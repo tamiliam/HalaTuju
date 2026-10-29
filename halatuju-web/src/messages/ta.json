@@ -832,7 +832,10 @@
     "requirements": "நுழைவுத் தேவைகள்",
     "generalReq": "பொதுத் தேவைகள்",
     "specialReq": "கல்வித் தேவைகள்",
-    "subjectReq": "பாடத் தேவைகள்"
+    "subjectReq": "பாடத் தேவைகள்",
+    "bumiputeraOnly": "பூமிபுத்திரா மட்டும்",
+    "otherSubjects": "{grade} or better in {count} more subject(s) not already counted",
+    "exceptSubjects": "not counting"
   },
   "saved": {
     "title": "சேமிக்கப்பட்ட படிப்புகள்",

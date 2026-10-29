@@ -54,6 +54,16 @@ describe('PathwayPicker reads the results held, not the declared exam (TD-325)',
 
   // Owner ruling 2026-10-28 (Bumi coverage, Option A): "Your Plans" offers EVERY course, Bumi-only
   // included, to EVERY student, and never reads the Bumiputera answer (course-guide only).
+  // Bumi Sprint D1: the SPM course list has Bumi-only (UiTM) rows too, and the SPM check reads the
+  // profile it is sent — so the picker sends `bumiputera: true` whatever the stored answer.
+  it.each([false, null, undefined, true])(
+    'the SPM check includes Bumi-only courses whatever the stored answer (%s)', async (answer) => {
+      (checkEligibility as jest.Mock).mockClear()
+      mount({ ...sandboxProfileFormSix, results_held: 'spm', nationality: 'malaysian', bumiputera: answer })
+      await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+      expect((checkEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
+    })
+
   it.each([false, null, undefined, true])(
     'the STPM degree check includes Bumi-only courses whatever the stored answer (%s)', async (answer) => {
       mount({ ...sandboxProfileStpm, results_held: 'stpm', nationality: 'malaysian', bumiputera: answer })

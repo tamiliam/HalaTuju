@@ -19,8 +19,22 @@ interface OrGroup {
   subjects: string[]
 }
 
+/** Bumi Sprint D1 (`spm_count_once.py`): subjects that each count ONCE across the block, plus
+ *  "N more subjects not already counted" (`remaining`), optionally excluding some. */
+interface RemainingRule {
+  count: number
+  grade: string
+  exclude: string[]
+}
+
+interface CountOnceBlock {
+  groups: OrGroup[]
+  remaining: RemainingRule[]
+}
+
 interface ComplexRequirements {
   or_groups?: OrGroup[]
+  count_once?: CountOnceBlock[]
 }
 
 // PISMP subject_group_req: flat array of rule objects
@@ -32,6 +46,7 @@ interface SubjectGroupRule {
 
 export interface CourseRequirements {
   source_type: string
+  req_bumiputera?: boolean   // Bumi Sprint D1: shown as a "Bumiputera only" row
   general: ReqItem[]
   special: ReqItem[]
   complex_requirements: ComplexRequirements | null
@@ -136,7 +151,15 @@ export default function RequirementsCard({
   const { locale, t } = useT()
   const hasGeneral = requirements.general.length > 0
   const hasSpecial = requirements.special.length > 0
-  const hasComplex = requirements.complex_requirements?.or_groups?.length
+  // Legacy OR groups, then each count-once block's groups (a slotted group shows its full list).
+  const subjectGroups = [
+    ...(requirements.complex_requirements?.or_groups || []),
+    ...(requirements.complex_requirements?.count_once || []).flatMap((b) => b.groups),
+  ]
+  const remaining = (requirements.complex_requirements?.count_once || []).flatMap((b) => b.remaining)
+    .map((r) => t('courseDetail.otherSubjects', { grade: gradeLabel(r.grade, locale), count: String(r.count) })
+      + (r.exclude.length ? ` ${t('courseDetail.exceptSubjects')} ${r.exclude.map((s) => getSubjectName(s, locale)).join(', ')}` : ''))
+  const hasComplex = subjectGroups.length + remaining.length
   const hasSubjectGroup = Array.isArray(requirements.subject_group_req) && requirements.subject_group_req.length > 0
 
   // PISMP medium-of-instruction languages: prefer API-provided list, fall back to detection
@@ -197,7 +220,9 @@ export default function RequirementsCard({
                 {requirements.general.map((item) => (
                   <div key={item.key} className="flex items-start gap-2.5">
                     <CheckIcon color="gray" />
-                    <span className="text-[13px] text-ground-700 leading-snug">{item.label}</span>
+                    <span className="text-[13px] text-ground-700 leading-snug">
+                      {item.key === 'req_bumiputera' ? t('courseDetail.bumiputeraOnly') : item.label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -237,9 +262,10 @@ export default function RequirementsCard({
         {/* PISMP Language Requirements — removed as separate section; now injected as a rule in PismpSection */}
 
         {/* Complex Requirements — OR groups (UA/Asasi courses) */}
-        {hasComplex && (
+        {hasComplex > 0 && (
           <OrGroupSection
-            groups={requirements.complex_requirements!.or_groups!}
+            groups={subjectGroups}
+            remaining={remaining}
             locale={locale}
             label={t('courseDetail.subjectReq')}
           />
@@ -335,10 +361,12 @@ function tvetValueLabel(item: ReqItem, locale: string): string {
 
 function OrGroupSection({
   groups,
+  remaining = [],
   locale,
   label,
 }: {
   groups: OrGroup[]
+  remaining?: string[]   // count-once "N more subjects" lines, already worded
   locale: string
   label: string
 }) {
@@ -370,6 +398,19 @@ function OrGroupSection({
                   {getSubjectName(subj, locale)}
                 </span>
               ))}
+            </div>
+          </div>
+        ))}
+        {/* Count-once blocks: "N more subjects not already counted" (Bumi Sprint D1) */}
+        {expanded && remaining.map((text, idx) => (
+          <div key={`r${idx}`} className="bg-ground-50 rounded-lg p-3 border border-ground-100">
+            <div className="flex items-start gap-2.5">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
+                {groups.length + idx + 1}
+              </span>
+              <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
+                {text}
+              </span>
             </div>
           </div>
         ))}

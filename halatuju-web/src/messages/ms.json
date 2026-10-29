@@ -832,7 +832,10 @@
     "requirements": "Syarat Kemasukan",
     "generalReq": "Syarat Am",
     "specialReq": "Syarat Khas",
-    "subjectReq": "Syarat Subjek"
+    "subjectReq": "Syarat Subjek",
+    "bumiputeraOnly": "Bumiputera Sahaja",
+    "otherSubjects": "{grade} atau lebih dalam {count} mata pelajaran lain yang belum dikira",
+    "exceptSubjects": "tidak termasuk"
   },
   "saved": {
     "title": "Kursus Disimpan",

@@ -12,8 +12,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
-import { sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
-import { checkStpmEligibility } from '@/lib/api'
+import { sandboxProfileSpm, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
+import { checkEligibility, checkStpmEligibility } from '@/lib/api'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -71,6 +71,15 @@ it.each([
   fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
   fireEvent.focus(await screen.findByRole('combobox'))
   expect(await screen.findByText(/Seni Bina \(UiTM\)/)).toBeTruthy()
+})
+
+// Bumi Sprint D1: the SPM course list has Bumi-only (UiTM) rows too. The SPM check reads the profile
+// it is sent, so the picker overrides the answer with `bumiputera: true` — every course, as above.
+it.each([false, null, undefined])('an SPM student (stored answer %s) is sent the whole SPM list', async (answer) => {
+  (checkEligibility as jest.Mock).mockClear()
+  mount({ ...sandboxProfileSpm, results_exam_type: 'spm', results_held: 'spm', bumiputera: answer })
+  await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+  expect((checkEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
 })
 
 it('never reads the stored Bumiputera answer', async () => {
