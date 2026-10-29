@@ -1014,6 +1014,13 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ### ⚠ STATE AT 2026-10-29 — READ THIS FIRST
 
+**PAYMENTS FOLLOW A DEFAULT SCHEDULE THAT MIRRORS CONTRACT 10 (LIVE 2026-10-29, `e6a03fb3`, api-01191-f9p).**
+No contract template is active, so `default_schedule.py` pays every student: RM200; Poly/University skip
+November, STPM skips December and June, every pathway stops after its last month. Edit it together with the
+seed fixture (a drift test ties them). ⚠ A draft run keeps the line-up it was made with: the November draft
+made before this deploy is being cancelled and re-created by admin staff (owner). Retro
+`docs/retrospectives/retrospective-2026-10-29-default-schedule-c10.md`.
+
 **THE FIRST REAL INVOICES ARE ISSUED AND SENT.** INV-2026-0001 July RM0.00, INV-2026-0002 August
 RM790.86, INV-2026-0003 September RM179.89 — all three emailed to surithiru@gmail.com. **Do NOT
 void, re-issue or re-number anything under scholarship billing without asking the owner.** Live:
