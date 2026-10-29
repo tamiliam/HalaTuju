@@ -20,8 +20,9 @@ Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a tes
   flagged. The table wins over its heading (2 headings disagreed; kept in the remarks).
 - **Grouping + ingest** (`tvet_catalogue_rows.py`, `tvet_institutions.py`, `ingest_tvet_courses`, shared code
   moved first into `catalogue_ingest.py`): of 278 public non-MARA rows, **35 new courses** (39 campus
-  offerings; 32 open, 2 Bumi-only KEMAS), **56 new campus links to 34 held courses** (94 rows prod already
-  links), **89 flagged** (75 no SPM route, 7 ambiguous held names, 4 Tahfiz / religion, 2 gender wording, 1 no field rule), **4
+  offerings; 32 open, 2 Bumi-only KEMAS), **33 new campus links to 20 held courses** (116 rows prod already
+  links, matched by id_kursus or by the (course, campus) pair), **90 flagged** (75 no SPM route, 7 ambiguous held
+  names, 4 Tahfiz / religion, 2 gender wording, 1 no field rule, 1 held course only in the fixture), **4
   proposed institutions** (IKBN-022 IKSN AKBG; ILKA-001 FAMA Kota Bharu, ILKA-002 KEMAS Gopeng, ILKA-003 Kolej
   Pertanian Bukit Tangga), created only with `--create-institutions`. Held rules never change: 63 held courses
   differ from their pages (`held_rule_differences`, for review).
@@ -40,8 +41,13 @@ Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a tes
   is pinned by digest (2,259 over the original). A numbered age line loses its number (TVET-51431 now
   "Umur 17 hingga 30 tahun."). Owner rulings recorded: today's catalogue only; the qualified disability line is
   text only. The created set did not move (35 / 39 / 56 / 89 / 4); only TVET-51431's remark text changed.
+- **Review round 2 (prod read-only check):** 22 of the 56 "new" held links already exist in prod (prod's
+  hyperlink carries June's id_kursus), so a link is now held when prod holds the (course, campus) PAIR; 33 are
+  new. `--apply` refuses a link marked new that already exists (unless `--allow-update`), so the rollback list is
+  exact. IKBN-DIP-002 is in the fixture but not in prod: its campus row is flagged and it joins UL0481001 /
+  FB0500001 as fixture drift. Courses, offerings, institutions and the golden masters did not move.
 - **Not done:** MARA (F2; the current rules read 21 of 665 MARA pages, the rest need more condition wording);
-  the 89 flagged rows; the held-course flag mismatches (`req_malaysian` on 150 rows, `no_colorblind` on 59,
+  the 90 flagged rows; the fixture drift (UL0481001 / FB0500001 in prod only, IKBN-DIP-002 in the fixture only); the held-course flag mismatches (`req_malaysian` on 150 rows, `no_colorblind` on 59,
   `no_disability` on the qualified line) - owner: a SEPARATE small change after F1 ships; F1 leaves held rows
   untouched.
 

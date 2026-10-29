@@ -55,6 +55,12 @@ def held_courses_from_fixtures(fixtures=FIXTURES):
             for cid, fields in courses.items()}
 
 
+def load_not_in_prod(path):
+    """Held course ids the repo fixtures hold but prod does not (read-only SQL): never linked."""
+    with open(path, encoding='utf-8') as f:
+        return frozenset(json.load(f).get('not_in_prod', []))
+
+
 def load_held_links(path):
     with open(path, encoding='utf-8') as f:
         return {link['id_kursus']: (link['course_id'], link['institution_id']) for link in json.load(f)['links']}
@@ -133,7 +139,8 @@ class Command(CatalogueIngestMixin, BaseCommand):
             raise CommandError('--build-review needs --out <json>.')
         with open(source_path, encoding='utf-8') as f:
             source = json.load(f)
-        review = build_review(source, load_held_links(held_links_path), held_courses_from_fixtures(), families)
+        review = build_review(source, load_held_links(held_links_path), held_courses_from_fixtures(), families,
+                              load_not_in_prod(held_links_path))
         review['built_from'] = source_path.replace(os.sep, '/')
         write_json(out, review)
         self.stdout.write(json.dumps(review['counts'], indent=1))
@@ -152,6 +159,9 @@ class Command(CatalogueIngestMixin, BaseCommand):
                      for cid in sorted(held_ids - present)]
         parents = {o['institution_id'] for c in courses for o in c['offerings']} | {x['institution_id'] for x in links}
         problems += self._missing_institutions(parents, set(to_create))
+        new_links, clashes = self._new_links(links)
+        if not allow_update:
+            problems += clashes
         self._refuse_or_warn(problems, apply)
         for spec in to_create.values():
             self.stdout.write(f"CREATE INSTITUTION {spec['institution_id']} {spec['institution_name']} | "
@@ -161,13 +171,12 @@ class Command(CatalogueIngestMixin, BaseCommand):
             self.stdout.write(f"{'UPDATE' if exists else 'CREATE'} {entry['course_id']} {entry['course']} | "
                               f"{entry['field_key']} | bumi={entry['requirement'].get('req_bumiputera')} | "
                               f"campuses {', '.join(o['institution_id'] for o in entry['offerings'])}")
-        new_links = [x for x in links if not CourseInstitution.objects.filter(
-            course_id=x['course_id'], institution_id=x['institution_id']).exists()]
         for link in new_links:
             self.stdout.write(f"LINK {link['course_id']} -> {link['institution_id']} (id_kursus {link['id_kursus']})")
+        held = sum(1 for x in links if x['already_linked'])
         self.stdout.write(f"{len(courses)} new courses ({sum(len(c['offerings']) for c in courses)} campus "
-                          f"offerings); {len(new_links)} new campus links to held courses ({len(links) - len(new_links)} "
-                          f"already held); {len(data.get('flagged', []))} flagged rows NOT ingested.")
+                          f"offerings); {len(new_links)} new campus links to held courses ({held} already held); "
+                          f"{len(data.get('flagged', []))} flagged rows NOT ingested.")
         if not apply:
             self.stdout.write(self.style.NOTICE('DRY RUN: nothing written. Re-run with --apply.'))
             return
@@ -183,6 +192,22 @@ class Command(CatalogueIngestMixin, BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Applied {len(courses)} courses, {len(new_links)} held-course links; '
             f'created {len(to_create)} institutions.'))
+
+    @staticmethod
+    def _new_links(links):
+        """(links to write, clashes). Only a link the file marks NEW (`already_linked` false) is written,
+        and it must not exist yet: the rollback deletes exactly the file's new links, so a new link that
+        prod already holds would be deleted by a rollback (review 2026-10-29: 22 such pairs). A clash
+        refuses --apply unless --allow-update (a reviewed re-run of the same file)."""
+        new, clashes = [], []
+        for link in (x for x in links if not x['already_linked']):
+            if CourseInstitution.objects.filter(course_id=link['course_id'],
+                                                institution_id=link['institution_id']).exists():
+                clashes.append(f"link {link['course_id']} -> {link['institution_id']} is marked new but already "
+                               'exists (a rollback would delete a real link)')
+            else:
+                new.append(link)
+        return new, clashes
 
     @staticmethod
     def _id_problems(courses, allow_update):

@@ -163,13 +163,15 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    web) → CONFIRM the new api AND web revisions both serve 100% (an old api has no `mara` / `tvet_other`
    pathway, so the ILKA-* rows would show as plain "tvet"; an old web has no chips for them) →
    `ingest_tvet_courses --file data/tvet/tvet_new_courses_F1.json --create-institutions` (dry run: expect 4
-   `CREATE INSTITUTION` (IKBN-022, ILKA-001..003), 35 `CREATE TVET-…`, 0 UPDATE, 56 `LINK` lines, "94 already
-   held", 89 flagged, and no "Refusing") → the same with `--apply` (it refuses any `courses[]` id that already
+   `CREATE INSTITUTION` (IKBN-022, ILKA-001..003), 35 `CREATE TVET-…`, 0 UPDATE, 33 `LINK` lines, "116 already
+   held", 90 flagged, no "marked new but already exists", and no "Refusing") → the same with `--apply` (it refuses any `courses[]` id that already
    exists or is not `TVET-…`; a reviewed RE-run of the same file needs `--allow-update`) → a re-revision so the frame reloads. A held
    course (IJTM-* / IKBN-*) only GAINS campus links; its row and rule are never written. Read-only SQL before
    `--apply`: none of the 35 ids in `courses`; none of IKBN-022 / ILKA-001..003 in `institutions`; every
    IJTM-001..034 / IKBN-001..021 present; `SELECT count(*) FROM course_institutions WHERE (course_id,
-   institution_id) IN (F1LINKS)` = 0 (F1LINKS = the 56 `held_links` with `already_linked: false`). BEFORE ANY
+   institution_id) IN (F1LINKS)` = 0 (F1LINKS = the 33 `held_links` with `already_linked: false`; a
+   new link prod already holds makes `--apply` refuse, so this list is exactly what F1 added — review
+   2026-10-29 found 22 prod pairs whose hyperlink carries June's id_kursus, now marked held). BEFORE ANY
    ROLLBACK, read-only: `SELECT id, status FROM scholarship_applications WHERE chosen_programme->>'course_id'
    IN (F1) OR EXISTS (SELECT 1 FROM jsonb_array_elements(top_choices) e WHERE e->>'course_id' IN (F1))` and
    `SELECT count(*) FROM api_student_profiles WHERE chosen_programme->>'course_id' IN (F1)`; non-zero → the
@@ -1119,7 +1121,8 @@ the "not submitted" standing and the Results overdue filter.** Design of record:
 `docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d2.md`). All 150 Sprint A SPM courses are in (136
 Bumi-only, 14 open Islamic) plus 2 Bumi-only matric tracks. NEXT in that arc = Sprint F:** UP_TVET ingest incl.
 MARA (~544 rows in `data/tvet/uptvet_latest.csv`; parse the public `info_url` "Syarat Kursus", the Bumi flag
-from "Taraf Bumiputera"). Follow-ups: the 2 prod rows the fixture lacks (UL0481001, FB0500001); college lists
+from "Taraf Bumiputera"). Follow-ups: fixture drift — the 2 prod rows the fixture lacks (UL0481001, FB0500001) and
+IKBN-DIP-002, which the fixture holds and prod does not (F1 flags its campus row); college lists
 for the 2 Bumi matric tracks (then offer them in the pickers). The Bumi answer stays course-guide only.
 Adversarial review before push.
 

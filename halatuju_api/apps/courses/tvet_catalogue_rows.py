@@ -12,9 +12,11 @@ course id is `TVET-<lowest id_kursus>` of its group.
 HELD courses (prod's IJTM-* / IKBN-*): a catalogue row is held when prod already links its `id_kursus`
 (`held_links`, read-only SQL 2026-10-29) or, failing that, when its normalised name is EXACTLY one held
 course's name within the same family. A held course NEVER changes: its clean campuses become extra
-`held_links` (campus offerings only), and every difference between the page's parsed rule and the held
+`held_links` (campus offerings only; `already_linked` when prod holds the (course, campus) PAIR, whatever
+id_kursus its hyperlink carries), and every difference between the page's parsed rule and the held
 row's rule goes into `held_rule_differences` for review. Rows the parser could not read
-(`tvet_syarat`) go to `flagged`, with their source text, and are never written.
+(`tvet_syarat`) go to `flagged`, with their source text, and are never written; so does a row of a held
+course the fixture holds but prod does not (`not_in_prod`, from `held_tvet_links.json`).
 
 Course fields UP_TVET does not give us are derived deterministically: `level` from the page's "Tahap
 Pengajian" (Diploma / Sijil Lanjutan / Sijil), `semesters` = the "Tempoh Pengajian" months // 6,
@@ -160,8 +162,11 @@ def _held_id(item, held_links, by_name):
     return (names[0], 'name') if names else (None, None)
 
 
-def _reasons(item, held_id):
+def _reasons(item, held_id, not_in_prod=frozenset()):
     reasons = list(item['parsed']['unparsed'])
+    if held_id in not_in_prod:
+        reasons.append(f'held course {held_id} is only in the fixture, not in prod: no link until the '
+                       'fixture drift is reconciled')
     if (item['matched_by'] or '').startswith('ambiguous:'):
         reasons.append(f"the name matches more than one held course ({item['matched_by'][10:]}): "
                        'which one it is needs a person')
@@ -170,14 +175,17 @@ def _reasons(item, held_id):
     return reasons
 
 
-def build_review(source, held_links, held_courses, families=F1_FAMILIES):
+def build_review(source, held_links, held_courses, families=F1_FAMILIES, not_in_prod=frozenset()):
     """See the module doc. `held_links`: {id_kursus: (course_id, institution_id)} from prod;
     `held_courses`: {course_id: {'course': name, 'requirement': {field: value}}}."""
     items = _read_rows(source, families)
+    # Every (course, campus) pair prod already holds: a link is ALREADY THERE when prod has the pair, even
+    # when prod's hyperlink carries an older id_kursus (review 2026-10-29: 22 such pairs).
+    prod_pairs = set(held_links.values())
     by_name = _held_by_name(held_courses)
     for item in items:
         item['held_id'], item['matched_by'] = _held_id(item, held_links, by_name)
-        item['reasons'] = _reasons(item, item['held_id'])
+        item['reasons'] = _reasons(item, item['held_id'], not_in_prod)
     # Only a campus that gets a clean row is proposed, so the ids carry no gaps.
     unknown = {(i['family'], i['campus']): i['page'] for i in items
                if not i['reasons'] and held_institution(i['family'], i['campus']) is None}
@@ -195,7 +203,8 @@ def build_review(source, held_links, held_courses, families=F1_FAMILIES):
         inst = item['institution_id'] = held_institution(family, item['campus']) or new_ids[(family, item['campus'])]
         if held_id:
             links.append({**_offering(row, inst, item['campus']), 'course_id': held_id,
-                          'matched_by': item['matched_by'], 'already_linked': item['matched_by'] == 'id_kursus'})
+                          'matched_by': item['matched_by'],
+                          'already_linked': item['matched_by'] == 'id_kursus' or (held_id, inst) in prod_pairs})
             diff = _rule_differences(parsed['fields'], held_courses.get(held_id, {}).get('requirement', {}))
             if diff:
                 differences.append({'course_id': held_id, 'id_kursus': row['id_kursus'], 'campus': item['campus'],

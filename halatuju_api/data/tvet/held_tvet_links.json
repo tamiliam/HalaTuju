@@ -901,5 +901,9 @@
    "institution_id": "IKBN-012",
    "id_kursus": "43815"
   }
- ]
+ ],
+ "not_in_prod": [
+  "IKBN-DIP-002"
+ ],
+ "not_in_prod_note": "Held course ids the repo fixtures hold but prod does not (read-only SQL by the lead, 2026-10-29); with UL0481001 / FB0500001 they are the fixture-drift follow-up."
 }

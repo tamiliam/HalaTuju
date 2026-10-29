@@ -20,12 +20,12 @@
   "header_mismatches": 2,
   "remark_variants": 1,
   "rows": 278,
-  "flagged_rows": 89,
+  "flagged_rows": 90,
   "new_courses": 35,
   "new_offerings": 39,
-  "held_links": 150,
-  "held_links_new": 56,
-  "held_rule_differences": 150,
+  "held_links": 149,
+  "held_links_new": 33,
+  "held_rule_differences": 149,
   "split_by_rule": 0,
   "open_courses": 32,
   "new_institutions": 4
@@ -1999,7 +1999,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-032",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "14468",
@@ -2599,7 +2599,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-009",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "34535",
@@ -2659,7 +2659,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-013",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "35147",
@@ -3055,7 +3055,7 @@
    "registration_fee": "RM 750",
    "course_id": "IJTM-CET-024",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "40510",
@@ -3080,18 +3080,6 @@
    "course_id": "IKBN-CET-005",
    "matched_by": "id_kursus",
    "already_linked": true
-  },
-  {
-   "id_kursus": "43878",
-   "institution_id": "IKBN-001",
-   "campus": "INSTITUT KEMAHIRAN TINGGI BELIA NEGARA DUSUN TUA",
-   "kod_tauliah": "TVET(S1)/K03001/ME-020-4:2012-ST-B",
-   "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=43878",
-   "tuition_fee_semester": "",
-   "registration_fee": "",
-   "course_id": "IKBN-DIP-002",
-   "matched_by": "name",
-   "already_linked": false
   },
   {
    "id_kursus": "44014",
@@ -3247,7 +3235,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-028",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "46699",
@@ -3259,7 +3247,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-027",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "46702",
@@ -3271,7 +3259,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-025",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "47135",
@@ -3295,7 +3283,7 @@
    "registration_fee": "RM 750",
    "course_id": "IJTM-DIP-032",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "47369",
@@ -3307,7 +3295,7 @@
    "registration_fee": "",
    "course_id": "IJTM-CET-038",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "47390",
@@ -3331,7 +3319,7 @@
    "registration_fee": "RM 750",
    "course_id": "IJTM-CET-038",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "47408",
@@ -3343,7 +3331,7 @@
    "registration_fee": "RM 750",
    "course_id": "IJTM-CET-038",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "47420",
@@ -3355,7 +3343,7 @@
    "registration_fee": "RM 750",
    "course_id": "IJTM-DIP-010",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48059",
@@ -3379,7 +3367,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-026",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48458",
@@ -3391,7 +3379,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-024",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48500",
@@ -3415,7 +3403,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-014",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48620",
@@ -3451,7 +3439,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-011",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48632",
@@ -3475,7 +3463,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-003",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48638",
@@ -3487,7 +3475,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-020",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48707",
@@ -3499,7 +3487,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-005",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "48749",
@@ -3535,7 +3523,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-003",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "50159",
@@ -3547,7 +3535,7 @@
    "registration_fee": "",
    "course_id": "IKBN-CET-004",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "51404",
@@ -3559,7 +3547,7 @@
    "registration_fee": "",
    "course_id": "IKBN-DIP-001",
    "matched_by": "name",
-   "already_linked": false
+   "already_linked": true
   },
   {
    "id_kursus": "51440",
@@ -7016,30 +7004,6 @@
    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
   },
   {
-   "course_id": "IKBN-DIP-002",
-   "id_kursus": "43878",
-   "campus": "INSTITUT KEMAHIRAN TINGGI BELIA NEGARA DUSUN TUA",
-   "differences": {
-    "no_colorblind": {
-     "page": true,
-     "held": false
-    },
-    "no_disability": {
-     "page": false,
-     "held": true
-    },
-    "req_malaysian": {
-     "page": true,
-     "held": false
-    },
-    "three_m_only": {
-     "page": null,
-     "held": true
-    }
-   },
-   "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
-  },
-  {
    "course_id": "IJTM-CET-015",
    "id_kursus": "44014",
    "campus": "ADTEC JTM KAMPUS SANDAKAN (ILP SANDAKAN)",
@@ -9074,6 +9038,22 @@
     "01 Kelayakan Akademik / [Syarat Wajib] Memiliki Sijil Kemahiran Malaysia (SKM) Tahap 3 seperti berikut: / Pembuatan Roti [HT-013-3:2011] Atau / Pembuatan Pastri [HT-014-3:2011] Atau / Ketua Penyedia Roti [L-100-3] Atau / Ketua Seksyen Penyedia Pastri [L-110-3]",
     "02 Umur / [Syarat Wajib] Mestilah: / Umur Minimum : 17 / Umur Maksimum : 30",
     "03 Syarat Tambahan / [Syarat Wajib] Mestilah: / 1. Sihat Tubuh Badan (Wajib) / 2. Boleh Membaca, Menulis dan Mengira (Wajib)",
+    "04 Warganegara / (Warganegara Malaysia) / [Syarat Wajib] Mestilah: / Warganegara Malaysia Sahaja"
+   ]
+  },
+  {
+   "id_kursus": "43878",
+   "name": "DIPLOMA TEKNOLOGI ELEKTRIK (PENYEJUKBEKUAN & PENYAMANAN UDARA)",
+   "family": "ilkbs",
+   "campus": "INSTITUT KEMAHIRAN TINGGI BELIA NEGARA DUSUN TUA",
+   "held_course": "IKBN-DIP-002",
+   "reasons": [
+    "held course IKBN-DIP-002 is only in the fixture, not in prod: no link until the fixture drift is reconciled"
+   ],
+   "source": [
+    "01 Kelayakan Akademik / [Syarat Pilihan 1] Minimum: / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis / ATAU / [Syarat Pilihan 2] Memiliki SPM;",
+    "02 Umur / [Syarat Wajib] Mestilah: / Umur Minimum : 17 / Umur Maksimum : 30",
+    "03 Syarat Tambahan / [Syarat Wajib] Mestilah: / 1. Sihat Tubuh Badan (Wajib) / 2. Boleh Membaca, Menulis dan Mengira (Wajib) / 3. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)",
     "04 Warganegara / (Warganegara Malaysia) / [Syarat Wajib] Mestilah: / Warganegara Malaysia Sahaja"
    ]
   },

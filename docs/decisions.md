@@ -166,6 +166,12 @@ route beside an SPM route is allowed: the SPM route decides (18170, 18176, 31450
 the review file lists (`req_malaysian` false on all 150 matched rows, `no_colorblind` missing on 59,
 `no_disability` set where the page has only the qualified line) are fixed in a SEPARATE small change after
 F1 ships.
+**Held links are matched by PAIR (review round 2, prod read-only check).** A campus link to a held course
+is "already held" when prod holds that (course, institution) pair, whatever id_kursus its hyperlink carries
+(22 prod links still carry June's numbers). Only links the file marks new are written, and `--apply` refuses
+one that already exists, so the rollback deletes exactly what F1 added. A held course the fixture holds but
+prod does not (IKBN-DIP-002) gets no link: its row is flagged and it is fixture drift, beside UL0481001 /
+FB0500001 (prod-only), for a separate reconciliation.
 **Ingest safety (review).** `ingest_tvet_courses --apply` refuses a `courses[]` id that already exists, or
 any id not starting `TVET-`, unless `--allow-update` (which still never lets a non `TVET-` id through), so
 a held course can never be rewritten through the new-course path.

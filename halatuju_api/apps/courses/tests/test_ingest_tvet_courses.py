@@ -10,7 +10,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.courses.management.commands.ingest_tvet_courses import (
-    held_courses_from_fixtures, load_held_links,
+    held_courses_from_fixtures, load_held_links, load_not_in_prod,
 )
 from apps.courses.models import Course, CourseInstitution, CourseRequirement, Institution
 from apps.courses.tvet_catalogue_rows import build_review, clean_name, field_of, level_of, semesters_of
@@ -33,7 +33,8 @@ def _run(*args):
 class TestReviewFile:
     def test_rebuilt_byte_for_byte_from_the_committed_source(self):
         source = json.loads((DATA / 'uptvet_F1_source.json').read_text(encoding='utf-8'))
-        review = build_review(source, load_held_links(DATA / 'held_tvet_links.json'), held_courses_from_fixtures())
+        links = DATA / 'held_tvet_links.json'
+        review = build_review(source, load_held_links(links), held_courses_from_fixtures(), not_in_prod=load_not_in_prod(links))
         review['built_from'] = 'data/tvet/uptvet_F1_source.json'
         assert json.loads(json.dumps(review, ensure_ascii=False)) == _review()
 
@@ -164,14 +165,37 @@ class TestIngest:
         cid = data['courses'][0]['course_id']
         assert CourseInstitution.objects.filter(course_id=cid).count() == len(data['courses'][0]['offerings'])
 
-    def test_an_existing_held_link_is_left_as_it_is(self, catalogue, tmp_path):
+    def test_a_new_link_that_already_exists_refuses_apply_so_the_rollback_list_is_exact(self, catalogue, tmp_path):
         path, data = _small(tmp_path)
         link = data['held_links'][0]
         CourseInstitution.objects.create(course_id=link['course_id'], institution_id=link['institution_id'],
                                          hyperlink='https://example.org/kept', tuition_fee_semester='Percuma')
-        _run('--file', str(path), '--create-institutions', '--apply')
+        out = _run('--file', str(path), '--create-institutions')
+        assert f"link {link['course_id']} -> {link['institution_id']} is marked new but already exists" in out
+        with pytest.raises(CommandError, match='marked new but already exists'):
+            _run('--file', str(path), '--create-institutions', '--apply')
+        _run('--file', str(path), '--create-institutions', '--apply', '--allow-update')   # a reviewed re-run
         kept = CourseInstitution.objects.get(course_id=link['course_id'], institution_id=link['institution_id'])
         assert kept.hyperlink == 'https://example.org/kept'
+
+    def test_a_link_marked_already_held_is_never_written(self, catalogue, tmp_path):
+        review = _review()
+        held = next(x for x in review['held_links'] if x['already_linked'])
+        path, data = _small(tmp_path)
+        data['held_links'] = [held]
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+        _run('--file', str(path), '--create-institutions', '--apply')
+        assert not CourseInstitution.objects.filter(course_id=held['course_id'],
+                                                    institution_id=held['institution_id']).exists()
+
+    def test_the_review_file_marks_prods_existing_pairs_and_skips_a_fixture_only_course(self):
+        review = _review()
+        prod = {(x['course_id'], x['institution_id'])
+                for x in json.loads((DATA / 'held_tvet_links.json').read_text(encoding='utf-8'))['links']}
+        new = [x for x in review['held_links'] if not x['already_linked']]
+        assert len(new) == 33 and not {(x['course_id'], x['institution_id']) for x in new} & prod
+        assert not any(x['course_id'] == 'IKBN-DIP-002' for x in review['held_links'])
+        assert any('IKBN-DIP-002' in r for f in review['flagged'] for r in f['reasons'])
 
     def test_refuses_a_link_to_a_held_course_that_does_not_exist(self, catalogue, tmp_path):
         path, data = _small(tmp_path)
