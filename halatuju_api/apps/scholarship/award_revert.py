@@ -41,6 +41,10 @@ def revert_to_pool(application):
         reasons = divert_reasons(application)
         application.status = 'interviewed' if reasons else 'recommended'
         fields.append('status')
+        # Student maintenance S1 (review L1): leaving the payable statuses resets a stored hold /
+        # probation to on_track (stamped 'system', logged), so a re-award never inherits it.
+        from .maintenance import reset_on_leaving
+        fields += reset_on_leaving(application, reason='award_reverted')
     if application.award_due_at is not None:
         application.award_due_at = None
         fields.append('award_due_at')

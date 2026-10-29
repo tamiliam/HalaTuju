@@ -148,7 +148,9 @@ class TestSerializerSurfaces(TestCase):
         app = _app(self.cohort, status='maintenance', suffix='st')
         maintenance.set_substate(app, 'on_hold')
         data = ApplicationReadSerializer(app).data
-        self.assertEqual(data['maintenance_substate'], 'on_hold')
+        # Maintenance S1 (review L5): the student gets the coarse answer, never the raw sub-state.
+        self.assertNotIn('maintenance_substate', data)
+        self.assertTrue(data['support_paused'])
 
     def test_sponsor_card_coarse_only(self):
         from apps.scholarship.serializers import SponsorPoolCardSerializer

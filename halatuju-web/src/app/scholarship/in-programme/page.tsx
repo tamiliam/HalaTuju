@@ -200,7 +200,7 @@ export default function InProgrammePage() {
         </div>
 
         {/* S5: a paused (on-hold) student sees a clear, non-alarming notice. */}
-        {app?.in_maintenance && app?.maintenance_substate === 'on_hold' && (
+        {app?.in_maintenance && app?.support_paused && (
           <div className="rounded-2xl border border-caution-200 bg-caution-50 p-4">
             <p className="text-sm font-medium text-caution-900">{t('scholarship.inProgramme.onHold.title')}</p>
             <p className="mt-1 text-sm text-caution-800">{t('scholarship.inProgramme.onHold.body')}</p>
@@ -250,7 +250,7 @@ export default function InProgrammePage() {
             <p className="mt-3 text-sm text-ground-400">{t('scholarship.inProgramme.results.empty')}</p>
           )}
 
-          {!app?.in_maintenance ? null : !showForm ? (
+          {!app?.can_record_results ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
               className="mt-3 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}

@@ -87,11 +87,19 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
 3. **Student "My Bursary" hub shell** (~25 files). `/scholarship/bursary` Overview + Results (existing
    typed form moved), redirect, AppHeader link, application-page card, `scholarship/bursary/summary/`;
    move sub-state + closure controls from cockpit to the file. Accept: bundle-budget unchanged on
-   `/scholarship/application`; on-hold/closed notices kept.
+   `/scholarship/application`; on-hold/closed notices kept. **Carry-over from S1 review (L4):** an
+   `awarded` student may now be marked `ready_to_close`, but `closure.close_application` refuses an
+   awarded case that holds money (`sponsorship_open`, TD-366) — the file must say why "Close" is not
+   offered, or the owner rules on a release door. (The cockpit's sub-state control still shows only at
+   `maintenance`; awarded students are held through the API until the file has the control.)
 4. **Results and standing** (~35 files, may split 4a backend / 4b UI; migration).
    Slip upload; `standing.py` derives performing / underperforming / failing / not submitted / no result
    yet from settings + `ResultsExpectation`; admin Results tab (slip viewer, accept/query, history);
    registry keys; crons `results-due-reminders` + `results-overdue-flag` (daily). **Adversarial review.**
+   **Carry-over from S1 review (M2):** widen the results gate (`in_programme.can_record_results`, still
+   active/maintenance) to the maintenance predicate + make the sponsor readers consistent:
+   `derive_progress_state` on the predicate, with a cross-reader test (support status, portfolio badge,
+   progress band agree for every status x wallet x sub-state).
    Accept: changing `maintenance_min_cgpa` changes chips with no deploy; reminders idempotent + metered.
 5. **Money summary + contract** (~20 files). Admin Money tab: paid to date, remaining, last 3 releases,
    spending by category (spending block needs `spending` permission; finance sees payments only), links to

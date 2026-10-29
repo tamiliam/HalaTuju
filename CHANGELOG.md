@@ -28,6 +28,13 @@ put on hold, or reach the in-programme page. Backend foundation; the status stat
   The payments page maps both new codes (en/ms/ta).
 - **Sponsor-visible:** an on-hold `awarded` student now reads `paused` (support status and portfolio
   badge); the sponsor progress band is unchanged (owner default).
+- **Adversarial review fixes:** placing or lifting a hold needs payments-prepare rights (super, org
+  admin, `payments_prepare`; else 403 `hold_needs_payments`), and the runs it touched (signatures
+  cleared or not) are in the activity row and a WARNING AUDIT line; semester-result recording stays
+  active/maintenance until Sprint 4 (served `can_record_results`); an award that falls through resets
+  a stored hold to on_track (logged); `set_substate` judges the stored value and writes conditionally;
+  run items carry `on_hold` (a chip) and the refusal says how many; the student sees `support_paused`,
+  never the raw sub-state.
 - **Who/when for the sub-state:** `maintenance_substate_changed_at` / `_by` (the admin endpoint passes
   the officer's email).
 - **Activity log foundation:** `StudentActivity` (`student_activity`, RLS + service_role policy) and
@@ -35,7 +42,7 @@ put on hold, or reach the in-programme page. Backend foundation; the status stat
   `payment_released` (run completion and tranche release), `closed`. Written inside the caller's
   transaction — the log is part of the record. No endpoints yet (Sprint 2).
 - **Student page:** the in-programme page reads the server's `has_file` / `in_maintenance` instead of
-  deriving it from statuses; the results form shows only in maintenance.
+  deriving it from statuses; the results form follows the served `can_record_results`.
 - **Moves only, first:** the Vircle eWallet ID rules moved verbatim to `vircle_ids.py` (re-exported),
   so `payments.py` is under 600 lines and leaves the oversize ledger; `test_maintenance.py` converted
   to the factory.

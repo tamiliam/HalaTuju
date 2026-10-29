@@ -85,8 +85,8 @@ _CENTS = Decimal('0.01')
 class PaymentsError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'past_date',
     'name_mismatch', 'same_signer', 'not_draft', 'amount_over_cap')."""
-    def __init__(self, code, message=''):
-        self.code = code
+    def __init__(self, code, message='', count=None):
+        self.code, self.count = code, count     # `count`: how many, for `on_hold_in_run`
         super().__init__(message or code)
 
 
@@ -543,8 +543,9 @@ def complete(run):
         raise PaymentsError('already_paid')
 
     items = [i for i in run.items.select_related('application') if i.included]
-    if any(_is_on_hold(i.application) for i in items):
-        raise PaymentsError('on_hold_in_run')
+    held = sum(1 for i in items if _is_on_hold(i.application))
+    if held:
+        raise PaymentsError('on_hold_in_run', count=held)
     for item in items:
         app = item.application
         if item.amount and item.amount > 0:

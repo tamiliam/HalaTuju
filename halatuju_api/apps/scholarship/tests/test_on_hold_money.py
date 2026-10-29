@@ -80,17 +80,23 @@ class TestHoldAfterTheRunWasMade(_PaidCohort):
         run.refresh_from_db()
         self.assertEqual(run.status, 'draft')
         row = StudentActivity.objects.get(application=self.held, event=EVENT_SUBSTATE_CHANGED)
-        self.assertEqual(row.meta['excluded_from_runs'], [run.reference])
+        self.assertEqual(row.meta['excluded_from_runs'],
+                         [{'run': run.reference, 'signatures_cleared': False}])
 
     def test_a_signed_run_reverts_to_draft_and_loses_her_item(self):
         run = self._run()
         run.status, run.admin_signed_name = 'admin_signed', 'Maker'
         run.admin_signed_email, run.admin_signed_at = 'maker@example.test', timezone.now()
         run.save()
-        maintenance.set_substate(self.held, 'on_hold')
+        with self.assertLogs('apps.scholarship.maintenance', 'WARNING') as logs:
+            maintenance.set_substate(self.held, 'on_hold')
+        self.assertIn('signatures cleared', logs.output[0])
         run.refresh_from_db()
         self.assertEqual((run.status, run.admin_signed_email, run.admin_signed_at),
                          ('draft', '', None))
+        row = StudentActivity.objects.get(application=self.held, event=EVENT_SUBSTATE_CHANGED)
+        self.assertEqual(row.meta['excluded_from_runs'],
+                         [{'run': run.reference, 'signatures_cleared': True}])
         self.assertFalse(self._item(run, self.held).included)
 
     def test_a_completed_run_is_history_and_is_left_alone(self):

@@ -45,6 +45,9 @@ export interface PaymentRunItem {
   credit_applied: string
   included: boolean
   exclude_reason: string
+  /** Maintenance S1 (review L3): the student is on hold NOW. A run still including her cannot be
+   *  approved (`on_hold_in_run`); shown as a chip. Optional for older payloads. */
+  on_hold?: boolean
 }
 export interface PaymentRunSkipped {
   application_id: number

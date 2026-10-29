@@ -9,6 +9,8 @@
  * Student maintenance S1 (2026-10-29): the page no longer derives this from statuses — it reads the
  * server's `has_file` (who reaches the page) and `in_maintenance` (who gets the results form), both
  * from `maintenance_scope.py`. So the 65 live students, all `awarded` with a live wallet, reach it.
+ * The results form follows the served `can_record_results` (active / maintenance until Sprint 4 —
+ * review M2) and the paused notice the coarse `support_paused` (review L5), never the raw sub-state.
  */
 import { render, screen, waitFor } from '@testing-library/react'
 import InProgrammePage from './page'
@@ -54,19 +56,26 @@ it('a FUNDED case that was closed still reaches the page (the thank-you stays op
   expect(screen.queryByText(/scholarship\.inProgramme\.results\.add/)).toBeNull()
 })
 
-it('an AWARDED student with a live wallet (in maintenance) reaches the page and the results form', async () => {
+it('an AWARDED student with a live wallet reaches the page, without the results form until Sprint 4', async () => {
   serve({ status: 'awarded', closure_reason: '', has_file: true, in_maintenance: true,
-          maintenance_substate: 'on_track' })
+          can_record_results: false, support_paused: false })
   render(<InProgrammePage />)
   await waitFor(() => expect(mockApi.getSemesterResults).toHaveBeenCalledWith(7, { token: 'tok' }))
   expect(screen.queryByText('scholarship.inProgramme.notInProgramme')).toBeNull()
-  expect(await screen.findByText(/scholarship\.inProgramme\.results\.add/)).toBeTruthy()
+  expect(screen.queryByText(/scholarship\.inProgramme\.results\.add/)).toBeNull()
   expect(screen.queryByText('scholarship.inProgramme.onHold.title')).toBeNull()
+})
+
+it('an ACTIVE student gets the results form (the server says can_record_results)', async () => {
+  serve({ status: 'active', closure_reason: '', has_file: true, in_maintenance: true,
+          can_record_results: true, support_paused: false })
+  render(<InProgrammePage />)
+  expect(await screen.findByText(/scholarship\.inProgramme\.results\.add/)).toBeTruthy()
 })
 
 it('an on-hold awarded student sees the paused notice', async () => {
   serve({ status: 'awarded', closure_reason: '', has_file: true, in_maintenance: true,
-          maintenance_substate: 'on_hold' })
+          can_record_results: false, support_paused: true })
   render(<InProgrammePage />)
   expect(await screen.findByText('scholarship.inProgramme.onHold.title')).toBeTruthy()
 })

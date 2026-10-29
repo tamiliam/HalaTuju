@@ -213,8 +213,11 @@ class TestMaintenanceBrake(_FundedCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'maintenance')
 
-    def _substate(self, substate):
-        return self.client.post(f'{API}applications/{self.app.id}/maintenance/',
+    def _substate(self, substate, client=None):
+        # A move to/from on_hold is a money act: payments_prepare / org_admin / super (review M1).
+        if client is None and 'on_hold' in (substate, self.app.maintenance_substate):
+            client = authed_client(self.org_admin)
+        return (client or self.client).post(f'{API}applications/{self.app.id}/maintenance/',
                                 {'substate': substate}, format='json')
 
     def test_on_hold_is_recorded_and_then_refuses_the_next_release(self):
@@ -230,8 +233,8 @@ class TestMaintenanceBrake(_FundedCase):
         nxt.refresh_from_db()
         self.assertEqual(nxt.status, 'scheduled')
 
-        # Resuming lifts the brake.
-        self._substate('on_track')
+        # Resuming lifts the brake (a money act too: the org admin).
+        self.assertEqual(self._substate('on_track').status_code, 200)
         self.assertEqual(self._act(nxt, 'release').status_code, 200)
 
     def test_a_case_not_yet_in_maintenance_has_no_substate(self):

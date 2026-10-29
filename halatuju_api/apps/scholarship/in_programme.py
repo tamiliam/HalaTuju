@@ -18,6 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import activity, pool, services
+from .closure import FUNDED_STATUSES
 from .maintenance_scope import has_file, is_in_maintenance
 from .models import GraduationMessage, SemesterResult
 from .models.activity import EVENT_RESULT_SUBMITTED
@@ -38,6 +39,15 @@ class InProgrammeError(Exception):
 def _require_in_programme(application):
     if not is_in_maintenance(application):
         raise InProgrammeError('not_in_programme')
+
+
+def can_record_results(application):
+    """May the student record a semester result? ``active`` / ``maintenance`` ONLY
+    (``closure.FUNDED_STATUSES``), as before maintenance S1 — deliberately NOT the wider predicate
+    (adversarial review M2): a self-reported result feeds the sponsor progress band unreviewed, so
+    the gate widens in Sprint 4 together with results review and one sponsor-reader rule. Served
+    to the student page as ``can_record_results``, so the form and the server agree."""
+    return application is not None and application.status in FUNDED_STATUSES
 
 
 # S6: the graduation thank-you relay stays open AFTER closure — a graduated/completed student can
@@ -78,8 +88,10 @@ def record_semester_result(application, *, semester='', cgpa=None,
     ``created_at`` is the one the progress signal reads. Returns the new row.
 
     Writes one ``result_submitted`` activity row in the same transaction (the student is the
-    actor, so ``actor_email`` is blank and ``meta.by`` says so)."""
-    _require_in_programme(application)
+    actor, so ``actor_email`` is blank and ``meta.by`` says so). Gated by ``can_record_results``
+    (active / maintenance), NOT the maintenance predicate — see there."""
+    if not can_record_results(application):
+        raise InProgrammeError('not_in_programme')
     with transaction.atomic():
         row = SemesterResult.objects.create(
             application=application,

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.courses.exam_questions import ResultsHeldField
 from . import pool
 from .family import PROFESSION_CODES, form_guardians_shape
+from .serializers_maintenance import StudentMaintenanceFields
 from .models import (
     ApplicantDocument, BankAccount, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
@@ -648,7 +649,7 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
         return out
 
 
-class ApplicationReadSerializer(serializers.ModelSerializer):
+class ApplicationReadSerializer(StudentMaintenanceFields, serializers.ModelSerializer):
     """
     Output representation of an application (read-only).
 
@@ -707,9 +708,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # before the decision was revealed; no student screen ever read it. Staff read it on
             # the admin serializer.
             'status', 'bucket',
-            # S5 sub-state (e.g. on_hold → "support paused") + maintenance S1: the server's own answers
-            # to "in maintenance" / "has a file" (model properties over maintenance_scope.py).
-            'maintenance_substate', 'in_maintenance', 'has_file',
+            # Maintenance S1: served answers, never the raw sub-state (serializers_maintenance.py).
+            'support_paused', 'in_maintenance', 'has_file', 'can_record_results',
             # S6: closure bucket — lets the in-programme page show the right "programme
             # complete" (graduated/completed) vs neutral closed copy.
             'closure_reason',

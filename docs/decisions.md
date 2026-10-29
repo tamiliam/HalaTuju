@@ -44,6 +44,18 @@ must exist first (migrate-first is mandatory for 0183). Not changed, by design: 
 `derive_progress_state` (sponsor band, owner default), `services/consent.py`'s onboarding gate,
 `payments.PAYABLE_STATUSES`, `views._FUNDED_STATES`, `spending_import`, `disbursement._require_funded` (tranche
 scheduling stays active/maintenance — the awarded cohort is paid by runs, not tranches).
+**Adversarial review fixes (same day):** (M1) a move to or from `on_hold` is a MONEY act — it needs
+`payments.may_prepare` (super, the organisation admin, a `payments_prepare` holder), else 403 `hold_needs_payments`;
+the other sub-states keep the app-write gate. `PaymentRun` has no audit trail (its `note` is free text), so the runs
+a hold took her out of, and whether their signatures were cleared, go in the `substate_changed` activity meta plus a
+WARNING AUDIT log line. (M2) **Recording a semester result is NOT widened in Sprint 1**: it stays active /
+maintenance (`in_programme.can_record_results`, served as `can_record_results`) because a self-reported result feeds
+the sponsor band unreviewed; it widens in Sprint 4 with results review and one sponsor-reader rule. Promotional
+consent and the (moderated) thank-you follow the new predicate. (L1) an award that falls through
+(`award_revert.revert_to_pool`) resets a stored sub-state to on_track, stamped `system`, logged; `reopen.py` never
+moves a post-award status, so it needs nothing. (L2) `set_substate` re-reads the stored sub-state and writes
+conditionally (`changed_meanwhile` on a lost race). (L3) a run item says `on_hold`; the refusal carries the count.
+(L5) the student is served `support_paused` (= `is_on_hold`), never the raw sub-state — probation is a staff flag.
 
 ## A transcript is told by its issuer only where no kind is printed; a blank `results_kind` is filled from the results held, never from the detection — 2026-10-29 (Matric/Diploma M1, #49)
 

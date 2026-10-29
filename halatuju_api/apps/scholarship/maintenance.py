@@ -29,6 +29,8 @@ be given (or lifted from) a sub-state.
 Import direction: ``maintenance → maintenance_scope / activity / models``; ``payments`` is
 imported lazily inside ``_exclude_from_open_runs`` (payments reads ``is_on_hold`` from here).
 """
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -36,6 +38,9 @@ from . import activity
 from .maintenance_scope import PAYABLE_STATUSES, in_maintenance_q, is_in_maintenance
 from .models import ScholarshipApplication
 from .models.activity import EVENT_SUBSTATE_CHANGED
+
+#: ⚠ THE MODULE NAME, WRITTEN OUT: the hold's AUDIT line is what a person searches the logs for.
+logger = logging.getLogger('apps.scholarship.maintenance')
 
 # The valid sub-states (mirror the model choices).
 SUBSTATES = ('on_track', 'probation', 'on_hold', 'ready_to_close')
@@ -87,8 +92,12 @@ def _exclude_from_open_runs(application):
     still be edited (``payments.EDITABLE_STATUSES``), through ``payments.set_item`` — so a signed
     run reverts to draft and loses its signatures (D2: nobody signs one list and sends another;
     the approver signs the list without her). A run that completed meanwhile (``not_editable``,
-    judged under the run's lock) is history: the money went before the hold. Returns the
-    references of the runs she was taken out of."""
+    judged under the run's lock) is history: the money went before the hold.
+
+    Returns ``[{'run': reference, 'signatures_cleared': bool}]``. ``PaymentRun`` keeps no audit
+    trail of its own (its ``note`` is free text), so this list goes into the ``substate_changed``
+    activity row, and a run whose signatures were cleared also gets a WARNING AUDIT log line —
+    a finance sign-off undone by a hold must be findable (adversarial review M1)."""
     from . import payments
     from .models import PaymentRunItem
     refs = []
@@ -96,13 +105,18 @@ def _exclude_from_open_runs(application):
              .filter(application=application, included=True,
                      run__status__in=payments.EDITABLE_STATUSES).order_by('run_id'))
     for item in items:
+        was = item.run.status
         try:
             payments.set_item(item, included=False, exclude_reason=ON_HOLD_EXCLUDE_REASON)
         except payments.PaymentsError as e:
             if e.code != 'not_editable':
                 raise
             continue
-        refs.append(item.run.reference)
+        cleared = was != 'draft'
+        refs.append({'run': item.run.reference, 'signatures_cleared': cleared})
+        if cleared:
+            logger.warning('AUDIT hold_reverted_run app_id=%s run=%s from=%s — signatures cleared',
+                           application.id, item.run.reference, was)
     return refs
 
 
@@ -119,7 +133,16 @@ def set_substate(application, substate, *, by_email=''):
     Moving TO ``on_hold`` first takes the student out of every editable payment run
     (``_exclude_from_open_runs``) — first, so this transaction takes the run's lock BEFORE the
     application's row, the same order ``payments.complete`` takes them (no deadlock). Lifting the
-    hold re-includes nobody."""
+    hold re-includes nobody.
+
+    The STORED sub-state is re-read first (a plain read, no row lock — the run locks come first),
+    so a stale in-memory copy cannot skip a real change or log the wrong ``old``; the write is
+    CONDITIONAL on that value still being stored, so two officers racing cannot both "move" it —
+    the loser gets ``changed_meanwhile`` and her whole change (run exclusions too) rolls back."""
+    stored = (ScholarshipApplication.objects.filter(pk=application.pk)
+              .values_list('maintenance_substate', flat=True).first())
+    if stored is not None:
+        application.maintenance_substate = stored
     _require_maintenance(application, substate)
     if substate not in SUBSTATES:
         raise MaintenanceError('bad_substate')
@@ -130,14 +153,36 @@ def set_substate(application, substate, *, by_email=''):
         meta = {'old': old, 'new': substate}
         if substate == 'on_hold':
             meta['excluded_from_runs'] = _exclude_from_open_runs(application)
+        now, by = timezone.now(), (by_email or '')[:254]
+        moved = ScholarshipApplication.objects.filter(pk=application.pk, maintenance_substate=old).update(
+            maintenance_substate=substate, maintenance_substate_changed_at=now,
+            maintenance_substate_changed_by=by)
+        if not moved:
+            raise MaintenanceError('changed_meanwhile')
         application.maintenance_substate = substate
-        application.maintenance_substate_changed_at = timezone.now()
-        application.maintenance_substate_changed_by = (by_email or '')[:254]
-        application.save(update_fields=['maintenance_substate', 'maintenance_substate_changed_at',
-                                        'maintenance_substate_changed_by'])
+        application.maintenance_substate_changed_at = now
+        application.maintenance_substate_changed_by = by
         activity.log_event(application, EVENT_SUBSTATE_CHANGED, actor_email=by_email, meta=meta,
                            internal=True)
     return application
+
+
+def reset_on_leaving(application, *, by_email='system', reason=''):
+    """A case LEAVING the payable statuses (an award that falls through, ``award_revert``) starts
+    clean: a stored sub-state other than ``on_track`` is reset, stamped and logged (adversarial
+    review L1), so a later re-award never inherits an old hold or probation. Plain writes on the
+    in-memory row — the CALLER saves; returns the field names to fold into its ``update_fields``.
+    The activity row is written here, in the caller's transaction."""
+    old = application.maintenance_substate
+    if old in ('', 'on_track'):
+        return []
+    application.maintenance_substate = 'on_track'
+    application.maintenance_substate_changed_at = timezone.now()
+    application.maintenance_substate_changed_by = (by_email or '')[:254]
+    activity.log_event(application, EVENT_SUBSTATE_CHANGED, actor_email=by_email, internal=True,
+                       meta={'old': old, 'new': 'on_track', 'reason': reason or 'left_payable'})
+    return ['maintenance_substate', 'maintenance_substate_changed_at',
+            'maintenance_substate_changed_by']
 
 
 def is_on_hold(application):

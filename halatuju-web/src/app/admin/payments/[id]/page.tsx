@@ -54,8 +54,11 @@ const Rosette = () => (
 
 type SortKey = 'name' | 'nric' | 'vircle_id' | 'paid_to_date'
 
-const errText = (e: unknown, t: (k: string) => string) => {
+const errText = (e: unknown, t: (k: string, params?: Record<string, string>) => string) => {
   const code = (e as { code?: string })?.code
+  // on_hold_in_run carries how many held students block the approval (maintenance S1, L3).
+  const count = (e as { body?: { count?: number } })?.body?.count
+  if (code === 'on_hold_in_run') return t('admin.payments.error.on_hold_in_run', { count: String(count ?? 1) })
   const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
                  'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready',
                  'finance_check_required', 'on_hold', 'on_hold_in_run']
@@ -270,6 +273,11 @@ export default function PaymentRunDetailPage() {
                   ⚠ {t('admin.payments.notActivated')}
                 </span>
               )}
+              {it.on_hold && (
+                <span data-testid="on-hold-chip" className="inline-flex items-center rounded-full bg-critical-100 px-2 py-0.5 font-sans text-[10.5px] font-medium text-critical-700">
+                  {t('admin.payments.reason.on_hold')}
+                </span>
+              )}
 
             </div>
 
@@ -322,6 +330,11 @@ export default function PaymentRunDetailPage() {
                     <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-caution-100 px-2 py-0.5 text-[11px] font-medium text-caution-800"
                       title={t('admin.payments.notActivatedHint')}>
                       ⚠ {t('admin.payments.notActivated')}
+                    </span>
+                  )}
+                  {it.on_hold && (
+                    <span className="mt-1 ml-1 inline-flex items-center rounded-full bg-critical-100 px-2 py-0.5 text-[11px] font-medium text-critical-700">
+                      {t('admin.payments.reason.on_hold')}
                     </span>
                   )}
                 </td>

@@ -903,16 +903,6 @@ class ScholarshipApplication(models.Model):
         from apps.scholarship import card_display
         return card_display.preu_track_malay(self.pre_u_track)
 
-    @property
-    def in_maintenance(self):   # served to the student's page: ONE predicate, maintenance_scope.py
-        from apps.scholarship.maintenance_scope import is_in_maintenance
-        return is_in_maintenance(self)
-
-    @property
-    def has_file(self):         # in maintenance, or closed after it (read-only): maintenance_scope.py
-        from apps.scholarship.maintenance_scope import has_file
-        return has_file(self)
-
     def __str__(self):
         who = self.profile_id or 'unlinked'
         return f'Application #{self.pk} ({who} -> {self.cohort.code})'

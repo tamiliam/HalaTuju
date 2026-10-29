@@ -170,11 +170,22 @@ class AdminMaintenanceSubstateView(_AdminBase):
     """Post-award S5: POST .../applications/<pk>/maintenance/ {substate} — set the
     operational maintenance sub-state (on_track | probation | on_hold | ready_to_close).
     Reviewer-gated + access-scoped. `on_hold` stops money (tranches AND payment runs, maintenance
-    S1) and records who moved it. Returns the refreshed application detail."""
+    S1) and records who moved it. Returns the refreshed application detail.
+
+    ⚠ A move TO or FROM `on_hold` is a MONEY act (adversarial review M1): placing a hold takes the
+    student out of open payment runs and clears a signed run's signatures. So it needs what
+    preparing a run needs — `payments.may_prepare` (super, the organisation admin, or a
+    `payments_prepare` holder) — on top of `_require_app_write`; anyone else is 403
+    `hold_needs_payments`. probation / on_track / ready_to_close stay with the app-write gate."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        from .. import payments
+        if ('on_hold' in (request.data.get('substate'), app.maintenance_substate)
+                and not payments.may_prepare(admin)):
+            return Response({'error': 'hold_needs_payments', 'code': 'hold_needs_payments'},
+                            status=status.HTTP_403_FORBIDDEN)
         try:
             maintenance_service.set_substate(app, request.data.get('substate'),
                                              by_email=admin.email)
