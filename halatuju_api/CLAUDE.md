@@ -984,6 +984,49 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### ⚠ STATE AT 2026-10-29 — READ THIS FIRST
+
+**THE FIRST REAL INVOICES ARE ISSUED AND SENT.** INV-2026-0001 July RM0.00, INV-2026-0002 August
+RM790.86, INV-2026-0003 September RM179.89 — all three emailed to surithiru@gmail.com. **Do NOT
+void, re-issue or re-number anything under scholarship billing without asking the owner.** Live:
+`halatuju-api-01175-xll`, `halatuju-web-01009-x22`. Migrations `scholarship/0181` and `0182` were
+applied MIGRATE-FIRST and recorded — never re-apply that DDL.
+
+**BRANCH `feat/back-issue-invoices` — one commit AHEAD of origin/main, not pushed.** `ceea94e0`
+fixes a flaky onboarding test that turned the deploy gate red (`mount()` flushed one microtask
+waiting for an async profile; it now flushes a macrotask). ⚠ **The tenant-facing invoice status
+wording is ALREADY ON MAIN in `f8fe0698` but has NOT DEPLOYED** — its web build `d42bb043` died on
+that same flake. The next green web build carries both. Verify with `npm run bundle-budget` after
+merging; the line is 148 kB since TD-416.
+
+**TWO PIECES OF WORK THE OWNER HAS APPROVED AND I HAD NOT STARTED:**
+
+1. **The metered guard.** An invoice must REFUSE when the meter recorded tenant activity for the
+   month but the metered cost is zero or missing. ⚠ This is not hypothetical: October 2026 held
+   **no GCP rows at all** against a real RM58.85, of which RM48.34 was tenant-driven, on a month
+   that burned 5.36 million Gemini tokens and 2,160 document reads. September held RM3.25 against a
+   real RM14.18. Cause both times: `sync_gcp_costs` had not been run, or was run before the month
+   closed. `platform_cost.reconcile` already says *"if tenant-driven cost moves and metered events
+   do not, a billable seam is missing"* — nothing acted on it. Shape it like `supplier_missing` in
+   `invoicing.readiness`. ⚠ **An early diagnosis blamed prepaid Gemini credits for hiding cost and
+   was WRONG** — AI Studio and the GCP report both read RM34.95 for October, so the billing export
+   already covers prepay AND postpay. Do not rebuild that theory.
+
+2. **The tenant payment declaration** (its own sprint). BrightPath cannot tell us it has paid; only
+   a super can record a payment, and only with a bank reference. Owner's choice: **date + bank
+   reference only, NO slip upload** — it keeps their account details out of our storage and the
+   reference is what is matched against. ⚠ **A declaration must NOT mint a receipt.** The standing
+   rule on `InvoiceReceipt` is that a receipt means money actually moved and there is proof; the
+   flow is `Unpaid → Payment declared → owner confirms against the bank → Paid`, with the owner's
+   confirm issuing the real receipt and a Query action for when nothing arrived.
+
+**Owner still to do:** record October's 149.5 billable hours (`/admin/billing` → *Finished work not
+yet billed*); obtain the October Supabase, Twilio and Workspace bills; convert the held Anthropic
+rows for October and November once each month ends. **Blocked on permissions:** deleting the orphan
+`.worktrees/budget-base` (already git-pruned, no junctions, three harmless files).
+
+---
+
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's
 printed issue date, so July can say 15 August — bounded by `invoicing.issue_date_for`: never after today,
