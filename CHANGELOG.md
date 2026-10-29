@@ -22,6 +22,12 @@ Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record
   fenced by the Applications rule (decisions.md); the cockpit payload gains `has_file` and the cockpit an "Open
   scholar file" link. `card_display.catalogue_course_names` reads a page's course names in two queries (query
   budget 8 at 2 and 5 rows).
+- **Adversarial review fixes:** search uses the Applications people-search rules (IC digits-only both sides, so an
+  undashed IC or a 6-digit prefix finds the student; `#104` is an application number); a student with no result /
+  activity sorts last in both directions (`nulls_last`); a CLOSED file is read-only (409 `file_closed`, no
+  composer); a moved round's scholars list under their new gift (the Applications gift rule); the file's money
+  links show only to a viewer who may open Payments / Spending and carry the gift; "remaining" is the funding
+  summary's own rule (`payments._remaining`). TD-421 raised (an IC in a search URL reaches the request logs).
 - Guide updated (reviewer, general admin and org admin chapters each gain a Scholars section); role matrix gains
   a Scholars section. ⚠ No FAQ entry: `content/manual/faq.tsx` sits at its 600-line limit (TD-413 — the next
   entry must split it first), so the FAQ question waits for that split.

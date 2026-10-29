@@ -14,11 +14,12 @@ Across organisations the answer is 404, never 403. Writing an activity entry nee
 right on that file (a note is a record, not a decision); placing a hold stays on the cockpit door
 (`AdminMaintenanceSubstateView`, payments rights). Nothing here is ever served to a student.
 """
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 
 from .. import activity, scholars
-from ..maintenance_scope import has_file
+from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import StudentActivity
 from .base import _AdminBase
 
@@ -79,7 +80,12 @@ class AdminScholarListView(_ScholarsBase):
 
         def scoped(closed):
             qs = self._fenced(scholars.base_queryset(closed=closed), admin, scope)
-            return qs.filter(programme=programme) if programme is not None else qs
+            if programme is None:
+                return qs
+            # ⚠ THE APPLICATIONS GIFT RULE (views_admin/applications.py): reach through the cohort
+            # too. `programme` is denormalised at first save and SET ONCE, so a round moved to
+            # another gift leaves its scholars on the OLD one; the column alone would hide them.
+            return qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
 
         closed = q.get('closed') == '1'
         qs = scholars.filter_rows(scoped(closed), substate=q.get('substate', ''),
@@ -111,7 +117,8 @@ class AdminScholarActivityView(_ScholarsBase):
 
     GET — the timeline, newest first, `?page=` `?page_size=` (≤ 100): `{count, page, results}`.
     POST `{kind: note|call|meeting|email, body, internal}` — a manual entry by this officer
-    (`activity.add_entry`). 400 `{code}` on bad_kind / empty_body / too_long."""
+    (`activity.add_entry`). 400 `{code}` on bad_kind / empty_body / too_long; 409 `file_closed` on
+    a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student."""
 
     def get(self, request, pk):
         app, _admin, err = self._file_for(request, pk)
@@ -129,6 +136,9 @@ class AdminScholarActivityView(_ScholarsBase):
         app, admin, err = self._file_for(request, pk)
         if err:
             return err
+        if not is_in_maintenance(app):
+            return Response({'error': 'file_closed', 'code': 'file_closed'},
+                            status=status.HTTP_409_CONFLICT)
         data = request.data if isinstance(request.data, dict) else {}
         try:
             body = data.get('body')

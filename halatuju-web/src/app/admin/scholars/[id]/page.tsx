@@ -80,6 +80,12 @@ export default function ScholarFilePage() {
   if (!file) return <RecordState loading={loading} />
 
   const result = file.latest_result
+  // The money links: shown only to a viewer who may open each page, and carrying the file's gift so
+  // the page opens on THIS student's gift rather than asking (or showing another's).
+  const viewer = effectiveRole(role)
+  const giftQuery = file.gift ? `?programme=${encodeURIComponent(file.gift.code)}` : ''
+  const moneyLinks = (['payments', 'spending'] as const)
+    .filter((page) => canAccess(`/admin/${page}`, viewer, role?.permissions))
   const fundedSince = file.vircle_activated_at || file.awarded_at
   const sub = [file.gift?.name, [file.course, file.institution].filter(Boolean).join(', '),
     t('admin.scholars.file.applicationNo', { id: String(file.id) })].filter(Boolean).join(' · ')
@@ -118,10 +124,15 @@ export default function ScholarFilePage() {
             amount: money(file.money.last_payment.amount), date: formatDate(file.money.last_payment.at) })
           : t('admin.scholars.money.noPayment')}
       </p>
-      <p className="flex gap-4 text-sm">
-        <Link href="/admin/payments" className="text-primary-600 hover:underline">{t('admin.scholars.money.openPayments')}</Link>
-        <Link href="/admin/spending" className="text-primary-600 hover:underline">{t('admin.scholars.money.openSpending')}</Link>
-      </p>
+      {moneyLinks.length > 0 && (
+        <p className="flex gap-4 text-sm">
+          {moneyLinks.map((page) => (
+            <Link key={page} href={`/admin/${page}${giftQuery}`} className="text-primary-600 hover:underline">
+              {t(page === 'payments' ? 'admin.scholars.money.openPayments' : 'admin.scholars.money.openSpending')}
+            </Link>
+          ))}
+        </p>
+      )}
     </Card>
   )
   const contractCard = (
@@ -184,7 +195,7 @@ export default function ScholarFilePage() {
             {resultsCard}{moneyCard}{contractCard}{later('mentor')}{later('letters')}{later('surveys')}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
-            <ScholarActivity id={file.id} token={token} compact />
+            <ScholarActivity id={file.id} token={token} compact readOnly={!file.in_maintenance} />
           </div>
         </div>
       )}
@@ -194,7 +205,7 @@ export default function ScholarFilePage() {
       {tab === 'letters' && <div className="max-w-xl">{later('letters')}</div>}
       {tab === 'mentoring' && <div className="max-w-xl">{later('mentor')}</div>}
       {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}
-      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity id={file.id} token={token} /></div>}
+      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>
   )
 }

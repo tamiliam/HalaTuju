@@ -23,11 +23,14 @@ type Kind = (typeof KINDS)[number]
  * ⚠ A system row is a translated sentence from its event code (`lib/scholars.activityText`), never
  * the raw meta, so a payment's run reference reads as a sentence and nothing internal leaks as JSON.
  */
-export default function ScholarActivity({ id, token, compact = false }: {
+export default function ScholarActivity({ id, token, compact = false, readOnly = false }: {
   id: number
   token: string | null
   /** The Overview's side panel shows the newest few; the Activity tab shows them all. */
   compact?: boolean
+  /** A CLOSED file is read-only (owner ruling 2026-10-29): no composer — the server refuses a
+   *  write too (409 `file_closed`). */
+  readOnly?: boolean
 }) {
   const { t } = useT()
   const { showToast } = useToast()
@@ -65,7 +68,11 @@ export default function ScholarActivity({ id, token, compact = false }: {
       className="rounded-xl border border-ground-200 bg-ground-0 p-5">
       <h2 className="mb-3 text-base font-semibold text-ground-900">{t('admin.scholars.activity.title')}</h2>
 
-      <div className="space-y-2">
+      {readOnly ? (
+        <p className="text-sm text-ground-500" data-testid="activity-read-only">
+          {t('admin.scholars.activity.readOnly')}
+        </p>
+      ) : <div className="space-y-2">
         <div role="group" aria-label={t('admin.scholars.activity.kindLabel')} className="flex flex-wrap gap-1.5">
           {KINDS.map((k) => (
             <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}
@@ -92,7 +99,7 @@ export default function ScholarActivity({ id, token, compact = false }: {
             {busy ? t('admin.saving') : t('admin.scholars.activity.save')}
           </button>
         </div>
-      </div>
+      </div>}
 
       {failed && <p className="mt-4 text-sm text-critical-600">{t('admin.scholars.activity.loadFailed')}</p>}
       {rows !== null && rows.length === 0 && (

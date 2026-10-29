@@ -16,8 +16,9 @@ import * as api from '@/lib/admin-api'
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
 }))
+let mockRole: Record<string, unknown> = { role: 'org_admin', owning_org_id: 11 }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin', owning_org_id: 11 } }),
+  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
 }))
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
@@ -40,6 +41,7 @@ const FILE: api.ScholarFile = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockRole = { role: 'org_admin', owning_org_id: 11 }
   mockApi.getScholarFile.mockResolvedValue(FILE)
   mockApi.getScholarActivity.mockResolvedValue({ count: 0, page: 1, page_size: 50, results: [] })
 })
@@ -73,6 +75,29 @@ it('shows the contract status when there is one, and switches tabs', async () =>
   fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.activity' }))
   expect(await screen.findByTestId('activity-empty')).toBeTruthy()
   expect(screen.queryByTestId('card-money')).toBeNull()
+})
+
+it('the money links open on THIS gift, and only for a viewer who may open them', async () => {
+  render(<ScholarFilePage />)
+  const pay = await screen.findByRole('link', { name: 'admin.scholars.money.openPayments' })
+  expect(pay.getAttribute('href')).toBe('/admin/payments?programme=flag')
+  expect(screen.getByRole('link', { name: 'admin.scholars.money.openSpending' })
+    .getAttribute('href')).toBe('/admin/spending?programme=flag')
+})
+
+it('a reviewer gets no money links (Payments and Spending are not theirs)', async () => {
+  mockRole = { role: 'reviewer', owning_org_id: 11 }
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+  expect(screen.queryByRole('link', { name: 'admin.scholars.money.openPayments' })).toBeNull()
+  expect(screen.queryByRole('link', { name: 'admin.scholars.money.openSpending' })).toBeNull()
+})
+
+it('a closed file has no composer (closed is read-only)', async () => {
+  mockApi.getScholarFile.mockResolvedValue({ ...FILE, status: 'closed', in_maintenance: false })
+  render(<ScholarFilePage />)
+  expect(await screen.findByTestId('activity-read-only')).toBeTruthy()
+  expect(screen.queryByPlaceholderText('admin.scholars.activity.placeholder')).toBeNull()
 })
 
 it('a file the server will not show is the neutral not-found', async () => {

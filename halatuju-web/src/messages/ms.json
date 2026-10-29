@@ -6058,7 +6058,8 @@
           "meeting": "Mesyuarat",
           "email": "E-mel",
           "system": "Sistem"
-        }
+        },
+        "readOnly": "Fail ini telah ditutup, jadi log ini baca sahaja."
       },
       "event": {
         "substate_changed": "Status ditukar: {from} → {to}",

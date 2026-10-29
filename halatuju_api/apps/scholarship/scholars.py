@@ -18,7 +18,11 @@ active, maintenance); `?closed=1` lists the closed students who still have a fil
 """
 from decimal import Decimal
 
-from django.db.models import Count, OuterRef, Q, Subquery
+import re
+
+from django.db.models import Count, F, OuterRef, Q, Subquery
+
+from apps.courses.search import _digits_expr
 
 from . import card_display, maintenance_scope
 from .models import (
@@ -28,11 +32,15 @@ from .models import (
 #: The sub-states an officer may filter on (the model's choices).
 SUBSTATES = ('on_track', 'probation', 'on_hold', 'ready_to_close')
 
-#: `?sort=` keys → order_by. Every key ends on `id` so a page is stable.
+#: `?sort=` keys → order_by. Every key ends on `id` so a page is stable. ⚠ A student with no
+#: result / no activity sorts LAST in BOTH directions (`nulls_last`): Postgres puts NULLs first on
+#: DESC, so "highest CGPA first" would otherwise open on every student who has none.
 SORTS = {
     'name': ('profile__name', 'id'), '-name': ('-profile__name', '-id'),
-    'cgpa': ('latest_cgpa', 'id'), '-cgpa': ('-latest_cgpa', '-id'),
-    'activity': ('last_activity_at', 'id'), '-activity': ('-last_activity_at', '-id'),
+    'cgpa': (F('latest_cgpa').asc(nulls_last=True), 'id'),
+    '-cgpa': (F('latest_cgpa').desc(nulls_last=True), '-id'),
+    'activity': (F('last_activity_at').asc(nulls_last=True), 'id'),
+    '-activity': (F('last_activity_at').desc(nulls_last=True), '-id'),
     'id': ('id',), '-id': ('-id',),
 }
 DEFAULT_SORT = 'name'
@@ -79,17 +87,24 @@ def filter_rows(qs, *, substate='', on_hold=False, search=''):
     if on_hold:
         qs = qs.filter(maintenance_substate='on_hold')
     text = (search or '').strip()
-    if text:
-        number = text.lstrip('#')
-        if number.isdigit() and len(number) <= 7:
-            # An application number (`#104`, `104`) — never matched as a fragment of an IC.
-            return qs.filter(pk=int(number))
-        cond = Q(profile__name__icontains=text) | Q(profile__nric__icontains=text)
-        digits = ''.join(ch for ch in text if ch.isdigit())
-        if len(digits) >= 6:
-            cond |= Q(profile__nric__icontains=digits)
-        qs = qs.filter(cond)
-    return qs
+    if not text:
+        return qs
+    if text.startswith('#') and text[1:].isdigit():
+        return qs.filter(pk=int(text[1:]))      # `#104` is an application number and nothing else
+    # The Applications search (`apps.courses.search.apply_people_search`): name / IC / phone / email,
+    # IC and phone matched DIGITS-ONLY on both sides, so `000101140001` and a `000101` prefix find
+    # `000101-14-0001`. Its own expression is reused rather than the function, because a bare
+    # number may ALSO be an application number, and that alternative has to join the same OR.
+    cond = (Q(profile__name__icontains=text) | Q(profile__nric__icontains=text)
+            | Q(profile__contact_email__icontains=text) | Q(notify_email__icontains=text))
+    digits = re.sub(r'\D', '', text)
+    if digits:
+        qs = qs.annotate(_nric_digits=_digits_expr('profile__nric'),
+                         _phone_digits=_digits_expr('profile__contact_phone'))
+        cond |= Q(_nric_digits__icontains=digits) | Q(_phone_digits__icontains=digits)
+    if text.isdigit():
+        cond |= Q(pk=int(text))
+    return qs.filter(cond)
 
 
 def summary(qs):
@@ -149,7 +164,7 @@ def rows(apps):
 
 def file_payload(app):
     """The file header + Overview cards for ONE application the view has fenced."""
-    from .payments import paid_to_date
+    from .payments import _remaining, paid_to_date
     latest = (SemesterResult.objects.filter(application=app)
               .order_by('-created_at', '-id').values('cgpa', 'semester', 'created_at').first())
     paid = paid_to_date(app)
@@ -173,7 +188,9 @@ def file_payload(app):
         'money': {
             'award_amount': _two(award),
             'paid_to_date': _two(paid),
-            'remaining': _two(max(award - paid, _ZERO)) if award is not None else None,
+            # The Payments funding summary's own rule (`payments._remaining`): no award reads 0
+            # remaining, never a blank, so the two screens can never disagree about one student.
+            'remaining': _two(_remaining(app)),
             'last_payment': ({'amount': _two(last['amount']), 'at': last['released_at']}
                              if last else None),
         },

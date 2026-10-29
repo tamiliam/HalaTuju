@@ -19,7 +19,8 @@ from apps.scholarship import activity, maintenance
 from apps.scholarship.models import Disbursement, SemesterResult, StudentActivity
 from apps.scholarship.models.activity import EVENT_SUBSTATE_CHANGED
 from apps.scholarship.tests.factories import (
-    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_student,
+    TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_programme,
+    make_student,
 )
 
 API = '/api/v1/admin/scholarship/scholars/'
@@ -37,6 +38,7 @@ class _Scholars(TestCase):
         cls.org_admin = make_admin('org_admin', owning_org=cls.org)
         cls.officer = make_admin('admin', owning_org=cls.org)
         cls.finance = make_admin('finance', owning_org=cls.org)
+        cls.qc = make_admin('qc', owning_org=cls.org)
         cls.super = make_admin('super', super_admin=True)
 
         def app(stage, name, **kw):
@@ -44,12 +46,14 @@ class _Scholars(TestCase):
         cls.aisyah = app('awarded', 'AISYAH', vircle_activated_at=now, reviewer=cls.reviewer,
                          chosen_programme={'course_name': 'Diploma in Accounting',
                                            'institution': 'Politeknik Ungku Omar'})
-        cls.bala = app('active', 'BALA', maintenance_substate='probation')
+        cls.bala = make_application('active', cohort=cls.cohort, maintenance_substate='probation',
+                                    student=make_student(name='BALA', nric='880312-10-5555'))
         cls.chen = app('maintenance', 'CHEN', maintenance_substate='on_hold')
         cls.dina = app('awarded', 'DINA')                               # no wallet: not in it
         cls.ezra = app('closed', 'EZRA')                                # funded, closed: a file
         other = make_cohort()
         cls.other_org_admin = make_admin('org_admin', owning_org=other.owning_organisation)
+        cls.other_gift = other.programme
         cls.stranger = make_application('maintenance', cohort=other,
                                         student=make_student(name='STRANGER'))
         SemesterResult.objects.create(application=cls.bala, semester='Sem 1', cgpa=Decimal('3.40'))
@@ -94,7 +98,7 @@ class TestWhoIsListed(_Scholars):
 
 class TestFence(_Scholars):
     def test_see_all_presets_read_the_organisation(self):
-        for admin in (self.officer, self.org_admin):
+        for admin in (self.officer, self.org_admin, self.qc):
             self.assertEqual(self._names(self._get(admin)), ['AISYAH', 'BALA', 'CHEN'])
 
     def test_a_reviewer_reads_only_their_assigned_scholars(self):
@@ -123,6 +127,27 @@ class TestFence(_Scholars):
         self.assertEqual(self._names(self._get(self.org_admin, programme=self.gift.code)),
                          ['AISYAH', 'BALA', 'CHEN'])
         self.assertEqual(self._get(self.org_admin, programme='no-such-gift').status_code, 404)
+        # Another organisation's REAL gift code reads exactly like an unknown one.
+        self.assertEqual(self._get(self.org_admin, programme=self.other_gift.code).status_code, 404)
+
+    def test_a_moved_round_lists_its_scholars_under_its_new_gift(self):
+        cohort = make_cohort(programme=make_programme(organisation=self.org))
+        moved = make_application('maintenance', cohort=cohort, student=make_student(name='MIRA'))
+        new_gift = make_programme(organisation=self.org)
+        cohort.programme = new_gift
+        cohort.save(update_fields=['programme'])
+        moved.refresh_from_db()
+        self.assertNotEqual(moved.programme_id, new_gift.id)          # the column stayed behind
+        self.assertEqual(self._names(self._get(self.org_admin, programme=new_gift.code)), ['MIRA'])
+
+    def test_a_reviewer_sees_no_closed_or_unassigned_scholar(self):
+        self.assertEqual(self._names(self._get(self.reviewer, closed='1')), [])
+        self.assertEqual(self._names(self._get(self.reviewer, search=f'#{self.bala.id}')), [])
+
+    def test_no_ic_is_served(self):
+        row = self._get(self.org_admin).json()['results'][0]
+        self.assertNotIn('nric', row)
+        self.assertNotIn('nric', self._get(self.org_admin, f'{API}{self.bala.id}/').json())
 
     def test_an_organisation_less_super_names_a_gift(self):
         r = self._get(self.super)
@@ -139,13 +164,23 @@ class TestFiltersAndPages(_Scholars):
     def test_search_by_name_ic_and_application_number(self):
         self.assertEqual(self._names(self._get(self.org_admin, search='aisy')), ['AISYAH'])
         self.assertEqual(self._names(self._get(self.org_admin, search=f'#{self.chen.id}')), ['CHEN'])
-        nric = self.bala.profile.nric
-        self.assertEqual(self._names(self._get(self.org_admin, search=nric)), ['BALA'])
+        for ic in ('880312-10-5555', '880312105555', '880312'):      # dashed, undashed, a prefix
+            with self.subTest(ic=ic):
+                self.assertEqual(self._names(self._get(self.org_admin, search=ic)), ['BALA'])
 
     def test_sort(self):
         self.assertEqual(self._names(self._get(self.org_admin, sort='-name')),
                          ['CHEN', 'BALA', 'AISYAH'])
-        self.assertEqual(self._names(self._get(self.org_admin, sort='-cgpa'))[:2], ['BALA', 'CHEN'])
+
+    def test_a_student_with_nothing_sorts_last_both_ways(self):
+        # Aisyah has no result; only Chen has activity. NULL last in BOTH directions (Postgres
+        # would otherwise put the NULLs FIRST on a descending sort).
+        self.assertEqual(self._names(self._get(self.org_admin, sort='-cgpa')), ['BALA', 'CHEN', 'AISYAH'])
+        self.assertEqual(self._names(self._get(self.org_admin, sort='cgpa')), ['CHEN', 'BALA', 'AISYAH'])
+        activity.add_entry(self.chen, 'note', 'x', actor_email='a@example.test')
+        for sort in ('activity', '-activity'):
+            with self.subTest(sort=sort):
+                self.assertEqual(self._names(self._get(self.org_admin, sort=sort))[0], 'CHEN')
 
     def test_pagination(self):
         r = self._get(self.org_admin, page_size='1', page='2')
@@ -172,6 +207,14 @@ class TestFile(_Scholars):
                          (None, [], 'has_result'))
         self.assertEqual(body['latest_result']['cgpa'], '2.10')
         self.assertNotIn('spending', body)
+
+    def test_no_award_reads_what_the_funding_summary_reads(self):
+        from apps.scholarship import payments
+        self.bala.award_amount = None
+        self.bala.save(update_fields=['award_amount'])
+        money = self._get(self.org_admin, f'{API}{self.bala.id}/').json()['money']
+        self.assertEqual((money['award_amount'], money['remaining']),
+                         (None, f'{payments._remaining(self.bala):.2f}'))
 
     def test_a_closed_file_still_opens(self):
         body = self._get(self.org_admin, f'{API}{self.ezra.id}/').json()
@@ -215,11 +258,23 @@ class TestActivity(_Scholars):
         client = authed_client(self.officer)
         for payload, code in (({'kind': 'system', 'body': 'x'}, 'bad_kind'),
                               ({'kind': 'note', 'body': '   '}, 'empty_body'),
-                              ({'kind': 'note', 'body': 5}, 'empty_body')):
+                              ({'kind': 'note', 'body': 5}, 'empty_body'),
+                              ({'kind': 'note', 'body': 'x' * 5001}, 'too_long')):
             with self.subTest(code=code):
                 r = client.post(self._url(self.bala), payload, format='json')
                 self.assertEqual((r.status_code, r.json()['code']), (400, code))
         self.assertFalse(StudentActivity.objects.filter(application=self.bala).exists())
+
+    def test_a_closed_file_is_read_only(self):
+        r = authed_client(self.officer).post(self._url(self.ezra), {'kind': 'note', 'body': 'x'},
+                                             format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'file_closed'))
+        self.assertEqual(self._get(self.org_admin, self._url(self.ezra)).status_code, 200)
+
+    def test_another_organisations_file_is_404_to_write(self):
+        r = authed_client(self.org_admin).post(self._url(self.stranger), {'kind': 'note', 'body': 'x'},
+                                               format='json')
+        self.assertEqual(r.status_code, 404)
 
     def test_a_reviewer_writes_only_on_their_own_scholar(self):
         client = authed_client(self.reviewer)

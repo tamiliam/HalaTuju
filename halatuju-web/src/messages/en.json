@@ -6058,7 +6058,8 @@
           "meeting": "Meeting",
           "email": "Email",
           "system": "System"
-        }
+        },
+        "readOnly": "This file is closed, so the log is read-only."
       },
       "event": {
         "substate_changed": "Status changed: {from} → {to}",
