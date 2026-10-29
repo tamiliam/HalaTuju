@@ -132,9 +132,12 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    transaction, or Postgres refuses the index (0163, 2026-10-03). The old image must stay safe
    between migrate and deploy: additive and nullable first, `NOT NULL` in a later migration (0163 → 0164).
    A NOT NULL column the old image never names takes a DATABASE default (`db_default`, courses 0088).
-   **Catalogue rows a new gate hides go in AFTER the deploy that carries the gate** (Bumi D1:
-   `ingest_spm_courses --apply` after courses/0088 + the deploy), and the eligibility frame is loaded
-   at start-up, so the rows show only on the next revision.
+   **Catalogue rows a new gate hides go in AFTER the deploy that carries the gate.** Bumi D1 order:
+   apply the 0088 SQL → push (api + web) → CONFIRM the new api AND web revisions both serve 100% →
+   `ingest_spm_courses --file data/spm/spm_new_courses_D1.json --institution-id UNIV-012` (dry run),
+   then `--apply`. The eligibility frame loads at start-up, so the rows show from the next revision.
+   ROLLBACK: delete the 84 D1 rows from `course_requirements`, `course_institutions`, `courses` (the
+   exact DELETE is in the 0088 docstring) BEFORE rolling back to a pre-0088 image.
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.

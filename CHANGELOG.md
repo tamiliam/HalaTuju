@@ -32,7 +32,12 @@ SPM batch needs, plus the 87 UiTM rows (84 ingested, 3 flagged for hand entry in
   code names `req_bumiputera`.
 - **Golden masters:** the ORIGINAL 389 fixture courses are frozen (count + digest); their total stays
   **5,319** with every student's set identical; full set at bumi=False **5,319**; new bumi=True baseline
-  **5,900**. STPM **2,025**.
+  **5,865** (after review round 1). STPM **2,025**.
+- **Review round 1:** legacy `or_groups` count DISTINCT student subjects (owner: a subject counts once
+  per group; the original 389 courses did not move); the parser lists a key once per group; STRICT
+  "not listed above" for "belum diambil kira / selain di atas" (owner ruling): Am and every earlier Khas
+  subject is excluded (12 of the 84 rows changed: 10 strict, 2 de-duplicated); runbook + rollback
+  DELETE in the 0088 docstring; partner-admin inference accepted (decisions.md).
 
 ## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
 
