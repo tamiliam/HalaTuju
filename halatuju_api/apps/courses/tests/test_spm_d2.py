@@ -92,6 +92,7 @@ class TestTheFile:
         built, stored = json.loads(out.read_text(encoding='utf-8')), _d2()
         assert built['courses'] == stored['courses'] and built['flagged'] == stored['flagged'] == []
         assert built['new_institutions'] == stored['new_institutions'] == NEW_INSTITUTIONS
+        assert NEW_INSTITUTIONS['MARA-BPT']['type'] == 'IPTA' and NEW_INSTITUTIONS['MARA-BPT']['state'] == 'WP Kuala Lumpur'
         assert len(stored['courses']) == 66
 
     def test_bumi_flag_institution_and_islamic_subject(self):
@@ -165,6 +166,21 @@ class TestRealShapes:
         # "C in one more not yet counted": BM / Sejarah (Am) and Maths / English (Khas) never fill it.
         block = parsed['fields']['complex_requirements']['count_once'][-1]
         assert block['remaining'][0]['exclude'] == ['bm', 'hist', 'math', 'eng']
+
+    def test_mara_any_n_is_strict(self):
+        """Owner ruling (review round 1): under MARA's Syarat Am, "C in any TWO subjects" without
+        "belum diambil kira" means two MORE, beyond BM, Sejarah and every Khas subject named."""
+        changed = ['OP4340002', 'OP4481001', 'OP4213001', 'OP4224001', 'OP4345002', 'OP4840001',
+                   'OP4340001', 'OP4343001']
+        for cid in changed:
+            fields = self._parse(cid)['fields']
+            assert fields['min_credits'] == 0, cid
+            assert fields['complex_requirements']['count_once'][-1]['remaining'][0]['exclude'], cid
+        # OP4340002: C BM, B English, B Maths, E Sejarah, then C in TWO more.
+        base = {'bm': 'C', 'hist': 'E', 'eng': 'B', 'math': 'B'}
+        assert not self._eligible('OP4340002', base)
+        assert not self._eligible('OP4340002', dict(base, geo='C'))
+        assert self._eligible('OP4340002', dict(base, geo='C', poa='C'))
 
     def test_the_bumi_matric_rows(self):
         by_id = {e['course_id']: e for e in _d2()['courses']}

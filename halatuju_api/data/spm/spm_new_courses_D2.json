@@ -4438,12 +4438,36 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
-    "complex_requirements": null,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "eng",
+        "math",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
+       ]
+      }
+     ]
+    },
     "subject_group_req": null,
     "remarks": "",
     "pass_bm": true,
@@ -4538,25 +4562,45 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 3,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "C",
-       "subjects": [
-        "math"
-       ]
-      },
-      {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 3,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "math",
+          "eng"
+         ]
+        }
        ]
       }
      ]
@@ -4647,18 +4691,39 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": true,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
        ]
       }
      ]
@@ -4691,12 +4756,36 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 1,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": true,
     "req_malaysian": true,
-    "complex_requirements": null,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "eng",
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
+       ]
+      }
+     ]
+    },
     "subject_group_req": null,
     "remarks": "",
     "pass_bm": true,
@@ -4726,18 +4815,39 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
        ]
       }
      ]
@@ -4770,18 +4880,39 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
        ]
       }
      ]
@@ -4814,18 +4945,39 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
        ]
       }
      ]
@@ -4858,18 +5010,39 @@
    "requirement": {
     "source_type": "ua",
     "merit_type": "standard",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "req_bumiputera": true,
     "req_interview": false,
     "req_malaysian": true,
     "complex_requirements": {
-     "or_groups": [
+     "count_once": [
       {
-       "count": 1,
-       "grade": "D",
-       "subjects": [
-        "eng"
+       "counted": [
+        "bm",
+        "math",
+        "hist"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "D",
+         "subjects": [
+          "eng"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": [
+          "bm",
+          "hist",
+          "eng",
+          "math"
+         ]
+        }
        ]
       }
      ]
@@ -6373,10 +6546,10 @@
    "institution_id": "MARA-BPT",
    "institution_name": "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi",
    "acronym": "MARA",
-   "type": "MARA",
+   "type": "IPTA",
    "category": "",
    "subcategory": "",
-   "state": "Wilayah Persekutuan Kuala Lumpur",
+   "state": "WP Kuala Lumpur",
    "url": "https://www.mara.gov.my"
   }
  }

@@ -4,8 +4,8 @@ KA0000002 (Sains, 4 semesters) and KA0000006 (Perakaunan Profesional) are held t
 tracks are — a synthetic `matric-<track>` catalogue row (source and merit type 'matric') plus a
 `pathways.MATRIC_TRACKS` entry and the course -> track map in `eligibility_service` — with
 `req_bumiputera`, so every door that lists catalogue rows hides them from a non-Bumi student. The
-one door that lists TRACKS rather than rows, /calculate/pathways/, never reads the answer, so it
-never lists them."""
+one door that lists TRACKS rather than rows, /calculate/pathways/ (pathway page, scholarship pickers),
+does not list them: no college list exists for them yet (owner, review round 1)."""
 from io import StringIO
 
 import pytest

@@ -82,8 +82,8 @@ NEW_INSTITUTIONS = {
     'MARA-BPT': {
         'institution_id': 'MARA-BPT',
         'institution_name': 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi',
-        'acronym': 'MARA', 'type': 'MARA', 'category': '', 'subcategory': '',
-        'state': 'Wilayah Persekutuan Kuala Lumpur', 'url': 'https://www.mara.gov.my',
+        'acronym': 'MARA', 'type': 'IPTA', 'category': '', 'subcategory': '',
+        'state': 'WP Kuala Lumpur', 'url': 'https://www.mara.gov.my',
     },
 }
 # The two Bumi-only Matrikulasi programmes (owner ruling 2026-10-29: two NEW Bumi-only tracks).

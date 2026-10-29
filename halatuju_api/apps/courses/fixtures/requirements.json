@@ -41475,7 +41475,7 @@
   "pk": "OP4340002",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 83.75,
@@ -41526,7 +41526,31 @@
     "pass_moral": false,
     "credit_moral": false,
     "subject_group_req": null,
-    "complex_requirements": null,
+    "complex_requirements": {
+      "count_once": [
+        {
+          "counted": [
+            "bm",
+            "eng",
+            "math",
+            "hist"
+          ],
+          "groups": [],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
+          ]
+        }
+      ]
+    },
     "req_interview": false,
     "remarks": "",
     "req_bumiputera": true
@@ -41630,7 +41654,7 @@
   "pk": "OP4481001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 3,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 88.33,
@@ -41682,19 +41706,39 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "C",
-          "subjects": [
-            "math"
-          ]
-        },
-        {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "C",
+              "subjects": [
+                "math"
+              ]
+            },
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 3,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "math",
+                "eng"
+              ]
+            }
           ]
         }
       ]
@@ -41795,7 +41839,7 @@
   "pk": "OP4213001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 77.49,
@@ -41847,12 +41891,33 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
           ]
         }
       ]
@@ -41867,7 +41932,7 @@
   "pk": "OP4224001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 1,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 85.29,
@@ -41918,7 +41983,31 @@
     "pass_moral": false,
     "credit_moral": false,
     "subject_group_req": null,
-    "complex_requirements": null,
+    "complex_requirements": {
+      "count_once": [
+        {
+          "counted": [
+            "eng",
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [],
+          "remaining": [
+            {
+              "count": 1,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
+          ]
+        }
+      ]
+    },
     "req_interview": true,
     "remarks": "",
     "req_bumiputera": true
@@ -41929,7 +42018,7 @@
   "pk": "OP4345002",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 83.65,
@@ -41981,12 +42070,33 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
           ]
         }
       ]
@@ -42001,7 +42111,7 @@
   "pk": "OP4840001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 83.1,
@@ -42053,12 +42163,33 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
           ]
         }
       ]
@@ -42073,7 +42204,7 @@
   "pk": "OP4340001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 86.34,
@@ -42125,12 +42256,33 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
           ]
         }
       ]
@@ -42145,7 +42297,7 @@
   "pk": "OP4343001",
   "fields": {
     "source_type": "ua",
-    "min_credits": 2,
+    "min_credits": 0,
     "min_pass": 0,
     "max_aggregate_units": 100,
     "merit_cutoff": 86.52,
@@ -42197,12 +42349,33 @@
     "credit_moral": false,
     "subject_group_req": null,
     "complex_requirements": {
-      "or_groups": [
+      "count_once": [
         {
-          "count": 1,
-          "grade": "D",
-          "subjects": [
-            "eng"
+          "counted": [
+            "bm",
+            "math",
+            "hist"
+          ],
+          "groups": [
+            {
+              "count": 1,
+              "grade": "D",
+              "subjects": [
+                "eng"
+              ]
+            }
+          ],
+          "remaining": [
+            {
+              "count": 2,
+              "grade": "C",
+              "exclude": [
+                "bm",
+                "hist",
+                "eng",
+                "math"
+              ]
+            }
           ]
         }
       ]

@@ -34,7 +34,10 @@ guesses. The shapes it reads, and how each lands:
                                                                    alternative spans; without one the
                                                                    row is UNPARSED
   Syarat Am  "... sekurang-kurangnya lulus dalam mata pelajaran Bahasa Melayu DAN Sejarah ."
-             (MARA, Sprint D2)                                  -> pass_bm + pass_history, no block
+             (MARA, Sprint D2)                                  -> pass_bm + pass_history, no block;
+                                                                   and the Khas "Gred C dalam mana-mana N
+                                                                   mata pelajaran" is then STRICT: N more
+                                                                   beyond everything named (owner, review 1)
 
 Count-once semantics and the JSON shape: `spm_count_once.py`. Legacy `or_groups` keep their own
 semantics (each group counted on its own); only a row with a "not yet counted" clause or a slotted
@@ -304,8 +307,10 @@ def _any_of(alternatives, tokens, problems, warnings):
     return {'any_of': out}, listed
 
 
-def _other_clause(clause, fields, problems, warnings, listed, remaining):
-    """Interview, Bumi, "N more not yet counted", "any N": True when the clause was one of them."""
+def _other_clause(clause, fields, problems, warnings, listed, remaining, strict_any=False):
+    """Interview, Bumi, "N more not yet counted", "any N": True when the clause was one of them.
+    `strict_any` (MARA's Syarat Am, owner ruling 2026-10-29 review round 1): "any N subjects" with no
+    "belum diambil kira" is read like its sister rules — N subjects beyond everything named above."""
     if _INTERVIEW_RE.search(clause):
         fields['req_interview'] = True
         return True
@@ -323,7 +328,9 @@ def _other_clause(clause, fields, problems, warnings, listed, remaining):
     if m:
         grade, word, digits = m.groups()
         n = _count(word, digits, problems, clause)
-        if grade == 'C':
+        if strict_any:
+            remaining.append({'count': n, 'grade': grade, 'exclude': _once(listed)})
+        elif grade == 'C':
             fields['min_credits'] = max(fields['min_credits'], n)
         elif grade == 'E':
             fields['min_pass'] = max(fields['min_pass'], n)
@@ -344,6 +351,7 @@ def parse_requirements(syarat_am, syarat_khas, atau_scope=None):
     # not (Add Maths beside Maths cannot be "another subject").
     if am_block:
         blocks.append(am_block)
+    strict_any = am_block is None and listed == ['bm', 'hist']   # MARA's "a pass in BM and Sejarah"
 
     tokens = _khas_tokens(_tidy(syarat_khas))
     chains = _atau_chains(tokens, atau_scope, problems)
@@ -356,7 +364,7 @@ def parse_requirements(syarat_am, syarat_khas, atau_scope=None):
                 bundles.append([made[0]])
                 listed += made[1]
             continue
-        if i in in_chain or atau or _other_clause(clause, fields, problems, warnings, listed, remaining):
+        if i in in_chain or atau or _other_clause(clause, fields, problems, warnings, listed, remaining, strict_any):
             continue  # (an ATAU outside a reviewed chain was reported by _atau_chains)
         parsed = _subject_clause(clause, problems, warnings)
         if parsed is None:

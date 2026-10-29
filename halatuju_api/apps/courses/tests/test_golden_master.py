@@ -31,8 +31,9 @@ ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
 ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
 GOLDEN_BASELINE = 5319                 # original catalogue, and the full one for a non-Bumi student
-# Full catalogue, the same 50 students as Bumiputera: 5,319 + 546 (D1 UiTM, strict reading) + 141 (D2).
-GOLDEN_BASELINE_BUMI = 6006
+# Full catalogue, the same 50 students as Bumiputera: 5,319 + 546 (D1 UiTM, strict reading) + 121 (D2,
+# after review round 1's strict reading of MARA's "any N subjects": 141 -> 121).
+GOLDEN_BASELINE_BUMI = 5986
 
 
 def _digest(lines):

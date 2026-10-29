@@ -111,8 +111,9 @@ MATRIC_TRACKS = [
     # Bumi coverage Sprint D2 (owner ruling 2026-10-29): the two Bumiputera-only programmes MOHE
     # lists under Bahagian Matrikulasi (KA0000002, KA0000006), held as catalogue rows
     # `matric-sains-4-semester` / `matric-perakaunan-profesional` with `req_bumiputera`, so the
-    # engine's gate decides who sees them. `check_all_pathways` (the /calculate/pathways/ door,
-    # which never reads the Bumiputera answer) leaves them out.
+    # engine's gate decides who sees them. `check_all_pathways` (the /calculate/pathways/ door: the
+    # pathway page and the scholarship pickers) leaves them out — owner, review round 1: no college list
+    # exists for them yet, so they are not offered there; add them when it does.
     {'id': 'sains_4_semester', 'name': 'Science (4 semesters)', 'name_ms': 'Sains (4 Semester)',
      'name_ta': 'அறிவியல் (4 பருவங்கள்)', 'bumiputera_only': True},
     {'id': 'perakaunan_profesional', 'name': 'Professional Accounting', 'name_ms': 'Perakaunan Profesional',
@@ -384,9 +385,9 @@ def check_all_pathways(grades, coq_score):
         coq_score: Co-curricular score (0-10).
 
     Returns:
-        List of 6 result dicts (4 matric + 2 stpm). The Bumiputera-only matric tracks are never
-        listed here: this door does not know the answer (they reach a Bumi student through the
-        course catalogue and its gate).
+        List of 6 result dicts (4 matric + 2 stpm). The Bumiputera-only matric tracks are not
+        listed here until a college list exists for them (owner, review round 1); a Bumi student
+        reaches them through the course catalogue and its gate.
     """
     results = []
 
