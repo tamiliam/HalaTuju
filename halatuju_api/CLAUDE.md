@@ -1065,21 +1065,20 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
-**Student maintenance Sprints 1 and 2 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2
-`1debc6cc`, no migration; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` and `…-s2.md`;
-roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 3 (student "My Bursary" hub
-`/scholarship/bursary`, and the sub-state + Close controls move from the cockpit into the scholar file)** — design
-approved by the owner 2026-10-29 at https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (the canvas is the design of
-record).
-- ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold` = stored `on_hold` + a
-  payable status). Moving to/from `on_hold` needs `payments.may_prepare` (403 `hold_needs_payments`).
-- `/admin/scholars` (+ `/<id>`) reads by the Applications rule (`_b40_scope`; finance refused; cross-org 404); search
-  reuses `apps.courses.search` (IC digits-only); nullable sorts are `nulls_last`; a closed file is read-only
-  (409 `file_closed`). `standing` is only `has_result` / `no_result_yet` until Sprint 4.
-- ⚠ **MIGRATE FIRST for anything that writes `student_activity`** (it writes inside the caller's transaction).
-  Deploy the api before the web.
-- `can_record_results` stays active/maintenance until Sprint 4; the student gets `support_paused`, never the raw
-  sub-state. Until Sprint 3 the cockpit's sub-state control shows only at `maintenance` (TD-419).
+**Student maintenance Sprints 1–3 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` / `-s2.md` / `-s3.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4, SPLIT: 4a results + standing (slip upload,
+review fields, `standing.py`, admin Results tab, sponsor readers on accepted results only; migration), then 4b the
+results-due/overdue crons + student email templates.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
+  `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
+- Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file
+  header (`ScholarControls`); the cockpit keeps the pre-award Close and, for a payable student with NO file, her
+  status control (`maintenance_controls`).
+- Student: `/scholarship/bursary` (`/scholarship/in-programme` redirects) from `scholarship/bursary/summary/` —
+  `support_paused` only, never a sub-state; the header link is a `localStorage` hint, not a gate.
+- ⚠ **MIGRATE FIRST for anything that writes `student_activity`**; deploy the api before the web.
+- `can_record_results` stays active/maintenance until 4a widens it with results review.
 
 ---
 
