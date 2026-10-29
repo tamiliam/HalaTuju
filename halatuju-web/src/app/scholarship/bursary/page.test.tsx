@@ -75,6 +75,17 @@ it('the results form follows can_record_results, on the Results tab', async () =
   expect(await screen.findByText(/scholarship\.inProgramme\.results\.add/)).toBeTruthy()
 })
 
+it('shows when her next result is due, and says so plainly once it is late', async () => {
+  // A past due date is NOT "late" until the server says so (the grace is the organisation's).
+  serve({ next_result_due: '2000-01-31', next_result_overdue: false })
+  const { unmount } = render(<BursaryPage />)
+  expect((await screen.findByTestId('bursary-next-due')).textContent).toContain('scholarship.bursary.nextDue.on')
+  unmount()
+  serve({ next_result_due: '2000-01-31', next_result_overdue: true })
+  render(<BursaryPage />)
+  expect((await screen.findByTestId('bursary-next-due')).textContent).toContain('scholarship.bursary.nextDue.late')
+})
+
 it('without can_record_results she sees her results but no form', async () => {
   serve()
   render(<BursaryPage />)

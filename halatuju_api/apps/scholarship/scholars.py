@@ -27,7 +27,8 @@ from apps.courses.search import _digits_expr
 from . import card_display, maintenance_scope, standing
 from .results_review import PENDING, accepted, latest_accepted
 from .models import (
-    BursaryAgreement, Disbursement, ScholarshipApplication, SemesterResult, StudentActivity,
+    BursaryAgreement, Disbursement, ResultsExpectation, ScholarshipApplication, SemesterResult,
+    StudentActivity,
 )
 
 #: The sub-states an officer may filter on (the model's choices).
@@ -42,6 +43,8 @@ SORTS = {
     '-cgpa': (F('latest_cgpa').desc(nulls_last=True), '-id'),
     'activity': (F('last_activity_at').asc(nulls_last=True), 'id'),
     '-activity': (F('last_activity_at').desc(nulls_last=True), '-id'),
+    'due': (F('next_due').asc(nulls_last=True), 'id'),
+    '-due': (F('next_due').desc(nulls_last=True), '-id'),
     'id': ('id',), '-id': ('-id',),
 }
 DEFAULT_SORT = 'name'
@@ -85,16 +88,58 @@ def annotate(qs):
                           application=OuterRef('pk'), review_status=PENDING)),
                       last_activity_at=Subquery(
                           StudentActivity.objects.filter(application=OuterRef('pk'))
-                          .order_by('-created_at', '-id').values('created_at')[:1])))
+                          .order_by('-created_at', '-id').values('created_at')[:1]),
+                      # S4b: her earliest OPEN result term — its due date (past = late) and start.
+                      next_due=Subquery(_open_term(OuterRef('pk')).values('due_on')[:1]),
+                      next_due_starts=Subquery(_open_term(OuterRef('pk')).values('term_starts_on')[:1]))
+            # Something she sent THIS term is waiting for the officer: not her lateness (review M3).
+            .annotate(pending_for_due=Exists(SemesterResult.objects.filter(
+                application=OuterRef('pk'), review_status=PENDING,
+                created_at__date__gte=OuterRef('next_due_starts'))),
+                      # A graduating result accepted: she has finished, never "not submitted" (review M2).
+                      graduated_any=Exists(accepted(SemesterResult.objects.filter(
+                          application=OuterRef('pk'), graduated=True)))))
 
 
-def below_minimum_q():
+def _open_term(app_ref):
+    return (ResultsExpectation.objects.filter(application=app_ref, satisfied_by__isnull=True)
+            .order_by('due_on', 'id'))
+
+
+def overdue_q(custom=None, today=None):
+    """S4b: the rows with an open result term past its due date AND THEIR organisation's grace
+    (the Results overdue filter and tile), on an ANNOTATED queryset."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from apps.courses import org_config
+    today = today or timezone.localdate()
+    custom = (custom or custom_lines())['results_overdue_grace_days']
+    cond = Q(next_due__lt=today - timedelta(days=org_config.default('results_overdue_grace_days'))) & ~Q(
+        owning_organisation_id__in=list(custom))
+    for org_id, grace in custom.items():
+        cond |= Q(owning_organisation_id=org_id, next_due__lt=today - timedelta(days=grace))
+    # ONE rule with the Standing column and the file (`results_expectations.late`, review M2/M4): in
+    # maintenance, not finished (no accepted graduating result, not ready to close), and nothing she
+    # sent this term waiting for the officer.
+    finished = Q(maintenance_substate='ready_to_close') | Q(graduated_any=True)
+    return cond & maintenance_scope.in_maintenance_q() & ~finished & Q(pending_for_due=False)
+
+
+def custom_lines():
+    """Every organisation's own minimum CGPA and overdue grace, in ONE query — for `below_minimum_q`
+    and `overdue_q` together (the list's query budget)."""
+    from apps.courses import org_config
+    return org_config.custom_values_many(('maintenance_min_cgpa', 'results_overdue_grace_days'))
+
+
+def below_minimum_q(custom=None):
     """S4a: the rows whose latest ACCEPTED CGPA is under THEIR organisation's minimum (the
-    Underperforming filter and tile — failing included), on an ANNOTATED queryset. ONE query reads
-    every organisation's own minimum (`org_config.custom_values`); the rest follow the default."""
+    Underperforming filter and tile — failing included), on an ANNOTATED queryset. Every
+    organisation's own minimum comes from `custom_lines()`; the rest follow the default."""
     from decimal import Decimal as _D
     from apps.courses import org_config
-    custom = {o: _D(str(v)) for o, v in org_config.custom_values('maintenance_min_cgpa').items()}
+    custom = (custom or custom_lines())['maintenance_min_cgpa']
+    custom = {o: _D(str(v)) for o, v in custom.items()}
     below = Q(latest_cgpa__isnull=False, latest_graduated=False)
     cond = Q(latest_cgpa__lt=_D(str(org_config.default('maintenance_min_cgpa')))) & ~Q(
         owning_organisation_id__in=list(custom))
@@ -103,10 +148,13 @@ def below_minimum_q():
     return below & cond
 
 
-def filter_rows(qs, *, substate='', on_hold=False, search='', below=None):
-    """`below` (from `below_minimum_q`) narrows to the students under their minimum."""
+def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdue=None):
+    """`below` (from `below_minimum_q`) narrows to the students under their minimum; `overdue`
+    (from `overdue_q`) to those with a result past due and grace (S4b)."""
     if below is not None:
         qs = qs.filter(below)
+    if overdue is not None:
+        qs = qs.filter(overdue)
     if substate in SUBSTATES:
         qs = qs.filter(maintenance_substate=substate)
     if on_hold:
@@ -132,10 +180,11 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None):
     return qs.filter(cond)
 
 
-SUMMARY_KEYS = ('in_programme', 'on_hold', 'probation', 'ready_to_close', 'closed', 'below_minimum')
+SUMMARY_KEYS = ('in_programme', 'on_hold', 'probation', 'ready_to_close', 'closed', 'below_minimum',
+                'results_overdue')
 
 
-def summary(qs, below):
+def summary(qs, below, overdue):
     """The tiles, counted in ONE query over the scoped files (annotated — `base_queryset(closed=None)`):
     the in-maintenance counts, the closed files, and the students under their minimum (S4a)."""
     live = maintenance_scope.in_maintenance_q()
@@ -145,7 +194,8 @@ def summary(qs, below):
         probation=Count('id', filter=live & Q(maintenance_substate='probation')),
         ready_to_close=Count('id', filter=live & Q(maintenance_substate='ready_to_close')),
         closed=Count('id', filter=~live),
-        below_minimum=Count('id', filter=live & below))
+        below_minimum=Count('id', filter=live & below),
+        results_overdue=Count('id', filter=live & overdue))
     return {k: row[k] or 0 for k in SUMMARY_KEYS}
 
 
@@ -181,12 +231,16 @@ def rows(apps):
     names = card_display.catalogue_course_names(
         (a.chosen_programme or {}).get('course_id') if isinstance(a.chosen_programme, dict) else ''
         for a in apps)
+    from . import results_expectations
     lines = {}
     out = []
     for app in apps:
         if app.owning_organisation_id not in lines:
-            lines[app.owning_organisation_id] = standing.thresholds(app.owning_organisation)
-        minimum, failing = lines[app.owning_organisation_id]
+            org = app.owning_organisation
+            lines[app.owning_organisation_id] = (*standing.thresholds(org),
+                                                 results_expectations.settings_for(org)[2])
+        minimum, failing, grace = lines[app.owning_organisation_id]
+        live = maintenance_scope.is_in_maintenance(app)
         latest = _result(app.latest_cgpa, app.latest_semester, app.latest_result_at)
         out.append({
             **_scholar_identity(app, names),
@@ -194,7 +248,11 @@ def rows(apps):
             'pending_review': bool(app.pending_review),
             'standing': standing.standing_for(
                 app.latest_cgpa, bool(app.latest_graduated), has_accepted=latest is not None,
-                has_pending=bool(app.pending_review), minimum=minimum, failing=failing),
+                has_pending=bool(app.pending_review), minimum=minimum, failing=failing,
+                overdue=(live and app.maintenance_substate != 'ready_to_close' and not app.graduated_any
+                         and not app.pending_for_due and results_expectations.is_overdue(app.next_due, grace))),
+            # A closed file has no next due date (review M2).
+            'next_due': app.next_due if live else None,
             'mentor': None,
             'last_activity_at': app.last_activity_at,
         })
@@ -203,6 +261,7 @@ def rows(apps):
 
 def file_payload(app):
     """The file header + Overview cards for ONE application the view has fenced."""
+    from . import results_expectations
     from .payments import _remaining, paid_to_date
     latest = latest_accepted(app)
     latest = {'cgpa': latest.cgpa, 'semester': latest.semester, 'created_at': latest.created_at} if latest else None
@@ -224,6 +283,7 @@ def file_payload(app):
         'closed_at': app.closed_at,
         'latest_result': result,
         'standing': standing.standing_of(app),
+        'next_due': results_expectations.next_due(app),
         'thresholds': dict(zip(('minimum', 'failing'),
                                (_two(v) for v in standing.thresholds(app.owning_organisation)))),
         'money': {

@@ -48,6 +48,7 @@ interface SubjectGroupRule {
 
 export interface CourseRequirements {
   source_type: string
+  pathway_type?: string      // Bumi Sprint F1: the TVET pathway (iljtm / ilkbs / mara / tvet_other)
   req_bumiputera?: boolean   // Bumi Sprint D1: shown as a "Bumiputera only" row
   general: ReqItem[]
   special: ReqItem[]
@@ -119,6 +120,11 @@ const SOURCE_LABELS: Record<string, { label: string }> = {
   pismp: { label: 'PISMP' },
   ILJTM: { label: 'ILJTM' },
   ILKBS: { label: 'ILKBS' },
+  // A TVET row's chip is its PATHWAY (Bumi Sprint F1), the same key the dashboard chips use.
+  iljtm: { label: 'ILJTM' },
+  ilkbs: { label: 'ILKBS' },
+  mara: { label: 'MARA' },
+  tvet_other: { label: 'Latihan Kemahiran' },
 }
 
 // Language codes that indicate medium-of-instruction variants (PISMP)
@@ -172,11 +178,14 @@ export default function RequirementsCard({
       : extractPismpLanguages(requirements.subject_group_req))
     : []
 
-  if (!hasGeneral && !hasSpecial && !hasComplex && !hasSubjectGroup) {
+  // An open UP_TVET row may carry only its remarks (age, health): still show them (Bumi Sprint F1).
+  const hasRemarks = !!requirements.remarks && !requirements.remarks.startsWith('General:')
+  if (!hasGeneral && !hasSpecial && !hasComplex && !hasSubjectGroup && !hasRemarks) {
     return null
   }
 
-  const sourceInfo = SOURCE_LABELS[requirements.source_type]
+  const chipType = requirements.pathway_type || requirements.source_type
+  const sourceInfo = SOURCE_LABELS[chipType]
   const isTvet = requirements.source_type === 'tvet'
 
   return (
@@ -190,7 +199,7 @@ export default function RequirementsCard({
           {t('courseDetail.requirements')}
         </h2>
         {sourceInfo && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${institutionTypeChip(requirements.source_type)}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${institutionTypeChip(chipType)}`}>
             {sourceInfo.label}
           </span>
         )}
@@ -285,7 +294,7 @@ export default function RequirementsCard({
         )}
 
         {/* Remarks — skip auto-generated text */}
-        {requirements.remarks && !requirements.remarks.startsWith('General:') && (
+        {hasRemarks && (
           <p className="text-[11px] text-ground-400 pt-3 border-t border-ground-100 italic leading-relaxed">
             {requirements.remarks}
           </p>

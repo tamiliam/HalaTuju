@@ -57,6 +57,7 @@ from .review import (
     AssignmentEvent, GraduationMessage, ResolutionItem, ReviewerProfile, SemesterResult,
     SponsorReferral,
 )
+from .results import ResultsExpectation
 from .content import (
     StandingGift, TrustContent, WhatsAppMessage,
 )
@@ -73,7 +74,7 @@ from .invoices import (
 )
 from .comms_templates import (
     PartnerEmailLog, PartnerEmailTemplate, SponsorEmailLog, SponsorEmailTemplate,
-    SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion,
+    SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion, StudentEmailTemplate,
 )
 from .items import (
     ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,

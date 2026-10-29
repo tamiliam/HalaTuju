@@ -199,6 +199,8 @@ export default function DashboardPage() {
       { type: 'kkom', count: courseCounts['kkom'] || 0 },
       { type: 'iljtm', count: courseCounts['iljtm'] || 0 },
       { type: 'ilkbs', count: courseCounts['ilkbs'] || 0 },
+      { type: 'mara', count: courseCounts['mara'] || 0 },
+      { type: 'tvet_other', count: courseCounts['tvet_other'] || 0 },
     ]
 
     for (const { type, count } of orderedPathways) {

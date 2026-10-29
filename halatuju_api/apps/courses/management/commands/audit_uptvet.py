@@ -1,5 +1,6 @@
 """
-Coverage inventory for the UP_TVET catalogue (reads a scrape_uptvet CSV; NO DB writes).
+Coverage inventory for the UP_TVET catalogue (reads a scrape_uptvet CSV). Its only DB write is the
+dashboard's UP_TVET status row (`record_status('uptvet', ...)`); the catalogue itself is never written.
 
 Answers the questions a future TVET ingest needs before touching the eligibility engine:
   - How many programmes does the public UP_TVET catalogue actually hold?
@@ -76,7 +77,7 @@ def coverage_gap(rows, existing_inst_names):
 
 
 class Command(BaseCommand):
-    help = 'Coverage inventory for a UP_TVET catalogue CSV (no DB writes)'
+    help = 'Coverage inventory for a UP_TVET catalogue CSV (writes only the UP_TVET status row)'
 
     def add_arguments(self, parser):
         parser.add_argument('--csv', type=str, required=True, help='Path to a scrape_uptvet CSV')
@@ -121,7 +122,14 @@ class Command(BaseCommand):
             held = ' (already held)' if _norm_inst(inst) in {_norm_inst(x) for x in existing_names} else ''
             self.stdout.write(f'  {n:4d}  {inst}{held}')
 
+        from apps.courses.course_data_status import UPTVET, record_status
+        record_status(UPTVET, {'total': s['total'], 'awam': s['awam'], 'swasta': s['swasta'],
+                               'distinct_institutions': s['distinct_institutions'],
+                               'new_institutions': len(gap['new_institutions']),
+                               'awam_new_programmes': gap['awam_new_programmes']},
+                      detail=f"python manage.py audit_uptvet --csv {options['csv']}")
+
         self.stdout.write(self.style.NOTICE(
-            '\nNo DB writes. Use this to decide the Awam/Swasta ingest scope + the per-institution '
+            '\nNo catalogue writes (only the dashboard status row). Use this to decide the Awam/Swasta ingest scope + the per-institution '
             'priority before the (golden-master-adjacent) TVET ingest sprint.'
         ))

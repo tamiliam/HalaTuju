@@ -18,6 +18,7 @@ from .engine import (
 )
 from .pathways import check_matric_track, check_stpm_bidang
 from .ranking_engine import get_credential_priority
+from .tvet_families import TVET_PATHWAYS
 
 # Merit label/colour tuples — derived from engine constants
 MERIT_HIGH = ("High", MERIT_COLORS['High'])
@@ -212,7 +213,7 @@ def deduplicate_pismp(eligible_courses, req_hashes):
 _PATHWAY_PRIORITY = {
     'asasi': 8, 'matric': 7, 'stpm': 6,
     'university': 5, 'ua': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
-    'iljtm': 1, 'ilkbs': 1,
+    'iljtm': 1, 'ilkbs': 1, 'mara': 1, 'tvet_other': 1,   # every TVET pathway (Bumi Sprint F1)
 }
 _MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
 
@@ -231,7 +232,7 @@ def _merit_sort_key(c):
     if c.get('source_type') == 'pismp':
         return -_MERIT_LABEL_PRIORITY['High']
     pt = c.get('pathway_type', c.get('source_type', ''))
-    if pt in ('iljtm', 'ilkbs'):
+    if pt in TVET_PATHWAYS:
         return -1.5
     return -2
 

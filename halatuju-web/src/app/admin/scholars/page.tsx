@@ -31,9 +31,9 @@ import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 
 type Filter = 'all' | 'on_track' | 'probation' | 'on_hold' | 'ready_to_close' | 'closed'
   | 'underperforming' | 'overdue' | 'wantsMentor'
-type SortKey = 'name' | 'cgpa' | 'activity'
+type SortKey = 'name' | 'cgpa' | 'due' | 'activity'
 
-const FIRST_DIR: Record<SortKey, SortDir> = { name: 'asc', cgpa: 'desc', activity: 'desc' }
+const FIRST_DIR: Record<SortKey, SortDir> = { name: 'asc', cgpa: 'desc', due: 'asc', activity: 'desc' }
 
 export default function ScholarsPage() {
   const { token, role } = useAdminAuth()
@@ -72,7 +72,7 @@ export default function ScholarsPage() {
       ? filter as ScholarRow['maintenance_substate'] : ''
     getScholars({
       programme, closed: filter === 'closed', substate, search,
-      standing: filter === 'underperforming' ? 'below_minimum' : '',
+      standing: filter === 'underperforming' ? 'below_minimum' : filter === 'overdue' ? 'results_overdue' : '',
       sort: `${sort.dir === 'desc' ? '-' : ''}${sort.key}`, page, page_size: pageSize,
     }, { token })
       .then((d) => { if (ticket === latest.current) setData(d) })
@@ -99,7 +99,7 @@ export default function ScholarsPage() {
     { key: 'on_hold', labelKey: 'admin.maintenance.substate.on_hold', count: s?.on_hold },
     { key: 'ready_to_close', labelKey: 'admin.maintenance.substate.ready_to_close', count: s?.ready_to_close },
     { key: 'underperforming', labelKey: 'admin.scholars.filter.underperforming', count: s?.below_minimum },
-    { key: 'overdue', labelKey: 'admin.scholars.filter.overdue', disabled: true },
+    { key: 'overdue', labelKey: 'admin.scholars.filter.overdue', count: s?.results_overdue },
     { key: 'wantsMentor', labelKey: 'admin.scholars.filter.wantsMentor', disabled: true },
     { key: 'closed', labelKey: 'admin.scholars.filter.closed', count: s?.closed },
   ]
@@ -109,6 +109,7 @@ export default function ScholarsPage() {
     { key: 'probation', value: s?.probation, tone: s?.probation ? 'text-caution-700' : 'text-ground-900' },
     { key: 'readyToClose', value: s?.ready_to_close, tone: 'text-ground-900' },
     { key: 'belowMinimum', value: s?.below_minimum, tone: s?.below_minimum ? 'text-caution-700' : 'text-ground-900' },
+    { key: 'resultsOverdue', value: s?.results_overdue, tone: s?.results_overdue ? 'text-critical-700' : 'text-ground-900' },
   ]
   const rows = data?.results ?? []
   const total = data?.count ?? 0
@@ -129,7 +130,7 @@ export default function ScholarsPage() {
         </label>
       </header>
 
-      <section aria-label={t('admin.scholars.summary')} className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <section aria-label={t('admin.scholars.summary')} className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-6">
         {tiles.map((tile) => (
           <div key={tile.key} className="rounded-xl border border-ground-200 bg-ground-0 p-4">
             <div className="text-sm text-ground-600">{t(`admin.scholars.tile.${tile.key}`)}</div>
@@ -166,12 +167,13 @@ export default function ScholarsPage() {
               <span>#{r.id}</span>
               <span>{t('admin.scholars.col.cgpa')} {r.latest_result?.cgpa ?? '—'}</span>
               <span>{t(`admin.scholars.standing.${r.standing}`)}</span>
+              {r.next_due && <span>{t('admin.scholars.col.nextDue')} {formatDate(r.next_due)}</span>}
             </p>
           </Link>
         ))}
       </div>
 
-      <TableFrame className="hidden md:block" minWidth={980} label={t('admin.scholars.title')}>
+      <TableFrame className="hidden md:block" minWidth={1080} label={t('admin.scholars.title')}>
         <table className="w-full text-sm">
           <thead className="border-b bg-ground-50">
             <tr>
@@ -180,6 +182,7 @@ export default function ScholarsPage() {
               <th className={TH}>{t('admin.scholars.col.status')}</th>
               <SortHeader col="cgpa" label={t('admin.scholars.col.cgpa')} sort={sort} onSort={onSort} align="right" />
               <th className={TH}>{t('admin.scholars.col.standing')}</th>
+              <SortHeader col="due" label={t('admin.scholars.col.nextDue')} sort={sort} onSort={onSort} />
               <th className={TH}>{t('admin.scholars.col.mentor')}</th>
               <SortHeader col="activity" label={t('admin.scholars.col.lastActivity')} sort={sort} onSort={onSort} />
             </tr>
@@ -211,6 +214,9 @@ export default function ScholarsPage() {
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STANDING_TONE[r.standing]}`}>
                     {t(`admin.scholars.standing.${r.standing}`)}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-ground-600" data-testid="next-due">
+                  {r.next_due ? formatDate(r.next_due) : '—'}
                 </td>
                 <td className="px-4 py-3 text-ground-500">—</td>
                 <td className="px-4 py-3 text-ground-600">

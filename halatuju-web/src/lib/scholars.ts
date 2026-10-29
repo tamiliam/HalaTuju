@@ -6,6 +6,7 @@
  * four the cockpit's sub-state chip uses (`PostAwardPanels.tsx`), never a category colour.
  */
 import type { MaintenanceSubstate, ScholarActivity, ScholarStanding } from '@/lib/admin-api'
+import { formatDate } from '@/lib/formatDate'
 
 export const SUBSTATE_TONE: Record<MaintenanceSubstate, string> = {
   on_track: 'bg-positive-100 text-positive-700',
@@ -20,6 +21,7 @@ export const STANDING_TONE: Record<ScholarStanding, string> = {
   performing: 'bg-positive-100 text-positive-700',
   underperforming: 'bg-caution-100 text-caution-700',
   failing: 'bg-critical-100 text-critical-700',
+  not_submitted: 'bg-critical-100 text-critical-700',
   awaiting_review: 'bg-ground-100 text-ground-700',
   no_result_yet: 'bg-ground-100 text-ground-500',
 }
@@ -62,6 +64,8 @@ export function activityText(
     case 'result_reviewed':
       return t(`admin.scholars.event.result_${str(m.new) === 'queried' ? 'queried' : 'accepted'}`,
         { semester: str(m.semester) || '—' })
+    case 'results_overdue':
+      return t('admin.scholars.event.results_overdue', { date: m.due_on ? formatDate(str(m.due_on)) : '—' })
     case 'closed':
       return t('admin.scholars.event.closed', {
         reason: m.reason ? t(`admin.closure.reason.${str(m.reason)}`) : '—' })

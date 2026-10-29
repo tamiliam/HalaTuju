@@ -954,7 +954,9 @@
           "kkom": "Kolej Komuniti",
           "pismp": "Perguruan (PISMP / IPG)",
           "iljtm": "Institut latihan kemahiran (ILJTM)",
-          "ilkbs": "Institut kemahiran belia (ILKBS)"
+          "ilkbs": "Institut kemahiran belia (ILKBS)",
+          "mara": "Institut kemahiran MARA",
+          "tvet_other": "Latihan kemahiran awam lain"
         }
       },
       "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
@@ -2816,6 +2818,10 @@
       "slip": {
         "label": "Slip keputusan anda (foto atau PDF) — wajib",
         "hint": "Muat naik slip daripada institusi anda di sini. Keputusan hanya diterima jika slipnya dimuat naik di halaman ini — slip yang dihantar melalui e-mel tidak diterima."
+      },
+      "nextDue": {
+        "on": "Keputusan anda yang seterusnya perlu dihantar sebelum {date}.",
+        "late": "Keputusan anda sepatutnya dihantar sebelum {date}. Sila muat naik bersama slip anda di tab Keputusan."
       }
     },
     "subnav": {
@@ -3060,7 +3066,9 @@
       "university": "Universiti",
       "kkom": "Kolej Komuniti",
       "iljtm": "ILJTM",
-      "ilkbs": "ILKBS"
+      "ilkbs": "ILKBS",
+      "mara": "MARA",
+      "tvet_other": "Latihan kemahiran lain"
     },
     "courses": "kursus"
   },
@@ -6060,7 +6068,8 @@
         "onHold": "Ditangguhkan",
         "probation": "Percubaan",
         "readyToClose": "Sedia ditutup",
-        "belowMinimum": "Prestasi rendah"
+        "belowMinimum": "Prestasi rendah",
+        "resultsOverdue": "Keputusan lewat"
       },
       "filter": {
         "all": "Semua",
@@ -6076,14 +6085,16 @@
         "cgpa": "PNGK terkini",
         "standing": "Kedudukan",
         "mentor": "Mentor",
-        "lastActivity": "Aktiviti terakhir"
+        "lastActivity": "Aktiviti terakhir",
+        "nextDue": "Tarikh akhir seterusnya"
       },
       "standing": {
         "performing": "Berprestasi",
         "underperforming": "Prestasi rendah",
         "failing": "Gagal",
         "awaiting_review": "Menunggu semakan",
-        "no_result_yet": "Belum ada keputusan"
+        "no_result_yet": "Belum ada keputusan",
+        "not_submitted": "Tidak dihantar"
       },
       "tab": {
         "overview": "Gambaran",
@@ -6114,7 +6125,8 @@
         "noResult": "Belum ada keputusan semester direkodkan.",
         "openFile": "Buka fail penerima",
         "thresholds": "PNGK minimum {min} · gagal di bawah {failing} (tetapan organisasi)",
-        "openResults": "Buka keputusan"
+        "openResults": "Buka keputusan",
+        "nextDue": "Keputusan seterusnya perlu dihantar {date}"
       },
       "money": {
         "award_amount": "Anugerah",
@@ -6166,7 +6178,8 @@
         "closed": "Fail ditutup · {reason}",
         "other": "Kemas kini sistem",
         "result_accepted": "Keputusan diterima · {semester}",
-        "result_queried": "Keputusan dipersoalkan · {semester}"
+        "result_queried": "Keputusan dipersoalkan · {semester}",
+        "results_overdue": "Keputusan tidak dihantar (tarikh akhir {date})"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6853,7 +6866,8 @@
       "tab": {
         "colours": "Warna",
         "configuration": "Konfigurasi",
-        "billing": "Pengebilan"
+        "billing": "Pengebilan",
+        "studentComms": "Komunikasi pelajar"
       },
       "config": {
         "subtitle": "Nilai yang boleh dilaraskan oleh organisasi anda. Ruang kosong mengikut tetapan lalai platform.",
@@ -7024,6 +7038,26 @@
           "maintenance_failing_cgpa": {
             "label": "PNGK gagal",
             "desc": "Di bawah nilai ini dia gagal. Mesti di bawah minimum."
+          },
+          "results_terms_per_year": {
+            "label": "Penggal keputusan setahun",
+            "desc": "Berapa keputusan semester yang dihantar pelajar yang dibiayai setiap tahun. Penggalnya dikira dari hari dia dibiayai."
+          },
+          "results_due_days_after_term": {
+            "label": "Keputusan perlu dihantar — hari selepas penggal tamat",
+            "desc": "Berapa lama selepas penggal tamat keputusannya perlu dihantar."
+          },
+          "results_overdue_grace_days": {
+            "label": "Tempoh tangguh sebelum \"tidak dihantar\" — hari",
+            "desc": "Berapa lama selepas tarikh akhir sebelum keputusan yang tiada ditunjukkan sebagai tidak dihantar."
+          },
+          "results_reminder_lead_days": {
+            "label": "Peringatan keputusan — hari sebelum tarikh akhir",
+            "desc": "Bila e-mel pertama \"keputusan anda perlu dihantar\" dihantar, dikira ke belakang dari tarikh akhir."
+          },
+          "results_reminder_every_days": {
+            "label": "Peringatan keputusan — ulang setiap (hari)",
+            "desc": "Berapa kerap peringatan diulang sehingga tarikh akhir keputusan."
           }
         },
         "unit": {
@@ -7036,7 +7070,8 @@
           "megabytes": "MB",
           "documents": "dokumen",
           "attempts": "percubaan",
-          "cgpa": "PNGK"
+          "cgpa": "PNGK",
+          "terms": "penggal"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",
@@ -7122,6 +7157,45 @@
         "mode": {
           "light": "Cerah",
           "dark": "Gelap"
+        }
+      },
+      "studentComms": {
+        "subtitle": "E-mel yang diterima oleh pelajar yang anda biayai tentang keputusan mereka, dalam bahasa Inggeris, Melayu dan Tamil — setiap pelajar menerima e-mel dalam bahasanya sendiri. Ubah surat untuk menjadikannya milik anda; \"Guna lalai\" mengembalikan kata-kata platform.",
+        "on": "E-mel ini dihidupkan dan sedang dihantar.",
+        "off": "E-mel ini dimatikan pada platform buat masa ini, jadi belum ada yang dihantar. Pelajar masih melihat tarikh akhir dan sebarang soalan di halaman mereka sendiri. Anda boleh menyediakan kata-kata anda sekarang.",
+        "kind": {
+          "results_due": "Keputusan perlu dihantar tidak lama lagi",
+          "results_overdue": "Keputusan lewat",
+          "result_queried": "Keputusan dipersoalkan"
+        },
+        "when": {
+          "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
+          "results_overdue": "Dihantar sekali, apabila keputusan melepasi tarikh akhir dan tempoh tangguh.",
+          "result_queried": "Dihantar apabila pegawai mempersoalkan keputusan, bersama catatan pegawai."
+        },
+        "language": {
+          "en": "Inggeris",
+          "ms": "Melayu",
+          "ta": "Tamil"
+        },
+        "customised": "Kata-kata anda",
+        "default": "Lalai platform",
+        "reset": "Guna lalai",
+        "edit": "Sunting",
+        "loadError": "Tidak dapat memuatkan e-mel pelajar.",
+        "editLabel": "Sunting e-mel",
+        "subject": "Subjek",
+        "body": "Mesej",
+        "placeholderHint": "Klik butiran untuk meletakkannya di tempat kursor. Ia diisi untuk setiap pelajar.",
+        "previewLabel": "Apa yang dia terima",
+        "sharedNote": "Kata-kata organisasi anda, untuk setiap pelajar yang dibiayai.",
+        "error": {
+          "unknown_placeholders": "Butiran ini tidak boleh diisi untuk e-mel ini: {list}",
+          "banned_phrase": "Sila buang: {list}",
+          "empty": "Tulis subjek dan mesej.",
+          "subject_too_long": "Subjek terlalu panjang.",
+          "unknown_template": "E-mel ini tidak wujud.",
+          "generic": "Tidak dapat menyimpan e-mel. Anda mungkin tiada kebenaran."
         }
       }
     },
@@ -7366,6 +7440,8 @@
         "application-nudges": "Gesaan permohonan",
         "purge-referrals": "Pembersihan rujukan",
         "query-reminders": "Peringatan pertanyaan",
+        "results-due-reminders": "Peringatan keputusan perlu dihantar",
+        "results-overdue-flag": "Bendera keputusan lewat",
         "application-reminders": "Peringatan permohonan",
         "backfill-assigned-profiles": "Draf profil penaja",
         "review-nudges": "Gesaan penyemak",

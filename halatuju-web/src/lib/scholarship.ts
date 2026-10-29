@@ -195,7 +195,7 @@ export function isValidPhone(s: string): boolean {
 // so a drift test would have nothing stable to read. ⚠ A pathway the server sends that is missing
 // from this list is not drawn at all — check this list when a new pathway is introduced.
 export const PATHWAY_ORDER = [
-  'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs',
+  'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
 ] as const
 export type PathwayKey = typeof PATHWAY_ORDER[number]
 
@@ -208,7 +208,9 @@ export type PathwayCertainty = '' | 'sure' | 'uncertain'
 // ── Plans redesign P3: eligible-programme course picker (the decided course) ──
 // Pathways whose "decided" branch is a programme list (→ course combobox). The two
 // institution pathways (matric, stpm) take the stream→school / track→college flow (P4).
-export const PROGRAMME_PATHWAYS = ['asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs'] as const
+export const PROGRAMME_PATHWAYS = [
+  'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
+] as const
 export function isProgrammePathway(key: string): boolean {
   return (PROGRAMME_PATHWAYS as readonly string[]).includes(key)
 }

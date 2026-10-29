@@ -23,6 +23,8 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-29 Student maintenance Sprint 1 (one predicate, on hold stops money, activity log, migration 0183) — ad299d31 901c63d5 ae939213 99ee813b
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list + maintenance file) — 3b27acbd 1debc6cc
 - 2026-10-29 Student maintenance Sprint 3 (My Bursary hub; sub-state + Close move to the scholar file) — 1f78c76a c007883e
+- 2026-10-29 Student maintenance Sprint 4a (results review, standing, accepted-only sponsor readers, portal-only slips, migration 0186) — 3d38f1f8 10072c71
+- 2026-10-30 Student maintenance Sprint 4b (result terms, not submitted, Results overdue, student results emails + Student communications tab, migration 0188) — e421d37b 9da575eb eaee818a 9809de16 47d00f11
 - 2026-10-28 Back-issuing invoices, grouped development lines, bug work free (migrations 0181, 0182) — ec21c0b5 4c6aca75 fc864c2c 62ebb121 b0473994 ceea94e0
 - 2026-10-29 Billing — the busy-meter guard, the tenant payment declaration and the owner's four readings (migrations 0184, 0185) — dec989c6 b1045b8b e20a3363 8e946874 6db38edc
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list and maintenance file) — 3b27acbd 1debc6cc _(logged by the billing session at its close, as above)_

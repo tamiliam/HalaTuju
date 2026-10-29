@@ -11,7 +11,8 @@ import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import type { ClosureReason, MaintenanceSubstate } from './lifecycle'
 /** S4a: `standing.py`, from the latest ACCEPTED result and the organisation's thresholds. */
-export type ScholarStanding = 'performing' | 'underperforming' | 'failing' | 'awaiting_review' | 'no_result_yet'
+export type ScholarStanding = 'performing' | 'underperforming' | 'failing' | 'not_submitted' | 'awaiting_review'
+  | 'no_result_yet'
 
 export interface ScholarResult { cgpa: string | null; semester: string; at: string }
 export interface ScholarGift { code: string; name: string }
@@ -29,6 +30,8 @@ export interface ScholarRow {
   /** A result is waiting for an officer's review. */
   pending_review?: boolean
   standing: ScholarStanding
+  /** S4b: her earliest open result term's due date (a past date = late), or null. */
+  next_due?: string | null
   mentor: null
   last_activity_at: string | null
 }
@@ -41,6 +44,8 @@ export interface ScholarSummary {
   closed: number
   /** S4a: in maintenance with a latest accepted CGPA under the organisation's minimum. */
   below_minimum: number
+  /** S4b: an open result term past its due date and the organisation's grace. */
+  results_overdue: number
 }
 
 export interface ScholarList {
@@ -58,7 +63,7 @@ export interface ScholarListQuery {
   search?: string
   sort?: string
   /** S4a: 'below_minimum' narrows to the Underperforming filter. */
-  standing?: 'below_minimum' | ''
+  standing?: 'below_minimum' | 'results_overdue' | ''
   page?: number
   page_size?: number
 }
@@ -79,6 +84,8 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
   contract: { exists: boolean; status: string | null }
   /** S4a: the organisation's thresholds the standing was judged by. */
   thresholds?: { minimum: string; failing: string }
+  /** S4b: when her next result is due (null: no open term). */
+  next_due?: string | null
   mentor: null
   letters: never[]
   last_activity_at: string | null

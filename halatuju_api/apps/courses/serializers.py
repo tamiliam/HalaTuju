@@ -168,6 +168,8 @@ class CourseRequirementSerializer(serializers.Serializer):
 
         return {
             'source_type': getattr(instance, 'source_type', ''),
+            # The pathway chip (iljtm / ilkbs / mara / tvet_other for a TVET row; Bumi Sprint F1).
+            'pathway_type': _pathway_type(instance),
             'req_bumiputera': bool(getattr(instance, 'req_bumiputera', False)),
             'general': general,
             'special': special,
@@ -176,6 +178,14 @@ class CourseRequirementSerializer(serializers.Serializer):
             'merit_cutoff': instance.merit_cutoff,
             'remarks': instance.remarks or '',
         }
+
+
+def _pathway_type(requirement):
+    """The course's pathway as the eligibility payload names it (`apps.py` course_pathway_map),
+    falling back to the source type for a course the loaded map does not hold yet."""
+    from django.apps import apps
+    pathway_map = getattr(apps.get_app_config('courses'), 'course_pathway_map', {}) or {}
+    return pathway_map.get(getattr(requirement, 'course_id', None)) or getattr(requirement, 'source_type', '')
 
 
 # Frontend → engine value maps. The engine compares against the Malay forms

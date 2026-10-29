@@ -21,19 +21,29 @@ from apps.courses.engine import StudentProfile, check_eligibility
 from apps.courses.tests.conftest import load_requirements_df
 
 # Bumi coverage Sprint D1 appended the 84 UiTM rows of `data/spm/spm_new_courses_D1.json` to the
-# fixtures, and Sprint D2 the 66 rows of `spm_new_courses_D2.json`. The ORIGINAL catalogue is
-# everything else, frozen here by count and digest so that a later fixture edit cannot quietly
-# redefine "original".
+# fixtures, Sprint D2 the 66 rows of `spm_new_courses_D2.json`, and Sprint F1 the 35 public UP_TVET
+# courses of `data/tvet/tvet_new_courses_F1.json`. The ORIGINAL catalogue is everything else, frozen
+# here by count and digest so that a later fixture edit cannot quietly redefine "original".
 _D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_courses_D1.json'
 _D2_FILE = _D1_FILE.with_name('spm_new_courses_D2.json')
+_F1_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F1.json'
 ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
 ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
-GOLDEN_BASELINE = 5319                 # original catalogue, and the full one for a non-Bumi student
+GOLDEN_BASELINE = 5319                 # the original catalogue, for every student
+# Sprint F1: the non-MARA UP_TVET rows are mostly OPEN (no academic rule), so a non-Bumi student now
+# gains EXACTLY those F1 rows she meets, and nothing else: pinned as a count and a digest.
+GOLDEN_F1_NON_BUMI_GAIN = 1494        # 30-33 per citizen, 20 if colour-blind, 0 for the non-citizen
+F1_NON_BUMI_GAIN_SHA256 = '07d39bf4539eecbf8a31d5652a6fea97e566cef3c6fbd393e15b0b6021c9eb85'
+GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,813
 # Full catalogue, the same 50 students as Bumiputera: 5,319 + 546 (D1 UiTM, strict reading) + 121 (D2,
-# after review round 1's strict reading of MARA's "any N subjects": 141 -> 121).
-GOLDEN_BASELINE_BUMI = 5986
+# after review round 1's strict reading of MARA's "any N subjects": 141 -> 121) + 1,592 (F1: the
+# 1,494 above + the two Bumi-only KEMAS rows, 49 each).
+GOLDEN_BASELINE_BUMI = 7578
+#: What the 50 Bumiputera twins gain over the ORIGINAL catalogue (D1 + D2 + F1 rows they meet), as one
+#: digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
+BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
 
 
 def _digest(lines):
@@ -331,7 +341,7 @@ class TestGoldenMaster:
 
     def _original_ids(self):
         from apps.courses.models import Course
-        added = self._added_ids(_D1_FILE) | self._added_ids(_D2_FILE)
+        added = self._added_ids(_D1_FILE) | self._added_ids(_D2_FILE) | self._added_ids(_F1_FILE)
         return set(Course.objects.values_list('course_id', flat=True)) - added
 
     def test_the_original_catalogue_is_frozen(self):
@@ -355,14 +365,21 @@ class TestGoldenMaster:
         lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s)]
         assert _digest(lines) == ORIGINAL_SETS_SHA256, "a golden student's eligible set changed"
 
-    def test_a_non_bumi_student_gains_nothing_from_the_new_rows(self):
-        """Every D1 row is Bumiputera-only, so the FULL catalogue gives the same 5,319. Of the D2 rows
-        only the 14 open Islamic-subject ones may add anything at bumi=False — and none of the 50
-        golden students holds the Islamic / Arabic subjects they need, so the total is unchanged
-        (`test_spm_d2.py` shows such a student does gain them)."""
+    def test_a_non_bumi_student_gains_exactly_the_f1_open_set(self):
+        """Every D1 row is Bumiputera-only and no golden student holds the Islamic subjects the 14 open
+        D2 rows need, so D1 and D2 add nothing at bumi=False. Sprint F1's public UP_TVET rows are mostly
+        open: a non-Bumi student gains exactly the F1 rows she meets (pinned by count and digest), never
+        a Bumi-only row, and never a D1 / D2 row."""
         from apps.courses.models import CourseRequirement
         sets = self._eligible_sets(GOLDEN_STUDENTS)
-        assert sum(len(s) for s in sets) == GOLDEN_BASELINE
+        original = self._original_ids()
+        f1 = self._added_ids(_F1_FILE)
+        gained = [s - original for s in sets]
+        assert all(g <= f1 for g in gained), 'a non-Bumi student gained a non-F1 row'
+        assert sum(len(g) for g in gained) == GOLDEN_F1_NON_BUMI_GAIN, [len(g) for g in gained]
+        lines = [f'{i}:{cid}' for i, g in enumerate(gained, 1) for cid in sorted(g)]
+        assert _digest(lines) == F1_NON_BUMI_GAIN_SHA256, "a golden student's F1 gain changed"
+        assert sum(len(s) for s in sets) == GOLDEN_BASELINE_FULL
         bumi_only = set(CourseRequirement.objects.filter(req_bumiputera=True).values_list('course_id', flat=True))
         assert not any(s & bumi_only for s in sets)
 
@@ -376,3 +393,6 @@ class TestGoldenMaster:
         assert sum(len(s) for s in sets) == GOLDEN_BASELINE_BUMI, [len(s) for s in sets]
         original = self._original_ids()
         assert [s & original for s in sets] == [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s - original)]
+        assert len(lines) == GOLDEN_BASELINE_BUMI - GOLDEN_BASELINE   # 2,259
+        assert _digest(lines) == BUMI_GAIN_SHA256, "a Bumiputera twin's gain changed"

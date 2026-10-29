@@ -954,7 +954,9 @@
           "kkom": "Community college",
           "pismp": "Teaching (PISMP / IPG)",
           "iljtm": "Skills institute (ILJTM)",
-          "ilkbs": "Youth skills institute (ILKBS)"
+          "ilkbs": "Youth skills institute (ILKBS)",
+          "mara": "MARA skills institute",
+          "tvet_other": "Other public skills training"
         }
       },
       "notesLabel": "Tell us briefly why you need assistance and what would help",
@@ -2816,6 +2818,10 @@
       "slip": {
         "label": "Your result slip (photo or PDF) — required",
         "hint": "Upload the slip from your institution here. A result is accepted only with its slip uploaded on this page — slips sent by email are not accepted."
+      },
+      "nextDue": {
+        "on": "Your next result is due by {date}.",
+        "late": "Your result was due by {date}. Please upload it with your slip on the Results tab."
       }
     },
     "subnav": {
@@ -3060,7 +3066,9 @@
       "university": "University",
       "kkom": "Kolej Komuniti",
       "iljtm": "ILJTM",
-      "ilkbs": "ILKBS"
+      "ilkbs": "ILKBS",
+      "mara": "MARA",
+      "tvet_other": "Other skills training"
     },
     "courses": "courses"
   },
@@ -6060,7 +6068,8 @@
         "onHold": "On hold",
         "probation": "Probation",
         "readyToClose": "Ready to close",
-        "belowMinimum": "Underperforming"
+        "belowMinimum": "Underperforming",
+        "resultsOverdue": "Results overdue"
       },
       "filter": {
         "all": "All",
@@ -6076,14 +6085,16 @@
         "cgpa": "Latest CGPA",
         "standing": "Standing",
         "mentor": "Mentor",
-        "lastActivity": "Last activity"
+        "lastActivity": "Last activity",
+        "nextDue": "Next due"
       },
       "standing": {
         "performing": "Performing",
         "underperforming": "Underperforming",
         "failing": "Failing",
         "awaiting_review": "Awaiting review",
-        "no_result_yet": "No result yet"
+        "no_result_yet": "No result yet",
+        "not_submitted": "Not submitted"
       },
       "tab": {
         "overview": "Overview",
@@ -6114,7 +6125,8 @@
         "noResult": "No semester result recorded yet.",
         "openFile": "Open scholar file",
         "thresholds": "Minimum CGPA {min} · failing below {failing} (organisation settings)",
-        "openResults": "Open results"
+        "openResults": "Open results",
+        "nextDue": "Next result due {date}"
       },
       "money": {
         "award_amount": "Award",
@@ -6166,7 +6178,8 @@
         "closed": "File closed · {reason}",
         "other": "System update",
         "result_accepted": "Result accepted · {semester}",
-        "result_queried": "Result queried · {semester}"
+        "result_queried": "Result queried · {semester}",
+        "results_overdue": "Result not submitted (due {date})"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6853,7 +6866,8 @@
       "tab": {
         "colours": "Colours",
         "configuration": "Configuration",
-        "billing": "Billing"
+        "billing": "Billing",
+        "studentComms": "Student communications"
       },
       "config": {
         "subtitle": "Values your organisation can tune. A blank field follows the platform default.",
@@ -7024,6 +7038,26 @@
           "maintenance_failing_cgpa": {
             "label": "Failing CGPA",
             "desc": "Below this she is failing. Must be below the minimum."
+          },
+          "results_terms_per_year": {
+            "label": "Result terms a year",
+            "desc": "How many semester results a funded student sends each year. Her terms count from the day she was funded."
+          },
+          "results_due_days_after_term": {
+            "label": "Result due — days after a term ends",
+            "desc": "How long after a term ends her result is due."
+          },
+          "results_overdue_grace_days": {
+            "label": "Grace before \"not submitted\" — days",
+            "desc": "How long after the due date before a missing result shows as not submitted."
+          },
+          "results_reminder_lead_days": {
+            "label": "Result reminder — days before it is due",
+            "desc": "When the first \"your result is due\" email goes, counted back from the due date."
+          },
+          "results_reminder_every_days": {
+            "label": "Result reminder — repeat every (days)",
+            "desc": "How often the reminder repeats until the result is due."
           }
         },
         "unit": {
@@ -7036,7 +7070,8 @@
           "megabytes": "MB",
           "documents": "documents",
           "attempts": "attempts",
-          "cgpa": "CGPA"
+          "cgpa": "CGPA",
+          "terms": "terms"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "defaultNoteClock": "Platform default: {n} (Malaysian time)",
@@ -7122,6 +7157,45 @@
         "mode": {
           "light": "Light",
           "dark": "Dark"
+        }
+      },
+      "studentComms": {
+        "subtitle": "The emails your funded students receive about their results, in English, Malay and Tamil — each student is written to in her own language. Change a letter to make it yours; \"Use the default\" brings back the platform wording.",
+        "on": "These emails are switched on and are being sent.",
+        "off": "These emails are switched off on the platform for now, so nothing is sent yet. Students still see due dates and any query on their own page. You can prepare your wording now.",
+        "kind": {
+          "results_due": "A result is due soon",
+          "results_overdue": "A result is overdue",
+          "result_queried": "A result is queried"
+        },
+        "when": {
+          "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
+          "results_overdue": "Sent once, when a result is past its due date and the grace.",
+          "result_queried": "Sent when an officer queries a result, with the officer's note."
+        },
+        "language": {
+          "en": "English",
+          "ms": "Malay",
+          "ta": "Tamil"
+        },
+        "customised": "Your wording",
+        "default": "Platform default",
+        "reset": "Use the default",
+        "edit": "Edit",
+        "loadError": "Could not load the student emails.",
+        "editLabel": "Edit the email",
+        "subject": "Subject",
+        "body": "Message",
+        "placeholderHint": "Click a detail to place it where the cursor is. It is filled in for each student.",
+        "previewLabel": "What she receives",
+        "sharedNote": "Your organisation's wording, for every funded student.",
+        "error": {
+          "unknown_placeholders": "These details cannot be filled in for this email: {list}",
+          "banned_phrase": "Please remove: {list}",
+          "empty": "Write a subject and a message.",
+          "subject_too_long": "The subject is too long.",
+          "unknown_template": "This email does not exist.",
+          "generic": "Could not save the email. You may not have permission."
         }
       }
     },
@@ -7366,6 +7440,8 @@
         "application-nudges": "Application nudges",
         "purge-referrals": "Referral clean-up",
         "query-reminders": "Query reminders",
+        "results-due-reminders": "Results due reminders",
+        "results-overdue-flag": "Results overdue flag",
         "application-reminders": "Application reminders",
         "backfill-assigned-profiles": "Sponsor profile drafts",
         "review-nudges": "Reviewer nudges",

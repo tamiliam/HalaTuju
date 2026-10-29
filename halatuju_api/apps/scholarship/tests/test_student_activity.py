@@ -121,7 +121,7 @@ class TestWriters(TestCase):
     def test_the_roadmap_event_list(self):
         self.assertEqual(set(EVENTS), {
             'substate_changed', 'result_submitted', 'result_reviewed', 'letter_issued',
-            'mentor_assigned', 'session_logged', 'payment_released', 'closed'})
+            'mentor_assigned', 'session_logged', 'payment_released', 'closed', 'results_overdue'})
 
     def test_add_entry_writes_a_manual_row(self):
         row = activity.add_entry(self.app, 'call', '  Rang her mother.  ',

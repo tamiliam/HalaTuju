@@ -1,0 +1,909 @@
+{
+ "source": "prod course_institutions of source_type tvet, read-only SQL by the lead, 2026-10-29 (id_kursus taken from the hyperlink)",
+ "links": [
+  {
+   "course_id": "IJTM-CET-001",
+   "institution_id": "IJTM-029",
+   "id_kursus": "33929"
+  },
+  {
+   "course_id": "IJTM-CET-002",
+   "institution_id": "IJTM-029",
+   "id_kursus": "40510"
+  },
+  {
+   "course_id": "IJTM-CET-003",
+   "institution_id": "IJTM-029",
+   "id_kursus": "40507"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-002",
+   "id_kursus": "9290"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-008",
+   "id_kursus": "7768"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-013",
+   "id_kursus": "8776"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-015",
+   "id_kursus": "36888"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-016",
+   "id_kursus": "45048"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-021",
+   "id_kursus": "7111"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-028",
+   "id_kursus": "7231"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-032",
+   "id_kursus": "40218"
+  },
+  {
+   "course_id": "IJTM-CET-004",
+   "institution_id": "IJTM-034",
+   "id_kursus": "7306"
+  },
+  {
+   "course_id": "IJTM-CET-005",
+   "institution_id": "IJTM-024",
+   "id_kursus": "42539"
+  },
+  {
+   "course_id": "IJTM-CET-005",
+   "institution_id": "IJTM-033",
+   "id_kursus": "30603"
+  },
+  {
+   "course_id": "IJTM-CET-005",
+   "institution_id": "IJTM-034",
+   "id_kursus": "7300"
+  },
+  {
+   "course_id": "IJTM-CET-006",
+   "institution_id": "IJTM-024",
+   "id_kursus": "39077"
+  },
+  {
+   "course_id": "IJTM-CET-007",
+   "institution_id": "IJTM-003",
+   "id_kursus": "36785"
+  },
+  {
+   "course_id": "IJTM-CET-007",
+   "institution_id": "IJTM-019",
+   "id_kursus": "36755"
+  },
+  {
+   "course_id": "IJTM-CET-007",
+   "institution_id": "IJTM-020",
+   "id_kursus": "36701"
+  },
+  {
+   "course_id": "IJTM-CET-008",
+   "institution_id": "IJTM-019",
+   "id_kursus": "7480"
+  },
+  {
+   "course_id": "IJTM-CET-008",
+   "institution_id": "IJTM-032",
+   "id_kursus": "30540"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-002",
+   "id_kursus": "33911"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-003",
+   "id_kursus": "33956"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-013",
+   "id_kursus": "33989"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-014",
+   "id_kursus": "33995"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-016",
+   "id_kursus": "33977"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-021",
+   "id_kursus": "33862"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-023",
+   "id_kursus": "34007"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-024",
+   "id_kursus": "33914"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-032",
+   "id_kursus": "33944"
+  },
+  {
+   "course_id": "IJTM-CET-009",
+   "institution_id": "IJTM-034",
+   "id_kursus": "33905"
+  },
+  {
+   "course_id": "IJTM-CET-010",
+   "institution_id": "IJTM-009",
+   "id_kursus": "10790"
+  },
+  {
+   "course_id": "IJTM-CET-010",
+   "institution_id": "IJTM-021",
+   "id_kursus": "7102"
+  },
+  {
+   "course_id": "IJTM-CET-011",
+   "institution_id": "IJTM-003",
+   "id_kursus": "9551"
+  },
+  {
+   "course_id": "IJTM-CET-011",
+   "institution_id": "IJTM-020",
+   "id_kursus": "36695"
+  },
+  {
+   "course_id": "IJTM-CET-011",
+   "institution_id": "IJTM-021",
+   "id_kursus": "36692"
+  },
+  {
+   "course_id": "IJTM-CET-012",
+   "institution_id": "IJTM-012",
+   "id_kursus": "30582"
+  },
+  {
+   "course_id": "IJTM-CET-013",
+   "institution_id": "IJTM-018",
+   "id_kursus": "36746"
+  },
+  {
+   "course_id": "IJTM-CET-013",
+   "institution_id": "IJTM-021",
+   "id_kursus": "36689"
+  },
+  {
+   "course_id": "IJTM-CET-014",
+   "institution_id": "IJTM-028",
+   "id_kursus": "33887"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-002",
+   "id_kursus": "39065"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-003",
+   "id_kursus": "36779"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-008",
+   "id_kursus": "36815"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-012",
+   "id_kursus": "36927"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-014",
+   "id_kursus": "44014"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-017",
+   "id_kursus": "36803"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-018",
+   "id_kursus": "36737"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-020",
+   "id_kursus": "36698"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-021",
+   "id_kursus": "36683"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-024",
+   "id_kursus": "39071"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-028",
+   "id_kursus": "36716"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-032",
+   "id_kursus": "36761"
+  },
+  {
+   "course_id": "IJTM-CET-015",
+   "institution_id": "IJTM-034",
+   "id_kursus": "36731"
+  },
+  {
+   "course_id": "IJTM-CET-016",
+   "institution_id": "IJTM-002",
+   "id_kursus": "9272"
+  },
+  {
+   "course_id": "IJTM-CET-016",
+   "institution_id": "IJTM-011",
+   "id_kursus": "46910"
+  },
+  {
+   "course_id": "IJTM-CET-016",
+   "institution_id": "IJTM-024",
+   "id_kursus": "7378"
+  },
+  {
+   "course_id": "IJTM-CET-016",
+   "institution_id": "IJTM-033",
+   "id_kursus": "30609"
+  },
+  {
+   "course_id": "IJTM-CET-017",
+   "institution_id": "IJTM-007",
+   "id_kursus": "45646"
+  },
+  {
+   "course_id": "IJTM-CET-017",
+   "institution_id": "IJTM-013",
+   "id_kursus": "45682"
+  },
+  {
+   "course_id": "IJTM-CET-017",
+   "institution_id": "IJTM-014",
+   "id_kursus": "45643"
+  },
+  {
+   "course_id": "IJTM-CET-017",
+   "institution_id": "IJTM-020",
+   "id_kursus": "45673"
+  },
+  {
+   "course_id": "IJTM-CET-018",
+   "institution_id": "IJTM-032",
+   "id_kursus": "30543"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-015",
+   "id_kursus": "34040"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-017",
+   "id_kursus": "33968"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-018",
+   "id_kursus": "33920"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-019",
+   "id_kursus": "33938"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-020",
+   "id_kursus": "33869"
+  },
+  {
+   "course_id": "IJTM-CET-019",
+   "institution_id": "IJTM-025",
+   "id_kursus": "36921"
+  },
+  {
+   "course_id": "IJTM-CET-020",
+   "institution_id": "IJTM-013",
+   "id_kursus": "10964"
+  },
+  {
+   "course_id": "IJTM-CET-020",
+   "institution_id": "IJTM-015",
+   "id_kursus": "10082"
+  },
+  {
+   "course_id": "IJTM-CET-021",
+   "institution_id": "IJTM-021",
+   "id_kursus": "30438"
+  },
+  {
+   "course_id": "IJTM-CET-021",
+   "institution_id": "IJTM-030",
+   "id_kursus": "7204"
+  },
+  {
+   "course_id": "IJTM-CET-022",
+   "institution_id": "IJTM-024",
+   "id_kursus": "7375"
+  },
+  {
+   "course_id": "IJTM-CET-023",
+   "institution_id": "IJTM-007",
+   "id_kursus": "34019"
+  },
+  {
+   "course_id": "IJTM-CET-024",
+   "institution_id": "IJTM-012",
+   "id_kursus": "36930"
+  },
+  {
+   "course_id": "IJTM-CET-024",
+   "institution_id": "IJTM-023",
+   "id_kursus": "8005"
+  },
+  {
+   "course_id": "IJTM-CET-024",
+   "institution_id": "IJTM-033",
+   "id_kursus": "36897"
+  },
+  {
+   "course_id": "IJTM-CET-025",
+   "institution_id": "IJTM-002",
+   "id_kursus": "33908"
+  },
+  {
+   "course_id": "IJTM-CET-025",
+   "institution_id": "IJTM-013",
+   "id_kursus": "33986"
+  },
+  {
+   "course_id": "IJTM-CET-025",
+   "institution_id": "IJTM-019",
+   "id_kursus": "33935"
+  },
+  {
+   "course_id": "IJTM-CET-025",
+   "institution_id": "IJTM-032",
+   "id_kursus": "33941"
+  },
+  {
+   "course_id": "IJTM-CET-026",
+   "institution_id": "IJTM-003",
+   "id_kursus": "33959"
+  },
+  {
+   "course_id": "IJTM-CET-027",
+   "institution_id": "IJTM-027",
+   "id_kursus": "34511"
+  },
+  {
+   "course_id": "IJTM-CET-028",
+   "institution_id": "IJTM-020",
+   "id_kursus": "33866"
+  },
+  {
+   "course_id": "IJTM-CET-029",
+   "institution_id": "IJTM-012",
+   "id_kursus": "33998"
+  },
+  {
+   "course_id": "IJTM-CET-029",
+   "institution_id": "IJTM-017",
+   "id_kursus": "33965"
+  },
+  {
+   "course_id": "IJTM-CET-029",
+   "institution_id": "IJTM-021",
+   "id_kursus": "33859"
+  },
+  {
+   "course_id": "IJTM-CET-030",
+   "institution_id": "IJTM-021",
+   "id_kursus": "33865"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-002",
+   "id_kursus": "34146"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-003",
+   "id_kursus": "34535"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-005",
+   "id_kursus": "45679"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-009",
+   "id_kursus": "34562"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-023",
+   "id_kursus": "34149"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-024",
+   "id_kursus": "34152"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-028",
+   "id_kursus": "34137"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-033",
+   "id_kursus": "34580"
+  },
+  {
+   "course_id": "IJTM-CET-031",
+   "institution_id": "IJTM-034",
+   "id_kursus": "34143"
+  },
+  {
+   "course_id": "IJTM-CET-032",
+   "institution_id": "IJTM-024",
+   "id_kursus": "44050"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-002",
+   "id_kursus": "39068"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-003",
+   "id_kursus": "36782"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-017",
+   "id_kursus": "36806"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-024",
+   "id_kursus": "39074"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-028",
+   "id_kursus": "36713"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-032",
+   "id_kursus": "36764"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-033",
+   "id_kursus": "36891"
+  },
+  {
+   "course_id": "IJTM-CET-033",
+   "institution_id": "IJTM-034",
+   "id_kursus": "36728"
+  },
+  {
+   "course_id": "IJTM-CET-034",
+   "institution_id": "IJTM-015",
+   "id_kursus": "36846"
+  },
+  {
+   "course_id": "IJTM-CET-034",
+   "institution_id": "IJTM-018",
+   "id_kursus": "36749"
+  },
+  {
+   "course_id": "IJTM-CET-034",
+   "institution_id": "IJTM-020",
+   "id_kursus": "36704"
+  },
+  {
+   "course_id": "IJTM-CET-034",
+   "institution_id": "IJTM-028",
+   "id_kursus": "7219"
+  },
+  {
+   "course_id": "IJTM-CET-035",
+   "institution_id": "IJTM-034",
+   "id_kursus": "7291"
+  },
+  {
+   "course_id": "IJTM-CET-036",
+   "institution_id": "IJTM-002",
+   "id_kursus": "9269"
+  },
+  {
+   "course_id": "IJTM-CET-037",
+   "institution_id": "IJTM-021",
+   "id_kursus": "7066"
+  },
+  {
+   "course_id": "IJTM-CET-038",
+   "institution_id": "IJTM-009",
+   "id_kursus": "9617"
+  },
+  {
+   "course_id": "IJTM-CET-038",
+   "institution_id": "IJTM-019",
+   "id_kursus": "7489"
+  },
+  {
+   "course_id": "IJTM-CET-038",
+   "institution_id": "IJTM-023",
+   "id_kursus": "8002"
+  },
+  {
+   "course_id": "IJTM-DIP-010",
+   "institution_id": "IJTM-004",
+   "id_kursus": "9581"
+  },
+  {
+   "course_id": "IJTM-DIP-017",
+   "institution_id": "IJTM-004",
+   "id_kursus": "35147"
+  },
+  {
+   "course_id": "IJTM-DIP-017",
+   "institution_id": "IJTM-027",
+   "id_kursus": "33902"
+  },
+  {
+   "course_id": "IJTM-DIP-019",
+   "institution_id": "IJTM-004",
+   "id_kursus": "36797"
+  },
+  {
+   "course_id": "IJTM-DIP-022",
+   "institution_id": "IJTM-027",
+   "id_kursus": "33893"
+  },
+  {
+   "course_id": "IJTM-DIP-024",
+   "institution_id": "IJTM-026",
+   "id_kursus": "10049"
+  },
+  {
+   "course_id": "IJTM-DIP-026",
+   "institution_id": "IJTM-026",
+   "id_kursus": "10007"
+  },
+  {
+   "course_id": "IJTM-DIP-032",
+   "institution_id": "IJTM-001",
+   "id_kursus": "8718"
+  },
+  {
+   "course_id": "IJTM-DIP-033",
+   "institution_id": "IJTM-001",
+   "id_kursus": "34568"
+  },
+  {
+   "course_id": "IJTM-DIP-034",
+   "institution_id": "IJTM-001",
+   "id_kursus": "7774"
+  },
+  {
+   "course_id": "IJTM-DIP-035",
+   "institution_id": "IJTM-001",
+   "id_kursus": "33983"
+  },
+  {
+   "course_id": "IKBN-CET-001",
+   "institution_id": "IKBN-001",
+   "id_kursus": "14612"
+  },
+  {
+   "course_id": "IKBN-CET-001",
+   "institution_id": "IKBN-003",
+   "id_kursus": "14375"
+  },
+  {
+   "course_id": "IKBN-CET-001",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14465"
+  },
+  {
+   "course_id": "IKBN-CET-002",
+   "institution_id": "IKBN-003",
+   "id_kursus": "14399"
+  },
+  {
+   "course_id": "IKBN-CET-002",
+   "institution_id": "IKBN-008",
+   "id_kursus": "14276"
+  },
+  {
+   "course_id": "IKBN-CET-002",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14477"
+  },
+  {
+   "course_id": "IKBN-CET-003",
+   "institution_id": "IKBN-007",
+   "id_kursus": "14411"
+  },
+  {
+   "course_id": "IKBN-CET-003",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14483"
+  },
+  {
+   "course_id": "IKBN-CET-004",
+   "institution_id": "IKBN-003",
+   "id_kursus": "44202"
+  },
+  {
+   "course_id": "IKBN-CET-005",
+   "institution_id": "IKBN-003",
+   "id_kursus": "43845"
+  },
+  {
+   "course_id": "IKBN-CET-005",
+   "institution_id": "IKBN-007",
+   "id_kursus": "45292"
+  },
+  {
+   "course_id": "IKBN-CET-005",
+   "institution_id": "IKBN-008",
+   "id_kursus": "45289"
+  },
+  {
+   "course_id": "IKBN-CET-005",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14456"
+  },
+  {
+   "course_id": "IKBN-CET-005",
+   "institution_id": "IKBN-021",
+   "id_kursus": "14531"
+  },
+  {
+   "course_id": "IKBN-CET-006",
+   "institution_id": "IKBN-003",
+   "id_kursus": "14363"
+  },
+  {
+   "course_id": "IKBN-CET-006",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14468"
+  },
+  {
+   "course_id": "IKBN-CET-007",
+   "institution_id": "IKBN-016",
+   "id_kursus": "45298"
+  },
+  {
+   "course_id": "IKBN-CET-008",
+   "institution_id": "IKBN-004",
+   "id_kursus": "33765"
+  },
+  {
+   "course_id": "IKBN-CET-008",
+   "institution_id": "IKBN-020",
+   "id_kursus": "33768"
+  },
+  {
+   "course_id": "IKBN-CET-009",
+   "institution_id": "IKBN-012",
+   "id_kursus": "30635"
+  },
+  {
+   "course_id": "IKBN-CET-010",
+   "institution_id": "IKBN-004",
+   "id_kursus": "14489"
+  },
+  {
+   "course_id": "IKBN-CET-010",
+   "institution_id": "IKBN-011",
+   "id_kursus": "14450"
+  },
+  {
+   "course_id": "IKBN-CET-011",
+   "institution_id": "IKBN-013",
+   "id_kursus": "14240"
+  },
+  {
+   "course_id": "IKBN-CET-012",
+   "institution_id": "IKBN-017",
+   "id_kursus": "14798"
+  },
+  {
+   "course_id": "IKBN-CET-013",
+   "institution_id": "IKBN-010",
+   "id_kursus": "14639"
+  },
+  {
+   "course_id": "IKBN-CET-014",
+   "institution_id": "IKBN-019",
+   "id_kursus": "14195"
+  },
+  {
+   "course_id": "IKBN-CET-014",
+   "institution_id": "IKBN-021",
+   "id_kursus": "14561"
+  },
+  {
+   "course_id": "IKBN-CET-015",
+   "institution_id": "IKBN-005",
+   "id_kursus": "14342"
+  },
+  {
+   "course_id": "IKBN-CET-015",
+   "institution_id": "IKBN-008",
+   "id_kursus": "14306"
+  },
+  {
+   "course_id": "IKBN-CET-016",
+   "institution_id": "IKBN-017",
+   "id_kursus": "14783"
+  },
+  {
+   "course_id": "IKBN-CET-017",
+   "institution_id": "IKBN-010",
+   "id_kursus": "14660"
+  },
+  {
+   "course_id": "IKBN-CET-018",
+   "institution_id": "IKBN-017",
+   "id_kursus": "44208"
+  },
+  {
+   "course_id": "IKBN-CET-019",
+   "institution_id": "IKBN-011",
+   "id_kursus": "14453"
+  },
+  {
+   "course_id": "IKBN-CET-020",
+   "institution_id": "IKBN-014",
+   "id_kursus": "14471"
+  },
+  {
+   "course_id": "IKBN-CET-021",
+   "institution_id": "IKBN-018",
+   "id_kursus": "14432"
+  },
+  {
+   "course_id": "IKBN-CET-022",
+   "institution_id": "IKBN-016",
+   "id_kursus": "14759"
+  },
+  {
+   "course_id": "IKBN-CET-023",
+   "institution_id": "IKBN-001",
+   "id_kursus": "14567"
+  },
+  {
+   "course_id": "IKBN-CET-024",
+   "institution_id": "IKBN-004",
+   "id_kursus": "30661"
+  },
+  {
+   "course_id": "IKBN-CET-025",
+   "institution_id": "IKBN-018",
+   "id_kursus": "14435"
+  },
+  {
+   "course_id": "IKBN-CET-026",
+   "institution_id": "IKBN-004",
+   "id_kursus": "14504"
+  },
+  {
+   "course_id": "IKBN-CET-026",
+   "institution_id": "IKBN-021",
+   "id_kursus": "14525"
+  },
+  {
+   "course_id": "IKBN-CET-027",
+   "institution_id": "IKBN-018",
+   "id_kursus": "30656"
+  },
+  {
+   "course_id": "IKBN-CET-028",
+   "institution_id": "IKBN-018",
+   "id_kursus": "30653"
+  },
+  {
+   "course_id": "IKBN-CET-029",
+   "institution_id": "IKBN-015",
+   "id_kursus": "45421"
+  },
+  {
+   "course_id": "IKBN-CET-032",
+   "institution_id": "IKBN-014",
+   "id_kursus": "30659"
+  },
+  {
+   "course_id": "IKBN-CET-034",
+   "institution_id": "IKBN-011",
+   "id_kursus": "33783"
+  },
+  {
+   "course_id": "IKBN-CET-034",
+   "institution_id": "IKBN-013",
+   "id_kursus": "33777"
+  },
+  {
+   "course_id": "IKBN-DIP-001",
+   "institution_id": "IKBN-004",
+   "id_kursus": "35198"
+  },
+  {
+   "course_id": "IKBN-DIP-001",
+   "institution_id": "IKBN-005",
+   "id_kursus": "35199"
+  },
+  {
+   "course_id": "IKBN-DIP-001",
+   "institution_id": "IKBN-020",
+   "id_kursus": "35202"
+  },
+  {
+   "course_id": "IKBN-DIP-003",
+   "institution_id": "IKBN-010",
+   "id_kursus": "35118"
+  },
+  {
+   "course_id": "IKBN-DIP-006",
+   "institution_id": "IKBN-001",
+   "id_kursus": "14603"
+  },
+  {
+   "course_id": "IKBN-DIP-007",
+   "institution_id": "IKBN-012",
+   "id_kursus": "43815"
+  }
+ ],
+ "not_in_prod": [
+  "IKBN-DIP-002"
+ ],
+ "not_in_prod_note": "Held course ids the repo fixtures hold but prod does not (read-only SQL by the lead, 2026-10-29); with UL0481001 / FB0500001 they are the fixture-drift follow-up."
+}

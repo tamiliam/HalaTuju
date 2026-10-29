@@ -2,6 +2,90 @@
 
 All notable changes to this project will be documented in this file.
 
+## Bumi coverage Sprint F1 — public UP_TVET programmes (non-MARA), two new pathways (no migration) - 2026-10-29
+
+Sprint F1 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md` (owner rulings F, decisions.md).
+Review file: `halatuju_api/data/tvet/tvet_new_courses_F1.json`, rebuilt by a test from `uptvet_F1_source.json`.
+
+- **Catalogue re-scraped** (`scrape_uptvet`, 2 pages checked first): 1,006 programmes (Awam 943, Swasta 63;
+  June had 988). Public by family: MARA 665, ILJTM 173, ILKBS 89, KEMAS 7, agriculture 6, fisheries 2, FAMA 1.
+  Kraf, PERDA-TECH, veterinary, MARDI, Peladang and tenun rows of June are no longer listed (not ingested).
+  `scrape_uptvet` / `audit_uptvet` now `record_status('uptvet', ...)`; the card counts Awam as available.
+- **`scrape_uptvet_syarat`**: saves every public course page (943 saved, MARA too for F2, 0 failures) to a
+  gitignored cache; polite (>= 1.5 s), resumable, loud on a page with no requirement card.
+- **Parser** (`tvet_pages.py`, `tvet_syarat.py`, `tvet_subjects.py`): "no formal education" = open; only the SPM
+  option is the academic rule (items in one option count once; "selain di atas" is strict); citizenship,
+  Bumiputera, colour vision, "Bujang" are flags; age, health, reading and the qualified disability wording are
+  TEXT in `remarks`; gender / religion wording, an unknown line, no SPM route, "any N" inside alternatives are
+  flagged. The table wins over its heading (2 headings disagreed; kept in the remarks).
+- **Grouping + ingest** (`tvet_catalogue_rows.py`, `tvet_institutions.py`, `ingest_tvet_courses`, shared code
+  moved first into `catalogue_ingest.py`): of 278 public non-MARA rows, **35 new courses** (39 campus
+  offerings; 32 open, 2 Bumi-only KEMAS), **33 new campus links to 20 held courses** (116 rows prod already
+  links, matched by id_kursus or by the (course, campus) pair), **90 flagged** (75 no SPM route, 7 ambiguous held
+  names, 4 Tahfiz / religion, 2 gender wording, 1 no field rule, 1 held course only in the fixture), **4
+  proposed institutions** (IKBN-022 IKSN AKBG; ILKA-001 FAMA Kota Bharu, ILKA-002 KEMAS Gopeng, ILKA-003 Kolej
+  Pertanian Bukit Tangga), created only with `--create-institutions`. Held rules never change: 63 held courses
+  differ from their pages (`held_rule_differences`, for review).
+- **Doors:** pathways `mara` and `tvet_other` ("Other skills training") from the institution category, in the
+  dashboard chips, search filter + pick-list, scholarship pathway picker, course page chip (`pathway_type` in
+  the requirement payload), RequirementsCard (remarks-only rows render), sort, scholarship families
+  (tertiary, post-SPM), funding estimate (none). i18n en/ms/ta (Tamil via Sol). The Bumi gate is
+  source-type independent: the KEMAS rows are hidden from a non-Bumi student in eligibility and search.
+- **Golden masters:** original 389 = **5,319** identical; a non-Bumi student gains EXACTLY the F1 rows she
+  meets (**1,494**, digest pinned; full **6,813**); bumi=True **5,986 -> 7,578**; STPM **2,025**.
+- **Review round 1:** every line of an academic card (SVM / Tahfiz / open options, text before the first SPM
+  item) is read for gender, religion, citizenship, Bumi, OKU and colour wording: gender / religion or a gate
+  no condition card sets is flagged (SKM titles and trade names like "Pakaian Lelaki" are not gates); a Tahfiz
+  certificate route beside an SPM route stays allowed (tested). `ingest_tvet_courses --apply` refuses an
+  existing or non `TVET-` course id unless `--allow-update` (never for a non `TVET-` id). The Bumi twins' gain
+  is pinned by digest (2,259 over the original). A numbered age line loses its number (TVET-51431 now
+  "Umur 17 hingga 30 tahun."). Owner rulings recorded: today's catalogue only; the qualified disability line is
+  text only. The created set did not move (35 / 39 / 56 / 89 / 4); only TVET-51431's remark text changed.
+- **Review round 2 (prod read-only check):** 22 of the 56 "new" held links already exist in prod (prod's
+  hyperlink carries June's id_kursus), so a link is now held when prod holds the (course, campus) PAIR; 33 are
+  new. `--apply` refuses a link marked new that already exists (unless `--allow-update`), so the rollback list is
+  exact. IKBN-DIP-002 is in the fixture but not in prod: its campus row is flagged and it joins UL0481001 /
+  FB0500001 as fixture drift. Courses, offerings, institutions and the golden masters did not move.
+- **Not done:** MARA (F2; the current rules read 21 of 665 MARA pages, the rest need more condition wording);
+  the 90 flagged rows; the fixture drift (UL0481001 / FB0500001 in prod only, IKBN-DIP-002 in the fixture only); the held-course flag mismatches (`req_malaysian` on 150 rows, `no_colorblind` on 59,
+  `no_disability` on the qualified line) - owner: a SEPARATE small change after F1 ships; F1 leaves held rows
+  untouched.
+
+## Student maintenance Sprint 4b (part 2) — the emails a funded student receives about her results - 2026-10-29
+
+One new table (`student_email_templates`), in the same migration as part 1 (**0188**).
+
+- **Organisation → Settings → Student communications** — the organisation's wording for three emails, each in
+  English, Malay and Tamil: a result is due soon, a result is overdue, and an officer queried a result (with the
+  note). The platform wording applies until the organisation saves its own; "Use the default" brings it back.
+- **Daily jobs:** `results-due-reminders` (from 14 days before the due date, every 7 days — both on Configuration —
+  never while a result awaits review) and `results-overdue-flag` (once per late term: a "Result not submitted" line
+  on her file and one email). Every send is metered to the organisation and comes from its own sender.
+- ⚠ **All three are OFF until `MAINTENANCE_REMINDERS_ENABLED` is set** (Cloud Run env). Create the two Cloud
+  Scheduler jobs (08:00 and 08:30 MYT) at deploy — the System health light expects them.
+- Guide (org admin) updated.
+
+## Student maintenance Sprint 4b (part 1) — when a result is due, and "not submitted" - 2026-10-29
+
+Roadmap Sprint 4b. One new table (`results_expectations`), in migration **0188** (hand-apply DDL with RLS in its
+docstring; migrate BEFORE the deploy).
+
+- **Result terms** per funded student, counted from the day she was funded (`ResultsExpectation`): two a year by
+  default, each due 45 days after the term ends, "not submitted" 14 days after that — all three on Organisation →
+  Settings → Configuration (Student maintenance). No back-dated debt: the schedule starts with the term she is in.
+- An accepted result meets her oldest open term; un-accepting it reopens the term.
+- **Staff standing "Not submitted"**; the Scholars list's **Results overdue** filter and tile are live, with a
+  **Next due** column (sortable); the scholar file names the next due date.
+- **My Bursary** tells her when her next result is due, and says so plainly once the server says she is late.
+- **Review fixes:** terms are stored and chained (a settings or funding-date change never overlaps or back-dates a
+  term); no terms after graduation or "ready to close", and a closed file is never late; a result she sent this term
+  and awaiting review means she is not late — in the standing, the jobs, her page and the list alike; a repeated
+  semester does not use up a term; one overdue line and email per student per run, retried until the email goes;
+  reminders claim their row and give it back on a failed send; no due/overdue emails while she is on hold (owner
+  default, reversible).
+- Daily job `results-overdue-flag` makes and pairs the terms (idempotent). ⚠ Create its Cloud Scheduler entry
+  (08:00 MYT) at deploy — the System health light now expects it.
+
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 
 The owner audited every billed request — 3, 5, 10, 12, 14, 18, 27, 28, 29, 30, 31, 33, 38, 39, 42, 44 — and

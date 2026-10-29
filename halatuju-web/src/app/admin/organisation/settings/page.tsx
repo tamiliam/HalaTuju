@@ -20,11 +20,14 @@ import { canAccess, effectiveRole } from '@/lib/navigation'
 import OrganisationColoursTab from '@/components/admin/OrganisationColoursTab'
 import OrganisationConfigurationTab from '@/components/admin/OrganisationConfigurationTab'
 import OrganisationBillingTab from '@/components/admin/OrganisationBillingTab'
+import StudentCommsTab from '@/components/admin/StudentCommsTab'
 
 // Billing joined on 2026-10-28: where this organisation's invoices are addressed and sent.
 // Its scope is the organisation, so it belongs here rather than on Billing & usage, and the
 // organisation may edit its own (owner ruling) — the server fences it to the caller's own.
-const TABS = ['colours', 'configuration', 'billing'] as const
+// Student communications joined on 2026-10-29 (maintenance S4b): the organisation's wording for the
+// emails its funded students receive about their results.
+const TABS = ['colours', 'configuration', 'studentComms', 'billing'] as const
 type Tab = (typeof TABS)[number]
 
 export default function AdminOrganisationSettingsPage() {
@@ -65,6 +68,11 @@ export default function AdminOrganisationSettingsPage() {
       {tab === 'configuration' && (
         <div role="tabpanel" id="panel-configuration" aria-labelledby="tab-configuration">
           <OrganisationConfigurationTab />
+        </div>
+      )}
+      {tab === 'studentComms' && (
+        <div role="tabpanel" id="panel-studentComms" aria-labelledby="tab-studentComms">
+          <StudentCommsTab />
         </div>
       )}
       {tab === 'billing' && (

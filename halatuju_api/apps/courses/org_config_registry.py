@@ -547,8 +547,31 @@ SETTINGS = {
         'group': 'maintenance', 'unit': 'cgpa', 'min': 0, 'max': 4, 'decimals': 2,
         'default': _default_maintenance_failing_cgpa,
     },
-    # The results-timing keys (terms a year, due days, overdue grace) arrive in S4b WITH their
-    # reader (`ResultsExpectation` + the due / overdue jobs) — a setting nothing reads is a lie.
+    # S4b: WHEN a result is due (`scholarship/results_expectations.py` reads all three). Her terms run
+    # from the day she was funded, `12 / terms_per_year` months each; a term's result is due
+    # `due_days_after_term` after it ends, and is "not submitted" `overdue_grace_days` after that.
+    'results_terms_per_year': {
+        'group': 'maintenance', 'unit': 'terms', 'min': 1, 'max': 4, 'allowed': (1, 2, 3, 4),
+        'default': lambda: 2,
+    },
+    'results_due_days_after_term': {
+        'group': 'maintenance', 'unit': 'days', 'min': 14, 'max': 120,
+        'default': lambda: 45,
+    },
+    'results_overdue_grace_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 0, 'max': 60,
+        'default': lambda: 14,
+    },
+    # S4b: the "your result is due" reminder (`results_expectations.send_due_reminders`): first sent
+    # this many days before the due date, then every `results_reminder_every_days` until it is due.
+    'results_reminder_lead_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 1, 'max': 60,
+        'default': lambda: 14,
+    },
+    'results_reminder_every_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 1, 'max': 30,
+        'default': lambda: 7,
+    },
 }
 
 # ⚠ THE FOUNDATION SIGNATORY IS NOT HERE, AND MUST NOT BE ADDED. The roadmap's Sprint F line said

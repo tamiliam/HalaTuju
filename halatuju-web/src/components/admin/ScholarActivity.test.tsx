@@ -66,3 +66,15 @@ it('cannot save an empty entry', async () => {
   const save = screen.getByRole('button', { name: 'admin.scholars.activity.save' }) as HTMLButtonElement
   expect(save.disabled).toBe(true)
 })
+
+it('an overdue line names the due date as a date, never the raw ISO string (S4b review L10)', async () => {
+  const overdue: api.ScholarActivity = {
+    id: 3, kind: 'system', event: 'results_overdue', body: '', meta: { due_on: '2026-12-15', term_index: 2 },
+    actor_email: '', internal: true, created_at: '2027-01-20T00:00:00Z',
+  }
+  mockApi.getScholarActivity.mockResolvedValue({ count: 1, page: 1, page_size: 50, results: [overdue] })
+  render(<ScholarActivity id={7} token="tok" />)
+  const row = await screen.findByTestId('activity-row')
+  expect(row.textContent).toContain('admin.scholars.event.results_overdue')
+  expect(row.textContent).not.toContain('2026-12-15')
+})

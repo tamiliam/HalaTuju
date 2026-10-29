@@ -20,7 +20,7 @@ from __future__ import annotations
 
 # pathway value (chosen_pathway / intended_pathway / pathways_considered) → estimate
 # category. The category IS the pathway key for the six pathways we estimate; aliases
-# fold in. kkom / iljtm / ilkbs / tvet are intentionally absent → no estimate.
+# fold in. kkom / iljtm / ilkbs / mara / tvet_other / tvet are intentionally absent → no estimate.
 _PATHWAY_MAP = {
     'matric': 'matric', 'matrik': 'matric', 'matrikulasi': 'matric',
     'stpm': 'stpm',
@@ -43,7 +43,8 @@ PATHWAY_ESTIMATES = {
     'pismp':      {'monthly': 180, 'months': 60, 'variable': False, 'practical': True},
 }
 
-# course_id prefixes with a different, un-estimated cost structure → no estimate.
+# course_id prefixes with a different, un-estimated cost structure → no estimate. 'tvet' also covers
+# the UP_TVET programmes' TVET-<id_kursus> ids (Bumi Sprint F1), whatever their name says ("Diploma").
 _NO_ESTIMATE_ID_PREFIXES = ('kkom', 'ijtm', 'iljtm', 'ikbn', 'iktbn', 'ilkbs', 'tvet')
 # course_id prefixes that pin an estimate category.
 _PROGRAMME_ID_PREFIXES = (

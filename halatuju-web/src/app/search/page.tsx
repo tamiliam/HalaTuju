@@ -324,6 +324,8 @@ function SearchPageInner() {
     poly: 'Politeknik',
     iljtm: 'ILJTM',
     ilkbs: 'ILKBS',
+    mara: 'MARA',
+    tvet_other: 'Latihan Kemahiran',
     kkom: 'Kolej Komuniti',
     matric: 'Kolej Matrikulasi',
     stpm: 'Tingkatan 6',

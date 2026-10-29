@@ -159,6 +159,29 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    course_requirements / course_institutions WHERE course_id IN (D2)`, then `DELETE FROM courses WHERE
    course_id IN (D2)`, then `DELETE FROM institutions WHERE institution_id = 'MARA-BPT'` (only after its
    course links are gone), then a re-revision. The D2 code may stay deployed (it shows only rows that exist).
+   **Bumi F1 order (no migration; UP_TVET public, non-MARA):** read-only SQL first (below) → push (api +
+   web) → CONFIRM the new api AND web revisions both serve 100% (an old api has no `mara` / `tvet_other`
+   pathway, so the ILKA-* rows would show as plain "tvet"; an old web has no chips for them) →
+   `ingest_tvet_courses --file data/tvet/tvet_new_courses_F1.json --create-institutions` (dry run: expect 4
+   `CREATE INSTITUTION` (IKBN-022, ILKA-001..003), 35 `CREATE TVET-…`, 0 UPDATE, 33 `LINK` lines, "116 already
+   held", 90 flagged, no "marked new but already exists", and no "Refusing") → the same with `--apply` (it refuses any `courses[]` id that already
+   exists or is not `TVET-…`; a reviewed RE-run of the same file needs `--allow-update`) → a re-revision so the frame reloads. A held
+   course (IJTM-* / IKBN-*) only GAINS campus links; its row and rule are never written. Read-only SQL before
+   `--apply`: none of the 35 ids in `courses`; none of IKBN-022 / ILKA-001..003 in `institutions`; every
+   IJTM-001..034 / IKBN-001..021 present; `SELECT count(*) FROM course_institutions WHERE (course_id,
+   institution_id) IN (F1LINKS)` = 0 (F1LINKS = the 33 `held_links` with `already_linked: false`; a
+   new link prod already holds makes `--apply` refuse, so this list is exactly what F1 added — review
+   2026-10-29 found 22 prod pairs whose hyperlink carries June's id_kursus, now marked held). BEFORE ANY
+   ROLLBACK, read-only: `SELECT id, status FROM scholarship_applications WHERE chosen_programme->>'course_id'
+   IN (F1) OR EXISTS (SELECT 1 FROM jsonb_array_elements(top_choices) e WHERE e->>'course_id' IN (F1))` and
+   `SELECT count(*) FROM api_student_profiles WHERE chosen_programme->>'course_id' IN (F1)`; non-zero → the
+   owner decides first. ROLLBACK, one transaction, F1 = the 35 `courses[].course_id` of the file:
+   `DELETE FROM saved_courses / admission_outcomes / course_tags / courses_career_occupations /
+   course_requirements / course_institutions WHERE course_id IN (F1)`, then `DELETE FROM course_institutions
+   WHERE (course_id, institution_id) IN (F1LINKS)`, then `DELETE FROM courses WHERE course_id IN (F1)`, then
+   `DELETE FROM institutions WHERE institution_id IN ('IKBN-022','ILKA-001','ILKA-002','ILKA-003')` (only
+   after their links are gone), then a re-revision. The F1 code may stay deployed. F2 (MARA) = the same
+   command on a file built with `--families mara` (`MARA-NNN` institutions, category MARA).
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.
@@ -1107,11 +1130,16 @@ git-pruned, no junctions, three harmless files).
 
 ---
 
-**Student maintenance Sprints 1–3 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
-S3 `c007883e`; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` / `-s2.md` / `-s3.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4, SPLIT: 4a results + standing (slip upload,
-review fields, `standing.py`, admin Results tab, sponsor readers on accepted results only; migration), then 4b the
-results-due/overdue crons + student email templates.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+**Student maintenance Sprints 1–4b are LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188` (applied by hand 2026-10-29
+21:40 UTC, api 01193-58g); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`,
+`retrospective-2026-10-30-maintenance-s4b.md`; roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`).
+NEXT = Sprint 5: money summary (admin Money tab: paid, remaining, last releases, spending by category) + the
+Contract tab (admin + student; signed PDF by signed URL, else "No contract on file").** Design of record:
+https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- ⚠ **OWNER PENDING (S4b):** create the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and
+  `results-due-reminders` (08:30 MYT) — the System health light expects both; `MAINTENANCE_REMINDERS_ENABLED`
+  stays OFF until the owner has read the en/ms/ta wording on Organisation → Settings → Student communications.
 - ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
   `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
 - Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file
@@ -1120,7 +1148,14 @@ results-due/overdue crons + student email templates.** Design of record: https:/
 - Student: `/scholarship/bursary` (`/scholarship/in-programme` redirects) from `scholarship/bursary/summary/` —
   `support_paused` only, never a sub-state; the header link is a `localStorage` hint, not a gate.
 - ⚠ **MIGRATE FIRST for anything that writes `student_activity`**; deploy the api before the web.
-- `can_record_results` stays active/maintenance until 4a widens it with results review.
+- Results (S4a): recorded on the predicate WITH a portal-uploaded slip (owner ruling: emailed docs not accepted;
+  no staff attach path); ONLY an accepted result counts — standing (`standing.py`, org `maintenance` settings) and
+  every sponsor reader go through `results_review.accepted` (per-function doors fence in `test_results_review.py`).
+  A slip is evidence: never deletable, replaceable, listed with her documents or re-read by a sweep.
+- Due dates (S4b): `results_expectations.py` — terms CHAIN from the stored rows (first term from the funding date,
+  no back-dated debt); ONE late rule (`late`) for standing, list, file, hub and both jobs; student emails
+  (`student_comms.py`, defaults in code, org rows only when edited) are all dark behind `MAINTENANCE_REMINDERS_ENABLED`
+  and never go to a student on hold.
 
 ---
 
@@ -1128,7 +1163,8 @@ results-due/overdue crons + student email templates.** Design of record: https:/
 `docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d2.md`). All 150 Sprint A SPM courses are in (136
 Bumi-only, 14 open Islamic) plus 2 Bumi-only matric tracks. NEXT in that arc = Sprint F:** UP_TVET ingest incl.
 MARA (~544 rows in `data/tvet/uptvet_latest.csv`; parse the public `info_url` "Syarat Kursus", the Bumi flag
-from "Taraf Bumiputera"). Follow-ups: the 2 prod rows the fixture lacks (UL0481001, FB0500001); college lists
+from "Taraf Bumiputera"). Follow-ups: fixture drift — the 2 prod rows the fixture lacks (UL0481001, FB0500001) and
+IKBN-DIP-002, which the fixture holds and prod does not (F1 flags its campus row); college lists
 for the 2 Bumi matric tracks (then offer them in the pickers). The Bumi answer stays course-guide only.
 Adversarial review before push.
 

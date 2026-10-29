@@ -9161,5 +9161,600 @@
       "description_en": "",
       "field_key": "undang-undang"
     }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-10052",
+    "fields": {
+      "course": "Sijil Teknologi Binaan Berasaskan Kayu",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Dalam kursus ini, pelajar akan diajar menyelenggara dan menggunakan pelbagai jenis mesin kayu, membuat tanggam, memasang struktur kayu seperti rangka bumbung, lantai kayu, rangka pintu serta dinding, penerapan batu bata dan kerja paip.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-10754",
+    "fields": {
+      "course": "Diploma Teknologi Mekanikal (Pemprosesan Bahan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program selama 3 tahun ini disediakan khusus untuk pengajaran dan pembelajaran dalam teknologi mekanikal dengan pengkhususan kepada bidang berkaitan bahan seperti Program berorientasikan kemahiran ini dijangka akan menyediakan graduan yang berkebolehan dan profesional dalam menguasai pelbagai aspek teori dan amali khususnya dalam bidang bahan. Antara pengetahuan dan kemahiran yang dipelajari adalah merangkumi konsep bahan, teknologi pemprosesan dan pengeluaran produk berasaskan bahan seramik termaju, polimer, komposit dan juga teknologi fabrikasi semikonduktor. Para pelajar juga akan didedahkan kepada rekabentuk bahan dan produk, rekabentuk dan fabrikasi acuan, penyelenggaraan mesin dan asas baikpulih komponen, metrologi dan pengukuran, kawalan dan jaminan kualiti produk serta pengujian/pencirian dan analisa bahan dan produk. Di samping itu, para pelajar bukan sahaja dilengkapi dengan pengetahuan teknikal, malah mereka akan didedahkan dengan kemahiran insaniah bagi menyediakan bakal graduan sebelum memasuki alam pekerjaan atau menyambung pelajaran ke peringkat yang lebih tinggi samada di dalam mahupun ke luar negara.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-14384",
+    "fields": {
+      "course": "Sijil Teknologi Awam (Landskap Pembinaan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Bidang pembinaan lanskap adalah suatu disiplin yang berkaitan dengan perancangan, pembangunan, pemeliharaan, dan pengelolaan ruang luar yang berfungsi untuk meningkatkan kualitas lingkungan dan estetika. Ini melibatkan penciptaan ruang terbuka, taman, taman bermain, taman kota, dan elemen-elemen lain dalam lingkungan luar yang dirancang untuk kepentingan manusia dan lingkungan alam.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-14711",
+    "fields": {
+      "course": "Diploma Teknologi Elektronik (Elektronik Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 2,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program sambung Tahap dari Sijil ke Diploma Kemahiran Tahap 4 ini direka untuk menyediakan pelajar dengan",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-14738",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Multimedia (Multimedia Interaktif)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Multimedia Interaktif menjadikan sumber maklumat digital lebih menyeronokkan dan interaktif untuk dipelajari.Persembahan interaktif digital memaparkan kandungan teks, grafik, audio, animasi dan video untuk mendidik topik tertentu melalui pelbagai platform melalui peranti dalam talian atau luar talian. Hasil daripada persembahan multimedia",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-18170",
+    "fields": {
+      "course": "SIJIL PENGELUARAN MAKANAN (Pemprosesan) (TAHAP 3)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direka khas untuk membekalkan pelatih dengan kemahiran dan pengetahuan holistik dalam menguruskan keseluruhan rantaian pengeluaran makanan. Ia merangkumi tahap pengurusan bahan mentah, pesanan pengeluaran, penyelenggaraan jentera, pemprosesan produk makanan sedia dimakan (RTE), kawalan kualiti, hingga kepada penyeliaan tenaga kerja secara efektif mengikut piawaian industri.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-18176",
+    "fields": {
+      "course": "Sijil Operasi Jualan dan Pemasaran Produk Berasaskan Pertanian (Tahap 3)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Menyelia aktiviti penyelidikan",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30679",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Terapi Sukan",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Sains Sukan",
+      "field": "Sains Sukan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelajar akan mempelajari komponen-komponen bagi penyediaan dan penjagaan pusat rawatan terapi. Selain dari itu, kursus ini menawarkan beberapa elemen terapi sukan yang lain antaranya konsep asas Anatomi dan Fisiologi manusia, kaedah-kaedah meningkatkan prestasi atlet melalui terapi, kaedah urutan sukan dan urutan umum, kaedah-kaedah mengelak kecederaan dan rawatan awal kecederaan sukan, kaedah meningkatkan keupayaan fizikal melalui latihan bebanan, mengelola ujian kecergasan berlandaskan kesihatan dan berlandaskan prestasi serta yang terakhir adalah pengurusan professional.",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31450",
+    "fields": {
+      "course": "Sijil Operasi Pengeluaran Tanaman (Tahap 3)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Sijil Kemahiran Malaysia (SKM) Operasi Pengeluaran Tanaman merupakan program sijil kemahiran Tahap 3 yang memberi penekanan kepada pembangunan kompetensi dalam penyeliaan aktiviti pengeluaran tanaman secara sistematik, produktif dan berorientasikan teknologi.",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33453",
+    "fields": {
+      "course": "Sijil Teknologi Awam (Pengendalian Kren Menara)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Pengendalian Kren Menara adalah satu kursus yang diiktiraf oleh JKKP.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33459",
+    "fields": {
+      "course": "Sijil Teknologi Awam (Juruperancah Asas)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Awam menyediakan pelajar untuk kerjaya di dalam industri kejuruteraan awam. Pelajar yang berketerampilan berpeluang menjadi penyelia atau pemeriksa pemasangan perancah berlesen di tapak pembinaan yang memerlukan kepakaran seperti pembinaan jambatan, empangan, bangunan pencakar langit, pelantar minyak dan di pelabuhan di serata dunia.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34046",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Pembuatan Makanan (Pemprosesan)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini direka untuk mendedahkan peserta dengan prinsip-prinsip penghasilan makanan separa siap atau sedia dimasak (Ready-To-Cook (RTC)), siap dimasak atau dimakan (Ready-To-Eat (RTE)) serta sedia diminum (Ready-To-Drink (RTD)). Kurikulum latihan mengambil masa selama 2 tahun 3 bulan dimana peserta akan dilengkapkan dengan pengetahuan berkaitan pengendalian bahan mentah, pengendalian penyediaan pesanan pengeluaran produk, penyelarasan penyelenggaraan mesin dan perlatan pemprosesan makanan, kawalan kualiti pemprosesan makanan, penyeliaan personel pemprosesan makanan dan penghasilan produk RTC, RTE dan RTD.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34061",
+    "fields": {
+      "course": "Servis Kereta Elektrik dan Hibrid",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menekankan kemahiran dalam kerja-kerja servis kenderaan bermotor (automotif) termasuk sistem enjin, sistem casis, sistem transmisi dan lain-lain. Pelajar-pelajar juga akan dilengkapkan dengan kemahiran pengurusan, penyeliaan dalam industri automotif. Setelah tamat kursus pelajar mesti boleh : -",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-40513",
+    "fields": {
+      "course": "Sijil Teknologi Automotif (Automasi Industri) (Diploma Integrasi)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 2,
+      "headline": "",
+      "headline_en": "",
+      "description": "Dalam kursus ini, pelajar akan mempelajari sistem hidraulik dan elektro-hidraulik, pneumatik dan elektro-pneumatik, Programmable Logic Control (PLC), sistem automasi industri dan perkakas serta perisian komputer industri dan reka bentuk automasi.",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43957",
+    "fields": {
+      "course": "Sijil Teknologi Sukan (Operasi Perkhidmatan Kedi Golf)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sains Sukan",
+      "field": "Sains Sukan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Bidang Operasi Pembantu Pemain Golf (Kedi) kod kursus MWA-2-1515 merujuk kepada khidmat sokongan profesional yang diberikan oleh seorang kedi kepada pemain golf semasa permainan berlangsung. Ia adalah satu bidang khusus dalam industri sukan golf yang melibatkan pengetahuan teknikal permainan golf, etika kerja, kemahiran komunikasi dan pengendalian peralatan permainan golf khususnya membantu meningkatkan prestasi permainan pemain golf.",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-44205",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Elektrik (Juruteknik Elektrik & PW4)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "1.Dalam kursus ini pelajar akan diajar tentang kaedah- kaedah pendawaian, memasang, mengendali dan menguji pendawaian satu dan tiga fasa (domestik dan industri).",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45214",
+    "fields": {
+      "course": "Sijil Penyeliaan Operasi Akuakultur Air Tawar",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Sijil Kemahiran Malaysia (SKM) Penyeliaan Operasi Akuakultur Air Tawar merupakan program kemahiran yang memberikan pengetahuan dan kemahiran kepada pelatih dalam melaksanakan pengurusan operasi penternakan ikan air tawar secara terancang, sistematik dan mengikut amalan kerja yang ditetapkan.",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45301",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Fesyen dan Pakaian (Jahitan Pakaian Lelaki)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Memberi latihan kemahiran yang berkualiti dan berterusan bagi memenuhi kehendak dan peluang pekerjaaan mahir kepada belia di dalam bidang Jahitan Pakaian Lelaki.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46249",
+    "fields": {
+      "course": "Operasi Jualan dan Pemasaran Produk Berasaskan Pertanian",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pusat Bertauliah bererti penyedia latihan kemahiran, samada institusi atau tempat kerja (workplace) yang telah diluluskan oleh JPK untuk mengendali kemahiran dan menawarkan Persijilan Kemahiran Malaysia bagi bidang dan tahap kemahiran tertentu berdasarkan NOSS",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46693",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Mekanikal (Fabrikasi Vesel)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelajar akan mempelajari bidang pembentukan bahan logam bagi peralatan bertekanan tinggi (fabrikasi vesel) yang digunakan dalam industri oil & gas serta industri pembuatan bahan logam.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47045",
+    "fields": {
+      "course": "Jahitan Pakaian Lelaki",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "KURSUS INI MEMBERI PENDEDAHAN KEPADA PARA PESERTA MENGENAI ASAS JAHITAN PAKAIAN LELAKI YANG MELIPUTI TEKNIK PEMBUATAN PAKAIAN KASUAL, PAKAIAN PEJABAT, PAKAIAN TRADISIONAL, PAKAIAN TRADISIONAL KONTEMPORARI, PAKAIAN SUKAN DAN PAKAIAN SERAGAM",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47051",
+    "fields": {
+      "course": "Penyediaan dan Penghasilan Makanan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "KURSUS INI DIREKA UNTUK MENDEDAHKAN PARA PESERTA KEPADA TEKNIK - TEKNIK ASAS MEMASAK YANG MELIBATKAN PRACTICE KITCHEN HYGIENE AND SAFETY PROCEDURE, PERFORM VEGETABLE AND POTATO CUTS, PERFORM COOKING METHODS, PRODUCE STOCK, PRODUCE THICKENING AGENTS, PRODUCE MOTHER SAUCE, PRODUCE SOUP (BASIC), PRODUCE VEGETABLE DISHES, PRODUCE SALADS, PRODUCE APPERTIZER, PRODUCE SANDWICH, PRODUCE BREAKFAST DISHES DAN PRODUCE COUPE DESSERT.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47129",
+    "fields": {
+      "course": "Sijil Teknologi Percetakan Digital",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Produksi Percetakan Digital Tahap 3 direka khas untuk melahirkan individu yang mahir dalam dunia percetakan moden berasaskan teknologi digital. Pelajar akan didedahkan kepada keseluruhan proses pengeluaran cetakan digital — daripada penyediaan warna, pengendalian mesin, kawalan mutu, hingga penyelenggaraan peralatan.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47405",
+    "fields": {
+      "course": "Sijil Teknologi Elektronik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kaedah latihan/ kursus peringkat sijil adalah berteraskan kemahiran secara teori dan amali. Dalam kursus ini, pelajar akan diajar berkaitan asas elektronik, sistem analog dan digital, programmable logic controller (PLC), mikro pemproses dan penghasilan projek elektronik.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47423",
+    "fields": {
+      "course": "Lukisan Pelan Senibina",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini melatih belia-belia lepasan sekolah dengan kemahiran dalam bidang lukisan senibina bagi membolehkan mereka mendapat pekerjaan di sektor industri, kerajaan atau berkerja sendiri sejajar dengan usaha kerajaan melahirkan lebih ramai modal insan yang berkemahiran. Pelajar akan didedahkan kepada teknik menghasilkan lukisan kerja yang mematuhi undang-undang Kecil Bangunan Seragam yang boleh dijadikan rujukan dalam proses rekabentuk sesebuah bangunan.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48398",
+    "fields": {
+      "course": "Pelaksanaan Kawalan Proses",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Kimia & Proses",
+      "field": "Kimia & Proses",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Dalam kursus ini, pelajar akan diajar pemeriksaan paparan grafik, mengenalpasti bahan-bahan pengukuran, aktiviti asas instrumentasi, kawalan, menganalisa loop, asas litar elektronik dan litar logik. Mengawal dan menganalisa parameter proses seperti aliran, paras, suhu dan tekanan dengan menggunakan sistem elektronik, pneumatik dan hidraulik. Menyelenggara sistem kawalan supaya proses sentiasa stabil.",
+      "description_en": "",
+      "field_key": "kimia-proses"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48896",
+    "fields": {
+      "course": "Penyeliaan Ladang Ruminan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Sijil Kemahiran Malaysia (SKM) Tahap 3 - Penyeliaan Ladang Ruminan merupakan program kemahiran yang menjalankan aktiviti operasi ladang, penyelenggaraan peralatan dan kemudahan sistem ternakan di samping mengendalikan program kesihatan, pembiakan, penyembelihan dan memasarkan hasil ladang serta membentuk keusahawanan",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49538",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Mekanikal (Pemesinan CNC)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Sijil Lanjutan Teknologi Mekanikal (Pemesinan CNC) merupakan program pendidikan dan latihan teknikal yang memberi penekanan kepada penguasaan pengetahuan serta kemahiran dalam bidang pemesinan berkomputer menggunakan teknologi Computer Numerical Control (CNC). Kursus ini direka bentuk bagi memenuhi keperluan industri pembuatan yang semakin berkembang dan memerlukan tenaga kerja berkemahiran tinggi dalam pengendalian mesin serta proses pengeluaran berasaskan teknologi moden.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49856",
+    "fields": {
+      "course": "Diploma Teknologi Mekanikal (Perekaan Alat Tekan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pengenalan kepada pengoperasian mesin seperti mesin konvensional, pemesinan dan CNC meliputi mesin canai permukaan, mesin canai cylinder, CNC mesin canai, konvensional larik mesin dan CNC, konvensional mesin kisar dan CNC, mesin EDM Die Sinking serta mesin EDM wirecut",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-50324",
+    "fields": {
+      "course": "Sijil Teknologi Elektronik (Diploma Integrasi)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Teknologi Elektronik dibangunkan untuk menyediakan pelajar dengan pengetahuan dan kemahiran asas yang kukuh dalam bidang elektronik dan teknik kawalan berasaskan kepada penggunaan teknologi elektronik terutama dalam bidang pengeluaran, pengukuran dan baikpulih. Disamping itu, pelajar juga akan dilatih untuk membuat pengujian, analisa kerosakan dan baikpulih peralatan elektronik, membuat pendawaian elektrik 1 fasa dan menjalankan pengujian litar, merekabentuk, menganalisa litar elektronik dan membina papan litar bercetak (PCB), mengunakan PLC, sensor dan sistem hidraulik & pneumatik untuk pengawalan sistem automasi kompleks, membuat pengaturcaraan dan merekabentuk sistem berasaskan microprocessor dan microcontroller, menjalankan ujikaji menggunakan sistem pengukuran berautomatik (automatic measuring system) melalui pengaturacaraan berasaskan objek/grafik dan menjalankan latihan amali yang melibatkan sistem telekomunikasi.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-50327",
+    "fields": {
+      "course": "Sijil Teknologi Mekatronik (Diploma Integrasi)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Sijil Teknologi Mekatronik",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-51212",
+    "fields": {
+      "course": "Sijil Teknologi Automotif (Kenderaan Elektrik Hibrid)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus perkhidmatan pembaikan-kenderaan ringan memberi latihan dalam penyelenggaraan dan pembaikan kenderaan ringan seperti kereta dan kenderaan kecil.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-51431",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Fotografi",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pengenalan Kursus Fotografi",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-52559",
+    "fields": {
+      "course": "SIJIL TEKNOLOGI AUTOMOTIF SERVIS (KENDERAAN HYBRID) (Diploma Integrasi)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini direka khas untuk melahirkan tenaga kerja mahir yang kompeten dalam menghadapi revolusi kenderaan hijau melalui pendedahan komprehensif terhadap sistem hibrid dan kenderaan elektrik (EV). Sepanjang kursus ini, pelajar akan menguasai kemahiran praktikal dan teori kritikal merangkumi diagnostik bateri voltan tinggi, pengurusan motor elektrik, sistem pengecasan, serta pematuhan SOP keselamatan voltan tinggi yang ketat. Graduan kursus ini bukan sahaja bersedia memenuhi permintaan tinggi industri automotif moden, malah berupaya menjadi perintis teknisyen EV yang berdaya saing di peringkat tempatan dan global.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-53270",
+    "fields": {
+      "course": "Sijil Lanjutan Teknologi Maklumat (Rangkaian Komputer)",
+      "wbl": false,
+      "level": "Sijil Lanjutan",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Bagi jurusan ini, pelajar-pelajar akan dilatih bagi menguasai Kemahiran Rangkaian Komputer, bermula dengan asas mengenali peralatan, memasang dan membaik pulih Komputer Peribadi sehingga kepada mengawal server, termasuk menghubungkan dan mengenalpasti kerosakan pada Rangkaian Komputer. Pelajar akan didedahkan kepada sistem dan peralatan bagi sistem rangkaian Fiber Optik serta sistem rangkaian tanpa wayar (Wireless).",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
   }
 ]

@@ -62,7 +62,8 @@ def coverage_snapshot():
     uptvet_available = None
     row = CourseDataStatus.objects.filter(key=UPTVET).first()
     if row and isinstance(row.summary, dict):
-        uptvet_available = row.summary.get('total') or row.summary.get('scraped')
+        # Public (Awam) programmes are the ingest scope (owner ruling F); older rows carry only 'total'.
+        uptvet_available = row.summary.get('awam') or row.summary.get('total') or row.summary.get('scraped')
 
     tvet_have = spm_by_source.get('tvet', 0)
     uptvet_gap = (uptvet_available - tvet_have) if isinstance(uptvet_available, int) else None

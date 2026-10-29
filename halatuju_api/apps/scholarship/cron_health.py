@@ -51,6 +51,8 @@ EXPECTED_CADENCE = {
     'lapse-expired-offers': DAILY,           # 09:00
     'purge-referrals': DAILY,                # 03:00
     'query-reminders': DAILY,                # 09:00
+    'results-due-reminders': DAILY,          # 08:30 — ⚠ NEW in maintenance S4b: create the Scheduler job
+    'results-overdue-flag': DAILY,           # 08:00 — ⚠ NEW in maintenance S4b: create the Scheduler job
     'review-nudges': DAILY,                  # 09:00
     'spending-ingest': DAILY,                # 07:00
     'sync-vircle-sheet': DAILY,              # 07:05

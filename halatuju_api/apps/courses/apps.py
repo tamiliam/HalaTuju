@@ -109,6 +109,7 @@ class CoursesConfig(AppConfig):
         sees `requirements_df` set sees every map that goes with it."""
         import pandas as pd
         from .models import CourseRequirement, CourseTag, Institution
+        from .tvet_families import TVET_CATEGORY_PATHWAY
 
         logger.info("Loading course data from database...")
 
@@ -168,12 +169,13 @@ class CoursesConfig(AppConfig):
         from .models import Course, CourseInstitution
         course_pathway_map = {}
 
-        # Map institution_id → category for TVET lookups
+        # Map institution_id → TVET pathway via the institution's category (Bumi Sprint F1:
+        # MARA -> 'mara', every other public body's 'TVET' -> 'tvet_other'; tvet_families.py).
         inst_cat_qs = Institution.objects.filter(
-            category__in=['ILJTM', 'ILKBS']
+            category__in=list(TVET_CATEGORY_PATHWAY)
         ).values('institution_id', 'category')
         inst_categories = {
-            row['institution_id']: row['category'].lower()
+            row['institution_id']: TVET_CATEGORY_PATHWAY[row['category']]
             for row in inst_cat_qs
         }
 

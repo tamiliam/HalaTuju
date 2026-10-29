@@ -414,3 +414,41 @@ class SponsorTermsAcceptance(models.Model):
 
     def __str__(self):
         return f'sponsor={self.sponsor_id} {self.terms_id} ({self.basis})'
+
+
+class StudentEmailTemplate(models.Model):
+    """An ORGANISATION's own wording for one email a funded student receives, in one language
+    (student maintenance S4b, 2026-10-29).
+
+    Unlike the partner and sponsor families (one platform row per kind), this family is PER
+    ORGANISATION: a student hears from the organisation that funds her, in its voice. A row exists
+    only where the organisation changed the wording; otherwise `student_comms.DEFAULTS` applies, so
+    nothing is seeded. Kinds, tokens and defaults live in `student_comms`; the send is switched by
+    `MAINTENANCE_REMINDERS_ENABLED`, not by a row.
+    """
+    KIND_CHOICES = [
+        ('results_due', 'A result is due soon'),
+        ('results_overdue', 'A result is overdue'),
+        ('result_queried', 'An officer queried a result'),
+    ]
+    LANGUAGE_CHOICES = [('en', 'English'), ('ms', 'Malay'), ('ta', 'Tamil')]
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.CASCADE, related_name='student_email_templates')
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES)
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'student_email_templates'
+        ordering = ['organisation_id', 'kind', 'language']
+        constraints = [
+            models.UniqueConstraint(fields=['organisation', 'kind', 'language'],
+                                    name='student_email_template_org_kind_lang_uniq'),
+        ]
+
+    def __str__(self):
+        return f'{self.kind}/{self.language} org={self.organisation_id}'

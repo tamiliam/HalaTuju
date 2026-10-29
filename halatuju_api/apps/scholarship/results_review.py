@@ -129,6 +129,18 @@ def review(result, *, decision, note='', by_email=''):
         activity.log_event(result.application, EVENT_RESULT_REVIEWED, actor_email=by_email, meta={
             'result_id': result.id, 'semester': result.semester, 'old': old, 'new': decision,
             'cgpa': str(result.cgpa) if result.cgpa is not None else None})
+        # S4b: an accepted result meets her oldest open result term; one no longer accepted
+        # reopens the term it met (`results_expectations`).
+        from . import results_expectations, student_comms
+        if decision == ACCEPTED:
+            results_expectations.reconcile(result.application)
+        elif old == ACCEPTED:
+            results_expectations.unlink(result)
+        if decision == QUERIED:
+            # S4b: she is told by email too (the organisation's `result_queried` wording; dark
+            # while `MAINTENANCE_REMINDERS_ENABLED` is off — she still sees the note on her page).
+            student_comms.send_after_commit(result.application, 'result_queried',
+                                            semester=result.semester or '—', note=text)
     return result
 
 
