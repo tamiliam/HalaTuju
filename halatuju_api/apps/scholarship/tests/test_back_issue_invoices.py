@@ -182,16 +182,20 @@ class TestTheIssueDateBounds(TestCase):
         """⚠ `datetime` IS A SUBCLASS OF `date`, so a plain isinstance check admits one — and a
         timestamp carries a zone, which is exactly what TD-209 keeps out of a date field. Python
         3.11's `date.fromisoformat` also parses the string form, so both shapes are tested."""
+        # ⚠ `subTest(bad=repr(bad))`, never the object. The deploy gate runs pytest under xdist,
+        # which serialises subTest parameters across worker processes — a `datetime` and a bare
+        # `object()` cannot be pickled that way, so these two tests passed here and FAILED the
+        # gate. A label is for reading; it should never be a live object.
         for bad in (datetime(2026, 8, 15, 23, 30, tzinfo=dt_timezone.utc),
                     '2026-08-15T23:30:00+00:00', '2026-08-15 23:30'):
-            with self.subTest(bad=bad):
+            with self.subTest(bad=repr(bad)):
                 with self.assertRaises(invoicing.InvoicingError) as caught:
                     invoicing.issue_date_for('2026-07', bad, OCT_28)
                 self.assertEqual(caught.exception.code, 'bad_issue_date')
 
     def test_a_number_is_refused(self):
         for bad in (20260815, 1, [], {}, object()):
-            with self.subTest(bad=bad):
+            with self.subTest(bad=repr(bad)):      # see the note above: xdist must serialise it
                 with self.assertRaises(invoicing.InvoicingError) as caught:
                     invoicing.issue_date_for('2026-07', bad, OCT_28)
                 self.assertEqual(caught.exception.code, 'bad_issue_date')
