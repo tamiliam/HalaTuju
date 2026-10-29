@@ -14,7 +14,9 @@ from apps.courses.engine import StudentProfile, check_eligibility
 from apps.courses.spm_count_once import count_once_failure
 from apps.courses.tvet_pages import card_text, read_page
 from apps.courses.tvet_subjects import tvet_subject_keys
-from apps.courses.tvet_syarat import parse_requirements
+import copy
+
+from apps.courses.tvet_syarat import academic_gate_hits, parse_requirements
 
 PAGES = Path(__file__).resolve().parent / 'fixtures' / 'tvet_pages'
 
@@ -191,3 +193,54 @@ class TestSubjectNames:
             assert found and len(found) == 1   # the MOHE table's '&' spelling, folded
         else:
             assert found == keys
+
+
+class TestAcademicCardGates:
+    """Review 2026-10-29: a gate written INSIDE an academic option is still a gate. Every line of every
+    option is read (an SVM / Tahfiz / open option too, and the text before an option's first item)."""
+
+    def test_gender_and_disability_lines_in_an_academic_card_are_flagged(self):
+        reasons = parsed('52502')['unparsed']   # "Temuduga bagi: 1. Perempuan 2. Orang Kurang Upaya ..."
+        assert any(u.startswith('gender condition inside academic card') for u in reasons)
+        assert any(u.startswith('no_disability condition inside academic card') for u in reasons)
+
+    def _with_line(self, kid, option_index, line):
+        p = copy.deepcopy(page(kid))
+        card = next(c for c in p['cards'] if 'AKADEMIK' in c['title'].upper())
+        card['options'][option_index]['body'].insert(0, ('text', line))
+        return parse_requirements(p)
+
+    def test_religion_in_a_non_spm_option_is_flagged(self):
+        r = self._with_line('18170', 2, '1. beragama Islam')   # the Tahfiz route's own option
+        assert any(u.startswith('religion condition inside academic card') for u in r['unparsed'])
+
+    def test_gender_in_the_open_option_is_flagged_although_the_card_is_open(self):
+        r = self._with_line('18170', 0, 'Lelaki sahaja')
+        assert any(u.startswith('gender condition inside academic card') for u in r['unparsed'])
+
+    def test_text_before_the_first_spm_item_is_read(self):
+        r = self._with_line('33768', 0, 'Calon Bumiputera Sahaja')
+        assert any(u.startswith('req_bumiputera condition inside academic card') for u in r['unparsed'])
+
+    def test_a_citizenship_line_is_allowed_when_the_page_sets_it_elsewhere(self):
+        r = self._with_line('18170', 1, 'Warganegara Malaysia')
+        assert not r['unparsed'] and r['fields']['req_malaysian']
+
+    def test_the_qualified_disability_sentence_is_text_never_a_gate(self):
+        line = ('Calon tidak mempunyai ketidakupayaan penglihatan, pendengaran, fizikal atau mental yang '
+                'menyukarkan kerja-kerja amali.')
+        r = self._with_line('18170', 1, line)
+        assert not r['unparsed'] and not r['fields']['no_disability']
+        assert academic_gate_hits({'title': '', 'subtitle': '', 'options': [
+            {'heading': line, 'body': []}]}) == []
+
+    @pytest.mark.parametrize('kid', ['18170'])
+    def test_a_tahfiz_certificate_route_beside_an_spm_route_is_allowed(self, kid):
+        r = parsed(kid)   # options: no formal education ATAU SPM ATAU a Sijil Tahfiz Malaysia
+        tahfiz = [o for c in page(kid)['cards'] for o in c['options'] if 'Tahfiz' in o['heading']]
+        assert tahfiz and not r['unparsed'] and r['open']
+
+
+class TestAgeText:
+    def test_a_numbered_age_line_loses_its_number(self):
+        assert parsed('51431')['fields']['remarks'].startswith('Umur 17 hingga 30 tahun.')

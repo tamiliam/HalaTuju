@@ -1,5 +1,6 @@
 """
-Coverage inventory for the UP_TVET catalogue (reads a scrape_uptvet CSV; NO DB writes).
+Coverage inventory for the UP_TVET catalogue (reads a scrape_uptvet CSV). Its only DB write is the
+dashboard's UP_TVET status row (`record_status('uptvet', ...)`); the catalogue itself is never written.
 
 Answers the questions a future TVET ingest needs before touching the eligibility engine:
   - How many programmes does the public UP_TVET catalogue actually hold?
@@ -76,7 +77,7 @@ def coverage_gap(rows, existing_inst_names):
 
 
 class Command(BaseCommand):
-    help = 'Coverage inventory for a UP_TVET catalogue CSV (no DB writes)'
+    help = 'Coverage inventory for a UP_TVET catalogue CSV (writes only the UP_TVET status row)'
 
     def add_arguments(self, parser):
         parser.add_argument('--csv', type=str, required=True, help='Path to a scrape_uptvet CSV')

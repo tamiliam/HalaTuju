@@ -1661,7 +1661,7 @@
     "single": false,
     "complex_requirements": null,
     "subject_group_req": null,
-    "remarks": "1. 17 hingga 30 tahun."
+    "remarks": "Umur 17 hingga 30 tahun."
    },
    "offerings": [
     {
@@ -9541,7 +9541,9 @@
    "campus": "KOLEJ PERIKANAN SULTAN NAZRIN MUIZZUDDIN SHAH LUMUT",
    "held_course": null,
    "reasons": [
-    "item without a count or grade: 'Perempuan'"
+    "item without a count or grade: 'Perempuan'",
+    "gender condition inside academic card 05 (not a gate this page sets elsewhere): '1. Perempuan'",
+    "no_disability condition inside academic card 05 (not a gate this page sets elsewhere): '2. Orang Kurang Upaya'"
    ],
    "source": [
     "01 KELAYAKAN AKADEMIK / [Syarat Pilihan 1] Pemohon boleh membaca, menulis dan mengira / Tiada Pendidikan Formal Atau Mempunyai Minat, Boleh Membaca Dan Menulis / ATAU / [Syarat Pilihan 2] Pemohon Memiliki Sijil Vokasional Malaysia (SVM) Dari Institusi Yang Diiktiraf / (empty table) / (empty table) / ATAU / [Syarat Pilihan 3] Pemohon Memiliki Sijil Tahfiz atau Pondok Dari Institusi Yang Berdaftar / Jenis Sijil/Diploma : Sijil / Mempunyai SIJIL TAHFIZ ATAU PONDOK Dari INSTITUSI YANG BERDAFTAR / Minimum CGPA : 0 / ATAU / [Syarat Pilihan 4] Pemohon Memiliki Sijil Pelajaran Malaysia / 1. Pemohon Memiliki SPM Dengan Sekurang-kurangnya Gred E Dalam Subjek Berikut : / Bil. Subjek : 2 / Gred Minimum : E / 1103 | BAHASA MELAYU ; 1249 | SEJARAH",

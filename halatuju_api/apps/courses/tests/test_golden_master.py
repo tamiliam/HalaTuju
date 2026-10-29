@@ -41,6 +41,9 @@ GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,813
 # after review round 1's strict reading of MARA's "any N subjects": 141 -> 121) + 1,592 (F1: the
 # 1,494 above + the two Bumi-only KEMAS rows, 49 each).
 GOLDEN_BASELINE_BUMI = 7578
+#: What the 50 Bumiputera twins gain over the ORIGINAL catalogue (D1 + D2 + F1 rows they meet), as one
+#: digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
+BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
 
 
 def _digest(lines):
@@ -390,3 +393,6 @@ class TestGoldenMaster:
         assert sum(len(s) for s in sets) == GOLDEN_BASELINE_BUMI, [len(s) for s in sets]
         original = self._original_ids()
         assert [s & original for s in sets] == [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s - original)]
+        assert len(lines) == GOLDEN_BASELINE_BUMI - GOLDEN_BASELINE   # 2,259
+        assert _digest(lines) == BUMI_GAIN_SHA256, "a Bumiputera twin's gain changed"

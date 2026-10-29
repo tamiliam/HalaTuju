@@ -85,6 +85,9 @@ class Command(CatalogueIngestMixin, BaseCommand):
         parser.add_argument('--create-institutions', action='store_true',
                             help="Also create the file's new_institutions (only ids not yet held)")
         parser.add_argument('--apply', action='store_true', help='Write (default: report only)')
+        parser.add_argument('--allow-update', action='store_true',
+                            help='Let --apply rewrite a course id the catalogue already holds (a re-run after a '
+                                 'reviewed edit). Without it an existing or non TVET- id is refused.')
         parser.add_argument('--build-source', action='store_true', help='Freeze catalogue rows + pages')
         parser.add_argument('--build-review', action='store_true', help='Build the review file from a source')
         parser.add_argument('--csv', default=os.path.join('data', 'tvet', 'uptvet_latest.csv'))
@@ -104,7 +107,7 @@ class Command(CatalogueIngestMixin, BaseCommand):
             raise CommandError('Pass --file <json>, or --build-source / --build-review with --out.')
         with open(options['file'], encoding='utf-8') as f:
             data = json.load(f)
-        self._ingest(data, options['create_institutions'], options['apply'])
+        self._ingest(data, options['create_institutions'], options['apply'], options['allow_update'])
 
     # --- build -------------------------------------------------------------------------------
 
@@ -138,10 +141,11 @@ class Command(CatalogueIngestMixin, BaseCommand):
 
     # --- ingest ------------------------------------------------------------------------------
 
-    def _ingest(self, data, create, apply):
+    def _ingest(self, data, create, apply, allow_update=False):
         courses, links = data.get('courses', []), data.get('held_links', [])
         to_create = self._tvet_institutions_to_create(data, courses, links, create)
         problems = self._entry_problems(courses)
+        problems += self._id_problems(courses, allow_update)
         held_ids = {link['course_id'] for link in links}
         present = set(Course.objects.filter(course_id__in=held_ids).values_list('course_id', flat=True))
         problems += [f'held course {cid!r} does not exist (a campus link is added to a held course only)'
@@ -179,6 +183,20 @@ class Command(CatalogueIngestMixin, BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Applied {len(courses)} courses, {len(new_links)} held-course links; '
             f'created {len(to_create)} institutions.'))
+
+    @staticmethod
+    def _id_problems(courses, allow_update):
+        """A new UP_TVET course is TVET-<id_kursus> and does not exist yet: anything else would rewrite a
+        held course (IJTM-* / IKBN-*, or any other row) through the new-course path. --allow-update lets a
+        reviewed re-run rewrite its OWN TVET- rows; it never lets a non TVET- id through."""
+        ids = [c['course_id'] for c in courses]
+        problems = [f'{cid}: a new UP_TVET course id must start with TVET-' for cid in ids
+                    if not cid.startswith('TVET-')]
+        if not allow_update:
+            held = sorted(Course.objects.filter(course_id__in=ids).values_list('course_id', flat=True))
+            problems += [f'{cid}: already in the catalogue (pass --allow-update to rewrite it on purpose)'
+                         for cid in held]
+        return problems
 
     def _tvet_institutions_to_create(self, data, courses, links, create):
         """The file's proposed institutions a row needs and the catalogue lacks (never an existing id)."""

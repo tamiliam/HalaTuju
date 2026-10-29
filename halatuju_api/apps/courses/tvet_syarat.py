@@ -25,6 +25,8 @@ Pilihan 1 ATAU Syarat Pilihan 2 ...") are alternatives. Owner rulings F (2026-10
                   "tidak mempunyai ketidakupayaan ... yang menyukarkan kerja amali"
                                                                   -> remarks TEXT, never a gate
   any gender wording, a religion, an unknown line                 -> UNPARSED
+  ... and in an ACADEMIC card, every line of every option (SVM / Tahfiz / open too) is read for those
+  gates (`academic_gate_hits`): gender / religion, or a gate no condition card sets, is UNPARSED
 
 Inside an SPM option every item counts ONCE with the others (one block): "Lulus dua (2) subjek wajib;
 Lulus satu (1) subjek Matematik; Lulus satu (1) subjek pilihan" are four different subjects. An item
@@ -119,7 +121,8 @@ def _items(option, problems):
             current['wide'] = len(value['headers']) == 6
             continue
         m = _ITEM_RE.match(value)
-        if current is not None and not m and (current['rows'] is not None or current['exclusion'])                 and (value.lower() == 'dan' or _COUNT_RE.match(value)):
+        if current is not None and not m and (current['rows'] is not None or current['exclusion']) \
+                and (value.lower() == 'dan' or _COUNT_RE.match(value)):
             # A second rule inside one numbered item ("KEPUJIAN bagi subjek: Bahasa Inggeris ... Dan
             # Matematik / ..."): its own count, grade and table, under the same title.
             current = {'title': current['title'], 'lines': [], 'count': None, 'grade': None, 'rows': None,
@@ -328,7 +331,7 @@ def _apply_condition_card(card, out, problems):
             elif action in ('remark_disability', 'remark_text'):
                 out['remarks'].append(line.rstrip('.').lstrip('0123456789. ').replace(' (Wajib)', ''))
             elif action == 'age_text':
-                out['age_text'].append(line)
+                out['age_text'].append(re.sub(r'^\d+\.\s*', '', line))
         if 'req_bumiputera' in flags:
             flags.add('req_malaysian')   # a Bumiputera is always a citizen
         per_option.append(flags)
@@ -339,7 +342,48 @@ def _apply_condition_card(card, out, problems):
         out['flags'] |= common
 
 
+#: Conditions a student can be refused on. In an ACADEMIC card they are read on EVERY line of every
+#: option (an SVM / Tahfiz / open option too, and the text before an option's first item), because a
+#: gate written inside an option is still a gate (review 2026-10-29). Gender and religion are always
+#: UNPARSED; a citizenship / Bumiputera / OKU / colour-vision line is allowed only when a condition card
+#: sets the same flag. A Tahfiz CERTIFICATE is a qualification route, not a religion condition: it
+#: matches none of these, and a card with an SPM route is decided by the SPM route.
+ACADEMIC_GATES = (
+    ('gender', re.compile(r'\bLelaki\b|\bPerempuan\b|\bWanita\b|\bjantina\b', re.I)),
+    ('religion', re.compile(r'beragama|agama Islam|\bMuslim', re.I)),
+    ('req_bumiputera', re.compile(r'Bumiputera|Berbangsa Melayu|Orang Asli|Anak Negeri', re.I)),
+    ('req_malaysian', re.compile(r'Warganegara', re.I)),
+    ('no_colorblind', re.compile(r'rabun warna|buta warna', re.I)),
+    ('no_disability', re.compile(r'\bOKU\b|kurang upaya|ketidakupayaan', re.I)),
+)
+#: A skills-certificate title (an SKM code such as [TA-010-3]) or a trade name ("Pakaian Lelaki" is
+#: menswear) names a qualification, not who may apply.
+_NAMES_A_TRADE = re.compile(r'\[[A-Z]{1,4}\d*-\d|Pakaian (Lelaki|Wanita)', re.I)
+_QUALIFIED_DISABILITY = re.compile(r'tidak mempunyai (ketidakupayaan|kurang upaya).*(menyukarkan|amali)', re.I)
+
+
+def _card_lines(card):
+    lines = [card['title'], card['subtitle']]
+    for option in card['options']:
+        lines += _option_lines(option)
+    return [line for line in lines if line]
+
+
+def academic_gate_hits(card):
+    """[(gate, line)] for every gate line in an academic card. The QUALIFIED disability sentence
+    ("... yang menyukarkan kerja amali") is text, never a gate (owner ruling 2026-10-29)."""
+    hits = []
+    for line in _card_lines(card):
+        if _QUALIFIED_DISABILITY.search(line) or _NAMES_A_TRADE.search(line):
+            continue
+        gate = next((g for g, pattern in ACADEMIC_GATES if pattern.search(line)), None)
+        if gate:
+            hits.append((gate, line))
+    return hits
+
+
 def _apply_academic_card(card, kinds, out, problems, warnings):
+    out['academic_gates'] += [(card['number'], gate, line) for gate, line in academic_gate_hits(card)]
     if 'open' in kinds:
         out['open_cards'] += 1
         return
@@ -386,13 +430,15 @@ def _age_remark(age, texts):
         return f'Umur minimum {low} tahun'
     if high:
         return f'Umur maksimum {high} tahun'
-    return texts[0] if texts else None
+    if not texts:
+        return None
+    return texts[0] if re.search(r'umur', texts[0], re.I) else f'Umur {texts[0]}'
 
 
 def parse_requirements(page):
     """`read_page` output -> {'fields', 'unparsed', 'warnings', 'remarks', 'header_mismatches', 'open'}."""
     problems, warnings = [], []
-    out = {'flags': set(), 'remarks': [], 'age': [None, None], 'age_text': [], 'spm_flags': [],
+    out = {'flags': set(), 'remarks': [], 'age': [None, None], 'age_text': [], 'spm_flags': [], 'academic_gates': [],
            'blocks': [], 'open_cards': 0, 'mismatches': 0, 'warnings': warnings}
     academic = 0
     if not page['cards']:
@@ -410,6 +456,10 @@ def parse_requirements(page):
             _apply_condition_card(card, out, problems)
     if page['cards'] and not academic:
         problems.append('no academic requirement card')
+    for number, gate, line in out['academic_gates']:
+        if gate in ('gender', 'religion') or gate not in out['flags']:
+            problems.append(f'{gate} condition inside academic card {number} (not a gate this page sets '
+                            f'elsewhere): {line!r}')
     fields = _new_fields()
     for flag in out['flags']:
         fields[flag] = True

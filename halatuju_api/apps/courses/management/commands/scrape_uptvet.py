@@ -4,7 +4,7 @@ Scrape the public UP_TVET Perdana course catalogue (mohon.tvet.gov.my).
 This is the TVET counterpart to scrape_mohe_stpm. UP_TVET covers ~12 ministries / 685
 institutions; HalaTuju currently holds only ILJTM + ILKBS (~83 courses). This scraper
 acquires the FULL public catalogue into a CSV for a coverage inventory (audit_uptvet) —
-it does NOT write to the DB (ingest is a later, golden-master-adjacent sprint).
+it never writes the catalogue (a full run records only the dashboard's UP_TVET status row).
 
 The catalogue is server-rendered, paginated HTML (no JSON API):
     https://mohon.tvet.gov.my/awam-kursus/katalog?page=N        (20 cards/page, ~50 pages)
@@ -33,7 +33,7 @@ CSV_FIELDS = [
 
 
 class Command(BaseCommand):
-    help = 'Scrape the public UP_TVET Perdana course catalogue to a CSV (no DB writes)'
+    help = 'Scrape the public UP_TVET Perdana course catalogue to a CSV (writes only the UP_TVET status row)'
 
     def add_arguments(self, parser):
         parser.add_argument('--output', type=str, required=True, help='Output CSV file path')

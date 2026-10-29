@@ -107,6 +107,8 @@ def _small(tmp_path, review=None):
             'new_institutions': review['new_institutions']}
     path = tmp_path / 'f1.json'
     path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+    # The fixtures hold the F1 rows already (the golden master reads them): start these two as NEW.
+    Course.objects.filter(course_id__in=[c['course_id'] for c in data['courses']]).delete()
     return path, data
 
 
@@ -122,7 +124,6 @@ def catalogue(db):
 class TestIngest:
     def test_dry_run_writes_nothing(self, catalogue, tmp_path):
         path, data = _small(tmp_path)
-        Course.objects.filter(course_id__in=[c['course_id'] for c in data['courses']]).delete()  # fixtures hold F1
         before = (Course.objects.count(), CourseInstitution.objects.count())
         out = _run('--file', str(path), '--create-institutions')
         assert 'DRY RUN' in out and 'CREATE INSTITUTION ILKA-' in out and 'LINK ' in out
@@ -158,7 +159,7 @@ class TestIngest:
         iid = next(iter(data['new_institutions']))
         Institution.objects.create(institution_id=iid, institution_name='Already here', type='IPTA', state='X')
         _run('--file', str(path), '--create-institutions', '--apply')
-        _run('--file', str(path), '--create-institutions', '--apply')
+        _run('--file', str(path), '--create-institutions', '--apply', '--allow-update')
         assert Institution.objects.get(institution_id=iid).institution_name == 'Already here'
         cid = data['courses'][0]['course_id']
         assert CourseInstitution.objects.filter(course_id=cid).count() == len(data['courses'][0]['offerings'])
@@ -180,6 +181,23 @@ class TestIngest:
             _run('--file', str(path), '--create-institutions', '--apply')
 
     def test_the_full_file_dry_runs_clean(self, catalogue):
+        Course.objects.filter(course_id__in=[c['course_id'] for c in _review()['courses']]).delete()
         out = _run('--file', str(F1), '--create-institutions')
         assert 'Refusing' not in out
         assert f"{len(_review()['courses'])} new courses" in out
+
+    def test_apply_refuses_a_course_that_already_exists(self, catalogue, tmp_path):
+        path, data = _small(tmp_path)
+        _run('--file', str(path), '--create-institutions', '--apply')
+        with pytest.raises(CommandError, match='already in the catalogue'):
+            _run('--file', str(path), '--create-institutions', '--apply')
+
+    def test_apply_refuses_a_non_tvet_id_even_with_allow_update(self, catalogue, tmp_path):
+        path, data = _small(tmp_path)
+        held = CourseRequirement.objects.filter(course_id='IJTM-CET-001').values()[0]
+        data['courses'][0]['course_id'] = 'IJTM-CET-001'   # a held course through the new-course path
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+        for extra in ([], ['--allow-update']):
+            with pytest.raises(CommandError, match='must start with TVET-'):
+                _run('--file', str(path), '--create-institutions', '--apply', *extra)
+        assert CourseRequirement.objects.filter(course_id='IJTM-CET-001').values()[0] == held
