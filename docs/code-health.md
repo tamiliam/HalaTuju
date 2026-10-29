@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-29 | 71ae8cc | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 143 | 0 | 0 | ok | ok |
 | 2026-10-29 | f528264 | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 11 | 140 | 0 | 0 | ok | ok |
 | 2026-10-29 | f856d20 | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 72 | 93 | 0 | 3 | 12 | 137 | 0 | 0 | ok | ok |
 | 2026-10-28 | 6e1d66d | 90 | 52 | vision.py 28.1 | 17 | 15 | 4 | 72 | 92 | 0 | 3 | 12 | 136 | 0 | - | - | ok |
@@ -104,7 +105,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-29, f528264, window 2026-07-31 onward)
+## Latest run (2026-10-29, 71ae8cc, window 2026-07-31 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -121,7 +122,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/courses/views.py` | 3 | 2182 | 6.5 |
 
 ### Fix ratio
-- 219 fix / 201 feat commits since 2026-07-31
+- 219 fix / 203 feat commits since 2026-07-31
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -190,7 +191,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - 33 of 288 web test files read source text (signals: readFileSync, apiSource); drift 23 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 418 entries have a defining line; 140 carry no resolution marker on it
+- 421 entries have a defining line; 143 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -216,7 +217,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at f856d20
+- budgets no looser than at f528264
 
 ### tsc
 - 0 errors in 0 files
@@ -224,11 +225,31 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 5888
+- Total keys per locale: 5891
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-29 (71ae8cc, billing meter guard + payment declarations close) — 0 FAIL; one reading moved, on purpose
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against the previous run (`f528264`) exactly ONE number moved:
+
+| reading | was | now | decision |
+|---|---|---|---|
+| `td_open` | 140 | **143** | **ACCEPTED.** The three are TD-422, TD-423 and TD-424, all raised BY this sprint about its own work: the busy-meter guard asks a month-wide question rather than a per-tenant one (harmless at one tenant, wrong at two); a receipt whose email failed can only be re-sent by hand; and the platform now has two date formats. Writing them down is the sprint doing its job — a register that only ever falls is a register nobody is adding to honestly. |
+
+Everything else is byte-identical: `fix%` 52, `hot#1` vision.py 28.1, `big` 16, `long` 15, `dup` 4, `xapp` 73,
+`supp` 93, `skip` 0, `mirror` 3, `guard%` 11.
+
+⚠ **Two moves-only splits in this sprint did NOT move `big`, and that is the reading being fair, not lucky.**
+`platform_cost.py` fell 664 → 566 and LEFT the 600-line ledger entirely; `invoicing.py` fell 626 → 532. Both new
+modules (`metered_usage.py` 199, `invoice_receipts.py` 132) are far below every threshold, so the count of large
+files was always going to be unchanged — unlike the `xapp` case noted on 2026-09-20, where a faithful split could
+only inflate the number. Nothing was engineered to hold a reading.
+
+**Nothing promoted.** The five WARNs are the standing ones and none worsened.
+
 
 ### 2026-10-29 (f528264, Bumi Sprint D1 close) — 0 FAIL; nothing to promote
 
