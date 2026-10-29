@@ -6872,3 +6872,40 @@ that is kept and readable by anyone with log access — outside the organisation
 Pre-existing on Applications; Scholars copied the shape. **Fix:** move people-search to a POST body (or a
 header), or log the path without its query string; a hashed IC would also serve an exact match. Check the
 retention on the existing logs when this is fixed. *(B · S)*
+
+### [TD-422] The busy-meter guard asks whether ANY metered money exists, not this tenant's share - medium
+
+**Raised 2026-10-29** by the sprint that built it. `metered_usage.metered_activity_without_cost` counts
+`UsageEvent` rows **for one organisation** and then asks `metered_rows(period_month)` whether the month holds
+any metered money **at all**. With ONE tenant those are the same question. With two they are not: a month in
+which tenant A's OCR is fully synced and tenant B's provider bill is missing would show metered money, and B's
+invoice would go out with a metered charge computed from a share of a cost that does not include B's own usage —
+the exact under-billing this guard exists to stop, one tenant along.
+
+It is not a bug today (`tenant_shares` itself notes there is one tenant and neither split has ever been
+exercised in anger), and it fails in the SAFE direction only while that holds. **Fix, the day a second tenant
+arrives:** compare per-SOURCE — the services this tenant's events used (`gemini`, `vision_ocr`, `whatsapp`,
+`email`) against the metered sources the month actually recorded — rather than one month-wide total. That
+mapping is a hand-kept list, which is why it was not written today: `supplier_missing` is deliberately
+self-maintaining, and a wrong hand-kept map would refuse good months. *(B · S)*
+
+### [TD-423] A receipt whose email failed can only be re-sent by hand - low
+
+**Raised 2026-10-29** with the receipt email. `invoicing.email_receipt` is best-effort by design — money
+recorded must never be undone by a mail outage — and it stamps `emailed_at` only on success, so the billing
+screen says "Not emailed" honestly. But there is no way to ASK it to try again: the owner has to download the
+PDF and attach it to their own email. `send_invoice` has the same shape and solved it with a Send button that
+may be pressed again. **Fix:** a "Send receipt" button beside the PDF button, calling `email_receipt` on an
+existing receipt; it is idempotent already (it overwrites the stamp). Small, and worth doing the first time a
+send actually fails. *(B · S)*
+
+### [TD-424] Two date formats on one platform: the tenant writes day-first, the owner writes ISO - low
+
+**Raised 2026-10-29** by the owner's reading of the live page. The tenant's "Tell us you have paid" box takes
+DD-MM-YYYY (`isoFromDayFirst`), which is how Malaysia writes a date; the owner's Record payment, Confirm and
+Issue-date boxes still take YYYY-MM-DD. **No screen shows both** — a super cannot declare and an org_admin
+cannot confirm — so nothing is mixed in front of one reader today, which is why it shipped this way rather than
+growing the change. It is still two rules for one idea, and the next date box has no obvious precedent to
+follow. **Fix:** move the owner's three boxes to day-first too (the helper and its tests already exist), and
+state the rule in CLAUDE.md so the next box does not re-open the question. Ask the owner first: they read ISO
+dates daily and may prefer them. *(B · S)*

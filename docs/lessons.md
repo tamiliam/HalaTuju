@@ -1534,3 +1534,35 @@ is prefetched — weight moved off a route's first load can still travel in the 
   signed payment runs while keeping a gate written when it only touched tranches. **Rule:** before widening a write
   or adding a side effect, grep every reader of the field (and every object the action now touches) and re-ask
   the gate as the UNION of those owners' gates. (Student maintenance S1, 2026-10-29)
+
+- **A bite-check must prove the guard failed for the RIGHT REASON, not merely that something failed.**
+  The first run of this sprint's bite harness reported all four guards red — with a `UnicodeDecodeError`
+  in the captured output. It had used `subprocess.run(..., text=True)`, which decodes with the Windows
+  locale (cp1252), and the suite prints `⚠`, so the capture itself could raise; a crash exits non-zero
+  and is indistinguishable from a guard correctly going red. **Rule:** capture a bite-check's child
+  output as UTF-8 with `errors='replace'`, keep it, and read the assertion line behind every RED. A red
+  you have not read is a hypothesis wearing a result. (Billing meter guard + payment declarations,
+  2026-10-29)
+
+- **When a screen makes a promise to a customer, trace the promise to the code that keeps it.** The
+  payment-declaration screen said *"we will check it against our account and raise your receipt"* while
+  nothing was ever emailed — the receipt was raised, numbered, stored and shown, and the customer had to
+  come and find it. I had written that sentence in the same sprint and never checked it against the
+  behaviour, because the receipt "already existed". The owner found it by reading the live page.
+  **Rule:** every sentence shown to a customer that describes a FUTURE action is a claim about code;
+  grep for the code that performs it before the sprint closes. (Billing, 2026-10-29)
+
+- **A test that asserts a PROXY breaks when the feature grows correctly.** Two tests had to be corrected
+  this sprint, both mine and both days old: one asserted an EMPTY outbox to mean "nothing goes to the
+  owner" (it broke the moment confirming started emailing the customer), and one matched a table cell by
+  its whole text (it broke when a request number inside it became a link). Neither feature was wrong.
+  **Rule:** assert the rule, not a stand-in for it — *who* was written to rather than how many messages
+  exist; the cell's `textContent` plus the link, rather than an exact string match that any enrichment
+  will split. (Billing, 2026-10-29)
+
+- **A non-null model field with a Python default cannot be rendered to DDL offline.** `JSONField(default=list)`
+  made Django compute an effective default to backfill existing rows, and adapting it to `jsonb` goes
+  through the live driver — so the offline Postgres renderer (the one migrate-first depends on, because
+  `sqlmigrate` emits SQLite locally) died on `connection refused`. `null=True, default=None` renders
+  cleanly AND models the state better: NULL on both `emailed_at` and `emailed_to` says "never emailed"
+  more plainly than an empty list beside a NULL timestamp. (Billing, 2026-10-29)

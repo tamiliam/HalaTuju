@@ -15699,3 +15699,69 @@ a Bumi-only course (UiTM) the student saved or was shown, and infer the answer f
 **Why:** the same inference is accepted for sponsors (who see the chosen institution), and it has been true for
 STPM since Sprint B; the answer itself is never served. Hiding the course would hide the student's own plan.
 **Revisit if:** a partner or sponsor is found to act on the inference, or the s44(6) stance is challenged.
+
+## 2026-10-29 — A tenant's payment declaration NEVER mints a receipt (owner approved, billing)
+**Decision:** A tenant may declare that it has paid. The declaration creates an
+`InvoicePaymentDeclaration` row and nothing else. A receipt is still raised in exactly one place,
+`invoicing.record_receipt`, by a super, after looking at the bank statement.
+**Alternatives considered:** letting a declaration raise a provisional receipt and marking it
+unconfirmed; auto-confirming small amounts; matching the bank reference automatically.
+**Rationale:** `Invoice.status` reads receipts to decide `paid`. If a tenant's claim could create a
+receipt, a customer could mark their own invoice paid. Every tenant-side test therefore also asserts
+that no receipt exists and the balance has not moved.
+**Trade-offs:** the owner must act on every claim; nothing settles itself.
+**Revisit if:** bank-feed matching is ever introduced — then the matcher, not the tenant, is the
+thing raising the receipt, and the rule still holds.
+
+## 2026-10-29 — A declaration carries a date and a bank reference, and nothing else (owner)
+**Decision:** No amount and no payment slip. The owner's words: *"Date and bank reference only."*
+**Alternatives considered:** an amount field; a slip upload; both.
+**Rationale:** the invoice already states the amount, and a tenant-typed figure only invites an
+argument about which number is right — the owner reads the real figure off the statement. A slip is a
+document to store, scan, serve and eventually purge, and the reference already identifies the transfer.
+**Trade-offs:** a partial payment cannot be described by the tenant; the owner discovers the amount.
+**Revisit if:** partial payments become common, or a tenant asks to say "we paid RM X of this".
+
+## 2026-10-29 — `payment_declared` is derived, and a receipt always outranks a claim
+**Decision:** `Invoice.status` gains `payment_declared`, placed AFTER `paid` and `part_paid`. Money in
+plus an open claim still reads `part_paid`.
+**Alternatives considered:** a stored status column; ranking the claim above part payment so the owner's
+queue is never hidden.
+**Rationale:** the status says what the BANK says, never what somebody told us about the bank. A stored
+status would be a second answer to "has this been paid?", and two answers eventually disagree. The open
+claim is still carried in the payload as its own object, so the screen can show both.
+**Trade-offs:** an invoice that is part paid AND has a claim shows the claim only in the panel, not the chip.
+**Revisit if:** the owner reports missing claims on part-paid invoices.
+
+## 2026-10-29 — `email_receipt` is a separate call, deliberately not part of `record_receipt`
+**Decision:** Recording a receipt and emailing it are two calls. Each door (`Record payment`, and
+`confirm_payment`) calls the second AFTER its transaction commits.
+**Alternatives considered:** emailing inside `record_receipt`; `transaction.on_commit`.
+**Rationale:** `record_receipt` is itself called from inside `confirm_payment`'s transaction, so emailing
+from within it would tell a customer their money arrived and then roll the receipt back if anything later
+failed. `on_commit` hides the ordering two layers down and does not fire under `TestCase`, which would
+have made the rule untestable. Two doors, a test each.
+**Trade-offs:** a future third call site could forget to email; the tests name both doors to catch that.
+**Revisit if:** a third door appears — then fold it into a small service that does both in order.
+
+## 2026-10-29 — Nothing owed is never late, and is not "Paid" either (owner reading)
+**Decision:** A zero balance on a sent invoice reads "Nothing to pay" to the tenant, never "Overdue".
+**Alternatives considered:** calling it "Paid"; leaving it "Unpaid"; suppressing the chip.
+**Rationale:** July 2026 is computed in full and discounted to zero, so the tenant's row said OVERDUE in
+red beside a balance of RM0.00. "Paid" would claim money arrived when none did — `Invoice.status` is
+deliberate about never claiming that. The chip reads the BALANCE, because a zero-total month and a month
+discounted to zero are the same thing to the person reading it.
+**Trade-offs:** `statusChip` now needs the balance passed in; omitted, it never says this, which is the
+safe direction.
+**Revisit if:** a zero-balance invoice ever needs to be chased for something other than money.
+
+## 2026-10-29 — Day-first dates convert at the EDGE, not in the money code (owner)
+**Decision:** The tenant's declare box takes DD-MM-YYYY; `isoFromDayFirst` converts in the browser and
+the server keeps the one ISO format it has always parsed. It refuses a day that does not exist.
+**Alternatives considered:** teaching the server a second date format; a native date picker.
+**Rationale:** Malaysia writes dates day-first. Converting at the edge keeps a single date rule in the
+money code. A native picker follows the BROWSER's locale and can report no value at all (TD-209 family),
+which is why every date box here is a text box. `31-02-2026` must be refused, not rolled into 3 March — a
+payment date nobody typed is worse than a complaint.
+**Trade-offs:** the owner's own date boxes are still ISO (TD-424); no screen shows both.
+**Revisit if:** the owner wants their boxes moved too, or a third audience appears.
