@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Matric/Diploma Exact-read M1 - 2026-10-29
+
+Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a
+Matriculation transcript uploaded in the SPM card was read as an SPM slip).
+
+- **An "ACADEMIC TRANSCRIPT" is told by its issuer.** `results_kind` gains a second tier, read only
+  when no kind word is printed and no SPM marker either: "POLITEKNIK" / "POLYTECHNIC" → Diploma, and
+  the compulsory subject "PENGAJIAN AM MATRIKULASI / MATRICULATION GENERAL STUDIES" (from a stored
+  read's subject rows) → Matriculation. `detect_from_fields` now also reads the Gemini read's
+  `institution` ("KOLEJ MATRIKULASI LABUAN"). Calibrated on the corpus OCR: the issuer words are on 3
+  of 4 polytechnic documents and 0 of 151 STPM / SPM pages; the subject on 8 of 9 Matriculation pages
+  and nothing else. The tier never answers STPM, so the STPM genuineness gate
+  (`detect(...) == 'stpm'`) cannot move: no `MODEL_VERSION` bump.
+- **#49's shape now reads as Matriculation in the SPM card** (`wrong_slip.higher_kind`): named, never
+  SPM-compared, the move offered. The band can move → `VERDICT_ENGINE_VERSION` 2026-10-29.1. Live
+  at read time: 0 of 216 SPM-card reads change; higher-results reads keep their stored detection.
+- **`backfill_higher_results_kind`** (report-first, `--apply`): a blank `results_kind` on a live
+  higher-results upload is filled from the results held when they are tertiary — never from the
+  detection (D13: the column is what the upload is meant to be). Verdict-neutral; idempotent.
+- **Corpus** (gitignored): 9 live documents added to `results_split/matric` (6) and `/diploma` (3),
+  OCR captured (8 Vision calls); hand-check labels in `<key>.expect.json` for all 18
+  Matriculation / Diploma / Asasi pages. Hand-run `eval/results_kind_check.py` scores every page.
+- Tests: `test_results_kind_issuers.py` (16, red-first on the old module, each rule bite-checked).
+
 ## Billing — the first real invoices: back-dating, grouped development lines, bug work free (migration 0181) - 2026-10-29
 
 The owner asked for the first real invoices (July onwards, each dated the 15th of the following

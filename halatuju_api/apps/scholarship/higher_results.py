@@ -177,7 +177,7 @@ def extract(doc, ocr, image_fn, extract_fn):
     or transcript is read EXACT first (`stpm_parse`, from the OCR text / word boxes — STPM
     exact-read S2); anything it is unsure of goes to Gemini on the IMAGE as before (a transcript's
     table, like the SPM slip's, does not survive flat OCR). Then the routing detection from the
-    upload's OCR text (fallback: the read's own exam title). Returns the usual `ex` dict. The
+    upload's OCR text (fallback: the read's title / institution / subjects). Returns the `ex` dict. The
     detection is stored beside the fields — `results_kind_detected` and the markers seen."""
     from .results_kind import detect, detect_from_fields, kinds_seen
     text = ((ocr or {}).get('text') if isinstance(ocr, dict) else '') or ''

@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## A transcript is told by its issuer only where no kind is printed; a blank `results_kind` is filled from the results held, never from the detection — 2026-10-29 (Matric/Diploma M1, #49)
+
+**Issuer tier.** `results_kind.detect` reads fixed issuer markers ("POLITEKNIK" / "POLYTECHNIC" →
+Diploma) and one fixed subject ("Pengajian Am Matrikulasi / Matriculation General Studies", from a
+stored read's subject rows → Matriculation) ONLY when no kind word is printed and no SPM marker
+either. So every page the kind words answered keeps its answer — above all an STPM page, which
+`genuineness/stpm_doc.py` scores only when `detect(...) == 'stpm'` — and the tier never answers
+STPM; that is why it is not a `MODEL_VERSION` change. "Cannot tell" still never disagrees: two
+issuers → ''. Subject rows are never read for kind WORDS ("Foundation Mathematics" on a diploma is
+not Asasi). Matriculation colleges need no issuer marker: "KOLEJ MATRIKULASI" already holds a kind
+word. "JPPKK" is not a marker (on no transcript in the corpus); a Kolej Komuniti transcript printing
+"Jabatan Pendidikan Politeknik dan Kolej Komuniti" with no "Diploma" would read Diploma — accepted
+until an example exists. `VERDICT_ENGINE_VERSION` 2026-10-29.1: the SPM card's witness
+(`wrong_slip.higher_kind`) now names #49's shape, so its band can move.
+
+**The blank column.** `applicant_documents.results_kind` is the results the upload is MEANT to be
+(D13: the results held at upload). It is '' when the student held no tertiary results then, and that
+is a true value. Filling it from the detection would make `student_higher_check` compare the page
+with itself — a "kind matches" line that checks nothing. `backfill_higher_results_kind` fills it
+from the results held NOW, only when tertiary; it is verdict-neutral because `student_higher_check`
+already prefers tertiary results held over the column. Live 2026-10-29: three blank rows — two
+STPM (expected to fill 'stpm' if D1 promotes them) and one SPM holder's polytechnic transcript, left ''.
+
 ## No second AI company reads student documents: TD-399 (OpenAI fallback) is parked — 2026-10-28 (owner ruling)
 
 Asked: when Gemini is down, may student documents (ICs, payslips, EPF statements, results) be sent to OpenAI to

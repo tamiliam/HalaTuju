@@ -37,6 +37,18 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   transcript by "POLITEKNIK" / JPPKK wording, so a title of "ACADEMIC TRANSCRIPT" alone no longer blanks.
   Backfill the blank `results_kind` rows (read-time classification, no re-extraction).
 - **Done when:** every corpus doc has an `.ocr.txt` and a label; the #49 shape detects as matric.
+- **BUILT 2026-10-29** (branch `m1-matric-diploma-kinds`, not pushed). Notes:
+  - Corpus now 9 Matriculation + 8 Diploma + 1 Asasi pages, every one with `.ocr.txt` and a
+    `<key>.expect.json` label (gitignored; the committed `labels.json` is the PII-free verdict
+    harness and has no results entries). Labels are seeded from the stored read and OCR-checked;
+    `unverified` lists 4 fields to hand-check before M2 scores against them.
+  - **Polytechnic is rarer than planned:** of the 4 LIVE diplomas, all are UiTM; the one live
+    polytechnic transcript is the blank-kind row (#317). Corpus polytechnic: 4 (one a portal
+    screenshot that prints no "POLITEKNIK"). M3 has 3 printed transcripts to build on.
+  - The OCR-text detector already read every corpus Matriculation page right; the gap was the
+    stored-read path (`detect_from_fields`: no institution, no subject) — the path #49 took.
+  - Ruling and backfill: `docs/decisions.md` 2026-10-29. Production step for the lead:
+    `python manage.py backfill_higher_results_kind` (report), then `--apply`.
 
 ### M2 — `matric_parse.py`: deterministic Matriculation reader · medium · ~8 h
 - Text-first, like `stpm_parse`: name, NRIC, matric number, college, semester rows, subject–grade rows
