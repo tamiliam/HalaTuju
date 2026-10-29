@@ -77,6 +77,7 @@ class CourseRequirementSerializer(serializers.Serializer):
     # General requirement fields → BM labels
     GENERAL_FIELDS = {
         'req_malaysian': 'Warganegara Malaysia',
+        'req_bumiputera': 'Bumiputera sahaja',  # Bumi Sprint D1; the web shows its own i18n badge
         'req_male': 'Lelaki sahaja',
         'req_female': 'Perempuan sahaja',
         'no_colorblind': 'Tidak buta warna',
@@ -167,6 +168,7 @@ class CourseRequirementSerializer(serializers.Serializer):
 
         return {
             'source_type': getattr(instance, 'source_type', ''),
+            'req_bumiputera': bool(getattr(instance, 'req_bumiputera', False)),
             'general': general,
             'special': special,
             'complex_requirements': instance.complex_requirements,
@@ -218,6 +220,9 @@ class EligibilityRequestSerializer(serializers.Serializer):
     nationality = serializers.CharField(default='Warganegara')
     colorblind = serializers.BooleanField(default=False, required=False)
     disability = serializers.BooleanField(default=False, required=False)
+    # Bumi Sprint D1: course guide only. The view reads it through `bumiputera.resolve_bumiputera`
+    # (a foreign student is never Bumi); absent / null = not Bumi.
+    bumiputera = serializers.BooleanField(default=False, required=False)
     other_tech = serializers.BooleanField(default=False)
     other_voc = serializers.BooleanField(default=False)
     coq_score = serializers.FloatField(default=5.0, required=False,

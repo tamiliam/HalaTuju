@@ -6611,5 +6611,1433 @@
       "description_en": "",
       "field_key": "sains-sosial"
     }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE0222001",
+    "fields": {
+      "course": "Asasi TESL",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "TESL",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE0380001",
+    "fields": {
+      "course": "Asasi Undang-Undang (KPM)",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Undang-Undang",
+      "field": "Undang-Undang (KPM)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "undang-undang"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE0380002",
+    "fields": {
+      "course": "Asasi Undang-Undang (UiTM)",
+      "wbl": false,
+      "level": "Asasi",
+      "department": "Undang-Undang",
+      "field": "Undang-Undang (UiTM)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "undang-undang"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4343004",
+    "fields": {
+      "course": "Diploma Analisis Pelaburan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Analisis Pelaburan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213001",
+    "fields": {
+      "course": "Diploma Animasi",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Animasi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4224001",
+    "fields": {
+      "course": "Diploma Bahasa Inggeris Komunikasi Profesional",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Bahasa Inggeris Komunikasi Profesional",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4727001",
+    "fields": {
+      "course": "Diploma Farmasi",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Farmasi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "farmasi"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4726002",
+    "fields": {
+      "course": "Diploma Fisioterapi",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Fisioterapi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213004",
+    "fields": {
+      "course": "Diploma Fotomedia Kreatif",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Fotomedia Kreatif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4322003",
+    "fields": {
+      "course": "Diploma Informatik Perpustakaan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Informatik Perpustakaan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "komunikasi"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4723001",
+    "fields": {
+      "course": "Diploma Kejururawatan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Kejururawatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kejururawatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4526003",
+    "fields": {
+      "course": "Diploma Kejuruteraan Awam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan Awam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4523001",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektrik (Elektronik)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan Elektrik (Elektronik)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4522002",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan Elektrik (Kuasa)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4524001",
+    "fields": {
+      "course": "Diploma Kejuruteraan Kimia",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan Kimia",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kimia-proses"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4521001",
+    "fields": {
+      "course": "Diploma Kejuruteraan Mekanikal",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Kejuruteraan Mekanikal",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4422001",
+    "fields": {
+      "course": "Diploma Kesihatan Persekitaran",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Kesihatan Persekitaran",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4621001",
+    "fields": {
+      "course": "Diploma Keusahawanan Tani",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pertanian Dan Bio-Industri",
+      "field": "Keusahawanan Tani",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4321001",
+    "fields": {
+      "course": "Diploma Komunikasi Dan Media",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Komunikasi Dan Media",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "komunikasi"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4421001",
+    "fields": {
+      "course": "Diploma Mikrobiologi",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Mikrobiologi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4343005",
+    "fields": {
+      "course": "Diploma Muamalat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Muamalat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4724001",
+    "fields": {
+      "course": "Diploma Pembantu Pembedahan Pergigian",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Pembantu Pembedahan Pergigian",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pergigian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4726001",
+    "fields": {
+      "course": "Diploma Pemulihan Carakerja",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Pemulihan Carakerja",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4143001",
+    "fields": {
+      "course": "Diploma Pendidikan Awal Kanak-Kanak",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pendidikan",
+      "field": "Pendidikan Awal Kanak-Kanak",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pendidikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4146001",
+    "fields": {
+      "course": "Diploma Pendidikan Islam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pendidikan",
+      "field": "Pendidikan Islam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pendidikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4343003",
+    "fields": {
+      "course": "Diploma Pengajian Insurans",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pengajian Insurans",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perakaunan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4343002",
+    "fields": {
+      "course": "Diploma Pengajian Perbankan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pengajian Perbankan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4340001",
+    "fields": {
+      "course": "Diploma Pengajian Perniagaan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pengajian Perniagaan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4340002",
+    "fields": {
+      "course": "Diploma Pengajian Perniagaan (Pengangkutan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pengajian Perniagaan (Pengangkutan)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4813001",
+    "fields": {
+      "course": "Diploma Pengajian Sukan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains Sukan",
+      "field": "Pengajian Sukan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4725002",
+    "fields": {
+      "course": "Diploma Pengimejan Perubatan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Pengimejan Perubatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4346001",
+    "fields": {
+      "course": "Diploma Pengurusan Dan Teknologi Pejabat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pengurusan Dan Teknologi Pejabat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengurusan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4221001",
+    "fields": {
+      "course": "Diploma Pengurusan Halal",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pengajian Islam",
+      "field": "Pengurusan Halal",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pengajian-islam"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4581002",
+    "fields": {
+      "course": "Diploma Pengurusan Hartanah",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Pengurusan Hartanah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4811002",
+    "fields": {
+      "course": "Diploma Pengurusan Hotel",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti",
+      "field": "Pengurusan Hotel",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "hospitaliti"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4620002",
+    "fields": {
+      "course": "Diploma Pengurusan Industri Perladangan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pertanian Dan Bio-Industri",
+      "field": "Pengurusan Industri Perladangan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4322001",
+    "fields": {
+      "course": "Diploma Pengurusan Maklumat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Pengurusan Maklumat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "komunikasi"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4812001",
+    "fields": {
+      "course": "Diploma Pengurusan Pelancongan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti",
+      "field": "Pengurusan Pelancongan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "hospitaliti"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4212003",
+    "fields": {
+      "course": "Diploma Pengurusan Seni",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Pengurusan Seni",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4813002",
+    "fields": {
+      "course": "Diploma Pengurusan Sukan Dan Rekreasi",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains Sukan",
+      "field": "Pengurusan Sukan Dan Rekreasi",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-sosial"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4345001",
+    "fields": {
+      "course": "Diploma Pentadbiran Awam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pentadbiran Awam",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4345002",
+    "fields": {
+      "course": "Diploma Pentadbiran Korporat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Pentadbiran Korporat",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perniagaan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4222001",
+    "fields": {
+      "course": "Diploma Penulisan Skrip",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Bahasa Dan Komunikasi",
+      "field": "Penulisan Skrip",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "bahasa"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4344001",
+    "fields": {
+      "course": "Diploma Perakaunan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Perakaunan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perakaunan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4581003",
+    "fields": {
+      "course": "Diploma Perancangan Bandar & Wilayah",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Perancangan Bandar & Wilayah",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senibina"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4212005",
+    "fields": {
+      "course": "Diploma Produksi Audio Digital",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Produksi Audio Digital",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4214003",
+    "fields": {
+      "course": "Diploma Reka Bentuk Seramik Industri Kreatif",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Reka Bentuk Seramik Industri Kreatif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4545004",
+    "fields": {
+      "course": "Diploma Sains",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Sains",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4462002",
+    "fields": {
+      "course": "Diploma Sains Aktuari",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Sains Aktuari",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-data"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4581004",
+    "fields": {
+      "course": "Diploma Sains Geomatik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Sains Geomatik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senibina"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4481001",
+    "fields": {
+      "course": "Diploma Sains Komputer",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Maklumat",
+      "field": "Sains Komputer",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "it-perisian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4461001",
+    "fields": {
+      "course": "Diploma Sains Matematik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Sains Matematik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-fizikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4211002",
+    "fields": {
+      "course": "Diploma Seni Halus",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Seni Halus",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4811003",
+    "fields": {
+      "course": "Diploma Seni Kulinari",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti",
+      "field": "Seni Kulinari",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4215002",
+    "fields": {
+      "course": "Diploma Seni Lukis Dan Seni Reka (Seni Reka Logam Halus)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Seni Lukis Dan Seni Reka (Seni Reka Logam Halus)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4215001",
+    "fields": {
+      "course": "Diploma Seni Lukis Dan Seni Reka (Seni Reka Tekstil)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Seni Lukis Dan Seni Reka (Seni Reka Tekstil)",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4212001",
+    "fields": {
+      "course": "Diploma Seni Muzik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Seni Muzik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4811001",
+    "fields": {
+      "course": "Diploma Seni Pastri",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti",
+      "field": "Seni Pastri",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213005",
+    "fields": {
+      "course": "Diploma Seni Reka Grafik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Seni Reka Grafik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4581001",
+    "fields": {
+      "course": "Diploma Senibina Landskap",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Senibina Landskap",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senibina"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4343001",
+    "fields": {
+      "course": "Diploma Sistem Maklumat Perakaunan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Perniagaan Dan Pengurusan",
+      "field": "Sistem Maklumat Perakaunan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perakaunan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4462001",
+    "fields": {
+      "course": "Diploma Statistik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Statistik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-data"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4212004",
+    "fields": {
+      "course": "Diploma Tari Persembahan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Tari Persembahan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4212002",
+    "fields": {
+      "course": "Diploma Teater",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teater",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4620001",
+    "fields": {
+      "course": "Diploma Teknologi Akuakultur",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pertanian Dan Bio-Industri",
+      "field": "Teknologi Akuakultur",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4582001",
+    "fields": {
+      "course": "Diploma Teknologi Binaan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Teknologi Binaan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213002",
+    "fields": {
+      "course": "Diploma Teknologi Filem",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Filem",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4581005",
+    "fields": {
+      "course": "Diploma Teknologi Geospatial",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Teknologi Geospatial",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4545001",
+    "fields": {
+      "course": "Diploma Teknologi Higien Industri",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Teknologi Higien Industri",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4543001",
+    "fields": {
+      "course": "Diploma Teknologi Industri Perkayuan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Pembuatan",
+      "field": "Teknologi Industri Perkayuan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "umum"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4524002",
+    "fields": {
+      "course": "Diploma Teknologi Kimia Perindustrian",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Teknologi Kimia Perindustrian",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kimia-proses"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213003",
+    "fields": {
+      "course": "Diploma Teknologi Komunikasi Media Digital",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Komunikasi Media Digital",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4541001",
+    "fields": {
+      "course": "Diploma Teknologi Makanan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Pembuatan",
+      "field": "Teknologi Makanan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4725001",
+    "fields": {
+      "course": "Diploma Teknologi Makmal Perubatan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kesihatan",
+      "field": "Teknologi Makmal Perubatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "perubatan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4620003",
+    "fields": {
+      "course": "Diploma Teknologi Pengeluaran Herba",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Pertanian Dan Bio-Industri",
+      "field": "Teknologi Pengeluaran Herba",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4213006",
+    "fields": {
+      "course": "Diploma Teknologi Percetakan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Percetakan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4545003",
+    "fields": {
+      "course": "Diploma Teknologi Polimer",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains",
+      "field": "Teknologi Polimer",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4214001",
+    "fields": {
+      "course": "Diploma Teknologi Rekabentuk Dalaman",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Rekabentuk Dalaman",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4214002",
+    "fields": {
+      "course": "Diploma Teknologi Seni Reka Fesyen",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Seni Reka Fesyen",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4214004",
+    "fields": {
+      "course": "Diploma Teknologi Seni Reka Perindustrian",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Dan Reka Bentuk",
+      "field": "Teknologi Seni Reka Perindustrian",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4542001",
+    "fields": {
+      "course": "Diploma Teknologi Tekstil Dan Pakaian",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Teknologi Pembuatan",
+      "field": "Teknologi Tekstil Dan Pakaian",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "umum"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4526002",
+    "fields": {
+      "course": "Diploma Ukur Bahan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Ukur Bahan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE4526001",
+    "fields": {
+      "course": "Diploma Ukur Bangunan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Kejuruteraan",
+      "field": "Ukur Bangunan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "UE6581001",
+    "fields": {
+      "course": "Sarjana Muda Sains (Kepujian) Senibina",
+      "wbl": false,
+      "level": "Ijazah Sarjana Muda",
+      "department": "Seni Bina Dan Binaan",
+      "field": "Senibina",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "",
+      "description_en": "",
+      "field_key": "senibina"
+    }
   }
 ]

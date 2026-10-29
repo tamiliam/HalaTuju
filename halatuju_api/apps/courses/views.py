@@ -151,8 +151,12 @@ class CourseSearchView(APIView):
         courses_config = apps.get_app_config('courses')
         pathway_map = getattr(courses_config, 'course_pathway_map', {})
 
+        # Bumi Sprint D1: Bumiputera-only SPM courses only for a Bumi student — results and pick-lists.
+        spm_visible = Course.objects.all()
+        if not search_bumiputera(request.query_params):
+            spm_visible = spm_visible.exclude(requirement__req_bumiputera=True)
         if include_spm:
-            qs = Course.objects.select_related('requirement').all()
+            qs = spm_visible.select_related('requirement')
 
             if q:
                 qs = qs.filter(course__icontains=q)
@@ -289,7 +293,7 @@ class CourseSearchView(APIView):
 
         # ── Build dynamic filter options from full DB ─────────────────
         spm_levels = list(
-            Course.objects.values_list('level', flat=True)
+            spm_visible.values_list('level', flat=True)
             .distinct().order_by('level')
         )
         # Sprint B: the STPM pick-lists offer only what this student's search can return.
@@ -300,7 +304,7 @@ class CourseSearchView(APIView):
         all_levels = sorted(set(spm_levels + stpm_levels))
 
         spm_field_keys = list(
-            Course.objects.exclude(field_key__isnull=True)
+            spm_visible.exclude(field_key__isnull=True)
             .values_list('field_key', flat=True)
             .distinct()
         )
@@ -313,7 +317,7 @@ class CourseSearchView(APIView):
 
         # Legacy: keep fields list for backward compatibility
         spm_fields = list(
-            Course.objects.exclude(field='')
+            spm_visible.exclude(field='')
             .values_list('field', flat=True)
             .distinct().order_by('field')
         )
@@ -325,7 +329,7 @@ class CourseSearchView(APIView):
         all_fields = sorted(set(spm_fields + stpm_fields))
 
         spm_source_types = list(
-            CourseRequirement.objects.values_list('source_type', flat=True)
+            CourseRequirement.objects.filter(course__in=spm_visible).values_list('source_type', flat=True)
             .distinct().order_by('source_type')
         )
         # Replace 'tvet' with 'iljtm' + 'ilkbs' for filter display
@@ -336,7 +340,7 @@ class CourseSearchView(APIView):
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 
         # PISMP Aliran options (derived) — only the school types actually present.
-        pismp_names = Course.objects.filter(
+        pismp_names = spm_visible.filter(
             requirement__source_type='pismp'
         ).values_list('course_id', 'course')
         present_alirans = {aliran_of(name, cid) for cid, name in pismp_names}
@@ -406,6 +410,7 @@ class EligibilityCheckView(APIView):
             disability=data.get('disability', False),
             other_tech=data.get('other_tech', False),
             other_voc=data.get('other_voc', False),
+            bumiputera=resolve_bumiputera(data.get('bumiputera'), data.get('nationality', 'Warganegara')),
         )
 
         courses_config = apps.get_app_config('courses')

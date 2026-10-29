@@ -1,0 +1,6312 @@
+{
+ "built_from": "data/spm/mohe_bumi_2026-10-29.csv",
+ "prefix": "UE",
+ "parser": "apps/courses/spm_syarat.py (count-once: spm_count_once.py)",
+ "courses": [
+  {
+   "course_id": "UE0222001",
+   "course": "Asasi TESL",
+   "level": "Asasi",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "TESL",
+   "field_key": "bahasa",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE0222001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 4,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "A",
+         "subjects": [
+          "eng"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math",
+          "addmath"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 3,
+         "grade": "A-",
+         "exclude": [
+          "eng"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 78.12
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred A dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred A- dalam mana-mana TIGA (3) mata pelajaran yang belum dikira tidak termasuk mata pelajaran berikut : • Bahasa Inggeris Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE0380001",
+   "course": "Asasi Undang-Undang (KPM)",
+   "level": "Asasi",
+   "department": "Undang-Undang",
+   "field": "Undang-Undang (KPM)",
+   "field_key": "undang-undang",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE0380001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 4,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math",
+          "addmath"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 3,
+         "grade": "A-",
+         "exclude": [
+          "eng",
+          "math",
+          "addmath"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "distinction_eng": true,
+    "merit_cutoff": 86.74
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred A- dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred A- dalam mana-mana TIGA (3) mata pelajaran yang belum dikira tidak termasuk mata pelajaran berikut : • Bahasa Inggeris • Matematik • Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE0380002",
+   "course": "Asasi Undang-Undang (UiTM)",
+   "level": "Asasi",
+   "department": "Undang-Undang",
+   "field": "Undang-Undang (UiTM)",
+   "field_key": "undang-undang",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE0380002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 4,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math",
+          "addmath"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 3,
+         "grade": "A-",
+         "exclude": [
+          "addmath",
+          "math",
+          "eng"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "distinction_eng": true,
+    "merit_cutoff": 88.51
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred A- dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred A- dalam mana-mana TIGA (3) mata pelajaran yang belum dikira tidak termasuk mata pelajaran berikut : • Matematik Tambahan • Matematik • Bahasa Inggeris Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4343004",
+   "course": "Diploma Analisis Pelaburan",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Analisis Pelaburan",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4343004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 66.37
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213001",
+   "course": "Diploma Animasi",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Animasi",
+   "field_key": "multimedia",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 69.22
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4224001",
+   "course": "Diploma Bahasa Inggeris Komunikasi Profesional",
+   "level": "Diploma",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "Bahasa Inggeris Komunikasi Profesional",
+   "field_key": "bahasa",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4224001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 5,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "distinction_eng": true,
+    "credit_bm_b": true,
+    "merit_cutoff": 66.69
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred A- dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Melayu. Mendapat sekurang-kurangnya Gred C dalam mana-mana LIMA (5) mata pelajaran Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4727001",
+   "course": "Diploma Farmasi",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Farmasi",
+   "field_key": "farmasi",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4727001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C+",
+       "subjects": [
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C+",
+       "subjects": [
+        "bio"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C+",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 87.26
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C+ dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C+ dalam mata pelajaran Kimia. Mendapat sekurang-kurangnya Gred C+ dalam mata pelajaran Biologi. Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4726002",
+   "course": "Diploma Fisioterapi",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Fisioterapi",
+   "field_key": "perubatan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4726002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 81.21
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Biologi. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Fizik. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213004",
+   "course": "Diploma Fotomedia Kreatif",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Fotomedia Kreatif",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4322003",
+   "course": "Diploma Informatik Perpustakaan",
+   "level": "Diploma",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "Informatik Perpustakaan",
+   "field_key": "komunikasi",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4322003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 71.99
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4723001",
+   "course": "Diploma Kejururawatan",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Kejururawatan",
+   "field_key": "kejururawatan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4723001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math",
+          "addmath"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "bio",
+          "phy",
+          "chem",
+          "sci"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 84.72
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam DUA (2) mata pelajaran berikut : • Matematik / Matematik Tambahan • Biologi / Fizik / Kimia / Sains Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran selain diatas Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4526003",
+   "course": "Diploma Kejuruteraan Awam",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Kejuruteraan Awam",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4526003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "eng"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "pertanian",
+        "eng_elec",
+        "addsci",
+        "gkt",
+        "comp_sci",
+        "bio",
+        "eng_civil",
+        "sci",
+        "chem",
+        "reka_cipta",
+        "eng_mech",
+        "kelestarian",
+        "eng_draw",
+        "sports_sci",
+        "phy"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 2,
+         "grade": "D",
+         "slots": [
+          [
+           "geo",
+           "poa",
+           "ekonomi",
+           "business",
+           "keusahawanan",
+           "psv"
+          ],
+          [
+           "kelestarian"
+          ],
+          [
+           "bio"
+          ],
+          [
+           "phy"
+          ],
+          [
+           "chem"
+          ],
+          [
+           "gkt"
+          ],
+          [
+           "eng_draw"
+          ],
+          [
+           "eng_civil"
+          ],
+          [
+           "eng_elec"
+          ],
+          [
+           "eng_mech"
+          ],
+          [
+           "pertanian"
+          ],
+          [
+           "reka_cipta"
+          ],
+          [
+           "comp_sci"
+          ],
+          [
+           "sports_sci"
+          ],
+          [
+           "addsci"
+          ],
+          [
+           "sci"
+          ]
+         ],
+         "subjects": [
+          "geo",
+          "poa",
+          "ekonomi",
+          "business",
+          "keusahawanan",
+          "psv",
+          "kelestarian",
+          "bio",
+          "phy",
+          "chem",
+          "gkt",
+          "eng_draw",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "pertanian",
+          "reka_cipta",
+          "comp_sci",
+          "sports_sci",
+          "addsci",
+          "sci"
+         ]
+        }
+       ],
+       "remaining": []
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 68.13
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pertanian / Pengajian Kejuruteraan Elektrik & Elektronik / Sains Tambahan / Grafik Komunikasi Teknikal / Sains Komputer / Biologi / Pengajian Kejuruteraan Awam / Sains / Kimia / Reka Cipta / Pengajian Kejuruteraan Mekanikal / Asas Kelestarian / Lukisan Kejuruteraan / Sains Sukan / Fizik Mendapat sekurang-kurangnya Gred D dalam DUA (2) mata pelajaran berikut : • Geografi / Prinsip Perakaunan / Ekonomi / Perniagaan / Pengajian Keusahawanan / Pendidikan Seni Visual • Asas Kelestarian • Biologi • Fizik • Kimia • Grafik Komunikasi Teknikal • Lukisan Kejuruteraan • Pengajian Kejuruteraan Awam • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Mekanikal • Pertanian • Reka Cipta • Sains Komputer • Sains Sukan • Sains Tambahan • Sains Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4523001",
+   "course": "Diploma Kejuruteraan Elektrik (Elektronik)",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Kejuruteraan Elektrik (Elektronik)",
+   "field_key": "elektrik",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4523001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "eng"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "sports_sci",
+        "phy",
+        "pertanian",
+        "eng_elec",
+        "addsci",
+        "gkt",
+        "comp_sci",
+        "bio",
+        "eng_civil",
+        "sci",
+        "chem",
+        "reka_cipta",
+        "eng_mech",
+        "kelestarian",
+        "eng_draw"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 2,
+         "grade": "D",
+         "slots": [
+          [
+           "kelestarian"
+          ],
+          [
+           "bio"
+          ],
+          [
+           "phy"
+          ],
+          [
+           "chem"
+          ],
+          [
+           "gkt"
+          ],
+          [
+           "eng_draw"
+          ],
+          [
+           "eng_civil"
+          ],
+          [
+           "eng_elec"
+          ],
+          [
+           "eng_mech"
+          ],
+          [
+           "pertanian"
+          ],
+          [
+           "reka_cipta"
+          ],
+          [
+           "comp_sci"
+          ],
+          [
+           "sports_sci"
+          ],
+          [
+           "addsci"
+          ],
+          [
+           "sci"
+          ],
+          [
+           "geo",
+           "poa",
+           "ekonomi",
+           "business",
+           "keusahawanan",
+           "psv"
+          ]
+         ],
+         "subjects": [
+          "kelestarian",
+          "bio",
+          "phy",
+          "chem",
+          "gkt",
+          "eng_draw",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "pertanian",
+          "reka_cipta",
+          "comp_sci",
+          "sports_sci",
+          "addsci",
+          "sci",
+          "geo",
+          "poa",
+          "ekonomi",
+          "business",
+          "keusahawanan",
+          "psv"
+         ]
+        }
+       ],
+       "remaining": []
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 67.33
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Sains Sukan / Fizik / Pertanian / Pengajian Kejuruteraan Elektrik & Elektronik / Sains Tambahan / Grafik Komunikasi Teknikal / Sains Komputer / Biologi / Pengajian Kejuruteraan Awam / Sains / Kimia / Reka Cipta / Pengajian Kejuruteraan Mekanikal / Asas Kelestarian / Lukisan Kejuruteraan Mendapat sekurang-kurangnya Gred D dalam DUA (2) mata pelajaran berikut : • Asas Kelestarian • Biologi • Fizik • Kimia • Grafik Komunikasi Teknikal • Lukisan Kejuruteraan • Pengajian Kejuruteraan Awam • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Mekanikal • Pertanian • Reka Cipta • Sains Komputer • Sains Sukan • Sains Tambahan • Sains • Geografi / Prinsip Perakaunan / Ekonomi / Perniagaan / Pengajian Keusahawanan / Pendidikan Seni Visual Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4522002",
+   "course": "Diploma Kejuruteraan Elektrik (Kuasa)",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Kejuruteraan Elektrik (Kuasa)",
+   "field_key": "elektrik",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4522002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "eng"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "pertanian",
+        "eng_elec",
+        "addsci",
+        "gkt",
+        "comp_sci",
+        "bio",
+        "eng_civil",
+        "sci",
+        "chem",
+        "reka_cipta",
+        "eng_mech",
+        "kelestarian",
+        "eng_draw",
+        "sports_sci",
+        "phy"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 2,
+         "grade": "D",
+         "slots": [
+          [
+           "kelestarian"
+          ],
+          [
+           "bio"
+          ],
+          [
+           "phy"
+          ],
+          [
+           "chem"
+          ],
+          [
+           "gkt"
+          ],
+          [
+           "eng_draw"
+          ],
+          [
+           "eng_civil"
+          ],
+          [
+           "eng_elec"
+          ],
+          [
+           "eng_mech"
+          ],
+          [
+           "pertanian"
+          ],
+          [
+           "reka_cipta"
+          ],
+          [
+           "comp_sci"
+          ],
+          [
+           "sports_sci"
+          ],
+          [
+           "addsci"
+          ],
+          [
+           "sci"
+          ],
+          [
+           "geo",
+           "poa",
+           "ekonomi",
+           "business",
+           "keusahawanan",
+           "psv"
+          ]
+         ],
+         "subjects": [
+          "kelestarian",
+          "bio",
+          "phy",
+          "chem",
+          "gkt",
+          "eng_draw",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "pertanian",
+          "reka_cipta",
+          "comp_sci",
+          "sports_sci",
+          "addsci",
+          "sci",
+          "geo",
+          "poa",
+          "ekonomi",
+          "business",
+          "keusahawanan",
+          "psv"
+         ]
+        }
+       ],
+       "remaining": []
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 68.38
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pertanian / Pengajian Kejuruteraan Elektrik & Elektronik / Sains Tambahan / Grafik Komunikasi Teknikal / Sains Komputer / Biologi / Pengajian Kejuruteraan Awam / Sains / Kimia / Reka Cipta / Pengajian Kejuruteraan Mekanikal / Asas Kelestarian / Lukisan Kejuruteraan / Sains Sukan / Fizik Mendapat sekurang-kurangnya Gred D dalam DUA (2) mata pelajaran berikut : • Asas Kelestarian • Biologi • Fizik • Kimia • Grafik Komunikasi Teknikal • Lukisan Kejuruteraan • Pengajian Kejuruteraan Awam • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Mekanikal • Pertanian • Reka Cipta • Sains Komputer • Sains Sukan • Sains Tambahan • Sains • Geografi / Prinsip Perakaunan / Ekonomi / Perniagaan / Pengajian Keusahawanan / Pendidikan Seni Visual Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4524001",
+   "course": "Diploma Kejuruteraan Kimia",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Kejuruteraan Kimia",
+   "field_key": "kimia-proses",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4524001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "eng"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "sci",
+        "chem",
+        "reka_cipta",
+        "eng_mech",
+        "kelestarian",
+        "eng_draw",
+        "sports_sci",
+        "phy",
+        "pertanian",
+        "eng_elec",
+        "addsci",
+        "gkt",
+        "comp_sci",
+        "bio",
+        "eng_civil"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 2,
+         "grade": "D",
+         "slots": [
+          [
+           "kelestarian"
+          ],
+          [
+           "bio"
+          ],
+          [
+           "phy"
+          ],
+          [
+           "chem"
+          ],
+          [
+           "gkt"
+          ],
+          [
+           "eng_draw"
+          ],
+          [
+           "eng_civil"
+          ],
+          [
+           "eng_elec"
+          ],
+          [
+           "eng_mech"
+          ],
+          [
+           "pertanian"
+          ],
+          [
+           "reka_cipta"
+          ],
+          [
+           "comp_sci"
+          ],
+          [
+           "sports_sci"
+          ],
+          [
+           "addsci"
+          ],
+          [
+           "sci"
+          ],
+          [
+           "geo",
+           "poa",
+           "ekonomi",
+           "business",
+           "keusahawanan",
+           "psv"
+          ]
+         ],
+         "subjects": [
+          "kelestarian",
+          "bio",
+          "phy",
+          "chem",
+          "gkt",
+          "eng_draw",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "pertanian",
+          "reka_cipta",
+          "comp_sci",
+          "sports_sci",
+          "addsci",
+          "sci",
+          "geo",
+          "poa",
+          "ekonomi",
+          "business",
+          "keusahawanan",
+          "psv"
+         ]
+        }
+       ],
+       "remaining": []
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 75.58
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Sains / Kimia / Reka Cipta / Pengajian Kejuruteraan Mekanikal / Asas Kelestarian / Lukisan Kejuruteraan / Sains Sukan / Fizik / Pertanian / Pengajian Kejuruteraan Elektrik & Elektronik / Sains Tambahan / Grafik Komunikasi Teknikal / Sains Komputer / Biologi / Pengajian Kejuruteraan Awam Mendapat sekurang-kurangnya Gred D dalam DUA (2) mata pelajaran berikut : • Asas Kelestarian • Biologi • Fizik • Kimia • Grafik Komunikasi Teknikal • Lukisan Kejuruteraan • Pengajian Kejuruteraan Awam • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Mekanikal • Pertanian • Reka Cipta • Sains Komputer • Sains Sukan • Sains Tambahan • Sains • Geografi / Prinsip Perakaunan / Ekonomi / Perniagaan / Pengajian Keusahawanan / Pendidikan Seni Visual Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4521001",
+   "course": "Diploma Kejuruteraan Mekanikal",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Kejuruteraan Mekanikal",
+   "field_key": "mekanikal",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4521001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "eng"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "D",
+       "subjects": [
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "pertanian",
+        "eng_elec",
+        "addsci",
+        "gkt",
+        "comp_sci",
+        "bio",
+        "eng_civil",
+        "sci",
+        "chem",
+        "reka_cipta",
+        "eng_mech",
+        "kelestarian",
+        "eng_draw",
+        "sports_sci",
+        "phy"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [],
+       "groups": [
+        {
+         "count": 2,
+         "grade": "D",
+         "slots": [
+          [
+           "kelestarian"
+          ],
+          [
+           "bio"
+          ],
+          [
+           "phy"
+          ],
+          [
+           "chem"
+          ],
+          [
+           "gkt"
+          ],
+          [
+           "eng_draw"
+          ],
+          [
+           "eng_civil"
+          ],
+          [
+           "eng_elec"
+          ],
+          [
+           "eng_mech"
+          ],
+          [
+           "pertanian"
+          ],
+          [
+           "reka_cipta"
+          ],
+          [
+           "comp_sci"
+          ],
+          [
+           "sports_sci"
+          ],
+          [
+           "addsci"
+          ],
+          [
+           "sci"
+          ],
+          [
+           "geo",
+           "poa",
+           "ekonomi",
+           "business",
+           "keusahawanan",
+           "psv"
+          ]
+         ],
+         "subjects": [
+          "kelestarian",
+          "bio",
+          "phy",
+          "chem",
+          "gkt",
+          "eng_draw",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "pertanian",
+          "reka_cipta",
+          "comp_sci",
+          "sports_sci",
+          "addsci",
+          "sci",
+          "geo",
+          "poa",
+          "ekonomi",
+          "business",
+          "keusahawanan",
+          "psv"
+         ]
+        }
+       ],
+       "remaining": []
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "merit_cutoff": 70.07
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred D dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pertanian / Pengajian Kejuruteraan Elektrik & Elektronik / Sains Tambahan / Grafik Komunikasi Teknikal / Sains Komputer / Biologi / Pengajian Kejuruteraan Awam / Sains / Kimia / Reka Cipta / Pengajian Kejuruteraan Mekanikal / Asas Kelestarian / Lukisan Kejuruteraan / Sains Sukan / Fizik Mendapat sekurang-kurangnya Gred D dalam DUA (2) mata pelajaran berikut : • Asas Kelestarian • Biologi • Fizik • Kimia • Grafik Komunikasi Teknikal • Lukisan Kejuruteraan • Pengajian Kejuruteraan Awam • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Mekanikal • Pertanian • Reka Cipta • Sains Komputer • Sains Sukan • Sains Tambahan • Sains • Geografi / Prinsip Perakaunan / Ekonomi / Perniagaan / Pengajian Keusahawanan / Pendidikan Seni Visual Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4422001",
+   "course": "Diploma Kesihatan Persekitaran",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Kesihatan Persekitaran",
+   "field_key": "sains-hayat",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4422001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio",
+        "phy"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 68.49
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Kimia. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Biologi / Fizik Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4621001",
+   "course": "Diploma Keusahawanan Tani",
+   "level": "Diploma",
+   "department": "Pertanian Dan Bio-Industri",
+   "field": "Keusahawanan Tani",
+   "field_key": "pertanian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4621001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 2,
+       "grade": "E",
+       "subjects": [
+        "keusahawanan",
+        "chem",
+        "bio",
+        "addsci",
+        "pertanian",
+        "pertanian",
+        "tanaman_makanan",
+        "akuakultur",
+        "landskap_nurseri",
+        "kelestarian",
+        "sci",
+        "ekonomi",
+        "business",
+        "phy"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 60.89
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam DUA (2) mata pelajaran berikut : • Pengajian Keusahawanan • Kimia • Biologi • Sains Tambahan • Sains Pertanian • Pertanian • Tanaman Makanan • Akuakultur & Haiwan Rekreasi • Landskap Dan Nurseri • Pengeluaran Tanaman • Hortikultur Hiasan Dan Landskap • Kejenteraan Ladang • Pengurusan Ladang • Asas Kelestarian • Sains • Ekonomi • Perniagaan • Fizik Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": [
+    "no grade-form key, dropped from its list: 'Pengeluaran Tanaman'",
+    "no grade-form key, dropped from its list: 'Hortikultur Hiasan Dan Landskap'",
+    "no grade-form key, dropped from its list: 'Kejenteraan Ladang'",
+    "no grade-form key, dropped from its list: 'Pengurusan Ladang'"
+   ]
+  },
+  {
+   "course_id": "UE4321001",
+   "course": "Diploma Komunikasi Dan Media",
+   "level": "Diploma",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "Komunikasi Dan Media",
+   "field_key": "komunikasi",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4321001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C+",
+       "subjects": [
+        "bm"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 64.87
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C+ dalam mata pelajaran Bahasa Melayu. Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4421001",
+   "course": "Diploma Mikrobiologi",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Mikrobiologi",
+   "field_key": "sains-hayat",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4421001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "chem",
+        "bio",
+        "sci",
+        "addsci",
+        "phy",
+        "srt",
+        "reka_cipta",
+        "sports_sci",
+        "akuakultur",
+        "pertanian"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 78.0
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Kimia / Biologi / Sains / Sains Tambahan / Fizik / Sains Rumah Tangga / Reka Cipta / Sains Sukan / Akuakultur & Haiwan Rekreasi / Pertanian Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4343005",
+   "course": "Diploma Muamalat",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Muamalat",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4343005/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "islam",
+        "tasawwur_islam",
+        "pqs",
+        "psi",
+        "turath_quran_sunnah",
+        "turath_islamiah",
+        "usul_aldin",
+        "al_syariah",
+        "manahij"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "bahasa_arab",
+        "bahasa_arab_tinggi",
+        "turath_bahasa_arab",
+        "lughah_arabiah",
+        "adab_balaghah"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 72.79
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pendidikan Islam / Tasawwur Islam / Pendidikan Al-quran Dan Al-sunnah / Pendidikan Syari'ah Islamiah / Turath Al-quran Dan Al-sunnah / Turath Dirasat Islamiah / Usul Al-din / Al-syariah / Manahij Al-'ulum Al-islamiah Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Bahasa Arab / Bahasa Arab Tinggi / Turath Bahasa Arab / Al-lughah Al-arabiah Al-mu'asirah / Al-adab Wa Al-balaghah Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4724001",
+   "course": "Diploma Pembantu Pembedahan Pergigian",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Pembantu Pembedahan Pergigian",
+   "field_key": "pergigian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4724001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math",
+          "addmath"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 84.38
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam DUA (2) mata pelajaran berikut : • Matematik / Matematik Tambahan • Fizik / Kimia / Biologi / Sains Tambahan / Sains Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran selain diatas Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4726001",
+   "course": "Diploma Pemulihan Carakerja",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Pemulihan Carakerja",
+   "field_key": "perubatan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4726001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio",
+        "phy"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 76.16
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Biologi / Fizik Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4143001",
+   "course": "Diploma Pendidikan Awal Kanak-Kanak",
+   "level": "Diploma",
+   "department": "Pendidikan",
+   "field": "Pendidikan Awal Kanak-Kanak",
+   "field_key": "pendidikan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4143001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 5,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 66.56
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mana-mana LIMA (5) mata pelajaran Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4146001",
+   "course": "Diploma Pendidikan Islam",
+   "level": "Diploma",
+   "department": "Pendidikan",
+   "field": "Pendidikan Islam",
+   "field_key": "pendidikan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4146001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "B+",
+       "subjects": [
+        "islam",
+        "tasawwur_islam",
+        "pqs",
+        "psi",
+        "turath_quran_sunnah",
+        "turath_islamiah",
+        "usul_aldin",
+        "al_syariah",
+        "manahij"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bahasa_arab",
+        "bahasa_arab_tinggi",
+        "turath_bahasa_arab",
+        "lughah_arabiah",
+        "adab_balaghah"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 89.09
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B+ dalam SATU (1) mata pelajaran berikut : • Pendidikan Islam / Tasawwur Islam / Pendidikan Al-quran Dan Al-sunnah / Pendidikan Syari'ah Islamiah / Turath Al-quran Dan Al-sunnah / Turath Dirasat Islamiah / Usul Al-din / Al-syariah / Manahij Al-'ulum Al-islamiah Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Bahasa Arab / Bahasa Arab Tinggi / Turath Bahasa Arab / Al-lughah Al-arabiah Al-mu'asirah / Al-adab Wa Al-balaghah Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4343003",
+   "course": "Diploma Pengajian Insurans",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pengajian Insurans",
+   "field_key": "perakaunan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4343003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 65.21
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4343002",
+   "course": "Diploma Pengajian Perbankan",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pengajian Perbankan",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4343002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 71.22
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4340001",
+   "course": "Diploma Pengajian Perniagaan",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pengajian Perniagaan",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4340001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 75.17
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4340002",
+   "course": "Diploma Pengajian Perniagaan (Pengangkutan)",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pengajian Perniagaan (Pengangkutan)",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4340002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 63.14
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4813001",
+   "course": "Diploma Pengajian Sukan",
+   "level": "Diploma",
+   "department": "Sains Sukan",
+   "field": "Pengajian Sukan",
+   "field_key": "sains-sosial",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4813001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 70.44
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4725002",
+   "course": "Diploma Pengimejan Perubatan",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Pengimejan Perubatan",
+   "field_key": "perubatan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4725002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio",
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 86.57
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Fizik. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Biologi / Kimia Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4346001",
+   "course": "Diploma Pengurusan Dan Teknologi Pejabat",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pengurusan Dan Teknologi Pejabat",
+   "field_key": "pengurusan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4346001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 68.83
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4221001",
+   "course": "Diploma Pengurusan Halal",
+   "level": "Diploma",
+   "department": "Pengajian Islam",
+   "field": "Pengurusan Halal",
+   "field_key": "pengajian-islam",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4221001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "islam",
+        "tasawwur_islam",
+        "pqs",
+        "psi",
+        "turath_quran_sunnah",
+        "turath_islamiah",
+        "usul_aldin",
+        "al_syariah",
+        "manahij"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "bahasa_arab",
+        "bahasa_arab_tinggi",
+        "turath_bahasa_arab",
+        "lughah_arabiah",
+        "adab_balaghah"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 77.07
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pendidikan Islam / Tasawwur Islam / Pendidikan Al-quran Dan Al-sunnah / Pendidikan Syari'ah Islamiah / Turath Al-quran Dan Al-sunnah / Turath Dirasat Islamiah / Usul Al-din / Al-syariah / Manahij Al-'ulum Al-islamiah Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Bahasa Arab / Bahasa Arab Tinggi / Turath Bahasa Arab / Al-lughah Al-arabiah Al-mu'asirah / Al-adab Wa Al-balaghah Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4581002",
+   "course": "Diploma Pengurusan Hartanah",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Pengurusan Hartanah",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4581002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 64.24
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Tambahan / Sains Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4811002",
+   "course": "Diploma Pengurusan Hotel",
+   "level": "Diploma",
+   "department": "Hospitaliti",
+   "field": "Pengurusan Hotel",
+   "field_key": "hospitaliti",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4811002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 62.08
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4620002",
+   "course": "Diploma Pengurusan Industri Perladangan",
+   "level": "Diploma",
+   "department": "Pertanian Dan Bio-Industri",
+   "field": "Pengurusan Industri Perladangan",
+   "field_key": "pertanian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4620002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 2,
+       "grade": "E",
+       "subjects": [
+        "sci",
+        "kelestarian",
+        "landskap_nurseri",
+        "akuakultur",
+        "tanaman_makanan",
+        "pertanian",
+        "pertanian",
+        "addsci",
+        "bio",
+        "chem",
+        "phy"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 55.96
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam DUA (2) mata pelajaran berikut : • Sains • Asas Kelestarian • Kejenteraan Ladang • Hortikultur Hiasan Dan Landskap • Pengeluaran Tanaman • Landskap Dan Nurseri • Akuakultur & Haiwan Rekreasi • Tanaman Makanan • Pertanian • Sains Pertanian • Sains Tambahan • Biologi • Kimia • Fizik • Pengurusan Ladang Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": [
+    "no grade-form key, dropped from its list: 'Kejenteraan Ladang'",
+    "no grade-form key, dropped from its list: 'Hortikultur Hiasan Dan Landskap'",
+    "no grade-form key, dropped from its list: 'Pengeluaran Tanaman'",
+    "no grade-form key, dropped from its list: 'Pengurusan Ladang'"
+   ]
+  },
+  {
+   "course_id": "UE4322001",
+   "course": "Diploma Pengurusan Maklumat",
+   "level": "Diploma",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "Pengurusan Maklumat",
+   "field_key": "komunikasi",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4322001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 69.9
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4812001",
+   "course": "Diploma Pengurusan Pelancongan",
+   "level": "Diploma",
+   "department": "Hospitaliti",
+   "field": "Pengurusan Pelancongan",
+   "field_key": "hospitaliti",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4812001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 60.86
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4212003",
+   "course": "Diploma Pengurusan Seni",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Pengurusan Seni",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4212003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 76.44
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4813002",
+   "course": "Diploma Pengurusan Sukan Dan Rekreasi",
+   "level": "Diploma",
+   "department": "Sains Sukan",
+   "field": "Pengurusan Sukan Dan Rekreasi",
+   "field_key": "sains-sosial",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4813002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 72.18
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4345001",
+   "course": "Diploma Pentadbiran Awam",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pentadbiran Awam",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4345001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 74.14
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4345002",
+   "course": "Diploma Pentadbiran Korporat",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Pentadbiran Korporat",
+   "field_key": "perniagaan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4345002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 78.03
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4222001",
+   "course": "Diploma Penulisan Skrip",
+   "level": "Diploma",
+   "department": "Bahasa Dan Komunikasi",
+   "field": "Penulisan Skrip",
+   "field_key": "bahasa",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4222001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 71.33
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4344001",
+   "course": "Diploma Perakaunan",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Perakaunan",
+   "field_key": "perakaunan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4344001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 81.9
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4581003",
+   "course": "Diploma Perancangan Bandar & Wilayah",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Perancangan Bandar & Wilayah",
+   "field_key": "senibina",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4581003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 65.63
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Tambahan / Sains Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4212005",
+   "course": "Diploma Produksi Audio Digital",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Produksi Audio Digital",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4212005/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 60.29
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4214003",
+   "course": "Diploma Reka Bentuk Seramik Industri Kreatif",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Reka Bentuk Seramik Industri Kreatif",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4214003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4545004",
+   "course": "Diploma Sains",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Sains",
+   "field_key": "sains-hayat",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4545004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio",
+        "phy",
+        "chem",
+        "sci",
+        "addsci",
+        "pertanian",
+        "srt",
+        "reka_cipta",
+        "sports_sci",
+        "eng_mech",
+        "eng_elec",
+        "akuakultur",
+        "voc_elec_serv",
+        "landskap_nurseri",
+        "business",
+        "keusahawanan"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 72.39
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Biologi / Fizik / Kimia / Sains / Sains Tambahan / Pertanian / Sains Rumah Tangga / Reka Cipta / Sains Sukan / Pengajian Kejuruteraan Mekanikal / Pengajian Kejuruteraan Elektrik & Elektronik / Akuakultur & Haiwan Rekreasi / Pendawaian Domestik / Landskap Dan Nurseri / Perniagaan / Pengajian Keusahawanan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4462002",
+   "course": "Diploma Sains Aktuari",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Sains Aktuari",
+   "field_key": "sains-data",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4462002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "addmath",
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_addmath": true,
+    "credit_english": true,
+    "merit_cutoff": 74.12
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran selain diatas Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4581004",
+   "course": "Diploma Sains Geomatik",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Sains Geomatik",
+   "field_key": "senibina",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4581004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "phy",
+          "chem",
+          "bio",
+          "sci"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": []
+        },
+        {
+         "count": 1,
+         "grade": "E",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 61.35
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran yang belum diambil kira Mendapat sekurang-kurangnya Gred E dalam mana-mana SATU (1) mata pelajaran. mata pelajaran yang belum diambil kira Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4481001",
+   "course": "Diploma Sains Komputer",
+   "level": "Diploma",
+   "department": "Teknologi Maklumat",
+   "field": "Sains Komputer",
+   "field_key": "it-perisian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4481001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "addmath",
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci",
+          "comp_sci",
+          "gkt",
+          "reka_cipta",
+          "eng_civil",
+          "eng_elec",
+          "eng_mech",
+          "eng_draw",
+          "reka_bentuk_grafik",
+          "produksi_multimedia"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 76.71
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik Tambahan / Fizik / Kimia / Biologi / Sains Tambahan / Sains / Sains Komputer / Grafik Komunikasi Teknikal / Reka Cipta / Pengajian Kejuruteraan Awam / Pengajian Kejuruteraan Elektrik & Elektronik / Pengajian Kejuruteraan Mekanikal / Lukisan Kejuruteraan / Reka Bentuk Grafik / Produksi Multimedia Mendapat sekurang-kurangnya Gred C dalam mana-mana DUA (2) mata pelajaran yang belum diambil kira Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4461001",
+   "course": "Diploma Sains Matematik",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Sains Matematik",
+   "field_key": "sains-fizikal",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4461001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "addmath",
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 1,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_addmath": true,
+    "credit_english": true,
+    "merit_cutoff": 68.74
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik Tambahan. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mana-mana SATU (1) mata pelajaran selain diatas Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4211002",
+   "course": "Diploma Seni Halus",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Seni Halus",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4211002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4811003",
+   "course": "Diploma Seni Kulinari",
+   "level": "Diploma",
+   "department": "Hospitaliti",
+   "field": "Seni Kulinari",
+   "field_key": "kulinari",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4811003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 70.94
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4215002",
+   "course": "Diploma Seni Lukis Dan Seni Reka (Seni Reka Logam Halus)",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Seni Lukis Dan Seni Reka (Seni Reka Logam Halus)",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4215002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4215001",
+   "course": "Diploma Seni Lukis Dan Seni Reka (Seni Reka Tekstil)",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Seni Lukis Dan Seni Reka (Seni Reka Tekstil)",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4215001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4212001",
+   "course": "Diploma Seni Muzik",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Seni Muzik",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4212001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 61.32
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4811001",
+   "course": "Diploma Seni Pastri",
+   "level": "Diploma",
+   "department": "Hospitaliti",
+   "field": "Seni Pastri",
+   "field_key": "kulinari",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4811001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 75.09
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213005",
+   "course": "Diploma Seni Reka Grafik",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Seni Reka Grafik",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213005/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4581001",
+   "course": "Diploma Senibina Landskap",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Senibina Landskap",
+   "field_key": "senibina",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4581001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 67.66
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4343001",
+   "course": "Diploma Sistem Maklumat Perakaunan",
+   "level": "Diploma",
+   "department": "Perniagaan Dan Pengurusan",
+   "field": "Sistem Maklumat Perakaunan",
+   "field_key": "perakaunan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4343001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 74.56
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4462001",
+   "course": "Diploma Statistik",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Statistik",
+   "field_key": "sains-data",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4462001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      },
+      {
+       "counted": [
+        "eng"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "math"
+         ]
+        },
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "addmath",
+          "phy",
+          "chem",
+          "bio",
+          "addsci",
+          "sci",
+          "comp_sci",
+          "eng_mech",
+          "eng_elec",
+          "eng_civil",
+          "reka_cipta",
+          "eng_draw",
+          "ekonomi",
+          "keusahawanan",
+          "business",
+          "poa"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 69.97
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik Tambahan • Fizik • Kimia • Biologi • Sains Tambahan • Sains • Sains Komputer • Pengajian Kejuruteraan Mekanikal • Pengajian Kejuruteraan Elektrik & Elektronik • Pengajian Kejuruteraan Awam • Reka Cipta • Lukisan Kejuruteraan • Ekonomi • Pengajian Keusahawanan • Perniagaan • Prinsip Perakaunan Mendapat sekurang-kurangnya Gred C dalam mana-mana DUA (2) mata pelajaran yang belum diambil kira Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4212004",
+   "course": "Diploma Tari Persembahan",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Tari Persembahan",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4212004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 66.5
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4212002",
+   "course": "Diploma Teater",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teater",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4212002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 74.18
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4620001",
+   "course": "Diploma Teknologi Akuakultur",
+   "level": "Diploma",
+   "department": "Pertanian Dan Bio-Industri",
+   "field": "Teknologi Akuakultur",
+   "field_key": "pertanian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4620001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 2,
+       "grade": "E",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "sci",
+        "akuakultur"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 53.38
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam DUA (2) mata pelajaran berikut : • Fizik • Kimia • Biologi • Sains • Akuakultur & Haiwan Rekreasi Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4582001",
+   "course": "Diploma Teknologi Binaan",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Teknologi Binaan",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4582001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "addsci",
+        "sci",
+        "kelestarian"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 58.58
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Sains Tambahan / Sains / Asas Kelestarian Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213002",
+   "course": "Diploma Teknologi Filem",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Filem",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 68.85
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4581005",
+   "course": "Diploma Teknologi Geospatial",
+   "level": "Diploma",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Teknologi Geospatial",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4581005/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 69.66
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Matematik. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Tambahan / Sains Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4545001",
+   "course": "Diploma Teknologi Higien Industri",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Teknologi Higien Industri",
+   "field_key": "sains-hayat",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4545001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "eng_mech",
+        "phy",
+        "chem",
+        "bio",
+        "sci",
+        "addsci",
+        "kelestarian",
+        "reka_cipta",
+        "eng_civil",
+        "eng_elec",
+        "eng_draw",
+        "kerja_paip",
+        "voc_construct",
+        "pembuatan_perabot",
+        "voc_elec_serv",
+        "voc_auto",
+        "voc_weld",
+        "menservis_motosikal",
+        "penyejukan",
+        "menservis_elektrik"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 60.0
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Pengajian Kejuruteraan Mekanikal / Fizik / Kimia / Biologi / Sains / Sains Tambahan / Asas Kelestarian / Reka Cipta / Pengajian Kejuruteraan Awam / Pengajian Kejuruteraan Elektrik & Elektronik / Lukisan Kejuruteraan / Kerja Paip Domestik / Pembinaan Domestik / Pembuatan Perabot / Pendawaian Domestik / Menservis Automobil / Kimpalan Arka Dan Gas / Menservis Motosikal / Menservis Peralatan Penyejukan & Penyamanan Udara / Menservis Peralatan Elektrik Domestik Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4543001",
+   "course": "Diploma Teknologi Industri Perkayuan",
+   "level": "Diploma",
+   "department": "Teknologi Pembuatan",
+   "field": "Teknologi Industri Perkayuan",
+   "field_key": "umum",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4543001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath",
+        "sci"
+       ]
+      },
+      {
+       "count": 2,
+       "grade": "E",
+       "subjects": [
+        "chem",
+        "bio",
+        "phy",
+        "addsci",
+        "gkt",
+        "kelestarian",
+        "pertanian",
+        "srt",
+        "reka_cipta",
+        "comp_sci",
+        "sports_sci",
+        "eng_civil",
+        "eng_mech",
+        "eng_elec",
+        "eng_draw",
+        "pembuatan_perabot",
+        "hiasan_dalaman",
+        "reka_bentuk_grafik"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 47.38
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan / Sains Mendapat sekurang-kurangnya Gred E dalam DUA (2) mata pelajaran berikut : • Kimia / Biologi / Fizik / Sains Tambahan / Grafik Komunikasi Teknikal / Asas Kelestarian / Pertanian / Sains Rumah Tangga / Reka Cipta / Sains Komputer / Sains Sukan / Pengajian Kejuruteraan Awam / Pengajian Kejuruteraan Mekanikal / Pengajian Kejuruteraan Elektrik & Elektronik / Lukisan Kejuruteraan / Pembuatan Perabot / Hiasan Dalaman Asas / Reka Bentuk Grafik Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4524002",
+   "course": "Diploma Teknologi Kimia Perindustrian",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Teknologi Kimia Perindustrian",
+   "field_key": "kimia-proses",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4524002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "bio",
+        "sci",
+        "comp_sci",
+        "reka_cipta",
+        "eng_draw",
+        "ekonomi",
+        "business"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 68.41
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Kimia. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Biologi / Sains / Sains Komputer / Reka Cipta / Lukisan Kejuruteraan / Ekonomi / Perniagaan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213003",
+   "course": "Diploma Teknologi Komunikasi Media Digital",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Komunikasi Media Digital",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C+",
+       "subjects": [
+        "bm"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 67.2
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C+ dalam mata pelajaran Bahasa Melayu. Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4541001",
+   "course": "Diploma Teknologi Makanan",
+   "level": "Diploma",
+   "department": "Teknologi Pembuatan",
+   "field": "Teknologi Makanan",
+   "field_key": "kulinari",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4541001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "chem",
+        "bio",
+        "phy",
+        "voc_food",
+        "sci",
+        "addsci",
+        "pertanian",
+        "comp_sci",
+        "tanaman_makanan",
+        "voc_catering",
+        "akuakultur"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 76.46
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Kimia / Biologi / Fizik / Pemprosesan Makanan / Sains / Sains Tambahan / Pertanian / Sains Komputer / Tanaman Makanan / Katering Dan Penyajian / Akuakultur & Haiwan Rekreasi Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4725001",
+   "course": "Diploma Teknologi Makmal Perubatan",
+   "level": "Diploma",
+   "department": "Kesihatan",
+   "field": "Teknologi Makmal Perubatan",
+   "field_key": "perubatan",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4725001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "bio",
+        "phy"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_eng_b": true,
+    "merit_cutoff": 80.92
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Kimia. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Biologi / Fizik Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4620003",
+   "course": "Diploma Teknologi Pengeluaran Herba",
+   "level": "Diploma",
+   "department": "Pertanian Dan Bio-Industri",
+   "field": "Teknologi Pengeluaran Herba",
+   "field_key": "pertanian",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4620003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "chem"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "bio"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 53.82
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Kimia. Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Biologi. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4213006",
+   "course": "Diploma Teknologi Percetakan",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Percetakan",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4213006/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4545003",
+   "course": "Diploma Teknologi Polimer",
+   "level": "Diploma",
+   "department": "Sains",
+   "field": "Teknologi Polimer",
+   "field_key": "sains-hayat",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4545003/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "bio",
+        "comp_sci",
+        "reka_cipta",
+        "eng_draw",
+        "eng_mech",
+        "ekonomi",
+        "business"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "chem",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 56.59
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Biologi / Sains Komputer / Reka Cipta / Lukisan Kejuruteraan / Pengajian Kejuruteraan Mekanikal / Ekonomi / Perniagaan Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Kimia / Sains Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4214001",
+   "course": "Diploma Teknologi Rekabentuk Dalaman",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Rekabentuk Dalaman",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4214001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": 71.26
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Sains Tambahan / Sains Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4214002",
+   "course": "Diploma Teknologi Seni Reka Fesyen",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Seni Reka Fesyen",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4214002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4214004",
+   "course": "Diploma Teknologi Seni Reka Perindustrian",
+   "level": "Diploma",
+   "department": "Seni Dan Reka Bentuk",
+   "field": "Teknologi Seni Reka Perindustrian",
+   "field_key": "senireka",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4214004/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "E",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "pass_eng": true,
+    "merit_cutoff": null
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred E dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4542001",
+   "course": "Diploma Teknologi Tekstil Dan Pakaian",
+   "level": "Diploma",
+   "department": "Teknologi Pembuatan",
+   "field": "Teknologi Tekstil Dan Pakaian",
+   "field_key": "umum",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4542001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "sci",
+        "addsci",
+        "teknologi_kej",
+        "kelestarian",
+        "eng_mech",
+        "eng_elec",
+        "voc_tailoring",
+        "eng_civil",
+        "gkt"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 57.56
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains / Sains Tambahan / Teknologi Kejuruteraan / Asas Kelestarian / Pengajian Kejuruteraan Mekanikal / Pengajian Kejuruteraan Elektrik & Elektronik / Rekaan Dan Jahitan Pakaian / Pengajian Kejuruteraan Awam / Grafik Komunikasi Teknikal Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4526002",
+   "course": "Diploma Ukur Bahan",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Ukur Bahan",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4526002/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 64.56
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Tambahan / Sains Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE4526001",
+   "course": "Diploma Ukur Bangunan",
+   "level": "Diploma",
+   "department": "Kejuruteraan",
+   "field": "Ukur Bangunan",
+   "field_key": "sivil",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE4526001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": false,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "C",
+       "subjects": [
+        "phy",
+        "chem",
+        "bio",
+        "addsci",
+        "sci"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm",
+        "hist"
+       ],
+       "groups": [],
+       "remaining": [
+        {
+         "count": 2,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "pass_history": true,
+    "credit_english": true,
+    "merit_cutoff": 58.52
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Biologi / Sains Tambahan / Sains Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  },
+  {
+   "course_id": "UE6581001",
+   "course": "Sarjana Muda Sains (Kepujian) Senibina",
+   "level": "Ijazah Sarjana Muda",
+   "department": "Seni Bina Dan Binaan",
+   "field": "Senibina",
+   "field_key": "senibina",
+   "semesters": null,
+   "university": "Universiti Teknologi Mara",
+   "mohe_url": "https://online.mohe.gov.my/epanduan/carianNamaProgram/UE/UE6581001/A/spm",
+   "requirement": {
+    "source_type": "ua",
+    "merit_type": "standard",
+    "min_credits": 0,
+    "min_pass": 0,
+    "req_bumiputera": true,
+    "req_interview": true,
+    "req_malaysian": true,
+    "complex_requirements": {
+     "or_groups": [
+      {
+       "count": 1,
+       "grade": "B",
+       "subjects": [
+        "math",
+        "addmath"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "B",
+       "subjects": [
+        "phy",
+        "chem",
+        "addsci",
+        "sci"
+       ]
+      },
+      {
+       "count": 1,
+       "grade": "B",
+       "subjects": [
+        "geo",
+        "hist",
+        "psv",
+        "eng_draw",
+        "gkt",
+        "reka_cipta",
+        "ekonomi",
+        "business"
+       ]
+      }
+     ],
+     "count_once": [
+      {
+       "counted": [
+        "bm"
+       ],
+       "groups": [
+        {
+         "count": 1,
+         "grade": "C",
+         "subjects": [
+          "hist"
+         ]
+        }
+       ],
+       "remaining": [
+        {
+         "count": 4,
+         "grade": "C",
+         "exclude": []
+        }
+       ]
+      }
+     ]
+    },
+    "subject_group_req": null,
+    "remarks": "",
+    "credit_bm": true,
+    "credit_english": true,
+    "merit_cutoff": 79.72
+   },
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred C bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred B dalam SATU (1) mata pelajaran berikut : • Fizik / Kimia / Sains Tambahan / Sains Mendapat sekurang-kurangnya Gred B dalam SATU (1) mata pelajaran berikut : • Geografi / Sejarah / Pendidikan Seni Visual / Lukisan Kejuruteraan / Grafik Komunikasi Teknikal / Reka Cipta / Ekonomi Asas / Ekonomi / Perniagaan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Lulus ujian dan / atau temu duga yang ditetapkan. Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   },
+   "warnings": []
+  }
+ ],
+ "flagged": [
+  {
+   "course_id": "UE0520001",
+   "course": "Asasi Kejuruteraan",
+   "reasons": [
+    "two grades over one list (hand entry, D2): 'Mendapat sekurang-kurangnya Gred A- dalam SATU (1) mata pelajaran DAN Gred B dalam TIGA (3) mata pelajaran berikut : • Fizik / Matematik Tambahan / Kimia / Matematik'"
+   ],
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred A- dalam SATU (1) mata pelajaran DAN Gred B dalam TIGA (3) mata pelajaran berikut : • Fizik / Matematik Tambahan / Kimia / Matematik Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   }
+  },
+  {
+   "course_id": "UE0545001",
+   "course": "Asasi Sains",
+   "reasons": [
+    "two grades over one list (hand entry, D2): 'Mendapat sekurang-kurangnya Gred A- dalam SATU (1) mata pelajaran DAN Gred B dalam TIGA (3) mata pelajaran berikut : • Fizik / Kimia / Biologi / Matematik Tambahan'"
+   ],
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred B dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred A- dalam SATU (1) mata pelajaran DAN Gred B dalam TIGA (3) mata pelajaran berikut : • Fizik / Kimia / Biologi / Matematik Tambahan Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   }
+  },
+  {
+   "course_id": "UE4811004",
+   "course": "Diploma Pengurusan Perkhidmatan Makanan",
+   "reasons": [
+    "ATAU: alternative requirement sets (hand entry, D2)"
+   ],
+   "source": {
+    "syarat_am": "Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . DUA (2) C dalam mana-mana matapelajaran yang belum dikira.",
+    "syarat_khas": "Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Matematik / Matematik Tambahan Mendapat sekurang-kurangnya Gred C dalam mata pelajaran Bahasa Inggeris. Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : • Sains Tambahan / Sains ATAU Mendapat sekurang-kurangnya Gred E dalam SATU (1) mata pelajaran berikut : • Kimia / Biologi / Fizik Berketurunan Melayu, Anak Negeri Sabah, Anak Negeri Sarawak dan Orang Asli sahaja."
+   }
+  }
+ ]
+}
