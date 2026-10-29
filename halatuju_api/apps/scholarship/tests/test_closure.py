@@ -11,7 +11,8 @@ from apps.courses.models import StudentProfile
 from apps.scholarship import closure, disbursement as disb
 from apps.scholarship.closure import ClosureError
 from apps.scholarship.disbursement import DisbursementError
-from apps.scholarship.in_programme import submit_graduation_message, record_semester_result, InProgrammeError
+from apps.scholarship.in_programme import submit_graduation_message, InProgrammeError
+from apps.scholarship.tests.factories import record_result
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 
 
@@ -109,7 +110,7 @@ class TestThankYouReGating(TestCase):
         app = _app(self.cohort, status='maintenance', suffix='sr')
         closure.close_application(app, closure_reason='completed')
         with self.assertRaises(InProgrammeError):
-            record_semester_result(app, semester='Final', cgpa='3.8')
+            record_result(app, semester='Final', cgpa='3.8')
 
 
 class TestSerializerSurfaces(TestCase):

@@ -10,13 +10,14 @@ from django.db import transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.scholarship import activity, closure, disbursement, in_programme, maintenance
+from apps.scholarship import activity, closure, disbursement, maintenance
 from apps.scholarship.activity import ActivityError
 from apps.scholarship.models import StudentActivity
 from apps.scholarship.models.activity import (
     EVENT_CLOSED, EVENT_PAYMENT_RELEASED, EVENT_RESULT_SUBMITTED, EVENT_SUBSTATE_CHANGED, EVENTS,
 )
 from apps.scholarship.tests.factories import (
+    record_result,
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
 )
 
@@ -72,7 +73,7 @@ class TestSubstateEndpointRecordsTheActor(TestCase):
 class TestWiredDoors(TestCase):
     def test_a_semester_result_writes_result_submitted(self):
         app = make_application('maintenance')
-        row = in_programme.record_semester_result(app, semester='Sem 2', cgpa='3.10')
+        row = record_result(app, semester='Sem 2', cgpa='3.10')
         log = StudentActivity.objects.get(application=app)
         self.assertEqual((log.event, log.meta['result_id'], log.meta['cgpa']),
                          (EVENT_RESULT_SUBMITTED, row.id, '3.10'))

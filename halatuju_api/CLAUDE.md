@@ -140,6 +140,25 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    `course_requirements`, `course_institutions`, then `courses` (Postgres has no cascade — Django's
    CASCADE is Python-side — so a student's saved UiTM course would abort a bare `courses` delete; the
    exact DELETE is in the 0088 docstring) BEFORE rolling back to a pre-0088 image.
+   **Bumi D2 order (no migration):** read-only SQL first (below) → push (api + web) → CONFIRM the new api
+   AND web revisions both serve 100% (the D2 rows use the `any_of` engine and the Bumi matric tracks need
+   the D2 `pathways.py`; an old image reads an `any_of` group as a unit nobody can meet, so it would hide
+   those 5 ATAU rows from everyone, and would give the matric rows no merit) → `ingest_spm_courses
+   --file data/spm/spm_new_courses_D2.json --create-institutions` (dry run: expect `CREATE INSTITUTION MARA-BPT` and 66 CREATE, 0 UPDATE, 0 flagged) → the same with `--apply` →
+   a re-revision so the frame reloads. The rows carry their own parents (no `--institution-id`). Read-only
+   SQL before `--apply`: none of the 66 ids already in `courses`; `MARA-BPT` not in `institutions`; the
+   seven UNIV ids exist (MARA-BPT's type IPTA and state "WP Kuala Lumpur" were checked against prod in
+   review round 1). BEFORE ANY ROLLBACK, read-only: who chose a D2 course (a JSON choice, not a foreign key,
+   so a delete leaves it pointing at nothing): `SELECT id, status FROM scholarship_applications WHERE
+   chosen_programme->>'course_id' IN (D2) OR EXISTS (SELECT 1 FROM jsonb_array_elements(top_choices) e
+   WHERE e->>'course_id' IN (D2))` and `SELECT count(*) FROM api_student_profiles WHERE
+   chosen_programme->>'course_id' IN (D2)`; if either is non-zero, decide with the owner first.
+   ROLLBACK, one transaction, D2 = the 66 ids of `data/spm/spm_new_courses_D2.json`
+   (also the list in `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`, Sprint D2):
+   `DELETE FROM saved_courses / admission_outcomes / course_tags / courses_career_occupations /
+   course_requirements / course_institutions WHERE course_id IN (D2)`, then `DELETE FROM courses WHERE
+   course_id IN (D2)`, then `DELETE FROM institutions WHERE institution_id = 'MARA-BPT'` (only after its
+   course links are gone), then a re-revision. The D2 code may stay deployed (it shows only rows that exist).
 4. **Reconcile the ledger before the push.** Compare every migration file with production's
    `SELECT app, name FROM django_migrations ORDER BY name` (read-only): a gap in the middle is the
    signal (0135 sat applied-but-unrecorded for a day in July). Release list: `docs/releases/v3.0.0-migrations.md`.
@@ -1046,31 +1065,30 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
-**Student maintenance Sprints 1 and 2 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2
-`1debc6cc`, no migration; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` and `…-s2.md`;
-roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 3 (student "My Bursary" hub
-`/scholarship/bursary`, and the sub-state + Close controls move from the cockpit into the scholar file)** — design
-approved by the owner 2026-10-29 at https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (the canvas is the design of
-record).
-- ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold` = stored `on_hold` + a
-  payable status). Moving to/from `on_hold` needs `payments.may_prepare` (403 `hold_needs_payments`).
-- `/admin/scholars` (+ `/<id>`) reads by the Applications rule (`_b40_scope`; finance refused; cross-org 404); search
-  reuses `apps.courses.search` (IC digits-only); nullable sorts are `nulls_last`; a closed file is read-only
-  (409 `file_closed`). `standing` is only `has_result` / `no_result_yet` until Sprint 4.
-- ⚠ **MIGRATE FIRST for anything that writes `student_activity`** (it writes inside the caller's transaction).
-  Deploy the api before the web.
-- `can_record_results` stays active/maintenance until Sprint 4; the student gets `support_paused`, never the raw
-  sub-state. Until Sprint 3 the cockpit's sub-state control shows only at `maintenance` (TD-419).
+**Student maintenance Sprints 1–3 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` / `-s2.md` / `-s3.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 4, SPLIT: 4a results + standing (slip upload,
+review fields, `standing.py`, admin Results tab, sponsor readers on accepted results only; migration), then 4b the
+results-due/overdue crons + student email templates.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
+  `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
+- Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file
+  header (`ScholarControls`); the cockpit keeps the pre-award Close and, for a payable student with NO file, her
+  status control (`maintenance_controls`).
+- Student: `/scholarship/bursary` (`/scholarship/in-programme` redirects) from `scholarship/bursary/summary/` —
+  `support_paused` only, never a sub-state; the header link is a `localStorage` hint, not a gate.
+- ⚠ **MIGRATE FIRST for anything that writes `student_activity`**; deploy the api before the web.
+- `can_record_results` stays active/maintenance until 4a widens it with results review.
 
 ---
 
-**Bumi + Islamic coverage: Sprints A, B, C, TD-416 and D1 are LIVE (D1 2026-10-29, `f5282643`; retro
-`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d1.md`). NEXT in that arc = Sprint D2:** the other 63
-SPM courses (UIAM, MARA, the 14 open Islamic, UMS / UNIMAS / UM), the 2 Bumi-only Matrikulasi tracks (owner),
-the 3 flagged UiTM rows (ATAU; "A- in ONE AND B in THREE"), the search pick-list refresh for a Bumi student,
-and the 2 prod rows the fixture lacks (UL0481001, FB0500001). Reuse `spm_syarat.py` + `ingest_spm_courses`;
-strict reading of "belum diambil kira"; the D1 runbook (0088 docstring) is the ingest order. The Bumi answer
-stays course-guide only. Adversarial review before push.
+**Bumi + Islamic coverage: Sprints A to D2 are LIVE (D2 2026-10-29, `914d4a5b`; retro
+`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d2.md`). All 150 Sprint A SPM courses are in (136
+Bumi-only, 14 open Islamic) plus 2 Bumi-only matric tracks. NEXT in that arc = Sprint F:** UP_TVET ingest incl.
+MARA (~544 rows in `data/tvet/uptvet_latest.csv`; parse the public `info_url` "Syarat Kursus", the Bumi flag
+from "Taraf Bumiputera"). Follow-ups: the 2 prod rows the fixture lacks (UL0481001, FB0500001); college lists
+for the 2 Bumi matric tracks (then offer them in the pickers). The Bumi answer stays course-guide only.
+Adversarial review before push.
 
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's

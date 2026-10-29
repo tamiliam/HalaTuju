@@ -14,11 +14,21 @@ export const SUBSTATE_TONE: Record<MaintenanceSubstate, string> = {
   ready_to_close: 'bg-info-100 text-info-700',
 }
 
-/** Only "has a result" / "no result yet" until Sprint 4 derives the real standing — neither is a
- *  judgement, so both are calm ground tones. */
+/** S4a: the standing chip (`standing.py`) — performing positive, underperforming caution, failing
+ *  critical; awaiting review / no result yet are not judgements, so calm ground tones. */
 export const STANDING_TONE: Record<ScholarStanding, string> = {
-  has_result: 'bg-ground-100 text-ground-700',
+  performing: 'bg-positive-100 text-positive-700',
+  underperforming: 'bg-caution-100 text-caution-700',
+  failing: 'bg-critical-100 text-critical-700',
+  awaiting_review: 'bg-ground-100 text-ground-700',
   no_result_yet: 'bg-ground-100 text-ground-500',
+}
+
+/** S4a: a result's review chip on the officer's Results tab. */
+export const REVIEW_TONE: Record<string, string> = {
+  pending: 'bg-ground-100 text-ground-700',
+  accepted: 'bg-positive-100 text-positive-700',
+  queried: 'bg-caution-100 text-caution-700',
 }
 
 /** The dot beside an entry: money green, a sub-state change amber, an officer's own entry blue,
@@ -49,6 +59,9 @@ export function activityText(
         amount: str(m.amount), ref: str(m.run || m.reference) })
     case 'result_submitted':
       return t('admin.scholars.event.result_submitted', { semester: str(m.semester) || '—' })
+    case 'result_reviewed':
+      return t(`admin.scholars.event.result_${str(m.new) === 'queried' ? 'queried' : 'accepted'}`,
+        { semester: str(m.semester) || '—' })
     case 'closed':
       return t('admin.scholars.event.closed', {
         reason: m.reason ? t(`admin.closure.reason.${str(m.reason)}`) : '—' })

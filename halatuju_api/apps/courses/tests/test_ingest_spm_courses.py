@@ -99,9 +99,13 @@ class TestBuild:
                      '--out', str(out), stdout=StringIO())
         built = json.loads(out.read_text(encoding='utf-8'))
         stored = json.loads(D1.read_text(encoding='utf-8'))
-        assert built['courses'] == stored['courses'] and built['flagged'] == stored['flagged']
-        assert len(built['courses']) == 84
-        assert [f['course_id'] for f in built['flagged']] == ['UE0520001', 'UE0545001', 'UE4811004']
+        # Sprint D2: entries now name their parent (UiTM, the one D1 passed as --institution-id),
+        # and the 3 rows D1 flagged parse; they are ingested by the D2 file, never by this one.
+        assert {c.pop('institution_id') for c in built['courses']} == {'UNIV-012'}
+        d1_ids = [c['course_id'] for c in stored['courses']]
+        assert [c for c in built['courses'] if c['course_id'] in d1_ids] == stored['courses']
+        assert len(stored['courses']) == 84 and built['flagged'] == []
+        assert [f['course_id'] for f in stored['flagged']] == ['UE0520001', 'UE0545001', 'UE4811004']
 
     def test_names_and_merit(self):
         assert clean_name('DIPLOMA SENI HALUS\n          \n      Baru') == 'Diploma Seni Halus'

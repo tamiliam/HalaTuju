@@ -21,7 +21,7 @@ from apps.scholarship.maintenance_scope import (
 )
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.serializers import ApplicationReadSerializer
-from apps.scholarship.tests.factories import make_application, make_cohort
+from apps.scholarship.tests.factories import make_application, make_cohort, record_result
 
 STAGES = ('submitted', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected',
           'expired')
@@ -86,21 +86,20 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
                                      vircle_activated_at=timezone.now())
         self.no_wallet = make_application('awarded', cohort=self.cohort)
 
-    def test_results_stay_funded_only_until_sprint_4(self):
-        """Adversarial review M2: a self-reported result feeds the sponsor band unreviewed, so
-        recording stays active / maintenance until Sprint 4 brings results review."""
-        for app in (self.live, self.no_wallet):
-            with self.assertRaises(InProgrammeError) as ctx:
-                in_programme.record_semester_result(app, semester='Sem 1', cgpa='3.40')
-            self.assertEqual(ctx.exception.code, 'not_in_programme')
-        active = make_application('active', cohort=self.cohort)
-        self.assertTrue(in_programme.can_record_results(active))
-        in_programme.record_semester_result(active, semester='Sem 1', cgpa='3.40')
+    def test_results_open_to_the_predicate_since_s4a_and_start_pending(self):
+        """S4a: recording widens to the maintenance predicate now that every result is REVIEWED
+        before it counts; without a live wallet she still cannot record one."""
+        row = record_result(self.live, semester='Sem 1', cgpa='3.40')
+        self.assertEqual(row.review_status, 'pending')
+        with self.assertRaises(InProgrammeError) as ctx:
+            record_result(self.no_wallet, semester='Sem 1', cgpa='3.40')
+        self.assertEqual(ctx.exception.code, 'not_in_programme')
 
     def test_promotional_consent_follows_the_predicate(self):
         with self.assertRaises(InProgrammeError):
             in_programme.grant_promotional_consent(self.no_wallet)
-        self.assertFalse(in_programme.can_record_results(self.live))
+        self.assertTrue(in_programme.can_record_results(self.live))
+        self.assertFalse(in_programme.can_record_results(self.no_wallet))
 
     def test_is_given_a_substate_and_can_be_on_hold(self):
         maintenance.set_substate(self.live, 'on_hold', by_email='officer@example.test')
@@ -125,11 +124,16 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
         self.assertEqual(maintenance.sponsor_support_status(self.live), 'completing')
         self.assertIsNone(maintenance.sponsor_support_status(self.no_wallet))
 
-    def test_the_sponsor_progress_band_is_unchanged(self):
-        """Owner default 2026-10-29: the sponsor progress band stays as it is — still None for
-        an `awarded` student, whatever result she records."""
-        from apps.scholarship import pool
-        self.assertIsNone(pool.derive_progress_state(self.live))
+    def test_the_sponsor_band_reads_the_predicate_and_only_accepted_results(self):
+        """S4a: `derive_progress_state` is on the maintenance predicate (an awarded student with a
+        live wallet reads on_track, not None), and a PENDING result never moves it."""
+        from apps.scholarship import pool, results_review
+        self.assertEqual(pool.derive_progress_state(self.live), 'on_track')
+        self.assertIsNone(pool.derive_progress_state(self.no_wallet))
+        row = record_result(self.live, semester='Sem 1', cgpa='1.50')
+        self.assertEqual(pool.derive_progress_state(self.live), 'on_track')       # pending: no move
+        results_review.review(row, decision='accepted')
+        self.assertEqual(pool.derive_progress_state(self.live), 'needs_attention')
 
     def test_ready_to_close_worklist_includes_the_awarded_student(self):
         maintenance.set_substate(self.live, 'ready_to_close')
@@ -152,7 +156,7 @@ class TestAwardedWithAWalletIsInMaintenance(TestCase):
     def test_the_student_payload_serves_the_two_answers(self):
         keys = ('in_maintenance', 'has_file', 'can_record_results', 'support_paused')
         data = ApplicationReadSerializer(self.live).data
-        self.assertEqual(tuple(data[k] for k in keys), (True, True, False, False))
+        self.assertEqual(tuple(data[k] for k in keys), (True, True, True, False))   # S4a widened
         self.assertNotIn('maintenance_substate', data)
         data = ApplicationReadSerializer(self.no_wallet).data
         self.assertEqual(tuple(data[k] for k in keys), (False, False, False, False))
@@ -172,7 +176,7 @@ class TestClosedFile(TestCase):
         self.assertFalse(is_in_maintenance(app))
         in_programme.submit_graduation_message(app, raw_text='Thank you for everything.')
         with self.assertRaises(InProgrammeError):
-            in_programme.record_semester_result(app, semester='Sem 9', cgpa='3.00')
+            record_result(app, semester='Sem 9', cgpa='3.00')
 
     def test_a_stalled_close_after_a_fallen_through_award_has_no_file(self):
         """`revert_to_pool` keeps the wallet stamp; the later pre-award close records `stalled`."""

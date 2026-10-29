@@ -34,7 +34,7 @@ import {
 /** Groups render in this order; a group appears only when the registry has a row in it. The
  *  student timings (org-timing Sprint 1) sit in the order a student meets them. */
 const GROUP_ORDER = ['sponsor_page', 'student_comms', 'decisions', 'profile_completion', 'check2',
-  'reviewers_staff', 'interviews', 'documents', 'awards', 'agreements']
+  'reviewers_staff', 'interviews', 'documents', 'awards', 'agreements', 'maintenance']
 
 type Outcome =
   | { kind: 'idle' }
@@ -63,13 +63,16 @@ export function hhmmToMinutes(text: string): number | null {
 }
 
 const isClock = (s: OrganisationConfigSetting) => s.unit === 'time_of_day'
+/** A number as the row shows it — a decimal row (S4a, a CGPA) at its fixed places: 3 → "3.00". */
+const shown = (s: OrganisationConfigSetting, n: number) => (s.decimals ? n.toFixed(s.decimals) : String(n))
 
 /** The box state the payload implies: '' for "following the default", else the typed form —
  *  "HH:MM" for a clock row, the plain number for every other. */
 function draftFrom(cfg: OrganisationConfiguration | null): Record<string, string> {
   const out: Record<string, string> = {}
   for (const s of cfg?.settings ?? []) {
-    out[s.key] = s.value === null ? '' : (isClock(s) ? minutesToHhmm(s.value) : String(s.value))
+    out[s.key] = s.value === null ? '' : (isClock(s) ? minutesToHhmm(s.value)
+      : s.decimals ? s.value.toFixed(s.decimals) : String(s.value))
   }
   return out
 }
@@ -79,7 +82,11 @@ function parseBox(raw: string, s: OrganisationConfigSetting):
     { ok: true; value: number | null } | { ok: false } {
   const text = (raw ?? '').trim()
   if (text === '') return { ok: true, value: null }
-  const n = isClock(s) ? hhmmToMinutes(text) : (/^\d+$/.test(text) ? parseInt(text, 10) : null)
+  // S4a: a decimal row (a CGPA) takes up to `decimals` places; every other row a whole number.
+  const decimal = s.decimals ? new RegExp(String.raw`^\d+(\.\d{1,${s.decimals}})?$`) : null
+  const n = isClock(s) ? hhmmToMinutes(text)
+    : decimal ? (decimal.test(text) ? parseFloat(text) : null)
+      : (/^\d+$/.test(text) ? parseInt(text, 10) : null)
   if (n === null) return { ok: false }
   if (n < s.min || n > s.max) return { ok: false }
   // A listed vocabulary is the whole rule for that row — the range is not the constraint.
@@ -206,6 +213,13 @@ export default function OrganisationConfigurationTab() {
               <h2 className="text-lg font-semibold text-ground-900">
                 {t(`admin.orgSettings.config.group.${group}`)}
               </h2>
+              {(config.warnings ?? []).filter((w) => settings.some((s) => s.key === w.key && s.group === group))
+                .map((w, i) => (
+                  <p key={i} className="mt-2 rounded-lg border border-caution-200 bg-caution-50 p-3 text-sm text-caution-800"
+                    data-testid="config-warning">
+                    {t(`admin.orgSettings.config.warning.${w.code}`, { template: w.template || '—', stated: w.stated ?? '' })}
+                  </p>
+                ))}
               <ul className="mt-2 divide-y divide-ground-100" data-testid="config-rows">
                 {rows.filter((r) => r.s.group === group).map(({ s, parsed }) => (
                   <li key={s.key} className="flex flex-wrap items-start justify-between gap-4 py-4">
@@ -253,7 +267,7 @@ export default function OrganisationConfigurationTab() {
                               setOutcome({ kind: 'idle' })
                               setDraft((d) => ({ ...d, [s.key]: e.target.value }))
                             }}
-                            placeholder={isClock(s) ? minutesToHhmm(s.default) : String(s.default)}
+                            placeholder={isClock(s) ? minutesToHhmm(s.default) : shown(s, s.default)}
                             aria-label={label(s.key)}
                             data-testid={`config-${s.key}`}
                             className="w-24 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-right text-sm tabular-nums text-ground-900" />
@@ -276,7 +290,7 @@ export default function OrganisationConfigurationTab() {
                             ? t('admin.orgSettings.config.defaultNoteClock',
                               { n: minutesToHhmm(s.default) })
                             : t('admin.orgSettings.config.defaultNote', {
-                              n: String(s.default),
+                              n: shown(s, s.default),
                               unit: t(`admin.orgSettings.config.unit.${s.unit}`),
                             })}
                         </p>

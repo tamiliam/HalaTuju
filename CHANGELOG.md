@@ -2,6 +2,100 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 4a — results review and standing - 2026-10-29
+
+Roadmap Sprint 4, first half (4b = reminders, overdue and student emails). Migration **0186** (hand-apply DDL in
+its docstring; deploy AFTER migrating).
+
+- **Every funded student can record a result** (`can_record_results` = the maintenance predicate), with a result
+  slip (photo or PDF) uploaded first; "graduated" is the site Toggle. Each result shows her its review: awaiting
+  review, accepted, or queried with the officer's note. The hub no longer judges her CGPA itself.
+- **`SemesterResult` review fields** — `review_status` (pending / accepted / queried), `reviewed_by`, `reviewed_at`,
+  `review_note`, `term_index` (for 4b).
+- **Admin Results tab** on the scholar file: every result, her slip in the document viewer, Accept / Query with a
+  note, who reviewed and when; logged as `result_submitted` / `result_reviewed`.
+- **Standing** from the organisation's settings (new **Student maintenance** group: minimum CGPA 3.00, failing CGPA
+  2.00 — two decimal places, failing must be below minimum). Only an ACCEPTED result counts. The Scholars list
+  shows the standing chip, an **Underperforming** filter and tile (server-side), and the file names the thresholds.
+  A contract whose wording (progress standard or clauses) states another CGPA beside a GPA phrase is warned.
+- **Sponsors see only accepted results** — progress band (now on the maintenance predicate), portfolio count,
+  feed and impact agree (cross-reader test); the band's "needs attention" is the staff "failing" line (strictly
+  below the failing CGPA — 2.00 itself no longer reads "needs attention").
+- **Review fixes:** a results slip cannot be deleted or replaced by the student (409 `slip_locked`), is left out of
+  her documents list and of every re-read sweep; slip paths must match the issued shape; at most five results a
+  day (`too_many_results`); whole-number settings take whole numbers only; the doors fence is per function.
+- **Owner ruling — slips are uploaded at the portal only:** a result cannot be sent without its slip, a result with
+  no slip cannot be accepted (the officer queries it), and staff cannot attach a slip for her. Guide (org admin,
+  general admin, reviewer) and the student's hint updated.
+
+## Bumi coverage Sprint D2 — the other SPM courses, ATAU, the Bumi matric tracks (no migration) - 2026-10-29
+
+Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 rows in
+`halatuju_api/data/spm/spm_new_courses_D2.json` (ids and buckets in `spm_new_courses_D2.ids`), **0 flagged**.
+
+- **The rows:** 47 Bumi-only non-UiTM (UIAM 20, MARA Bahagian Pendidikan Tinggi 15, UMS 4, UNIMAS 3, UM 3,
+  UniSZA 2); 14 open rows never loaded because they need an Islamic subject (UniSZA 9 diplomas, USIM 4
+  Tamhidi, UM Asasi Pengajian Islam); the 3 UiTM rows D1 flagged; the 2 Bumi-only Matrikulasi programmes.
+  The bucket rule is a test (`test_spm_d2.py`); the file is reproducible from the scrape.
+- **ATAU → `any_of`** (`spm_count_once.py`): a count-once group of alternatives, each a list of groups whose
+  units join the block's matching. Read ONLY through a reviewed scope (`spm_atau_scopes.py`, from each
+  programme's MOHE modal layout): the flat text cannot say how many clauses an alternative spans
+  (UY0000007: A- English, OR B+ English AND B in Arabic). No scope → flagged.
+- **"A- in ONE AND B in THREE of: list"** = two groups over one list in one block: four different subjects.
+- **Parser:** MARA's Syarat Am (a pass in BM and Sejarah); Tamhidi is level Asasi; a general (0xx) NEC field
+  takes its field key from the name (Asasi Sains Sosial was "life science").
+- **Institutions:** each row names its own parent (`INSTITUTION_IDS`); MARA has no row, so the file proposes
+  `MARA-BPT`, created only by `ingest_spm_courses --create-institutions` (dry run first, never silently).
+- **Two Bumi-only matric tracks** (`matric-sains-4-semester`, `matric-perakaunan-profesional`), held like the
+  four open tracks with `req_bumiputera`: eligibility, dashboard and search go through the gate;
+  `/calculate/pathways/` (pathway page, scholarship pickers) does not list them until a college list exists (owner). The course page no longer shows the
+  Science track's colleges for an unmapped matric id, and the Sains Komputer id is spelt as the catalogue does.
+- **Search (D1 follow-up L4):** a Bumi student's pick-lists re-load when the answer arrives, and a late
+  response asked under the old answer is dropped. First jest harness for `search/page.tsx`.
+- **Golden masters:** original 389 = **5,319**, every set identical; full catalogue at bumi=False **5,319**
+  (+0: none of the 50 students holds the Islamic / Arabic subjects the 14 open rows need — a test shows a
+  student who does gains open rows and ONLY open rows); bumi=True **5,865 → 5,986** (+121); STPM **2,025**.
+- **Not done:** UL0481001 / FB0500001 (prod-only, not Bumi; lead: not this sprint). The Bumi matric tracks
+  are not on the pathway page or the scholarship pickers' track list (decisions.md).
+- **Review round 1:** the course page crashed on every ATAU row (`RequirementsCard` read `subjects` on an
+  `any_of` group) — it now shows "one of these:" and each alternative (en/ms/ta keys, jest on the real
+  shapes); MARA's "C in any N subjects" is STRICT (owner; 8 OP rows, Bumi baseline 6,006 → 5,986); MARA-BPT
+  is type IPTA, state "WP Kuala Lumpur" (prod's spellings); UM0221002's shared-subject reading and the matric
+  tracks' absence from the pickers (no college list yet) recorded; rollback gains a read-only count of
+  applications and profiles that chose a D2 course.
+- **Gates (after review round 1):** pytest 10,135 passed / 3 skipped (`-n auto`); jest 4,897 / 313 suites; tsc 0; lint 0 errors;
+  bundle median 146.343 / 148 kB; makemigrations clean.
+- **Runbook + rollback:** `halatuju_api/CLAUDE.md` ("Bumi D2 order") — deploy first, read-only SQL, dry run,
+  `--create-institutions --apply`, re-revision.
+
+## Matric/Diploma Exact-read M4 - 2026-10-29
+
+- **Matriculation and polytechnic transcripts are genuineness-checked** in the higher-results card
+  (`genuineness/matric_poly_doc.py`, called from `stpm_doc.stpm_slot_genuineness` after STPM), so
+  their card no longer says "not checked" and the TD-114 floor no longer holds a clean one at Probable.
+  **Genuine or nothing (adversarial review B1):** a page is stored "genuine" or not scored at all —
+  never suspect, never "not_" — because a genuine 2-year transcript seen page 1 only scores 0.68, a
+  cropped photo 0.64; a suspect would wrongly tell a student their real transcript does not look
+  genuine. Positive gates: the transcript title (never inside "bukan transkrip akademik"), a
+  transcript-only grid label, both a Semester I and a Semester II block, no slip wording at all
+  (several phrases, so a mangled disclaimer still excludes it); for a polytechnic page, no Kolej
+  Komuniti anywhere once the JPPKK department's name is removed, and the transcript's own grid.
+  Fixed printed wording only, text only, calibrated on the corpus as production reads it (page 1 of a
+  scan): Matriculation transcripts p 0.96–1.00 (certified copies included, ruling 2A), every control
+  ≤ 0.29; the one polytechnic transcript p 1.00.
+- **Stays "not checked":** every semester result slip, offer and other letters, the polytechnic
+  student-portal screen, Kolej Komuniti, UiTM and Asasi — owner questions in the M4 report.
+- `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 (bands can move: a clean, genuine
+  Matriculation card can read Certain). Scores land when a document is read again (M5).
+- Hand-run `eval/matric_poly_genuineness_check.py`; tests `test_matric_poly_doc.py` (18, synthetic, one through the live read to the Academic band;
+  every rule bite-checked).
+
+- **Live 2026-10-29** in `914d4a5b` (web f4ab3724 / api 53b5e475 SUCCESS). Ingested by the `release-decisions`
+  job after both revisions served 100%: dry run = CREATE INSTITUTION MARA-BPT + 66 CREATE (52 Bumi-only),
+  0 UPDATE, 0 flagged; prod now 516 courses, 136 Bumi-only; re-revision `halatuju-api-01188-45h`. Live smoke
+  (all-A students): science non-Bumi 0 D2 Bumi rows, Bumi 44; Islamic-subject non-Bumi 13 open rows and 0 Bumi
+  rows, Bumi 31 + 13; a foreigner answering yes 0 + 0; the ATAU course pages render.
+
 ## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29
 
 Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-29). No migration.

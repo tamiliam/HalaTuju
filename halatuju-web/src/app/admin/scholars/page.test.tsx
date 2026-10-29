@@ -4,9 +4,10 @@
  * The officer's Scholars list (student maintenance Sprint 2). Pinned from the harm:
  *  * the list asks the SERVER for each filter, search, sort and page — a client-side filter over a
  *    page of 25 would quietly miss the rest of the list;
- *  * the filters for what is NOT built yet (Underperforming, Results overdue, Wants a mentor) are
- *    shown DISABLED, never faked and never hidden (PanelTabs' rule);
- *  * no CGPA is judged here: a row says "Result recorded" / "No result yet" until Sprint 4;
+ *  * the filters for what is NOT built yet (Results overdue, Wants a mentor) are shown DISABLED,
+ *    never faked and never hidden (PanelTabs' rule); Underperforming is live since S4a and asks the
+ *    SERVER (`standing=below_minimum`) — the browser never compares a CGPA;
+ *  * the row's standing is the server's word (`standing.py`), drawn as given;
  *  * finance cannot open the page (the server refuses too) — names beside case data.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -29,10 +30,10 @@ const ROW: api.ScholarRow = {
   course: 'Diploma in Accounting', institution: 'Politeknik Ungku Omar', status: 'awarded',
   maintenance_substate: 'probation', is_on_hold: false,
   latest_result: { cgpa: '2.85', semester: 'Sem 2', at: '2026-07-12T00:00:00Z' },
-  standing: 'has_result', mentor: null, last_activity_at: '2026-10-27T00:00:00Z',
+  standing: 'underperforming', mentor: null, last_activity_at: '2026-10-27T00:00:00Z',
 }
 const LIST: api.ScholarList = {
-  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2 },
+  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2, below_minimum: 3 },
   count: 1, page: 1, page_size: 25, results: [ROW],
 }
 
@@ -52,16 +53,27 @@ it('draws the tiles, the row and its link to the file', async () => {
   expect(screen.getByText('Diploma in Accounting')).toBeTruthy()
   expect(screen.getByText('2.85')).toBeTruthy()
   expect(screen.getByText('admin.maintenance.substate.probation', { selector: 'td span' })).toBeTruthy()
-  expect(screen.getAllByText('admin.scholars.standing.has_result')).toHaveLength(2)
+  expect(screen.getAllByText('admin.scholars.standing.underperforming')).toHaveLength(2)
 })
 
 it('shows the not-yet-built filters disabled', async () => {
   render(<ScholarsPage />)
   await screen.findAllByText('NUR AISYAH')
-  for (const key of ['underperforming', 'overdue', 'wantsMentor']) {
+  for (const key of ['overdue', 'wantsMentor']) {
     const tab = screen.getByText(`admin.scholars.filter.${key}`).closest('button')!
     expect([tab.getAttribute('role'), tab.hasAttribute('disabled')]).toEqual(['tab', true])
   }
+})
+
+it('Underperforming is live: it carries its count and asks the server, never the browser', async () => {
+  render(<ScholarsPage />)
+  await screen.findAllByText('NUR AISYAH')
+  const tab = screen.getByRole('tab', { name: /admin\.scholars\.filter\.underperforming/ })
+  expect(tab.hasAttribute('disabled')).toBe(false)
+  expect(tab.textContent).toContain('3')
+  fireEvent.click(tab)
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ standing: 'below_minimum', closed: false, substate: '' }), { token: 'tok' }))
 })
 
 it('asks the server for the filter, the search and the sort', async () => {

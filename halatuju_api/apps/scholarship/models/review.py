@@ -182,7 +182,7 @@ class SemesterResult(models.Model):
     ``results_slip`` (the SPM slip captured at application). The uploaded slip is
     **myNADI-only** (never crosses to a sponsor); only the DERIVED, non-identifying
     ``cgpa``/``graduated`` band feeds ``pool.derive_progress_state`` (the coarse
-    ``progress_state`` a sponsor sees). The latest row (by ``created_at``) wins."""
+    ``progress_state`` a sponsor sees). The latest ACCEPTED row (by ``created_at``) wins (S4a)."""
     application = models.ForeignKey(
         ScholarshipApplication, on_delete=models.CASCADE,
         related_name='semester_results',
@@ -204,6 +204,18 @@ class SemesterResult(models.Model):
         related_name='+',
     )
     note = models.CharField(max_length=500, blank=True, default='')
+    # Student maintenance S4a (2026-10-29): an officer REVIEWS each result. Only an ACCEPTED one
+    # counts — for standing (`standing.py`) and for every sponsor reader (`results_review.accepted`).
+    # `queried` sends it back with a note the student sees. db_default: the old image inserts rows
+    # without these columns between the migrate and the deploy.
+    REVIEW_STATUSES = [('pending', 'Awaiting review'), ('accepted', 'Accepted'), ('queried', 'Queried')]
+    review_status = models.CharField(max_length=10, choices=REVIEW_STATUSES, default='pending',
+                                     db_default='pending')
+    reviewed_by = models.CharField(max_length=254, blank=True, default='', db_default='')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=500, blank=True, default='', db_default='')
+    # Which result term this is (S4b's `ResultsExpectation` keys on it); null until S4b sets it.
+    term_index = models.PositiveSmallIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

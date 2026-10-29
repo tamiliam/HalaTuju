@@ -96,7 +96,7 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
 #   .3 TD-404 ANAK=AK, BINTI=BT/BTE; .4 STPM S3 scored (+1A); .5 TD-410 a suspect proof shows no income;
-VERDICT_ENGINE_VERSION = '2026-10-29.1'   # 27.6 #374 declared ≤ Probable; .7 stamp+approver approves; .8 govt letterhead; 28.1 STPM CGPA C2: a slip's PNGK vs PA + best three; 28.2 TD-408 reversed patronymic = mismatch, Iban/BT father derived; 28.3 C4: an STPM CGPA matches within 0.01 (was 0.05); 29.1 Matric/Diploma M1: an "ACADEMIC TRANSCRIPT" is told by its college / polytechnic / fixed subject (#49)
+VERDICT_ENGINE_VERSION = '2026-10-29.2'   # 27.6 #374 declared ≤ Probable; .7 stamp+approver approves; .8 govt letterhead; 28.1 STPM CGPA C2: a slip's PNGK vs PA + best three; 28.2 TD-408 reversed patronymic = mismatch, Iban/BT father derived; 28.3 C4: an STPM CGPA matches within 0.01 (was 0.05); 29.1 Matric/Diploma M1: an "ACADEMIC TRANSCRIPT" is told by its college / polytechnic / fixed subject (#49); 29.2 M4: a Matriculation / polytechnic transcript is genuineness-scored (no longer "not checked")
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.

@@ -93,10 +93,16 @@ class AdminOrganisationConfigurationView(_AdminBase):
                 # Present only for a setting whose vocabulary is a short list rather than a
                 # range (the slot step) — the tab renders a menu instead of a box.
                 'allowed': list(spec['allowed']) if spec.get('allowed') else None,
+                # S4a: how many decimal places the value may carry (a CGPA: 2; everything else 0).
+                'decimals': spec.get('decimals', 0),
             })
+        from .. import standing
         return {
             'organisation': {'code': org.code, 'name': org.name},
             'settings': rows,
+            # S4a contract guard: where a live contract's progress standard states a CGPA that is not
+            # the organisation's minimum — or states none — the tab says so (a warning, never a block).
+            'warnings': standing.contract_warnings(org),
         }
 
     def get(self, request):

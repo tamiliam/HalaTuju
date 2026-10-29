@@ -58,6 +58,9 @@ _MATRIC_TRACK_MAP = {
     'matric-kejuruteraan': 'kejuruteraan',
     'matric-sains-komputer': 'sains_komputer',
     'matric-perakaunan': 'perakaunan',
+    # Bumi Sprint D2: Bumiputera-only rows; the engine's gate has already decided who reaches here.
+    'matric-sains-4-semester': 'sains_4_semester',
+    'matric-perakaunan-profesional': 'perakaunan_profesional',
 }
 
 _STPM_BIDANG_MAP = {

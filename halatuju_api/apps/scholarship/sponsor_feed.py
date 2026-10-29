@@ -7,6 +7,7 @@ community stats are programme-wide counts. The view layer gates them behind
 ``SPONSOR_POOL_ENABLED`` + approved-sponsor.
 """
 from . import pool
+from .results_review import accepted
 from .models import (
     GraduationMessage, ScholarshipApplication, SemesterResult, Sponsor, Sponsorship,
 )
@@ -31,7 +32,8 @@ def sponsor_activity(sponsor, *, limit=20):
                 events.append({'type': 'accepted', 'ref': ref, 'at': sp.decided_at})
 
     if active_ids:
-        for r in SemesterResult.objects.filter(application_id__in=active_ids):
+        # S4a: only an ACCEPTED result is news to a sponsor (`results_review.accepted`).
+        for r in accepted(SemesterResult.objects.filter(application_id__in=active_ids)):
             events.append({
                 'type': 'graduated' if r.graduated else 'semester',
                 'ref': pool.pool_ref(r.application_id),

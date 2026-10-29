@@ -296,6 +296,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarListView': 'scholars-org-fenced',
         'AdminScholarFileView': 'scholars-org-fenced',
         'AdminScholarActivityView': 'scholars-org-fenced',
+        # S4a: the Results tab and a result's review — the same door (`_file_for`); the review is a
+        # write on the case, so it also needs `_can_review_app`.
+        'AdminScholarResultsView': 'scholars-org-fenced',
+        'AdminScholarResultReviewView': 'scholars-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only

@@ -61,12 +61,14 @@ def service_error_documents(limit):
         return []
     try:
         from .decline import CASE_CLOSED_STATES
+        from ..results_review import SLIP_REQUEST_CODE
         errs = reduce(or_, [Q(vision_fields__error__startswith=p) for p in SERVICE_ERROR_PREFIXES],
                       Q(vision_fields__error=RATE_LIMITED))
         now = timezone.now()
         rows = (ApplicantDocument.objects
                 .filter(errs, doc_type__in=SERVICE_RETRY_TYPES, superseded_at__isnull=True)
                 .exclude(application__status__in=CASE_CLOSED_STATES)
+                .exclude(request_code=SLIP_REQUEST_CODE)   # S4a: a results slip is read by a person, never re-read
                 .filter(~Q(vision_fields__has_key=RETRY_UNTIL)
                         | Q(vision_fields__service_retry_until__gt=int(now.timestamp())))
                 .order_by('vision_fields_run_at')[:limit])

@@ -97,3 +97,57 @@ class TestEngineDoor:
         data = {'or_groups': [{'count': 1, 'grade': 'C', 'subjects': ['chem']}], 'count_once': [NURSING]}
         assert not check_complex_requirements({'math': 'C', 'bio': 'C', 'bm': 'C'}, data)[0]
         assert check_complex_requirements({'math': 'C', 'bio': 'C', 'bm': 'C', 'chem': 'C'}, data)[0]
+
+
+# Bumi Sprint D2: MOHE's "ATAU" (`any_of`) and "A- in ONE AND B in THREE of" (two groups, one list).
+# ASASI KEJURURAWATAN (UY0000004): C in Kimia / Fizik / Biologi ATAU A in Sains ATAU B in Sains
+# Tambahan, then C in two more subjects not listed.
+SCIENCE_ATAU = {'any_of': [[{'count': 1, 'grade': 'C', 'subjects': ['chem', 'phy', 'bio']}],
+                           [{'count': 1, 'grade': 'A', 'subjects': ['sci']}],
+                           [{'count': 1, 'grade': 'B', 'subjects': ['addsci']}]]}
+NURSING_D2 = {'counted': [], 'groups': [SCIENCE_ATAU],
+              'remaining': [{'count': 1, 'grade': 'C', 'exclude': ['chem', 'phy', 'bio', 'sci', 'addsci']}]}
+
+
+class TestAnyOf:
+    def test_each_alternative_alone_is_enough(self):
+        for science in ({'bio': 'C'}, {'sci': 'A'}, {'addsci': 'B'}):
+            assert block_passes({**science, 'geo': 'C'}, NURSING_D2), science
+
+    def test_an_alternative_below_its_own_grade_fails(self):
+        # Sains at B is not the A the second alternative asks for; B in Sains is no Kimia etc.
+        assert not block_passes({'sci': 'B', 'geo': 'C'}, NURSING_D2)
+        assert not block_passes({'addsci': 'C', 'geo': 'C'}, NURSING_D2)
+
+    def test_the_chosen_alternative_counts_once_with_the_rest(self):
+        # One science only: it fills the ATAU, so nothing is left for "one more".
+        assert not block_passes({'bio': 'A'}, NURSING_D2)
+
+    def test_an_alternative_of_several_groups_needs_all_of_them(self):
+        # ASASI PENGAJIAN ISLAM (UM0221002): B in THREE of a science list ATAU (B in TWO Islamic
+        # AND B in TWO others).
+        group = {'any_of': [[{'count': 3, 'grade': 'B', 'subjects': ['phy', 'chem', 'bio', 'math']}],
+                            [{'count': 2, 'grade': 'B', 'slots': [['islam', 'tdi'], ['syariah'], ['usul']]},
+                             {'count': 2, 'grade': 'B', 'subjects': ['geo', 'ekonomi', 'math']}]]}
+        block = {'counted': [], 'groups': [group], 'remaining': []}
+        assert block_passes({'phy': 'B', 'chem': 'B', 'bio': 'B'}, block)
+        assert block_passes({'islam': 'B', 'usul': 'B', 'geo': 'B', 'math': 'B'}, block)
+        # Two Islamic subjects but only one other: the second alternative is not whole.
+        assert not block_passes({'islam': 'B', 'usul': 'B', 'geo': 'B', 'phy': 'B'}, block)
+        # Two subjects from ONE bullet (Pendidikan Islam / Turath Dirasat Islamiah) are one slot.
+        assert not block_passes({'islam': 'B', 'tdi': 'B', 'geo': 'B', 'math': 'B'}, block)
+
+    def test_one_grade_for_one_and_another_for_three_of_one_list(self):
+        # ASASI KEJURUTERAAN (UE0520001): A- in ONE AND B in THREE of Fizik / Add Maths / Kimia /
+        # Matematik — four different subjects.
+        block = {'counted': [], 'remaining': [],
+                 'groups': [{'count': 1, 'grade': 'A-', 'subjects': ['phy', 'addmath', 'chem', 'math']},
+                            {'count': 3, 'grade': 'B', 'subjects': ['phy', 'addmath', 'chem', 'math']}]}
+        assert block_passes({'phy': 'A-', 'addmath': 'B', 'chem': 'B', 'math': 'B'}, block)
+        assert not block_passes({'phy': 'A', 'addmath': 'A', 'chem': 'A'}, block)   # three, not four
+        assert not block_passes({'phy': 'B+', 'addmath': 'B', 'chem': 'B', 'math': 'B'}, block)  # no A-
+
+    def test_through_the_engine_door(self):
+        data = {'count_once': [NURSING_D2]}
+        assert check_complex_requirements({'sci': 'A', 'geo': 'C'}, data)[0]
+        assert not check_complex_requirements({'sci': 'A'}, data)[0]

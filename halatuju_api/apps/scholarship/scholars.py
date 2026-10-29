@@ -8,10 +8,10 @@ WHO IS LISTED. `maintenance_scope.in_maintenance_q()` — the ONE predicate (awa
 active, maintenance); `?closed=1` lists the closed students who still have a file
 (`maintenance_scope.has_file_q()` minus the in-maintenance ones). Nothing else decides it.
 
+STANDING (S4a) is `standing.py`'s, from the latest ACCEPTED result and the organisation's
+thresholds; a result awaiting review never moves it (it reads `awaiting_review`).
+
 ⚠ WHAT IS DELIBERATELY NOT HERE YET, so nothing is invented:
-  * STANDING — Sprint 4 derives performing / underperforming / failing / not submitted from the
-    organisation's settings. Until then a row says only whether ANY result exists
-    (`no_result_yet` / `has_result`) and never judges a CGPA.
   * MENTOR (Sprint 7), LETTERS (Sprint 6), SPENDING (Sprint 5) — served as null / [] / absent.
   * A signed-PDF link (Sprint 5) — the contract summary says only whether an agreement exists and
     its derived status.
@@ -20,11 +20,12 @@ from decimal import Decimal
 
 import re
 
-from django.db.models import Count, F, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, F, OuterRef, Q, Subquery
 
 from apps.courses.search import _digits_expr
 
-from . import card_display, maintenance_scope
+from . import card_display, maintenance_scope, standing
+from .results_review import PENDING, accepted, latest_accepted
 from .models import (
     BursaryAgreement, Disbursement, ScholarshipApplication, SemesterResult, StudentActivity,
 )
@@ -56,13 +57,17 @@ def _two(value):
 
 
 def _latest(field):
-    return Subquery(SemesterResult.objects.filter(application=OuterRef('pk'))
+    """The latest ACCEPTED result's `field` (S4a: only an accepted result counts)."""
+    return Subquery(accepted(SemesterResult.objects.filter(application=OuterRef('pk')))
                     .order_by('-created_at', '-id').values(field)[:1])
 
 
 def base_queryset(*, closed=False):
-    """The population, before the fence (the VIEW applies it — `_org_scoped`)."""
-    if closed:
+    """The population, before the fence (the VIEW applies it — `_org_scoped`). `closed=None` is
+    EVERY file (in maintenance and closed) — the summary counts both in one query."""
+    if closed is None:
+        q = maintenance_scope.has_file_q()
+    elif closed:
         q = maintenance_scope.has_file_q() & ~maintenance_scope.in_maintenance_q()
     else:
         q = maintenance_scope.in_maintenance_q()
@@ -73,15 +78,35 @@ def base_queryset(*, closed=False):
 
 def annotate(qs):
     """The per-row facts a list needs, as subqueries on ONE query (no per-row read)."""
-    return (qs.select_related('profile', 'programme')
+    return (qs.select_related('profile', 'programme', 'owning_organisation__configuration')
             .annotate(latest_cgpa=_latest('cgpa'), latest_semester=_latest('semester'),
-                      latest_result_at=_latest('created_at'),
+                      latest_result_at=_latest('created_at'), latest_graduated=_latest('graduated'),
+                      pending_review=Exists(SemesterResult.objects.filter(
+                          application=OuterRef('pk'), review_status=PENDING)),
                       last_activity_at=Subquery(
                           StudentActivity.objects.filter(application=OuterRef('pk'))
                           .order_by('-created_at', '-id').values('created_at')[:1])))
 
 
-def filter_rows(qs, *, substate='', on_hold=False, search=''):
+def below_minimum_q():
+    """S4a: the rows whose latest ACCEPTED CGPA is under THEIR organisation's minimum (the
+    Underperforming filter and tile — failing included), on an ANNOTATED queryset. ONE query reads
+    every organisation's own minimum (`org_config.custom_values`); the rest follow the default."""
+    from decimal import Decimal as _D
+    from apps.courses import org_config
+    custom = {o: _D(str(v)) for o, v in org_config.custom_values('maintenance_min_cgpa').items()}
+    below = Q(latest_cgpa__isnull=False, latest_graduated=False)
+    cond = Q(latest_cgpa__lt=_D(str(org_config.default('maintenance_min_cgpa')))) & ~Q(
+        owning_organisation_id__in=list(custom))
+    for org_id, minimum in custom.items():
+        cond |= Q(owning_organisation_id=org_id, latest_cgpa__lt=minimum)
+    return below & cond
+
+
+def filter_rows(qs, *, substate='', on_hold=False, search='', below=None):
+    """`below` (from `below_minimum_q`) narrows to the students under their minimum."""
+    if below is not None:
+        qs = qs.filter(below)
     if substate in SUBSTATES:
         qs = qs.filter(maintenance_substate=substate)
     if on_hold:
@@ -107,14 +132,21 @@ def filter_rows(qs, *, substate='', on_hold=False, search=''):
     return qs.filter(cond)
 
 
-def summary(qs):
-    """The four tiles, counted over the SCOPED population in one query."""
+SUMMARY_KEYS = ('in_programme', 'on_hold', 'probation', 'ready_to_close', 'closed', 'below_minimum')
+
+
+def summary(qs, below):
+    """The tiles, counted in ONE query over the scoped files (annotated — `base_queryset(closed=None)`):
+    the in-maintenance counts, the closed files, and the students under their minimum (S4a)."""
+    live = maintenance_scope.in_maintenance_q()
     row = qs.aggregate(
-        in_programme=Count('id'),
-        on_hold=Count('id', filter=Q(maintenance_substate='on_hold')),
-        probation=Count('id', filter=Q(maintenance_substate='probation')),
-        ready_to_close=Count('id', filter=Q(maintenance_substate='ready_to_close')))
-    return {k: row[k] or 0 for k in ('in_programme', 'on_hold', 'probation', 'ready_to_close')}
+        in_programme=Count('id', filter=live),
+        on_hold=Count('id', filter=live & Q(maintenance_substate='on_hold')),
+        probation=Count('id', filter=live & Q(maintenance_substate='probation')),
+        ready_to_close=Count('id', filter=live & Q(maintenance_substate='ready_to_close')),
+        closed=Count('id', filter=~live),
+        below_minimum=Count('id', filter=live & below))
+    return {k: row[k] or 0 for k in SUMMARY_KEYS}
 
 
 def _gift(app):
@@ -144,18 +176,25 @@ def _scholar_identity(app, names=None):
 
 
 def rows(apps):
-    """List rows for one PAGE of annotated applications (catalogue names in two queries)."""
+    """List rows for one PAGE of annotated applications (catalogue names in two queries; one
+    thresholds read per organisation on the page)."""
     names = card_display.catalogue_course_names(
         (a.chosen_programme or {}).get('course_id') if isinstance(a.chosen_programme, dict) else ''
         for a in apps)
+    lines = {}
     out = []
     for app in apps:
+        if app.owning_organisation_id not in lines:
+            lines[app.owning_organisation_id] = standing.thresholds(app.owning_organisation)
+        minimum, failing = lines[app.owning_organisation_id]
         latest = _result(app.latest_cgpa, app.latest_semester, app.latest_result_at)
         out.append({
             **_scholar_identity(app, names),
             'latest_result': latest,
-            # Sprint 4 replaces this with the real standing; until then it never judges a CGPA.
-            'standing': 'has_result' if latest else 'no_result_yet',
+            'pending_review': bool(app.pending_review),
+            'standing': standing.standing_for(
+                app.latest_cgpa, bool(app.latest_graduated), has_accepted=latest is not None,
+                has_pending=bool(app.pending_review), minimum=minimum, failing=failing),
             'mentor': None,
             'last_activity_at': app.last_activity_at,
         })
@@ -165,8 +204,8 @@ def rows(apps):
 def file_payload(app):
     """The file header + Overview cards for ONE application the view has fenced."""
     from .payments import _remaining, paid_to_date
-    latest = (SemesterResult.objects.filter(application=app)
-              .order_by('-created_at', '-id').values('cgpa', 'semester', 'created_at').first())
+    latest = latest_accepted(app)
+    latest = {'cgpa': latest.cgpa, 'semester': latest.semester, 'created_at': latest.created_at} if latest else None
     paid = paid_to_date(app)
     award = app.award_amount
     last = (Disbursement.objects.filter(application=app, status__in=Disbursement.PAID)
@@ -184,7 +223,9 @@ def file_payload(app):
         'vircle_activated_at': app.vircle_activated_at,
         'closed_at': app.closed_at,
         'latest_result': result,
-        'standing': 'has_result' if result else 'no_result_yet',
+        'standing': standing.standing_of(app),
+        'thresholds': dict(zip(('minimum', 'failing'),
+                               (_two(v) for v in standing.thresholds(app.owning_organisation)))),
         'money': {
             'award_amount': _two(award),
             'paid_to_date': _two(paid),
@@ -223,11 +264,32 @@ def controls(app, *, can_write, can_hold):
     if post_award and app.status not in closure.FUNDED_STATUSES and closure.has_live_money(app):
         refusal = 'sponsorship_open'
     return {
+        # S4a: accepting / querying a result is a write on the case, and only while she is in it.
+        'can_review_results': bool(can_write and maintenance_scope.is_in_maintenance(app)),
         'can_set_substate': bool(can_write and can_set_substate(app)),
         'can_hold': bool(can_hold),
         'close_reasons': (list(closure.reasons_for(app.status))
                           if can_write and post_award and not refusal else []),
         'close_refusal': refusal,
+    }
+
+
+def result_dict(row):
+    """One result for the officer's Results tab — the slip by signed URL (org-fenced by the key)."""
+    slip = row.results_slip
+    url = None
+    if slip is not None:
+        from .storage import create_signed_download_url, resolve_org_for_path
+        path_org = resolve_org_for_path(slip.storage_path)
+        if path_org is None or path_org == row.application.owning_organisation_id:
+            url = create_signed_download_url(slip.storage_path)
+    return {
+        'id': row.id, 'semester': row.semester, 'cgpa': _two(row.cgpa), 'graduated': row.graduated,
+        'note': row.note, 'created_at': row.created_at,
+        'review_status': row.review_status, 'review_note': row.review_note,
+        'reviewed_by': row.reviewed_by, 'reviewed_at': row.reviewed_at,
+        'slip': ({'url': url, 'filename': slip.original_filename, 'content_type': slip.content_type}
+                 if slip is not None else None),
     }
 
 

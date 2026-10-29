@@ -20,9 +20,15 @@ count each group on its own, so one subject may satisfy two groups; that stays e
 A block passes when ONE assignment gives every unit its own student subject:
   * a group without `slots` is `count` units, each met by any listed subject at `grade` or better;
   * a group with `slots` is `count` units from `count` DIFFERENT slots (a bullet counts once);
+  * a group with `any_of` (Bumi Sprint D2: MOHE's "ATAU") is ONE of its alternatives, each a list of
+    groups like the ones above, e.g. {"any_of": [[{"count": 1, "grade": "C", "subjects": ["chem",
+    "phy", "bio"]}], [{"count": 1, "grade": "A", "subjects": ["sci"]}]]}; the chosen alternative's
+    units join the block, so they too count once with everything else in it;
   * a `remaining` entry is `count` units, each met by ANY other subject at `grade` or better that is
     not in `exclude`;
   * no unit may use a subject in `counted`, and no student subject is used twice.
+Two groups over the SAME list at different grades ("A- in ONE AND B in THREE of: ...") are simply
+two groups in one block: 1 + 3 units, four different subjects.
 "Each subject at most once" over a many-to-many map is a bipartite MATCHING (augmenting paths), not
 a first-fit loop — a greedy pick could spend Fizik on the remaining slot and starve the science
 group (the lesson behind `stpm_engine._distinct_matches`).
@@ -72,22 +78,30 @@ def _slot_choices(group):
     return [[(slots[i], grade) for i in pick] for pick in combinations(range(len(slots)), count)]
 
 
+def _group_choices(group):
+    """Every way a group can be met, each a list of units (allowed_keys, min_grade)."""
+    if group.get('any_of'):
+        return [units for alternative in group['any_of'] for units in _all_of(alternative)]
+    if group.get('slots'):
+        return _slot_choices(group)
+    return [[(_keys(group.get('subjects')), group.get('grade', 'E'))] * group.get('count', 1)]
+
+
+def _all_of(groups):
+    """Every way to meet ALL of `groups` together: one choice of each, units joined."""
+    return [[unit for units in picks for unit in units]
+            for picks in product(*(_group_choices(g) for g in groups))]
+
+
 def block_passes(grades, block):
     """True when one count-once assignment fills every unit of the block (see the module doc)."""
     counted = _keys(block.get('counted'))
     grades = {k: g for k, g in (grades or {}).items() if k not in counted}
-    fixed, choices = [], []
-    for group in block.get('groups', []):
-        if group.get('slots'):
-            choices.append(_slot_choices(group))
-        else:
-            allowed = _keys(group.get('subjects'))
-            fixed += [(allowed, group.get('grade', 'E'), frozenset())] * group.get('count', 1)
-    for entry in block.get('remaining', []):
-        fixed += [(None, entry.get('grade', 'E'), frozenset(_keys(entry.get('exclude'))))] * entry.get('count', 1)
-    for picks in product(*choices):
-        units = fixed + [(allowed, grade, frozenset()) for pick in picks for allowed, grade in pick]
-        if _max_matching(units, grades) == len(units):
+    fixed = [(None, entry.get('grade', 'E'), frozenset(_keys(entry.get('exclude'))))
+             for entry in block.get('remaining', []) for _ in range(entry.get('count', 1))]
+    for units in _all_of(block.get('groups', [])):
+        if _max_matching(fixed + [(allowed, grade, frozenset()) for allowed, grade in units],
+                         grades) == len(fixed) + len(units):
             return True
     return False
 

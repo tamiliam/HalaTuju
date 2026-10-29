@@ -7,10 +7,10 @@
 // organisation, a reviewer only their assigned scholars, finance never. This page draws what it is
 // handed and filters on the server, so a page of 25 is the right 25 of the whole list.
 //
-// ⚠ NO STANDING IS JUDGED HERE. Until Sprint 4 derives it from the organisation's settings the server
-// says only whether a result exists; the "Underperforming", "Results overdue" and "Wants a mentor"
-// filters from the design are drawn DISABLED (PanelTabs' rule: a tab not built yet is shown, never
-// hidden) rather than faked.
+// ⚠ NO STANDING IS JUDGED HERE. The server's `standing` (S4a, `standing.py`: the latest ACCEPTED
+// result against the organisation's thresholds) is drawn as it comes; "Underperforming" asks the
+// server (`standing=below_minimum`). "Results overdue" (S4b) and "Wants a mentor" (S7) stay
+// DISABLED (PanelTabs' rule: a tab not built yet is shown, never hidden) rather than faked.
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -72,6 +72,7 @@ export default function ScholarsPage() {
       ? filter as ScholarRow['maintenance_substate'] : ''
     getScholars({
       programme, closed: filter === 'closed', substate, search,
+      standing: filter === 'underperforming' ? 'below_minimum' : '',
       sort: `${sort.dir === 'desc' ? '-' : ''}${sort.key}`, page, page_size: pageSize,
     }, { token })
       .then((d) => { if (ticket === latest.current) setData(d) })
@@ -97,7 +98,7 @@ export default function ScholarsPage() {
     { key: 'probation', labelKey: 'admin.maintenance.substate.probation', count: s?.probation },
     { key: 'on_hold', labelKey: 'admin.maintenance.substate.on_hold', count: s?.on_hold },
     { key: 'ready_to_close', labelKey: 'admin.maintenance.substate.ready_to_close', count: s?.ready_to_close },
-    { key: 'underperforming', labelKey: 'admin.scholars.filter.underperforming', disabled: true },
+    { key: 'underperforming', labelKey: 'admin.scholars.filter.underperforming', count: s?.below_minimum },
     { key: 'overdue', labelKey: 'admin.scholars.filter.overdue', disabled: true },
     { key: 'wantsMentor', labelKey: 'admin.scholars.filter.wantsMentor', disabled: true },
     { key: 'closed', labelKey: 'admin.scholars.filter.closed', count: s?.closed },
@@ -107,6 +108,7 @@ export default function ScholarsPage() {
     { key: 'onHold', value: s?.on_hold, tone: s?.on_hold ? 'text-critical-700' : 'text-ground-900' },
     { key: 'probation', value: s?.probation, tone: s?.probation ? 'text-caution-700' : 'text-ground-900' },
     { key: 'readyToClose', value: s?.ready_to_close, tone: 'text-ground-900' },
+    { key: 'belowMinimum', value: s?.below_minimum, tone: s?.below_minimum ? 'text-caution-700' : 'text-ground-900' },
   ]
   const rows = data?.results ?? []
   const total = data?.count ?? 0
@@ -127,7 +129,7 @@ export default function ScholarsPage() {
         </label>
       </header>
 
-      <section aria-label={t('admin.scholars.summary')} className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section aria-label={t('admin.scholars.summary')} className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-5">
         {tiles.map((tile) => (
           <div key={tile.key} className="rounded-xl border border-ground-200 bg-ground-0 p-4">
             <div className="text-sm text-ground-600">{t(`admin.scholars.tile.${tile.key}`)}</div>

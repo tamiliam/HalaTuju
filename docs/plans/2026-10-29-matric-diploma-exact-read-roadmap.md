@@ -115,6 +115,18 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
 - Replace `higher_results_not_checked` for those two families only; others keep it.
 - Bump `MODEL_VERSION` and `VERDICT_ENGINE_VERSION`.
 - **Done when:** the owner has seen the before/after list of affected applications (ids only) before release.
+- **BUILT 2026-10-29** (branch `m4-matric-poly-genuineness`, not pushed). Notes:
+  - `genuineness/matric_poly_doc.py`: a Matriculation transcript list (6 corpus transcripts at
+    p 0.96–1.00, two of them certified copies; every control ≤ 0.29) and a polytechnic transcript
+    list (ONE corpus transcript, p 1.00). Review B1: BOTH are genuine or nothing (a genuine page-1
+    view scores 0.68); positive gates exclude slips, letters, portal screens and Kolej Komuniti.
+  - **M5 must run only after M4 is final:** nothing but "genuine" is ever stored, so no clearing
+    path is needed — but a re-read keeps whatever score is stored.
+  - Left "not checked" (owner questions): Matriculation semester RESULT SLIPS, a page below the
+    floor (in the corpus only Matriculation OFFER letters), polytechnic result slips, the student-
+    portal screen, any polytechnic page below genuine, Kolej Komuniti, UiTM, Asasi.
+  - The before/after list (ids only) is in the M4 report; scores land only when a document is read
+    again (M5), because a stored score is never replaced by silence.
 
 ### M5 — Live re-read + close · low · ~3 h · paid: Gemini fallback on misses only
 - Targeted live `reextract_documents` for matric/diploma `higher_results` with the job flags.

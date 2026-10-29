@@ -133,13 +133,22 @@ const TIMINGS: api.OrganisationConfigSetting[] = [
     min: 1, max: 3, value: null, default: 2 },
 ]
 
+// Student maintenance S4a — the first DECIMAL rows (a CGPA, two places). The results timings
+// arrive in S4b with their reader.
+const MAINTENANCE: api.OrganisationConfigSetting[] = [
+  { key: 'maintenance_min_cgpa', group: 'maintenance', unit: 'cgpa',
+    min: 1, max: 4, decimals: 2, value: null, default: 3 },
+  { key: 'maintenance_failing_cgpa', group: 'maintenance', unit: 'cgpa',
+    min: 0, max: 4, decimals: 2, value: null, default: 2 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F, ...TIMINGS],
+    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F, ...TIMINGS, ...MAINTENANCE],
   }
 }
 
@@ -485,6 +494,45 @@ describe('a row whose vocabulary is a list is a menu, not a box', () => {
     await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
     expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(
       { interview_slot_step_min: 15 }, undefined, { token: 'tok' })
+  })
+})
+
+describe('a decimal row (a CGPA) takes two places, and a contract that disagrees is warned', () => {
+  const cgpa = () => screen.getByTestId('config-maintenance_min_cgpa') as HTMLInputElement
+
+  it('names the default with its places and sends the typed decimal as a number', async () => {
+    mockApi.saveOrganisationConfiguration.mockResolvedValue(config())
+    await mount()
+    expect(cgpa().placeholder).toBe('3.00')
+    fireEvent.change(cgpa(), { target: { value: '3.25' } })
+    expect(save().disabled).toBe(false)
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
+    expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(
+      { maintenance_min_cgpa: 3.25 }, undefined, { token: 'tok' })
+  })
+
+  it('refuses three places or words, and a whole-number row still refuses a decimal', async () => {
+    await mount()
+    for (const bad of ['3.255', 'abc', '4.5']) {
+      fireEvent.change(cgpa(), { target: { value: bad } })
+      expect(save().disabled).toBe(true)
+      expect(screen.getByTestId('config-maintenance_min_cgpa-invalid')).toBeTruthy()
+    }
+    fireEvent.change(cgpa(), { target: { value: '' } })
+    fireEvent.change(box(), { target: { value: '2.5' } })
+    expect(screen.getByTestId(`config-${KEY}-invalid`)).toBeTruthy()
+  })
+
+  it('draws the server contract warning inside the maintenance group — a warning, not a refusal', async () => {
+    mockApi.getOrganisationConfiguration.mockResolvedValue({ ...config(), warnings: [
+      { code: 'contract_differs', key: 'maintenance_min_cgpa', template: 'Standard 2026', stated: '2.50' },
+    ] })
+    await mount()
+    const w = screen.getByTestId('config-warning')
+    expect(w.textContent).toBe('admin.orgSettings.config.warning.contract_differs|Standard 2026,2.50')
+    expect(w.closest('section')?.textContent).toContain('admin.orgSettings.config.group.maintenance')
+    expect(save().disabled).toBe(true)
   })
 })
 

@@ -16,6 +16,7 @@ from halatuju.throttling import UploadRateThrottle
 
 from .document_snapshot import SNAPSHOT_ORDER
 from .read_errors import is_ai_service_error
+from .results_review import SLIP_REQUEST_CODE, slip_locked
 from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication, ScholarshipCohort
 from .serializers import (
     ApplicantDocumentSerializer,
@@ -574,31 +575,23 @@ class SemesterResultView(_OwnInProgrammeView):
         application = self._own_application(request, pk)
         if application is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        results = application.semester_results.all()
-        return Response({'results': SemesterResultSerializer(results, many=True).data})
+        from .results_review import results_for_file
+        return Response({'results': SemesterResultSerializer(results_for_file(application), many=True).data})
 
     def post(self, request, pk):
         application = self._own_application(request, pk)
         if application is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         data = request.data if isinstance(request.data, dict) else {}
-        slip = None
-        slip_id = data.get('results_slip')
-        if slip_id not in (None, '', 0):
-            slip = ApplicantDocument.objects.filter(
-                pk=slip_id, application=application, doc_type='results_slip',
-            ).first()
-            if slip is None:
-                return Response({'error': 'No such results slip on this application.',
-                                 'code': 'bad_slip'}, status=status.HTTP_400_BAD_REQUEST)
+        # S4a: the slip is the file she just PUT (`slip`: storage path + metadata), recorded by the
+        # service so the pre-award document pipeline never runs on it (`results_review.record_slip`).
         try:
             result = in_programme_service.record_semester_result(
                 application,
                 semester=data.get('semester', ''),
                 cgpa=data.get('cgpa'),
                 graduated=bool(data.get('graduated', False)),
-                results_slip=slip,
-                note=data.get('note', ''),
+                note=data.get('note', ''), slip_upload=data.get('slip'),
             )
         except in_programme_service.InProgrammeError as exc:
             return Response({'error': exc.code, 'code': exc.code},
@@ -986,8 +979,9 @@ class DocumentListCreateView(APIView):
         app = _current_application(request.user_id)
         # Student-facing listing: LIVE docs only — a superseded (replaced) copy is
         # version history for the officer view, never shown back to the student.
+        # S4a review H1: an in-programme results slip is EVIDENCE, shown with its result, never here.
         docs = (ApplicantDocument.objects.filter(application=app, superseded_at__isnull=True)
-                if app else ApplicantDocument.objects.none())
+                .exclude(request_code=SLIP_REQUEST_CODE) if app else ApplicantDocument.objects.none())
         # ⚠ THE LIMITS ARE SERVED, NEVER MIRRORED (Org Config Sprint E). The uploader used to
         # hold its own `8 * 1024 * 1024` so it could warn before a doomed upload; that number is
         # the ORGANISATION's now, so it rides here — the same read the POST below refuses on.
@@ -1044,6 +1038,8 @@ class DocumentListCreateView(APIView):
         # document its OWN single-instance slot, so it can't overwrite the student's route doc
         # or another request. '' = the student's own apply-form/route doc (shared slot).
         new_request_code = serializer.validated_data.get('request_code', '') or ''
+        if new_request_code == SLIP_REQUEST_CODE:   # S4a H1: a results slip's slot is never replaced here
+            return Response({'error': 'slip_locked', 'code': 'slip_locked'}, status=status.HTTP_409_CONFLICT)
         # Slot model (TD-115): income docs are tagged by the household member they belong to.
         # The STR route has a single earner, so PRE-CONSENT the backend AUTHORITATIVELY tags the
         # earner's income docs (str/parent_ic/salary_slip/epf) to that earner — by design, the STR
@@ -1376,6 +1372,8 @@ class DocumentDetailView(APIView):
         ).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if slip_locked(doc):   # S4a review H1: a results slip is evidence, whatever its review says
+            return Response({'error': 'slip_locked', 'code': 'slip_locked'}, status=status.HTTP_409_CONFLICT)
         # An explicit "Remove" fully clears the slot INCLUDING its version history — this is a
         # deliberate student action, not a replace. Hard-delete the live row AND every superseded
         # ancestor it replaced (walk the `supersedes` chain transitively — a slot can have several

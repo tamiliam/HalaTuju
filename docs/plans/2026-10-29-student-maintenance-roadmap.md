@@ -102,6 +102,14 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    progress band agree for every status x wallet x sub-state). **Carry-over from S3 review:** the results
    form's "graduated" tick box becomes the site Toggle (house rule: a student's on/off choice is a Toggle).
    Accept: changing `maintenance_min_cgpa` changes chips with no deploy; reminders idempotent + metered.
+   **Split (2026-10-29):** **4a** — results recording on the predicate with slip + Toggle, review fields
+   (migration 0186), admin Results tab (accept/query), `standing.py` + `maintenance` settings group, list
+   chip + Underperforming filter, accepted-only sponsor readers, contract-text warning. **4b** (separate push) —
+   `ResultsExpectation` + `results-due-reminders` / `results-overdue-flag` crons, the `StudentEmailTemplate`
+   family (results_due / results_overdue / result_queried; Student communications tab; metered), and the
+   Results overdue filter + "not submitted" standing. 4b also registers the results timing keys (with their
+   reader) and stamps `term_index`, after which "latest result" means the latest TERM, not the latest
+   submitted (`results_review.latest_accepted`).
 5. **Money summary + contract** (~20 files). Admin Money tab: paid to date, remaining, last 3 releases,
    spending by category (spending block needs `spending` permission; finance sees payments only), links to
    `/admin/payments` + `/admin/spending`. Contract tab (admin + student): signed PDF by signed URL, else

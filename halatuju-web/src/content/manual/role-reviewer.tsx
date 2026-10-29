@@ -88,7 +88,10 @@ export const roleReviewer: ManualChapter = {
         <strong> Staff only</strong> for an entry meant for colleagues. On her file&rsquo;s header you can change her
         status &mdash; <strong>probation</strong> or <strong>ready to close</strong> &mdash; and close the file when
         her support ends. Putting a student <strong>on hold</strong> (which stops her payments) is done by the
-        people who prepare payment runs, not by reviewers.</>
+        people who prepare payment runs, not by reviewers. Her <strong>Results</strong> tab lists each result
+        she sends with her slip: <strong>Accept</strong> it, or <strong>Query</strong> it with a note she will
+        see. Only an accepted result counts. A result needs the slip she uploaded at the portal &mdash; slips sent
+        by email are not accepted and you cannot attach one for her, so query her to upload it.</>
       ),
     },
     {

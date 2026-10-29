@@ -835,7 +835,9 @@
     "subjectReq": "Subject Requirements",
     "bumiputeraOnly": "Bumiputera Only",
     "otherSubjects": "{grade} or better in {count} more subject(s) not already counted",
-    "exceptSubjects": "not counting"
+    "exceptSubjects": "not counting",
+    "oneOf": "one of these:",
+    "orAlternative": "or"
   },
   "saved": {
     "title": "Saved Courses",
@@ -2794,7 +2796,27 @@
         "body": "Your funds, your results and your thank-you to your sponsor, in one place."
       },
       "loadFailed": "We couldn't load this. Try again.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "resultError": {
+        "bad_cgpa": "Enter a CGPA between 0.00 and 4.00.",
+        "unsupported_format": "Attach a photo or a PDF of your slip.",
+        "file_too_large": "That file is too large. Attach a smaller photo or PDF.",
+        "upload_incomplete": "Your slip did not finish uploading. Please try again.",
+        "bad_slip": "We could not attach that slip. Please try again.",
+        "too_many_results": "You have sent several results today. Please wait a day before sending another.",
+        "slip_required": "Upload your result slip first. A result cannot be sent without it.",
+        "generic": "Could not save your result. Please try again."
+      },
+      "review": {
+        "pending": "Awaiting review",
+        "accepted": "Accepted",
+        "queried": "Queried",
+        "queriedNote": "We have a question about this result: {note}"
+      },
+      "slip": {
+        "label": "Your result slip (photo or PDF) — required",
+        "hint": "Upload the slip from your institution here. A result is accepted only with its slip uploaded on this page — slips sent by email are not accepted."
+      }
     },
     "subnav": {
       "apply": "Apply for assistance",
@@ -6023,7 +6045,8 @@
         "inProgramme": "In programme",
         "onHold": "On hold",
         "probation": "Probation",
-        "readyToClose": "Ready to close"
+        "readyToClose": "Ready to close",
+        "belowMinimum": "Underperforming"
       },
       "filter": {
         "all": "All",
@@ -6042,7 +6065,10 @@
         "lastActivity": "Last activity"
       },
       "standing": {
-        "has_result": "Result recorded",
+        "performing": "Performing",
+        "underperforming": "Underperforming",
+        "failing": "Failing",
+        "awaiting_review": "Awaiting review",
         "no_result_yet": "No result yet"
       },
       "tab": {
@@ -6072,8 +6098,9 @@
         "cgpaFor": "CGPA · {semester}",
         "recordedOn": "Recorded {date}",
         "noResult": "No semester result recorded yet.",
-        "standingLater": "Standing against the programme's minimum CGPA arrives with results review.",
-        "openFile": "Open scholar file"
+        "openFile": "Open scholar file",
+        "thresholds": "Minimum CGPA {min} · failing below {failing} (organisation settings)",
+        "openResults": "Open results"
       },
       "money": {
         "award_amount": "Award",
@@ -6123,7 +6150,9 @@
         "payment_released": "Payment released · RM{amount} {ref}",
         "result_submitted": "Result submitted · {semester}",
         "closed": "File closed · {reason}",
-        "other": "System update"
+        "other": "System update",
+        "result_accepted": "Result accepted · {semester}",
+        "result_queried": "Result queried · {semester}"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6148,6 +6177,37 @@
           "generic": "Could not change the status. You may not have permission."
         },
         "noFileHint": "She is paid by the payment runs but has no scholar file yet (her eWallet is not reported live), so her status is set here."
+      },
+      "results": {
+        "intro": "Only an accepted result counts towards her standing and anything a sponsor sees.",
+        "loadFailed": "Could not load the results.",
+        "graduated": "Graduated",
+        "cgpa": "CGPA {cgpa}",
+        "submitted": "Submitted {date}",
+        "reviewed": "reviewed by {by} on {date}",
+        "status": {
+          "pending": "Awaiting review",
+          "accepted": "Accepted",
+          "queried": "Queried"
+        },
+        "studentNote": "Her note: {note}",
+        "viewSlip": "View slip",
+        "noSlip": "No slip uploaded — query her to upload it here. A result without a slip cannot be accepted.",
+        "accept": "Accept",
+        "query": "Query",
+        "queryPlaceholder": "What should she check or send again?",
+        "sendQuery": "Send query",
+        "slip": "Result slip",
+        "done": {
+          "accepted": "Result accepted.",
+          "queried": "Query sent to the student."
+        },
+        "error": {
+          "note_required": "Write what she should check before sending a query.",
+          "file_closed": "This file is closed, so its results are read-only.",
+          "slip_required": "A result can be accepted only with the slip she uploaded. Query her to upload it.",
+          "generic": "Could not save the review. You may not have permission."
+        }
       }
     },
     "contracts": {
@@ -6795,7 +6855,8 @@
           "decisions": "Decisions & declines",
           "profile_completion": "Completing the application",
           "check2": "Questions after submission",
-          "awards": "Awards"
+          "awards": "Awards",
+          "maintenance": "Student maintenance"
         },
         "setting": {
           "shortlist_email_delay_minutes": {
@@ -6941,6 +7002,14 @@
           "interview_reschedule_cutoff_hours": {
             "label": "Change or cancel until — hours before",
             "desc": "How close to the start a student may still pick a different time or cancel. The confirmation email promises this same number."
+          },
+          "maintenance_min_cgpa": {
+            "label": "Minimum CGPA",
+            "desc": "A funded student below this is underperforming (the contract's academic standard)."
+          },
+          "maintenance_failing_cgpa": {
+            "label": "Failing CGPA",
+            "desc": "Below this she is failing. Must be below the minimum."
           }
         },
         "unit": {
@@ -6952,7 +7021,8 @@
           "time_of_day": "(hh:mm)",
           "megabytes": "MB",
           "documents": "documents",
-          "attempts": "attempts"
+          "attempts": "attempts",
+          "cgpa": "CGPA"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "defaultNoteClock": "Platform default: {n} (Malaysian time)",
@@ -6970,10 +7040,15 @@
           "questions_after_reminder": "Must reach the student at least a day before the questions reminder.",
           "cutoff_beyond_lead": "Must be no longer than the earliest booking.",
           "qc_hold_too_long": "Must be no longer than the decline hold.",
-          "nudge_after_due": "Must be fewer days than the verdict due time."
+          "nudge_after_due": "Must be fewer days than the verdict due time.",
+          "failing_not_below_min": "The failing CGPA must be below the minimum CGPA."
         },
         "errorGeneric": "Could not save. Please try again.",
-        "invalid": "Fix the highlighted value first."
+        "invalid": "Fix the highlighted value first.",
+        "warning": {
+          "contract_differs": "The contract \"{template}\" states a CGPA of {stated}, which is not your minimum CGPA. Check that the two agree.",
+          "contract_unstated": "The contract \"{template}\" does not state a CGPA in its progress standard, so we cannot check it against your minimum CGPA."
+        }
       },
       "colours": {
         "subtitle": "Set the colour your students and sponsors see across the programme.",

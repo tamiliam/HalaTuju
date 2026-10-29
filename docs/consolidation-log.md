@@ -19,8 +19,10 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-28 Bumi coverage Sprint B (the Bumiputera answer, migration 0087) — 6443120d 8a47851a daf1918d 6c458ed5
 - 2026-10-29 TD-416 message slices + Bumi coverage Sprint C (Islamic SPM subjects) — f1ae0a83 9d1dedca 5a4e186e f4aa714d 1a4aedc8
 - 2026-10-29 Bumi coverage Sprint D1 (UiTM SPM courses, courses/0088) — 7d484e3b c420f805 7318cdba a3e67e91 19fdf24e 8018922c
+- 2026-10-29 Bumi coverage Sprint D2 (other SPM courses, ATAU, Bumi matric tracks) — 17e4b0a2 0679e368 e8de21dc 1948c6b7 733649b5 de10ccda 6d806eb4
 - 2026-10-29 Student maintenance Sprint 1 (one predicate, on hold stops money, activity log, migration 0183) — ad299d31 901c63d5 ae939213 99ee813b
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list + maintenance file) — 3b27acbd 1debc6cc
+- 2026-10-29 Student maintenance Sprint 3 (My Bursary hub; sub-state + Close move to the scholar file) — 1f78c76a c007883e
 - 2026-10-28 Back-issuing invoices, grouped development lines, bug work free (migrations 0181, 0182) — ec21c0b5 4c6aca75 fc864c2c 62ebb121 b0473994 ceea94e0
 - 2026-10-29 Billing — the busy-meter guard, the tenant payment declaration and the owner's four readings (migrations 0184, 0185) — dec989c6 b1045b8b e20a3363 8e946874 6db38edc
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list and maintenance file) — 3b27acbd 1debc6cc _(logged by the billing session at its close, as above)_

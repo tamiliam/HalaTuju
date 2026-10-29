@@ -2,7 +2,7 @@
 from rest_framework import serializers
 
 from apps.courses.exam_questions import ResultsHeldField
-from . import pool
+from . import pool, results_review
 from .family import PROFESSION_CODES, form_guardians_shape
 from .serializers_maintenance import StudentMaintenanceFields
 from .models import (
@@ -308,7 +308,7 @@ class SponsorSponsorshipSerializer(serializers.Serializer):
         return sponsorship.application.onboarded_at is not None
 
     def get_semesters(self, sponsorship):
-        return sponsorship.application.semester_results.count()
+        return results_review.accepted_count(sponsorship.application)  # S4a: accepted only
 
 
 class SponsorMyStudentDetailSerializer(SponsorSponsorshipSerializer):
@@ -393,7 +393,7 @@ class SemesterResultSerializer(serializers.ModelSerializer):
     The uploaded ``results_slip`` is myNADI-only; only its id is surfaced here."""
     class Meta:
         model = SemesterResult
-        fields = ['id', 'semester', 'cgpa', 'graduated', 'results_slip', 'note', 'created_at']
+        fields = ['id', 'semester', 'cgpa', 'graduated', 'results_slip', 'note', 'created_at', 'review_status', 'review_note']
         read_only_fields = fields
 
 

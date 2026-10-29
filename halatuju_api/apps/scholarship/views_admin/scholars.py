@@ -20,7 +20,7 @@ from rest_framework.response import Response
 
 from .. import activity, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
-from ..models import StudentActivity
+from ..models import SemesterResult, StudentActivity
 from .base import _AdminBase
 
 
@@ -88,16 +88,17 @@ class AdminScholarListView(_ScholarsBase):
             return qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
 
         closed = q.get('closed') == '1'
-        qs = scholars.filter_rows(scoped(closed), substate=q.get('substate', ''),
-                                  on_hold=q.get('on_hold') == '1', search=q.get('search', ''))
+        below = scholars.below_minimum_q()          # one read of every organisation's minimum
+        qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
+                                  on_hold=q.get('on_hold') == '1', search=q.get('search', ''),
+                                  below=below if q.get('standing') == 'below_minimum' else None)
         sort = q.get('sort') or scholars.DEFAULT_SORT
-        qs = scholars.annotate(qs).order_by(*scholars.SORTS.get(sort, scholars.SORTS['name']))
+        qs = qs.order_by(*scholars.SORTS.get(sort, scholars.SORTS['name']))
         count = qs.count()
         size = _int(q.get('page_size'), 25, 1, scholars.MAX_PAGE_SIZE)
         page = _int(q.get('page'), 1, 1, max(1, -(-count // size)))
         page_rows = list(qs[(page - 1) * size:page * size])
-        summary = scholars.summary(scoped(False))
-        summary['closed'] = scoped(True).count()
+        summary = scholars.summary(scholars.annotate(scoped(None)), below)
         return Response({'summary': summary, 'count': count, 'page': page, 'page_size': size,
                          'results': scholars.rows(page_rows)})
 
@@ -112,6 +113,54 @@ class AdminScholarFileView(_ScholarsBase):
         from .. import payments
         return Response({**scholars.file_payload(app), 'controls': scholars.controls(
             app, can_write=self._can_review_app(admin, app), can_hold=payments.may_prepare(admin))})
+
+
+class AdminScholarResultsView(_ScholarsBase):
+    """GET admin/scholarship/scholars/<pk>/results/ — every result, newest first, each with its
+    review and its slip (signed URL). S4a."""
+
+    def get(self, request, pk):
+        app, _admin, err = self._file_for(request, pk)
+        if err:
+            return err
+        from .. import results_review
+        return Response({'results': [scholars.result_dict(r)
+                                     for r in results_review.results_for_file(app)]})
+
+
+class AdminScholarResultReviewView(_ScholarsBase):
+    """POST admin/scholarship/scholars/<pk>/results/<result_id>/review/ {decision: accepted|queried,
+    note} — accept or query a result (a query needs a note the student sees). S4a.
+
+    ⚠ WHO: reviewing a result decides what counts for standing and for every sponsor reader, so it
+    is a WRITE on the case — `_can_review_app` (super, the organisation's qc holders, or the
+    assignee), not merely a reader of the file. 409 `file_closed` on a closed file."""
+
+    def post(self, request, pk, result_id):
+        app, admin, err = self._file_for(request, pk)
+        if err:
+            return err
+        if not self._can_review_app(admin, app):
+            return self._deny_role()
+        if not is_in_maintenance(app):
+            return Response({'error': 'file_closed', 'code': 'file_closed'},
+                            status=status.HTTP_409_CONFLICT)
+        result = SemesterResult.objects.filter(pk=result_id, application=app).first()
+        if result is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .. import results_review
+        data = request.data if isinstance(request.data, dict) else {}
+        note = data.get('note')
+        try:
+            results_review.review(result, decision=data.get('decision'),
+                                  note=note if isinstance(note, str) else '',
+                                  by_email=admin.email or '')
+        except results_review.ResultsError as e:
+            # `slip_required` is a state of the RESULT (no slip yet), not a bad request — 409.
+            code = status.HTTP_409_CONFLICT if e.code == 'slip_required' else status.HTTP_400_BAD_REQUEST
+            return Response({'error': e.code, 'code': e.code}, status=code)
+        result.refresh_from_db()
+        return Response(scholars.result_dict(result))
 
 
 class AdminScholarActivityView(_ScholarsBase):

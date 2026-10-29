@@ -500,7 +500,9 @@ function StpmSchoolCard({ school, stream }: { school: StpmSchool; stream: string
 
 function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   const { t } = useT()
-  const trackId: TrackId = MATRIC_TRACK_MAP[courseId] || 'sains'
+  // No fallback (Bumi D2): a track without a college list here (the two Bumi-only tracks) lists
+  // no colleges, rather than the Science track's.
+  const trackId: TrackId = MATRIC_TRACK_MAP[courseId]
   const [stateFilter, setStateFilter] = useState('')
 
   const trackColleges = useMemo(() => {

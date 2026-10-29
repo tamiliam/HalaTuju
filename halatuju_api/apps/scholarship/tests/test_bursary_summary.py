@@ -35,7 +35,8 @@ class TestBursarySummary(TestCase):
     def test_her_own_file(self):
         Disbursement.objects.create(application=self.app, amount=Decimal('200'), status='released',
                                     sequence=1, released_at=timezone.now())
-        SemesterResult.objects.create(application=self.app, semester='Sem 1', cgpa=Decimal('3.25'))
+        SemesterResult.objects.create(application=self.app, semester='Sem 1', cgpa=Decimal('3.25'),
+                                      review_status='accepted')
         r = self._get()
         self.assertEqual(r.status_code, 200, r.content)
         body = r.json()
@@ -47,7 +48,7 @@ class TestBursarySummary(TestCase):
         self.assertEqual((body['latest_result']['semester'], body['latest_result']['cgpa']),
                          ('Sem 1', '3.25'))
         self.assertEqual((body['in_maintenance'], body['can_record_results'], body['support_paused']),
-                         (True, False, False))
+                         (True, True, False))          # S4a: recording is open to her now
 
     def test_never_a_staff_word(self):
         maintenance.set_substate(self.app, 'probation', by_email='officer@example.test')

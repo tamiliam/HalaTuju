@@ -1134,8 +1134,10 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     // same tone — is the claim, and it is unchanged; `on_track` is a TINT and deliberately does
     // not move (a tinted panel and a filled control want opposite things when the ground inverts,
     // which is the whole reason the fill became a role).
-    expect(src).toMatch(/graduated: 'bg-positive-fill text-positive-fill-ink'/)
-    expect(src).toMatch(/on_track: 'bg-positive-100 text-positive-700'/)
+    // ⚠ Maintenance S4a: the browser no longer judges a CGPA; each result shows its REVIEW. The
+    // weight contrast survives — `graduated` filled, an accepted result the positive TINT.
+    expect(src).toMatch(/GRADUATED_TONE = 'bg-positive-fill text-positive-fill-ink'/)
+    expect(src).toMatch(/accepted: 'bg-positive-100 text-positive-700'/)
     expect(withoutComments(src)).not.toMatch(/indigo/)
   })
 })

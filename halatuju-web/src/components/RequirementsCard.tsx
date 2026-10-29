@@ -16,7 +16,9 @@ interface ReqItem {
 interface OrGroup {
   count: number
   grade: string
-  subjects: string[]
+  subjects?: string[]
+  /** Bumi Sprint D2 (MOHE "ATAU"): one of these alternatives, each a list of groups. No subjects. */
+  any_of?: OrGroup[][]
 }
 
 /** Bumi Sprint D1 (`spm_count_once.py`): subjects that each count ONCE across the block, plus
@@ -341,6 +343,44 @@ function TvetLabelOnlyRow({ label }: { label: string }) {
   )
 }
 
+/** One requirement group: its wording and subject chips, or (an ATAU) "one of" its alternatives. */
+function GroupBody({ group, locale, number }: { group: OrGroup; locale: string; number?: number }) {
+  const { t } = useT()
+  const subjects = group.subjects ?? []
+  return (
+    <>
+      <div className="flex items-start gap-2.5 mb-2">
+        {number !== undefined && (
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
+            {number}
+          </span>
+        )}
+        <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
+          {group.any_of ? t('courseDetail.oneOf') : requirementDesc(group.count, group.grade, subjects.length, locale)}
+        </span>
+      </div>
+      {group.any_of ? (
+        <div className="ml-[34px] space-y-2">
+          {group.any_of.map((alternative, i) => (
+            <div key={i}>
+              {i > 0 && <p className="text-[11px] font-semibold text-ground-400 uppercase mb-1">{t('courseDetail.orAlternative')}</p>}
+              {alternative.map((g, j) => <GroupBody key={j} group={g} locale={locale} />)}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={`flex flex-wrap gap-1.5 ${number !== undefined ? 'ml-[34px]' : ''}`}>
+          {subjects.map((subj) => (
+            <span key={subj} className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700">
+              {getSubjectName(subj, locale)}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
 function tvetValueLabel(item: ReqItem, locale: string): string {
   const values: Record<string, { bm: string; en: string }> = {
     req_malaysian: { bm: 'Malaysia', en: 'Malaysian' },
@@ -381,24 +421,7 @@ function OrGroupSection({
       <div className="space-y-2">
         {displayGroups.map((group, idx) => (
           <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
-            <div className="flex items-start gap-2.5 mb-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
-                {idx + 1}
-              </span>
-              <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
-                {requirementDesc(group.count, group.grade, group.subjects.length, locale)}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 ml-[34px]">
-              {group.subjects.map((subj) => (
-                <span
-                  key={subj}
-                  className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700"
-                >
-                  {getSubjectName(subj, locale)}
-                </span>
-              ))}
-            </div>
+            <GroupBody group={group} locale={locale} number={idx + 1} />
           </div>
         ))}
         {/* Count-once blocks: "N more subjects not already counted" (Bumi Sprint D1) */}

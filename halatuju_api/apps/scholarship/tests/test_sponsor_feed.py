@@ -13,7 +13,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerOrganisation, StudentProfile
-from apps.scholarship import in_programme
+from apps.scholarship.tests.factories import record_result
+from apps.scholarship import results_review   # S4a: only an accepted result reaches a sponsor
 from apps.scholarship import sponsor_feed
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
@@ -79,8 +80,8 @@ class TestSponsorActivityService(TestCase):
         Donation.objects.create(sponsor=s, amount=Decimal('10000'), programme=_gift())
         app = _fundable_app(self.cohort)
         _fund_accept(s, app)                                            # funded + accepted
-        in_programme.record_semester_result(app, semester='1', cgpa=Decimal('3.5'))   # semester
-        in_programme.record_semester_result(app, semester='2', cgpa=Decimal('3.9'), graduated=True)  # graduated
+        results_review.review(record_result(app, semester='1', cgpa=Decimal('3.5')), decision='accepted')   # semester
+        results_review.review(record_result(app, semester='2', cgpa=Decimal('3.9'), graduated=True), decision='accepted')  # graduated
         GraduationMessage.objects.create(
             application=app, raw_text='thank you', scrubbed_text='thank you',
             status='approved', reviewed_at=timezone.now())             # thank_you

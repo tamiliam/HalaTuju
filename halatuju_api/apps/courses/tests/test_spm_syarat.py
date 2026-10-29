@@ -118,11 +118,14 @@ class TestSyaratKhasClauses:
 
 
 class TestFlaggedNeverGuessed:
-    def test_atau(self):
+    def test_atau_without_a_reviewed_scope(self):
+        """Sprint D2 reads ATAU only through `spm_atau_scopes.py`; without an entry it stays flagged."""
         assert any('ATAU' in r for r in parse(_rows()['UE4811004']['syarat_khas'])[1])
 
-    def test_two_grades_over_one_list(self):
-        assert any('two grades' in r for r in parse(_rows()['UE0520001']['syarat_khas'])[1])
+    def test_two_grades_over_a_list_whose_bullets_hold_alternatives(self):
+        unparsed = parse('Mendapat sekurang-kurangnya Gred A- dalam SATU (1) mata pelajaran DAN Gred B dalam '
+                         'TIGA (3) mata pelajaran berikut : • Fizik / Kimia • Biologi • Matematik ' + BUMI)[1]
+        assert any('two grades' in r for r in unparsed)
 
     def test_an_unknown_subject_name(self):
         unparsed = parse('Mendapat sekurang-kurangnya Gred C dalam SATU (1) mata pelajaran berikut : '
@@ -149,7 +152,8 @@ class TestSubjectNames:
 
 
 def test_the_uitm_batch():
-    """All 87 UiTM rows: 84 parse faithfully and carry the Bumi flag; 3 are flagged for D2."""
+    """All 87 UiTM rows carry the Bumi flag. Without a reviewed ATAU scope only UE4811004 is flagged
+    (D1 also flagged UE0520001 / UE0545001; Sprint D2 reads "A- in ONE AND B in THREE")."""
     flagged = {}
     for cid, row in _rows().items():
         if not cid.startswith('UE'):
@@ -159,7 +163,7 @@ def test_the_uitm_batch():
             flagged[cid] = unparsed
         else:
             assert fields['req_bumiputera'] and fields['req_malaysian'], cid
-    assert sorted(flagged) == ['UE0520001', 'UE0545001', 'UE4811004']
+    assert sorted(flagged) == ['UE4811004']
 
 
 def test_strict_selain_excludes_every_subject_listed_above():

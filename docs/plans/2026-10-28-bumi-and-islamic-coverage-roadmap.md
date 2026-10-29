@@ -25,7 +25,7 @@ Owner rulings (2026-10-28):
 - **Sprint A DONE 2026-10-28** — `docs/bumi-inventory-2026-10-28.md`. STPM data already exact → **Sprint E dropped**. Sprint D = 150 SPM courses (136 Bumi + 14 Islamic-subject). Sprint F parses `info_url` (kelayakan pages now need a login).
 - **Sprint B BUILT 2026-10-28** (branch `sprint-b-bumi-toggle`; migration 0087 migrate-first). Owner Option A: scholarship pickers show every course and never read the answer.
 - **Sprint C BUILT 2026-10-29** (branch `bumi-sprint-c`, on TD-416): 13 Islamic subjects selectable as electives under their slip names; doc recognition 1.18.0; `BAHASA_ARAB_MUASIRAH_SPM` also met by `lughah_arabiah`. Golden masters unchanged. `SPM_PREREQ_OPTIONAL` turned out to be dead (the STPM SPM block reads `SPM_ALL_ELECTIVE_SUBJECTS`); `BA` left alone (no fixture uses it); `pathways.py` left alone (no source).
-- **B, TD-416 and C LIVE 2026-10-29 (1a4aedc8). D1 LIVE 2026-10-29 (f5282643; 84 UiTM rows ingested). NEXT = Sprint D2.**
+- **B, TD-416 and C LIVE 2026-10-29 (1a4aedc8). D1 LIVE 2026-10-29 (f5282643; 84 UiTM rows ingested). D2 LIVE 2026-10-29 (914d4a5b; 66 rows + MARA-BPT). NEXT = Sprint F (UP_TVET / MARA).**
 - **Sprint D1 BUILT 2026-10-29** (branch `bumi-sprint-d`; migration courses/0088 migrate-first): 84 of the 87 UiTM rows parse (3 flagged: UE0520001, UE0545001 two grades over one list; UE4811004 ATAU), `count_once` construct, `ingest_spm_courses` (dry run first), all 7 doors. Golden masters 5,319 (original + full at bumi=False) / 5,865 (bumi=True, after review round 1) / STPM 2,025. NEXT = adversarial review, then the read-only SQL checks, migrate, deploy, `--apply`.
 
 ## Roadmap — 6 sprints (now 5: E dropped)
@@ -93,6 +93,27 @@ baseline too. STPM stays **2,025**.
 **Lessons applied:** L539 two Bumi signals (both already agree, 0 disagree); L708 check the scraper's page count on
 `--max-pages 2` first; L710 the fixtures are 2 rows behind prod (89 vs 87 MOHE-coded) — reconcile by read-only SQL
 before `--apply`; the slip-name alias lesson (old stored names stay); a count-once rule is a matching.
+
+#### Sprint D2 — built 2026-10-29 (branch `bumi-sprint-d2`, no migration)
+66 rows in `halatuju_api/data/spm/spm_new_courses_D2.json` (ids + buckets: `spm_new_courses_D2.ids`), 0 flagged:
+47 Bumi-only non-UiTM (UIAM 20, MARA 15, UMS 4, UNIMAS 3, UM 3, UniSZA 2), 14 open Islamic (UniSZA 9, USIM 4
+Tamhidi, UM 1), the 3 UiTM rows D1 flagged, and the 2 Bumi matric tracks (`matric-sains-4-semester`,
+`matric-perakaunan-profesional`). New: `any_of` count-once groups for ATAU, read through reviewed scopes
+(`spm_atau_scopes.py`); "X in ONE AND Y in THREE" as two groups in one block; MARA's Syarat Am; per-row parent
+institutions and an explicit `--create-institutions` for the proposed `MARA-BPT`; the search pick-list refresh.
+Golden masters: original 389 = 5,319 identical; full bumi=False 5,319 (+0: no golden student holds an Islamic
+subject); bumi=True 5,986 (after review round 1); STPM 2,025. Not done: UL0481001 / FB0500001 (prod-only, not Bumi — lead ruling: not
+in this sprint). Runbook + rollback: `halatuju_api/CLAUDE.md` ("Bumi D2 order"). Rollback ids (D2):
+    'UY0000010', 'UH0010003', 'UY0000015', 'UY0000001', 'UY0000016', 'UY0000014', 'UY0000012',
+    'UY0000011', 'UY0000005', 'UY0000006', 'UY0000004', 'UE0520001', 'UY0520001', 'OM0520001',
+    'OM0520002', 'UM0221002', 'UW0010003', 'UY0000019', 'UY0000018', 'UD0010001', 'UE0545001',
+    'UH0010001', 'UM0440001', 'UW0010002', 'UY0000002', 'UM0421001', 'UW0010001', 'UY0000013',
+    'UY0000017', 'UY0000003', 'UY0481001', 'UD0010004', 'UH0010004', 'UM0010001', 'UY0000009',
+    'UH0010002', 'UY0000007', 'UD4221001', 'UD4224001', 'UD4221005', 'OP4344001', 'OP4344003',
+    'OP4340002', 'OP4340003', 'OP4481001', 'OP4481002', 'OP4213001', 'OP4224001', 'OP4345002',
+    'OP4840001', 'OP4340001', 'OP4343001', 'OP4342001', 'UD4221008', 'UE4811004', 'UD4221002',
+    'UD4221003', 'UD4221007', 'UD4380001', 'UD4221006', 'matric-perakaunan-profesional',
+    'matric-sains-4-semester', 'UQ0340001', 'UQ0421001', 'UQ0010002', 'UQ0381001'
 
 ### Sprint E — STPM refresh check · low
 - Apply any Sprint A changes to STPM bumi flags / new bumi STPM courses. Golden master re-baseline only if rows change.

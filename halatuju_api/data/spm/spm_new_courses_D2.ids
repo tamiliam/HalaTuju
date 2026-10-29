@@ -1,0 +1,79 @@
+# Bumi coverage Sprint D2: the MOHE SPM programmes (data/spm/mohe_bumi_2026-10-29.csv) this sprint adds.
+# Read by ingest_spm_courses --build-from-csv --ids-file; the bucket rule is proved by
+# apps/courses/tests/test_spm_d2.py. Not here: Politeknik / Kolej Komuniti / the 4 open Matrikulasi
+# rows (held under internal ids), UiTM (D1), and UL0481001 (UMK Asasi Teknologi Maklumat Huffaz:
+# open, not Islamic-subject-gated, prod holds it, the fixture does not; a separate reconciliation).
+
+# 1. Bumiputera-only, non-UiTM universities and MARA (47)
+OM0520001  # Mara, Bahagian Pendidikan Tinggi
+OM0520002  # Mara, Bahagian Pendidikan Tinggi
+OP4213001  # Mara, Bahagian Pendidikan Tinggi
+OP4224001  # Mara, Bahagian Pendidikan Tinggi
+OP4340001  # Mara, Bahagian Pendidikan Tinggi
+OP4340002  # Mara, Bahagian Pendidikan Tinggi
+OP4340003  # Mara, Bahagian Pendidikan Tinggi
+OP4342001  # Mara, Bahagian Pendidikan Tinggi
+OP4343001  # Mara, Bahagian Pendidikan Tinggi
+OP4344001  # Mara, Bahagian Pendidikan Tinggi
+OP4344003  # Mara, Bahagian Pendidikan Tinggi
+OP4345002  # Mara, Bahagian Pendidikan Tinggi
+OP4481001  # Mara, Bahagian Pendidikan Tinggi
+OP4481002  # Mara, Bahagian Pendidikan Tinggi
+OP4840001  # Mara, Bahagian Pendidikan Tinggi
+UY0000001  # Universiti Islam Antarabangsa Malaysia
+UY0000002  # Universiti Islam Antarabangsa Malaysia
+UY0000003  # Universiti Islam Antarabangsa Malaysia
+UY0000004  # Universiti Islam Antarabangsa Malaysia
+UY0000005  # Universiti Islam Antarabangsa Malaysia
+UY0000006  # Universiti Islam Antarabangsa Malaysia
+UY0000007  # Universiti Islam Antarabangsa Malaysia
+UY0000009  # Universiti Islam Antarabangsa Malaysia
+UY0000010  # Universiti Islam Antarabangsa Malaysia
+UY0000011  # Universiti Islam Antarabangsa Malaysia
+UY0000012  # Universiti Islam Antarabangsa Malaysia
+UY0000013  # Universiti Islam Antarabangsa Malaysia
+UY0000014  # Universiti Islam Antarabangsa Malaysia
+UY0000015  # Universiti Islam Antarabangsa Malaysia
+UY0000016  # Universiti Islam Antarabangsa Malaysia
+UY0000017  # Universiti Islam Antarabangsa Malaysia
+UY0000018  # Universiti Islam Antarabangsa Malaysia
+UY0000019  # Universiti Islam Antarabangsa Malaysia
+UY0481001  # Universiti Islam Antarabangsa Malaysia
+UY0520001  # Universiti Islam Antarabangsa Malaysia
+UM0010001  # Universiti Malaya
+UM0421001  # Universiti Malaya
+UM0440001  # Universiti Malaya
+UH0010001  # Universiti Malaysia Sabah
+UH0010002  # Universiti Malaysia Sabah
+UH0010003  # Universiti Malaysia Sabah
+UH0010004  # Universiti Malaysia Sabah
+UW0010001  # Universiti Malaysia Sarawak
+UW0010002  # Universiti Malaysia Sarawak
+UW0010003  # Universiti Malaysia Sarawak
+UD0010001  # Universiti Sultan Zainal Abidin
+UD0010004  # Universiti Sultan Zainal Abidin
+
+# 2. Open to all, never loaded: need an Islamic subject (14)
+UM0221002  # Universiti Malaya
+UQ0010002  # Universiti Sains Islam Malaysia
+UQ0340001  # Universiti Sains Islam Malaysia
+UQ0381001  # Universiti Sains Islam Malaysia
+UQ0421001  # Universiti Sains Islam Malaysia
+UD4221001  # Universiti Sultan Zainal Abidin
+UD4221002  # Universiti Sultan Zainal Abidin
+UD4221003  # Universiti Sultan Zainal Abidin
+UD4221005  # Universiti Sultan Zainal Abidin
+UD4221006  # Universiti Sultan Zainal Abidin
+UD4221007  # Universiti Sultan Zainal Abidin
+UD4221008  # Universiti Sultan Zainal Abidin
+UD4224001  # Universiti Sultan Zainal Abidin
+UD4380001  # Universiti Sultan Zainal Abidin
+
+# 3. UiTM rows D1 flagged, now representable (3)
+UE0520001  # A- in ONE AND B in THREE
+UE0545001  # A- in ONE AND B in THREE
+UE4811004  # ATAU
+
+# 4. The two Bumi-only Matrikulasi programmes -> synthetic matric rows (2)
+KA0000002  # Jurusan Sains (4 Semester) -> matric-sains-4-semester
+KA0000006  # Jurusan Perakaunan Profesional -> matric-perakaunan-profesional

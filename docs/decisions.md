@@ -1,5 +1,105 @@
 # Architectural Decisions — HalaTuju
 
+## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
+
+**Decision:** (1) a student IN MAINTENANCE (`maintenance_scope.is_in_maintenance`, so awarded + activated too) may
+record a semester result, with a slip (sign → PUT → record; `doc_type='semester_result'`,
+`request_code='in_programme'`, linked by `results_slip`). (2) Every result is born `review_status='pending'`; an
+officer with application-write rights on the file Accepts, or Queries with a note she sees (`results_review.review`,
+logged `result_reviewed`). (3) **Only an `accepted` result feeds anything that judges her** — her standing and every
+sponsor-facing reader. (4) Standing (`standing.py`: performing / underperforming / failing / awaiting review / no
+result yet) is the latest ACCEPTED result against the organisation's `maintenance_min_cgpa` (3.00) and
+`maintenance_failing_cgpa` (2.00), new registry group `maintenance` with a `decimals` unit (2 places) and a rule
+that failing < minimum; a graduated result is performing. Changing a threshold moves the chips with no deploy.
+(5) A contract template whose English wording — progress standard AND clause bodies — states no CGPA equal to the
+minimum (or none) is a settings WARNING, never a refusal; a number counts only beside a GPA / CGPA / PNGK / "grade
+point average" phrase (the live BrightPath line is in clause 4.1.V; a bare "3.1" is a clause number).
+(6) The browser judges nothing: the hub's own `≤ 2.0 → needs attention` chip is gone; she sees each result's review.
+
+**The doors (every writer and reader of `semester_results`, pinned PER FUNCTION in `test_results_review.py`):**
+writers — `in_programme.record_semester_result` (student, via `SemesterResultView.post`) and
+`results_review.review` (officer, via `AdminScholarResultReviewView`); nothing else creates or changes a row (the
+static fence flags any `.create/.update/.delete` beside a `SemesterResult` use, and any write to `review_status` /
+`term_index` / `cgpa`, anywhere in `apps/` incl. management commands). Readers that JUDGE go through
+`results_review.accepted(...)` (`latest_accepted`, `accepted_count`) — `pool.derive_progress_state` (sponsor band;
+now on the predicate, so an awarded + funded student reads `on_track` instead of nothing), `pool` portfolio count,
+`sponsor_feed`, `sponsorship` impact, `serializers` sponsor `get_semesters`, `scholars._latest` / `standing_of`.
+Readers that SHOW (every status, with its review) — `results_for_file` (her own list and the admin Results tab),
+`views_bursary` latest result, the list's "a result waits" flag. A cross-reader test pins that a pending or queried
+result moves no sponsor reader.
+
+**Review fixes (same day).** (H1) **A slip is evidence.** Her `DocumentDetailView.delete` refuses 409 `slip_locked`
+for an in-programme slip OR any document a result names, whatever the review status; the general documents list
+leaves `request_code='in_programme'` out, and the general upload refuses that slot (409) so a slip can never be
+superseded; no self-heal sweep (`_stuck_unread_documents`, `service_error_documents`, the dry-run count) picks one
+up. (M2) **One failing line for both audiences:** the sponsor band's `needs_attention` IS the staff `failing` —
+strictly below the organisation's `maintenance_failing_cgpa` (`standing.is_failing`), replacing the band's own fixed
+`<= 2.0`. Consequence: a CGPA of exactly 2.00 moves from `needs_attention` to `semester_completed` for a sponsor (0
+live rows — no result has been accepted yet). (M3) **"Latest"** = latest SUBMITTED (`-created_at, -id`) until S4b
+stamps `term_index`; then it is the latest TERM. (L1) a slip path must be exactly `<this application's slip
+prefix>/<32 hex>` (no `..`, capped length). (L2) a whole-number setting takes an int only (2.0 refused). (L3) a sixth
+result inside 24 hours is refused (`too_many_results`) — a student sends one or two a term; five leave room to fix a
+typo.
+
+**OWNER RULING (2026-10-29): "Students must upload at the portal. Emailed docs are not allowed."** It replaces the
+review's L4/L6 note (accept-without-slip). (1) `results_review.review` refuses to ACCEPT a result with no slip — 409
+`slip_required`; a QUERY is still allowed, so the officer asks her to upload it. (2) `record_semester_result`
+refuses a result without the slip she uploaded (`slip_required`) — the typed-only fallback is gone; the server is
+the gate and the hub's Save stays asleep until a slip is chosen. (3) There is NO admin path to attach a document on
+her behalf (the review endpoint ignores any slip in its body — tested). Consequence: a pre-S4a typed-only result
+(born `pending`, no slip) can only be queried until she sends that term's result again with its slip.
+
+**Alternatives considered:** running the slip through the pre-award document pipeline (Gemini read, Check-2, slot
+superseding) — refused: that pipeline judges an APPLICATION, and a post-award slip is read by a person;
+`record_slip` writes the document row itself. Judging standing in the browser from served thresholds — refused (two
+places to keep in step). **Trade-offs:** a result she records reaches a sponsor only after an officer reviews it — a
+deliberate delay. **Revisit if:** the officer queue grows past what the team reviews within the 4b due window.
+**Split:** 4b (separate push) = `ResultsExpectation` + `results-due-reminders` / `results-overdue-flag` crons + the
+`StudentEmailTemplate` family (results_due / results_overdue / result_queried; Student communications tab; metered)
++ the Results overdue filter. The results timing keys (terms a year, due days, overdue grace) arrive in 4b WITH
+their reader — review M1: a setting nothing reads is not registered.
+
+## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
+
+**What is scored.** `genuineness/matric_poly_doc.py` fingerprints the two single-issuer layouts the
+way `stpm_doc` fingerprints STPM: fixed printed wording, text only, `results_doc._score_list` +
+`band_for`, in the higher-results slot only (`stpm_slot_genuineness` tries STPM first). A
+Matriculation page (`results_kind` reads it as such) that is not a semester result slip is scored
+on the KPM transcript list; a Diploma page that prints a polytechnic's own name and the transcript
+title, and is not headed by a Kolej Komuniti, on the JPPKK transcript list. Calibration (production's
+input, page 1 of a scan): 6 Matriculation transcripts 0.96–1.00, two certified copies among them
+(ruling 2A: a certified copy carries the document's own text); every control — 95 offer letters,
+98 SPM slips, 39 STPM pages, UiTM / polytechnic slips, fakes — ≤ 0.29 on the Matriculation list;
+the one polytechnic transcript 1.00. Weights sit heaviest on what only a transcript prints (the
+value-point column, the semester GPA, the average box, the completion status), so a Matriculation
+offer letter, which shares the division's header, stays below the floor.
+
+**Genuine or nothing (adversarial review B1, 2026-10-29).** Neither family stores a suspect or a
+"not_": a genuine 2-year transcript seen page 1 only scores 0.68, a cropped photo 0.64, a noisy scan
+0.61 — a suspect band would tell a student their real transcript does not look genuine, and no
+multi-page or cropped sample exists to calibrate one. So a page is stored "genuine" (it passes its
+gates and scores ≥ 0.70) or nothing ("not checked", the TD-114 floor, exactly as before M4). The
+gates are POSITIVE: the transcript title (a negated "bukan transkrip akademik" never counts), a
+transcript-only grid label (Mata Nilaian / Value Point / PNGS), both a Semester I and a Semester II
+block, and no slip wording at all (several phrases, so a mangled or cut-off disclaimer still
+excludes a slip); for a polytechnic page, its own name, no Kolej Komuniti anywhere once the JPPKK
+department's name is removed (an OCR "KOMUNlTI" too), the transcript title and its grid.
+**Because nothing but "genuine" is ever stored, `keep_stored_authenticity` (a re-read that returns
+no signal keeps the stored score) can never hold a wrong M4 score — M5's re-read must still run only
+after M4 is final.**
+
+**What is NOT decided here (owner questions).** No genuine corpus document is marked suspect or
+fake, and no ruling is invented: (1) a Matriculation or polytechnic SEMESTER RESULT SLIP, (2) the
+polytechnic student-portal screen, (3) a Matriculation page below 0.35 — in the corpus, offer
+letters (should it read "not a transcript", the fake step?), and (4) a polytechnic page below
+genuine (one sample cannot calibrate a suspect band) all stay unscored — "not checked", Probable at
+best — exactly as before M4. Ruling 1A has no Matriculation / polytechnic checker page to recognise.
+
+**Versions.** `MODEL_VERSION` 1.21.0; `VERDICT_ENGINE_VERSION` 2026-10-29.2 — a scored page lifts the
+TD-114 floor, so a clean card can read Certain — bands can move (upward only). A score is written only
+when a document is read (`keep_stored_authenticity`), so live cards change at M5's re-read; the
+before/after list went to the owner first.
+
 ## "My Bursary" shows two tabs, and the maintenance controls live on the scholar file — 2026-10-29 (student maintenance S3)
 
 **Decision:** (1) the student hub `/scholarship/bursary` shows **Overview** and **Results** only; Funds, Contract,
@@ -13,7 +113,8 @@ pre-award Close stays in the cockpit (that case has no file). **Alternatives con
 call on ~90 routes for one link); drawing every tab disabled (the admin file does that, for staff; a student is
 not staff). **Trade-offs:** the menu link can lag until she visits a page that reads her applications (the
 dashboard banner, the application page or the hub). **Revisit if:** the header gains a session payload that carries
-it. **Review M1 (same day):** a payable student with NO file (awarded, an eWallet id, activation not reported) is
+it. **Owner ruling (2026-10-29, after S3 shipped):** a student SEES her award, what she has received and what
+remains — the hub's funds card stays. **Review M1 (same day):** a payable student with NO file (awarded, an eWallet id, activation not reported) is
 paid by the runs but has no file to be held from, so her status control stays in the cockpit
 (`maintenance_controls` on the cockpit payload: `can_set_substate`, and the viewer's `can_hold`); every case WITH a
 file is changed on the file.
@@ -15819,3 +15920,87 @@ which is why every date box here is a text box. `31-02-2026` must be refused, no
 payment date nobody typed is worse than a complaint.
 **Trade-offs:** the owner's own date boxes are still ISO (TD-424); no screen shows both.
 **Revisit if:** the owner wants their boxes moved too, or a third audience appears.
+
+## 2026-10-29 — MOHE "ATAU" is an `any_of` count-once group, read ONLY through a reviewed scope (Bumi Sprint D2)
+**Decision:** a `count_once` group may be `{"any_of": [[groups], [groups], ...]}` — one alternative, each a list
+of ordinary groups (plain, slotted, or another `any_of`), whose units join the block's matching, so the
+chosen alternative counts once with everything else in that block (`spm_count_once.py`). With a "not yet
+counted" clause the ATAU group sits in the Khas block; without one it is a block of its own, like a slotted
+group. Every subject in every alternative is "listed above" for the strict reading.
+**The scope is data, not a guess:** the scraped Syarat text is flat, so "A- English ATAU B+ English. B in
+Arabic." cannot say whether Arabic belongs to the second alternative. `apps/courses/spm_atau_scopes.py`
+records, per programme, how many clauses each alternative spans, read from that programme's MOHE modal HTML
+(2026-10-29): the modal numbers what everyone must meet as `<li>` items and prints alternatives outside the
+list around a centred ATAU, so an alternative runs from its ATAU to the next `<li>`. The parser checks the
+scope fits the text and flags the row otherwise; a row with an ATAU and no entry stays flagged. Five rows
+(UY0000004 [[1,1,1]], UY0000007 [[1,2]], UM0221002 [[1,2]], UQ0010002 [[1,1]], UE4811004 [[1,1]]).
+**Why not a text-only rule:** "one clause each side" reads UY0000004 / UQ0010002 / UE4811004 right and
+UY0000007 / UM0221002 wrong (A- ATAU B+ in English alone would make the A- alternative pointless — the D1
+lesson that a clause everyone meets is a wrong reading).
+**Revisit if:** a re-scrape changes any of the five texts (re-read the modal), or the scraper is taught to
+keep the modal's structure (then the scope can be derived and this table retired).
+
+## 2026-10-29 — "Grade X in ONE AND grade Y in THREE of: list" is four different subjects (Bumi Sprint D2)
+**Decision:** read as two groups over the same list in ONE count-once block — 1 unit at X and 3 at Y, each a
+different subject (UE0520001, UE0545001: A- in one and B in three of Fizik / Add Maths / Kimia / Maths, so
+all four at B or better and one at A-). No engine change: two groups in one block already count once.
+**Why:** the owner's rule that a subject counts once per group, and the D1 count-once reading of MOHE
+wording; reading it as "three at B, one of them A-" would let one grade count twice. A list whose bullets
+hold alternatives under such a clause is flagged (no row has one).
+**Revisit if:** UPU publishes the overlapping reading.
+
+## 2026-10-29 — MARA's SPM programmes link to a NEW parent institution, created only on purpose (Bumi Sprint D2)
+**Decision:** the 15 "MARA, Bahagian Pendidikan Tinggi" rows (Kolej MARA / KPM asasi and diplomas) link to ONE
+new `Institution` row (owner ruling: one parent per course, campuses later), proposed in
+`spm_catalogue_rows.NEW_INSTITUTIONS`: `MARA-BPT`, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan
+Tinggi", acronym MARA, type IPTA, state "WP Kuala Lumpur", url mara.gov.my. It is created
+only by `ingest_spm_courses --create-institutions --apply`, which prints it in the dry run first and never
+overwrites a held id. Every other D2 row links to its university's existing row by the review file's own
+`institution_id` (UIAM UNIV-006, UM UNIV-001, UMS UNIV-009, UNIMAS UNIV-008, USIM UNIV-011, UniSZA UNIV-018,
+UiTM UNIV-012); the two Bumi matric rows link to none, as the four open matric rows.
+**Why:** prod has no MARA row; inventing campus links would invent data; a silent create would hide a
+catalogue change inside a course ingest. **Type and state (review round 1, prod read-only SQL):** prod
+uses only IPTA, ILKA, Kolej Matrikulasi and Sekolah Menengah, and spells the state "WP Kuala Lumpur". IPTA is
+chosen: `Institution.type` is only a LABEL (printed under the name on the course page, an admin list filter,
+and `derive_institution_modifiers` statistics) — no student filter or grouping reads it; the course search
+groups post-SPM providers by the requirement's `source_type` ('ua') and level, which put the MARA rows with
+the other UPU-listed asasi and diplomas. Of the four, IPTA (a public higher-education provider) is the true
+one for a MARA college awarding asasi and diplomas; ILKA is public skills training (TVET), the other two are
+wrong outright.
+**Revisit if:** campus lists (Kolej MARA / KPM sites) become available.
+
+## 2026-10-29 — The two Bumiputera-only Matrikulasi programmes are two Bumi-only matric tracks (owner; Bumi Sprint D2)
+**Decision:** KA0000002 (Sains, 4 semesters) and KA0000006 (Perakaunan Profesional) are held exactly as the
+four open tracks are: synthetic rows `matric-sains-4-semester` / `matric-perakaunan-profesional` (source and
+merit type `matric`, level Pra-U, no institution, no merit cutoff — MOHE publishes none), their rules parsed
+from MOHE's Syarat text, `req_bumiputera` true; `pathways.MATRIC_TRACKS` entries marked `bumiputera_only`;
+`MATRIC_REQUIREMENTS` naming the subjects the merit counts first (Sains 4-sem: Maths C, Add Maths E, Kimia E,
+Fizik/Biologi/Sains Komputer E; Perakaunan Profesional: Maths A, Add Maths C, then the best two at C); the
+course -> track map in `eligibility_service`. The merit FORMULA is untouched.
+**Doors:** eligibility, dashboard and course search go through the engine gate / the visible queryset, so a
+non-Bumi or foreign student never sees them. `/calculate/pathways/` (the matric pathway page and the
+scholarship pickers' track list) does not list them: **owner ruling (review round 1) — not offered in the
+scholarship pickers for now, because there is no college list for them yet** (a picker choice needs a
+college); add them when that data exists. (Option A would let the pickers show them to every student — it
+is the missing college data, not the Bumi answer, that keeps them out.) A Bumi student reaches them through
+the catalogue. The course page shows them to anyone (with the Bumi row, as D1) and lists
+no colleges for them (no college list is known); it no longer falls back to the Science track's colleges.
+**Assumption to confirm:** which four subjects the official matric merit counts for these two programmes.
+**Revisit if:** MOHE or KPM publishes their colleges (then add them to the pickers, for every student, as
+Option A, and to the pathway page for Bumi students).
+
+## 2026-10-29 — MARA's "C in any N subjects" is STRICT, like its sister rules (owner, Bumi Sprint D2 review round 1)
+**Decision:** under MARA's Syarat Am ("a pass in BM and Sejarah"), a Syarat Khas "Gred C dalam mana-mana N mata
+pelajaran" WITHOUT "belum diambil kira" is read as N MORE subjects beyond everything named in the Syarat Am and
+above it — a count-once `remaining` entry with that exclude list — not a bare `min_credits` (which BM, Sejarah,
+English and Maths would always fill). Rows changed: OP4340002, OP4481001, OP4213001, OP4224001, OP4345002,
+OP4840001, OP4340001, OP4343001 (8 of the 13 MARA OP rows; the other 5 already said "belum diambil kira").
+The parser applies it only under MARA's Am shape, so no UiTM or other row moves. Bumi golden master 6,006 ->
+5,986. **Why:** the D1 lesson — a clause every applicant meets by construction is a wrong reading — and the
+sister MARA rows say the same thing in full. **Revisit if:** MARA publishes a different reading.
+
+## 2026-10-29 — UM0221002: the "B in ONE Islamic" clause and the ATAU's "B in TWO Islamic" may share a subject (owner, review round 1)
+**Decision:** kept as built. The two clauses have no "not yet counted" phrase, so they are counted separately,
+as every plain Khas pair has been since D1 (2026-10-29, the count-once block decision): the single-clause group
+is its own block and the ATAU is another. A student with two Islamic subjects at B meets both.
+**Revisit if:** UPU or UM publishes that the two lists must be met by different subjects.

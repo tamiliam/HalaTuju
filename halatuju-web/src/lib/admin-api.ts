@@ -217,11 +217,12 @@ export type {
 // Student maintenance S2: the Scholars list, maintenance file and activity log.
 export {
   getScholars, getScholarFile, getScholarActivity, addScholarActivity, scholarsQuery,
+  getScholarResults, reviewScholarResult,
 } from './admin-api/scholars'
 export type {
   ScholarStanding, ScholarResult, ScholarGift, ScholarRow, ScholarSummary,
   ScholarList, ScholarListQuery, ScholarFile, ActivityKind, ScholarActivity, ScholarActivityPage,
-  ScholarControls,
+  ScholarControls, ScholarResultRow,
 } from './admin-api/scholars'
 
 // Org-owned versioned bursary contract templates.

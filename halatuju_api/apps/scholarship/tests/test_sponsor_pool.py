@@ -232,7 +232,7 @@ class TestPortfolioStatus(TestCase):
 
     def _result(self, app, cgpa=Decimal('3.0'), graduated=False):
         from apps.scholarship.models import SemesterResult
-        return SemesterResult.objects.create(application=app, cgpa=cgpa, graduated=graduated)
+        return SemesterResult.objects.create(review_status='accepted', application=app, cgpa=cgpa, graduated=graduated)
 
     # --- supported_semesters ---
     def test_supported_semesters_explicit_overrides_heuristic(self):
@@ -520,26 +520,26 @@ class TestProgressState(TestCase):
     def test_band_semester_completed_with_good_cgpa(self):
         from apps.scholarship.models import SemesterResult
         app = self._sponsored()
-        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='3.50')
+        SemesterResult.objects.create(review_status='accepted', application=app, semester='2026 S1', cgpa='3.50')
         self.assertEqual(pool.derive_progress_state(app), 'semester_completed')
 
     def test_band_needs_attention_with_low_cgpa(self):
         from apps.scholarship.models import SemesterResult
         app = self._sponsored()
-        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='1.80')
+        SemesterResult.objects.create(review_status='accepted', application=app, semester='2026 S1', cgpa='1.80')
         self.assertEqual(pool.derive_progress_state(app), 'needs_attention')
 
     def test_band_graduated_overrides_cgpa(self):
         from apps.scholarship.models import SemesterResult
         app = self._sponsored()
-        SemesterResult.objects.create(application=app, semester='Final', cgpa='1.50', graduated=True)
+        SemesterResult.objects.create(review_status='accepted', application=app, semester='Final', cgpa='1.50', graduated=True)
         self.assertEqual(pool.derive_progress_state(app), 'graduated')
 
     def test_latest_result_wins(self):
         from apps.scholarship.models import SemesterResult
         app = self._sponsored()
-        SemesterResult.objects.create(application=app, semester='2025 S2', cgpa='1.50')
-        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='3.20')
+        SemesterResult.objects.create(review_status='accepted', application=app, semester='2025 S2', cgpa='1.50')
+        SemesterResult.objects.create(review_status='accepted', application=app, semester='2026 S1', cgpa='3.20')
         self.assertEqual(pool.derive_progress_state(app), 'semester_completed')
 
 
