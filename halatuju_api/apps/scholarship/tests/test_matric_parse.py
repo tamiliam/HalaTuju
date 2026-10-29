@@ -194,6 +194,16 @@ class TestTheReader(SimpleTestCase):
             + 'NO . KP / IC NO . : 050101141234'))
         self.assertEqual(got['institution'], 'KOLEJ MATRIKULASI PERAK')
 
+    def test_a_name_never_ends_on_a_connector(self):
+        """M3 review: "… BINTI" with the rest cut off reads as no name; WANITA is no name word."""
+        self.assertIsNone(matric_parse.parse(two_sem().replace(
+            'NAMA / NAME : SITI AMINAH BINTI ALI', 'NAMA / NAME : SITI AMINAH BINTI')))
+        self.assertIsNone(matric_parse.parse(two_sem().replace(
+            'NAMA / NAME : SITI AMINAH BINTI ALI', 'NAMA / NAME : SITI AMINAH BINTI ALI WANITA')))
+
+    def test_another_ic_printed_with_spaces_refuses(self):
+        self.assertIsNone(matric_parse.parse(two_sem() + NL + 'DISAHKAN 800101 01 5555'))
+
     def test_a_second_page_that_repeats_the_header_falls_back(self):
         """A text layer whose page 2 prints the header again (a second NAMA row) reads two ways."""
         p1, p2 = four_sem_pages()

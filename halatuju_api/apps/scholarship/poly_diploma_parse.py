@@ -46,7 +46,9 @@ from decimal import ROUND_HALF_UP, Decimal
 
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning rule).
 # 1.0.0 (2026-10-29): M3 — the JPPKK polytechnic academic transcript (text layer, 5 or 6 semesters).
-PARSER_VERSION = '1.0.0'
+# 1.1.0 (2026-10-29): review — every header line known; a name never ends on a connector; a
+#   Diploma programme only; a wrapped row holds no credit or remark; an IC with spaces is an IC.
+PARSER_VERSION = '1.1.0'
 
 #: The polytechnic grade scale (the result slips print A+ as 4.00). Anything else → None.
 GRADE_POINTS = {'A+': '4.00', 'A': '4.00', 'A-': '3.67', 'B+': '3.33', 'B': '3.00', 'B-': '2.67',
@@ -64,11 +66,22 @@ _GPA_LINE = re.compile(r'^:\s*([0-4]\.\d\d)\s*Grade Point Average \(GPA\)$')
 _VALUE = re.compile(r'^:\s*([0-4]\.\d\d)$')
 _EARNED = re.compile(r'^:\s*(\d{1,3}\.\d)$')
 _TOTAL = re.compile(r'^:\s*(\d{1,3}\.\d)\s*/\s*(\d{1,3}\.\d)$')
-_NRIC = re.compile(r'(?<!\d)(\d{2})(\d{2})(\d{2})-?(\d{2})-?(\d{4})(?!\d)')
+_NRIC = re.compile(r'(?<!\d)(\d{2})(\d{2})(\d{2})\s*-?\s*(\d{2})\s*-?\s*(\d{4})(?!\d)')
 _END = '~~~~~End of results~~~~~'
 _COLUMNS = 'CODE COURSE CREDIT GRADE REMARK'
 _NOT_IN_NAME = frozenset({'NAME', 'REG', 'NO', 'IC', 'PROGRAMME', 'STATUS', 'MALE', 'FEMALE',
-                          'LELAKI', 'PEREMPUAN', 'GENDER', 'JANTINA'})
+                          'LELAKI', 'PEREMPUAN', 'WANITA', 'GENDER', 'JANTINA', 'BANGSA', 'AGAMA',
+                          'WARGANEGARA'})
+#: A name never ENDS on one of these: the rest of it was cut off or wrapped (review, 2026-10-29).
+CONNECTORS = frozenset({'BIN', 'BINTI', 'BTE', 'BT', 'B', 'A/L', 'A/P', 'AL', 'AP', 'S/O', 'D/O',
+                        'ANAK', 'AK', '@', 'VAN', 'DE', 'BINTE'})
+#: Words of a remark or a repeat that must never be read into a course name (review, 2026-10-29).
+_REMARKS = re.compile(r'\b(?:REPEAT|ULANG|ULANGAN|GAGAL|FAIL|FAILED|EXEMPTION|RIG|CE|CTV|CTH|CA|C1|C2)\b'
+                      r'|\(R\)|\[|\]')
+_CREDIT_TOKEN = re.compile(r'(?<![\d.])\d{1,2}\.\d(?![\d.])')
+#: Words of an address glued after the polytechnic's name — never part of it.
+_ADDRESS = frozenset({'JALAN', 'HUB', 'BATU', 'LOT', 'KAMPUS', 'PETI', 'SURAT', 'EDUCATION', 'KM',
+                      'BANDAR', 'TAMAN', 'PERSIARAN', 'LEBUH', 'KAWASAN', 'PERINDUSTRIAN'})
 
 
 def _half_up(x: Decimal) -> str:
@@ -88,11 +101,14 @@ def _poly_header(lines):
     reg = _one(lines, r'^\s*:\s*(\d{2}[A-Z]{3}\d{2}[A-Z]\d{4})REG\.NO$')
     ic = _one(lines, r'^\s*:\s*(\d{6}-\d{2}-\d{4})IC NO$')
     inst = [ln for ln in lines if re.fullmatch(r'POLITEKNIK [A-Z ]+', ln.strip())]
-    if not (name and reg and ic) or len(inst) != 1:
+    if not (name and reg and ic) or len(inst) != 1 or not _header_area_known(lines, inst[0]):
         return None
     words = name.group(1).split()
-    if len(words) < 2 or any(w.strip('.') in _NOT_IN_NAME for w in words):
+    if len(words) < 2 or any(w.strip('.') in _NOT_IN_NAME for w in words) or words[-1] in CONNECTORS:
         return None
+    place = inst[0].split()[1:]
+    if not place or len(place) > 5 or any(w in _ADDRESS for w in place):
+        return None                             # an address glued to the name: not just the name
     m = _NRIC.fullmatch(ic.group(1))
     if not m or not (1 <= int(m[2]) <= 12 and 1 <= int(m[3]) <= 31):
         return None
@@ -100,6 +116,38 @@ def _poly_header(lines):
         return None
     return {'name': ' '.join(words), 'nric': ''.join(m.groups()), 'reg_no': reg.group(1),
             'institution': inst[0].strip()}
+
+
+#: The header area's fixed lines (before the first semester heading). Anything else there — a
+#: wrapped name's second line, a second document — refuses (review, 2026-10-29).
+_HEADER_LINES = (
+    r'PROVISIONAL', r'ACADEMIC TRANSCRIPT(?: \(PROVISIONAL\))?', r":\s*[A-Z][A-Z@'/.\- ]*[A-Z]NAME",
+    r':\s*\d{2}[A-Z]{3}\d{2}[A-Z]\d{4}REG\.NO', r':\s*\d{6}-\d{2}-\d{4}IC NO', r'PROGRAMME',
+    r'INTAKE SESSION', r'STATUS\s*:\s*COMPLETED', r':\s*DIPLOMA [A-Z][A-Z ()&,\-]*',
+    r':\s*(?:I|II) : 20\d\d/20\d\d', r'MEDIUM OF INSTRUCTION\s*:\s*[A-Z ]+',
+    r'DATE\s*:\s*\d{1,2} [A-Z]+ 20\d\d', r'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI',
+    re.escape(_COLUMNS), r'Cumulative Grade Point Average \(CGPA\)', r'Credit Earned', r'Total Credits',
+    r':\s*[0-4]\.\d\d\s*Grade Point Average \(GPA\)', r':\s*\d{1,3}\.\d{1,2}(?:\s*/\s*\d{1,3}\.\d)?')
+
+
+def _header_area_known(lines, institution):
+    """Is every line before the first semester heading a known header line? The polytechnic's
+    address (between its name and the JPPKK line) is free text; ONE programme line, a DIPLOMA."""
+    first = next((i for i, ln in enumerate(lines) if _HEADER.match(ln)), None)
+    if first is None:
+        return False
+    area = lines[:first]
+    if any(re.match(r'KOLEJ KOMUNITI\b', ln) for ln in area):
+        return False                            # a Kolej Komuniti's own transcript
+    if sum(1 for ln in area if re.fullmatch(r':\s*DIPLOMA [A-Z][A-Z ()&,\-]*', ln)) != 1:
+        return False                            # a Diploma programme, printed once (never a SIJIL / BACHELOR)
+    jppkk = area.index('JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI') if (
+        'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI' in area) else -1
+    at = area.index(institution) if institution in area else -1
+    if at < 0 or jppkk < at:
+        return False
+    return all(any(re.fullmatch(p, ln) for p in _HEADER_LINES)
+               for i, ln in enumerate(area) if i != at and not at < i < jppkk)
 
 
 def _boxes(lines):
@@ -148,8 +196,13 @@ def _semesters(lines):
             continue
         row = _ROW.match(ln)
         if row and opened is None:
+            if _REMARKS.search(row[2]) or _CREDIT_TOKEN.search(row[2]):
+                return None                     # a remark or a second credit inside the name
             cur[2].append((row[1], row[2].strip(), Decimal(row[3]), row[4]))
             continue
+        if _REMARKS.search(ln) or (opened is not None or _ROW_OPEN.match(ln)) and not _ROW_CLOSE.match(
+                ln) and _CREDIT_TOKEN.search(ln):
+            return None                         # a failed / remarked row is never read into a name
         if opened is None and _ROW_OPEN.match(ln):
             opened = [_ROW_OPEN.match(ln)[1], _ROW_OPEN.match(ln)[2].strip()]
             continue

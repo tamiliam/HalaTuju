@@ -193,6 +193,124 @@ class TestTheReader(SimpleTestCase):
         self.assertIsNone(poly_diploma_parse.read_poly_transcript(None))
 
 
+def spec_transcript(specs, programme=None, training_gpa=None):
+    """A transcript from an ORDERED spec — ('graded', rows) or ('training', credits) — so a training
+    semester can sit anywhere and carry any credits (the isolation tests below)."""
+    lines = transcript().split(NL)
+    head = lines[:lines.index('CODE COURSE CREDIT GRADE REMARK') + 1]
+    body, pts, crs, run, bx = [], Decimal(0), Decimal(0), Decimal(0), []
+    for kind, val in specs:
+        if kind == 'graded':
+            sp = sum(Decimal(cr) * Decimal(POINTS[g]) for _c, _n, cr, g in val)
+            sc = sum(Decimal(cr) for _c, _n, cr, _g in val)
+            pts, crs, run = pts + sp, crs + sc, run + sc
+            bx.append((_r(sp / sc), _r(pts / crs), sc, run))
+        else:
+            run += val
+            bx.append((training_gpa, _r(pts / crs) if crs else '0.00', Decimal(val), run))
+    programme = programme if programme is not None else run
+    for k, (kind, val) in enumerate(specs):
+        body += _box_lines(bx[k], programme)
+        if kind == 'graded':
+            body.append(f'{ORD[k]} SEMESTER ({SESSIONS[k]})')
+            for row in val:
+                body += _row_lines(*row)
+        else:
+            body += [f'{ORD[k]} SEMESTER ({SESSIONS[k]}) - INDUSTRIAL TRAINING', 'Company : CONTOH SDN BHD']
+    return NL.join(head + body + ['~~~~~End of results~~~~~'])
+
+
+GRADED = [('graded', rows) for rows in SEMS]
+
+
+class TestEveryRuleOnItsOwn(SimpleTestCase):
+    """M3 review: a test that goes red when ONLY that rule is removed, for each rule."""
+
+    def test_the_spec_builder_reads(self):
+        self.assertEqual(poly_diploma_parse.read_poly_transcript(spec_transcript(GRADED + [('training', 9)]))['cgpa'],
+                         '3.55')
+
+    def test_a_name_has_two_words_and_never_ends_on_a_connector(self):
+        read = poly_diploma_parse.read_poly_transcript
+        self.assertIsNone(read(transcript(edit={' : SITI AMINAH BINTI ALINAME': ' : SITINAME'})))
+        self.assertIsNone(read(transcript(edit={' : SITI AMINAH BINTI ALINAME': ' : SITI AMINAH BINTINAME'})))
+        self.assertIsNone(read(transcript(edit={'BINTI ALINAME': 'BINTI ALI WANITANAME'})))
+
+    def test_a_line_the_header_does_not_know_refuses(self):
+        """A cut-off name's second line ("ALI" below "… BINTI") is never left behind unread."""
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={
+            ' : SITI AMINAH BINTI ALINAME': ' : SITI AMINAH BINTI ALINAME' + NL + 'BIN ABU'})))
+
+    def test_a_diploma_programme_only(self):
+        for prog in (' : BACHELOR OF TECHNOLOGY', ' : SIJIL TEKNOLOGI'):
+            self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={
+                ' : DIPLOMA AGROTECHNOLOGY': prog})), prog)
+
+    def test_the_ic_is_a_date(self):
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={'030101-12-1234': '031301-12-1234'})))
+
+    def test_another_ic_with_spaces_refuses(self):
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript() + NL + 'SAKSI 800101 01 5555'))
+
+    def test_semesters_in_order(self):
+        text = transcript().replace('FIRST SEMESTER', 'TMP SEMESTER').replace(
+            'SECOND SEMESTER', 'FIRST SEMESTER').replace('TMP SEMESTER', 'SECOND SEMESTER')
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(text))
+
+    def test_industrial_training_only_last(self):
+        specs = GRADED[:2] + [('training', 9)] + GRADED[2:]
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(spec_transcript(specs)))
+
+    def test_a_box_for_every_semester(self):
+        """The training semester printed but its box missing, the programme total met without it."""
+        text = spec_transcript(GRADED + [('training', 9)], programme=Decimal(36))
+        cut = text.index('Cumulative Grade Point Average (CGPA)', text.index('POST HARVEST TECHNOLOGY'))
+        text = text[:cut] + NL.join(text[cut:].split(NL)[6:])
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(text))
+
+    def test_one_programme_total(self):
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={' / 45.0\nFIRST': ' / 46.0\nFIRST'})))
+
+    def test_the_training_box_has_no_gpa_and_its_own_credits(self):
+        read = poly_diploma_parse.read_poly_transcript
+        self.assertIsNone(read(spec_transcript(GRADED + [('training', 9)], training_gpa='3.55')))
+        self.assertIsNone(read(spec_transcript(GRADED + [('training', 0)])))
+
+    def test_the_end_of_results_marker_is_required(self):
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={'~~~~~End of results~~~~~': ''})))
+
+    def test_a_wrapped_name_is_at_most_four_lines(self):
+        five = 'DYA30083 BASIC ROBOTIC AND' + NL + 'AUTOMATION' + NL + 'IN' + NL + 'AGRICULTURE' + NL + 'ONE' + NL + '3.0 A-'
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={
+            'DYA30083 BASIC ROBOTIC AND AUTOMATION IN' + NL + 'AGRICULTURE' + NL + '3.0 A-': five})))
+
+    def test_a_box_line_inside_a_wrapped_row_refuses(self):
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={
+            'AUTOMATION IN' + NL + 'AGRICULTURE': 'AUTOMATION IN' + NL + 'Credit Earned' + NL + 'AGRICULTURE'})))
+
+    def test_a_failed_or_remarked_row_never_merges_into_a_name(self):
+        """Review fix 2: a whole row whose grade is off the scale, then a stray credit + grade line."""
+        read = poly_diploma_parse.read_poly_transcript
+        self.assertIsNone(read(transcript(edit={'DYA20033 CROP PROTECTION 3.0 A':
+                                                'DYA20033 CROP PROTECTION 3.0 E' + NL + '3.0 A'})))
+        self.assertIsNone(read(transcript(edit={'DYA20033 CROP PROTECTION 3.0 A':
+                                                'DYA20033 CROP PROTECTION (R)' + NL + '3.0 A'})))
+        self.assertIsNone(read(transcript(edit={'AGRICULTURE' + NL + '3.0 A-': 'AGRICULTURE ULANG' + NL + '3.0 A-'})))
+
+    def test_the_polytechnic_name_alone(self):
+        read = poly_diploma_parse.read_poly_transcript
+        self.assertIsNone(read(transcript(edit={'POLITEKNIK CONTOH SABAH': 'POLITEKNIK CONTOH SABAH JALAN CONTOH'})))
+        self.assertIsNone(read(transcript(edit={'POLITEKNIK CONTOH SABAH': 'KOLEJ KOMUNITI CONTOH' + NL
+                                                + 'POLITEKNIK CONTOH SABAH'})))
+        # in the address block (free text) only the Kolej Komuniti rule sees it
+        self.assertIsNone(read(transcript(edit={'POLITEKNIK CONTOH SABAH': 'POLITEKNIK CONTOH SABAH' + NL
+                                                + 'KOLEJ KOMUNITI CONTOH'})))
+
+    def test_the_programme_line_is_printed_once(self):
+        """A missing programme line: the known-lines rule cannot see an absence; the count rule does."""
+        self.assertIsNone(poly_diploma_parse.read_poly_transcript(transcript(edit={' : DIPLOMA AGROTECHNOLOGY' + NL: ''})))
+
+
 #: A UiTM "ACADEMIC MINI TRANSCRIPT" twin: a diploma, a faculty, a CGPA — and no polytechnic.
 UITM = (f'ACADEMIC MINI TRANSCRIPT{NL}FAKULTI SAINS PENTADBIRAN DAN PENGAJIAN POLISI{NL}'
         f'DIPLOMA IN PUBLIC ADMINISTRATION{NL}CGPA 3.40{NL}FINAL CGPA 3.40')
@@ -222,7 +340,9 @@ class TestTheWiring(TestCase):
 
     def test_uitm_stpm_and_matric_pages_never_reach_the_polytechnic_reader(self):
         from apps.scholarship.tests.test_matric_parse import two_sem
-        for text in (UITM, 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025 PNGK 3.50', two_sem()):
+        kk = transcript(edit={'POLITEKNIK CONTOH SABAH': 'KOLEJ KOMUNITI CONTOH'})    # a Kolej Komuniti
+        spm = 'SIJIL PELAJARAN MALAYSIA 2024 BAHASA MELAYU A POLITEKNIK CONTOH'
+        for text in (UITM, 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025 PNGK 3.50', two_sem(), kk, spm):
             with patch('apps.scholarship.poly_diploma_parse.read_poly_transcript') as reader:
                 extract(self._doc(), {'text': text, 'words': None}, lambda: None, self._gemini)
             reader.assert_not_called()

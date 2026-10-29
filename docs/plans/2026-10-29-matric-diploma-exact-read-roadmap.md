@@ -105,6 +105,8 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   - Every graded row is proven: each semester's credits equal its box's Credit Earned, its GPA and the
     running CGPA recomputed; the boxes (out of step with their semesters in the two-column text layer)
     are paired by their own running Total Credits. 0-credit rows (PISPA 3, 4) are left out.
+  - Review fixes (poly 1.1.0, matric 1.2.0): a known header area, no name ending on a connector, a
+    DIPLOMA programme only, no credit or remark inside a wrapped row; each rule isolated by a test.
   - Its label was WRONG on one grade (Gemini-seeded; the semester GPA proves the printed grade): the
     LIVE stored Gemini read of 3926 carries the same misread (checked) — M5's re-read fixes it.
 

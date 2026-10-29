@@ -37,6 +37,15 @@ accepted only last, with credits, no rows, no GPA and the CGPA unchanged. A 0-cr
 no sum, so it is left out of `results`. Same blind spot as M2: two equal-credit grades of one
 semester exchanged add up the same; each text-layer row is printed whole on its own line.
 
+**Review (2026-10-29), poly 1.1.0 / matric 1.2.0.** The header area (before the first semester
+heading) is read whole: every line must be a known header line — the address between the
+polytechnic's name and the JPPKK line is the one free-text block — so a cut-off name's second line
+refuses; a name never ends on a connector (BIN, BINTI, A/L, ANAK …), in both readers. The programme
+line must read DIPLOMA. An opening or continuation line of a wrapped row holding a credit, and any
+row line holding a remark (ULANG, REPEAT, (R), [CE] …), refuses — a failed row can never be read into
+the next row's name. Kolej Komuniti headings refuse; a polytechnic name with an address glued on
+refuses (never trimmed). Each rule has a test that fails when only it is removed.
+
 **Versions.** `MODEL_VERSION` 1.20.0 (a new recognition path). `VERDICT_ENGINE_VERSION` unchanged:
 the reader fills the fields Gemini did; the CGPA and name feed `verdict_academic`, so a value read
 more exactly can change a fact — a model change, not an engine change; genuineness is still unscored

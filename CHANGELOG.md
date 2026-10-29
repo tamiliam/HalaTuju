@@ -109,7 +109,7 @@ Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record
 
 ## Matric/Diploma Exact-read M3 - 2026-10-29
 
-- **A polytechnic Diploma academic transcript is read Exact** (`poly_diploma_parse` 1.0.0, from
+- **A polytechnic Diploma academic transcript is read Exact** (`poly_diploma_parse` 1.1.0, from
   `higher_results.extract`, only on a page `results_kind` reads as Diploma AND that prints a
   polytechnic's own name, `results_kind.prints_polytechnic`; UiTM and other diplomas never reach it).
   Name, IC, registration number, polytechnic, every graded course row, the FINAL CGPA.
@@ -122,7 +122,14 @@ Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record
 - Corpus (`eval/poly_parse_check.py`): 1 Exact, 7 Gemini, **0 wrong**; 0 of 169 controls accepted.
   The one transcript's Gemini-seeded label had a grade wrong — the semester GPA proves the print.
 - `MODEL_VERSION` 1.20.0. `VERDICT_ENGINE_VERSION` unchanged (the M2 reasoning).
-- Tests: `test_poly_diploma_parse.py` (17, synthetic twins of the text layer; every rule bite-checked).
+- **Adversarial review (poly 1.1.0, matric 1.2.0):** every line of the header area must be a known
+  header line (a cut-off name's second line refuses), and a name never ends on a connector (BIN,
+  BINTI, A/L … — both readers); the programme must read DIPLOMA (a polytechnic SIJIL or BACHELOR is not
+  filed as one); a wrapped row holding a credit or a remark (ULANG, REPEAT, (R) …) refuses, so a failed
+  row cannot merge into a name; the polytechnic name refuses a glued address; a Kolej Komuniti heading
+  refuses; WANITA and the like are no name words; an IC printed with spaces is caught. Every rule has a
+  test that goes red when only that rule is removed (`TestEveryRuleOnItsOwn`).
+- Tests: `test_poly_diploma_parse.py` (34, synthetic twins of the text layer; every rule bite-checked).
 
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 
