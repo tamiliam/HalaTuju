@@ -74,9 +74,9 @@ from .requests import (
 from .requests_delivery import (
     AdminOrgRequestAiRerunView, AdminOrgRequestAnalysisApproveView, AdminOrgRequestAnalysisView,
     AdminOrgRequestAttachmentCreateView, AdminOrgRequestAttachmentDeleteView,
-    AdminOrgRequestAttachmentSignUploadView, AdminOrgRequestDoneView, AdminOrgRequestQuoteView,
-    AdminOrgRequestRequoteView, AdminOrgRequestScheduleView, AdminOrgRequestTriageView,
-    AdminOrgRequestWithdrawAnalysisView,
+    AdminOrgRequestAttachmentSignUploadView, AdminOrgRequestDoneView, AdminOrgRequestHoursView,
+    AdminOrgRequestQuoteView, AdminOrgRequestRequoteView, AdminOrgRequestScheduleView,
+    AdminOrgRequestTriageView, AdminOrgRequestWithdrawAnalysisView,
 )
 from .sponsor_terms import (
     _SponsorTermsBase, _terms_detail_dict, _terms_err, _terms_section_dict, _terms_summary_dict,

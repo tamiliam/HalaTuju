@@ -159,6 +159,7 @@ from .views_admin import (
     AdminOrgRequestCommentView,
     AdminOrgRequestAnalysisView,
     AdminOrgRequestAnalysisApproveView,
+    AdminOrgRequestHoursView,
     AdminOrgRequestWithdrawAnalysisView,
     AdminReviewerListView,
     AdminReviewerDetailView,
@@ -383,6 +384,9 @@ urlpatterns = [
     # ...and retires one it got wrong, so a stale draft can never be approved by mistake.
     path('admin/scholarship/requests/<int:pk>/analysis/<int:aid>/withdraw/',
          AdminOrgRequestWithdrawAnalysisView.as_view()),
+    # The PUBLISHED actual against the plan (2026-10-29) — the figure the invoice reads.
+    path('admin/scholarship/requests/<int:pk>/analysis/<int:aid>/hours/',
+         AdminOrgRequestHoursView.as_view()),
     # Request #10 — Organisation → Reviewers. Staff invites; this is where you look at somebody.
     path('admin/reviewers/', AdminReviewerListView.as_view()),
     path('admin/reviewers/<int:pk>/', AdminReviewerDetailView.as_view()),

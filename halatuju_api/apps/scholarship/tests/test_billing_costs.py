@@ -371,10 +371,20 @@ class TestFinishedRequestWorkIsFoundAndCountedOnce(_Base):
         self.assertEqual(row['worked_month'], timezone.localtime().strftime('%Y-%m'))
 
     def test_a_finished_quoted_request_is_reported_as_unbilled(self):
+        """⚠ THIS TEST USED TO ASSERT `hours == 7.5` — THE QUOTE — AND THAT WAS THE DEFECT.
+
+        It encoded the behaviour the owner found wrong on 2026-10-29: the panel proposed the PLAN,
+        pressing Record filed it, and the invoice billed it. Five of sixteen billed requests were
+        wrong that way. A request with no closing report now offers NO number at all and says why,
+        so the screen can withhold the Record button. The quote is still reported beside it,
+        because it is what the organisation agreed to — it is simply not what is billed.
+        """
         r = self._request('7.5')
         rows = platform_cost.unbilled_request_hours()
         self.assertEqual([x['request_id'] for x in rows], [r.id])
-        self.assertEqual(rows[0]['hours'], Decimal('7.5'))
+        self.assertIsNone(rows[0]['hours'])
+        self.assertEqual(rows[0]['blocked'], 'no_actual_reported')
+        self.assertEqual(rows[0]['quoted_hours'], Decimal('7.5'))
         # The prefilled module carries the tag, so the human never has to type it.
         self.assertIn(platform_cost.request_module_tag(r.id), rows[0]['module'])
 

@@ -321,6 +321,28 @@ export function defaultIssueDate(month: string, today: string): string {
  * Issue — but this panel exists to set a date on purpose, and adversarial review (2026-10-28)
  * found that clearing the box silently produced the exact failure the panel was built to stop: a
  * July invoice dated 28 October with a November due date, frozen, remedied only by a void. */
+/** A signed money string split into its sign and its size, WITHOUT going through a number.
+ *
+ * ⚠ Money reaches this screen as a STRING for a reason — a float in an invoice payload is how
+ * RM30.00 becomes RM30.0 — so taking `Math.abs(Number(x))` to print a credit would undo that at
+ * the last step. This strips the sign as text instead.
+ *
+ * Returns `negative` and the unsigned `magnitude`, ready for the minus sign the screen draws
+ * itself. A blank or unreadable value is reported as not negative, with the value untouched, so
+ * the formatter downstream shows its own em dash rather than this inventing a zero.
+ */
+export function splitSignedMoney(amount: string | null | undefined): {
+  negative: boolean
+  magnitude: string
+} {
+  const value = (amount || '').trim()
+  if (!/^-?\d+(\.\d+)?$/.test(value)) return { negative: false, magnitude: value }
+  // ⚠ The sign comes off whether or not it meant anything. A value of '-0.00' is not negative —
+  // "−RM0.00" says nothing — but leaving its minus on would print "RM-0.00", which says less.
+  const unsigned = value.startsWith('-') ? value.slice(1) : value
+  return { negative: value.startsWith('-') && Number(value) !== 0, magnitude: unsigned }
+}
+
 export function issueDateProblem(month: string, issuedOn: string, today: string): string {
   const value = (issuedOn || '').trim()
   if (value === '') return 'issueDateRequired'

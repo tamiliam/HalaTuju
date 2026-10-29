@@ -269,6 +269,89 @@ class TestOrgPayloadAllowlist(_Base):
         self.assertIn('organisation_name', body)
 
 
+class TestOneLabelForBothViews(_Base):
+    """⚠ **THE TAG DECIDES WHETHER THEY ARE CHARGED, so both views must read the same word.**
+
+    The owner read BrightPath's own screen on 2026-10-29: request 14, filed a bug, triaged a
+    FEATURE and billed RM46 in August, still said "Bug report" to them while the super's screen
+    said "Feature". Both pages run the same `effectiveKind` (`triaged_kind || kind`); only the
+    DATA differed, because the org payload withheld the triage as "the owner's private judgement"
+    — a 2026-07-30 ruling made when triage was internal routing and billing did not exist.
+
+    Nine live requests differ between filed and final (7 bug→feature, 2 feature→bug), and a
+    customer who follows `(REQ-14)` off an invoice must land on something labelled the way it was
+    charged.
+    """
+
+    def org_kind(self, req):
+        self._auth('oa-a')
+        return self.client.get(f'{BASE}{req.id}/').json()['kind']
+
+    def super_effective_kind(self, req):
+        self._auth('sup')
+        body = self.client.get(f'{BASE}{req.id}/').json()
+        return body['triaged_kind'] or body['kind']          # what the super's screen computes
+
+    def test_a_bug_triaged_into_a_feature_reads_feature_to_the_organisation(self):
+        """Request 14's exact shape — the one that was billed while reading "Bug report"."""
+        self.req_a.kind = 'bug'
+        self.req_a.triaged_kind = 'feature'
+        self.req_a.save()
+        self.assertEqual(self.org_kind(self.req_a), 'feature')
+
+    def test_a_feature_triaged_into_a_bug_reads_bug_to_the_organisation(self):
+        """The other direction (requests 36 and 49): now free, and it must not still say
+        "Feature" or they will expect a charge that never comes."""
+        self.req_a.kind = 'feature'
+        self.req_a.triaged_kind = 'bug'
+        self.req_a.save()
+        self.assertEqual(self.org_kind(self.req_a), 'bug')
+
+    def test_the_two_views_agree_in_every_combination(self):
+        for filed, triaged in (('bug', 'feature'), ('feature', 'bug'),
+                               ('bug', 'bug'), ('feature', 'feature'), ('feature', '')):
+            with self.subTest(filed=filed, triaged=triaged):
+                self.req_a.kind = filed
+                self.req_a.triaged_kind = triaged
+                self.req_a.save()
+                self.assertEqual(self.org_kind(self.req_a),
+                                 self.super_effective_kind(self.req_a))
+
+    def test_before_triage_the_organisation_still_sees_what_it_filed(self):
+        self.req_a.kind = 'bug'
+        self.req_a.triaged_kind = ''
+        self.req_a.save()
+        self.assertEqual(self.org_kind(self.req_a), 'bug')
+
+    def test_the_change_itself_is_not_shown_and_adds_no_key(self):
+        """⚠ Owner, 2026-10-29: *"They don't have to see the details of the label change. It
+        should simply say the final label."* So the triage REPLACES `kind` rather than arriving
+        beside it — which is also why the allowlist's exact key set does not move, and why the
+        screen's `filedKindDiffers()` stays false with no special case."""
+        self.req_a.kind = 'bug'
+        self.req_a.triaged_kind = 'feature'
+        self.req_a.triage_note = 'owner-only note'
+        self.req_a.lane = 'small_change'
+        self.req_a.save()
+        self._auth('oa-a')
+        body = self.client.get(f'{BASE}{self.req_a.id}/').json()
+        self.assertEqual(set(body), TestOrgPayloadAllowlist.ORG_KEYS)
+        for still_private in ('triaged_kind', 'lane', 'triage_note'):
+            self.assertNotIn(still_private, body, still_private)
+        self.assertNotIn('owner-only note', list(_leaf_values(body)))
+
+    def test_the_list_agrees_with_the_detail(self):
+        """The invoice links to the detail, but the organisation reads the LIST first — two
+        labels for one request on two of its own screens is the same fault again."""
+        self.req_a.kind = 'bug'
+        self.req_a.triaged_kind = 'feature'
+        self.req_a.save()
+        self._auth('oa-a')
+        rows = self.client.get(BASE).json()['requests']
+        row = next(r for r in rows if r['id'] == self.req_a.id)
+        self.assertEqual(row['kind'], 'feature')
+
+
 class TestHappyPath(_Base):
     def test_create_scoped_to_caller_org(self):
         self._auth('oa-a')

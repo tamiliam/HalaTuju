@@ -259,6 +259,7 @@ describe('finished work not yet billed', () => {
       // ⚠ RAISED in July, WORKED in August — the exact shape the owner caught on
       // 2026-09-11. Recording must file it under August.
       worked_on: '2026-08-01', worked_month: '2026-08', worked_basis: 'scheduled',
+      quoted_hours: '7.5', actual_hours: '7.5', blocked: null,
     }],
   })
 
@@ -291,6 +292,43 @@ describe('finished work not yet billed', () => {
     const { container } = render(<BillingPage />)
     await waitFor(() => within(container).getByTestId('cost-section'))
     expect(within(container).queryByTestId('unbilled-requests')).toBeNull()
+  })
+
+  it('shows the PLAN beside the actual when the two differ', async () => {
+    // ⚠ The owner read this panel on 2026-10-29 and could not see that it was offering the plan.
+    // Both numbers now show, so a surprise is visible before anybody presses Record.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      unbilled_requests: [{
+        request_id: 30, organisation_id: 1, organisation: 'BrightPath', title: 'Bulk invite',
+        hours: '4.0', quoted_hours: '7.0', actual_hours: '4.0', blocked: null,
+        module: '[REQ-30] Bulk invite', worked_on: '2026-10-03', worked_month: '2026-10',
+        worked_basis: 'scheduled',
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    // ⚠ Matched on the section's TEXT, not a whole-cell string: the actual and the plan share one
+    // cell, so a whole-text match would break the moment either moves.
+    const quoted = within(section).getByText('admin.billing.unbilled.quoted:7h')
+    expect(quoted.parentElement?.textContent).toContain('4h')
+  })
+
+  it('offers NO number and NO Record button while no actual has been reported', async () => {
+    // ⚠ THE DEFECT, closed. Pressing Record used to file the quote, and the invoice billed it.
+    // The remedy is to record the actual, so there is nothing here to click past.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      unbilled_requests: [{
+        request_id: 31, organisation_id: 1, organisation: 'BrightPath', title: 'Merchant flags',
+        hours: null, quoted_hours: '8.0', actual_hours: null, blocked: 'no_actual_reported',
+        module: '[REQ-31] Merchant flags', worked_on: '2026-10-05', worked_month: '2026-10',
+        worked_basis: 'scheduled',
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    expect(within(section).getByText('admin.billing.unbilled.noActual')).not.toBeNull()
+    expect(within(section).queryByText('admin.billing.unbilled.record')).toBeNull()
+    expect(within(section).queryByText('8h')).toBeNull()
   })
 })
 
@@ -378,6 +416,7 @@ describe('hours are filed by when we WORKED', () => {
       request_id: 3, organisation_id: 1, organisation: 'BrightPath',
       title: 'Email notification', hours: '3.5', module: '[REQ-3] Email notification',
       worked_on: '2026-08-01', worked_month: '2026-08', worked_basis: 'scheduled',
+      quoted_hours: '7.5', actual_hours: '7.5', blocked: null,
     }],
   })
 

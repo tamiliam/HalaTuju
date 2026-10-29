@@ -5,6 +5,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import InvoicesSection from '@/components/admin/InvoicesSection'
+import { UnbilledSection } from '@/components/admin/UnbilledSection'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
@@ -397,62 +398,6 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
             </button>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-/** Finished request work that has never reached an invoice.
- *
- * ⚠ It is REPORTED, not auto-billed. A request carries no completion date — only `updated_at`,
- * which any later edit moves — so which MONTH the work belongs to is a human call, and getting it
- * wrong would bill it under the wrong month's terms. Recording it writes an `OrgBuildHours` row
- * whose `basis` names the request, which is what makes the choice reviewable afterwards. */
-function UnbilledSection({ payload, t, onRecord, busy }: {
-  payload: BillingCostsPayload
-  t: (k: string, vars?: Record<string, string>) => string
-  onRecord: (row: UnbilledRequest) => void
-  busy: boolean
-}) {
-  const groups = unbilledByOrg(payload)
-  if (groups.length === 0) return null
-
-  return (
-    <div className="mt-8" data-testid="unbilled-requests">
-      <h2 className="text-sm font-semibold text-ground-900">{t('admin.billing.unbilled.title')}</h2>
-      <p className="mt-1 text-xs text-ground-500">{t('admin.billing.unbilled.sub')}</p>
-      <div className="mt-3 space-y-3">
-        {groups.map((g) => (
-          <div key={g.organisation_id} className="rounded-xl border bg-ground-0 p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-ground-900">{g.organisation}</h3>
-            <ul className="mt-2 space-y-1">
-              {g.rows.map((r) => (
-                <li key={r.request_id} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                  <span className="text-ground-700">
-                    #{r.request_id} {r.title}
-                    {/* ⚠ The month these hours go to, and how firm it is. Recording files them
-                        HERE, not under the month being viewed — the owner's correction. */}
-                    <span className="block text-[11px] text-ground-400">
-                      {t('admin.billing.unbilled.worked', {
-                        month: formatMonth(r.worked_month),
-                        date: r.worked_on,
-                        basis: r.worked_basis,
-                      })}
-                    </span>
-                  </span>
-                  <span className="flex items-baseline gap-3">
-                    <span className="tabular-nums text-ground-900">{formatHours(r.hours)}</span>
-                    <button type="button" disabled={busy}
-                      className="text-ground-500 underline disabled:opacity-40"
-                      onClick={() => onRecord(r)}>
-                      {t('admin.billing.unbilled.record')}
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
       </div>
     </div>
   )

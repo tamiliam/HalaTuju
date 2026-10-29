@@ -5395,9 +5395,11 @@
       },
       "unbilled": {
         "title": "Finished work not yet billed",
-        "sub": "Requests marked done that carry quoted hours. Recording one files those hours against the month we WORKED, not the month it was raised.",
+        "sub": "Requests marked done. Recording one files the hours we PUBLISHED in the closing report against the month we worked, not the month it was raised.",
         "record": "Record",
-        "worked": "worked {date} ({basis}) — goes to {month}"
+        "worked": "worked {date} ({basis}) — goes to {month}",
+        "noActual": "No hours reported yet — record the actual on the closing report first",
+        "quoted": "planned {hours}"
       },
       "service": {
         "gemini": "AI calls (Gemini)",
@@ -5528,7 +5530,9 @@
           "badDate": "Enter the date as DD-MM-YYYY, for example 29-10-2026."
         },
         "receiptEmailed": "Emailed {date}",
-        "receiptNotEmailed": "Not emailed — send the PDF by hand"
+        "receiptNotEmailed": "Not emailed — send the PDF by hand",
+        "correctionCredit": "Credit for an earlier month",
+        "correctionCharge": "Charge for an earlier month"
       },
       "usageTitle": "Usage this month",
       "storageOrgNote": "your organisation's files only; shared course images are not included",
@@ -5758,7 +5762,21 @@
         "analysisNextBug": "Bug: no quote. After you approve, triage it, then schedule the fix.",
         "analysisNextFeature": "Feature: after you approve, triage it and send a quote. The organisation then accepts or declines.",
         "analysisWithdrawConfirm": "Withdraw this draft? It has not reached the organisation, and withdrawing it only means it can no longer be approved. It stays on the record as a superseded draft.",
-        "analysisStale": "Something has been said on this request since this analysis was written. Check it still holds."
+        "analysisStale": "Something has been said on this request since this analysis was written. Check it still holds.",
+        "hoursRecorded": "Took {actual}h · charged {charged}h",
+        "hoursMissing": "No hours recorded yet — the invoice for this month will refuse until they are",
+        "hoursRecord": "Record the hours",
+        "hoursEdit": "Change the hours",
+        "hoursHelp": "Copy the figures from the closing report above. These are what the invoice reads — never the quote.",
+        "hoursActual": "Hours actually spent",
+        "hoursCharged": "Hours charged",
+        "hoursNote": "Why they differ",
+        "hoursSave": "Save the hours",
+        "hoursError": {
+          "hoursRequired": "Enter the hours the work actually took.",
+          "badHours": "Enter hours as a number, to one decimal place at most.",
+          "chargeNoteRequired": "Say why the charged hours differ from the hours spent."
+        }
       },
       "error": {
         "bug_is_free": "A bug report is free — schedule it instead of quoting.",

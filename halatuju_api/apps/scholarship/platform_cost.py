@@ -37,10 +37,13 @@ from decimal import Decimal
 from . import metered_usage, request_hours
 
 billable_kind = request_hours.billable_kind
+billable_hours = request_hours.billable_hours                   # the PUBLISHED actual, not the quote
 bug_reports_fixed = request_hours.bug_reports_fixed             # counted, never priced
+closing_report = request_hours.closing_report                   # the document the tenant was sent
 consent_gaps = request_hours.consent_gaps                       # the quote + acceptance check
 request_id_from_module = request_hours.request_id_from_module
 request_module_tag = request_hours.request_module_tag
+record_hours = request_hours.record_hours                       # the owner writes the actual down
 unbilled_request_hours = request_hours.unbilled_request_hours
 worked_date = request_hours.worked_date
 
@@ -405,6 +408,22 @@ def apply_margin(amount_myr, category, period_month):
 # file, so `platform_cost.<name>` still reaches them.
 
 
+def corrections_for(organisation, period_month):
+    """Corrections of EARLIER months that this month's invoice carries. Oldest first.
+
+    ⚠ The owner's rule, 2026-10-29: *"When we have overcharged or undercharged, this should be
+    deducted or added (or written off) in the following month."* An invoice already sent is never
+    rewritten, so a mistake travels forward as its own line. `period_month` on the row is the month
+    that CARRIES it, not the month that was wrong.
+    """
+    from .models import OrgBillingCorrection
+
+    return (OrgBillingCorrection.objects
+            .filter(organisation=organisation, period_month=period_month)
+            .select_related('corrects_invoice')
+            .order_by('id'))
+
+
 def adjustment_for(organisation, period_month):
     """The discount agreed for this organisation and this month, or None."""
     from .models import OrgBillingAdjustment
@@ -542,6 +561,14 @@ def charge_for(organisation, period_month):
     discount_pct = adj.discount_pct if adj else Decimal('0.00')
     discount = (subtotal * discount_pct / Decimal('100')).quantize(Decimal('0.01'))
 
+    # ⚠ CORRECTIONS COME AFTER THE DISCOUNT, and that order is the point. A discount is a
+    # percentage of THIS month's work; a correction is a fixed sum putting right an EARLIER
+    # invoice. Discounting a correction would quietly shrink a refund we already owe — July's
+    # 100% discount would have erased it entirely. So the month reads:
+    #     subtotal -> discount -> corrections -> charged.
+    corrections = list(corrections_for(organisation, period_month))
+    correction_total = sum((c.amount_myr for c in corrections), Decimal('0.00'))
+
     return {
         'month': period_month,
         'organisation_id': organisation.id if organisation else None,
@@ -555,7 +582,14 @@ def charge_for(organisation, period_month):
         'discount_myr': discount,
         'discount_reason': adj.reason if adj else '',
         'discount_set_by': adj.set_by_email if adj else '',
-        'charged_myr': (subtotal - discount).quantize(Decimal('0.01')),
+        # Each correction keeps its own words, because each one goes on the tenant's invoice as
+        # its own line. A single netted figure would be a number nobody can explain.
+        'corrections': [{'id': c.id, 'amount_myr': c.amount_myr, 'reason': c.reason,
+                         'corrects_invoice': (c.corrects_invoice.number
+                                              if c.corrects_invoice_id else ''),
+                         'set_by': c.set_by_email} for c in corrections],
+        'corrections_myr': correction_total,
+        'charged_myr': (subtotal - discount + correction_total).quantize(Decimal('0.01')),
         # Why a category is absent. Rendered on the screen — a silent omission is the thing
         # this whole module exists to stop.
         'blocked': blocked,

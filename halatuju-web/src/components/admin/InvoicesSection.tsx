@@ -26,8 +26,8 @@ import {
 import { formatMyr } from '@/lib/billingCosts'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  canRecordPayment, canSend, canVoid, formatDay, lineRequest, orderedInvoices, statusChip,
-  todayIso,
+  canRecordPayment, canSend, canVoid, formatDay, lineRequest, orderedInvoices, splitSignedMoney,
+  statusChip, todayIso,
 } from '@/lib/invoices'
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -158,6 +158,25 @@ function InvoiceDetail({ inv, isSuper, busy, t, token, onSend, onVoid, onReceipt
               {inv.discount_reason && <span className="block text-[11px] text-ground-400">{inv.discount_reason}</span>}
             </td><td className="px-2 text-right tabular-nums">−{formatMyr(inv.discount_myr)}</td></tr>
           )}
+          {/* ⚠ AFTER the discount, and ONE ROW PER CORRECTION with its own words. A discount is a
+              percentage of this month's work; a correction is a fixed sum putting right an earlier
+              invoice, so netting them into one figure would print a number nobody can explain. The
+              reason is the point of the line: the tenant reads what we got wrong without asking. */}
+          {(inv.corrections || []).map((c, i) => {
+            const { negative, magnitude } = splitSignedMoney(c.amount_myr)
+            return (
+              <tr key={i}><td colSpan={3} className="px-2 text-right text-ground-500">
+                {t(negative
+                  ? 'admin.billing.invoice.correctionCredit'
+                  : 'admin.billing.invoice.correctionCharge')}
+                <span className="block text-[11px] text-ground-400">
+                  {c.corrects_invoice ? `${c.corrects_invoice} — ${c.reason}` : c.reason}
+                </span>
+              </td><td className="px-2 text-right tabular-nums">
+                {negative ? '−' : ''}{formatMyr(magnitude)}
+              </td></tr>
+            )
+          })}
           <tr className="font-semibold"><td colSpan={3} className="border-t border-ground-900 px-2 pt-1.5 text-right">{t('admin.billing.invoice.totalDue')}</td>
             <td className="border-t border-ground-900 px-2 pt-1.5 text-right tabular-nums">{formatMyr(inv.total_myr)}</td></tr>
           {Number(inv.amount_paid_myr) > 0 && (

@@ -101,17 +101,31 @@ def unbilled_request_hours(organisation=None):
 
     recorded = list(OrgBuildHours.objects.values_list('module', flat=True))
     out = []
-    for r in qs.select_related('organisation').order_by('id'):
+    for r in qs.select_related('organisation').prefetch_related('analyses').order_by('id'):
         tag = request_module_tag(r.id)
         if any(tag in m for m in recorded):
             continue
         worked_on, worked_basis = worked_date(r)
+        # ⚠ THE PUBLISHED ACTUAL, NOT THE QUOTE. The owner read this very panel on 2026-10-29 and
+        # found it proposing 7h for request 30 and 8h for request 31 — the plans — while the
+        # closing reports had told BrightPath 4 and 5. Pressing Record filed the wrong number, and
+        # the invoice then billed it. `hours` is None where no closing figure exists, and the
+        # screen must offer no Record button for such a row.
+        report = closing_report(r)
+        hours = None if report is None else report.charged_hours
         out.append({
             'request_id': r.id,
             'organisation_id': r.organisation_id,
             'organisation': r.organisation.name,
             'title': r.title,
-            'hours': r.quote_hours,
+            'hours': hours,
+            # Shown beside it so the owner can see the two and notice a surprise. The QUOTE is
+            # still worth reading — it is what the organisation agreed to — it is simply not what
+            # is billed.
+            'quoted_hours': r.quote_hours,
+            'actual_hours': None if report is None else report.actual_hours,
+            # ⚠ The reason a row cannot be recorded, so the screen says WHY rather than hiding it.
+            'blocked': None if hours is not None else 'no_actual_reported',
             # Prefilled for the screen's "record these hours" action, so the tag that makes the
             # request countable as billed is written by the code, not typed by a human.
             'module': f'{tag} {r.title}'[:200],
@@ -121,6 +135,121 @@ def unbilled_request_hours(organisation=None):
             'worked_basis': worked_basis,
         })
     return out
+
+
+def closing_report(req):
+    """The latest approved, un-superseded analysis that states what the work ACTUALLY took.
+
+    ⚠ **THIS IS THE DOCUMENT THE ORGANISATION WAS SENT**, so it is the only honest source for a
+    bill. Returns the analysis, or None when no closing figure has been recorded yet — and None
+    must REFUSE an invoice, never fall back to the quote. Falling back is precisely the defect:
+    on 2026-10-29 the owner audited all sixteen billed requests and found five billed on their
+    PLAN while the closing report published a different number to the customer.
+
+    "Latest" is by `(approved_at, id)`, the same ordering `_hours_bearing_analysis` uses, so the
+    two cannot disagree about which report is the final one.
+    """
+    rows = [a for a in req.analyses.all()
+            if a.approved_at and not a.superseded_at and a.charged_hours is not None]
+    if not rows:
+        return None
+    return max(rows, key=lambda a: (a.approved_at, a.id))
+
+
+def billable_hours(req):
+    """What this request puts on an invoice: ``Decimal`` hours, or None when nothing is reported.
+
+    ⚠ **NEVER `quote_hours`.** The quote is the plan and the plan is not what happened. Request 10
+    was quoted 15.0, re-scoped downward and spent 11.5 — and billed 15.0. Request 14's closing
+    report said *"none of it is charged"* and it was billed 2.0.
+
+    ⚠ **0.0 IS A REAL ANSWER AND IS NOT None.** It means the work was done and deliberately not
+    charged, which a caller must be able to tell apart from "nobody has said yet".
+    """
+    report = closing_report(req)
+    return None if report is None else report.charged_hours
+
+
+#: The most hours one request may claim. A sanity ceiling, the same one `org_requests._MAX_HOURS`
+#: uses on a quote — held separately only because importing it would make this leaf depend on the
+#: module that imports it.
+_MAX_REPORTED_HOURS = 100000
+
+
+def _clean_reported_hours(value, code):
+    """Hours as a Decimal to one place, or raise. ⚠ **0.0 IS VALID HERE** and is the whole point.
+
+    `org_requests._clean_hours` refuses zero, correctly: a QUOTE of nothing is meaningless. A
+    REPORT of nothing is not — request 14's closing report said *"none of it is charged"*, and 0.0
+    is exactly how that is written down. Reusing the quote cleaner would have refused the very
+    figure this sprint exists to record, so this is a separate function on purpose.
+    """
+    from decimal import Decimal, InvalidOperation
+
+    from .org_requests import OrgRequestError
+
+    try:
+        hours = Decimal(str(value)).quantize(Decimal('0.1'))
+    except (InvalidOperation, ValueError, TypeError):
+        raise OrgRequestError(code)
+    if hours < 0 or hours > _MAX_REPORTED_HOURS:
+        raise OrgRequestError(code)
+    return hours
+
+
+def record_hours(analysis, admin, *, actual_hours, charged_hours=None, charge_note=''):
+    """Write down what the work ACTUALLY took and what we will charge for it (super only).
+
+    ⚠ **THIS IS A TRANSCRIPTION, NOT A DECISION.** The figures already exist — they were published
+    to the organisation in the closing report, in prose. The owner is copying them into columns so
+    the invoice can read them. **Nothing here parses the prose**, and nothing should: on 2026-10-29
+    five of sixteen billed requests were wrong precisely because a machine was left to infer the
+    number, and a guess that lands on an invoice is worse than a blank that refuses one.
+
+    ⚠ **THE ANALYSIS MUST BE APPROVED.** An unapproved draft was never sent, so its figures were
+    never communicated, so they are not the authority (owner, 2026-10-29: *"What matters is, what
+    was communicated back to the requester."*). A superseded one is refused for the same reason.
+
+    `charged_hours` defaults to `actual_hours`, which is the ordinary case. They may differ in
+    EITHER direction and both are real:
+      * charged < actual — we absorbed the overrun (request 14: five hours spent, nothing charged);
+      * charged > actual — the organisation accepted the extra (request 38).
+    ⚠ **A DIFFERENCE REQUIRES `charge_note`.** An unexplained write-off is money moved with no
+    reason on the record, which is the same defect `OrgBuildHours.basis` exists to prevent.
+
+    ⚠ **EDITING AFTER THE MONTH IS BILLED IS ALLOWED, AND CHANGES NO INVOICE.** `InvoiceLine` rows
+    are frozen snapshots, so a figure corrected today cannot rewrite a document already sent — that
+    is what `OrgBillingCorrection` is for. This has to be allowed, because the five figures the
+    owner audited belong to requests that are ALREADY billed; refusing the edit would mean the
+    record could never be made right at all.
+    """
+    from . import org_requests
+    from .org_requests import OrgRequestError
+
+    if not org_requests._is_super(admin):
+        raise OrgRequestError('forbidden')
+    if not analysis.approved_at:
+        raise OrgRequestError('analysis_not_approved')
+    if analysis.superseded_at:
+        raise OrgRequestError('analysis_superseded')
+
+    actual = _clean_reported_hours(actual_hours, 'bad_actual_hours')
+    charged = (actual if charged_hours in (None, '')
+               else _clean_reported_hours(charged_hours, 'bad_charged_hours'))
+    note = (charge_note or '').strip()
+    if charged != actual and not note:
+        raise OrgRequestError('charge_note_required')
+    if len(note) > org_requests.COMMENT_MAX_CHARS:
+        raise OrgRequestError('charge_note_too_long')
+
+    analysis.actual_hours = actual
+    analysis.charged_hours = charged
+    # Blank means "no note", stored as NULL rather than '' so the column reads the same way the
+    # other two do: absent, not empty.
+    analysis.charge_note = note or None
+    # `updated_at` is `auto_now`, so NAMING it is what makes it move — it is not assigned above.
+    analysis.save(update_fields=['actual_hours', 'charged_hours', 'charge_note', 'updated_at'])
+    return analysis
 
 
 def worked_date(request):

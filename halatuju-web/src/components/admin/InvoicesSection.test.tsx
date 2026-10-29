@@ -26,7 +26,7 @@ function inv(over: Partial<api.InvoiceRow> = {}): api.InvoiceRow {
     id: 7, number: 'INV-2026-0003', organisation_id: 1, organisation: 'BrightPath',
     period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued',
     currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
-    discount_reason: '', total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
+    discount_reason: '', corrections_myr: null, corrections: [], total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BrightPath Bursary',
     lines: [{ position: 1, category: 'development', description: 'Payments module', quantity: '10.0',
       unit_amount_myr: '57.50', amount_myr: '575.00' }],
@@ -125,6 +125,64 @@ describe('grouped development lines (owner, 2026-10-29)', () => {
     const cell = within(container).getAllByText('Payments module')[0]
     expect(cell.className).not.toContain('pl-6')
     expect(cell.closest('tr')!.querySelectorAll('td')[3].textContent).toContain('575.00')
+  })
+})
+
+describe('a correction of an earlier month (owner, 2026-10-29)', () => {
+  /** *"When we have overcharged or undercharged, this should be deducted or added (or written
+   *  off) in the following month."* The sent invoice is never edited; the money travels forward
+   *  as its own line, carrying the reason — so the tenant reads what we got wrong. */
+  const open = async (over: Partial<api.InvoiceRow>) => {
+    mockApi.getInvoices.mockResolvedValue({ invoices: [inv(over)] })
+    const { container } = render(<InvoicesSection token="tok" isSuper={false} t={t} />)
+    await waitFor(() => within(container).getAllByText('INV-2026-0003'))
+    fireEvent.click(within(container).getAllByText('INV-2026-0003')[0])
+    await waitFor(() => within(container).getAllByTestId('detail-7'))
+    // ⚠ The FIRST detail panel, not the whole container: the section renders the row in more than
+    // one place, so a container-wide match counts every correction twice.
+    return within(container).getAllByTestId('detail-7')[0] as HTMLElement
+  }
+
+  it('prints a credit with a minus, its reason, and the invoice it puts right', async () => {
+    const detail = await open({
+      corrections_myr: '-126.50', total_myr: '730.25',
+      corrections: [{ amount_myr: '-126.50', corrects_invoice: 'INV-2026-0001',
+        reason: 'Requests 10 and 14: billed the plan, not the hours we reported' }],
+    })
+    const row = within(detail)
+      .getByText('admin.billing.invoice.correctionCredit').closest('tr')!
+    expect(row.textContent).toContain('INV-2026-0001')
+    expect(row.textContent).toContain('Requests 10 and 14')
+    // ⚠ The minus is drawn by the screen and the amount is UNSIGNED — never "−RM-126.50".
+    expect(row.querySelectorAll('td')[1].textContent).toBe('−RM126.50')
+  })
+
+  it('prints an under-charge as a charge, with no minus', async () => {
+    const detail = await open({
+      corrections_myr: '40.00', total_myr: '896.75',
+      corrections: [{ amount_myr: '40.00', corrects_invoice: '', reason: 'July: two hours missed' }],
+    })
+    const row = within(detail)
+      .getByText('admin.billing.invoice.correctionCharge').closest('tr')!
+    expect(row.querySelectorAll('td')[1].textContent).toBe('RM40.00')
+  })
+
+  it('keeps each correction on its own line rather than netting them', async () => {
+    const detail = await open({
+      corrections_myr: '-149.50', total_myr: '707.25',
+      corrections: [
+        { amount_myr: '-126.50', corrects_invoice: '', reason: 'request 10' },
+        { amount_myr: '-23.00', corrects_invoice: '', reason: 'request 14' },
+      ],
+    })
+    expect(within(detail).getAllByText('admin.billing.invoice.correctionCredit'))
+      .toHaveLength(2)
+  })
+
+  it('a month with no correction prints no correction line at all', async () => {
+    const detail = await open({})
+    expect(within(detail).queryByText('admin.billing.invoice.correctionCredit')).toBeNull()
+    expect(within(detail).queryByText('admin.billing.invoice.correctionCharge')).toBeNull()
   })
 })
 

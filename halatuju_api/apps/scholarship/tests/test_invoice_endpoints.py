@@ -131,6 +131,27 @@ class TestWhatATenantSees(_Doors):
         self.assertEqual(row['receipts'][0]['amount_myr'], '10.00')
         self.assertEqual(row['status'], 'part_paid')
 
+    def test_the_tenant_reads_the_correction_and_its_reason(self):
+        """A tenant credited for an earlier month's mistake is entitled to read why, in the words
+        we wrote — and from the FROZEN snapshot, so the row can never be edited under them."""
+        from apps.scholarship.models import OrgBillingCorrection
+
+        OrgBillingCorrection.objects.create(
+            organisation=self.org, period_month='2026-08', amount_myr=Decimal('-126.50'),
+            reason='Requests 10 and 14: billed the plan, not the hours we reported')
+        invoicing.send_invoice(self.issued())
+        row = self.client_for('oa-a').get(f'{BASE}/invoices/').json()['invoices'][0]
+        self.assertEqual(row['corrections_myr'], '-126.50')
+        self.assertEqual(row['corrections'][0]['reason'],
+                         'Requests 10 and 14: billed the plan, not the hours we reported')
+        self.assertEqual(row['total_myr'], '730.25')
+
+    def test_a_month_with_no_correction_says_so_with_a_blank_not_a_zero(self):
+        invoicing.send_invoice(self.issued())
+        row = self.client_for('oa-a').get(f'{BASE}/invoices/').json()['invoices'][0]
+        self.assertIsNone(row['corrections_myr'])
+        self.assertEqual(row['corrections'], [])
+
     def test_a_sent_invoice_that_is_later_voided_still_shows_as_void(self):
         """The tenant was told about it, so the tenant is told it was withdrawn."""
         inv = self.sent()

@@ -22,7 +22,7 @@ function inv(over: Partial<InvoiceRow> = {}): InvoiceRow {
     id: 7, number: 'INV-2026-0003', organisation_id: 1, organisation: 'BrightPath',
     period_month: '2026-09', issued_on: '2026-10-15', due_on: '2026-11-14', status: 'sent',
     currency: 'MYR', subtotal_myr: '179.89', discount_pct: '0.00', discount_myr: '0.00',
-    discount_reason: '', total_myr: '179.89', amount_paid_myr: '0.00', balance_myr: '179.89',
+    discount_reason: '', corrections_myr: null, corrections: [], total_myr: '179.89', amount_paid_myr: '0.00', balance_myr: '179.89',
     sent_at: '2026-10-15T02:00:00Z', voided_at: null, void_reason: '', bill_to_name: 'BP',
     lines: [], receipts: [], payment_declarations: [],
     ...over,

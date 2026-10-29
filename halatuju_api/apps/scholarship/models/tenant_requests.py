@@ -337,6 +337,46 @@ class OrgRequestAnalysis(models.Model):
     body = models.TextField()
     # OWNER-ONLY. See the class docstring before exposing this anywhere.
     estimated_hours = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    # ── What it ACTUALLY took, and what we actually charge for it (2026-10-29) ──
+    # ⚠ **THE INVOICE READS `charged_hours`, AND NOTHING ELSE.** Before these two columns the
+    # closing report published the real figure as PROSE — "Planned: 7 hours. Actual: about 4" —
+    # while billing silently fell back to `OrgRequest.quote_hours`, the PLAN. The owner's audit of
+    # all sixteen billed requests on 2026-10-29 found five wrong: #10 billed 15.0 against 11.5
+    # spent, #14 billed 2.0 after we wrote *"none of it is charged"*, #28/#30/#31 still to be
+    # invoiced. Owner: *"It is not what is calculated internally. What matters is what was
+    # communicated back to the requester."*
+    #
+    # ⚠ TWO NUMBERS, BECAUSE THEY ARE TWO FACTS. `actual_hours` is what it took, which the
+    # organisation is told for transparency; `charged_hours` is what reaches the bill. They are
+    # normally equal, and `charged_hours = 0` is how request 14's "none of it is charged" is
+    # SAID — a write-off that is visible and auditable rather than a figure quietly absent.
+    #
+    # ⚠ The owner types these; nothing parses the prose (owner, 2026-10-29). A number the system
+    # guessed from a sentence is a number nobody can be held to.
+    #
+    # ⚠ `charged_hours` MAY EXCEED the accepted quote, and that is deliberate: #28 was quoted 2.5
+    # and took 5.0, and the 5.0 is what BrightPath was told. `consent_gaps` still guards the
+    # separate question of whether the work was agreed to at all.
+    actual_hours = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text='Hours actually spent, as reported to the organisation in the closing report. '
+                  'NULL = not reported yet, which REFUSES the invoice rather than billing the quote.')
+    charged_hours = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text='Hours that reach the invoice. Normally equals actual_hours; 0 means the work '
+                  'was done and deliberately not charged. NULL = not decided yet.')
+    # ⚠ NULLABLE, like `InvoiceReceipt.emailed_to`, and for the same mechanical reason — today's
+    # lesson, now known to be broader than it was written. A column added to an EXISTING table
+    # cannot be rendered offline for Postgres if it is NOT NULL: with a Python default Django
+    # adapts that default through the live driver to backfill, and with `db_default` it composes
+    # the literal through a real cursor (`operations.compose_sql` → `mogrify`). Both want a server
+    # the offline renderer does not have, and migrate-first depends on that renderer because
+    # `sqlmigrate` emits SQLite here. NULL and '' mean the same thing to every reader below, which
+    # all go through `(... or '')`.
+    charge_note = models.TextField(
+        null=True, blank=True, default=None,
+        help_text='Why charged_hours differs from actual_hours. Expected whenever they differ — a '
+                  'write-off nobody can explain later is not auditable (OrgBuildHours.basis rule).')
     # OWNER-ONLY. Repo-relative paths, validated to EXIST at record time by the command that
     # writes them — an unchecked citation is decoration, not evidence.
     cited_files = models.JSONField(default=list, blank=True)

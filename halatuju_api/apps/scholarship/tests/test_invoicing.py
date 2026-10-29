@@ -23,7 +23,7 @@ from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import invoice_pdf, invoicing, platform_cost
 from apps.scholarship.models import (
     BillingRate, BillingSequence, Invoice, InvoiceIssuer, InvoiceLine, OrgBillingAdjustment,
-    OrgBillingDetails, OrgBuildHours, PlatformCost,
+    OrgBillingCorrection, OrgBillingDetails, OrgBuildHours, PlatformCost,
 )
 from apps.scholarship.tests import factories
 
@@ -209,6 +209,30 @@ class TestReadiness(InvoiceWorld):
         self.assertEqual(len(unbilled), 1)
         # Only the request worked IN August counts against August.
         self.assertIn('1 finished request', unbilled[0]['message'])
+
+    def test_a_finished_request_with_no_published_actual_REFUSES_the_month(self):
+        """⚠ ABSOLUTE, and the reason this check exists at all (owner, 2026-10-29).
+
+        A row with no closing figure carries `hours=None`. Billing used to fall back to
+        `quote_hours` — the PLAN — and five of sixteen billed requests were wrong because of it.
+        There IS a remedy (record the actual), so "issue it anyway" must not be on offer.
+        """
+        row = {'request_id': 30, 'title': 'Bulk invite', 'organisation_id': self.org.id,
+               'hours': None, 'worked_month': '2026-08'}
+        with mock.patch.object(platform_cost, 'unbilled_request_hours', return_value=[row]):
+            problems = invoicing.readiness(self.org, '2026-08', today=SEPT_15)
+        missing = [p for p in problems if p['code'] == 'actual_hours_missing']
+        self.assertEqual(len(missing), 1)
+        self.assertFalse(missing[0]['overridable'])
+        self.assertIn('Bulk invite', missing[0]['message'])
+        # And it is NOT also counted as a warning that could be clicked past.
+        self.assertNotIn('unbilled_hours', [p['code'] for p in problems])
+
+    def test_a_request_worked_in_another_month_does_not_refuse_this_one(self):
+        row = {'request_id': 30, 'title': 'Bulk invite', 'organisation_id': self.org.id,
+               'hours': None, 'worked_month': '2026-09'}
+        with mock.patch.object(platform_cost, 'unbilled_request_hours', return_value=[row]):
+            self.assertEqual(invoicing.readiness(self.org, '2026-08', today=SEPT_15), [])
 
     def test_blank_issuer_details_block_and_name_the_missing_fields(self):
         InvoiceIssuer.objects.update(bank_account_no='', address='')
@@ -423,6 +447,112 @@ class TestIssueMonth(InvoiceWorld):
         self.assertEqual(len(report['skipped']), 1)
 
 
+# ── Corrections of an earlier month ──────────────────────────────────────────
+
+class TestCorrections(InvoiceWorld):
+    """Putting right a month already sent (owner, 2026-10-29).
+
+    *"When we have overcharged or undercharged, this should be deducted or added (or written off)
+    in the following month."* August over-charged BrightPath by 5.5 hours — request 10 billed 15.0
+    against 11.5 spent, request 14 billed 2.0 after we wrote *"none of it is charged"* — which at
+    RM23.00 the billed hour is RM126.50. The sent invoice is never edited; the money travels
+    forward as its own line.
+    """
+
+    def correction(self, amount, *, month='2026-08', reason='August over-charge', **kw):
+        return OrgBillingCorrection.objects.create(
+            organisation=self.org, period_month=month, amount_myr=Decimal(amount),
+            reason=reason, **kw)
+
+    def test_a_credit_reduces_the_total_and_leaves_the_subtotal_alone(self):
+        """The subtotal is THIS month's work and must still read true; the correction sits below."""
+        self.correction('-126.50')
+        inv = self.issue()
+        self.assertEqual(inv.subtotal_myr, Decimal('856.75'))
+        self.assertEqual(inv.corrections_myr, Decimal('-126.50'))
+        self.assertEqual(inv.total_myr, Decimal('730.25'))
+
+    def test_an_under_charge_is_added(self):
+        self.correction('40.00', reason='July under-charge: two hours missed')
+        self.assertEqual(self.issue().total_myr, Decimal('896.75'))
+
+    def test_a_correction_is_NOT_discounted(self):
+        """⚠ THE ORDER IS THE POINT: subtotal -> discount -> corrections.
+
+        A discount is a percentage of this month's work; a correction is a fixed sum putting right
+        an earlier invoice. Discounting it would shrink a refund we already owe — and July's 100%
+        discount would have erased it completely.
+        """
+        OrgBillingAdjustment.objects.create(organisation=self.org, period_month='2026-08',
+                                            discount_pct=Decimal('100'), reason='Pre-launch')
+        self.correction('40.00')
+        inv = self.issue()
+        self.assertEqual(inv.discount_myr, Decimal('856.75'))
+        self.assertEqual(inv.total_myr, Decimal('40.00'))   # NOT 0.00
+
+    def test_each_correction_keeps_its_own_words_on_the_invoice(self):
+        """A single netted figure would be a number nobody can explain six months later."""
+        self.correction('-126.50', reason='August: request 10 billed 15.0 for 11.5 spent')
+        self.correction('-23.00', reason='August: request 14 charged 2.0, we said none')
+        inv = self.issue()
+        self.assertEqual(inv.corrections_myr, Decimal('-149.50'))
+        reasons = [c['reason'] for c in inv.corrections_snapshot]
+        self.assertEqual(len(reasons), 2)
+        self.assertIn('request 10', reasons[0])
+        self.assertIn('request 14', reasons[1])
+
+    def test_the_snapshot_is_FROZEN_so_editing_the_row_cannot_rewrite_a_sent_invoice(self):
+        row = self.correction('-126.50')
+        inv = self.issue()
+        row.amount_myr = Decimal('-999.00')
+        row.reason = 'changed my mind'
+        row.save(update_fields=['amount_myr', 'reason'])
+        inv.refresh_from_db()
+        self.assertEqual(inv.corrections_myr, Decimal('-126.50'))
+        self.assertEqual(inv.total_myr, Decimal('730.25'))
+        self.assertEqual(inv.corrections_snapshot[0]['reason'], 'August over-charge')
+
+    def test_a_correction_names_the_invoice_it_puts_right(self):
+        """Provenance: a reader can walk from the credit back to the bill that was wrong."""
+        wrong = self.issue()
+        invoicing.void_invoice(wrong, reason='Billed the plan, not the actual')
+        self.correction('-126.50', month='2026-09', corrects_invoice=wrong)
+        charge = platform_cost.charge_for(self.org, '2026-09')
+        self.assertEqual(charge['corrections'][0]['corrects_invoice'], wrong.number)
+
+    def test_a_correction_belongs_to_ONE_month_only(self):
+        """`period_month` is the month that CARRIES it, so it cannot be applied twice."""
+        self.correction('-126.50', month='2026-08')
+        self.assertEqual(platform_cost.charge_for(self.org, '2026-07')['corrections_myr'],
+                         Decimal('0.00'))
+        self.assertEqual(platform_cost.charge_for(self.org, '2026-08')['corrections_myr'],
+                         Decimal('-126.50'))
+
+    def test_a_month_with_no_corrections_stores_NULL_not_zero(self):
+        """NULL reads as "none". A stored 0.00 beside an empty list would make the screen print a
+        correction line worth nothing."""
+        inv = self.issue()
+        self.assertIsNone(inv.corrections_myr)
+        self.assertIsNone(inv.corrections_snapshot)
+
+    def test_a_credit_bigger_than_the_month_REFUSES_rather_than_issuing_a_negative_bill(self):
+        """⚠ ABSOLUTE. An invoice asking the tenant to collect money has no process behind it: no
+        receipt could settle it and `status` could never read `paid`. The remedy is to split the
+        correction across months, so refusing is not a dead end."""
+        self.correction('-1000.00')
+        self.assertIn('correction_exceeds_month', self.codes())
+        with self.assertRaises(invoicing.InvoiceRefused):
+            self.issue(override_reason='Issue it anyway')
+        self.assertFalse(Invoice.objects.exists())
+
+    def test_another_tenants_correction_is_not_carried(self):
+        other = PartnerOrganisation.objects.create(code='other-tenant', name='Other Tenant')
+        OrgBillingCorrection.objects.create(
+            organisation=other, period_month='2026-08', amount_myr=Decimal('-500.00'),
+            reason='theirs')
+        self.assertIsNone(self.issue().corrections_myr)
+
+
 # ── Void ─────────────────────────────────────────────────────────────────────
 
 class TestVoid(InvoiceWorld):
@@ -594,6 +724,25 @@ class TestTheDocument(InvoiceWorld):
                                            reference='MBB1', today=SEPT_15)
         self.assertTrue(invoice_pdf.invoice_pdf(inv).startswith(b'%PDF'))
         self.assertTrue(invoice_pdf.receipt_pdf(receipt).startswith(b'%PDF'))
+
+    def test_a_correction_prints_with_its_reason_and_the_invoice_it_puts_right(self):
+        """The tenant must be able to read what we got wrong without having to ask us."""
+        OrgBillingCorrection.objects.create(
+            organisation=self.org, period_month='2026-08', amount_myr=Decimal('-126.50'),
+            reason='Requests 10 and 14: billed the plan, not the hours we reported')
+        html = invoice_pdf.render_invoice_html(self.issue())
+        self.assertIn('Credit for an earlier month', html)
+        self.assertIn('Requests 10 and 14', html)
+        self.assertIn('-RM126.50', html)
+        self.assertIn('RM730.25', html)                      # the total, after the credit
+
+    def test_an_under_charge_prints_as_a_charge_not_a_credit(self):
+        OrgBillingCorrection.objects.create(
+            organisation=self.org, period_month='2026-08', amount_myr=Decimal('40.00'),
+            reason='July: two hours missed')
+        html = invoice_pdf.render_invoice_html(self.issue())
+        self.assertIn('Charge for an earlier month', html)
+        self.assertNotIn('-RM40.00', html)
 
     def test_a_void_invoice_says_so_on_the_document(self):
         inv = invoicing.void_invoice(self.issue(), reason='Hours were for September')

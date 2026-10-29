@@ -122,6 +122,46 @@ class AdminOrgRequestWithdrawAnalysisView(_OrgRequestsBase):
         return Response(self._serialize(admin, req))
 
 
+class AdminOrgRequestHoursView(_OrgRequestsBase):
+    """POST <pk>/analysis/<aid>/hours/ {actual_hours, charged_hours?, charge_note?} —
+    write down what the work ACTUALLY took, and what we charge. Super only.
+
+    The owner audited all sixteen billed requests on 2026-10-29 and found five billed on their
+    PLAN while the closing report had published a different number to BrightPath. This is where
+    the published number becomes a column the invoice can read.
+
+    ⚠ The analysis is reached through `req.analyses`, never the model's top-level manager — the org
+    fence IS the request lookup, so a cross-org id must 404 rather than resolve. (Naming that
+    manager even in prose trips the static fence guard, which scans source text.)
+
+    ⚠ **POSTS NOTHING TO THE REQUESTER.** The figures were already communicated, in the closing
+    report they are being copied from; posting them again would tell the organisation something it
+    has read, as though it were new.
+    """
+
+    def post(self, request, pk, aid):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        analysis = req.analyses.filter(pk=aid).first()   # org-fence: scoped to this request
+        if analysis is None:
+            return self._not_found()
+        from .. import org_requests, request_hours
+        try:
+            request_hours.record_hours(
+                analysis, admin,
+                actual_hours=request.data.get('actual_hours'),
+                charged_hours=request.data.get('charged_hours'),
+                charge_note=request.data.get('charge_note') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
 class AdminOrgRequestTriageView(_OrgRequestsBase):
     """POST triage (submitted → triaged). Super only."""
 

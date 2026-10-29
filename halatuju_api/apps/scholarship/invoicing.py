@@ -188,6 +188,20 @@ def readiness(organisation, period_month, *, today=None):
     for b in charge['blocked']:
         problems.append(_problem('charge_blocked', b['reason'], True))
 
+    # ⚠ ABSOLUTE: a correction may not turn a bill into a demand for money BACK. The owner's rule
+    # is that an over-charge is *"deducted or added (or written off) in the following month"* —
+    # deducted FROM a bill, which presumes a bill to deduct it from. A negative total would be an
+    # invoice asking the tenant to collect, which this platform has no process for: `balance()`
+    # would go negative, no receipt could ever settle it, and `status` could never read `paid`.
+    # The remedy is to split the correction across months, so refusing is not a dead end.
+    if Decimal(charge['charged_myr']) < 0:
+        problems.append(_problem(
+            'correction_exceeds_month',
+            f'The corrections carried into {label} come to '
+            f'RM{Decimal(charge["corrections_myr"]):.2f}, which is more than the month itself is '
+            f'worth (RM{Decimal(charge["subtotal_myr"]) - Decimal(charge["discount_myr"]):.2f}). '
+            f'Split it across months — an invoice cannot owe the tenant money.', False))
+
     # ⚠ ABSOLUTE, not overridable (owner, 2026-10-29): *"Make sure every feature has a quote and
     # acceptance from BrightPath."* A feature is priced work, so one the organisation never agreed
     # to is a charge for something nobody ordered. There IS a remedy — quote it and have it
@@ -202,11 +216,30 @@ def readiness(organisation, period_month, *, today=None):
     unbilled = [u for u in platform_cost.unbilled_request_hours(organisation)
                 if u['worked_month'] == period_month]
     if unbilled:
-        hours = sum((Decimal(u['hours']) for u in unbilled), Decimal('0'))
+        # ⚠ A row with no closing figure carries `hours=None`; it cannot be summed and it must not
+        # be guessed at. It is reported by the ABSOLUTE check below instead, so this warning counts
+        # only what could actually be recorded today.
+        known = [u for u in unbilled if u['hours'] is not None]
+        if known:
+            hours = sum((Decimal(u['hours']) for u in known), Decimal('0'))
+            problems.append(_problem(
+                'unbilled_hours',
+                f'{len(known)} finished request(s) worked in {label} ({hours} hours) are not '
+                f'recorded as billable hours yet.', True))
+
+    # ⚠ ABSOLUTE (owner, 2026-10-29): *"It is not what is calculated internally. What matters is
+    # what was communicated back to the requester."* A finished feature whose closing report never
+    # stated the hours used to fall back to `quote_hours` — the PLAN — and five of the sixteen
+    # billed requests were wrong because of it: #10 billed 15.0 against 11.5 spent, #14 billed 2.0
+    # after we wrote "none of it is charged". There IS a remedy (record the actual on the closing
+    # report), so "bill it anyway on the quote" must not be on offer.
+    no_actual = [u for u in unbilled if u['hours'] is None]
+    for u in no_actual:
         problems.append(_problem(
-            'unbilled_hours',
-            f'{len(unbilled)} finished request(s) worked in {label} ({hours} hours) are not '
-            f'recorded as billable hours yet.', True))
+            'actual_hours_missing',
+            f'Request {u["request_id"]} ("{u["title"][:80]}") was finished in {label} but its '
+            f'closing report does not say how many hours it actually took. Record the actual '
+            f'before billing — the quote is a plan, not what happened.', False))
     return problems
 
 
@@ -418,6 +451,14 @@ def issue_invoice(organisation, period_month, *, issued_by_email='', override_re
                 discount_pct=charge['discount_pct'],
                 discount_myr=charge['discount_myr'],
                 discount_reason=charge['discount_reason'],
+                # ⚠ FROZEN, like the issuer and the bill-to. Editing the `OrgBillingCorrection`
+                # row afterwards must never rewrite an invoice already sent — and `_money` keeps
+                # the amounts as strings so a Decimal cannot reach JSON as a float.
+                corrections_myr=(charge['corrections_myr'] or None),
+                corrections_snapshot=([{'amount_myr': str(c['amount_myr']),
+                                        'reason': c['reason'],
+                                        'corrects_invoice': c['corrects_invoice']}
+                                       for c in charge['corrections']] or None),
                 total_myr=charge['charged_myr'],
                 issuer_snapshot=who.snapshot(),
                 bill_to_snapshot=bill_to.snapshot(),

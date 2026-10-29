@@ -69,6 +69,15 @@ def _invoice_payload(inv, *, for_super):
         'discount_pct': _invoice_money(inv.discount_pct),
         'discount_myr': _invoice_money(inv.discount_myr),
         'discount_reason': inv.discount_reason,
+        # ⚠ FROZEN, and read from the SNAPSHOT, never from the live correction rows. A document
+        # already sent must keep saying what it said. Both audiences get it: a tenant charged for
+        # an earlier month's mistake is entitled to read why, in the same words we wrote.
+        'corrections_myr': _invoice_money(inv.corrections_myr),
+        'corrections': [{
+            'amount_myr': str(c.get('amount_myr') or '0.00'),
+            'reason': str(c.get('reason') or ''),
+            'corrects_invoice': str(c.get('corrects_invoice') or ''),
+        } for c in (inv.corrections_snapshot or [])],
         'total_myr': _invoice_money(inv.total_myr),
         'amount_paid_myr': _invoice_money(inv.amount_paid()),
         'balance_myr': _invoice_money(inv.balance()),

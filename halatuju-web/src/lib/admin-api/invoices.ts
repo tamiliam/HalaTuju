@@ -35,6 +35,20 @@ export interface InvoiceLineRow {
   amount_myr: string
 }
 
+/** One correction of an EARLIER month, as it read when this invoice was issued.
+ *
+ * ⚠ The owner's rule, 2026-10-29: *"When we have overcharged or undercharged, this should be
+ * deducted or added (or written off) in the following month."* An invoice already sent is never
+ * rewritten, so a mistake travels forward as its own line — and the reason is printed, because a
+ * tenant charged or credited for an earlier month is entitled to read why. */
+export interface InvoiceCorrectionRow {
+  /** SIGNED. Negative = a credit to the tenant. */
+  amount_myr: string
+  reason: string
+  /** The invoice being put right, by number, or '' when none was named. */
+  corrects_invoice: string
+}
+
 export interface InvoiceReceiptRow {
   id: number
   number: string
@@ -83,6 +97,12 @@ export interface InvoiceRow {
   discount_pct: string
   discount_myr: string
   discount_reason: string
+  /** SIGNED total of the corrections this invoice carries. Negative means the tenant owes less.
+   *  null = none; a stored 0.00 beside an empty list would print a line worth nothing. */
+  corrections_myr: string | null
+  /** FROZEN at issue, so a document already sent keeps saying what it said. One entry per
+   *  correction, each with its own words — a netted figure is a number nobody can explain. */
+  corrections: InvoiceCorrectionRow[]
   total_myr: string
   amount_paid_myr: string
   balance_myr: string

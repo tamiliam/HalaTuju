@@ -2,7 +2,7 @@ import {
   canDeclarePayment, canRecordPayment, canSend, canVoid, dayFirstFromIso, defaultIssueDate,
   formatDay, isoFromDayFirst, issuableMonths, issueDateProblem, issueMode,
   lastRejectedDeclaration, lineRequest, openDeclaration,
-  orderedInvoices, settingsHref, shiftMonth,
+  orderedInvoices, settingsHref, shiftMonth, splitSignedMoney,
   orderedProblems, splitEmails, statusChip, todayIso,
 } from '@/lib/invoices'
 import type { InvoiceProblem, InvoiceRow } from '@/lib/admin-api'
@@ -12,7 +12,7 @@ function inv(over: Partial<InvoiceRow> = {}): InvoiceRow {
     id: 1, number: 'INV-2026-0001', organisation_id: 1, organisation: 'BrightPath',
     period_month: '2026-08', issued_on: '2026-09-15', due_on: '2026-10-15', status: 'issued',
     currency: 'MYR', subtotal_myr: '856.75', discount_pct: '0.00', discount_myr: '0.00',
-    discount_reason: '', total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
+    discount_reason: '', corrections_myr: null, corrections: [], total_myr: '856.75', amount_paid_myr: '0.00', balance_myr: '856.75',
     sent_at: null, voided_at: null, void_reason: '', bill_to_name: 'BP', lines: [], receipts: [],
     payment_declarations: [],
     ...over,
@@ -386,5 +386,26 @@ describe('payment declarations (2026-10-29)', () => {
     expect(lastRejectedDeclaration(inv({ ...sent, payment_declarations: [confirmed, rejected] })))
       .toBeUndefined()
     expect(lastRejectedDeclaration(inv())).toBeUndefined()
+  })
+})
+
+describe('splitSignedMoney', () => {
+  // ⚠ WHY THIS EXISTS AS TEXT, not `Math.abs(Number(x))`: money reaches the screen as a STRING
+  // because a float in an invoice payload is how RM30.00 becomes RM30.0. Stripping the sign
+  // through a number would undo that at the very last step.
+  it('splits a credit into a sign and a size, keeping the trailing zero', () => {
+    expect(splitSignedMoney('-126.50')).toEqual({ negative: true, magnitude: '126.50' })
+    expect(splitSignedMoney('126.50')).toEqual({ negative: false, magnitude: '126.50' })
+  })
+
+  it('treats minus zero as not negative, and drops its sign anyway', () => {
+    // "−RM0.00" says nothing; "RM-0.00" says less.
+    expect(splitSignedMoney('-0.00')).toEqual({ negative: false, magnitude: '0.00' })
+  })
+
+  it('hands an unreadable value back untouched so the formatter shows its own dash', () => {
+    expect(splitSignedMoney('')).toEqual({ negative: false, magnitude: '' })
+    expect(splitSignedMoney(null)).toEqual({ negative: false, magnitude: '' })
+    expect(splitSignedMoney('abc')).toEqual({ negative: false, magnitude: 'abc' })
   })
 })

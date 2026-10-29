@@ -143,7 +143,8 @@ export type {
 export {
   getOrgRequests, getOrgRequest, getOrgRequestCount, createOrgRequest, answerOrgRequest,
   askOrgRequest, commentOrgRequest, recordOrgRequestAnalysis, approveOrgRequestAnalysis,
-  withdrawOrgRequestAnalysis, approveOrgRequest, deferOrgRequest, modifyOrgRequest,
+  withdrawOrgRequestAnalysis, recordOrgRequestHours,
+  approveOrgRequest, deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, deleteOrgRequestAttachment, uploadOrgRequestAttachment,
 } from './admin-api/requests'
@@ -158,7 +159,6 @@ export type {
   BillingBlockedLine, BillingUnconverted, PlatformCostBlock, BillingChargeLine, BillingCharge,
   UnbilledRequest, BillingCostsPayload,
 } from './admin-api/billing'
-
 // Tenant invoices, receipts, build hours, and the two settings that feed an invoice: who is
 // BILLING (platform-wide, Platform -> Billing) and who is BILLED (per organisation, that
 // organisation's own settings). They were one call until 2026-10-28.
@@ -170,7 +170,7 @@ export {
 } from './admin-api/invoices'
 export type {
   InvoiceStatus, InvoiceLineRow, InvoiceReceiptRow, InvoiceRow, InvoiceProblem, InvoiceReadiness,
-  InvoicePaymentDeclarationRow,
+  InvoicePaymentDeclarationRow, InvoiceCorrectionRow,
   InvoicesPayload, InvoiceIssuerSettings, InvoiceIssuerPayload, TenantBillingDetails,
   BillingRateRow,
 } from './admin-api/invoices'

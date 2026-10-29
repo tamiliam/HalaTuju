@@ -66,6 +66,18 @@ export interface OrgRequestAnalysis {
   id: number
   body: string
   estimated_hours: string | null
+  /** ⚠ WHAT THE WORK ACTUALLY TOOK, as PUBLISHED to the organisation in this closing report, and
+   *  what we charge for it. Typed by the owner — nothing parses the prose. `charged_hours` is what
+   *  reaches the invoice; '0.0' means the work was done and deliberately not charged, which is a
+   *  real answer and not the same as null ("nobody has said yet"). Owner-only, like the estimate.
+   *
+   *  ⚠ A NULL `charged_hours` REFUSES the month's invoice rather than billing the quote. That was
+   *  the defect found on 2026-10-29: five of sixteen billed requests were charged on their plan. */
+  actual_hours: string | null
+  charged_hours: string | null
+  /** Why the two differ — expected whenever they do. An unexplained write-off is money moved with
+   *  no reason on the record. */
+  charge_note: string
   cited_files: string[]
   authored_by: string
   repo_sha: string
@@ -233,6 +245,24 @@ export async function withdrawOrgRequestAnalysis(
 ): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/${analysisId}/withdraw/`,
                      'POST', {}, options)
+}
+/** Record what the work ACTUALLY took, and what we charge for it. Super-only; posts nothing.
+ *
+ * ⚠ A TRANSCRIPTION, not a decision: the figures were already published to the organisation in
+ * this closing report's prose, and this copies them into columns the invoice can read. Billing
+ * REFUSES a month whose finished requests have no `charged_hours`, rather than falling back to
+ * the quote — which is what charged request 10 for 15.0 hours against 11.5 spent.
+ *
+ * `charged_hours` defaults server-side to `actual_hours`. Where they differ — in EITHER direction
+ * — `charge_note` is required.
+ */
+export async function recordOrgRequestHours(
+  id: number, analysisId: number,
+  data: { actual_hours: string; charged_hours?: string; charge_note?: string },
+  options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/${analysisId}/hours/`,
+                     'POST', data, options)
 }
 export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)

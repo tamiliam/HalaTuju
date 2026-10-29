@@ -36,6 +36,25 @@ class Invoice(models.Model):
     discount_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount_myr = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount_reason = models.TextField(blank=True, default='')
+    # ── Corrections of EARLIER months, frozen here the way the discount is ──
+    # ⚠ FIELDS, NOT LINES, and deliberately so. `build_lines` proves the lines add up to the
+    # SUBTOTAL; a correction belongs AFTER the discount, so putting it among the lines would break
+    # that check or quietly change what it means. The discount already works exactly this way.
+    # The month reads: subtotal -> discount -> corrections -> total.
+    #
+    # ⚠ NULLABLE for the same mechanical reason as `InvoiceReceipt.emailed_to`: a NOT NULL column
+    # added to an EXISTING table cannot be rendered offline for Postgres (Django adapts the
+    # default through the live driver, or composes a `db_default` literal through a real cursor),
+    # and migrate-first depends on that offline render. NULL reads as "none", through `or`.
+    corrections_myr = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='SIGNED total of the corrections carried onto this invoice. Negative reduces '
+                  'what is owed. NULL = none.')
+    corrections_snapshot = models.JSONField(
+        null=True, blank=True, default=None,
+        help_text='The corrections as they read WHEN ISSUED — amount, reason, which invoice they '
+                  'put right. Frozen like issuer_snapshot: editing the source row later must '
+                  'never rewrite a document already sent.')
     total_myr = models.DecimalField(max_digits=12, decimal_places=2)
     issuer_snapshot = models.JSONField(default=dict)
     bill_to_snapshot = models.JSONField(default=dict)
@@ -253,3 +272,70 @@ class InvoicePaymentDeclaration(models.Model):
     def __str__(self):
         state = 'open' if self.is_open else ('confirmed' if self.confirmed_at else 'rejected')
         return f'declaration for {self.invoice_id} on {self.paid_on} ({state})'
+
+
+class OrgBillingCorrection(models.Model):
+    """A fixed ringgit amount putting right an EARLIER month, carried onto a later invoice.
+
+    ⚠ **THE OWNER'S RULE, 2026-10-29:** *"When we have overcharged or undercharged, this should be
+    deducted or added (or written off) in the following month."* An invoice already sent is never
+    rewritten — that is `Invoice`'s whole design — so a mistake travels forward as its own line
+    with its own words, and the customer can read what happened.
+
+    The first one is why this exists. August's INV-2026-0002 billed request 10 at its 15.0-hour
+    QUOTE against 11.5 hours actually spent, and billed request 14 at 2.0 hours after its closing
+    report told BrightPath *"none of it is charged"* — 5.5 hours at RM23.00, RM126.50 too much,
+    on a document already in their inbox.
+
+    ⚠ **SEPARATE FROM `OrgBillingAdjustment`, and the difference is grain AND meaning.** That one
+    is a PERCENTAGE off one month, agreed in advance as a commercial term. This is a SIGNED
+    AMOUNT fixing a named past invoice, decided afterwards because something was wrong. Folding
+    them together would make a discount and an apology indistinguishable in the ledger — the same
+    reasoning that kept a "not billed" boolean out of the discount model.
+
+    ⚠ **SIGNED, and negative is the common case.** Negative reduces what the tenant owes (we
+    over-charged); positive increases it (we under-charged). It is NOT stored as an absolute with
+    a direction flag: two fields that must agree are two fields that can disagree.
+
+    ⚠ It lives HERE, beside `Invoice`, rather than next to the discount in `billing.py` — it names
+    an invoice and rides on one, and `billing.py` is four lines under the 600 standard.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='billing_corrections',
+        help_text='The tenant whose bill is corrected. PROTECT, like the discount: a billing '
+                  'decision must outlive any tidy-up of the organisation record.')
+    period_month = models.CharField(
+        max_length=7,
+        help_text="The month whose invoice CARRIES this correction, 'YYYY-MM' — not the month "
+                  'that was wrong. One live invoice per org per month already makes it apply '
+                  'once; a re-issue after a void correctly applies it again.')
+    amount_myr = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        help_text='SIGNED. Negative = the tenant owes less (we over-charged); positive = more. '
+                  'Decimal, never float — this lands on an invoice.')
+    reason = models.TextField(
+        help_text='REQUIRED, and it is PRINTED ON THE TENANT\'S INVOICE. Name the month, the '
+                  'requests and the arithmetic, so the line answers itself without anyone having '
+                  'to ask us what it was for.')
+    corrects_invoice = models.ForeignKey(
+        Invoice, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='corrected_by',
+        help_text='The invoice being put right, for provenance. SET_NULL so removing an invoice '
+                  'can never delete the record that it was corrected.')
+    set_by_email = models.EmailField(
+        blank=True, default='',
+        help_text='Who decided it. Moving money is a commercial act and needs a name.')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_billing_corrections'
+        ordering = ['-period_month', 'organisation', 'id']
+        indexes = [
+            models.Index(fields=['organisation', 'period_month'],
+                         name='org_billing_corr_org_month_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.period_month} {self.organisation_id}: {self.amount_myr:+}'

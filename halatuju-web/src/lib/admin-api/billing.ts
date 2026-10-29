@@ -182,7 +182,17 @@ export interface UnbilledRequest {
   organisation_id: number
   organisation: string
   title: string
+  /** ⚠ WHAT WOULD BE RECORDED — the hours PUBLISHED to the organisation in the closing report,
+   *  never `quote_hours`. null means no closing figure exists, and `blocked` says so. */
   hours: string | null
+  /** The plan. Shown beside the actual so a surprise is visible; never billed. */
+  quoted_hours: string | null
+  /** What it actually took, as reported. Normally equal to `hours`; it differs when we absorbed
+   *  an overrun or the organisation accepted the extra. */
+  actual_hours: string | null
+  /** Why this row cannot be recorded — 'no_actual_reported' — or null. The screen must offer no
+   *  Record button while it is set: the remedy is to record the actual, not to bill the plan. */
+  blocked: string | null
   /** Prefilled for the "record these hours" action, tag included. */
   module: string
   /** ⚠ WHEN WE WORKED, never when the request was raised (owner, 2026-09-11). On production the

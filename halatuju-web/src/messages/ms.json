@@ -5395,9 +5395,11 @@
       },
       "unbilled": {
         "title": "Kerja siap yang belum dicaj",
-        "sub": "Permintaan bertanda selesai yang mempunyai jam sebut harga. Merekodkannya memfailkan jam itu pada bulan kami BEKERJA, bukan bulan ia dikemukakan.",
+        "sub": "Permintaan bertanda selesai. Merekodkannya memfailkan jam yang kami LAPORKAN dalam laporan penutup pada bulan kami bekerja, bukan bulan ia dikemukakan.",
         "record": "Rekod",
-        "worked": "dikerjakan {date} ({basis}) — masuk {month}"
+        "worked": "dikerjakan {date} ({basis}) — masuk {month}",
+        "noActual": "Jam sebenar belum dilaporkan — rekodkannya dalam laporan penutup dahulu",
+        "quoted": "dirancang {hours}"
       },
       "service": {
         "gemini": "Panggilan AI (Gemini)",
@@ -5528,7 +5530,9 @@
           "badDate": "Masukkan tarikh sebagai DD-MM-YYYY, contohnya 29-10-2026."
         },
         "receiptEmailed": "Diemel {date}",
-        "receiptNotEmailed": "Tidak diemel — hantar PDF secara manual"
+        "receiptNotEmailed": "Tidak diemel — hantar PDF secara manual",
+        "correctionCredit": "Kredit untuk bulan terdahulu",
+        "correctionCharge": "Caj untuk bulan terdahulu"
       },
       "usageTitle": "Penggunaan bulan ini",
       "storageOrgNote": "fail organisasi anda sahaja; imej kursus yang dikongsi tidak termasuk",
@@ -5758,7 +5762,21 @@
         "analysisNextBug": "Pepijat: tiada sebut harga. Selepas diluluskan, nilai permintaan ini, kemudian jadualkan pembaikan.",
         "analysisNextFeature": "Ciri: selepas diluluskan, nilai permintaan ini dan hantar sebut harga. Organisasi kemudian menerima atau menolaknya.",
         "analysisWithdrawConfirm": "Tarik balik draf ini? Ia belum sampai kepada organisasi, dan menarik baliknya hanya bermakna ia tidak boleh diluluskan lagi. Ia kekal dalam rekod sebagai draf yang telah digantikan.",
-        "analysisStale": "Ada perkara baharu dinyatakan pada permintaan ini selepas analisis ini ditulis. Sila semak sama ada ia masih tepat."
+        "analysisStale": "Ada perkara baharu dinyatakan pada permintaan ini selepas analisis ini ditulis. Sila semak sama ada ia masih tepat.",
+        "hoursRecorded": "Mengambil {actual}j · dicaj {charged}j",
+        "hoursMissing": "Jam belum direkodkan — invois bulan ini akan ditolak sehingga ia direkodkan",
+        "hoursRecord": "Rekod jam",
+        "hoursEdit": "Ubah jam",
+        "hoursHelp": "Salin angka daripada laporan penutup di atas. Inilah yang dibaca oleh invois — bukan sebut harga.",
+        "hoursActual": "Jam yang sebenarnya digunakan",
+        "hoursCharged": "Jam yang dicaj",
+        "hoursNote": "Mengapa ia berbeza",
+        "hoursSave": "Simpan jam",
+        "hoursError": {
+          "hoursRequired": "Masukkan jam yang sebenarnya digunakan.",
+          "badHours": "Masukkan jam sebagai nombor, paling banyak satu titik perpuluhan.",
+          "chargeNoteRequired": "Nyatakan mengapa jam yang dicaj berbeza daripada jam digunakan."
+        }
       },
       "error": {
         "bug_is_free": "Laporan pepijat adalah percuma — jadualkannya, bukan disebut harga.",

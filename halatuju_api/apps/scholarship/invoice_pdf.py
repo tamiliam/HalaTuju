@@ -104,6 +104,22 @@ def render_invoice_html(invoice):
         totals.append(
             f'<tr><td class="num muted">Discount ({Decimal(invoice.discount_pct).normalize():f}%)'
             f'{reason}</td><td class="num">-{rm(invoice.discount_myr)}</td></tr>')
+    # ⚠ AFTER the discount, and one row PER correction with its own words. A netted figure would
+    # be a number nobody can explain, and the reason is the whole point of the line: the tenant
+    # must be able to read what we got wrong without having to ask us.
+    for correction in (invoice.corrections_snapshot or []):
+        amount = Decimal(str(correction.get('amount_myr') or '0'))
+        if not amount:
+            continue
+        reason = escape(str(correction.get('reason') or ''))
+        corrects = str(correction.get('corrects_invoice') or '')
+        if corrects:
+            reason = f'{escape(corrects)} — {reason}' if reason else escape(corrects)
+        label = 'Credit for an earlier month' if amount < 0 else 'Charge for an earlier month'
+        note = f'<br/><span class="small muted">{reason}</span>' if reason else ''
+        sign = '-' if amount < 0 else ''
+        totals.append(f'<tr><td class="num muted">{label}{note}</td>'
+                      f'<td class="num">{sign}{rm(abs(amount))}</td></tr>')
     totals.append(f'<tr class="grand"><td class="num">Total due</td>'
                   f'<td class="num">{rm(invoice.total_myr)}</td></tr>')
     paid = invoice.amount_paid()

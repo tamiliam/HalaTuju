@@ -61,6 +61,11 @@ const analysis = (over: Partial<api.OrgRequestAnalysis> = {}): api.OrgRequestAna
   id: 1,
   body: 'It reuses the existing invite engine.',
   estimated_hours: '4.0',
+  // Nothing published yet — which is how every analysis before 2026-10-29 reads, and what makes
+  // the month's invoice refuse rather than bill the plan.
+  actual_hours: null,
+  charged_hours: null,
+  charge_note: '',
   cited_files: ['apps/scholarship/referrals.py'],
   authored_by: 'claude-opus-5',
   repo_sha: 'abcdef0123456789abcdef0123456789abcdef01',

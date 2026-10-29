@@ -171,7 +171,13 @@ class AdminPlatformCostsView(_AdminBase):
             # `worked_month` — so the reader sees everything unbilled and records each against
             # the month we actually worked.
             'unbilled_requests': [{**u,
+                                   # `hours` is WHAT WOULD BE RECORDED — the published actual, not
+                                   # the plan. None means no closing figure exists, and `blocked`
+                                   # says so, so the screen can withhold the Record button rather
+                                   # than offering a number nobody published.
                                    'hours': _money(u['hours']),
+                                   'quoted_hours': _money(u['quoted_hours']),
+                                   'actual_hours': _money(u['actual_hours']),
                                    'worked_on': u['worked_on'].isoformat()}
                                   for u in platform_cost.unbilled_request_hours()],
         }

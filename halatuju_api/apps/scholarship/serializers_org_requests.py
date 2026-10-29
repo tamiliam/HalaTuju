@@ -91,10 +91,16 @@ class OrgRequestOrgSerializer(serializers.Serializer):
       unreliable*: the model has no codebase context, so it quoted 24h for work that was largely
       already built and 8h for a change whose mailer already existed. Publishing an untrustworthy
       number as the justification for a price makes it the figure the real quote must argue against.
-    * ``triaged_kind`` / ``lane`` / ``triage_note`` — **WITHHELD.** The owner's private judgement.
-      They already have two channels that DO reach the org (the ``ask`` thread and the quote note)
-      and used the quote note for exactly this on #3; opening the private note would cost the
-      ability to be blunt and buy nothing.
+    * ``lane`` / ``triage_note`` — **STILL WITHHELD.** The owner's private judgement. They already
+      have two channels that DO reach the org (the ``ask`` thread and the quote note) and used the
+      quote note for exactly this on #3; opening the private note would cost the ability to be
+      blunt and buy nothing.
+    * ``triaged_kind`` — **NO LONGER WITHHELD, and no longer a separate key** (owner, 2026-10-29).
+      It is resolved INTO ``kind``, so the organisation sees one word: the final classification.
+      Billing arrived on 2026-09-14 and turned that tag into a price — a feature is charged and a
+      bug is not — so it stopped being a private judgement and became a commercial fact the payer
+      is entitled to. See ``get_kind`` for the whole reasoning and for why it replaces ``kind``
+      rather than joining it.
 
     ⚠ **``ai_draft_note`` is free-form model prose, so it MAY state an hours figure even though
     ``ai_draft_hours`` is withheld.** Accepted knowingly: the owner sets the final quote regardless,
@@ -108,7 +114,10 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     Input is an ``OrgRequest``.
     """
     id = serializers.IntegerField()
-    kind = serializers.CharField()
+    # ⚠ THE FINAL CLASSIFICATION, NOT THE ONE THEY FILED (owner, 2026-10-29). Read through the
+    # same `org_requests._effective_kind` that gates quoting, so the price and the label can never
+    # come from two different answers. See `get_kind`.
+    kind = serializers.SerializerMethodField()
     title = serializers.CharField()
     description = serializers.CharField()
     # Optional Bugzilla-style scoping (Sprint 15 increment) — org-SUBMITTED, so org-visible.
@@ -154,6 +163,36 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     # Screenshot attachments (Sprint 15.1) — org-SUBMITTED evidence, so org-visible. Adds ONE key
     # to the exact-key snapshot (19 → 20); still no ai_* / triage key.
     attachments = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        """The FINAL classification, which is what the organisation is entitled to see.
+
+        ⚠ **THIS FIELD DECIDES WHETHER THEY ARE CHARGED, so it cannot be the filed guess.** A
+        feature is billed and a bug is not. The owner read BrightPath's own screen on 2026-10-29
+        and found request 14 — filed a bug, triaged a FEATURE, billed RM46 in August — still
+        reading "Bug report" to them, while the super's screen read "Feature". Same line of code
+        on both pages (`effectiveKind` = `triaged_kind || kind`); only the DATA differed, because
+        this payload withheld the triage. A customer who follows `(REQ-14)` off an invoice must
+        land on something labelled the way it was charged.
+
+        ⚠ **The 2026-07-30 ruling is NARROWED here, not overturned.** It withheld
+        `triaged_kind`, `lane` and `triage_note` as "the owner's private judgement" — sound while
+        triage was internal routing, and billing did not exist until 2026-09-14. `lane` and
+        `triage_note` STAY private for exactly the reason given then: the ability to be blunt in
+        a note that buys the organisation nothing. Only the classification moves, because only
+        the classification sets a price.
+
+        ⚠ **No "filed as X, now Y" is shown, and that is the owner's instruction** (2026-10-29):
+        *"They don't have to see the details of the label change. It should simply say the final
+        label… the details of why would be in the discussion which they could read if they
+        want."* So this REPLACES `kind` rather than adding `triaged_kind` beside it — which also
+        keeps `filedKindDiffers()` false on the org page with no special case, and keeps the
+        allowlist's exact key set unchanged.
+
+        Safe to resolve here because nothing writes back through this payload: `kind` is set once
+        by `create_request` and never edited, and triage writes `triaged_kind` only.
+        """
+        return org_requests._effective_kind(obj)
 
     def get_comments(self, obj):
         # viewer_is_org=True — the ROW filter. An internal comment must never appear here.
@@ -255,6 +294,16 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
                 'id': a.id,
                 'body': a.body,
                 'estimated_hours': str(a.estimated_hours) if a.estimated_hours is not None else None,
+                # WHAT IT ACTUALLY TOOK, and what we charge for it (2026-10-29). Strings, like
+                # every other money-or-hours figure that crosses the wire — a bare Decimal
+                # serialises as a float and a float is not what an invoice is made of.
+                # OWNER-ONLY, like `estimated_hours` beside it: the organisation reads these
+                # numbers in the closing-report PROSE, which is where they were published. A
+                # second machine-readable copy in the org payload would recreate exactly the
+                # "two figures, which one is true?" problem TD-202 removed from the AI.
+                'actual_hours': str(a.actual_hours) if a.actual_hours is not None else None,
+                'charged_hours': str(a.charged_hours) if a.charged_hours is not None else None,
+                'charge_note': a.charge_note or '',
                 'cited_files': list(a.cited_files or []),
                 'authored_by': a.authored_by,
                 'repo_sha': a.repo_sha,
