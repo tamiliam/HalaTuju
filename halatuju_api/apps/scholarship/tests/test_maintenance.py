@@ -1,27 +1,30 @@
 """Post-award lifecycle Sprint 5 — maintenance loop + operational sub-states.
 
-Verifies: sub-states only apply in `maintenance`; valid transitions; `on_hold` BLOCKS a
+Verifies: sub-states only apply IN MAINTENANCE (`maintenance_scope`, student maintenance S1:
+awarded with a live wallet, active, maintenance); valid transitions; `on_hold` BLOCKS a
 tranche release (the money pause); the coarse sponsor `support_status` hides probation;
 and the substate surfaces on the admin + student serializers (not leaking to the sponsor
 card beyond the coarse signal).
+
+Fixtures come from the H5 factory (converted at student maintenance S1, which had to edit this file).
 """
 from django.test import TestCase
 
-from apps.courses.models import StudentProfile
 from apps.scholarship import disbursement as disb
 from apps.scholarship import maintenance
 from apps.scholarship.disbursement import DisbursementError
 from apps.scholarship.maintenance import MaintenanceError
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, SponsorProfile, Consent
+from apps.scholarship.models import SponsorProfile, Consent
+from apps.scholarship.tests.factories import make_application, make_cohort
 
 
 def _cohort():
-    return ScholarshipCohort.objects.create(code='pa', name='B40 Programme', year=2026)
+    return make_cohort()
 
 
 def _app(cohort, status='maintenance', suffix='1'):
-    p = StudentProfile.objects.create(supabase_user_id=f'm-{suffix}')
-    return ScholarshipApplication.objects.create(cohort=cohort, profile=p, status=status)
+    # `suffix` is kept so the call sites read as before; the factory makes every row unique.
+    return make_application(status, cohort=cohort)
 
 
 class TestSubstateGate(TestCase):
@@ -29,11 +32,19 @@ class TestSubstateGate(TestCase):
         self.cohort = _cohort()
 
     def test_set_substate_requires_maintenance(self):
-        for i, st in enumerate(['active', 'recommended', 'awarded', 'closed']):
+        # `awarded` here has no live wallet, so it is not in maintenance yet.
+        for i, st in enumerate(['recommended', 'awarded', 'closed']):
             app = _app(self.cohort, status=st, suffix=f'g{i}')
             with self.assertRaises(MaintenanceError) as ctx:
                 maintenance.set_substate(app, 'probation')
             self.assertEqual(ctx.exception.code, 'not_in_maintenance')
+
+    def test_active_is_in_maintenance_now(self):
+        """Student maintenance S1: `active` is funded by nature, so it takes a sub-state too."""
+        app = _app(self.cohort, status='active', suffix='act')
+        maintenance.set_substate(app, 'probation')
+        app.refresh_from_db()
+        self.assertEqual(app.maintenance_substate, 'probation')
 
     def test_bad_substate_rejected(self):
         app = _app(self.cohort, suffix='bad')
@@ -142,8 +153,11 @@ class TestSerializerSurfaces(TestCase):
     def test_sponsor_card_coarse_only(self):
         from apps.scholarship.serializers import SponsorPoolCardSerializer
         app = _app(self.cohort, status='maintenance', suffix='sc')
-        SponsorProfile.objects.create(application=app, anon_markdown='x', anon_blurb='x', anon_published=True)
-        Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
+        # The factory's funded case already carries its profile + consent (it passed the pool).
+        SponsorProfile.objects.update_or_create(
+            application=app, defaults={'anon_markdown': 'x', 'anon_blurb': 'x', 'anon_published': True})
+        Consent.objects.update_or_create(application=app, consent_type='share_with_sponsors',
+                                         defaults={'version': 'e', 'is_active': True})
         maintenance.set_substate(app, 'probation')
         data = SponsorPoolCardSerializer(app).data
         # The sponsor card carries the coarse support_status (None for probation) and

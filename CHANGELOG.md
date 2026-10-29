@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 1 — one predicate, on hold stops money, the activity log (migration 0183) - 2026-10-29
+
+Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; owner rulings in `docs/decisions.md`
+(2026-10-29). The 65 live funded students are all `awarded` with a live Vircle wallet, and every
+in-programme gate accepted only `active` / `maintenance` — so none of them could record a result, be
+put on hold, or reach the in-programme page. Backend foundation; the status state machine is unchanged.
+
+- **ONE predicate, `maintenance_scope.py`.** In maintenance = `awarded` with `vircle_activated_at`
+  set, OR `active` / `maintenance` (`closure.FUNDED_STATUSES`). `has_file` adds a closed student who
+  was in it (read-only): closed with `active_at`, or with a live wallet AND a post-award-only closure
+  reason. A wallet stamp alone is not trusted on a closed record — `revert_to_pool` keeps it, and a
+  stalled pre-award close must never count (TD-352). Queryset and record forms are proven to agree.
+- **The gates now ask it:** `in_programme._require_in_programme` / `_require_can_thank`,
+  `maintenance._require_maintenance` / `is_on_hold` / `sponsor_support_status` /
+  `ready_to_close_queryset`, `payments._is_on_hold` (now delegates — one definition). `active` is in
+  maintenance too, so an `active` student now takes a sub-state.
+- **On hold stops money, every door:** run creation greys her out (`on_hold`); a hold placed after a
+  run was made takes her item out of every editable run ('On hold' — a signed run reverts to draft and
+  loses its signatures, the D2 house rule); `payments.set_item` refuses to re-include her (`on_hold`);
+  `payments.complete` refuses a run that still pays an on-hold student (`on_hold_in_run`, the approval
+  rolls back); `disbursement.release_tranche` already refused. Lifting the hold re-includes nobody.
+  The payments page maps both new codes (en/ms/ta).
+- **Sponsor-visible:** an on-hold `awarded` student now reads `paused` (support status and portfolio
+  badge); the sponsor progress band is unchanged (owner default).
+- **Who/when for the sub-state:** `maintenance_substate_changed_at` / `_by` (the admin endpoint passes
+  the officer's email).
+- **Activity log foundation:** `StudentActivity` (`student_activity`, RLS + service_role policy) and
+  `activity.py` (`log_event`, `add_entry`). Wired: `substate_changed`, `result_submitted`,
+  `payment_released` (run completion and tranche release), `closed`. Written inside the caller's
+  transaction — the log is part of the record. No endpoints yet (Sprint 2).
+- **Student page:** the in-programme page reads the server's `has_file` / `in_maintenance` instead of
+  deriving it from statuses; the results form shows only in maintenance.
+- **Moves only, first:** the Vircle eWallet ID rules moved verbatim to `vircle_ids.py` (re-exported),
+  so `payments.py` is under 600 lines and leaves the oversize ledger; `test_maintenance.py` converted
+  to the factory.
+- ⚠ **Migrate first, by hand** — scholarship `0183_maintenance_activity_log` (DDL, RLS and ledger row
+  in its docstring). Deploying first is NOT survivable: run approval, tranche release, closure,
+  sub-state changes and results would all roll back without `student_activity`.
+
 ## Matric/Diploma Exact-read M1 - 2026-10-29
 
 Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a

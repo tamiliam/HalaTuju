@@ -82,6 +82,11 @@ export interface ScholarshipApplication {
   closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated' | 'stalled'
   /** When the award became active (funded); null if never. TD-352: a closed case is in-programme only with it. */
   active_at?: string | null
+  /** Student maintenance S1: the SERVER's answer to "in maintenance" (awarded + live wallet, active,
+   *  maintenance — `maintenance_scope.py`). The results form shows only when true. */
+  in_maintenance?: boolean
+  /** In maintenance, or closed after it (read-only). Decides who reaches the in-programme page. */
+  has_file?: boolean
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string

@@ -5810,7 +5810,9 @@
         "not_editable": "This run can no longer be edited.",
         "bad_state": "That action isn't allowed in this run's current state.",
         "not_ready": "The CSV is available once the run is signed.",
-        "finance_check_required": "This run needs its check before it can be approved."
+        "finance_check_required": "This run needs its check before it can be approved.",
+        "on_hold": "This student's support is on hold. Resume it on their file before including them again.",
+        "on_hold_in_run": "A student in this run is on hold. Exclude them, then approve the run again."
       },
       "financeStep": "Checked",
       "financeSign": "Check",

@@ -58,7 +58,7 @@ const errText = (e: unknown, t: (k: string) => string) => {
   const code = (e as { code?: string })?.code
   const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
                  'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready',
-                 'finance_check_required']
+                 'finance_check_required', 'on_hold', 'on_hold_in_run']
   return code && known.includes(code) ? t(`admin.payments.error.${code}`)
     : e instanceof Error ? e.message : t('admin.actionFailed')
 }

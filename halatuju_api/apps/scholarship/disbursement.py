@@ -114,6 +114,12 @@ def release_tranche(disbursement, *, by_email='', reference='mock', note=''):
     disbursement.save(update_fields=[
         'status', 'released_at', 'actioned_by', 'reference', 'note', 'updated_at'])
     _flip_to_maintenance(disbursement.application)
+    # Student maintenance S1: the file's activity log records the money, in this transaction.
+    from . import activity
+    from .models.activity import EVENT_PAYMENT_RELEASED
+    activity.log_event(disbursement.application, EVENT_PAYMENT_RELEASED, actor_email=by_email,
+                       meta={'amount': str(disbursement.amount), 'disbursement_id': disbursement.id,
+                             'reference': disbursement.reference})
     return disbursement
 
 

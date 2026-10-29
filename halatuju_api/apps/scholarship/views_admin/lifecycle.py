@@ -169,14 +169,15 @@ class AdminCloseApplicationView(_AdminBase):
 class AdminMaintenanceSubstateView(_AdminBase):
     """Post-award S5: POST .../applications/<pk>/maintenance/ {substate} — set the
     operational maintenance sub-state (on_track | probation | on_hold | ready_to_close).
-    Reviewer-gated + access-scoped. `on_hold` pauses tranche releases. Returns the
-    refreshed application detail."""
+    Reviewer-gated + access-scoped. `on_hold` stops money (tranches AND payment runs, maintenance
+    S1) and records who moved it. Returns the refreshed application detail."""
     def post(self, request, pk):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         try:
-            maintenance_service.set_substate(app, request.data.get('substate'))
+            maintenance_service.set_substate(app, request.data.get('substate'),
+                                             by_email=admin.email)
         except maintenance_service.MaintenanceError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)

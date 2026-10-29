@@ -97,13 +97,11 @@ export default function InProgrammePage() {
     getMyScholarshipApplications({ token })
       .then(async (res) => {
         if (!active) return
-        // S6: a 'closed' student still reaches this page so they can write a graduation
-        // thank-you (the relay stays open after closure); the results form is hidden when closed.
-        // TD-352: only a closed case that was FUNDED (`active_at`) — a stalled close before any
-        // award has no programme and no sponsor (in_programme._require_can_thank agrees).
-        const sponsored = res.applications.find(
-          (a) => a.status === 'active' || a.status === 'maintenance'
-            || (a.status === 'closed' && !!a.active_at)) ?? null
+        // Student maintenance S1: WHO reaches this page is the server's answer (`has_file`, from
+        // maintenance_scope.py) — in maintenance (awarded with a live wallet, active, maintenance),
+        // or closed after it (read-only: the closed notice + the thank-you relay). Never re-derived
+        // here from statuses. TD-352 holds server-side: a stalled close before any award has no file.
+        const sponsored = res.applications.find((a) => a.has_file) ?? null
         if (!sponsored) { setNotInProgramme(true); setLoading(false); return }
         setApp(sponsored)
         await loadAll(sponsored.id, token)
@@ -202,7 +200,7 @@ export default function InProgrammePage() {
         </div>
 
         {/* S5: a paused (on-hold) student sees a clear, non-alarming notice. */}
-        {app?.status !== 'closed' && app?.maintenance_substate === 'on_hold' && (
+        {app?.in_maintenance && app?.maintenance_substate === 'on_hold' && (
           <div className="rounded-2xl border border-caution-200 bg-caution-50 p-4">
             <p className="text-sm font-medium text-caution-900">{t('scholarship.inProgramme.onHold.title')}</p>
             <p className="mt-1 text-sm text-caution-800">{t('scholarship.inProgramme.onHold.body')}</p>
@@ -252,7 +250,7 @@ export default function InProgrammePage() {
             <p className="mt-3 text-sm text-ground-400">{t('scholarship.inProgramme.results.empty')}</p>
           )}
 
-          {app?.status === 'closed' ? null : !showForm ? (
+          {!app?.in_maintenance ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
               className="mt-3 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}

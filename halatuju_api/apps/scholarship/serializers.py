@@ -707,9 +707,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # before the decision was revealed; no student screen ever read it. Staff read it on
             # the admin serializer.
             'status', 'bucket',
-            # S5: the student's own maintenance sub-state (e.g. on_hold) — only meaningful
-            # while status='maintenance'; lets the in-programme page show "support paused".
-            'maintenance_substate',
+            # S5 sub-state (e.g. on_hold → "support paused") + maintenance S1: the server's own answers
+            # to "in maintenance" / "has a file" (model properties over maintenance_scope.py).
+            'maintenance_substate', 'in_maintenance', 'has_file',
             # S6: closure bucket — lets the in-programme page show the right "programme
             # complete" (graduated/completed) vs neutral closed copy.
             'closure_reason',

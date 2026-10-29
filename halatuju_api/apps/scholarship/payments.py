@@ -36,11 +36,12 @@ from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
-from . import money
+from . import activity, money
 # The Vircle ID rules (D9) moved verbatim to vircle_ids.py (student maintenance S1, 2026-10-29);
 # re-exported so every caller keeps writing `payments.valid_vircle_id` / `payments.vircle_id_error`.
 from .vircle_ids import valid_vircle_id, vircle_id_band, vircle_id_error, vircle_id_prefix
 from .models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
+from .models.activity import EVENT_PAYMENT_RELEASED
 
 logger = logging.getLogger(__name__)
 
@@ -240,8 +241,10 @@ def _schedule_status(row, application, period_month):
 
 
 def _is_on_hold(application):
-    """D4-5: the only break-like signal in the data today — maintenance 'on_hold'."""
-    return application.status == 'maintenance' and application.maintenance_substate == 'on_hold'
+    """D4-5, widened by the owner 2026-10-29 (ON HOLD STOPS MONEY, whatever the status — the paid
+    cohort is `awarded`): `maintenance.is_on_hold`, the ONE definition, never a copy here."""
+    from .maintenance import is_on_hold
+    return is_on_hold(application)
 
 
 def _vircle_confirmation_pending(application):
@@ -470,6 +473,9 @@ def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
     _lock(run)
     if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('not_editable')
+    # On hold stops money (owner 2026-10-29): a maker cannot put a held student back by hand.
+    if included and _is_on_hold(ScholarshipApplication.objects.get(pk=run_item.application_id)):
+        raise PaymentsError('on_hold')
     if run.status != 'draft':
         _revert_to_draft(run)
     fresh = PaymentRunItem.objects.select_for_update().filter(pk=run_item.pk).values(
@@ -519,7 +525,12 @@ def complete(run):
     never from 'awarded'. This mirrors ``disbursement._flip_to_maintenance`` (the same effect the
     ad-hoc release path already had); the payment RUN is the real cohort's first payout, so it must
     carry the same flip. Historically ``complete`` never touched status; that gap left the whole
-    run cohort stuck at 'active' after their first run."""
+    run cohort stuck at 'active' after their first run.
+
+    ON HOLD STOPS MONEY (owner 2026-10-29), the last door: an INCLUDED item whose student is on hold
+    NOW refuses the whole completion (``on_hold_in_run``; ``sign`` rolls back with it, so the run
+    stays signed-but-unpaid and the maker excludes her). Each released item writes one
+    ``payment_released`` activity row, inside this transaction."""
     from . import sheets
     from . import emails
     from .disbursement import _flip_to_maintenance
@@ -531,9 +542,10 @@ def complete(run):
             status='released', reference=f'vircle:{run.reference}'[:100]).exists()):
         raise PaymentsError('already_paid')
 
-    for item in run.items.select_related('application'):
-        if not item.included:
-            continue
+    items = [i for i in run.items.select_related('application') if i.included]
+    if any(_is_on_hold(i.application) for i in items):
+        raise PaymentsError('on_hold_in_run')
+    for item in items:
         app = item.application
         if item.amount and item.amount > 0:
             top = app.disbursements.aggregate(m=Max('sequence'))['m'] or 0
@@ -545,6 +557,8 @@ def complete(run):
             )
             item.disbursement = disb
             item.save(update_fields=['disbursement', 'updated_at'])
+            activity.log_event(app, EVENT_PAYMENT_RELEASED, actor_email=actioned_by, meta={
+                'amount': str(item.amount), 'run': run.reference, 'disbursement_id': disb.id})
             # First real payout → enter the recurring loop (active → maintenance). Idempotent
             # and a no-op from 'awarded'/'maintenance'/'closed' (see _flip_to_maintenance).
             _flip_to_maintenance(app)
