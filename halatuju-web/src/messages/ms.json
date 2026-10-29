@@ -835,7 +835,9 @@
     "subjectReq": "Syarat Subjek",
     "bumiputeraOnly": "Bumiputera Sahaja",
     "otherSubjects": "{grade} atau lebih dalam {count} mata pelajaran lain yang belum dikira",
-    "exceptSubjects": "tidak termasuk"
+    "exceptSubjects": "tidak termasuk",
+    "oneOf": "salah satu daripada:",
+    "orAlternative": "atau"
   },
   "saved": {
     "title": "Kursus Disimpan",

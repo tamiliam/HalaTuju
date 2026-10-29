@@ -250,10 +250,11 @@ function SearchPageInner() {
         setFilters(data.filters)
       }
     } catch {
+      if (bumi !== bumiSeen.current) return
       setCourses([])
       setTotalCount(0)
     } finally {
-      setIsLoading(false)
+      if (bumi === bumiSeen.current) setIsLoading(false)   // a dropped response leaves the newer one loading
     }
   }, [debouncedQuery, level, field, sourceType, state, qualification, aliran, bumi, filters])
 
