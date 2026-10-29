@@ -110,6 +110,10 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    Results overdue filter + "not submitted" standing. 4b also registers the results timing keys (with their
    reader) and stamps `term_index`, after which "latest result" means the latest TERM, not the latest
    submitted (`results_review.latest_accepted`).
+   **Built 2026-10-29 as two commits (one migration, deferred behind Billing's 0187):** part 1 = result terms
+   (`ResultsExpectation`, `results_expectations.py`), "not submitted", Results overdue filter/tile/Next due,
+   hub due date, `results-overdue-flag`; part 2 = `StudentEmailTemplate` + Student communications tab, the
+   due/overdue/queried emails behind `MAINTENANCE_REMINDERS_ENABLED`, `results-due-reminders`.
 5. **Money summary + contract** (~20 files). Admin Money tab: paid to date, remaining, last 3 releases,
    spending by category (spending block needs `spending` permission; finance sees payments only), links to
    `/admin/payments` + `/admin/spending`. Contract tab (admin + student): signed PDF by signed URL, else

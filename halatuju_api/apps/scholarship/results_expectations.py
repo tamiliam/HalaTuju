@@ -150,6 +150,76 @@ def not_submitted(application, today=None):
     return is_overdue(next_due(application), grace, today)
 
 
+def _open_terms(today):
+    """Open terms of students still in maintenance, with what a send needs, oldest due first."""
+    from .maintenance_scope import in_maintenance_q
+    from .models import ScholarshipApplication
+    live = ScholarshipApplication.objects.filter(in_maintenance_q()).values('id')
+    return (ResultsExpectation.objects.filter(satisfied_by__isnull=True, application_id__in=live)
+            .select_related('application__profile', 'application__cohort__owning_organisation',
+                            'application__owning_organisation__configuration')
+            .order_by('due_on', 'id'))
+
+
+def send_due_reminders(today=None, now=None):
+    """The "your result is due by …" reminder: from `results_reminder_lead_days` before the due
+    date until the due date, at most once every `results_reminder_every_days`, and never while a
+    result of hers is waiting for review. Stamps `reminded_at` ONLY when the email went out, so a
+    switched-off or failed send is tried again next run. Returns how many were sent."""
+    from apps.courses import org_config
+    from . import student_comms
+    from .results_review import has_pending
+    if not student_comms.enabled():
+        return 0
+    now = now or timezone.now()
+    today = today or timezone.localdate(now)
+    sent = 0
+    for exp in _open_terms(today).filter(due_on__gte=today):
+        app = exp.application
+        org = app.owning_organisation
+        lead = org_config.value(org, 'results_reminder_lead_days')
+        every = org_config.value(org, 'results_reminder_every_days')
+        if today < exp.due_on - timedelta(days=lead):
+            continue
+        if exp.reminded_at and timezone.localdate(exp.reminded_at) > today - timedelta(days=every):
+            continue
+        if has_pending(app):
+            continue
+        if student_comms.send_student_email(app, 'results_due', due_date=exp.due_on):
+            ResultsExpectation.objects.filter(pk=exp.pk).update(reminded_at=now)
+            sent += 1
+    return sent
+
+
+def flag_overdue(today=None, now=None):
+    """Once a term is past its due date AND the grace: one `results_overdue` line on her file and
+    one email to her. `overdue_flagged_at` is stamped when that happens, so each term is flagged
+    once. With the switch OFF nothing is flagged (the standing and the filter read the dates, not
+    this stamp), so turning it on later still tells every student who is late. Returns the count."""
+    from . import activity, student_comms
+    from .models.activity import EVENT_RESULTS_OVERDUE
+    from .results_review import has_pending
+    if not student_comms.enabled():
+        return 0
+    now = now or timezone.now()
+    today = today or timezone.localdate(now)
+    flagged = 0
+    for exp in _open_terms(today).filter(overdue_flagged_at__isnull=True, due_on__lt=today):
+        app = exp.application
+        _terms, _due, grace = settings_for(app.owning_organisation)
+        if not is_overdue(exp.due_on, grace, today) or has_pending(app):
+            continue
+        with transaction.atomic():
+            if ResultsExpectation.objects.filter(pk=exp.pk, overdue_flagged_at__isnull=True).update(
+                    overdue_flagged_at=now) != 1:
+                continue                                # another run got there first
+            activity.log_event(app, EVENT_RESULTS_OVERDUE, meta={
+                'term_index': exp.term_index, 'due_on': exp.due_on.isoformat()})
+        student_comms.send_student_email(app, 'results_overdue', due_date=exp.due_on)
+        flagged += 1
+    return flagged
+
+
 def ensure_all(today=None):
     """The daily jobs' first step: every in-maintenance student's terms, made and reconciled.
     Returns how many term rows were made."""

@@ -215,12 +215,13 @@ class TestSettings(TestCase):
                 self.assertEqual(ctx.exception.code, 'bad_value')
 
     def test_every_maintenance_key_has_its_reader(self):
-        """M1: a setting arrives with its reader. S4b's three timing keys are read by
-        `results_expectations.settings_for`; the reminder keys arrive with the reminder job."""
+        """M1: a setting arrives with its reader. S4b's timing keys are read by
+        `results_expectations.settings_for`; the two reminder keys by `send_due_reminders`."""
         from apps.courses.org_config_registry import SETTINGS
         self.assertEqual(sorted(k for k, v in SETTINGS.items() if v['group'] == 'maintenance'),
                          ['maintenance_failing_cgpa', 'maintenance_min_cgpa', 'results_due_days_after_term',
-                          'results_overdue_grace_days', 'results_terms_per_year'])
+                          'results_overdue_grace_days', 'results_reminder_every_days',
+                          'results_reminder_lead_days', 'results_terms_per_year'])
 
     def test_the_contract_guard(self):
         """The shipped BrightPath template states no CGPA in its progress standard — the settings

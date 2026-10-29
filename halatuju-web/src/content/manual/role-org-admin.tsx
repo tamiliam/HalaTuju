@@ -37,7 +37,13 @@ export const roleOrgAdmin: ManualChapter = {
         failing CGPA you set under <strong>Organisation &rarr; Settings &rarr; Configuration</strong>) and for
         anything a sponsor sees. A student must upload her slip <strong>here, at the portal</strong>: a result
         without one cannot be sent or accepted, slips sent by email are not accepted, and staff cannot attach
-        one for her &mdash; query her to upload it.</p></>
+        one for her &mdash; query her to upload it.</p>
+        <p className="mt-2">Each student&rsquo;s results are <strong>due</strong> on a schedule counted from the day she
+        was funded (two terms a year by default, due 45 days after a term ends &mdash; all set under Configuration).
+        A result past its due date and the grace shows as <strong>Not submitted</strong>, and the list&rsquo;s
+        <strong> Results overdue</strong> filter finds those students. The emails students receive about their
+        results &mdash; due soon, overdue, and your query &mdash; are worded on <strong>Organisation &rarr; Settings
+        &rarr; Student communications</strong>, in English, Malay and Tamil.</p></>
       ),
     },
     {

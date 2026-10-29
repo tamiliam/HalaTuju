@@ -27,9 +27,11 @@ EVENT_MENTOR_ASSIGNED = 'mentor_assigned'       # Sprint 7 (mentors)
 EVENT_SESSION_LOGGED = 'session_logged'         # Sprint 7 (mentors)
 EVENT_PAYMENT_RELEASED = 'payment_released'     # WIRED: payments.complete, disbursement.release_tranche
 EVENT_CLOSED = 'closed'                         # WIRED: closure.close_application
+EVENT_RESULTS_OVERDUE = 'results_overdue'       # WIRED: results_expectations.flag_overdue (S4b)
 EVENTS = (
     EVENT_SUBSTATE_CHANGED, EVENT_RESULT_SUBMITTED, EVENT_RESULT_REVIEWED, EVENT_LETTER_ISSUED,
     EVENT_MENTOR_ASSIGNED, EVENT_SESSION_LOGGED, EVENT_PAYMENT_RELEASED, EVENT_CLOSED,
+    EVENT_RESULTS_OVERDUE,
 )
 
 

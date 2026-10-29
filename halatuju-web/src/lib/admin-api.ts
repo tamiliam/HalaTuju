@@ -252,6 +252,12 @@ export type {
   OrganisationConfiguration,
 } from './admin-api/orgConfig'
 
+// Organisation → Settings → Student communications (student maintenance S4b).
+export { getStudentEmails, saveStudentEmail } from './admin-api/studentComms'
+export type {
+  StudentEmailKind, StudentEmailLanguage, StudentEmailTemplate, StudentEmailsPayload,
+} from './admin-api/studentComms'
+
 // The organisation's colours: draft, contrast check, publish, revert.
 export {
   getOrganisationTheme, saveOrganisationThemeDraft, discardOrganisationThemeDraft,

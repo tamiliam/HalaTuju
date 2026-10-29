@@ -562,6 +562,16 @@ SETTINGS = {
         'group': 'maintenance', 'unit': 'days', 'min': 0, 'max': 60,
         'default': lambda: 14,
     },
+    # S4b: the "your result is due" reminder (`results_expectations.send_due_reminders`): first sent
+    # this many days before the due date, then every `results_reminder_every_days` until it is due.
+    'results_reminder_lead_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 1, 'max': 60,
+        'default': lambda: 14,
+    },
+    'results_reminder_every_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 1, 'max': 30,
+        'default': lambda: 7,
+    },
 }
 
 # ⚠ THE FOUNDATION SIGNATORY IS NOT HERE, AND MUST NOT BE ADDED. The roadmap's Sprint F line said

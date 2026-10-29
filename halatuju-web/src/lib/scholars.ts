@@ -63,6 +63,8 @@ export function activityText(
     case 'result_reviewed':
       return t(`admin.scholars.event.result_${str(m.new) === 'queried' ? 'queried' : 'accepted'}`,
         { semester: str(m.semester) || '—' })
+    case 'results_overdue':
+      return t('admin.scholars.event.results_overdue', { date: str(m.due_on) || '—' })
     case 'closed':
       return t('admin.scholars.event.closed', {
         reason: m.reason ? t(`admin.closure.reason.${str(m.reason)}`) : '—' })

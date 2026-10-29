@@ -348,6 +348,7 @@ class TestFenceCoverageCompleteness(TestCase):
         # MIRROR, not a subclass, so a stray verb on this route can never touch a colour draft.
         # Payload = the registry's few tunable numbers for ONE organisation; no student data.
         'AdminOrganisationConfigurationView': 'organisation-config-org-fenced',
+        'AdminStudentEmailsView': 'organisation-config-org-fenced',   # S4b: inherits its fence
         # Programme Overview phase 2 (2026-09-18). The organisation's widget layout — the SAME
         # derivation as the configuration view (organisation from `admin.owning_organisation`;
         # super names `?org=`; cross-org 404, never 403), a MIRROR again. Payload = five keys and

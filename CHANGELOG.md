@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 4b (part 2) — the emails a funded student receives about her results - 2026-10-29
+
+One new table (`student_email_templates`), in the same deferred migration as part 1.
+
+- **Organisation → Settings → Student communications** — the organisation's wording for three emails, each in
+  English, Malay and Tamil: a result is due soon, a result is overdue, and an officer queried a result (with the
+  note). The platform wording applies until the organisation saves its own; "Use the default" brings it back.
+- **Daily jobs:** `results-due-reminders` (from 14 days before the due date, every 7 days — both on Configuration —
+  never while a result awaits review) and `results-overdue-flag` (once per late term: a "Result not submitted" line
+  on her file and one email). Every send is metered to the organisation and comes from its own sender.
+- ⚠ **All three are OFF until `MAINTENANCE_REMINDERS_ENABLED` is set** (Cloud Run env). Create the two Cloud
+  Scheduler jobs (08:00 and 08:30 MYT) at deploy — the System health light expects them.
+- Guide (org admin) updated.
+
 ## Student maintenance Sprint 4b (part 1) — when a result is due, and "not submitted" - 2026-10-29
 
 Roadmap Sprint 4b. One new table (`results_expectations`); the migration waits for Billing's 0187 on main.

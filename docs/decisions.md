@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## Student results emails: organisation-worded, defaults in code, one platform switch — 2026-10-29 (student maintenance S4b)
+
+**Decision:** (1) A new per-ORGANISATION family, `StudentEmailTemplate` (organisation, kind, language; unique on the
+three), unlike the partner and sponsor families (one platform row per kind): a student hears from the organisation
+that funds her, in its voice. Kinds `results_due`, `results_overdue`, `result_queried`; languages en / ms / ta; each
+student is written to in her own (`application.locale`). (2) **Defaults live in code** (`student_comms.DEFAULTS`); a
+row exists only where an organisation changed a letter, and "Use the default" deletes it. **Nothing is seeded** — no
+data step in the migration and no seed command: the migration stays schema-only, a new organisation starts with
+sound wording, and a default can be corrected by a deploy. (3) Rendered by the shared engine
+(`email_templates.render`, with `unknown_placeholders` and the universal banned phrases refusing a save), sent by
+`emails.sending._send_html` from the organisation's sender (`branding.for_application`) inside
+`usage.usage_context(application=...)` — metered to the tenant. (4) **One platform switch,
+`MAINTENANCE_REMINDERS_ENABLED` (env, default off), takes all three dark**, including the queried notice, until the
+owner has read the wording; she still sees the query on her page. With the switch off the daily jobs still keep her
+terms; nothing is stamped, so switching on later still reaches everyone due or late. (5) Two daily jobs:
+`results-due-reminders` (from `results_reminder_lead_days` before the due date, every `results_reminder_every_days`,
+never while a result of hers awaits review; `reminded_at` stamped only when sent) and `results-overdue-flag` (terms
+made and paired; past due + grace: one `results_overdue` activity line and one email, `overdue_flagged_at` once).
+(6) The queried notice is sent after the review commits. (7) There is no student opt-out field; these are
+transactional notices about her own bursary.
+
+**Alternatives considered:** extending `PartnerEmailTemplate` (platform-wide, one row per kind; the wrong owner for a
+student's letters); seeding rows per organisation (every new organisation would need a data step, and a fixed default
+would need a data migration). **Revisit if:** an organisation asks to switch one kind off (a per-organisation
+`enabled` belongs on a small settings row, not on each language's row).
+
 ## When a result is due: terms count from the day she was funded, no back-dated debt — 2026-10-29 (student maintenance S4b)
 
 **Decision:** `ResultsExpectation` (one row per application and term: `term_index`, `term_ends_on`, `due_on`,

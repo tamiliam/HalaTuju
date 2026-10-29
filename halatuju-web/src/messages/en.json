@@ -6174,7 +6174,8 @@
         "closed": "File closed · {reason}",
         "other": "System update",
         "result_accepted": "Result accepted · {semester}",
-        "result_queried": "Result queried · {semester}"
+        "result_queried": "Result queried · {semester}",
+        "results_overdue": "Result not submitted (due {date})"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6861,7 +6862,8 @@
       "tab": {
         "colours": "Colours",
         "configuration": "Configuration",
-        "billing": "Billing"
+        "billing": "Billing",
+        "studentComms": "Student communications"
       },
       "config": {
         "subtitle": "Values your organisation can tune. A blank field follows the platform default.",
@@ -7044,6 +7046,14 @@
           "results_overdue_grace_days": {
             "label": "Grace before \"not submitted\" — days",
             "desc": "How long after the due date before a missing result shows as not submitted."
+          },
+          "results_reminder_lead_days": {
+            "label": "Result reminder — days before it is due",
+            "desc": "When the first \"your result is due\" email goes, counted back from the due date."
+          },
+          "results_reminder_every_days": {
+            "label": "Result reminder — repeat every (days)",
+            "desc": "How often the reminder repeats until the result is due."
           }
         },
         "unit": {
@@ -7143,6 +7153,45 @@
         "mode": {
           "light": "Light",
           "dark": "Dark"
+        }
+      },
+      "studentComms": {
+        "subtitle": "The emails your funded students receive about their results, in English, Malay and Tamil — each student is written to in her own language. Change a letter to make it yours; \"Use the default\" brings back the platform wording.",
+        "on": "These emails are switched on and are being sent.",
+        "off": "These emails are switched off on the platform for now, so nothing is sent yet. Students still see due dates and any query on their own page. You can prepare your wording now.",
+        "kind": {
+          "results_due": "A result is due soon",
+          "results_overdue": "A result is overdue",
+          "result_queried": "A result is queried"
+        },
+        "when": {
+          "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
+          "results_overdue": "Sent once, when a result is past its due date and the grace.",
+          "result_queried": "Sent when an officer queries a result, with the officer's note."
+        },
+        "language": {
+          "en": "English",
+          "ms": "Malay",
+          "ta": "Tamil"
+        },
+        "customised": "Your wording",
+        "default": "Platform default",
+        "reset": "Use the default",
+        "edit": "Edit",
+        "loadError": "Could not load the student emails.",
+        "editLabel": "Edit the email",
+        "subject": "Subject",
+        "body": "Message",
+        "placeholderHint": "Click a detail to place it where the cursor is. It is filled in for each student.",
+        "previewLabel": "What she receives",
+        "sharedNote": "Your organisation's wording, for every funded student.",
+        "error": {
+          "unknown_placeholders": "These details cannot be filled in for this email: {list}",
+          "banned_phrase": "Please remove: {list}",
+          "empty": "Write a subject and a message.",
+          "subject_too_long": "The subject is too long.",
+          "unknown_template": "This email does not exist.",
+          "generic": "Could not save the email. You may not have permission."
         }
       }
     },
@@ -7387,6 +7436,7 @@
         "application-nudges": "Application nudges",
         "purge-referrals": "Referral clean-up",
         "query-reminders": "Query reminders",
+        "results-due-reminders": "Results due reminders",
         "results-overdue-flag": "Results overdue flag",
         "application-reminders": "Application reminders",
         "backfill-assigned-profiles": "Sponsor profile drafts",

@@ -146,6 +146,10 @@ const MAINTENANCE: api.OrganisationConfigSetting[] = [
     min: 14, max: 120, value: null, default: 45 },
   { key: 'results_overdue_grace_days', group: 'maintenance', unit: 'days',
     min: 0, max: 60, value: null, default: 14 },
+  { key: 'results_reminder_lead_days', group: 'maintenance', unit: 'days',
+    min: 1, max: 60, value: null, default: 14 },
+  { key: 'results_reminder_every_days', group: 'maintenance', unit: 'days',
+    min: 1, max: 30, value: null, default: 7 },
 ]
 
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {

@@ -119,6 +119,7 @@ from .lifecycle import (
     AdminScopeListView,
 )
 from .org_config import AdminOrganisationConfigurationView, AdminProgrammeConfigurationView
+from .student_comms import AdminStudentEmailsView
 from .org_emails import (
     _SponsorEmailsBase, _partner_email_dict, _sponsor_email_dict, AdminPartnerEmailDetailView,
     AdminPartnerEmailsView, AdminSponsorEmailDetailView, AdminSponsorEmailsView,

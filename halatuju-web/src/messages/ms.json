@@ -6174,7 +6174,8 @@
         "closed": "Fail ditutup · {reason}",
         "other": "Kemas kini sistem",
         "result_accepted": "Keputusan diterima · {semester}",
-        "result_queried": "Keputusan dipersoalkan · {semester}"
+        "result_queried": "Keputusan dipersoalkan · {semester}",
+        "results_overdue": "Keputusan tidak dihantar (tarikh akhir {date})"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6861,7 +6862,8 @@
       "tab": {
         "colours": "Warna",
         "configuration": "Konfigurasi",
-        "billing": "Pengebilan"
+        "billing": "Pengebilan",
+        "studentComms": "Komunikasi pelajar"
       },
       "config": {
         "subtitle": "Nilai yang boleh dilaraskan oleh organisasi anda. Ruang kosong mengikut tetapan lalai platform.",
@@ -7044,6 +7046,14 @@
           "results_overdue_grace_days": {
             "label": "Tempoh tangguh sebelum \"tidak dihantar\" — hari",
             "desc": "Berapa lama selepas tarikh akhir sebelum keputusan yang tiada ditunjukkan sebagai tidak dihantar."
+          },
+          "results_reminder_lead_days": {
+            "label": "Peringatan keputusan — hari sebelum tarikh akhir",
+            "desc": "Bila e-mel pertama \"keputusan anda perlu dihantar\" dihantar, dikira ke belakang dari tarikh akhir."
+          },
+          "results_reminder_every_days": {
+            "label": "Peringatan keputusan — ulang setiap (hari)",
+            "desc": "Berapa kerap peringatan diulang sehingga tarikh akhir keputusan."
           }
         },
         "unit": {
@@ -7143,6 +7153,45 @@
         "mode": {
           "light": "Cerah",
           "dark": "Gelap"
+        }
+      },
+      "studentComms": {
+        "subtitle": "E-mel yang diterima oleh pelajar yang anda biayai tentang keputusan mereka, dalam bahasa Inggeris, Melayu dan Tamil — setiap pelajar menerima e-mel dalam bahasanya sendiri. Ubah surat untuk menjadikannya milik anda; \"Guna lalai\" mengembalikan kata-kata platform.",
+        "on": "E-mel ini dihidupkan dan sedang dihantar.",
+        "off": "E-mel ini dimatikan pada platform buat masa ini, jadi belum ada yang dihantar. Pelajar masih melihat tarikh akhir dan sebarang soalan di halaman mereka sendiri. Anda boleh menyediakan kata-kata anda sekarang.",
+        "kind": {
+          "results_due": "Keputusan perlu dihantar tidak lama lagi",
+          "results_overdue": "Keputusan lewat",
+          "result_queried": "Keputusan dipersoalkan"
+        },
+        "when": {
+          "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
+          "results_overdue": "Dihantar sekali, apabila keputusan melepasi tarikh akhir dan tempoh tangguh.",
+          "result_queried": "Dihantar apabila pegawai mempersoalkan keputusan, bersama catatan pegawai."
+        },
+        "language": {
+          "en": "Inggeris",
+          "ms": "Melayu",
+          "ta": "Tamil"
+        },
+        "customised": "Kata-kata anda",
+        "default": "Lalai platform",
+        "reset": "Guna lalai",
+        "edit": "Sunting",
+        "loadError": "Tidak dapat memuatkan e-mel pelajar.",
+        "editLabel": "Sunting e-mel",
+        "subject": "Subjek",
+        "body": "Mesej",
+        "placeholderHint": "Klik butiran untuk meletakkannya di tempat kursor. Ia diisi untuk setiap pelajar.",
+        "previewLabel": "Apa yang dia terima",
+        "sharedNote": "Kata-kata organisasi anda, untuk setiap pelajar yang dibiayai.",
+        "error": {
+          "unknown_placeholders": "Butiran ini tidak boleh diisi untuk e-mel ini: {list}",
+          "banned_phrase": "Sila buang: {list}",
+          "empty": "Tulis subjek dan mesej.",
+          "subject_too_long": "Subjek terlalu panjang.",
+          "unknown_template": "E-mel ini tidak wujud.",
+          "generic": "Tidak dapat menyimpan e-mel. Anda mungkin tiada kebenaran."
         }
       }
     },
@@ -7387,6 +7436,7 @@
         "application-nudges": "Gesaan permohonan",
         "purge-referrals": "Pembersihan rujukan",
         "query-reminders": "Peringatan pertanyaan",
+        "results-due-reminders": "Peringatan keputusan perlu dihantar",
         "results-overdue-flag": "Bendera keputusan lewat",
         "application-reminders": "Peringatan permohonan",
         "backfill-assigned-profiles": "Draf profil penaja",

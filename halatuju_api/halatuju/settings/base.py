@@ -462,6 +462,10 @@ REVIEW_SLA_DAYS = int(os.environ.get('REVIEW_SLA_DAYS', '10'))
 REVIEW_NUDGES_ENABLED = os.environ.get('REVIEW_NUDGES_ENABLED', '').lower() in ('1', 'true', 'yes')
 REVIEW_NUDGE_SOON_DAYS = int(os.environ.get('REVIEW_NUDGE_SOON_DAYS', '2'))   # nudge this many days BEFORE due
 REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '4'))  # escalate this many days AFTER due (→ day 14)
+# Student maintenance S4b: the emails a FUNDED student receives about her results (results due /
+# overdue / queried — `student_comms`). Dark by default until the owner has read the wording; the
+# daily jobs still keep her result terms, standing and the overdue filter up to date while off.
+MAINTENANCE_REMINDERS_ENABLED = os.environ.get('MAINTENANCE_REMINDERS_ENABLED', '').lower() in ('1', 'true', 'yes')
 
 # Partner onboarding: an UNCHANGED temp password is rotated dead this many days after it was issued
 # (the expire-temp-passwords daily cron + the login gate). A Resend re-issues a fresh one + clock.
