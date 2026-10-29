@@ -71,8 +71,9 @@ export const roleReviewer: ManualChapter = {
         (for example <strong>STPM results</strong>); STPM results are checked for genuineness like an SPM slip, and a screenshot of
         the online results-checker page is flagged as not the real slip. Matriculation and polytechnic transcripts are checked
         too, and only the final transcript counts: a semester result slip, a polytechnic student-portal screenshot or a
-        transcript with no completion status reads as not yet on file (Academic at most Probable, the final transcript asked
-        for), and a Matriculation offer letter is flagged as not a results document. Beside the NRIC, the header shows where her IC says she was
+        transcript showing the programme still in progress reads as not yet on file (Academic at most Probable, the final
+        transcript asked for); a transcript whose status line cannot be read stays not checked; and a Matriculation offer
+        letter is flagged as not a results document. Beside the NRIC, the header shows where her IC says she was
         <strong> born</strong>.</>
       ),
       img: '/reviewer-guide/step1-list.png',

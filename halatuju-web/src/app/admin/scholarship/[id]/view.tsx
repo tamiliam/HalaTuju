@@ -114,6 +114,7 @@ import { ReopenHeaderControl } from './view/ReopenHeaderControl'
 import { AssignAndWitness } from './view/AssignAndWitness'
 import { PostAwardPanels } from './view/PostAwardPanels'
 import { closeErrorKey, stageStatus } from '@/lib/closeOffer'
+import { anomalyParams } from '@/lib/docSeen'
 
 
 /**
@@ -903,8 +904,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
       .filter((a) => { const o = ANOMALY_CHECK2_OWNER[a.code]; return !(o && check2Owned.has(o)) })
       .map((a) => ({
         code: a.code, ai: false,
-        label: t(`admin.scholarship.anomaly.${a.code}.question`,
-          Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+        label: t(`admin.scholarship.anomaly.${a.code}.question`, anomalyParams(t, a.params)),   // M4b: no raw doc_seen
       })),
     ...(app.interview_agenda || [])
       .filter((e) => e.kind !== 'anomaly')

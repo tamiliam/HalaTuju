@@ -56,7 +56,7 @@ def stored_status(vision_fields) -> str:
 
 
 #: Owner ruling B (2026-10-29, Matric/Diploma M4b): a higher-results page that is NOT the final result
-#: (a semester result slip, the polytechnic portal page, a transcript with no completion status) is
+#: (a semester result slip, a polytechnic's portal page, a transcript printing an in-progress status) is
 #: stored NOT_CHECKED with one of these `doc_seen` codes — no genuineness signal, never a step — and
 #: read as "the final results are not on file yet" (`higher_results.final_owed`).
 NOT_FINAL_SEEN = frozenset({'matric_result_slip', 'poly_result_slip', 'poly_portal_page',
@@ -64,6 +64,9 @@ NOT_FINAL_SEEN = frozenset({'matric_result_slip', 'poly_result_slip', 'poly_port
 #: What the student's and the reviewer's document serializer shows for such a page (not a `not_`
 #: prefix: that reads as a wrong-type fake).
 FINAL_OWED = 'final_owed'
+#: Pages ruled NOT A RESULTS DOCUMENT in the higher-results card (owner ruling D, M4b): a
+#: Matriculation offer letter — the reviewer's copy says so, never "may not be the genuine original".
+NOT_RESULTS_SEEN = frozenset({'matric_offer_letter'})
 
 
 def shown_status(raw, doc_type=None, doc_seen='') -> str:

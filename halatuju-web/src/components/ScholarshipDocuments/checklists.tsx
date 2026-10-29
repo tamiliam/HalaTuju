@@ -262,7 +262,7 @@ export function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: 
  *  re-upload via the card's existing controls. (The IC has its own note in ICChecklist.) */
 /** What the higher-results check says a page IS when the owner ruled it does not count (2026-10-29,
  *  `genuineness/matric_poly_doc.py`, served as `final_owed`): a NON-FINAL page — a semester result
- *  slip, the polytechnic student portal, a transcript without its completion status — asks for the
+ *  slip, a polytechnic's student portal, a transcript printing an in-progress status — asks for the
  *  final academic transcript ("only the final version counts"); a Matriculation offer letter is not
  *  a results document. */
 const NOT_FINAL = new Set(['matric_result_slip', 'poly_result_slip', 'poly_portal_page',

@@ -14,6 +14,16 @@ store their read in dedicated columns; photos aren't OCR'd).
 ``REEXTRACT_DOC_TYPE`` (one doc type) and ``REEXTRACT_PASS`` (a NEW pass name, so those docs
 become eligible again without re-sweeping the whole corpus), run the ``reextract-documents``
 job repeatedly until it reports nothing left, then UNSET both.
+
+FORCED OVERWRITE (Matric/Diploma M5, review SF7 of M4b): `bands.keep_stored_authenticity` (TD-407)
+carries a stored genuineness block forward when a re-read gives no signal. For the Matriculation /
+Diploma higher-results pages re-scored under the M4b rulings that is wrong: a page stored "not final"
+or "genuine" under the old rule must take the NEW answer, `{}` ("not checked") included.
+``--fresh-higher-authenticity`` (env ``REEXTRACT_FRESH_HIGHER_AUTH=1``) drops the stored block of
+each `higher_results` doc whose kind is matric / diploma, IN MEMORY, just before its re-read — so the
+fresh result stands. Nothing is saved until the re-read succeeds: a failed re-read is clobber-guarded
+(`run_field_extraction_for_document`, no save), so the stored block survives it. Every other doc
+type, and the STPM higher pages, keep TD-407 exactly as before.
 """
 import os
 
@@ -24,6 +34,20 @@ from apps.scholarship.reextract import add_preflight_argument, reextract_documen
 
 # Bump this for a future re-extraction pass (e.g. after another parser change).
 PASS_MARKER = 'reextract_2026_06'
+#: The higher-results kinds whose stored authenticity a forced pass replaces (M4b review SF7).
+FRESH_AUTH_KINDS = ('matric', 'diploma')
+
+
+def drop_higher_authenticity(doc) -> bool:
+    """SF7: forget a Matriculation / Diploma higher-results doc's stored authenticity IN MEMORY (never
+    saved here), so the re-read's own answer — `{}` included — replaces it. True when it dropped one."""
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    fields = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
+    kind = (doc.results_kind or fields.get('results_kind_detected') or '').strip().lower()
+    if doc.doc_type != 'higher_results' or kind not in FRESH_AUTH_KINDS or 'authenticity' not in vf:
+        return False
+    doc.vision_fields = {k: v for k, v in vf.items() if k != 'authenticity'}
+    return True
 
 
 def _summary(doc) -> str:
@@ -69,6 +93,10 @@ class Command(BaseCommand):
         parser.add_argument('--retry-errors', action='store_true',
                             help="Also re-attempt docs whose last run FAILED (marked 'error'). "
                                  "Default runs skip them so one broken doc can't wedge the pass.")
+        parser.add_argument('--fresh-higher-authenticity', action='store_true',
+                            help='M5 (M4b review SF7): a Matriculation / Diploma higher-results re-read '
+                                 'REPLACES its stored authenticity with the fresh result ({} included), '
+                                 'instead of TD-407 keeping it. Env door: REEXTRACT_FRESH_HIGHER_AUTH=1.')
         add_preflight_argument(parser)
 
     def handle(self, *args, **opts):
@@ -98,6 +126,13 @@ class Command(BaseCommand):
         limit = max(1, opts['limit'])
         retry_errors = opts['retry_errors']
         marker = (opts.get('pass_marker') or os.environ.get('REEXTRACT_PASS') or PASS_MARKER).strip()
+        fresh_auth = bool(opts.get('fresh_higher_authenticity')) or (
+            os.environ.get('REEXTRACT_FRESH_HIGHER_AUTH', '').strip().lower() in ('1', 'true', 'yes'))
+        from django.conf import settings
+        if fresh_auth and not getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
+            from django.core.management.base import CommandError     # nothing fresh would replace it
+            raise CommandError('reextract: --fresh-higher-authenticity needs DOC_GENUINENESS_CHECK_ENABLED '
+                               '(with it off the re-read scores nothing, so dropping a score would lose it).')
 
         # Filter "not yet processed this pass" in Python — a JSON-key `.exclude()` mishandles
         # rows where the key (or the whole vision_fields) is absent (SQL NULL semantics).
@@ -125,6 +160,8 @@ class Command(BaseCommand):
             stamps_before = (doc.vision_fields_run_at, doc.vision_run_at)
             ok = True
             try:
+                if fresh_auth and drop_higher_authenticity(doc):
+                    before += ' auth=dropped'
                 reextract_document(doc)
                 doc.refresh_from_db()
                 after = _summary(doc)

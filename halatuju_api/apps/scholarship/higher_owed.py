@@ -82,26 +82,35 @@ def late_anchor(application) -> bool:
 
 def answered(application) -> bool:
     """Does a live higher-results upload answer the ask? Read clean (not pending, unreadable or in
-    another name), not an SPM slip — the S4 rule `results_requests.answers` applies to an
-    officer's request for named results — and the FINAL result (owner ruling B, M4b)."""
-    from .higher_results import final_owed, match_verdict, student_higher_check
-    return any(match_verdict(d) == 'ok' and student_higher_check(d)['kind_status'] != 'spm'
-               and not final_owed(d) for d in _live_higher(application))
+    another name) and `higher_results.answers_higher_ask` — the ONE rule an officer's request for
+    named results reads too (`results_requests.answers`): not an SPM slip, the FINAL result (M4b)."""
+    from .higher_results import answers_higher_ask, match_verdict
+    return any(match_verdict(d) == 'ok' and answers_higher_ask(d) for d in _live_higher(application))
 
 
 def final_owed_kind(application) -> str:
-    """Owner ruling B (2026-10-29, M4b): the kind whose FINAL result is still owed because the live
-    higher-results upload is not the final one (a semester slip, the portal page, a transcript with
-    no completion status), for a SUBMITTED application — else ''. The same ask as #388's."""
+    """Owner ruling B (2026-10-29, M4b): the kind whose FINAL result is still owed because the higher
+    upload the Academic card reads (`higher_results.higher_doc`: any live final one first, review
+    SF4) is not the final one (a semester slip, a polytechnic's portal page, a transcript printing an
+    in-progress status), for a SUBMITTED application that ASKS for higher results — its intake asks
+    for them (D16c) and its Academic card is about them (`anchors_on_higher`, review SF6) — else ''.
+    The kind is the upload's own (an officer's request names it there, `results_route.upload_kind`),
+    else the results held. The same ask as #388's."""
     from . import results_route
-    from .higher_results import final_owed
+    from .higher_results import anchors_on_higher, final_owed, higher_doc
+    from .wrong_slip import HIGHER_KINDS
     if getattr(application, 'profile_completed_at', None) is None:
         return ''
-    kind = results_route.held_kind(application)      # cheapest first: an SPM holder reads no document
-    if not kind:
+    held = results_route.held_kind(application)      # cheapest first: an SPM holder reads no document
+    if not held:
         return ''
-    live = _live_higher(application)
-    return kind if live and all(final_owed(d) for d in live) else ''
+    doc = higher_doc(application)
+    if doc is None or not final_owed(doc):
+        return ''
+    if not (results_route.gift_asks_higher(application) and anchors_on_higher(application)):
+        return ''                                    # SF6: a voluntary upload on an SPM-only intake asks none
+    named = getattr(doc, 'results_kind', '') or ''
+    return named if named in HIGHER_KINDS else held
 
 
 def ask_codes(application) -> set:

@@ -395,8 +395,9 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
     never gates. Flag-gated (only fires when the check ran). Returns the first hit; params carry
     a human doc label, the status, and what the AI thought the document actually was."""
     from .genuineness.bands import canonical_status, needs_attention
+    from .higher_results import anchor_doc       # M4b SF4: the higher upload the verdict reads
     for dt, label in _GENUINENESS_DOC_LABELS.items():
-        doc = latest_doc(application, dt)
+        doc = anchor_doc(application, dt) if dt == 'higher_results' else latest_doc(application, dt)
         if dt == 'results_slip':                 # S4 (#43): an SPM-list score of a higher result
             from .wrong_slip import spm_genuineness_skipped     # is no signal (C3's own stands)
             if spm_genuineness_skipped(doc):
@@ -413,6 +414,9 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
                 f = (doc.vision_fields or {}).get('fields') if isinstance(doc.vision_fields, dict) else None
                 kind = (f.get('results_kind_detected') if isinstance(f, dict) else '') or doc.results_kind
                 label = _HIGHER_LABELS.get(kind or '', 'higher results')
+                from .higher_results import not_results
+                if not_results(doc):             # ruling D: an offer letter is "not a results document"
+                    return Anomaly('document_not_results', {'doc': label})
             return Anomaly('document_not_genuine',
                            {'doc': label, 'status': canonical_status(raw, dt), 'seen': seen})
     return None

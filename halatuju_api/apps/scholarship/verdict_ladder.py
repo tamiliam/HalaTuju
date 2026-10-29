@@ -54,8 +54,9 @@ def _genuineness_step(application, doc_types):
 
 def _genuineness_reason(application, doc_types):
     """The human reason string from the first non-genuine feeding doc (for the ic_low_confidence copy)."""
+    from .higher_results import anchor_doc
     for dt in doc_types:
-        d = _latest_doc(application, dt)
+        d = anchor_doc(application, dt)
         auth = stored_authenticity(d.vision_fields if d else None)          # TD-293
         if canonical_status(auth.get('status'), getattr(d, 'doc_type', None) or dt) not in ('', 'genuine'):
             return auth.get('reason', '')
@@ -171,7 +172,7 @@ def _add_genuineness_caveat(application, fact, docs, step):
         code = 'offer_not_official'
     else:
         code = 'document_not_genuine'
-    if any(i['code'] == code for i in fact['unresolved']):
+    if any(i['code'] in (code, 'higher_results_not_results') for i in fact['unresolved']):
         return
     if code == 'ic_low_confidence':
         fact['unresolved'].append(_item('ic_low_confidence', status=st,
@@ -179,7 +180,30 @@ def _add_genuineness_caveat(application, fact, docs, step):
     elif code == 'offer_not_official':
         fact['unresolved'].append(_item('offer_not_official'))
     else:
-        fact['unresolved'].append(_item('document_not_genuine', status=st))
+        fact['unresolved'].append(doc_caveat(application, docs, st))
+
+
+def doc_caveat(application, docs, st):
+    """The Official caveat for a non-genuine feeding document: ``document_not_genuine`` — except a
+    Matriculation offer letter in the higher-results card (owner ruling D, M4b), which is "not a
+    results document", never "may not be the genuine original" (review nit, 2026-10-30)."""
+    if 'higher_results' in docs and _offer_in_results_card(application):
+        return _item('higher_results_not_results', held=_held_label(application))
+    return _item('document_not_genuine', status=st)
+
+
+def _offer_in_results_card(application):
+    """Ruling D (M4b): the upload the Academic card reads is a Matriculation offer letter."""
+    from .higher_results import anchor_doc, not_results
+    d = anchor_doc(application, 'higher_results')
+    return d is not None and not_results(d)
+
+
+def _held_label(application):
+    from apps.courses.exam_questions import QUALIFICATION_LABELS
+    from .higher_results import anchor_doc, student_higher_check
+    kind = student_higher_check(anchor_doc(application, 'higher_results'))['kind_held']
+    return QUALIFICATION_LABELS.get(kind, kind)
 
 
 def _apply_genuineness_ladder(application, facts):
@@ -248,8 +272,9 @@ def _genuineness_unscored(application, doc_types):
     from django.conf import settings
     if not getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
         return False
+    from .higher_results import anchor_doc
     for dt in doc_types:
-        d = _latest_doc(application, dt)
+        d = anchor_doc(application, dt)          # M4b SF4: the upload the verdict reads
         if d is None:
             continue        # a missing document is the base band's gap, not this rule's
         if not canonical_status(stored_status(d.vision_fields), dt):         # TD-293

@@ -100,6 +100,19 @@ scan, so a missing status there may be a missing page — never ask a student wi
 to re-upload). Recognition is from fixed, corpus-calibrated wording only. `MODEL_VERSION` 1.22.0,
 `VERDICT_ENGINE_VERSION` 2026-10-29.3 (unreleased; set once for M4b).
 
+**Amended by the adversarial review (2026-10-30, lead decision within the owner's intent).** The
+"end visible, no status → non-final" rule above is WITHDRAWN: it asked students with real final
+transcripts to re-upload whenever the status was printed value-first, OCR-damaged or worded another
+way. A page is ruled NON-FINAL only on POSITIVE evidence — a slip's or a polytechnic portal's own
+wording, or a transcript printing an in-progress status (AKTIF / ACTIVE / DIGANTUNG / SEDANG BELAJAR
+…) against its STATUS label. A transcript whose completion status is absent or unrecognised is `{}`
+("not checked": no genuine, no owed, no ask). Genuine still requires the recognised completion
+status. One rule each for "this upload answers a higher-results ask"
+(`higher_results.answers_higher_ask`) and "the upload the verdict reads" (`higher_results.higher_doc`:
+any live final one first). The ruling-B ask is raised only when the application asks for higher
+results. M5 replaces stored Matric / Diploma authenticity through
+`reextract_documents --fresh-higher-authenticity`, never by changing TD-407 globally.
+
 ## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
 
 **Decision:** (1) a student IN MAINTENANCE (`maintenance_scope.is_in_maintenance`, so awarded + activated too) may

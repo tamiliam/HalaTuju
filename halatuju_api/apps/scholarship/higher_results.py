@@ -397,7 +397,7 @@ def verdict_academic(application, spm_fact):
     (`verdict_engine._verdict_academic(spm_only=True)`), folded in ONLY when an SPM slip is on file
     (D9: optional — a missing one is no gap and asks nothing)."""
     from .verdict_engine import _fact, _item, _latest_doc
-    doc = _latest_doc(application, 'higher_results')
+    doc = higher_doc(application)     # review SF4: a live FINAL one first, whatever came after it
     if doc is None:
         return _fact('academic', 'gap', [], [_item('higher_results_missing')])
     chk = student_higher_check(doc)
@@ -446,12 +446,43 @@ def verdict_academic(application, spm_fact):
 
 def final_owed(doc) -> bool:
     """Owner ruling B (2026-10-29, M4b): is this live upload NOT the final result — a semester result
-    slip, the polytechnic portal page, a transcript with no completion status (`matric_poly_doc`)?
+    slip, a polytechnic's portal page, a transcript printing an in-progress status (`matric_poly_doc`)?
     Then it does not count: the final results read as not yet uploaded — the Academic card is
     capped at Probable with the reason named, and the final transcript is asked for (`higher_owed`)."""
     from .genuineness.bands import FINAL_OWED, shown_status, stored_authenticity
     auth = stored_authenticity(getattr(doc, 'vision_fields', None))
     return shown_status(auth.get('status'), 'higher_results', auth.get('doc_seen', '')) == FINAL_OWED
+
+
+def higher_doc(application):
+    """The higher-results upload the Academic card reads (review SF4, ONE rule with
+    `higher_owed.final_owed_kind` and the genuineness ladder, `anchor_doc`): the newest LIVE upload
+    that is not a non-final page (ruling B) nor an offer letter (ruling D) — so a final transcript
+    on file counts even when a semester slip or an offer letter came after it — else the newest."""
+    from .document_snapshot import live_docs
+    docs = list(live_docs(application, 'higher_results'))
+    return next((d for d in docs if not final_owed(d) and not not_results(d)), docs[0] if docs else None)
+
+
+def anchor_doc(application, doc_type):
+    """The document a card's genuineness reads for ``doc_type``: `higher_doc` for the higher
+    results (SF4: the verdict and its ladder read the same upload), else the latest live one."""
+    from .verdict_engine import _latest_doc
+    return higher_doc(application) if doc_type == 'higher_results' else _latest_doc(application, doc_type)
+
+
+def not_results(doc) -> bool:
+    """Owner ruling D (M4b): is this upload ruled NOT A RESULTS DOCUMENT (a Matriculation offer letter)?"""
+    from .genuineness.bands import NOT_RESULTS_SEEN, stored_authenticity
+    return stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '') in NOT_RESULTS_SEEN
+
+
+def answers_higher_ask(doc) -> bool:
+    """Review SF3 — the ONE rule for "this higher-results upload answers an ask for higher results",
+    read by an officer's request (`results_requests.answers`, so `resolution`'s closure too) and by
+    Check 2's #388 / ruling-B ask (`higher_owed.answered`): not an SPM slip, and the FINAL result (a
+    non-final page never closes an ask, so it can never close-then-reopen)."""
+    return student_higher_check(doc)['kind_status'] != 'spm' and not final_owed(doc)
 
 
 def _scored(doc) -> bool:
@@ -464,8 +495,7 @@ def _scored(doc) -> bool:
 def red_chips(application) -> int:
     """RED academic chips for the higher card — Name, Kind (another kind / an SPM slip), Results
     (CGPA or STPM grades that differ). 0-3. Unread / cannot-tell are grey, never red."""
-    from .verdict_engine import _latest_doc
-    doc = _latest_doc(application, 'higher_results')
+    doc = higher_doc(application)
     if doc is None:
         return 0
     chk = student_higher_check(doc)

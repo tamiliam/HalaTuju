@@ -1559,7 +1559,7 @@
       },
       "genuineness": {
         "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
-        "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip tanpa status tamat pengajian). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
+        "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip yang menunjukkan pengajian anda masih berjalan). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
         "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat."
       },
       "icCheck": {
@@ -4085,7 +4085,7 @@
         "higher_stpm": "slip keputusan atau sijil STPM — dokumen rasmi penuh dengan nama anda jelas kelihatan",
         "higher_matric": "transkrip akademik Matrikulasi — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan (slip keputusan semester tidak diterima)",
         "higher_asasi": "transkrip Asasi — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
-        "higher_diploma": "transkrip Diploma — transkrip rasmi penuh dengan nama dan PNGK anda jelas kelihatan",
+        "higher_diploma": "transkrip akademik Diploma — transkrip rasmi akhir yang penuh dengan nama dan PNGK anda jelas kelihatan (slip keputusan semester atau halaman portal pelajar tidak diterima)",
         "semester_result": "slip keputusan semester kolej/universiti terkini — menunjukkan CGPA semasa anda",
         "school_leaving_cert": "surat berhenti sekolah atau testimonial",
         "offer_letter": "surat tawaran — mesti dialamatkan kepada anda dan menunjukkan nama/IC anda",
@@ -4310,6 +4310,27 @@
           "seeded": "Motivasi & ketabahan: penyata hasrat adalah nipis — selidik motivasi, daya tahan, dan rancangan masa depan secara mendalam."
         }
       },
+      "docSeen": {
+        "results_slip": "slip keputusan SPM",
+        "certificate": "sijil SPM",
+        "stpm_slip": "slip keputusan STPM",
+        "stpm_certificate": "sijil STPM",
+        "stpm_online_results_page": "halaman semakan keputusan STPM dalam talian",
+        "birth_certificate": "sijil kelahiran",
+        "epf": "penyata KWSP",
+        "str_letter": "surat kelulusan STR",
+        "str_dashboard": "papan pemuka aplikasi MySTR",
+        "str_semakan": "halaman semakan status MySTR",
+        "matric_transcript": "transkrip akademik Matrikulasi",
+        "poly_transcript": "transkrip akademik politeknik",
+        "matric_result_slip": "slip keputusan semester Matrikulasi",
+        "poly_result_slip": "slip keputusan semester politeknik",
+        "poly_portal_page": "halaman portal pelajar politeknik",
+        "matric_transcript_not_final": "transkrip Matrikulasi yang menunjukkan pengajian masih berjalan",
+        "poly_transcript_not_final": "transkrip politeknik yang menunjukkan pengajian masih berjalan",
+        "matric_offer_letter": "surat tawaran Matrikulasi",
+        "other": "dokumen jenis lain"
+      },
       "anomaly": {
         "title": "Penanda pra-temubual",
         "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",
@@ -4360,6 +4381,10 @@
         "parent_ic_low_confidence": {
           "fact": "Kad pengenalan ibu bapa/penjaga tidak kelihatan seperti foto MyKad fizikal (berkemungkinan teks taip, cetakan, atau tangkapan skrin).",
           "question": "Imej IC ibu bapa/penjaga tidak kelihatan seperti kad tulen — sahkan kad fizikal semasa temu duga."
+        },
+        "document_not_results": {
+          "fact": "{doc} yang dimuat naik bukan dokumen keputusan — ia ialah surat tawaran Matrikulasi.",
+          "question": "Muat naik {doc} ialah surat tawaran, bukan dokumen keputusan — minta transkrip akademik akhir semasa temu duga."
         },
         "document_not_genuine": {
           "fact": "Dokumen {doc} yang dimuat naik tidak kelihatan seperti dokumen rasmi yang tulen — ia kelihatan seperti: {seen}.",
@@ -4662,7 +4687,8 @@
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "higher_results_missing": "Tiada keputusan STPM / Matrikulasi / Asasi / Diploma dimuat naik.",
-          "higher_results_not_final": "Muat naik {held} ini bukan keputusan akhir (slip keputusan semester, halaman portal pelajar atau transkrip tanpa status tamat pengajian), jadi ia tidak dikira: transkrip akademik akhir masih belum diterima dan telah diminta. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
+          "higher_results_not_final": "Muat naik {held} ini bukan keputusan akhir (slip keputusan semester, halaman portal pelajar politeknik atau transkrip yang menunjukkan pengajian masih berjalan), jadi ia tidak dikira: transkrip akademik akhir masih belum diterima — pelajar akan diminta menghantarnya sebaik sahaja permohonan dihantar. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
+          "higher_results_not_results": "Muat naik {held} ini ialah surat tawaran Matrikulasi, bukan dokumen keputusan, jadi ia tidak dikira: transkrip akademik akhir masih belum diterima. Akademik tidak boleh menjadi Pasti sehingga ia ada dalam fail.",
           "higher_results_not_on_file": "Keputusan {held} tiada dalam fail. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
           "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
           "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",
@@ -4918,6 +4944,7 @@
           "balance": "Baki",
           "genuine": "Tulen",
           "wrongType": "Jenis salah",
+          "finalOwed": "Transkrip akhir belum diterima",
           "unreadable": "Tidak dapat dibaca",
           "cgpa": "PNGK",
           "child": "Anak",

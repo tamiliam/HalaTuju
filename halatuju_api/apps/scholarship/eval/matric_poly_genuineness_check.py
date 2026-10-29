@@ -7,8 +7,8 @@ a scan's page 1). The committed tests use synthetic twins (`tests/test_matric_po
 Prints, per folder: the status `matric_poly_higher_genuineness` gives each page (what the
 higher-results slot would store), and the RAW probability of every page on each list — the
 controls' maximum is the margin below the 0.35 suspect floor. Keys, statuses and numbers only.
-M4b (owner rulings 2026-10-29): a NON-FINAL page (a semester result slip, the portal screen, a
-transcript with no completion status) is stored "unchecked" with its `doc_seen` (the final
+M4b (owner rulings 2026-10-29; positive evidence only, review B1): a NON-FINAL page (a semester
+result slip, a polytechnic's portal screen, a transcript printing an in-progress status) is stored "unchecked" with its `doc_seen` (the final
 transcript is still owed); a Matriculation offer letter `not_matric_result`. Exits non-zero if a
 FINAL transcript (its gates + its completion status) is not genuine, or a control is "genuine".
 
@@ -38,8 +38,8 @@ def main(argv):
         _io.SNAP = argv[argv.index('--snapshots') + 1]
     sys.path.insert(0, os.path.abspath(os.path.join(HERE, '..', '..', '..')))   # halatuju_api/
     from apps.scholarship.genuineness.matric_poly_doc import (
-        MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, _matric_gates, _poly_gates,
-        matric_poly_higher_genuineness)
+        _IN_PROGRESS, MATRIC_TRANSCRIPT_SIGNATURES, POLY_TRANSCRIPT_SIGNATURES, _final, _matric_gates,
+        _poly_gates, matric_poly_higher_genuineness)
     from apps.scholarship.genuineness.results_doc import _norm_fold_upper_alnum, _score_list
 
     bad = 0
@@ -53,11 +53,13 @@ def main(argv):
             sg = matric_poly_higher_genuineness(text)
             st = sg.get('status', '-') + (f" ({sg['type']})" if sg.get('status') not in (None, 'genuine') else '')
             tally[st] = tally.get(st, 0) + 1
-            final = any(m in tn for m in ('LULUS DAN TAMAT', 'PASS AND COMPLETED', 'STATUS COMPLETED'))
-            transcript = (_matric_gates(tn) or _poly_gates(text, tn)) and final
-            if transcript and st != 'genuine':
+            gated = (_matric_gates(tn) and 'matric') or (_poly_gates(text, tn) and 'diploma')
+            if gated and _final(tn, gated) and not _IN_PROGRESS.search(tn) and st != 'genuine':
                 bad += 1
                 print(f'  FINAL TRANSCRIPT NOT GENUINE {key} {st}')
+            if gated and 'not_final' in st and not _IN_PROGRESS.search(tn):   # review B1: positive evidence only
+                bad += 1
+                print(f'  TRANSCRIPT RULED NON-FINAL WITHOUT AN IN-PROGRESS STATUS {key}')
             if folder in ('matric', 'diploma'):
                 print(f'  {key:<32} matric p={pm:.2f} poly p={pp:.2f} -> {st}')
             else:

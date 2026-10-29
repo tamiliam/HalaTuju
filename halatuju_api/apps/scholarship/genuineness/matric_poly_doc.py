@@ -9,10 +9,12 @@ would need a new Gemini call; the transcripts clear 0.70 without it), scored by
 
 GENUINE OR NOTHING, BOTH FAMILIES (review, 2026-10-29). A page that passes a family's gates and
 scores ≥ 0.70 is stored "genuine"; anything else stays unscored — "not checked", exactly as before
-M4 — EXCEPT the pages the owner ruled on (M4b, below): a NON-FINAL page (a semester result slip, the
-polytechnic portal screen, a transcript with no completion status) stored NOT_CHECKED with its
-`doc_seen` — read as "the final results are not yet uploaded" — and a Matriculation offer letter
-stored `not_matric_result`. A transcript is genuine only when FINAL (its completion status printed). No suspect is ever stored (owner ruling 4, 2026-10-29), because no band is calibrated: a genuine 2-year
+M4 — EXCEPT the pages the owner ruled on (M4b, below): a NON-FINAL page, on POSITIVE evidence only (a
+semester result slip, a polytechnic's portal screen, a transcript printing an in-progress status),
+stored NOT_CHECKED with its `doc_seen` — read as "the final results are not yet uploaded" — and a
+Matriculation offer letter stored `not_matric_result`. A transcript is genuine only when FINAL (its
+recognised completion status printed); one whose status is absent, cut off, OCR-damaged or worded
+otherwise is neither genuine nor non-final: `{}`. No suspect is ever stored (owner ruling 4, 2026-10-29), because no band is calibrated: a genuine 2-year
 transcript seen page 1 only scores 0.68, a cropped photo 0.64, a noisy scan 0.61. A suspect would
 tell a student with a real transcript that it "does not look genuine" — so until multi-page and
 cropped samples calibrate a suspect band, the floor (Probable at best) is the cautious answer.
@@ -39,7 +41,7 @@ import re
 
 from apps.scholarship.results_kind import detect, prints_polytechnic
 
-from .bands import GENUINE_MIN, NOT_CHECKED, NOT_FINAL_SEEN, band_for
+from .bands import GENUINE_MIN, NOT_CHECKED, NOT_FINAL_SEEN, NOT_RESULTS_SEEN, band_for
 
 #: The KPM academic transcript's fixed wording (every corpus transcript prints all of it). The
 #: heaviest weights sit on what ONLY a transcript prints (value-point column, semester GPA, the
@@ -140,7 +142,8 @@ def _poly_gates(ocr_text, tn):
 # A. The higher-results upload is for the FINAL result only — the final academic transcript for
 #    Matriculation and Diploma. "Only the final version counts."
 # B. A NON-FINAL document — a Matriculation or polytechnic semester RESULT SLIP, the polytechnic
-#    student-PORTAL screen, or a transcript with no completion status — does not count: it is read
+#    student-PORTAL screen, or a transcript printing an in-progress status — does not count (review
+#    B1, 2026-10-30: ruled only on POSITIVE evidence; a missing / unrecognised status is `{}`): it is read
 #    as if the final results are NOT YET UPLOADED (no genuineness signal, never the −2 step; the
 #    Academic card is capped at Probable and the final transcript is asked for —
 #    `higher_results.final_owed`, `higher_owed`). Stored as `bands.NOT_CHECKED` with a `doc_seen`
@@ -162,18 +165,32 @@ _POLY_SLIP_MARKS = ('HPNM', 'JAM KREDIT', 'KELAS SEMASA', 'NILAI MATA', 'MATA KR
 #: The polytechnic student portal's own furniture (the corpus screenshot prints all 6; nothing else any).
 _PORTAL_MARKS = ('SEMAKAN BUTIRAN PELAJAR', 'STATUS PENDAFTARAN HAL EHWAL PELAJAR', 'DAFTAR HHP',
                  'STATUS DAFTAR LATIHAN INDUSTRI', 'KEPUTUSAN PEPERIKSAAN MENGIKUT SEMESTER', 'KEPUTUSAN ASASI TVET')
+#: The portal's menu item for a DIFFERENT programme ("Keputusan Asasi TVET") — removed before the
+#: page's kind is read, or every portal screen would point two ways (Asasi and Diploma).
+_PORTAL_MENU = re.compile(r'KEPUTUSAN\s+ASASI\s+TVET', re.I)
 #: A Matriculation offer letter's own wording (the 22 Bahagian Matrikulasi offers print 3-4; 0 on
 #: every transcript and slip).
 _OFFER_MARKS = ('TAWARAN', 'LAPOR DIRI', 'SURAT TAWARAN', 'KEMASUKAN', 'TARIKH PENDAFTARAN', 'TAHNIAH',
                 'DITAWARKAN', 'OFFER')
 #: The completion status a FINAL transcript prints (ruling A / C): every corpus transcript, the
-#: provisional polytechnic one included.
+#: provisional polytechnic one included. Label then value, or value then label (a text layer can
+#: print "COMPLETED" before its "STATUS" label). Nothing else is recognised as final.
 _MATRIC_FINAL = ('LULUS DAN TAMAT', 'PASS AND COMPLETED')
-_POLY_FINAL = ('STATUS COMPLETED',)
-#: The END of a transcript is on the page (so a missing status is really missing, not cut off by a
-#: page-1-only read): the Matriculation average box / PNGK; the polytechnic "End of results".
-_MATRIC_END = ('PURATA GRED BAGI KURSUS TERAS', 'AVERAGE GRADE FOR CORE COURSES', 'PNGK CGPA')
-_POLY_END = ('END OF RESULTS',)
+_POLY_FINAL = re.compile(r'\bSTATUS\s*COMPLETED\b|\bCOMPLETED\s*STATUS\b')
+#: POSITIVE evidence that a transcript is not final (review B1, lead decision 2026-10-30): an
+#: in-progress status printed against the STATUS label, either order. A transcript whose status is
+#: absent, cut off (page 1 only), OCR-damaged or worded otherwise is NOT ruled non-final — it stays
+#: "not checked" (no genuine, no owed, no ask). No corpus transcript prints one of these (every one
+#: is completed); the words sit only next to the label, so the portal's / offer letters' own AKTIF
+#: (5 offers, 1 portal page) never reaches it — and those pages fail the transcript gates anyway.
+_IN_PROGRESS_WORDS = (r'AKTIF|ACTIVE|DIGANTUNG|GANTUNG|SUSPENDED|SEDANG BELAJAR|SEDANG BERJALAN|'
+                      r'BELUM TAMAT|IN PROGRESS|ONGOING|TANGGUH|DEFERRED|BERHENTI|WITHDRAWN')
+_IN_PROGRESS = re.compile(rf'\bSTATUS\s*(?:{_IN_PROGRESS_WORDS})\b|\b(?:{_IN_PROGRESS_WORDS})\s*STATUS\b')
+
+
+def _final(tn, kind):
+    """Does this normalised transcript page print its recognised completion status?"""
+    return any(m in tn for m in _MATRIC_FINAL) if kind == 'matric' else bool(_POLY_FINAL.search(tn))
 #: What `doc_seen` says for each ruling (the reviewer's line, the student's note).
 MATRIC_SLIP, POLY_SLIP, POLY_PORTAL, MATRIC_OFFER = (
     'matric_result_slip', 'poly_result_slip', 'poly_portal_page', 'matric_offer_letter')
@@ -183,12 +200,12 @@ _RULINGS = {
     MATRIC_SLIP: (NOT_CHECKED, 'a Matriculation semester result slip' + _OWED),
     POLY_SLIP: (NOT_CHECKED, 'a polytechnic semester result slip' + _OWED),
     POLY_PORTAL: (NOT_CHECKED, 'the polytechnic student-portal page' + _OWED),
-    MATRIC_NOT_FINAL: (NOT_CHECKED, 'a Matriculation transcript with no completion status' + _OWED),
-    POLY_NOT_FINAL: (NOT_CHECKED, 'a polytechnic transcript with no completion status' + _OWED),
+    MATRIC_NOT_FINAL: (NOT_CHECKED, 'a Matriculation transcript printing an in-progress status' + _OWED),
+    POLY_NOT_FINAL: (NOT_CHECKED, 'a polytechnic transcript printing an in-progress status' + _OWED),
     MATRIC_OFFER: ('not_matric_result', 'a Matriculation offer letter, not a results document '
                    '(owner ruling D, 2026-10-29)'),
 }
-assert set(_RULINGS) - {MATRIC_OFFER} == NOT_FINAL_SEEN       # one home for the non-final codes
+assert set(_RULINGS) - NOT_RESULTS_SEEN == NOT_FINAL_SEEN and NOT_RESULTS_SEEN == {MATRIC_OFFER}   # one home
 
 
 def _count(tn, marks):
@@ -196,16 +213,17 @@ def _count(tn, marks):
 
 
 def _ruled_page(ocr_text, tn, kind):
-    """The ruling a page is recognised as (`MATRIC_SLIP` …), or ''. A page that passes a
-    transcript's own gates is a transcript: only its completion status can rule it (non-final)."""
-    if kind == 'matric' and _matric_gates(tn):
-        final = any(m in tn for m in _MATRIC_FINAL)
-        return '' if final or not any(m in tn for m in _MATRIC_END) else MATRIC_NOT_FINAL
-    if kind == 'diploma' and _poly_gates(ocr_text, tn):
-        final = any(m in tn for m in _POLY_FINAL)
-        return '' if final or not any(m in tn for m in _POLY_END) else POLY_NOT_FINAL
-    if _count(tn, _PORTAL_MARKS) >= 3:
-        return POLY_PORTAL
+    """The ruling a page is recognised as (`MATRIC_SLIP` …), or ''. Non-final ONLY on positive
+    evidence (review B1): a slip's / the portal's own wording, or a transcript printing an
+    in-progress status (and no completion status). A page that passes a transcript's own gates is a
+    transcript: nothing but that status can rule it."""
+    if kind in ('matric', 'diploma') and (_matric_gates(tn) if kind == 'matric' else _poly_gates(ocr_text, tn)):
+        if not _IN_PROGRESS.search(tn) or _final(tn, kind):
+            return ''
+        return MATRIC_NOT_FINAL if kind == 'matric' else POLY_NOT_FINAL
+    if (_count(tn, _PORTAL_MARKS) >= 3 and prints_polytechnic(ocr_text)
+            and detect(_PORTAL_MENU.sub(' ', ocr_text)) == 'diploma'):
+        return POLY_PORTAL      # SF5: a polytechnic's own portal only — KK / UiTM / unnamed stay {}
     kpm = 'BAHAGIAN MATRIKULASI' in tn or 'MATRICULATION DIVISION' in tn
     if kind == 'matric' and kpm and _count(tn, _MATRIC_SLIP_MARKS) >= 2:
         return MATRIC_SLIP
@@ -238,9 +256,11 @@ def matric_poly_higher_genuineness(ocr_text: str) -> dict:
     seen = _ruled_page(ocr_text, tn, kind)
     if seen:
         return _ruling_result(ocr_text, seen)
-    if kind == 'matric' and _matric_gates(tn) and any(m in tn for m in _MATRIC_FINAL):
+    if _IN_PROGRESS.search(tn) or not _final(tn, kind):     # contradictory or unrecognised: {}
+        return {}
+    if kind == 'matric' and _matric_gates(tn):
         sg = _scored(ocr_text, MATRIC_TRANSCRIPT_SIGNATURES, 'matric_transcript')
-    elif kind == 'diploma' and _poly_gates(ocr_text, tn) and any(m in tn for m in _POLY_FINAL):
+    elif kind == 'diploma' and _poly_gates(ocr_text, tn):
         sg = _scored(ocr_text, POLY_TRANSCRIPT_SIGNATURES, 'poly_transcript')
     else:
         return {}

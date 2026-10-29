@@ -134,9 +134,21 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   (Probable, the final transcript asked for — the #388 ask), never the −2 step; a provisional
   transcript with its status and final CGPA counts; a Matriculation offer letter is not a results
   document. Branch `m4b-matric-poly-rulings`.
+- Adversarial review (2026-10-30): non-final ONLY on positive evidence (slip / portal wording, an
+  in-progress status); an absent or unrecognised status is `{}`. One rule for "answers the ask" and
+  for "the upload the verdict reads"; the ask only when the application asks for higher results.
 
 ### M5 — Live re-read + close · low · ~3 h · paid: Gemini fallback on misses only
 - Targeted live `reextract_documents` for matric/diploma `higher_results` with the job flags.
+- **The forced overwrite (M4b review SF7):** TD-407 (`bands.keep_stored_authenticity`) carries a
+  stored score forward when a re-read gives no signal — so a page scored under an OLD rule would keep
+  it. Run the pass WITH `REEXTRACT_FRESH_HIGHER_AUTH=1` (flag `--fresh-higher-authenticity`) beside
+  `REEXTRACT_DOC_TYPE=higher_results` and a NEW `REEXTRACT_PASS`, plus the service's
+  `DOC_GENUINENESS_CHECK_ENABLED` (the command refuses without it). Only `higher_results` docs of kind
+  matric / diploma lose their stored block, in memory, just before their own re-read; the fresh
+  answer stands, `{}` included; a failed re-read keeps the stored block. UNSET all three after.
+- Before the paid run: the before/after list again (ids only), and a dry check that no STPM higher
+  page or other doc type is touched.
 - CHANGELOG, decisions, retrospective; completion report on #49 with TOTAL spent vs TOTAL planned.
 
 **Total: 5 sprints, ~30 h.**

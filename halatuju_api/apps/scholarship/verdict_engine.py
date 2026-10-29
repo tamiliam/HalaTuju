@@ -900,12 +900,12 @@ def _fact_genuineness_docs(application, fact_name):
 
 
 def _suspect_genuineness(application, doc_types):
-    """The CANONICAL genuineness status among the latest of the given doc types if it warrants a
-    soft cap ('suspect' / 'not_<type>'), else ''. Reads vision_fields only and folds any value —
-    current or legacy — via ``canonical_status``, so old stored authenticity still caps. SOFT: the
-    reviewer is the authority."""
+    """The CANONICAL genuineness status among the latest of the given doc types (the higher results:
+    `higher_results.anchor_doc`, M4b SF4) if it warrants a soft cap ('suspect' / 'not_<type>'), else ''.
+    Folds any value — current or legacy — via ``canonical_status``. SOFT: the reviewer is the authority."""
+    from .higher_results import anchor_doc
     for dt in doc_types:
-        d = _latest_doc(application, dt)
+        d = anchor_doc(application, dt)
         raw = stored_status(d.vision_fields if d else None)                 # TD-293
         st = canonical_status(raw, getattr(d, 'doc_type', None) or dt)
         if st and st != 'genuine':
@@ -926,10 +926,9 @@ def _str_wrong_type(application):
 
 
 def _apply_genuineness_caps(application, facts):
-    """Soft post-cap (Sprint 2): a suspect/wrong-type feeding document lowers a fact from
-    'verified' to 'review' and adds a `document_not_genuine` caveat — the AI is less certain
-    when the evidence may not be a genuine document. NEVER moves a fact to 'gap'/fail and
-    never upgrades. Only bites when the (flag-gated) genuineness check has run."""
+    """Soft post-cap (Sprint 2): a suspect/wrong-type feeding document lowers a fact from 'verified' to
+    'review' and adds a `document_not_genuine` caveat (`verdict_ladder.doc_caveat`) — the AI is less
+    certain. NEVER moves a fact to 'gap'/fail, never upgrades; only once the genuineness check ran."""
     for fact in facts:
         dts = _fact_genuineness_docs(application, fact['fact'])
         # A wrong_type STR — a GENUINE non-STR document in the STR slot (a payslip, a SARA letter) —
@@ -946,13 +945,14 @@ def _apply_genuineness_caps(application, facts):
             dts = [d for d in dts if d != 'birth_certificate']
         if specific & {'guardianship_letter_not_genuine', 'guardianship_letter_unreadable'}:
             dts = [d for d in dts if d != 'guardianship_letter']
-        if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
+        if not dts or specific & {'document_not_genuine', 'higher_results_not_results'}:
             continue
         st = _suspect_genuineness(application, dts)
         if st:
             if fact['status'] == 'verified':
                 fact['status'] = 'review'
-            fact['unresolved'].append(_item('document_not_genuine', status=st))
+            from .verdict_ladder import doc_caveat        # ruling D: an offer letter is "not a results document"
+            fact['unresolved'].append(doc_caveat(application, dts, st))
     return facts
 
 

@@ -134,6 +134,40 @@ docstring; migrate BEFORE the deploy).
   ask ("Please upload your final {kind} results"). Guide + FAQ updated.
 - `MODEL_VERSION` 1.22.0; `VERDICT_ENGINE_VERSION` 2026-10-29.3 (unreleased; set once for M4b).
 
+### Adversarial review fixes (2026-10-30)
+- **B1 / SF1 — non-final only on POSITIVE evidence** (lead decision, within the owner's intent): a
+  page is ruled non-final only by a slip's or a polytechnic portal's own wording, or a transcript
+  printing an in-progress status against its STATUS label (AKTIF / ACTIVE / DIGANTUNG / SEDANG
+  BELAJAR …; no corpus transcript prints one — the words hit only one salary slip). A transcript
+  whose status is absent, cut off (page 2), OCR-damaged (C0MPLETED, TAMAI) or worded otherwise
+  (GRADUATED, LULUS) is `{}` — not checked: no genuine, no owed, no ask, never "re-upload". Genuine
+  still needs the recognised status; a value-first " : COMPLETEDSTATUS" is recognised. The
+  "end of the transcript visible" rule is gone.
+- **SF2** — the cockpit shows a non-final page as a neutral grey "Final transcript owed" fact, never
+  the amber "Genuine" doubt.
+- **SF3** — ONE rule, `higher_results.answers_higher_ask` (not an SPM slip, the FINAL result), read
+  by an officer's results request (`results_requests.answers`, so the upload closure) and by Check
+  2's ask (`higher_owed.answered`): a non-final upload closes neither.
+- **SF4** — ONE rule for the upload the verdict reads, `higher_results.higher_doc`: the newest live
+  FINAL one (not a non-final page, not an offer letter), else the newest — read by the Academic card,
+  its red chips, the genuineness ladder / caps (`anchor_doc`), the anomaly and `final_owed_kind`.
+- **SF5** — the portal rule needs a polytechnic's own name on a Diploma page (the portal's
+  "Keputusan Asasi TVET" menu item is set aside first); Kolej Komuniti / UiTM / unnamed portal pages
+  are `{}`. Corpus 1311 (prints no polytechnic name, in the semester slot) is now `{}`.
+- **SF6** — the ruling-B ask fires only when the application asks for higher results (intake D16c
+  and the Academic card about them, `anchors_on_higher`); the kind is the upload's own (an
+  officer's request names it there), else the results held.
+- **SF7** — `reextract_documents --fresh-higher-authenticity` (env `REEXTRACT_FRESH_HIGHER_AUTH=1`):
+  M5's forced overwrite — a Matric / Diploma higher-results re-read REPLACES its stored authenticity
+  with the fresh result, `{}` included (TD-407 otherwise keeps it). Dropped in memory only; a failed
+  re-read keeps the stored block; refuses with the genuineness check off. TD-407 unchanged elsewhere.
+- **Nits** — the reviewer never sees a raw `doc_seen` code (`lib/docSeen.ts`, labels in en/ms/ta,
+  pinned to the api by a drift test); an offer letter reads "not a results document"
+  (`higher_results_not_results` verdict item, `document_not_results` anomaly), never "may not be the
+  genuine original"; `higher_results_not_final` no longer says "has been asked for" before submission;
+  the officer's Diploma request copy matches the Matriculation one. No version bump (1.22.0 /
+  2026-10-29.3 are still unreleased).
+
 ## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
 
 The owner audited every billed request — 3, 5, 10, 12, 14, 18, 27, 28, 29, 30, 31, 33, 38, 39, 42, 44 — and

@@ -56,7 +56,8 @@ def answers(doc, item) -> bool:
     """Does this clean upload answer this RESULTS item? A 'results_slip' item — the officer's OR the
     system's (`results_slip_missing`, review finding 2) — is not answered by a higher result, nor an
     officer's higher-results request by an SPM slip (each document is kept where it was put; the
-    reviewer sees it and the item stays open). The system's Check-2 ask for owed higher results
+    reviewer sees it and the item stays open), nor a higher-results ask by a non-final page (M4b ruling
+B: a semester slip, the portal page). The system's Check-2 ask for owed higher results
     (`higher_owed.ASK_CODE`, #388) follows the officer's rule. Every other item → True (unchanged)."""
     if item.doc_type == 'results_slip':
         from .wrong_slip import fills_spm_slot
@@ -64,6 +65,6 @@ def answers(doc, item) -> bool:
     if getattr(item, 'source', '') not in ('officer', 'check2'):   # check2: #388's ask (higher_owed)
         return True
     if item.doc_type == 'higher_results' and doc.doc_type == 'higher_results':
-        from .higher_results import student_higher_check
-        return student_higher_check(doc)['kind_status'] != 'spm'
+        from .higher_results import answers_higher_ask      # not an SPM slip, and the FINAL result (SF3)
+        return answers_higher_ask(doc)
     return True

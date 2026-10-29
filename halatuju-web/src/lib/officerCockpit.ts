@@ -345,12 +345,12 @@ function reasonableStatus(s: string): FactStatus {
 // A genuineness verdict that isn't 'genuine' → its own fact for the document. Two distinct tones
 // (owner 2026-07-07): a `not_<type>` (the scorer says it isn't that KIND of document at all — e.g.
 // an EPF filed as a salary slip) is a RED 'wrongType' — the wrong/"fake" document, its read values
-// are meaningless. A `suspect` (looks like the right type but the fingerprints are thin — usually a
-// cropped page) is AMBER 'genuine' — "we aren't sure it's genuine"; the read VALUES still stand on
-// their own match/read status. null when there is no signal or the doc is genuine/likely_genuine.
+// are meaningless. A `suspect` (thin fingerprints, usually a cropped page) is AMBER 'genuine' — "we
+// aren't sure it's genuine"; the read VALUES still stand. null when no signal / genuine.
 function genuinenessFact(doc: AdminApplicantDocument): DocumentFactLabel | null {
   const s = doc.authenticity?.status
   if (!s || s === 'genuine' || s === 'likely_genuine') return null
+  if (s === 'final_owed') return { key: 'finalOwed', status: 'unknown' }   // M4b SF2: grey, never a doubt
   return s.startsWith('not_')
     ? { key: 'wrongType', status: 'not' }      // wrong document / fake → RED, caps its reads
     : { key: 'genuine', status: 'partial' }    // suspect → AMBER "unsure", does NOT cap the reads

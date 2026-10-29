@@ -1,8 +1,8 @@
 """Matric/Diploma M4b — the owner's rulings (2026-10-29) on Matriculation / polytechnic pages in the
 higher-results slot (`genuineness/matric_poly_doc.py`, MODEL_VERSION 1.22.0):
   A. only the FINAL result counts — the final academic transcript;
-  B. a NON-FINAL document (a semester result slip, the polytechnic portal, a transcript with no
-     completion status) does not count: read as if the final results are NOT YET UPLOADED —
+  B. a NON-FINAL document (a semester result slip, a polytechnic's portal, a transcript printing an
+     in-progress status — POSITIVE evidence only, review B1) does not count: read as NOT YET UPLOADED —
      Academic capped at Probable, the final transcript asked for — never the −2 step;
   C. a PROVISIONAL transcript that prints its completion status and final CGPA counts as final;
   D. a Matriculation OFFER LETTER here is "not a results document" (the −2 step); no suspect band.
@@ -47,6 +47,12 @@ POLY_SLIP = NL.join(['SLIP KEPUTUSAN PENILAIAN AKHIR', 'KEPUTUSAN PENILAIAN AKHI
                      'DPB10063 PRINCIPLES OF MANAGEMENT 3.0 A 4.00 12.00', 'PNM : 3.53 HPNM : 3.16'])
 
 
+def mine(text):
+    """The page in the live-path student's own name and CGPA (so it reads clean: only finality differs)."""
+    return text.replace('SITI AMINAH BINTI ALI', 'PRIYA').replace('CGPA : 3.29', 'CGPA : 3.50').replace(
+        'CGPA : 4.00', 'CGPA : 3.50')
+
+
 class TestTheRulings(SimpleTestCase):
     def assertRuled(self, text, seen, status):
         sg = score(text)
@@ -66,26 +72,52 @@ class TestTheRulings(SimpleTestCase):
     def test_b_the_polytechnic_student_portal_is_not_final(self):
         self.assertRuled(PORTAL, m.POLY_PORTAL, NOT_CHECKED)
 
-    def test_b_a_transcript_with_no_completion_status_is_not_final(self):
-        no_status = MATRIC.replace('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', '').replace(
+    def test_b_a_transcript_printing_an_in_progress_status_is_not_final(self):
+        """Positive evidence (review B1): the status itself says the programme is not finished."""
+        for status in ('ACTIVE', 'AKTIF', 'DIGANTUNG', 'SEDANG BELAJAR'):
+            self.assertRuled(POLY.replace('STATUS  : COMPLETED', f'STATUS  : {status}'), m.POLY_NOT_FINAL, NOT_CHECKED)
+        self.assertRuled(POLY.replace('STATUS  : COMPLETED', ' : ACTIVESTATUS'), m.POLY_NOT_FINAL, NOT_CHECKED)
+        in_progress = MATRIC.replace('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', 'STATUS : SEDANG BELAJAR').replace(
             'PASS AND COMPLETED MATRICULATION PROGRAMME', '')
-        self.assertRuled(no_status, m.MATRIC_NOT_FINAL, NOT_CHECKED)
-        self.assertRuled(POLY.replace('STATUS  : COMPLETED', 'STATUS  : ACTIVE'), m.POLY_NOT_FINAL, NOT_CHECKED)
+        self.assertRuled(in_progress, m.MATRIC_NOT_FINAL, NOT_CHECKED)
+
+    def test_b_a_completion_status_and_an_in_progress_one_is_not_settled(self):
+        self.assertEqual(score(POLY + NL + 'STATUS : AKTIF'), {})
+        self.assertEqual(score(MATRIC + NL + 'STATUS : AKTIF'), {})
 
     def test_a_transcript_is_genuine_only_with_its_completion_status(self):
-        """No status, no end on the page (no average box, no PNGK): never genuine, only unsure."""
+        """No status at all: never genuine — and never ruled non-final either (B1): unsure, {}."""
         cut = MATRIC
-        for line in ('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', 'PASS AND COMPLETED MATRICULATION PROGRAMME',
-                     'PURATA GRED BAGI KURSUS TERAS DAN ENGLISH', 'AVERAGE GRADE FOR CORE COURSES AND ENGLISH',
-                     'PNGK / CGPA : 3.29'):
+        for line in ('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', 'PASS AND COMPLETED MATRICULATION PROGRAMME'):
             cut = cut.replace(line, '')
         self.assertEqual(score(cut), {})
+        self.assertEqual(score(POLY.replace('STATUS  : COMPLETED', 'STATUS  :')), {})
 
-    def test_b_a_page_one_view_that_cannot_see_the_end_stays_unsure(self):
-        """A missing status is only "missing" when the END of the transcript is on the page."""
-        self.assertEqual(score(four_sem_pages()[0]), {})
-        no_end = POLY.replace('~~~~~End of results~~~~~', '').replace('STATUS  : COMPLETED', 'STATUS  : ACTIVE')
-        self.assertEqual(score(no_end), {})
+    def test_b1_a_real_poly_transcript_printed_value_first_is_genuine(self):
+        """A text layer can print the value before its label: " : COMPLETEDSTATUS"."""
+        self.assertEqual(score(POLY.replace('STATUS  : COMPLETED', ' : COMPLETEDSTATUS'))['status'], 'genuine')
+        self.assertEqual(score(POLY.replace('STATUS  : COMPLETED', 'COMPLETED  STATUS'))['status'], 'genuine')
+
+    def test_b1_a_noisy_or_otherwise_worded_poly_status_is_unsure_never_non_final(self):
+        for status in ('STATUS  : C0MPLETED', 'STATUS  : GRADUATED', 'STATUS  : LULUS', 'STATUS  : C0MPLETEDSTATUS',
+                       ' : GRADUATEDSTATUS', 'STAT US : COMPLETED'):
+            self.assertEqual(score(POLY.replace('STATUS  : COMPLETED', status)), {}, status)
+
+    def test_sf1_a_matric_status_on_page_two_or_cut_or_damaged_is_unsure_never_non_final(self):
+        # 2-semester transcript whose STATUS lines moved to page 2: page 1 alone.
+        page1 = MATRIC.replace('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', '').replace(
+            'PASS AND COMPLETED MATRICULATION PROGRAMME', '').replace('PENGARAH / DIRECTOR', '')
+        self.assertEqual(score(page1), {})
+        self.assertEqual(score(four_sem_pages()[0]), {})                      # a 4-semester one, cut at page 1
+        damaged = MATRIC.replace('LULUS DAN TAMAT', 'LULUS DAN TAMAI').replace('PASS AND COMPLETED', 'PASS AND C0MPLETED')
+        self.assertEqual(score(damaged), {})
+
+    def test_sf5_the_portal_rule_is_a_polytechnics_own_portal(self):
+        for issuer in ('KOLEJ KOMUNITI CONTOH', 'UNIVERSITI TEKNOLOGI MARA', ''):
+            page = PORTAL.replace('POLITEKNIK CONTOH', issuer)
+            self.assertEqual(score(page), {}, issuer or 'no institution')
+        two_ways = PORTAL + NL + 'KOLEJ MATRIKULASI PERAK'               # a page pointing two ways: no kind
+        self.assertEqual(score(two_ways), {})
 
     def test_c_a_provisional_transcript_with_status_and_final_cgpa_counts_as_final(self):
         """3926's shape: "ACADEMIC TRANSCRIPT (PROVISIONAL)", STATUS COMPLETED, the final CGPA."""
@@ -142,10 +174,11 @@ class TestTheRulings(SimpleTestCase):
 class TestTheLivePath(TestCase):
     READ = {'candidate_name': 'PRIYA', 'cgpa': '3.50', 'cgpa_label': 'PNGK'}
 
-    def _upload(self, text, stage='shortlisted', **kw):
-        app = _app(MATRIC_HELD, DEGREE, stage=stage, **kw)
-        doc = ApplicantDocument.objects.create(application=app, doc_type='higher_results', results_kind='matric',
-                                               storage_path='test/hr-m4b', content_type='image/jpeg')
+    def _upload(self, text, stage='shortlisted', app=None, results_kind='matric', request_code='', **kw):
+        app = app or _app(MATRIC_HELD, DEGREE, stage=stage, **kw)
+        doc = ApplicantDocument.objects.create(application=app, doc_type='higher_results', results_kind=results_kind,
+                                               storage_path='test/hr-m4b', content_type='image/jpeg',
+                                               request_code=request_code)
         with patch('apps.scholarship.vision.extract_document_fields',
                    return_value={'fields': dict(self.READ), 'warnings': [], 'error': ''}):
             vision.run_field_extraction_for_document(
@@ -204,8 +237,86 @@ class TestTheLivePath(TestCase):
 
     def test_d_an_offer_letter_still_takes_the_not_a_result_step(self):
         app, doc = self._upload(MATRIC_OFFER)
+        from apps.scholarship.anomaly_engine import _detect_document_not_genuine
         self.assertEqual(doc.vision_fields['authenticity']['status'], 'not_matric_result')
-        self.assertIn('document_not_genuine', {i['code'] for i in self._academic(app)['unresolved']})
+        academic = self._academic(app)
+        codes = [i['code'] for i in academic['unresolved']]
+        # Review nit: the reviewer reads "not a results document", never "may not be the genuine original".
+        self.assertEqual(codes.count('higher_results_not_results'), 1)
+        self.assertNotIn('document_not_genuine', codes)
+        self.assertNotEqual(academic['status'], 'verified')                  # the -2 step still bites
+        anomaly = _detect_document_not_genuine(ScholarshipApplication.objects.get(pk=app.pk))
+        self.assertEqual((anomaly.code, anomaly.params), ('document_not_results', {'doc': 'Matriculation results'}))
+
+    def _submitted(self, **kw):
+        from apps.scholarship.tests.test_third_route_s4 import HIGHER_FROZEN
+        return _app(MATRIC_HELD, DEGREE, stage='profile_complete', requirements_snapshot=HIGHER_FROZEN, **kw)
+
+    def test_sf3_a_non_final_upload_never_closes_an_officers_results_request(self):
+        from apps.scholarship.models import ResolutionItem
+        from apps.scholarship.resolution import resolve_doc_items_for_upload
+        app = self._submitted()
+        item = ResolutionItem.objects.create(application=app, source='officer', code='officer_1', kind='doc',
+                                             doc_type='higher_results', fact='academic',
+                                             params={'results_kind': 'matric'})
+        _app_, slip = self._upload(mine(matric_slip()), app=app, request_code='officer_1')
+        self.assertEqual(resolve_doc_items_for_upload(ScholarshipApplication.objects.get(pk=app.pk), slip), 'ok')
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')                                # a slip is not the final result
+        _app_, final = self._upload(mine(MATRIC), app=app, request_code='officer_1')
+        resolve_doc_items_for_upload(ScholarshipApplication.objects.get(pk=app.pk), final)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+
+    def test_sf3_a_non_final_upload_never_closes_check_2s_ask(self):
+        from apps.scholarship import higher_owed, results_requests
+        from apps.scholarship.models import ResolutionItem
+        app = self._submitted()
+        ask = ResolutionItem.objects.create(application=app, source='check2', code=higher_owed.ASK_CODE, kind='doc',
+                                            doc_type='higher_results', fact='academic')
+        _app_, slip = self._upload(POLY_SLIP, app=app, results_kind='diploma')
+        self.assertFalse(results_requests.answers(slip, ask))
+        self.assertFalse(higher_owed.answered(ScholarshipApplication.objects.get(pk=app.pk)))
+        _app_, final = self._upload(mine(MATRIC), app=app)
+        self.assertTrue(results_requests.answers(final, ask))
+
+    def test_sf4_a_final_transcript_on_file_counts_whatever_came_after_it(self):
+        from apps.scholarship import higher_owed
+        from apps.scholarship.higher_results import higher_doc
+        for first, second in ((mine(MATRIC), mine(matric_slip())), (mine(matric_slip()), mine(MATRIC))):
+            app = self._submitted()
+            _a, one = self._upload(first, app=app)
+            _a, two = self._upload(second, app=app)
+            fresh = ScholarshipApplication.objects.get(pk=app.pk)
+            final = two if 'SLIP KEPUTUSAN' in first else one
+            self.assertEqual(higher_doc(fresh).pk, final.pk)
+            self.assertNotIn('higher_results_not_final', {i['code'] for i in self._academic(app)['unresolved']})
+            self.assertEqual(higher_owed.final_owed_kind(fresh), '')
+            self.assertEqual(higher_owed.ask_codes(fresh), set())
+
+    def test_sf6_an_spm_only_intake_with_a_voluntary_slip_asks_nothing(self):
+        from apps.scholarship import higher_owed
+        from apps.scholarship.tests.factories import make_cohort
+        app = self._submitted(cohort=make_cohort(min_stpm_pngk=None))
+        self._upload(mine(matric_slip()), app=app)
+        fresh = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertEqual(higher_owed.final_owed_kind(fresh), '')
+        self.assertEqual(higher_owed.ask_codes(fresh), set())
+
+    def test_sf6_no_ask_when_the_academic_card_is_not_about_the_higher_results(self):
+        from apps.scholarship import higher_owed
+        app = _app(MATRIC_HELD, DEGREE, stage='profile_complete')        # frozen with no higher-results slot
+        with patch('apps.scholarship.higher_results.anchors_on_higher', return_value=False):
+            self._upload(mine(matric_slip()), app=app)
+            self.assertEqual(higher_owed.final_owed_kind(ScholarshipApplication.objects.get(pk=app.pk)), '')
+
+    def test_sf6_the_ask_names_the_kind_an_officer_asked_for(self):
+        from apps.scholarship import higher_owed
+        app = self._submitted()
+        self._upload(POLY_SLIP, app=app, results_kind='diploma')              # an officer's Diploma request
+        fresh = ScholarshipApplication.objects.get(pk=app.pk)
+        self.assertEqual(higher_owed.final_owed_kind(fresh), 'diploma')
+        self.assertEqual(higher_owed.ask_params(fresh, higher_owed.ASK_CODE), {'results_kind': 'diploma'})
 
     def test_the_versions_moved(self):
         import re
@@ -213,3 +324,69 @@ class TestTheLivePath(TestCase):
         from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
         self.assertGreaterEqual(tuple(int(p) for p in MODEL_VERSION.split('.')), (1, 22, 0))
         self.assertGreaterEqual(tuple(int(p) for p in re.split(r'[-.]', VERDICT_ENGINE_VERSION)), (2026, 10, 29, 3))
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestTheM5ForcedOverwrite(TestCase):
+    """Review SF7: a re-read under the new rule REPLACES a Matric / Diploma page's stored
+    authenticity ({} included) only on the M5 pass's own flag; TD-407 holds everywhere else."""
+    OLD = {'status': NOT_CHECKED, 'doc_seen': m.MATRIC_NOT_FINAL, 'reason': 'old rule'}
+    READ = {'candidate_name': 'PRIYA', 'cgpa': '3.50', 'cgpa_label': 'PNGK'}
+
+    def _doc(self, kind='matric'):
+        app = _app(MATRIC_HELD, DEGREE)
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='higher_results', results_kind=kind, storage_path='test/m5',
+            content_type='image/jpeg', vision_fields={'fields': dict(self.READ), 'student_verdict': 'ok', 'error': '',
+                                                      'authenticity': dict(self.OLD)})
+
+    def _reread(self, doc):
+        """The real extraction path, on a page whose status line is cut off (page 1 only): no signal."""
+        page = mine(MATRIC).replace('STATUS : LULUS DAN TAMAT PROGRAM MATRIKULASI', '').replace(
+            'PASS AND COMPLETED MATRICULATION PROGRAMME', '')
+        with patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': dict(self.READ), 'warnings': [], 'error': ''}):
+            vision.run_field_extraction_for_document(
+                doc, names=['Priya'], ocr={'text': page, 'words': None, 'image': b'img', 'error': None})
+        return True
+
+    def _run(self, *args, **side):
+        from django.core.management import call_command
+        with patch('apps.scholarship.management.commands.reextract_documents.reextract_document',
+                   side_effect=side.get('effect', self._reread)):
+            call_command('reextract_documents', '--doc-type', 'higher_results', '--pass-marker', 'm5_test', *args)
+
+    def test_without_the_flag_td_407_keeps_the_stored_block(self):
+        doc = self._doc()
+        self._run()
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['authenticity']['doc_seen'], m.MATRIC_NOT_FINAL)
+
+    def test_the_flag_lets_the_fresh_empty_answer_replace_it(self):
+        doc = self._doc()
+        self._run('--fresh-higher-authenticity')
+        doc.refresh_from_db()
+        self.assertNotIn('authenticity', doc.vision_fields)                   # "not checked": no owed, no ask
+        self.assertTrue(doc.vision_fields['m5_test'])
+
+    def test_the_env_door_works_too_and_stpm_pages_keep_td_407(self):
+        stpm, matric = self._doc('stpm'), self._doc()
+        with patch.dict('os.environ', {'REEXTRACT_FRESH_HIGHER_AUTH': '1'}):
+            self._run()
+        stpm.refresh_from_db()
+        matric.refresh_from_db()
+        self.assertIn('authenticity', stpm.vision_fields)
+        self.assertNotIn('authenticity', matric.vision_fields)
+
+    def test_a_failed_re_read_keeps_the_stored_block(self):
+        doc = self._doc()
+        self._run('--fresh-higher-authenticity', effect=RuntimeError('storage outage'))
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['authenticity']['doc_seen'], m.MATRIC_NOT_FINAL)
+
+    @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
+    def test_the_flag_refuses_to_run_with_the_check_off(self):
+        from django.core.management.base import CommandError
+        self._doc()
+        with self.assertRaises(CommandError):
+            self._run('--fresh-higher-authenticity', '--allow-without-genuineness')

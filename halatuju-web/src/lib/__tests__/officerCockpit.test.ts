@@ -379,6 +379,17 @@ describe('documentFacts', () => {
       .toEqual([...base, { key: 'genuine', status: 'partial' }])
   })
 
+  it('a non-final Matric / Diploma page (M4b ruling B) → a neutral "final transcript owed" fact, never a genuineness doubt', () => {
+    const hc: HigherCheck = { name: 'match', candidate_name: '', exam: '', kind_held: 'matric', kind_detected: 'matric',
+      kind_status: 'match', cgpa_slip: 3.5, cgpa_entered: 3.5, cgpa_status: 'match', grades_status: '',
+      missing: [], mismatched: [], readable: true, note: '', note_kind: '', note_path: '' }
+    const facts = documentFacts(doc({ doc_type: 'higher_results', higher_check: hc,
+      authenticity: { status: 'final_owed', reason: '', doc_seen: 'matric_result_slip' } }))
+    expect(facts).toEqual([{ key: 'name', status: 'verified' }, { key: 'type', status: 'verified' },
+      { key: 'cgpa', status: 'verified' }, { key: 'finalOwed', status: 'unknown' }])
+    expect(facts.some((f) => f.key === 'genuine' || f.key === 'wrongType')).toBe(false)
+  })
+
   it('school-leaving cert → School/Name/IC match chips + Behaviour quality chip (owner 2026-07-15)', () => {
     const d = doc({ doc_type: 'school_leaving_cert', school_leaving_check: {
       school: 'SMK SEKSYEN 10', school_status: 'match', name: 'A B', name_status: 'partial',

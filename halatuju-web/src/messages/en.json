@@ -1559,7 +1559,7 @@
       },
       "genuineness": {
         "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked.",
-        "askFinal": "This is not your final result (it looks like a semester result slip, a student-portal page or a transcript without its completion status). Only the final version counts: please upload your final academic transcript. Nothing is blocked.",
+        "askFinal": "This is not your final result (it looks like a semester result slip, a student-portal page or a transcript showing your programme still in progress). Only the final version counts: please upload your final academic transcript. Nothing is blocked.",
         "notResults": "This looks like an offer letter, not a results document. Please upload your final academic transcript. Nothing is blocked."
       },
       "icCheck": {
@@ -4085,7 +4085,7 @@
         "higher_stpm": "STPM results slip or certificate — the full official document with your name clearly visible",
         "higher_matric": "Matriculation academic transcript — the full official transcript with your name and CGPA clearly visible (a semester result slip is not accepted)",
         "higher_asasi": "Asasi (Foundation) transcript — the full official transcript with your name and CGPA clearly visible",
-        "higher_diploma": "Diploma transcript — the full official transcript with your name and CGPA clearly visible",
+        "higher_diploma": "Diploma academic transcript — the full official final transcript with your name and CGPA clearly visible (a semester result slip or a student-portal page is not accepted)",
         "semester_result": "latest college/university semester result slip — showing your current CGPA",
         "school_leaving_cert": "school leaving certificate (surat berhenti sekolah) or a testimonial",
         "offer_letter": "offer letter — it must be addressed to you and show your name/IC",
@@ -4310,6 +4310,27 @@
           "seeded": "Motivation & grit: the statement of intent is thin — probe motivation, resilience, and future plans in depth."
         }
       },
+      "docSeen": {
+        "results_slip": "an SPM results slip",
+        "certificate": "an SPM certificate",
+        "stpm_slip": "an STPM results slip",
+        "stpm_certificate": "an STPM certificate",
+        "stpm_online_results_page": "the online STPM results-checker page",
+        "birth_certificate": "a birth certificate",
+        "epf": "an EPF statement",
+        "str_letter": "an STR approval letter",
+        "str_dashboard": "the MySTR app dashboard",
+        "str_semakan": "the MySTR status-check page",
+        "matric_transcript": "a Matriculation academic transcript",
+        "poly_transcript": "a polytechnic academic transcript",
+        "matric_result_slip": "a Matriculation semester result slip",
+        "poly_result_slip": "a polytechnic semester result slip",
+        "poly_portal_page": "a polytechnic's student-portal page",
+        "matric_transcript_not_final": "a Matriculation transcript showing the programme still in progress",
+        "poly_transcript_not_final": "a polytechnic transcript showing the programme still in progress",
+        "matric_offer_letter": "a Matriculation offer letter",
+        "other": "another kind of document"
+      },
       "anomaly": {
         "title": "Pre-interview flags",
         "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",
@@ -4360,6 +4381,10 @@
         "parent_ic_low_confidence": {
           "fact": "The parent/guardian's identity card doesn't look like a photo of a physical MyKad (likely typed text, a printout, or a screenshot).",
           "question": "The parent/guardian IC image doesn't look like a genuine card — confirm the physical card at interview."
+        },
+        "document_not_results": {
+          "fact": "The uploaded {doc} is not a results document — it is a Matriculation offer letter.",
+          "question": "The {doc} upload is an offer letter, not a results document — ask for the final academic transcript at interview."
         },
         "document_not_genuine": {
           "fact": "The uploaded {doc} doesn't look like a genuine official document — it appears to be: {seen}.",
@@ -4662,7 +4687,8 @@
           "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
           "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income).",
           "higher_results_missing": "No STPM / Matriculation / Asasi / Diploma results uploaded.",
-          "higher_results_not_final": "The {held} upload is not the final result (a semester result slip, a student-portal page or a transcript without its completion status), so it does not count: the final academic transcript is still owed and has been asked for. Academic cannot be Certain until it is on file.",
+          "higher_results_not_final": "The {held} upload is not the final result (a semester result slip, a polytechnic's student-portal page or a transcript showing the programme still in progress), so it does not count: the final academic transcript is still owed — the student is asked for it once the application is submitted. Academic cannot be Certain until it is on file.",
+          "higher_results_not_results": "The {held} upload is a Matriculation offer letter, not a results document, so it does not count: the final academic transcript is still owed. Academic cannot be Certain until it is on file.",
           "higher_results_not_on_file": "{held} results not on file. This application was submitted before the higher-results upload existed, so its SPM slip alone cannot make Academic Certain.",
           "higher_results_unreadable": "The higher results could not be read — ask for a clearer copy.",
           "higher_results_name_mismatch": "The higher results are in a different name. Confirm.",
@@ -4918,6 +4944,7 @@
           "balance": "Balance",
           "genuine": "Genuine",
           "wrongType": "Wrong type",
+          "finalOwed": "Final transcript owed",
           "unreadable": "Could not read",
           "cgpa": "CGPA",
           "child": "Child",
