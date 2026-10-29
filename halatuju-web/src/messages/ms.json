@@ -2796,7 +2796,25 @@
         "body": "Dana anda, keputusan anda dan ucapan terima kasih kepada penaja anda, di satu tempat."
       },
       "loadFailed": "Kami tidak dapat memuatkan halaman ini. Cuba lagi.",
-      "retry": "Cuba lagi"
+      "retry": "Cuba lagi",
+      "resultError": {
+        "bad_cgpa": "Masukkan PNGK antara 0.00 dan 4.00.",
+        "unsupported_format": "Lampirkan foto atau PDF slip anda.",
+        "file_too_large": "Fail itu terlalu besar. Lampirkan foto atau PDF yang lebih kecil.",
+        "upload_incomplete": "Slip anda tidak selesai dimuat naik. Sila cuba lagi.",
+        "bad_slip": "Kami tidak dapat melampirkan slip itu. Sila cuba lagi.",
+        "generic": "Tidak dapat menyimpan keputusan anda. Sila cuba lagi."
+      },
+      "review": {
+        "pending": "Menunggu semakan",
+        "accepted": "Diterima",
+        "queried": "Dipersoalkan",
+        "queriedNote": "Kami ada soalan tentang keputusan ini: {note}"
+      },
+      "slip": {
+        "label": "Slip keputusan anda (foto atau PDF)",
+        "hint": "Lampirkan slip daripada institusi anda supaya kami dapat mengesahkan keputusan anda."
+      }
     },
     "subnav": {
       "apply": "Mohon bantuan",
@@ -6007,7 +6025,8 @@
         "inProgramme": "Dalam program",
         "onHold": "Ditangguhkan",
         "probation": "Percubaan",
-        "readyToClose": "Sedia ditutup"
+        "readyToClose": "Sedia ditutup",
+        "belowMinimum": "Prestasi rendah"
       },
       "filter": {
         "all": "Semua",
@@ -6026,7 +6045,10 @@
         "lastActivity": "Aktiviti terakhir"
       },
       "standing": {
-        "has_result": "Keputusan direkodkan",
+        "performing": "Berprestasi",
+        "underperforming": "Prestasi rendah",
+        "failing": "Gagal",
+        "awaiting_review": "Menunggu semakan",
         "no_result_yet": "Belum ada keputusan"
       },
       "tab": {
@@ -6056,8 +6078,9 @@
         "cgpaFor": "PNGK · {semester}",
         "recordedOn": "Direkodkan {date}",
         "noResult": "Belum ada keputusan semester direkodkan.",
-        "standingLater": "Kedudukan berbanding PNGK minimum program akan tersedia bersama semakan keputusan.",
-        "openFile": "Buka fail penerima"
+        "openFile": "Buka fail penerima",
+        "thresholds": "PNGK minimum {min} · gagal di bawah {failing} (tetapan organisasi)",
+        "openResults": "Buka keputusan"
       },
       "money": {
         "award_amount": "Anugerah",
@@ -6107,7 +6130,9 @@
         "payment_released": "Bayaran dikeluarkan · RM{amount} {ref}",
         "result_submitted": "Keputusan dihantar · {semester}",
         "closed": "Fail ditutup · {reason}",
-        "other": "Kemas kini sistem"
+        "other": "Kemas kini sistem",
+        "result_accepted": "Keputusan diterima · {semester}",
+        "result_queried": "Keputusan dipersoalkan · {semester}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6132,6 +6157,36 @@
           "generic": "Tidak dapat menukar status. Anda mungkin tiada kebenaran."
         },
         "noFileHint": "Dia dibayar melalui larian pembayaran tetapi belum mempunyai fail penerima (e-dompetnya belum dilaporkan aktif), jadi statusnya ditetapkan di sini."
+      },
+      "results": {
+        "intro": "Hanya keputusan yang diterima dikira untuk kedudukannya dan apa-apa yang dilihat oleh penaja.",
+        "loadFailed": "Tidak dapat memuatkan keputusan.",
+        "graduated": "Bergraduat",
+        "cgpa": "PNGK {cgpa}",
+        "submitted": "Dihantar {date}",
+        "reviewed": "disemak oleh {by} pada {date}",
+        "status": {
+          "pending": "Menunggu semakan",
+          "accepted": "Diterima",
+          "queried": "Dipersoalkan"
+        },
+        "studentNote": "Catatannya: {note}",
+        "viewSlip": "Lihat slip",
+        "noSlip": "Tiada slip dilampirkan",
+        "accept": "Terima",
+        "query": "Persoalkan",
+        "queryPlaceholder": "Apa yang perlu dia semak atau hantar semula?",
+        "sendQuery": "Hantar soalan",
+        "slip": "Slip keputusan",
+        "done": {
+          "accepted": "Keputusan diterima.",
+          "queried": "Soalan dihantar kepada pelajar."
+        },
+        "error": {
+          "note_required": "Tulis apa yang perlu dia semak sebelum menghantar soalan.",
+          "file_closed": "Fail ini telah ditutup, jadi keputusannya baca sahaja.",
+          "generic": "Tidak dapat menyimpan semakan. Anda mungkin tiada kebenaran."
+        }
       }
     },
     "contracts": {
@@ -6779,7 +6834,8 @@
           "decisions": "Keputusan & penolakan",
           "profile_completion": "Melengkapkan permohonan",
           "check2": "Soalan selepas penghantaran",
-          "awards": "Anugerah"
+          "awards": "Anugerah",
+          "maintenance": "Penyelenggaraan pelajar"
         },
         "setting": {
           "shortlist_email_delay_minutes": {
@@ -6925,6 +6981,26 @@
           "interview_reschedule_cutoff_hours": {
             "label": "Tukar atau batal sehingga — jam sebelum",
             "desc": "Sehampir mana dengan waktu mula pelajar masih boleh memilih waktu lain atau membatalkan. E-mel pengesahan menjanjikan nombor yang sama."
+          },
+          "maintenance_min_cgpa": {
+            "label": "PNGK minimum",
+            "desc": "Pelajar yang dibiayai di bawah nilai ini berprestasi rendah (standard akademik kontrak)."
+          },
+          "maintenance_failing_cgpa": {
+            "label": "PNGK gagal",
+            "desc": "Di bawah nilai ini dia gagal. Mesti di bawah minimum."
+          },
+          "results_terms_per_year": {
+            "label": "Penggal keputusan setahun",
+            "desc": "Berapa keputusan semester yang dihantar pelajar setiap tahun."
+          },
+          "results_due_days_after_term": {
+            "label": "Keputusan perlu dihantar — hari selepas penggal",
+            "desc": "Berapa lama selepas penggal tamat keputusannya perlu dihantar."
+          },
+          "results_overdue_grace_days": {
+            "label": "Tempoh tangguh sebelum \"tidak dihantar\" — hari",
+            "desc": "Berapa lama selepas tarikh akhir sebelum keputusan yang tiada ditandakan."
           }
         },
         "unit": {
@@ -6936,7 +7012,9 @@
           "time_of_day": "(hh:mm)",
           "megabytes": "MB",
           "documents": "dokumen",
-          "attempts": "percubaan"
+          "attempts": "percubaan",
+          "cgpa": "PNGK",
+          "terms": "penggal"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",
@@ -6954,10 +7032,15 @@
           "questions_after_reminder": "Terlalu lewat: e-mel soalan mesti sampai kepada pelajar sekurang-kurangnya sehari sebelum peringatan soalan. Pendekkan nilai ini, beri lebih banyak hari untuk menjawab, atau hantar peringatan lebih dekat dengan tarikh akhir.",
           "cutoff_beyond_lead": "Tidak boleh lebih lama daripada tempahan terawal (jam lebih awal).",
           "qc_hold_too_long": "Tidak boleh lebih lama daripada tempoh penolakan ditahan.",
-          "nudge_after_due": "Mesti kurang daripada bilangan hari keputusan perlu dibuat."
+          "nudge_after_due": "Mesti kurang daripada bilangan hari keputusan perlu dibuat.",
+          "failing_not_below_min": "PNGK gagal mesti di bawah PNGK minimum."
         },
         "errorGeneric": "Tidak dapat disimpan. Sila cuba lagi.",
-        "invalid": "Betulkan nilai yang ditanda dahulu."
+        "invalid": "Betulkan nilai yang ditanda dahulu.",
+        "warning": {
+          "contract_differs": "Kontrak \"{template}\" menyatakan PNGK {stated}, yang bukan PNGK minimum anda. Pastikan kedua-duanya sepadan.",
+          "contract_unstated": "Kontrak \"{template}\" tidak menyatakan PNGK dalam standard kemajuannya, jadi kami tidak dapat menyemaknya dengan PNGK minimum anda."
+        }
       },
       "colours": {
         "subtitle": "Tetapkan warna yang dilihat pelajar dan penaja anda di seluruh program.",

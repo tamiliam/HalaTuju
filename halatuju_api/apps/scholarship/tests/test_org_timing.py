@@ -59,7 +59,8 @@ NARROWED = {
 
 RULE_CODES = {'window_inverted', 'decline_before_shortlist', 'reminders_too_close',
               'reminder_outside_window', 'questions_after_reminder', 'cutoff_beyond_lead',
-              'qc_hold_too_long', 'nudge_after_due'}
+              'qc_hold_too_long', 'nudge_after_due',
+              'failing_not_below_min'}   # student maintenance S4a: the failing CGPA under the minimum
 
 
 def _org_cohort(org):

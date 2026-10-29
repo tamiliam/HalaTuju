@@ -4,13 +4,14 @@
  * ⚠ Who may read is the SERVER's (`views_admin/scholars.py` — the Applications rule: see_all reads the
  * organisation, a reviewer only their assigned scholars, finance never). Nothing here decides it.
  * ⚠ Money arrives as a STRING and stays one (the Payments rule) — format at the edge.
- * ⚠ `standing` is only 'no_result_yet' | 'has_result' until Sprint 4 derives the real one from the
- * organisation's settings; the screen must never judge a CGPA itself.
+ * ⚠ `standing` is the SERVER's (S4a `standing.py`: the latest ACCEPTED result against the
+ * organisation's thresholds); the screen must never judge a CGPA itself.
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import type { ClosureReason, MaintenanceSubstate } from './lifecycle'
-export type ScholarStanding = 'no_result_yet' | 'has_result'
+/** S4a: `standing.py`, from the latest ACCEPTED result and the organisation's thresholds. */
+export type ScholarStanding = 'performing' | 'underperforming' | 'failing' | 'awaiting_review' | 'no_result_yet'
 
 export interface ScholarResult { cgpa: string | null; semester: string; at: string }
 export interface ScholarGift { code: string; name: string }
@@ -25,6 +26,8 @@ export interface ScholarRow {
   maintenance_substate: MaintenanceSubstate
   is_on_hold: boolean
   latest_result: ScholarResult | null
+  /** A result is waiting for an officer's review. */
+  pending_review?: boolean
   standing: ScholarStanding
   mentor: null
   last_activity_at: string | null
@@ -36,6 +39,8 @@ export interface ScholarSummary {
   probation: number
   ready_to_close: number
   closed: number
+  /** S4a: in maintenance with a latest accepted CGPA under the organisation's minimum. */
+  below_minimum: number
 }
 
 export interface ScholarList {
@@ -52,6 +57,8 @@ export interface ScholarListQuery {
   substate?: MaintenanceSubstate | ''
   search?: string
   sort?: string
+  /** S4a: 'below_minimum' narrows to the Underperforming filter. */
+  standing?: 'below_minimum' | ''
   page?: number
   page_size?: number
 }
@@ -70,6 +77,8 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
     last_payment: { amount: string; at: string } | null
   }
   contract: { exists: boolean; status: string | null }
+  /** S4a: the organisation's thresholds the standing was judged by. */
+  thresholds?: { minimum: string; failing: string }
   mentor: null
   letters: never[]
   last_activity_at: string | null
@@ -78,6 +87,8 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
 }
 
 export interface ScholarControls {
+  /** S4a: may accept or query a result (a write on the case, while she is in maintenance). */
+  can_review_results?: boolean
   /** May write this case and the case takes a sub-state. */
   can_set_substate: boolean
   /** May move it to or from `on_hold` (payments rights — S1 M1). */
@@ -117,6 +128,7 @@ export function scholarsQuery(q: ScholarListQuery): string {
   if (q.substate) p.set('substate', q.substate)
   if (q.search?.trim()) p.set('search', q.search.trim())
   if (q.sort) p.set('sort', q.sort)
+  if (q.standing) p.set('standing', q.standing)
   if (q.page) p.set('page', String(q.page))
   if (q.page_size) p.set('page_size', String(q.page_size))
   const s = p.toString()
@@ -133,6 +145,32 @@ export async function getScholarFile(id: number, options?: ApiOptions) {
 
 export async function getScholarActivity(id: number, options?: ApiOptions) {
   return adminFetch<ScholarActivityPage>(`${BASE}${id}/activity/`, options)
+}
+
+/** S4a — one result on the officer's Results tab: the student's figures, the review, the slip. */
+export interface ScholarResultRow {
+  id: number
+  semester: string
+  cgpa: string | null
+  graduated: boolean
+  note: string
+  created_at: string
+  review_status: 'pending' | 'accepted' | 'queried'
+  review_note: string
+  reviewed_by: string
+  reviewed_at: string | null
+  slip: { url: string | null; filename: string; content_type: string } | null
+}
+
+export async function getScholarResults(id: number, options?: ApiOptions) {
+  return adminFetch<{ results: ScholarResultRow[] }>(`${BASE}${id}/results/`, options)
+}
+
+export async function reviewScholarResult(
+  id: number, resultId: number, review: { decision: 'accepted' | 'queried'; note: string },
+  options?: ApiOptions,
+) {
+  return adminMutate<ScholarResultRow>(`${BASE}${id}/results/${resultId}/review/`, 'POST', review, options)
 }
 
 export async function addScholarActivity(

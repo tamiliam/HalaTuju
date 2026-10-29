@@ -509,7 +509,7 @@ def sponsor_impact(sponsor):
             graduated_count += 1
         else:
             committed += sp.amount
-        semesters_completed += app.semester_results.count()
+        semesters_completed += app.semester_results.filter(review_status='accepted').count()   # S4a
     return {
         'total_given': str(committed + completed),
         'students_supported': len(active),

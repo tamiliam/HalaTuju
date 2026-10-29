@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 4a — results review and standing - 2026-10-29
+
+Roadmap Sprint 4, first half (4b = reminders, overdue and student emails). Migration **0186** (hand-apply DDL in
+its docstring; deploy AFTER migrating).
+
+- **Every funded student can record a result** (`can_record_results` = the maintenance predicate), with a result
+  slip (photo or PDF) uploaded first; "graduated" is the site Toggle. Each result shows her its review: awaiting
+  review, accepted, or queried with the officer's note. The hub no longer judges her CGPA itself.
+- **`SemesterResult` review fields** — `review_status` (pending / accepted / queried), `reviewed_by`, `reviewed_at`,
+  `review_note`, `term_index` (for 4b).
+- **Admin Results tab** on the scholar file: every result, her slip in the document viewer, Accept / Query with a
+  note, who reviewed and when; logged as `result_submitted` / `result_reviewed`.
+- **Standing** from the organisation's settings (new **Student maintenance** group: minimum CGPA 3.00, failing CGPA
+  2.00 — two decimal places, failing must be below minimum; three result-timing settings for 4b). Only an ACCEPTED
+  result counts. The Scholars list shows the standing chip, an **Underperforming** filter and tile (server-side),
+  and the file names the thresholds. A contract whose progress standard names another CGPA is warned in settings.
+- **Sponsors see only accepted results** — progress band (now on the maintenance predicate), portfolio count,
+  feed and impact agree (cross-reader test).
+
 ## Bumi coverage Sprint D2 — the other SPM courses, ATAU, the Bumi matric tracks (no migration) - 2026-10-29
 
 Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 rows in

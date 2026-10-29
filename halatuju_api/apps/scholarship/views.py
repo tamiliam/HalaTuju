@@ -582,15 +582,9 @@ class SemesterResultView(_OwnInProgrammeView):
         if application is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         data = request.data if isinstance(request.data, dict) else {}
+        # S4a: the slip is the file she just PUT (`slip`: storage path + metadata), recorded by the
+        # service so the pre-award document pipeline never runs on it (`results_review.record_slip`).
         slip = None
-        slip_id = data.get('results_slip')
-        if slip_id not in (None, '', 0):
-            slip = ApplicantDocument.objects.filter(
-                pk=slip_id, application=application, doc_type='results_slip',
-            ).first()
-            if slip is None:
-                return Response({'error': 'No such results slip on this application.',
-                                 'code': 'bad_slip'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             result = in_programme_service.record_semester_result(
                 application,
@@ -598,7 +592,7 @@ class SemesterResultView(_OwnInProgrammeView):
                 cgpa=data.get('cgpa'),
                 graduated=bool(data.get('graduated', False)),
                 results_slip=slip,
-                note=data.get('note', ''),
+                note=data.get('note', ''), slip_upload=data.get('slip'),
             )
         except in_programme_service.InProgrammeError as exc:
             return Response({'error': exc.code, 'code': exc.code},

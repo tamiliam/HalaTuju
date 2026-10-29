@@ -211,7 +211,18 @@ def _default_award_confirm_hold_days():
     return _whole('AWARD_COOLOFF_DAYS', 2)
 
 
-# key → {group, unit, min, max, default}, plus two OPTIONAL keys:
+def _default_maintenance_min_cgpa():
+    # The contract's academic progress standard (the owner, 2026-10-29: "3.00 from the contract").
+    return 3.0
+
+
+def _default_maintenance_failing_cgpa():
+    return 2.0
+
+
+# key → {group, unit, min, max, default}, plus three OPTIONAL keys:
+#   * `decimals` — the value may carry this many decimal places (a CGPA: 2). Without it a value is a
+#     whole number, as every key was before student maintenance S4a (2026-10-29).
 #   * `allowed` — the only values this setting may take (rendered as a menu, not a box). Use it
 #     when the range is not the real constraint: a slot step of 45 leaves `minute % step` no
 #     honest reading across an hour boundary, so the divisors of 60 are the whole vocabulary.
@@ -523,6 +534,32 @@ SETTINGS = {
     'award_confirm_hold_days': {
         'group': 'awards', 'unit': 'days', 'min': 1, 'max': 3,
         'default': _default_award_confirm_hold_days,
+    },
+    # ── student maintenance (S4a, 2026-10-29) ──
+    # The standing a funded student is judged by (`scholarship/standing.py`), from ACCEPTED results
+    # only. At or above the minimum: performing; below it: underperforming; below failing: failing.
+    # `org_config_rules` keeps failing below the minimum.
+    'maintenance_min_cgpa': {
+        'group': 'maintenance', 'unit': 'cgpa', 'min': 1, 'max': 4, 'decimals': 2,
+        'default': _default_maintenance_min_cgpa,
+    },
+    'maintenance_failing_cgpa': {
+        'group': 'maintenance', 'unit': 'cgpa', 'min': 0, 'max': 4, 'decimals': 2,
+        'default': _default_maintenance_failing_cgpa,
+    },
+    # ⚠ Registered now, READ by S4b's results-due / overdue jobs (`ResultsExpectation`): how many
+    # result terms a year, how long after a term the result is due, and the grace before "overdue".
+    'results_terms_per_year': {
+        'group': 'maintenance', 'unit': 'terms', 'min': 1, 'max': 4,
+        'default': lambda: 2,
+    },
+    'results_due_days_after_term': {
+        'group': 'maintenance', 'unit': 'days', 'min': 14, 'max': 120,
+        'default': lambda: 45,
+    },
+    'results_overdue_grace_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 0, 'max': 60,
+        'default': lambda: 14,
     },
 }
 

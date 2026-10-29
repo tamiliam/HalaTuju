@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import in_programme
+from apps.scholarship import results_review   # S4a: only an accepted result reaches a sponsor
 from apps.scholarship import sponsorship as svc
 from apps.scholarship.models import (
     Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort,
@@ -80,12 +81,12 @@ class TestSponsorImpactService(TestCase):
         # Student A — ongoing, two semesters recorded.
         a = _fundable_app(self.cohort, suffix='a', award=Decimal('2500'))
         _fund_accept(s, a)
-        in_programme.record_semester_result(a, semester='1', cgpa=Decimal('3.5'))
-        in_programme.record_semester_result(a, semester='2', cgpa=Decimal('3.6'))
+        results_review.review(in_programme.record_semester_result(a, semester='1', cgpa=Decimal('3.5')), decision='accepted')
+        results_review.review(in_programme.record_semester_result(a, semester='2', cgpa=Decimal('3.6')), decision='accepted')
         # Student B — graduated (latest result marks graduation).
         b = _fundable_app(self.cohort, suffix='b', award=Decimal('2000'))
         _fund_accept(s, b)
-        in_programme.record_semester_result(b, semester='final', cgpa=Decimal('3.8'), graduated=True)
+        results_review.review(in_programme.record_semester_result(b, semester='final', cgpa=Decimal('3.8'), graduated=True), decision='accepted')
 
         impact = svc.sponsor_impact(s)
         self.assertEqual(impact['students_supported'], 2)
@@ -119,7 +120,7 @@ class TestSponsorshipSerializerJourney(TestCase):
         Donation.objects.create(sponsor=s, amount=Decimal('3000'), programme=_gift())
         app = _fundable_app(self.cohort)
         sp = _fund_accept(s, app)
-        in_programme.record_semester_result(app, semester='1', cgpa=Decimal('3.0'))
+        results_review.review(in_programme.record_semester_result(app, semester='1', cgpa=Decimal('3.0')), decision='accepted')
         data = SponsorSponsorshipSerializer(sp).data
         self.assertEqual(data['semesters'], 1)
         self.assertFalse(data['onboarded'])   # onboarding not completed yet

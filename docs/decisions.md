@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## Only an ACCEPTED result counts — recording widens to every file; standing comes from the organisation — 2026-10-29 (student maintenance S4a)
+
+**Decision:** (1) a student IN MAINTENANCE (`maintenance_scope.is_in_maintenance`, so awarded + activated too) may
+record a semester result, with a slip (sign → PUT → record; `doc_type='semester_result'`,
+`request_code='in_programme'`, linked by `results_slip`). (2) Every result is born `review_status='pending'`; an
+officer with application-write rights on the file Accepts, or Queries with a note she sees (`results_review.review`,
+logged `result_reviewed`). (3) **Only an `accepted` result feeds anything that judges her** — her standing and every
+sponsor-facing reader. (4) Standing (`standing.py`: performing / underperforming / failing / awaiting review / no
+result yet) is the latest ACCEPTED result against the organisation's `maintenance_min_cgpa` (3.00) and
+`maintenance_failing_cgpa` (2.00), new registry group `maintenance` with a `decimals` unit (2 places) and a rule
+that failing < minimum; a graduated result is performing. Changing a threshold moves the chips with no deploy.
+(5) A contract template whose progress standard names another CGPA (or none) is a settings WARNING, never a refusal.
+(6) The browser judges nothing: the hub's own `≤ 2.0 → needs attention` chip is gone; she sees each result's review.
+
+**The doors (every writer and reader of `semester_results`, pinned in `test_results_review.py`):**
+writers — `in_programme.record_semester_result` (student, via `SemesterResultView.post`) and
+`results_review.review` (officer, via `AdminScholarResultReviewView`); nothing else creates or changes a row.
+Readers that JUDGE (accepted only) — `pool.derive_progress_state` (sponsor progress band; now on the predicate, so
+an awarded + funded student reads `on_track` instead of nothing), `pool` portfolio count, `sponsor_feed`
+(semester-completed items), `sponsorship` impact (`semesters_completed`), `serializers` sponsor `get_semesters`,
+`scholars._latest` / `standing_of` (staff list + file). Readers that SHOW (all rows, with their review state) — her
+own `SemesterResultView.get`, `views_bursary` latest result, the admin Results tab (`scholars.result_dict`, slip by
+signed URL, org-fenced). A cross-reader test pins that a pending or queried result moves no sponsor reader.
+
+**Alternatives considered:** running the slip through the pre-award document pipeline (Gemini read, Check-2, slot
+superseding) — refused: that pipeline judges an APPLICATION, and a post-award slip is read by a person;
+`record_slip` writes the document row itself. Judging standing in the browser from served thresholds — refused (two
+places to keep in step). **Trade-offs:** a result she records reaches a sponsor only after an officer reviews it — a
+deliberate delay. **Revisit if:** the officer queue grows past what the team reviews within the 4b due window.
+**Split:** 4b (separate push) = `ResultsExpectation` + `results-due-reminders` / `results-overdue-flag` crons + the
+`StudentEmailTemplate` family (results_due / results_overdue / result_queried; Student communications tab; metered)
++ the Results overdue filter. The three timing keys (`results_terms_per_year`, `results_due_days_after_term`,
+`results_overdue_grace_days`) are registered now and read by nothing until 4b.
+
 ## A Matriculation or polytechnic transcript is genuineness-checked; every page that needs a ruling stays "not checked" — 2026-10-29 (Matric/Diploma M4)
 
 **What is scored.** `genuineness/matric_poly_doc.py` fingerprints the two single-issuer layouts the

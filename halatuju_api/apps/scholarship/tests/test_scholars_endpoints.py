@@ -56,8 +56,10 @@ class _Scholars(TestCase):
         cls.other_gift = other.programme
         cls.stranger = make_application('maintenance', cohort=other,
                                         student=make_student(name='STRANGER'))
-        SemesterResult.objects.create(application=cls.bala, semester='Sem 1', cgpa=Decimal('3.40'))
-        SemesterResult.objects.create(application=cls.chen, semester='Sem 1', cgpa=Decimal('2.10'))
+        SemesterResult.objects.create(application=cls.bala, semester='Sem 1', cgpa=Decimal('3.40'),
+                                      review_status='accepted')
+        SemesterResult.objects.create(application=cls.chen, semester='Sem 1', cgpa=Decimal('2.10'),
+                                      review_status='accepted')
 
     def _get(self, admin, url=API, **params):
         return authed_client(admin).get(url, params)
@@ -72,7 +74,8 @@ class TestWhoIsListed(_Scholars):
         r = self._get(self.org_admin)
         self.assertEqual(self._names(r), ['AISYAH', 'BALA', 'CHEN'])
         self.assertEqual(r.json()['summary'], {
-            'in_programme': 3, 'on_hold': 1, 'probation': 1, 'ready_to_close': 0, 'closed': 1})
+            'in_programme': 3, 'on_hold': 1, 'probation': 1, 'ready_to_close': 0, 'closed': 1,
+            'below_minimum': 1})                     # S4a: Chen's accepted 2.10 is under 3.00
 
     def test_closed_lists_only_the_closed_files(self):
         self.assertEqual(self._names(self._get(self.org_admin, closed='1')), ['EZRA'])
@@ -85,7 +88,8 @@ class TestWhoIsListed(_Scholars):
                           'no_result_yet', None))
         self.assertIsNone(a['latest_result'])
         self.assertEqual((b['standing'], b['latest_result']['cgpa'], b['latest_result']['semester']),
-                         ('has_result', '3.40', 'Sem 1'))
+                         ('performing', '3.40', 'Sem 1'))
+        self.assertEqual(rows['CHEN']['standing'], 'underperforming')
         self.assertTrue(rows['CHEN']['is_on_hold'])
         self.assertEqual(a['gift']['code'], self.gift.code)
 
@@ -204,7 +208,7 @@ class TestFile(_Scholars):
         self.assertEqual(money['last_payment']['amount'], '200.00')
         self.assertEqual(body['contract'], {'exists': False, 'status': None})
         self.assertEqual((body['mentor'], body['letters'], body['standing']),
-                         (None, [], 'has_result'))
+                         (None, [], 'underperforming'))
         self.assertEqual(body['latest_result']['cgpa'], '2.10')
         self.assertNotIn('spending', body)
 

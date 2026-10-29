@@ -4,7 +4,9 @@
  * "My Bursary" (student maintenance S3; the in-programme page moved here). Pinned:
  *  * WHO reaches it is the server's: the summary endpoint serves her own file or 404s — a 404 is the
  *    calm "not in the programme yet" and wipes the header's hint;
- *  * the results form shows only when the server says `can_record_results` (Sprint 4 widens it);
+ *  * the results form shows only when the server says `can_record_results` (S4a: the file
+ *    predicate, so an awarded student records too); a slip goes sign → PUT → record, "graduated"
+ *    is the site Toggle (`role="switch"`), and each result shows its REVIEW, never a standing;
  *  * the paused notice reads `support_paused`, never a sub-state; the closed notice stays;
  *  * Overview carries her funds and latest result; only two tabs exist (the rest are hidden until
  *    their modules ship). `t` echoes its key and params.
@@ -73,12 +75,63 @@ it('the results form follows can_record_results, on the Results tab', async () =
   expect(await screen.findByText(/scholarship\.inProgramme\.results\.add/)).toBeTruthy()
 })
 
-it('an awarded student sees her results but no form until Sprint 4', async () => {
+it('without can_record_results she sees her results but no form', async () => {
   serve()
   render(<BursaryPage />)
   fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
   expect(await screen.findByText('scholarship.inProgramme.results.empty')).toBeTruthy()
   expect(screen.queryByText(/scholarship\.inProgramme\.results\.add/)).toBeNull()
+})
+
+it('records a result with its slip: sign, upload, then name the slip; graduated is a Toggle', async () => {
+  serve({ can_record_results: true })
+  mockApi.signUploadDocument.mockResolvedValue({ upload_url: 'https://put.example', storage_path: 'p/slip.pdf' } as never)
+  mockApi.uploadFileToSignedUrl.mockResolvedValue(undefined as never)
+  mockApi.addSemesterResult.mockResolvedValue({} as never)
+  render(<BursaryPage />)
+  fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
+  fireEvent.click(await screen.findByText(/scholarship\.inProgramme\.results\.add/))
+  const toggle = screen.getByRole('switch', { name: 'scholarship.inProgramme.results.graduated' })
+  expect(screen.queryByRole('checkbox')).toBeNull()
+  fireEvent.click(toggle)
+  const file = new File(['%PDF'], 'slip.pdf', { type: 'application/pdf' })
+  fireEvent.change(screen.getByTestId('slip-input'), { target: { files: [file] } })
+  fireEvent.change(screen.getByPlaceholderText('scholarship.inProgramme.results.semesterPh'), { target: { value: 'Sem 4' } })
+  fireEvent.click(screen.getByText('scholarship.inProgramme.results.save'))
+  await waitFor(() => expect(mockApi.addSemesterResult).toHaveBeenCalledWith(7, {
+    semester: 'Sem 4', cgpa: null, graduated: true,
+    slip: { storage_path: 'p/slip.pdf', original_filename: 'slip.pdf', content_type: 'application/pdf', size: 4 },
+  }, { token: 'tok' }))
+  expect(mockApi.signUploadDocument).toHaveBeenCalledWith('semester_result', { token: 'tok' })
+  expect(mockApi.uploadFileToSignedUrl).toHaveBeenCalledWith('https://put.example', file)
+})
+
+it('a refused slip says why, in her words', async () => {
+  serve({ can_record_results: true })
+  mockApi.addSemesterResult.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_cgpa' }))
+  render(<BursaryPage />)
+  fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
+  fireEvent.click(await screen.findByText(/scholarship\.inProgramme\.results\.add/))
+  fireEvent.click(screen.getByText('scholarship.inProgramme.results.save'))
+  expect(await screen.findByText('scholarship.bursary.resultError.bad_cgpa')).toBeTruthy()
+})
+
+it('each result shows its review, and a query shows the officer’s note', async () => {
+  serve()
+  mockApi.getSemesterResults.mockResolvedValue({ results: [
+    { id: 1, semester: 'Sem 3', cgpa: '2.40', graduated: false, note: '', created_at: '2026-10-20T00:00:00Z',
+      review_status: 'queried', review_note: 'Please send the stamped slip.' },
+    { id: 2, semester: 'Sem 2', cgpa: '3.10', graduated: false, note: '', created_at: '2026-07-01T00:00:00Z',
+      review_status: 'accepted', review_note: '' },
+  ] } as never)
+  render(<BursaryPage />)
+  fireEvent.click(await screen.findByRole('tab', { name: 'scholarship.bursary.tab.results' }))
+  const rows = await screen.findAllByTestId('result-row')
+  expect(rows[0].textContent).toContain('scholarship.bursary.review.queried')
+  expect(rows[0].textContent).toContain('scholarship.bursary.review.queriedNote|{"note":"Please send the stamped slip."}')
+  expect(rows[1].textContent).toContain('scholarship.bursary.review.accepted')
+  // The browser never judges her CGPA (the old <= 2.0 "needs attention" chip is gone).
+  expect(screen.queryByText(/scholarship\.inProgramme\.progress\./)).toBeNull()
 })
 
 it('a paused student sees the paused notice (support_paused, never a sub-state)', async () => {

@@ -12,6 +12,8 @@ import Toggle from '@/components/Toggle'
 import {
   getBursarySummary,
   getSemesterResults,
+  signUploadDocument,
+  uploadFileToSignedUrl,
   addSemesterResult,
   getPromotionalConsent,
   setPromotionalConsent,
@@ -28,21 +30,18 @@ import { formatDate } from '@/lib/formatDate'
 /**
  * A STATE map, so these are TONES — not the `category-N` family (Layer 1 F3, 2026-08-31).
  *
- * `graduated` was `indigo`, outside the four tones, because the vocabulary has one "positive" and
- * this set needs TWO good states that a student can tell apart: still going well, and finished.
- * A category swatch would have been wrong — graduating is a state, and a tenant's arbitrary
- * category colour must never be what says "you made it".
- *
- * Resolved with WEIGHT instead of hue: `on_track` is a light tint (in progress), `graduated` is
- * the filled chip (a completed achievement). Same tone, different emphasis, and the stronger one
- * belongs to the thing that actually finished.
+ * ⚠ Maintenance S4a removed the page's own "progress" chip, which judged her CGPA in the browser
+ * (≤ 2.0 → "needs attention"). A result is now REVIEWED by an officer, and what she sees is each
+ * result's REVIEW — awaiting review, accepted, or queried with the officer's note — never a
+ * standing (that is staff-side, `standing.py`). `graduated` keeps the filled weight against the
+ * accepted TINT: same tone, the stronger one for the thing that actually finished.
  */
-const PROGRESS_TONE: Record<string, string> = {
-  on_track: 'bg-positive-100 text-positive-700',
-  semester_completed: 'bg-info-100 text-info-700',
-  needs_attention: 'bg-caution-100 text-caution-700',
-  graduated: 'bg-positive-fill text-positive-fill-ink',
+const REVIEW_TONE: Record<string, string> = {
+  pending: 'bg-ground-100 text-ground-600',
+  accepted: 'bg-positive-100 text-positive-700',
+  queried: 'bg-caution-100 text-caution-700',
 }
+const GRADUATED_TONE = 'bg-positive-fill text-positive-fill-ink'
 
 type Tab = 'overview' | 'results'
 const TABS: readonly Tab[] = ['overview', 'results']
@@ -79,6 +78,7 @@ export default function BursaryPage() {
   const [semester, setSemester] = useState('')
   const [cgpa, setCgpa] = useState('')
   const [graduated, setGraduated] = useState(false)
+  const [slip, setSlip] = useState<File | null>(null)
   const [savingResult, setSavingResult] = useState(false)
   const [resultError, setResultError] = useState<string | null>(null)
 
@@ -132,25 +132,29 @@ export default function BursaryPage() {
     return () => { active = false }
   }, [authStatus, token, router, loadAll, attempt])
 
-  const currentBand = results[0]
-    ? results[0].graduated ? 'graduated'
-      : results[0].cgpa != null && parseFloat(results[0].cgpa) <= 2.0 ? 'needs_attention'
-        : results[0].cgpa != null ? 'semester_completed' : 'on_track'
-    : 'on_track'
 
   async function saveResult() {
     if (!app || !token) return
     setSavingResult(true); setResultError(null)
     try {
+      // S4a: the slip goes to storage first (a signed URL), then the result names it — the server
+      // records the slip itself, so the pre-award document pipeline never runs on it.
+      let upload: { storage_path: string; original_filename: string; content_type: string; size: number } | undefined
+      if (slip) {
+        const signed = await signUploadDocument('semester_result', { token })
+        await uploadFileToSignedUrl(signed.upload_url, slip)
+        upload = { storage_path: signed.storage_path, original_filename: slip.name,
+          content_type: slip.type, size: slip.size }
+      }
       await addSemesterResult(app.application_id, {
-        semester, cgpa: cgpa.trim() === '' ? null : cgpa.trim(), graduated,
+        semester, cgpa: cgpa.trim() === '' ? null : cgpa.trim(), graduated, slip: upload,
       }, { token })
       await loadAll(app.application_id, token)
-      setShowForm(false); setSemester(''); setCgpa(''); setGraduated(false)
+      setShowForm(false); setSemester(''); setCgpa(''); setGraduated(false); setSlip(null)
     } catch (e) {
-      const code = (e as Error & { code?: string }).code
-      setResultError(code === 'bad_cgpa' ? t('scholarship.inProgramme.results.errorCgpa')
-        : t('scholarship.inProgramme.results.errorGeneric'))
+      const code = (e as Error & { code?: string }).code || ''
+      const known = ['bad_cgpa', 'unsupported_format', 'file_too_large', 'upload_incomplete', 'bad_slip']
+      setResultError(t(`scholarship.bursary.resultError.${known.includes(code) ? code : 'generic'}`))
     } finally { setSavingResult(false) }
   }
 
@@ -326,23 +330,30 @@ export default function BursaryPage() {
 
         {/* ── Semester results (the Results tab) ───────────────────────────── */}
         {tab === 'results' && <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-lg font-bold text-ground-900">{t('scholarship.inProgramme.results.title')}</h2>
-            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${PROGRESS_TONE[currentBand]}`}>
-              {t(`scholarship.inProgramme.progress.${currentBand}`)}
-            </span>
-          </div>
+          <h2 className="text-lg font-bold text-ground-900">{t('scholarship.inProgramme.results.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.inProgramme.results.subtitle')}</p>
 
           {results.length > 0 ? (
             <ul className="mt-3 divide-y divide-ground-100">
               {results.map((r) => (
-                <li key={r.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-ground-700">{r.semester || '—'}</span>
-                  <span className="text-ground-500">
-                    {r.graduated ? `🎓 ${t('scholarship.inProgramme.results.graduatedTag')}`
-                      : r.cgpa != null ? `${t('scholarship.inProgramme.results.cgpaLabel')} ${r.cgpa}` : '—'}
-                  </span>
+                <li key={r.id} className="py-2 text-sm" data-testid="result-row">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-ground-700">{r.semester || '—'}</span>
+                    <span className="flex items-center gap-2 text-ground-500">
+                      {r.graduated
+                        ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${GRADUATED_TONE}`}>
+                            {t('scholarship.inProgramme.results.graduatedTag')}</span>
+                        : r.cgpa != null ? `${t('scholarship.inProgramme.results.cgpaLabel')} ${r.cgpa}` : '—'}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${REVIEW_TONE[r.review_status] ?? REVIEW_TONE.pending}`}>
+                        {t(`scholarship.bursary.review.${r.review_status || 'pending'}`)}
+                      </span>
+                    </span>
+                  </div>
+                  {r.review_status === 'queried' && r.review_note && (
+                    <p className="mt-1 rounded-lg bg-caution-50 px-3 py-2 text-xs text-caution-800">
+                      {t('scholarship.bursary.review.queriedNote', { note: r.review_note })}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -370,11 +381,18 @@ export default function BursaryPage() {
                   className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
                 <p className="mt-1 text-xs text-ground-400">{t('scholarship.inProgramme.results.cgpaHint')}</p>
               </div>
-              <label className="flex items-center gap-2 text-sm text-ground-700">
-                <input type="checkbox" checked={graduated} onChange={(e) => setGraduated(e.target.checked)}
-                  className="h-4 w-4 rounded border-ground-300" />
-                {t('scholarship.inProgramme.results.graduated')}
-              </label>
+              <div>
+                <label className="text-xs font-medium text-ground-600">{t('scholarship.bursary.slip.label')}</label>
+                <input type="file" accept="image/*,application/pdf"
+                  onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+                  className="mt-1 block w-full text-sm" data-testid="slip-input" />
+                <p className="mt-1 text-xs text-ground-400">{t('scholarship.bursary.slip.hint')}</p>
+              </div>
+              {/* A student's on/off choice is the site Toggle, never a tick box (house rule). */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-ground-700">{t('scholarship.inProgramme.results.graduated')}</span>
+                <Toggle on={graduated} onChange={setGraduated} label={t('scholarship.inProgramme.results.graduated')} />
+              </div>
               {resultError && <p className="text-sm text-critical-600">{resultError}</p>}
               <div className="flex gap-2">
                 <button onClick={saveResult} disabled={savingResult}

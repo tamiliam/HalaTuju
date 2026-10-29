@@ -35,6 +35,11 @@ def _reminders_apart(earlier, later):
 # Ordered: the first broken rule is the one reported. R4 sits before R3 because a reminder
 # outside the answer window breaks R3 too, and the more basic fault is the one to name.
 RULES = (
+    # S4a: "failing" must sit below the minimum, or a student could be failing and performing at
+    # once and the standing chip would have no honest reading.
+    Rule('failing_not_below_min', 'maintenance_failing_cgpa',
+         ('maintenance_min_cgpa', 'maintenance_failing_cgpa'),
+         lambda v: v['maintenance_failing_cgpa'] < v['maintenance_min_cgpa']),
     # The interview window must open before it closes; an inverted window would offer the
     # reviewer an empty picker with nothing on screen saying why.
     Rule('window_inverted', 'interview_window_end_min',

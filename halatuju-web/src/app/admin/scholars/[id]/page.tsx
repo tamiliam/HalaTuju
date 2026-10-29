@@ -21,6 +21,7 @@ import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
 import RecordState from '@/components/admin/RecordState'
 import ScholarActivity from '@/components/admin/ScholarActivity'
 import ScholarControls from '@/components/admin/ScholarControls'
+import ScholarResults from '@/components/admin/ScholarResults'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
@@ -108,7 +109,14 @@ export default function ScholarFilePage() {
           </p>
         </>
       ) : <Later text={t('admin.scholars.file.noResult')} />}
-      <p className="text-xs text-ground-500">{t('admin.scholars.file.standingLater')}</p>
+      {file.thresholds && (
+        <p className="text-xs text-ground-500">
+          {t('admin.scholars.file.thresholds', { min: file.thresholds.minimum, failing: file.thresholds.failing })}
+        </p>
+      )}
+      <button type="button" onClick={() => setTab('results')} className="self-start text-sm text-primary-600 hover:underline">
+        {t('admin.scholars.file.openResults')}
+      </button>
     </Card>
   )
   const moneyCard = (
@@ -206,7 +214,12 @@ export default function ScholarFilePage() {
           </div>
         </div>
       )}
-      {tab === 'results' && <div className="max-w-xl">{resultsCard}</div>}
+      {tab === 'results' && (
+        <div className="max-w-3xl">
+          <ScholarResults id={file.id} token={token} canReview={!!file.controls?.can_review_results}
+            onChanged={() => setReloads((n) => n + 1)} />
+        </div>
+      )}
       {tab === 'money' && <div className="max-w-xl">{moneyCard}</div>}
       {tab === 'contract' && <div className="max-w-xl">{contractCard}</div>}
       {tab === 'letters' && <div className="max-w-xl">{later('letters')}</div>}

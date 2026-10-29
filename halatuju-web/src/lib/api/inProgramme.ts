@@ -15,6 +15,9 @@ export interface SemesterResult {
   results_slip: number | null
   note: string
   created_at: string
+  /** S4a: an officer reviews every result; only an accepted one counts. A query carries a note. */
+  review_status: 'pending' | 'accepted' | 'queried'
+  review_note: string
 }
 
 /** F9a/b — the student's own in-programme semester results (latest first). */
@@ -25,7 +28,11 @@ export async function getSemesterResults(appId: number, options?: ApiOptions): P
 /** Record one semester result. 400 `not_in_programme` (award not accepted) / `bad_cgpa`. */
 export async function addSemesterResult(
   appId: number,
-  body: { semester?: string; cgpa?: string | null; graduated?: boolean; results_slip?: number | null; note?: string },
+  body: {
+    semester?: string; cgpa?: string | null; graduated?: boolean; results_slip?: number | null; note?: string
+    /** S4a: the slip she just PUT to a signed URL; the server records it. */
+    slip?: { storage_path: string; original_filename: string; content_type: string; size: number }
+  },
   options?: ApiOptions,
 ): Promise<SemesterResult> {
   return apiRequest(`/api/v1/scholarship/applications/${appId}/semester-results/`, {
@@ -106,7 +113,7 @@ export interface BursarySummary {
     remaining: string
     last_payment: { amount: string; at: string } | null
   }
-  latest_result: { semester: string; cgpa: string | null; at: string } | null
+  latest_result: { semester: string; cgpa: string | null; at: string; review_status?: string } | null
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

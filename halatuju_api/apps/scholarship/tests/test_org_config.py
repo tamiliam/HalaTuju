@@ -222,12 +222,13 @@ class TestOrganisationConfigurationEndpoint(TestCase):
     def test_the_payload_shape_is_exactly_organisation_plus_settings(self):
         self._auth('oa-a')
         body = self.client.get(URL).json()
-        self.assertEqual(set(body), {'organisation', 'settings'})
+        # S4a: `warnings` (the contract guard) joined the payload, `decimals` the row (a CGPA: 2).
+        self.assertEqual(set(body), {'organisation', 'settings', 'warnings'})
         # `allowed` joined the row in Sprint D and is None for every setting whose vocabulary
         # is a range — the field is always PRESENT so the browser never has to guess.
         self.assertEqual(
             set(self._row(body)),
-            {'key', 'group', 'unit', 'min', 'max', 'value', 'default', 'allowed'})
+            {'key', 'group', 'unit', 'min', 'max', 'value', 'default', 'allowed', 'decimals'})
         self.assertIsNone(self._row(body)['allowed'])
         step = next(s for s in body['settings'] if s['key'] == 'interview_slot_step_min')
         self.assertEqual(step['allowed'], [5, 10, 15, 20, 30, 60])

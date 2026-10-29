@@ -120,11 +120,16 @@ export interface OrganisationConfigSetting {
    *  the row renders a menu of exactly these, not a number box (Org Config Sprint D: a slot
    *  step must divide an hour, so 5/10/15/20/30/60 is the whole vocabulary). */
   allowed?: number[] | null
+  /** S4a: decimal places the value may carry (a CGPA: 2). 0 / absent = a whole number. */
+  decimals?: number
 }
 
 export interface OrganisationConfiguration {
   organisation: { code: string; name: string }
   settings: OrganisationConfigSetting[]
+  /** S4a contract guard: a live contract template whose progress standard states another CGPA than
+   *  the minimum (`contract_differs`) or none (`contract_unstated`). A warning, never a block. */
+  warnings?: { code: 'contract_differs' | 'contract_unstated'; key: string; template: string; stated: string | null }[]
 }
 
 /** GET the organisation's tunable values. `org` is optional for an org_admin (their one

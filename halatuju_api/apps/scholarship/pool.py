@@ -93,9 +93,13 @@ def derive_progress_state(application):
     ``graduated`` (the result marks graduation) > ``needs_attention`` (CGPA at/below
     2.00) > ``semester_completed`` (a CGPA is recorded) > ``on_track`` (in-programme,
     no result yet, or a result with no CGPA)."""
-    if application is None or application.status not in FUNDED_STATES:
+    # S4a: on the maintenance predicate (an awarded student with a live wallet now reads on_track,
+    # not None), and only an ACCEPTED result moves the band — never a self-reported, unreviewed one.
+    from .maintenance_scope import is_in_maintenance
+    if not is_in_maintenance(application):
         return None
-    latest = application.semester_results.order_by('-created_at').first()
+    latest = (application.semester_results.filter(review_status='accepted')
+              .order_by('-created_at').first())
     if latest is None:
         return 'on_track'
     if latest.graduated:
@@ -161,7 +165,8 @@ def sponsor_portfolio_status(application):
     if is_on_hold(application):
         return 'paused'
     sup = supported_semesters(application)
-    if reason == 'completed' or (sup and application.semester_results.count() >= sup):
+    if reason == 'completed' or (sup and application.semester_results.filter(
+            review_status='accepted').count() >= sup):
         return 'semester_completed'
     if (derive_progress_state(application) == 'needs_attention'
             or getattr(application, 'maintenance_substate', '') == 'probation'):

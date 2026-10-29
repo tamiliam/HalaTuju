@@ -781,7 +781,8 @@ class TestTheScholarsListQueryBudget(TestCase):
             app = make_application('awarded', cohort=cohort, vircle_activated_at=timezone.now(),
                                    chosen_programme={'course_id': f'QB-{i}', 'course_name': 'X',
                                                      'institution': 'Y'})
-            SemesterResult.objects.create(application=app, semester='Sem 1', cgpa='3.10')
+            SemesterResult.objects.create(application=app, semester='Sem 1', cgpa='3.10',
+                                          review_status='accepted')
             activity.add_entry(app, 'note', 'x', actor_email='a@example.test')
         client = authed_client(make_admin('org_admin', owning_org=org))
         url = f'/{SCHOLARS_ROUTE}'

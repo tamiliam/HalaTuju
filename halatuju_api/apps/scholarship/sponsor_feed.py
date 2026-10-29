@@ -31,7 +31,8 @@ def sponsor_activity(sponsor, *, limit=20):
                 events.append({'type': 'accepted', 'ref': ref, 'at': sp.decided_at})
 
     if active_ids:
-        for r in SemesterResult.objects.filter(application_id__in=active_ids):
+        # S4a: only an ACCEPTED result is news to a sponsor (`results_review.accepted`).
+        for r in SemesterResult.objects.filter(application_id__in=active_ids, review_status='accepted'):
             events.append({
                 'type': 'graduated' if r.graduated else 'semester',
                 'ref': pool.pool_ref(r.application_id),

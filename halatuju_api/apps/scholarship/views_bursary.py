@@ -32,7 +32,7 @@ def summary_payload(app):
     last = (Disbursement.objects.filter(application=app, status__in=Disbursement.PAID)
             .order_by('-released_at', '-id').values('amount', 'released_at').first())
     latest = (SemesterResult.objects.filter(application=app).order_by('-created_at', '-id')
-              .values('semester', 'cgpa', 'created_at').first())
+              .values('semester', 'cgpa', 'created_at', 'review_status').first())
     programme = getattr(app, 'programme', None)
     return {
         'application_id': app.id,
@@ -55,8 +55,10 @@ def summary_payload(app):
             'last_payment': ({'amount': _two(last['amount']), 'at': last['released_at']}
                              if last else None),
         },
+        # Her OWN latest result whatever its review — she sees it is awaiting review or queried.
         'latest_result': ({'semester': latest['semester'], 'cgpa': _two(latest['cgpa']),
-                           'at': latest['created_at']} if latest else None),
+                           'at': latest['created_at'], 'review_status': latest['review_status']}
+                          if latest else None),
     }
 
 
