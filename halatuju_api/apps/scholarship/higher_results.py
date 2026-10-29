@@ -172,6 +172,26 @@ def _is_institution_noise(warning) -> bool:
 
 
 
+def _exact_read(doc, text, words):
+    """(fields, 'reader version') from the deterministic readers, or (None, ''). STPM first
+    (`stpm_parse`, S2); then, on a page `results_kind` reads as Matriculation, `matric_parse`
+    (Matric/Diploma M2). A reader that fails or is unsure → (None, '') and Gemini reads it."""
+    try:                     # the Exact reader must never break a read: any failure → Gemini
+        from .stpm_parse import PARSER_VERSION, parse as stpm_parse
+        exact = stpm_parse(text, words, entered=_entered_grade(doc))
+        if exact is not None:
+            return exact, f'stpm_parse {PARSER_VERSION}'
+        from .results_kind import detect
+        if detect(text) == 'matric':
+            from .matric_parse import PARSER_VERSION as MATRIC_VERSION, parse as matric_parse
+            exact = matric_parse(text, words)
+            if exact is not None:
+                return exact, f'matric_parse {MATRIC_VERSION}'
+    except Exception:
+        pass
+    return None, ''
+
+
 def extract(doc, ocr, image_fn, extract_fn):
     """The higher-results read for `vision._run_field_extraction_impl`. An STPM certificate, slip
     or transcript is read EXACT first (`stpm_parse`, from the OCR text / word boxes — STPM
@@ -184,17 +204,13 @@ def extract(doc, ocr, image_fn, extract_fn):
     if ocr is None:          # a caller with no shared read (never the upload, which passes one)
         from .vision import ocr_document
         text = (ocr_document(doc) or {}).get('text', '') or ''
-    try:                     # the Exact reader must never break a read: any failure → Gemini
-        from .stpm_parse import PARSER_VERSION, parse as stpm_parse
-        exact = stpm_parse(text, (ocr or {}).get('words') if isinstance(ocr, dict) else None,
-                           entered=_entered_grade(doc))
-    except Exception:
-        exact = None
+    exact, version = _exact_read(doc, text, (ocr or {}).get('words') if isinstance(ocr, dict) else None)
     if exact is not None:    # the reader's version is stored beside `capture`, never in the fields
         ex = {'fields': exact, 'warnings': [], 'error': '', 'capture': 'deterministic',
-              'parser_version': f'stpm_parse {PARSER_VERSION}',
-              'stpm_rows_from_entry': exact.pop('_rows_from_entry', []),   # audit: rule-2 rows
-              'stpm_rows_sign_from_point': exact.pop('_rows_sign_from_point', [])}   # ruling B rows
+              'parser_version': version}
+        if version.startswith('stpm_parse'):
+            ex['stpm_rows_from_entry'] = exact.pop('_rows_from_entry', [])          # audit: rule-2 rows
+            ex['stpm_rows_sign_from_point'] = exact.pop('_rows_sign_from_point', [])  # ruling B rows
     else:
         image = image_fn()
         if image is not None:

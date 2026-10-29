@@ -64,6 +64,21 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   Corpus (M1): all 9 Matriculation pages are one page with the final CGPA on page 1 — the
   multi-page case is not yet in the corpus, so M2 needs a synthetic twin for it.
 - **Done when:** the matric corpus reads Exact with correct name/CGPA/grades; 0 wrong values; gates green.
+- **BUILT 2026-10-29** (branch `m2-matric-parse`, not pushed). Notes:
+  - Corpus (`eval/matric_parse_check.py`, production's input): 3 Exact, 6 to Gemini, 0 wrong; 0 of
+    168 controls accepted. Of the 6 transcripts, 3 read Exact; the 3 fallbacks are a skewed scan
+    (grades sit between rows), a cropped photo with a misprinted point, and a scan with debris in a
+    row. The other 3 pages are semester RESULT SLIPS, which never read Exact (one semester cannot
+    prove a cumulative CGPA).
+  - Every hit is proven by arithmetic: each semester's PNGS and the final PNGK recomputed from the
+    core courses' credits × points. A 4-semester transcript needs its own note naming the counted
+    semesters ("Semester III dan IV").
+  - **Pages (read from the code):** a text-layer PDF is read whole (`pdf_pages.pdf_text_layer`, all
+    pages); a SCANNED PDF is rasterised page 1 only (`pdf_first_page_png`) for BOTH Vision and the
+    Gemini fallback. The reader therefore refuses a page that stops before the last semester or the
+    final PNGK. Reading every page is PROPOSED, not built (`docs/decisions.md` 2026-10-29 M2).
+  - Labels hand-checked against the page images: two names, one transcript's rows and CGPA rebuilt,
+    one transcript's average-grade box dropped from its rows.
 
 ### M3 — `poly_diploma_parse.py`: deterministic polytechnic Diploma reader · medium · ~8 h
 - Same shape for the shared polytechnic transcript layout (provisional and final transcripts).
