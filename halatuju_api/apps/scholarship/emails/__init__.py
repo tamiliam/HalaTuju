@@ -37,7 +37,9 @@ from .shared import (
     SUPPORT_EMAIL, _DEFAULT_NAME, _P, _PROG_EN, _PROG_MS, _TEAM_EN, _TEAM_MS, _meter_email,
     logger
 )
-from .invoice_mail import send_invoice_email, send_invoicing_alert_email
+from .invoice_mail import (
+    send_invoice_email, send_invoicing_alert_email, send_payment_declared_email,
+)
 from .ops_alerts import send_profile_complete_admin_email, send_vision_outage_alert_email
 from .org_request_mail import (
     _fmt_hours, _org_request_link, _requests_owner_email, send_org_request_accepted_email,

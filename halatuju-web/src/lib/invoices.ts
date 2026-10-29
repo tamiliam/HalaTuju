@@ -21,7 +21,13 @@ import type { InvoiceProblem, InvoiceRow, InvoiceStatus } from '@/lib/admin-api'
  */
 export function statusChip(
   status: InvoiceStatus,
-  opts: { forOwner?: boolean; today?: string; dueOn?: string | null } = {},
+  opts: {
+    forOwner?: boolean; today?: string; dueOn?: string | null
+    /** The balance as the server sends it — a STRING, truthy at '0.00'. Left out, the chip never
+     *  says "Nothing to pay", which is the safe direction: a customer who does owe something must
+     *  not be told otherwise. */
+    balanceMyr?: string
+  } = {},
 ): { key: string; className: string } {
   const owner = opts.forOwner !== false      // default to the owner's wording, as before
   switch (status) {
@@ -43,6 +49,15 @@ export function statusChip(
     case 'sent':
       if (owner) {
         return { key: 'admin.billing.invoice.status.sent', className: 'bg-info-100 text-info-700' }
+      }
+      // ⚠ NOTHING OWED IS NEVER LATE (owner, 2026-10-29). July 2026 is fully discounted — the
+      // month is shown in full and charged nothing — and the tenant's screen called it OVERDUE,
+      // in red, beside a balance of RM0.00. It is not "Paid" either: no money arrived, and
+      // `Invoice.status` is deliberate about not claiming it did. It is simply nothing to pay.
+      // Read from `balanceMyr` because the money decides this, not the status: a zero-total
+      // month and a month discounted to zero are the same thing to the person reading it.
+      if (opts.balanceMyr !== undefined && !(Number(opts.balanceMyr) > 0)) {
+        return { key: 'admin.billing.invoice.status.nothingToPay', className: 'bg-ground-100 text-ground-700' }
       }
       // ⚠ STRING compare on two ISO dates, never `new Date()`: the same reason `todayIso` exists
       // in this file. A timezone shift must not make a customer's invoice turn red a day early.

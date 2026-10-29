@@ -123,6 +123,42 @@ describe('what each invoice offers', () => {
         .toBe('admin.billing.invoice.status.beingChecked')
     })
 
+    describe('nothing owed is never late (owner, 2026-10-29)', () => {
+      /** The owner read BrightPath's own list: July 2026 is fully discounted — shown in full,
+       *  charged nothing — and its row said OVERDUE, in red, beside a balance of RM0.00. */
+      const longPast = { ...asOrg, today: '2026-12-01', dueOn: '2026-09-14' }
+
+      it('says Nothing to pay instead of Overdue when the balance is zero', () => {
+        expect(statusChip('sent', { ...longPast, balanceMyr: '0.00' }).key)
+          .toBe('admin.billing.invoice.status.nothingToPay')
+        expect(statusChip('sent', { ...longPast, balanceMyr: '0.00' }).className)
+          .not.toMatch(/critical/)
+      })
+
+      it('does NOT say Paid, because no money arrived', () => {
+        // `Invoice.status` is deliberate about this: a discounted month owes nothing, but
+        // calling it paid would claim money changed hands.
+        expect(statusChip('sent', { ...longPast, balanceMyr: '0.00' }).key)
+          .not.toBe('admin.billing.invoice.status.paid')
+      })
+
+      it('still says Overdue when something really is owed', () => {
+        expect(statusChip('sent', { ...longPast, balanceMyr: '790.86' }).key)
+          .toBe('admin.billing.invoice.status.overdue')
+      })
+
+      it('says nothing of the sort when the balance was not passed', () => {
+        // The safe direction: a customer who DOES owe must never be told otherwise.
+        expect(statusChip('sent', longPast).key)
+          .toBe('admin.billing.invoice.status.overdue')
+      })
+
+      it('leaves the owner reading Sent, as before', () => {
+        expect(statusChip('sent', { ...longPast, forOwner: true, balanceMyr: '0.00' }).key)
+          .toBe('admin.billing.invoice.status.sent')
+      })
+    })
+
     it('says Cancelled to the organisation where the owner reads Void', () => {
       expect(statusChip('void', asOrg).key).toBe('admin.billing.invoice.status.cancelled')
       expect(statusChip('void', { ...asOrg, forOwner: true }).key)

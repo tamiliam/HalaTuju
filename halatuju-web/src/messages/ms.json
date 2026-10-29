@@ -5439,7 +5439,8 @@
           "overdue": "Tertunggak",
           "cancelled": "Dibatalkan",
           "toCheck": "Perlu diperiksa",
-          "beingChecked": "Pembayaran sedang diperiksa"
+          "beingChecked": "Pembayaran sedang diperiksa",
+          "nothingToPay": "Tiada bayaran"
         },
         "pdf": "PDF",
         "discountLine": "Diskaun ({pct}%)",

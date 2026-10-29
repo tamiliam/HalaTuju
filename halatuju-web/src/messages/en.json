@@ -5439,7 +5439,8 @@
           "overdue": "Overdue",
           "cancelled": "Cancelled",
           "toCheck": "To check",
-          "beingChecked": "Payment being checked"
+          "beingChecked": "Payment being checked",
+          "nothingToPay": "Nothing to pay"
         },
         "pdf": "PDF",
         "discountLine": "Discount ({pct}%)",

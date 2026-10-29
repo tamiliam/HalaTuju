@@ -49,6 +49,50 @@ def send_invoice_email(invoice, pdf_bytes, to):
         return False
 
 
+def send_payment_declared_email(declaration):
+    """Tell the owner a tenant says it has paid. Best-effort → bool.
+
+    ⚠ **WITHOUT THIS, THE FEATURE SOLVES HALF THE PROBLEM.** The owner's complaint on 2026-10-29
+    was that a customer who had paid could only wait for somebody to notice. A declaration nobody
+    is told about leaves the same wait, pointed the other way: the claim sits on the billing page
+    until the owner happens to open it.
+
+    ⚠ **IT CARRIES NO AMOUNT**, because none was asked for and none is known. The figure the owner
+    acts on is the one on their own bank statement; printing the invoice total here would read as
+    "this much arrived", which is exactly the confusion `payment_declarations` exists to prevent.
+
+    Best-effort on purpose: the claim is already recorded and already on the screen, so a mail
+    failure must not undo it. Sent AFTER the row is committed, never inside its transaction.
+    """
+    recipient = (getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or '').strip()
+    if not recipient:
+        return False
+    from .. import invoicing
+    invoice = declaration.invoice
+    month = invoicing.month_label(invoice.period_month)
+    who = declaration.declared_by_email or invoice.organisation.name
+    body = (
+        f'{invoice.organisation.name} says it has paid invoice {invoice.number} ({month}).\n\n'
+        f'    Declared by: {who}\n'
+        f'    Date paid:   {declaration.paid_on:%d %B %Y}\n'
+        f'    Reference:   {declaration.reference}\n'
+        f'    Invoice:     {invoice.number}, RM{invoice.total_myr:,.2f}, '
+        f'due {invoice.due_on:%d %B %Y}\n\n'
+        'Nothing has been recorded as received. Check the bank for that reference, then open '
+        'Billing & usage and either confirm it — which raises the receipt — or say it could not '
+        'be matched, with a reason the organisation is shown.\n'
+    )
+    try:
+        EmailMessage(
+            subject=f'{invoice.organisation.name} says it has paid {invoice.number}',
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient]).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send the payment-declared email for %s',
+                       invoice.number, exc_info=True)
+        return False
+
+
 def send_invoicing_alert_email(report):
     """Tell a person the 15th's run could not issue something. Best-effort → bool.
 

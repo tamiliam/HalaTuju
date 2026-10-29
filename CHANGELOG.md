@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
+
+Both from the owner reading BrightPath's own billing page after the declaration sprint shipped.
+
+- **"Nothing to pay" replaces "Overdue" when the balance is zero.** July 2026 is fully discounted
+  — *"the month is computed and shown in full, then discounted to zero"* — and the tenant's row
+  said **Overdue, in red, beside a balance of RM0.00**. It is not "Paid" either, and deliberately
+  so: `Invoice.status` refuses to claim money arrived when none did. It is simply nothing to pay.
+  `statusChip` now reads the balance; left out, it never says this, which is the safe direction —
+  a customer who does owe must not be told otherwise. The owner's own chip still reads "Sent".
+- **The owner is emailed when a tenant declares a payment** (`send_payment_declared_email`,
+  `ADMIN_NOTIFY_EMAIL`). Without it the feature solved half the problem: the complaint was that a
+  customer who had paid could only wait for somebody to notice, and a claim nobody is told about
+  leaves the same wait pointed the other way. ⚠ **It carries no amount received** — none was asked
+  for and none is known; the invoice total is named only as what is billed. Sent AFTER the row is
+  committed, never inside its transaction, and best-effort: a mail outage must not refuse a
+  customer the one thing this feature gave them. Confirming and rejecting send nothing — the owner
+  is the one doing those.
+
 ## Billing — the tenant can say it has paid (migration 0184) - 2026-10-29
 
 The owner signed in as BrightPath's org_admin, read the billing page and said: *"there doesn't seem

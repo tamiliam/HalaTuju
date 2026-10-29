@@ -111,6 +111,12 @@ def declare_payment(invoice, *, paid_on, reference, declared_by_email='', today=
                 f'A payment has already been declared for {locked.number} and is being checked.')
     logger.info('invoicing: payment declared for %s paid_on=%s by=%s',
                 locked.number, paid_on, declared_by_email or '-')
+    # ⚠ AFTER THE COMMIT, never inside it: an email cannot be rolled back, so sending from inside
+    # the transaction would tell the owner about a claim that a later failure removed. Best-effort
+    # and deliberately unchecked — the claim is recorded and on the screen either way, and a mail
+    # outage must not refuse a customer the one thing this feature gave them.
+    from . import emails
+    emails.send_payment_declared_email(declaration)
     return declaration
 
 

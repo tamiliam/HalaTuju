@@ -20,6 +20,8 @@ What else is held:
 """
 from decimal import Decimal
 
+from django.core import mail
+
 from apps.scholarship import invoicing, payment_declarations
 from apps.scholarship.models import InvoicePaymentDeclaration
 from apps.scholarship.tests.test_invoicing import SEPT_15
@@ -153,6 +155,61 @@ class TestDeclaring(_World):
             self.reread(inv), paid_on=PAID_ON, reference='MBB-RIGHT')
         self.assertTrue(again.is_open)
         self.assertEqual(self.reread(inv).payment_declarations.count(), 2)
+
+
+class TestTheOwnerIsTold(_World):
+    """⚠ WITHOUT THE EMAIL THE FEATURE SOLVES HALF THE PROBLEM. The owner's complaint was that a
+    customer who had paid could only wait for somebody to notice. A claim nobody is told about
+    leaves the same wait pointed the other way."""
+
+    def test_declaring_emails_the_owner_with_the_date_and_the_reference(self):
+        mail.outbox.clear()
+        inv, _ = self.declared()
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['ops@halatuju.xyz'])
+        self.assertIn(inv.number, msg.subject)
+        self.assertIn(self.org.name, msg.subject)
+        self.assertIn(REF, msg.body)
+        self.assertIn('15 September 2026', msg.body)
+        self.assertIn('oa@x.com', msg.body)
+        self.assertIn('Nothing has been recorded as received', msg.body)
+
+    def test_the_email_never_claims_money_arrived(self):
+        """⚠ IT CARRIES NO AMOUNT RECEIVED, because none was asked for and none is known. The
+        invoice total is named as what is BILLED, so the owner can see which bill it is."""
+        mail.outbox.clear()
+        inv, _ = self.declared()
+        body = mail.outbox[0].body
+        self.assertIn('says it has paid', body)
+        for claim in ('Amount received', 'Paid:', 'has been received'):
+            self.assertNotIn(claim, body)
+
+    def test_a_mail_failure_does_not_lose_the_claim(self):
+        """Best-effort on purpose: the claim is recorded and on the screen either way, and a mail
+        outage must not refuse a customer the one thing this feature gave them."""
+        from unittest import mock
+
+        inv = self.sent()
+        with mock.patch('django.core.mail.EmailMessage.send', side_effect=OSError('smtp down')):
+            declaration = payment_declarations.declare_payment(
+                inv, paid_on=PAID_ON, reference=REF, declared_by_email='oa@x.com')
+        self.assertTrue(declaration.is_open)
+        self.assertEqual(self.reread(inv).status, 'payment_declared')
+
+    def test_confirming_and_rejecting_send_nothing_to_the_owner(self):
+        """The owner is the one DOING those, so telling them is noise."""
+        inv, d = self.declared()
+        mail.outbox.clear()
+        payment_declarations.confirm_payment(d, amount_myr='10.00')
+        self.assertEqual(mail.outbox, [])
+
+        # Only part paid, so the tenant may declare the rest — which gives a second open claim
+        # to reject without inventing another month.
+        _, again = self.declared(inv=self.reread(inv))
+        mail.outbox.clear()
+        payment_declarations.reject_declaration(again, reason='No credit that week.')
+        self.assertEqual(mail.outbox, [])
 
 
 class TestConfirming(_World):
