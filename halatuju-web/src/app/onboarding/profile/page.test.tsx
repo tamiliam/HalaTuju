@@ -49,7 +49,13 @@ const schoolInput = () => (schoolBox() as HTMLElement).querySelector('input') as
 async function mount() {
   render(<ProfileInputPage />)
   await waitFor(() => expect(profileMock).toHaveBeenCalled())
-  await act(async () => { await Promise.resolve() })
+  // ⚠ A MACROTASK, not a microtask. `toHaveBeenCalled` proves the profile was ASKED FOR, not that
+  // it came back and re-rendered — and `await Promise.resolve()` drains exactly one microtask,
+  // which happened to be enough on a developer's machine and was not enough in the deploy gate.
+  // The gate went red on 2026-10-29 with the School box still on screen in a test that asserts it
+  // is gone once the profile supplies the school. Reproduced locally by resolving the profile one
+  // tick later; a setTimeout(0) flush drains the whole chain and the race disappears.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)) })
 }
 
 async function pressContinue() {
