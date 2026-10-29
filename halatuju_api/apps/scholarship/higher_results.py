@@ -179,7 +179,7 @@ def extract(doc, ocr, image_fn, extract_fn):
     table, like the SPM slip's, does not survive flat OCR). Then the routing detection from the
     upload's OCR text (fallback: the read's title / institution / subjects). Returns the `ex` dict. The
     detection is stored beside the fields — `results_kind_detected` and the markers seen."""
-    from .results_kind import detect, detect_from_fields, kinds_seen
+    from .results_kind import detection, kinds_seen
     text = ((ocr or {}).get('text') if isinstance(ocr, dict) else '') or ''
     if ocr is None:          # a caller with no shared read (never the upload, which passes one)
         from .vision import ocr_document
@@ -204,8 +204,10 @@ def extract(doc, ocr, image_fn, extract_fn):
         ex['capture'] = 'ai'
     fields = ex.get('fields')
     if isinstance(fields, dict) and fields and not ex.get('error'):
-        fields['results_kind_detected'] = detect(text) or detect_from_fields(fields)
+        fields['results_kind_detected'], issuer = detection(text, fields)
         fields['results_kind_markers'] = kinds_seen(text)
+        if issuer:           # Matric/Diploma M1: the issuer / fixed subject that decided (audit only)
+            fields['results_kind_issuer'] = issuer
         if ex['capture'] == 'ai' and fields['results_kind_detected'] == 'stpm':   # STPM prints none
             ex['warnings'] = [w for w in ex.get('warnings') or [] if not _is_institution_noise(w)]
     return ex

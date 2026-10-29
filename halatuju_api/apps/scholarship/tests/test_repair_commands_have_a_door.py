@@ -43,7 +43,7 @@ NO_DOOR = {
     'backfill_admin_seen': 'TD-234 — predates the guard; ran locally with exported prod creds.',
     'backfill_higher_results_kind': ('Matric/Diploma M1 (2026-10-29) — hand-run through the release-decisions '
                                      'job args override (CLAUDE.md, How a change reaches production, item 12): '
-                                     'report, then --apply. Three live rows; lead-gated.'),
+                                     'report, then --apply. Lead-gated.'),
     'backfill_institution': 'TD-234 — predates the guard; ran locally with exported prod creds.',
     'backfill_invitations': 'TD-234 — predates the guard; ran locally with exported prod creds.',
     'backfill_nric_locks': 'TD-234 — predates the guard; ran locally with exported prod creds.',

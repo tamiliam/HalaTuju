@@ -17,7 +17,15 @@ Matriculation transcript uploaded in the SPM card was read as an SPM slip).
   (`detect(...) == 'stpm'`) cannot move: no `MODEL_VERSION` bump.
 - **#49's shape now reads as Matriculation in the SPM card** (`wrong_slip.higher_kind`): named, never
   SPM-compared, the move offered. The band can move → `VERDICT_ENGINE_VERSION` 2026-10-29.1. Live
-  at read time: 0 of 216 SPM-card reads change; higher-results reads keep their stored detection.
+  at read time: 0 of the 216 LIVE SPM-card reads change; #49's own document (3542) is not among
+  them — it was superseded when the student uploaded her SPM certificate and her Matriculation slip
+  went to the higher-results card. Higher-results reads keep their stored detection.
+- **Adversarial review fixes:** a read's `institution` feeds the issuer tier only, never the kind
+  words; the issuer tier needs the page to read as a result (a cumulative OR semester grade label —
+  the final CGPA may be on the last page, which a scanned upload's page-1 read never sees — or result
+  wording; rows or a CGPA in a stored read), so an offer letter naming a polytechnic says nothing; "Politeknik dan Kolej
+  Komuniti" (the department) is not a polytechnic marker; subject rows join with " | "; the issuer
+  that decided is stored as `results_kind_issuer`.
 - **`backfill_higher_results_kind`** (report-first, `--apply`): a blank `results_kind` on a live
   higher-results upload is filled from the results held when they are tertiary — never from the
   detection (D13: the column is what the upload is meant to be). Verdict-neutral; idempotent.

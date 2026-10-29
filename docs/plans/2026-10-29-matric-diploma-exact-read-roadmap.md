@@ -55,11 +55,26 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   (A … F with A-, B+ …), PNGK/CGPA, co-curriculum.
 - Unsure → nothing, falls back to Gemini. Never a wrong Exact.
 - Wired into `higher_results.extract`; a hit stores `capture='deterministic'`. `PARSER_VERSION`.
+- **Owner facts (2026-10-29):** Matriculation runs 1 year (2 semesters) or 2 years (4 semesters).
+  The reader takes the FINAL CGPA — the last cumulative figure, after the last semester — never a
+  semester GPA and never the first CGPA it meets. A transcript may span pages, and the final CGPA
+  may be on the LAST page; production OCRs only page 1 of a scanned PDF (a text-layer PDF is read
+  whole). So M2 first checks how many pages the higher-results read sees and plans for reading all
+  pages — mind the `vision.py` size ceiling (new code in a new file; vision.py takes one call).
+  Corpus (M1): all 9 Matriculation pages are one page with the final CGPA on page 1 — the
+  multi-page case is not yet in the corpus, so M2 needs a synthetic twin for it.
 - **Done when:** the matric corpus reads Exact with correct name/CGPA/grades; 0 wrong values; gates green.
 
 ### M3 — `poly_diploma_parse.py`: deterministic polytechnic Diploma reader · medium · ~8 h
 - Same shape for the shared polytechnic transcript layout (provisional and final transcripts).
 - Non-polytechnic diplomas (UiTM, private colleges) are NOT read here: they stay AI.
+- **Owner facts (2026-10-29):** a polytechnic Diploma runs 2.5 years (5 semesters) or 3 years (6
+  semesters). Same rules as M2: the FINAL CGPA (the last cumulative figure, polytechnic label HPNM or
+  CGPA, after the last semester), never a semester GPA (GPA / PNG) nor the first CGPA met; the
+  transcript may span pages with the final CGPA on the last; production OCRs only page 1 of a scan,
+  so plan for all pages (vision.py ceiling). Corpus (M1): all 4 polytechnic pages are one page with
+  the cumulative label on page 1; the only multi-page diploma (UiTM, 2 pages, scanned) carries its
+  last cumulative figure on page 2 — exactly the case production's page-1 read misses.
 - **Done when:** the polytechnic corpus reads Exact; other diplomas still AI; 0 wrong values.
 
 ### M4 — Genuineness for Matriculation + polytechnic Diploma · medium · ~7 h

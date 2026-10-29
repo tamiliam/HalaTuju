@@ -8,9 +8,11 @@ TRANSCRIPT", subject rows, no CGPA, no institution — named nothing, so it was 
 Synthetic text only: the shapes of the corpus pages, never their data.
 """
 import io
+import re
 
 from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 
 from apps.scholarship import results_kind, wrong_slip
 from apps.scholarship.academic_engine import student_slip_check
@@ -36,9 +38,53 @@ class TestTheIssuerTier(SimpleTestCase):
     def test_a_matric_transcript_read_names_its_college_red_first(self):
         """Blank before M1: the read's title says only "ACADEMIC TRANSCRIPT"."""
         self.assertEqual(results_kind.detect_from_fields(
-            {'exam': 'ACADEMIC TRANSCRIPT', 'institution': 'KOLEJ MATRIKULASI LABUAN'}), 'matric')
+            {'exam': 'ACADEMIC TRANSCRIPT', 'institution': 'KOLEJ MATRIKULASI LABUAN', 'cgpa': '3.54'}),
+            'matric')
         self.assertEqual(results_kind.detect_from_fields(
-            {'exam': 'ACADEMIC TRANSCRIPT', 'institution': 'LABUAN MATRICULATION COLLEGE'}), 'matric')
+            {'exam': 'ACADEMIC TRANSCRIPT', 'institution': 'LABUAN MATRICULATION COLLEGE',
+             'results': [{'subject': 'MATHEMATICS 1', 'grade': 'A'}]}), 'matric')
+
+    def test_the_institution_never_feeds_the_kind_words(self):
+        """Review fix 1: an institution is no title. MPM as the "institution" with no title says
+        nothing; a kind word in an institution never outvotes the title's kind."""
+        self.assertEqual(results_kind.detect_from_fields(
+            {'exam': '', 'institution': 'MAJLIS PEPERIKSAAN MALAYSIA', 'cgpa': '3.5'}), '')
+        for inst in ('KOLEJ FOUNDATION X', 'PUSAT ASASI X', 'KOLEJ DIPLOMA X', 'KOLEJ MATRIKULASI X'):
+            self.assertEqual(results_kind.detect_from_fields(
+                {'exam': 'SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025', 'institution': inst, 'cgpa': '3.5'}),
+                'stpm', inst)
+        self.assertEqual(results_kind.detect_from_fields(
+            {'exam': 'SIJIL PELAJARAN MALAYSIA 2024', 'institution': 'KOLEJ DIPLOMA X',
+             'results': [{'subject': 'BAHASA MELAYU', 'grade': 'A'}]}), 'spm')
+
+    def test_a_page_that_is_not_a_result_says_nothing(self):
+        """Review fix 2: an offer / enrolment letter naming a polytechnic, with no cumulative-grade
+        label (or, from a read, no rows and no CGPA), is not Diploma results."""
+        self.assertEqual(results_kind.detect(
+            'SURAT TAWARAN KEMASUKAN\nPOLITEKNIK SULTAN AZLAN SHAH\nSESI 2026/2027'), '')
+        self.assertEqual(results_kind.detect_from_fields(
+            {'exam': 'SURAT TAWARAN', 'institution': 'POLITEKNIK SULTAN AZLAN SHAH'}), '')
+        self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT\nPOLITEKNIK KOTA KINABALU\nHPNM 3.16'),
+                         'diploma')                      # the polytechnic's own cumulative label
+        # Owner 2026-10-29: the final CGPA may sit on the LAST page and production OCRs page 1 of a
+        # scan, so a page-1 semester GPA reads as a result too; bare "SEMESTER" (offer letters) does not.
+        self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT\nPOLITEKNIK X\nSEMESTER 1\nGPA 3.40'),
+                         'diploma')
+        self.assertEqual(results_kind.detect('SURAT TAWARAN\nPOLITEKNIK X\nSEMESTER 1 SESI 2026'), '')
+
+    def test_the_jppkk_department_is_not_a_polytechnic(self):
+        """A Kolej Komuniti page is headed by "Jabatan Pendidikan Politeknik dan Kolej Komuniti"."""
+        self.assertEqual(results_kind.detect(
+            'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nKOLEJ KOMUNITI SELAYANG\n'
+            'SIJIL TEKNOLOGI MAKLUMAT\nPNGK 3.20'), '')
+        self.assertEqual(results_kind.detect(
+            'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nPOLITEKNIK SANDAKAN SABAH\nCGPA 3.66'),
+            'diploma')                                   # the polytechnic's own name still counts
+
+    def test_a_fixed_subject_never_spans_two_rows(self):
+        self.assertEqual(results_kind.detect_from_fields(
+            {'exam': 'ACADEMIC TRANSCRIPT', 'results': [{'subject': 'ADVANCED MATRICULATION'},
+                                                        {'subject': 'GENERAL STUDIES'}]}), '')
 
     def test_49_shape_the_fixed_subject_names_a_matric_transcript(self):
         self.assertEqual(results_kind.detect_from_fields(MATRIC_IN_SPM_CARD), 'matric')
@@ -47,8 +93,8 @@ class TestTheIssuerTier(SimpleTestCase):
         self.assertEqual(results_kind.detect(POLY_TRANSCRIPT), 'diploma')
         self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT\nSANDAKAN POLYTECHNIC\nCGPA 3.1'), 'diploma')
         self.assertEqual(results_kind.detect_from_fields(
-            {'exam': 'ACADEMIC TRANSCRIPT (PROVISIONAL)', 'institution': 'POLITEKNIK KOTA KINABALU'}),
-            'diploma')
+            {'exam': 'ACADEMIC TRANSCRIPT (PROVISIONAL)', 'institution': 'POLITEKNIK KOTA KINABALU',
+             'cgpa': '3.16'}), 'diploma')
 
     def test_the_matric_transcript_text_still_reads_matric(self):
         self.assertEqual(results_kind.detect(MATRIC_TRANSCRIPT), 'matric')
@@ -82,7 +128,7 @@ class TestTheIssuerTier(SimpleTestCase):
                 {'exam': 'ACADEMIC TRANSCRIPT', 'results': [{'subject': subject}]}), '', subject)
 
     def test_whole_words_and_nothing_to_read(self):
-        self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT POLITEKNIKAL'), '')
+        self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT POLITEKNIKAL CGPA 3.0'), '')
         self.assertEqual(results_kind.detect('ACADEMIC TRANSCRIPT CGPA 3.0'), '')
         self.assertEqual(results_kind.detect_from_fields({'exam': 'ACADEMIC TRANSCRIPT',
                                                           'results': 'not a list'}), '')
@@ -116,7 +162,8 @@ class TestTheReaders(TestCase):
         self.assertEqual((chk['subjects'], chk['results'], chk['higher_kind']),
                          ('not_spm', 'not_spm', 'matric'))
         from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
-        self.assertGreaterEqual(VERDICT_ENGINE_VERSION, '2026-10-29.1')    # the SPM card's band can move
+        version = tuple(int(p) for p in re.split(r'[-.]', VERDICT_ENGINE_VERSION))
+        self.assertGreaterEqual(version, (2026, 10, 29, 1))     # the SPM card's band can move
 
     def test_the_upload_read_falls_back_to_the_institution(self):
         """No OCR text (an image the shared read missed): the Gemini read's institution decides."""
@@ -128,6 +175,8 @@ class TestTheReaders(TestCase):
                        'institution': 'POLITEKNIK SANDAKAN SABAH', 'cgpa': '3.66'},
             'warnings': [], 'error': ''})
         self.assertEqual(ex['fields']['results_kind_detected'], 'diploma')
+        self.assertEqual(ex['fields']['results_kind_issuer'], 'POLITEKNIK')      # the audit trail
+        self.assertEqual(ex['fields']['results_kind_markers'], [])
         doc.vision_fields = {'fields': ex['fields'], 'student_verdict': 'ok', 'error': ''}
         self.assertEqual(student_higher_check(doc)['kind_status'], 'match')
 
@@ -169,8 +218,10 @@ class TestTheBlankKindBackfill(TestCase):
                    completed_qualifications=['spm', 'matric'])
         kept = _doc(app, 'higher_results', {}, results_kind='stpm')
         slip = _doc(app, 'results_slip', {})
+        old = _doc(app, 'higher_results', {}, superseded_at=timezone.now())     # history: left alone
         out = self._run('--apply')
-        self.assertNotIn(f'doc {kept.id} ', out)
-        self.assertNotIn(f'doc {slip.id} ', out)
+        for doc in (kept, slip, old):
+            self.assertNotIn(f'doc {doc.id} ', out)
         kept.refresh_from_db()
-        self.assertEqual(kept.results_kind, 'stpm')
+        old.refresh_from_db()
+        self.assertEqual((kept.results_kind, old.results_kind), ('stpm', ''))

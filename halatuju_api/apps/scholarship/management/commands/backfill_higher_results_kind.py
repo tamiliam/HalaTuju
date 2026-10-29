@@ -13,6 +13,8 @@ tell" into a "kind matches" line that compares nothing.
 VERDICT-NEUTRAL. `student_higher_check` already uses the results held whenever they are tertiary
 and reads the column only when they are not, so a row this command fills reads exactly as before;
 the column it changes is the reviewer drawer's label ("STPM results" instead of "Higher results").
+Afterwards a filled row is like any other upload: if the student's held results later stop being
+tertiary (a D1 row whose witness goes), its filled column then drives `kind_held`.
 A row whose student holds no tertiary results is reported and left '' (that IS its value).
 
 REPORT-ONLY BY DEFAULT; ``--apply`` writes. IDEMPOTENT: only a still-blank live row is written, by a

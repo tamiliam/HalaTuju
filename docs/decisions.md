@@ -4,15 +4,24 @@
 
 **Issuer tier.** `results_kind.detect` reads fixed issuer markers ("POLITEKNIK" / "POLYTECHNIC" →
 Diploma) and one fixed subject ("Pengajian Am Matrikulasi / Matriculation General Studies", from a
-stored read's subject rows → Matriculation) ONLY when no kind word is printed and no SPM marker
-either. So every page the kind words answered keeps its answer — above all an STPM page, which
+stored read's subject rows → Matriculation) ONLY when no kind word is printed, no SPM marker
+either, and the page reads as a RESULT (`_RESULT`: a cumulative OR semester grade label — CGPA /
+PNGK / GPA / PNG / HPNM / "Purata Nilai Gred" — or result wording — "Keputusan Peperiksaan",
+"Examination Result", "Transcript"; from a stored read, subject rows or a CGPA), so an offer or
+enrolment letter naming a polytechnic says nothing (0 of 39 such letters in the corpus pass the
+gate; bare "SEMESTER" is on 38 of them, so it is not in it). Not a CGPA alone (owner, 2026-10-29):
+the final CGPA may sit on the last page, and production OCRs only page 1 of a scanned PDF. A stored read's `institution` feeds ONLY this tier
+(review fix 1): an institution is no title, so "MAJLIS PEPERIKSAAN MALAYSIA" or "… FOUNDATION …"
+there can never outvote or invent a kind; the kind words read the title and qualification only.
+"KOLEJ MATRIKULASI" / "MATRICULATION COLLEGE" are issuer markers for that field. So every page the kind words answered keeps its answer — above all an STPM page, which
 `genuineness/stpm_doc.py` scores only when `detect(...) == 'stpm'` — and the tier never answers
 STPM; that is why it is not a `MODEL_VERSION` change. "Cannot tell" still never disagrees: two
 issuers → ''. Subject rows are never read for kind WORDS ("Foundation Mathematics" on a diploma is
-not Asasi). Matriculation colleges need no issuer marker: "KOLEJ MATRIKULASI" already holds a kind
-word. "JPPKK" is not a marker (on no transcript in the corpus); a Kolej Komuniti transcript printing
-"Jabatan Pendidikan Politeknik dan Kolej Komuniti" with no "Diploma" would read Diploma — accepted
-until an example exists. `VERDICT_ENGINE_VERSION` 2026-10-29.1: the SPM card's witness
+not Asasi), and rows are joined with " | " so a pattern never spans two rows. "JPPKK" is not a
+marker, and the department name "Jabatan Pendidikan Politeknik dan Kolej Komuniti" (which heads
+Kolej Komuniti papers too) is not counted as a polytechnic (review fix 2); every corpus polytechnic
+transcript also prints its own "POLITEKNIK <town>". The issuer or subject that decided is stored as
+`results_kind_issuer` beside `results_kind_markers` (audit only). `VERDICT_ENGINE_VERSION` 2026-10-29.1: the SPM card's witness
 (`wrong_slip.higher_kind`) now names #49's shape, so its band can move.
 
 **The blank column.** `applicant_documents.results_kind` is the results the upload is MEANT to be
