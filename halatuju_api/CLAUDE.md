@@ -1057,12 +1057,13 @@ https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (Stitch did not render; that c
 
 ---
 
-**Bumi + Islamic coverage: Sprints A, B, C and TD-416 are LIVE (2026-10-29, `1a4aedc8`; retro
-`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-c-td416.md`). NEXT in that arc = Sprint D:** SPM
-catalogue Bumi + Islamic course ingest — `CourseRequirement.req_bumiputera` + the engine check (copy the
-`req_disability` pattern), the approved Sprint A rows, institutions and links; the SPM golden master WILL move
-(re-baseline with a diff showing the old 5,319 rows unchanged); adversarial review before push. The Bumi answer
-stays course-guide only (never scholarship, sponsors, reports, exports). Bundle median 146.4 / 148 kB.
+**Bumi + Islamic coverage: Sprints A, B, C, TD-416 and D1 are LIVE (D1 2026-10-29, `f5282643`; retro
+`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d1.md`). NEXT in that arc = Sprint D2:** the other 63
+SPM courses (UIAM, MARA, the 14 open Islamic, UMS / UNIMAS / UM), the 2 Bumi-only Matrikulasi tracks (owner),
+the 3 flagged UiTM rows (ATAU; "A- in ONE AND B in THREE"), the search pick-list refresh for a Bumi student,
+and the 2 prod rows the fixture lacks (UL0481001, FB0500001). Reuse `spm_syarat.py` + `ingest_spm_courses`;
+strict reading of "belum diambil kira"; the D1 runbook (0088 docstring) is the ingest order. The Bumi answer
+stays course-guide only. Adversarial review before push.
 
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's

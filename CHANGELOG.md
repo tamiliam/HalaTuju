@@ -72,6 +72,11 @@ SPM batch needs, plus the 87 UiTM rows (84 ingested, 3 flagged for hand entry in
   subject is excluded (12 of the 84 rows changed: 10 strict, 2 de-duplicated); runbook + rollback
   DELETE in the 0088 docstring; partner-admin inference accepted (decisions.md).
 
+- **Live 2026-10-29** in `f5282643` (api 89adcd9c / web 73497e1a SUCCESS). 0088 applied migrate-first;
+  84 UiTM rows ingested by the `release-decisions` job after both revisions served 100% (dry run: 84 CREATE,
+  0 UPDATE); re-revision `halatuju-api-01183-jll` loads them. Live smoke, all-A student: eligibility non-Bumi 0
+  UiTM, Bumi 81, foreigner saying yes 0; search non-Bumi 0, Bumi 80; UE4481001 page shows the Bumi row.
+
 ## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
 
 Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
