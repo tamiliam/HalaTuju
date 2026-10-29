@@ -101,7 +101,7 @@ export default function PathwayPicker({
       return
     }
     Promise.all([
-      checkEligibility(profile, { token })
+      checkEligibility({ ...profile, bumiputera: true }, { token })   // Option A: every course, Bumi-only too (D1)
         .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) }),
       calculatePathways(profile.grades || {}, profile.coq_score ?? 0, null, { token })
         .then((res) => setMatricTracks(eligibleMatricTracks(res.pathways))),

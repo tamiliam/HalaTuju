@@ -63,6 +63,15 @@ class TestNoScholarshipOrReportCodeReadsIt(TestCase):
         self.assertEqual(offenders, [], 'The Bumiputera answer is course-guide only (owner '
                                         'ruling 2026-10-28) — it must not be read here.')
 
+    def test_no_scholarship_or_report_code_reads_the_course_flag_either(self):
+        """Bumi Sprint D1: SPM courses carry `CourseRequirement.req_bumiputera` too. The scholarship
+        side offers EVERY course (Option A) and reads courses by id, so it has no reason to name the
+        flag — a read of it is the first step to filtering a picker by ethnicity."""
+        offenders = [f'{app}/{path.relative_to(_APPS / app)}'
+                     for app in ('scholarship', 'reports') for path in _sources(app)
+                     if 'req_bumiputera' in path.read_text(encoding='utf-8')]
+        self.assertEqual(offenders, [])
+
     def test_nothing_selects_every_profile_column(self):
         """A `select *` from the profile table would carry the answer along without naming it
         (fetch_corpus.py did, into applicants.json — review round, 2026-10-28). Name the columns."""

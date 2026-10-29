@@ -11,9 +11,29 @@ To run:
     cd halatuju_api
     python -m pytest apps/courses/tests/test_golden_master.py -v
 """
+import copy
+import hashlib
+import json
+from pathlib import Path
+
 import pytest
 from apps.courses.engine import StudentProfile, check_eligibility
 from apps.courses.tests.conftest import load_requirements_df
+
+# Bumi coverage Sprint D1 appended the 84 UiTM rows of `data/spm/spm_new_courses_D1.json` to the
+# fixtures. The ORIGINAL catalogue is everything else, frozen here by count and digest so that a
+# later fixture edit cannot quietly redefine "original".
+_D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_courses_D1.json'
+ORIGINAL_COURSE_COUNT = 389
+ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
+#: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
+ORIGINAL_SETS_SHA256 = '2b53c316f36b752b24422ebd7de50d3545a1bf08df9a2afae4b57bf34e9e9684'
+GOLDEN_BASELINE = 5319                 # original catalogue, and the full one for a non-Bumi student
+GOLDEN_BASELINE_BUMI = 5865   # full catalogue, the same 50 students as Bumiputera (strict reading)
+
+
+def _digest(lines):
+    return hashlib.sha256('\n'.join(lines).encode('utf-8')).hexdigest()
 
 
 # 50 edge-case students — THE CONSTANTS (unchanged from original)
@@ -295,28 +315,50 @@ class TestGoldenMaster:
         call_command('loaddata', 'courses', 'requirements', stdout=StringIO(), verbosity=0)
         load_requirements_df()
 
-    def test_total_eligibility_count(self):
-        """Total eligible matches must equal the golden baseline."""
+    @staticmethod
+    def _eligible_sets(students):
         from django.apps import apps
-        df_courses = apps.get_app_config('courses').requirements_df
+        rows = [row.to_dict() for _, row in apps.get_app_config('courses').requirements_df.iterrows()]
+        return [{r['course_id'] for r in rows if check_eligibility(s, r)[0]} for s in students]
 
-        total = 0
-        per_student = {}
-        for i, student in enumerate(GOLDEN_STUDENTS, 1):
-            count = 0
-            for _, row in df_courses.iterrows():
-                is_eligible, _ = check_eligibility(student, row.to_dict())
-                if is_eligible:
-                    count += 1
-            per_student[i] = count
-            total += count
+    @staticmethod
+    def _original_ids():
+        from apps.courses.models import Course
+        d1 = {c['course_id'] for c in json.loads(_D1_FILE.read_text(encoding='utf-8'))['courses']}
+        return set(Course.objects.values_list('course_id', flat=True)) - d1
 
+    def test_the_original_catalogue_is_frozen(self):
+        ids = self._original_ids()
+        assert len(ids) == ORIGINAL_COURSE_COUNT
+        assert _digest(sorted(ids)) == ORIGINAL_IDS_SHA256
+
+    def test_total_eligibility_count(self):
+        """Total eligible matches must equal the golden baseline — over the ORIGINAL catalogue,
+        with every student's eligible set identical to the frozen one (Bumi Sprint D1)."""
+        original = self._original_ids()
+        sets = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+        total = sum(len(s) for s in sets)
         # Baseline from DB fixtures (389 courses incl. 6 pre-U).
         # Differs from old CSV-based 8283 because DB data was refined during
         # data integrity sprint (MOHE audit, field corrections).
-        GOLDEN_BASELINE = 5319
-
         assert total == GOLDEN_BASELINE, (
             f"Golden master mismatch: expected {GOLDEN_BASELINE}, got {total}. "
-            f"Per student: {per_student}"
+            f"Per student: {[len(s) for s in sets]}"
         )
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s)]
+        assert _digest(lines) == ORIGINAL_SETS_SHA256, "a golden student's eligible set changed"
+
+    def test_a_non_bumi_student_gains_nothing_from_the_new_rows(self):
+        """Every D1 row is Bumiputera-only, so the FULL catalogue gives the same 5,319."""
+        assert sum(len(s) for s in self._eligible_sets(GOLDEN_STUDENTS)) == GOLDEN_BASELINE
+
+    def test_the_bumi_baseline(self):
+        bumi = []
+        for student in GOLDEN_STUDENTS:
+            twin = copy.copy(student)
+            twin.bumiputera = True
+            bumi.append(twin)
+        sets = self._eligible_sets(bumi)
+        assert sum(len(s) for s in sets) == GOLDEN_BASELINE_BUMI, [len(s) for s in sets]
+        original = self._original_ids()
+        assert [s & original for s in sets] == [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]

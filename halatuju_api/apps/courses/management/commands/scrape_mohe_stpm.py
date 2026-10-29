@@ -26,6 +26,10 @@ Bumiputera signals (both opt-in, both off by default so refresh_stpm is unchange
   --with-syarat  fetches each programme's Syarat modal (``modalSyarat/<cat>/<code>``). Adds
                  ``syarat_khas`` (clean text) and ``bumi_syarat`` (Y/N from the wording).
 Never trust one signal alone (docs/lessons.md L539): ``bumi_agreement`` reports where they differ.
+
+  --with-syarat-am  keeps each programme's Syarat Am (general requirements) pane, which sits in the
+                 listing page itself (``div#syarat-am-<code>``), so it costs no extra request. Adds
+                 ``syarat_am`` (clean text). Bumi Sprint D: the SPM requirement parser reads both.
 """
 import csv
 import html as html_lib
@@ -89,8 +93,23 @@ def bumi_in_syarat(text):
     return bool(_BUMI_ONLY_RE.search(text))
 
 
-def csv_fieldnames(with_bumi, with_syarat):
-    """The CSV columns: the base set, plus the Bumi columns for the passes that ran."""
+def syarat_am_text(page_html, code):
+    """One programme's Syarat Am text from a listing page's HTML (pure, testable offline). The pane
+    is ``div#syarat-am-<code>`` and ends where the same programme's ``syarat-Khas-<code>`` pane
+    starts. '' when the pane is not on the page."""
+    page_html = page_html or ''
+    start = re.search(r'<div[^>]*\bid="syarat-am-%s"[^>]*>' % re.escape(code), page_html)
+    if not start:
+        return ''
+    end = page_html.find(f'id="syarat-Khas-{code}"', start.end())
+    if end == -1:
+        return ''
+    chunk = page_html[start.end():end]
+    return clean_modal_text(chunk[:chunk.rfind('<')])  # drop the Khas pane's half-open tag
+
+
+def csv_fieldnames(with_bumi, with_syarat, with_syarat_am=False):
+    """The CSV columns: the base set, plus the Bumi / Syarat columns for the passes that ran."""
     fieldnames = [
         'course_id', 'course_name', 'university', 'merit',
         'stream', 'mohe_url', 'badges', 'year',
@@ -101,6 +120,8 @@ def csv_fieldnames(with_bumi, with_syarat):
         fieldnames += ['bumi_syarat', 'syarat_khas']
     if with_bumi and with_syarat:
         fieldnames.append('bumi_agreement')
+    if with_syarat_am:
+        fieldnames.append('syarat_am')
     return fieldnames
 
 
@@ -176,6 +197,10 @@ class Command(BaseCommand):
             '--with-syarat', action='store_true',
             help='Also fetch each programme\'s Syarat modal; adds syarat_khas and bumi_syarat.',
         )
+        parser.add_argument(
+            '--with-syarat-am', action='store_true',
+            help='Also keep each programme\'s Syarat Am pane from the listing page; adds syarat_am.',
+        )
 
     def handle(self, *args, **options):
         try:
@@ -244,6 +269,10 @@ class Command(BaseCommand):
                     cards = self._parse_cards(page, cat_code, stream_name, jenprog)
                     if not cards:
                         break
+                    if options['with_syarat_am']:
+                        listing_html = page.content()
+                        for card in cards:
+                            card['syarat_am'] = syarat_am_text(listing_html, card['course_id'])
 
                     all_programmes.extend(cards)
                     self.stdout.write(
@@ -272,7 +301,8 @@ class Command(BaseCommand):
 
             browser.close()
 
-        fieldnames = csv_fieldnames(options['with_bumi'], options['with_syarat'])
+        fieldnames = csv_fieldnames(options['with_bumi'], options['with_syarat'],
+                                    options['with_syarat_am'])
         if options['with_bumi'] and options['with_syarat']:
             for prog in all_programmes:
                 prog['bumi_agreement'] = bumi_agreement(prog['bumi_portal'], prog['bumi_syarat'])

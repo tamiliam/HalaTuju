@@ -832,7 +832,10 @@
     "requirements": "Entry Requirements",
     "generalReq": "General Requirements",
     "specialReq": "Academic Requirements",
-    "subjectReq": "Subject Requirements"
+    "subjectReq": "Subject Requirements",
+    "bumiputeraOnly": "Bumiputera Only",
+    "otherSubjects": "{grade} or better in {count} more subject(s) not already counted",
+    "exceptSubjects": "not counting"
   },
   "saved": {
     "title": "Saved Courses",

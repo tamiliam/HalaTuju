@@ -63,11 +63,6 @@ from .stpm_ranking import get_result_framing, get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
-from .stpm_quiz_engine import (
-    get_stpm_quiz_questions,
-    resolve_q3_and_q4,
-    process_stpm_quiz,
-)
 from .stpm_quiz_data import SUPPORTED_LANGUAGES as STPM_SUPPORTED_LANGUAGES
 from rest_framework.permissions import AllowAny
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
@@ -156,8 +151,12 @@ class CourseSearchView(APIView):
         courses_config = apps.get_app_config('courses')
         pathway_map = getattr(courses_config, 'course_pathway_map', {})
 
+        # Bumi Sprint D1: Bumiputera-only SPM courses only for a Bumi student — results and pick-lists.
+        spm_visible = Course.objects.all()
+        if not search_bumiputera(request.query_params):
+            spm_visible = spm_visible.exclude(requirement__req_bumiputera=True)
         if include_spm:
-            qs = Course.objects.select_related('requirement').all()
+            qs = spm_visible.select_related('requirement')
 
             if q:
                 qs = qs.filter(course__icontains=q)
@@ -294,7 +293,7 @@ class CourseSearchView(APIView):
 
         # ── Build dynamic filter options from full DB ─────────────────
         spm_levels = list(
-            Course.objects.values_list('level', flat=True)
+            spm_visible.values_list('level', flat=True)
             .distinct().order_by('level')
         )
         # Sprint B: the STPM pick-lists offer only what this student's search can return.
@@ -305,7 +304,7 @@ class CourseSearchView(APIView):
         all_levels = sorted(set(spm_levels + stpm_levels))
 
         spm_field_keys = list(
-            Course.objects.exclude(field_key__isnull=True)
+            spm_visible.exclude(field_key__isnull=True)
             .values_list('field_key', flat=True)
             .distinct()
         )
@@ -318,7 +317,7 @@ class CourseSearchView(APIView):
 
         # Legacy: keep fields list for backward compatibility
         spm_fields = list(
-            Course.objects.exclude(field='')
+            spm_visible.exclude(field='')
             .values_list('field', flat=True)
             .distinct().order_by('field')
         )
@@ -330,7 +329,7 @@ class CourseSearchView(APIView):
         all_fields = sorted(set(spm_fields + stpm_fields))
 
         spm_source_types = list(
-            CourseRequirement.objects.values_list('source_type', flat=True)
+            CourseRequirement.objects.filter(course__in=spm_visible).values_list('source_type', flat=True)
             .distinct().order_by('source_type')
         )
         # Replace 'tvet' with 'iljtm' + 'ilkbs' for filter display
@@ -341,7 +340,7 @@ class CourseSearchView(APIView):
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 
         # PISMP Aliran options (derived) — only the school types actually present.
-        pismp_names = Course.objects.filter(
+        pismp_names = spm_visible.filter(
             requirement__source_type='pismp'
         ).values_list('course_id', 'course')
         present_alirans = {aliran_of(name, cid) for cid, name in pismp_names}
@@ -411,6 +410,7 @@ class EligibilityCheckView(APIView):
             disability=data.get('disability', False),
             other_tech=data.get('other_tech', False),
             other_voc=data.get('other_voc', False),
+            bumiputera=resolve_bumiputera(data.get('bumiputera'), data.get('nationality', 'Warganegara')),
         )
 
         courses_config = apps.get_app_config('courses')
@@ -2180,147 +2180,3 @@ class CalculatePathwaysView(APIView):
             r['fit_score'] = get_pathway_fit_score(r, signals)
 
         return Response({'pathways': results})
-
-
-class StpmQuizQuestionsView(APIView):
-    """
-    GET /api/v1/stpm/quiz/questions/
-
-    Returns the STPM quiz questions for a student based on their subjects.
-    Subjects determine the branch (Science/Arts/Mixed) and which questions
-    are shown. Q3/Q4 are resolved after Q2 is answered.
-
-    Query params:
-        subjects: comma-separated subject keys (e.g. 'physics,chemistry,mathematics_t')
-        grades: JSON-encoded subject→grade mapping (e.g. '{"physics":"A","chemistry":"B+"}')
-        lang: language code (en/bm/ta, defaults to en)
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        subjects_raw = request.query_params.get('subjects', '')
-        grades_raw = request.query_params.get('grades', '{}')
-        lang = request.query_params.get('lang', 'en')
-
-        if not subjects_raw:
-            return Response(
-                {'error': 'subjects parameter is required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        subjects = [s.strip() for s in subjects_raw.split(',') if s.strip()]
-        if len(subjects) < 2:
-            return Response(
-                {'error': 'At least 2 STPM subjects are required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            grades = json.loads(grades_raw)
-        except (json.JSONDecodeError, TypeError):
-            return Response(
-                {'error': 'grades must be valid JSON'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        result = get_stpm_quiz_questions(subjects, grades, lang)
-        return Response(result)
-
-
-class StpmQuizResolveView(APIView):
-    """
-    POST /api/v1/stpm/quiz/resolve/
-
-    After the student answers Q2, resolve Q3 and Q4 based on their
-    chosen field direction and actual grades.
-
-    Request body:
-    {
-        "field_signal": "field_engineering",
-        "branch": "science",
-        "grades": {"physics": "A", "chemistry": "B+"},
-        "lang": "en"
-    }
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        field_signal = request.data.get('field_signal')
-        branch = request.data.get('branch')
-        grades = request.data.get('grades', {})
-        lang = request.data.get('lang', 'en')
-
-        if not field_signal:
-            return Response(
-                {'error': 'field_signal is required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not branch:
-            return Response(
-                {'error': 'branch is required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        result = resolve_q3_and_q4(field_signal, branch, grades, lang)
-        return Response(result)
-
-
-class StpmQuizSubmitView(APIView):
-    """
-    POST /api/v1/stpm/quiz/submit/
-
-    Submit STPM quiz answers and receive categorised student signals.
-
-    Request body:
-    {
-        "answers": [
-            {"question_id": "q1_readiness", "option_index": 0},
-            {"question_id": "q2s_field", "option_index": 1},
-            ...
-        ],
-        "subjects": ["physics", "chemistry", "mathematics_t"],
-        "grades": {"physics": "A", "chemistry": "B+", "mathematics_t": "A-"},
-        "lang": "en"
-    }
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        answers = request.data.get('answers')
-        subjects = request.data.get('subjects')
-        grades = request.data.get('grades', {})
-        lang = request.data.get('lang', 'en')
-
-        if not answers or not isinstance(answers, list):
-            return Response(
-                {'error': 'answers must be a non-empty list'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not subjects or not isinstance(subjects, list):
-            return Response(
-                {'error': 'subjects must be a non-empty list'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        for i, answer in enumerate(answers):
-            if 'question_id' not in answer:
-                return Response(
-                    {'error': f'answers[{i}] missing question_id'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            if 'option_index' not in answer:
-                return Response(
-                    {'error': f'answers[{i}] missing option_index'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        try:
-            result = process_stpm_quiz(answers, subjects, grades, lang=lang)
-        except ValueError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        _persist_quiz_signals(request, result.get('student_signals'))
-        return Response(result)

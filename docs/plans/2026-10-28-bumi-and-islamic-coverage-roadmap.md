@@ -26,6 +26,7 @@ Owner rulings (2026-10-28):
 - **Sprint B BUILT 2026-10-28** (branch `sprint-b-bumi-toggle`; migration 0087 migrate-first). Owner Option A: scholarship pickers show every course and never read the answer.
 - **Sprint C BUILT 2026-10-29** (branch `bumi-sprint-c`, on TD-416): 13 Islamic subjects selectable as electives under their slip names; doc recognition 1.18.0; `BAHASA_ARAB_MUASIRAH_SPM` also met by `lughah_arabiah`. Golden masters unchanged. `SPM_PREREQ_OPTIONAL` turned out to be dead (the STPM SPM block reads `SPM_ALL_ELECTIVE_SUBJECTS`); `BA` left alone (no fixture uses it); `pathways.py` left alone (no source).
 - **NEXT = deploy B, TD-416 and C (owner), then Sprint D.**
+- **Sprint D1 BUILT 2026-10-29** (branch `bumi-sprint-d`; migration courses/0088 migrate-first): 84 of the 87 UiTM rows parse (3 flagged: UE0520001, UE0545001 two grades over one list; UE4811004 ATAU), `count_once` construct, `ingest_spm_courses` (dry run first), all 7 doors. Golden masters 5,319 (original + full at bumi=False) / 5,865 (bumi=True, after review round 1) / STPM 2,025. NEXT = adversarial review, then the read-only SQL checks, migrate, deploy, `--apply`.
 
 ## Roadmap — 6 sprints (now 5: E dropped)
 
@@ -58,6 +59,40 @@ Owner rulings (2026-10-28):
 - Institutions + `CourseInstitution` links for new rows.
 - SPM golden master **will move** (new courses). Re-baseline on purpose, with a diff report showing old 5,319 rows unchanged.
 - May split into D1 (UiTM) / D2 (others) if > ~40 files or the review is heavy.
+
+#### Sprint D — detailed plan (2026-10-29, owner answers)
+Owner answers: (1) re-scrape Syarat Am with a new `--with-syarat-am` flag on `scrape_mohe_stpm` (approved tool change);
+(2) parser lives in the repo (`apps/courses/spm_syarat.py` + `ingest_spm_courses` command), not `Settings/_tools`;
+(3) link each UiTM / MARA course to ONE parent institution now, campuses later; (4) **the 2 Bumi Matrikulasi
+programmes become 2 new Bumi-only matric tracks** (KA0000002 Sains 4-semester, KA0000006 Perakaunan Profesional).
+
+**Split.** D1 = foundations + the 87 UiTM rows. D2 = the other 63 (UIAM, MARA, the 14 open Islamic, UMS / UNIMAS /
+UM / UniSZA / USIM) + the 2 Bumi matric tracks + `any_of` / hand entry for the ATAU rows.
+
+**D1 builds:** migration `courses/0088` `CourseRequirement.req_bumiputera` (default False + DB default; migrate-first);
+engine gate after the `req_disability` block (`engine.py` ~615), `StudentProfile(bumiputera=False)`; Syarat Am
+scrape; parser with a new "N remaining subjects, minus an exclude list" construct; dry-run-first ingest command;
+reviewed data file `data/spm/spm_new_courses_D1.json`, appended to both fixtures; every door below.
+
+**Doors (adversarial review brief):**
+1. `EligibilityRequestSerializer` + `EligibilityCheckView` read `bumiputera` via `resolve_bumiputera` (foreigner never Bumi).
+2. **Scholarship pickers** (`scholarship/apply/page.tsx` ~213, `PathwayPicker.tsx` ~104) send the whole profile: they must
+   force `bumiputera: true` (Option A, every course), like `degreeChoices.ts`. Jest guard.
+3. Dashboard + search send the profile (correct for the course guide); cached profile carries the flag.
+4. `CourseSearchView` SPM branch excludes `req_bumiputera` unless Bumi; its pick-lists use the same visible set.
+5. `CourseDetailView` shows a "Bumiputera only" badge (no 404); `req_bumiputera` in `GENERAL_FIELDS`.
+6. Client-filtered readers (ranking, insights, report_engine, saved, CourseListView) — confirm no leak, no filter needed.
+7. Scholarship `card_display` / `offer_pathway` read by id, unfiltered (Option A) — the Bumi-blind guards stay green.
+
+**Golden masters:** freeze the original fixture IDs; their total stays **5,319** and every student's set is identical.
+Full set at bumi=False = 5,319 + (only open Islamic rows; a Bumi row adding anything is a bug); record a bumi=True
+baseline too. STPM stays **2,025**.
+
+**Baseline measured 2026-10-29 (`origin/main` 7a19c93d, `pytest -n auto`):** 9,834 passed / 3 skipped.
+
+**Lessons applied:** L539 two Bumi signals (both already agree, 0 disagree); L708 check the scraper's page count on
+`--max-pages 2` first; L710 the fixtures are 2 rows behind prod (89 vs 87 MOHE-coded) — reconcile by read-only SQL
+before `--apply`; the slip-name alias lesson (old stored names stay); a count-once rule is a matching.
 
 ### Sprint E — STPM refresh check · low
 - Apply any Sprint A changes to STPM bumi flags / new bumi STPM courses. Golden master re-baseline only if rows change.

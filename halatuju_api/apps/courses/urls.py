@@ -2,7 +2,7 @@
 URL patterns for the courses app.
 """
 from django.urls import path
-from . import health, views
+from . import health, views, views_stpm_quiz
 from .views_admin import (
     AdminRoleView, AdminOrgsView, AdminSetPasswordView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
@@ -88,9 +88,9 @@ urlpatterns = [
     path('calculate/pathways/', views.CalculatePathwaysView.as_view(), name='calculate-pathways'),
 
     # STPM quiz
-    path('stpm/quiz/questions/', views.StpmQuizQuestionsView.as_view(), name='stpm-quiz-questions'),
-    path('stpm/quiz/resolve/', views.StpmQuizResolveView.as_view(), name='stpm-quiz-resolve'),
-    path('stpm/quiz/submit/', views.StpmQuizSubmitView.as_view(), name='stpm-quiz-submit'),
+    path('stpm/quiz/questions/', views_stpm_quiz.StpmQuizQuestionsView.as_view(), name='stpm-quiz-questions'),
+    path('stpm/quiz/resolve/', views_stpm_quiz.StpmQuizResolveView.as_view(), name='stpm-quiz-resolve'),
+    path('stpm/quiz/submit/', views_stpm_quiz.StpmQuizSubmitView.as_view(), name='stpm-quiz-submit'),
 
     # STPM eligibility
     path('stpm/eligibility/check/', views.StpmEligibilityCheckView.as_view(), name='stpm-eligibility-check'),

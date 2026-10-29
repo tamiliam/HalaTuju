@@ -15,6 +15,7 @@ from apps.courses.management.commands.scrape_mohe_stpm import (
     csv_fieldnames,
     detail_url,
     modal_url,
+    syarat_am_text,
 )
 
 
@@ -131,3 +132,45 @@ class TestCsvFieldnames:
         assert csv_fieldnames(True, False) == self.BASE + ['bumi_portal']
         assert csv_fieldnames(False, True) == self.BASE + ['bumi_syarat', 'syarat_khas']
         assert csv_fieldnames(True, True)[-1] == 'bumi_agreement'
+
+    def test_syarat_am_column_is_last_and_opt_in(self):
+        assert csv_fieldnames(True, True) == csv_fieldnames(True, True, False)
+        assert csv_fieldnames(True, True, True)[-1] == 'syarat_am'
+        assert csv_fieldnames(False, False, True) == self.BASE + ['syarat_am']
+
+
+# A real listing-page fragment (MOHE e-Panduan, SPM category A, 2026-10-29), whitespace trimmed.
+LISTING_SNIPPET = (
+    '<a class="nav-link" id="syarat-am-tab-UY0000010" href="#syarat-am-UY0000010">Syarat Am</a>'
+    '<div class="card border-0 tab-pane fade show active" id="syarat-am-UY0000010" role="tabpanel"'
+    ' aria-labelledby="syarat-am-tab-UY0000010"> <div class="pl-2 pb-3"> <ol>'
+    ' <li>Warganegara Malaysia yang mempunyai <b>No. Kad Pengenalan / My Kad</b>.</li>'
+    ' <li>Memiliki <b>Sijil Pelajaran Malaysia (SPM)</b> dengan mendapat sekurang-kurangnya :-</li>'
+    ' <ol type="i"> <li> Gred <b>C</b> bagi matapelajaran <b>BAHASA MELAYU</b>. </li>'
+    ' <li> Gred <b>E</b> bagi matapelajaran <b>SEJARAH</b>. </li>'
+    ' <li><b>EMPAT (4) C</b> dalam mana-mana matapelajaran yang belum dikira.</li> </ol> </ol> </div>'
+    ' <div class="pl-2 pb-3"> <ol> <ol type="i"> </ol> </ol> </div> </div>'
+    ' <!--Paparan Syarat khas Tab--> <div class="card border-0 tab-pane fade"'
+    ' id="syarat-Khas-UY0000010" role="tabpanel"> Mendapat sekurang-kurangnya Gred C </div>'
+)
+
+
+class TestSyaratAmText:
+    def test_reads_the_pane_of_the_named_programme(self):
+        assert syarat_am_text(LISTING_SNIPPET, 'UY0000010') == (
+            'Warganegara Malaysia yang mempunyai No. Kad Pengenalan / My Kad . Memiliki Sijil '
+            'Pelajaran Malaysia (SPM) dengan mendapat sekurang-kurangnya :- Gred C bagi '
+            'matapelajaran BAHASA MELAYU . Gred E bagi matapelajaran SEJARAH . EMPAT (4) C dalam '
+            'mana-mana matapelajaran yang belum dikira.')
+
+    def test_never_spills_into_the_syarat_khas_pane(self):
+        assert 'Mendapat' not in syarat_am_text(LISTING_SNIPPET, 'UY0000010')
+
+    def test_the_tab_link_is_not_the_pane(self):
+        # `syarat-am-tab-<code>` must not be mistaken for the pane `syarat-am-<code>`.
+        assert syarat_am_text(LISTING_SNIPPET.split('<div class="card')[0], 'UY0000010') == ''
+
+    def test_absent_programme_or_page_is_blank(self):
+        assert syarat_am_text(LISTING_SNIPPET, 'UE0545001') == ''
+        assert syarat_am_text('', 'UY0000010') == ''
+        assert syarat_am_text(None, 'UY0000010') == ''
