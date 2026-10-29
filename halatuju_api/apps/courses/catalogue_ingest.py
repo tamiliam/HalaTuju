@@ -18,7 +18,6 @@ def _parent(entry, cli_id):
     return cli_id if own is _UNSET else own
 
 
-
 class CatalogueIngestMixin:
     """The shared half of the catalogue ingest commands (see the module doc)."""
 
@@ -34,10 +33,7 @@ class CatalogueIngestMixin:
 
     def _check(self, courses, cli_id, creating, apply):
         """Refuse a file that is not safe to write, before anything is written."""
-        problems = [f"{e['course_id']}: unparsed {e['unparsed']}" for e in courses if e.get('unparsed')]
-        known = set(FieldTaxonomy.objects.values_list('key', flat=True))
-        problems += [f"{e['course_id']}: field_key {e['field_key']!r} is not a FieldTaxonomy key"
-                     for e in courses if e['field_key'] not in known]
+        problems = self._entry_problems(courses)
         own = [e for e in courses if 'institution_id' in e]
         if own and cli_id:
             problems.append('--institution-id given, but the file names each row\'s own institution')
@@ -48,10 +44,24 @@ class CatalogueIngestMixin:
                 break
             if parent is None and entry['requirement'].get('source_type') != 'matric':
                 problems.append(f"{entry['course_id']}: no institution, but it is not a matric row")
-        parents = {_parent(e, cli_id) for e in courses} - {None}
+        problems += self._missing_institutions({_parent(e, cli_id) for e in courses} - {None}, creating)
+        self._refuse_or_warn(problems, apply)
+
+    @staticmethod
+    def _entry_problems(courses):
+        """A row the parser flagged, or a field_key that names no FieldTaxonomy row."""
+        problems = [f"{e['course_id']}: unparsed {e['unparsed']}" for e in courses if e.get('unparsed')]
+        known = set(FieldTaxonomy.objects.values_list('key', flat=True))
+        return problems + [f"{e['course_id']}: field_key {e['field_key']!r} is not a FieldTaxonomy key"
+                           for e in courses if e['field_key'] not in known]
+
+    @staticmethod
+    def _missing_institutions(parents, creating):
         held = set(Institution.objects.filter(institution_id__in=parents).values_list('institution_id', flat=True))
-        problems += [f'Institution {iid!r} does not exist (a row the file proposes under new_institutions '
-                     'is created only with --create-institutions)' for iid in sorted(parents - held - creating)]
+        return [f'Institution {iid!r} does not exist (a row the file proposes under new_institutions '
+                'is created only with --create-institutions)' for iid in sorted(parents - held - creating)]
+
+    def _refuse_or_warn(self, problems, apply):
         if problems:
             report = 'Refusing to ingest:\n  ' + '\n  '.join(problems)
             if apply:
@@ -59,7 +69,8 @@ class CatalogueIngestMixin:
             self.stdout.write(self.style.WARNING(report))
 
     @staticmethod
-    def _write(entry, institution_id):
+    def _write_course(entry):
+        """`Course` + its `CourseRequirement`, idempotently; returns the course."""
         course, _ = Course.objects.update_or_create(
             course_id=entry['course_id'],
             defaults={**{k: entry[k] for k in COURSE_FIELDS}, 'field_key_id': entry['field_key']},
@@ -69,6 +80,11 @@ class CatalogueIngestMixin:
         flags = {f.name: False for f in CourseRequirement._meta.get_fields()
                  if f.get_internal_type() == 'BooleanField'}
         CourseRequirement.objects.update_or_create(course=course, defaults={**flags, **entry['requirement']})
+        return course
+
+    @classmethod
+    def _write(cls, entry, institution_id):
+        course = cls._write_course(entry)
         if institution_id:
             CourseInstitution.objects.update_or_create(
                 course=course, institution_id=institution_id,
