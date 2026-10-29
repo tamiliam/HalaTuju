@@ -241,7 +241,7 @@ def send_due_reminders(today=None, now=None):
                 sent += 1
             else:                                             # give the claim back: try again tomorrow
                 ResultsExpectation.objects.filter(pk=exp.pk, reminded_at=now).update(reminded_at=exp.reminded_at)
-        except Exception:  # noqa: BLE001 — one student's failure must not stop the run
+        except Exception:   # one student's failure must not stop the run
             log.exception('results-due reminder failed for application %s', app.id)
     return sent
 
@@ -277,7 +277,7 @@ def flag_overdue(today=None, now=None):
             if unsent and _may_email(app) and student_comms.send_student_email(
                     app, 'results_overdue', due_date=rows[0].due_on):
                 ResultsExpectation.objects.filter(pk__in=unsent).update(overdue_emailed_at=now)
-        except Exception:  # noqa: BLE001 — one student's failure must not stop the run
+        except Exception:   # one student's failure must not stop the run
             log.exception('results-overdue flag failed for application %s', app.id)
     return flagged
 
@@ -289,6 +289,6 @@ def ensure_all(today=None):
     for app in _live_applications():
         try:
             made += ensure_expectations(app, today)
-        except Exception:  # noqa: BLE001
+        except Exception:   # one student's failure must not stop the run
             log.exception('results terms failed for application %s', app.id)
     return made
