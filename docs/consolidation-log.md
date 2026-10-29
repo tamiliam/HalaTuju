@@ -18,6 +18,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-28 Bumi coverage Sprint A (scraper Bumi signals + inventory) — 4350af2f
 - 2026-10-28 Bumi coverage Sprint B (the Bumiputera answer, migration 0087) — 6443120d 8a47851a daf1918d 6c458ed5
 - 2026-10-29 TD-416 message slices + Bumi coverage Sprint C (Islamic SPM subjects) — f1ae0a83 9d1dedca 5a4e186e f4aa714d 1a4aedc8
+- 2026-10-29 Student maintenance Sprint 1 (one predicate, on hold stops money, activity log, migration 0183) — ad299d31 901c63d5 ae939213 99ee813b
 
 ## Reviews
 

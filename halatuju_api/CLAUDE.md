@@ -1027,6 +1027,24 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
+**Student maintenance Sprint 1 is LIVE (2026-10-29, `99ee813b`; migration `scholarship/0183` applied by hand
+with RLS + policy + ledger row; retro `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 2 (admin Scholars list + file shell) and
+Sprint 3 (student "My Bursary" hub)** — design approved by the owner 2026-10-29 at
+https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (Stitch did not render; that canvas is the design of record).
+- ONE predicate, `maintenance_scope.py` (awarded + `vircle_activated_at`, or active/maintenance); the MONEY hold is
+  separate: `maintenance.is_on_hold` = stored `on_hold` + a payable status, never the wallet stamp. Moving to/from
+  `on_hold` needs `payments.may_prepare` (403 `hold_needs_payments`).
+- ⚠ **MIGRATE FIRST for anything that writes `student_activity`** — `activity.log_event` writes inside the caller's
+  transaction, so a missing table rolls back run approvals, tranche releases, closures, holds and results. Deploy
+  the api before the web.
+- `can_record_results` stays active/maintenance until Sprint 4 (results review + one sponsor-reader rule); the
+  student gets `support_paused`, never the raw sub-state.
+- The cockpit's sub-state control (`PostAwardPanels.tsx`) still shows only at `maintenance`, so an awarded
+  student is held through the API until Sprint 3 moves the control to the file (TD-419/TD-420).
+
+---
+
 **Bumi + Islamic coverage: Sprints A, B, C and TD-416 are LIVE (2026-10-29, `1a4aedc8`; retro
 `docs/retrospectives/retrospective-2026-10-29-bumi-sprint-c-td416.md`). NEXT in that arc = Sprint D:** SPM
 catalogue Bumi + Islamic course ingest — `CourseRequirement.req_bumiputera` + the engine check (copy the

@@ -132,7 +132,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 7
+### Now — money, identity, eligibility or security — 8
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 
@@ -145,10 +145,12 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-348** — Two submits at the same moment to two different rounds can both pass the one-application-in-play check (a script could; a person realistically cannot); nothing in the database holds that rule. Fix: a short locked transaction with the acknowledgement email on `on_commit`. *(B · M · raised 2026-10-05 by the one-application-per-organisation sprint)*
 - **TD-347** — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)*
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
+- **TD-420** — A tranche release reads the hold on a copy without a lock, so a hold committed mid-request does not stop it; fold into TD-383. *(B · S · raised 2026-10-29 by student maintenance S1)*
 
-### Next — a student or an officer can see it, and it is small — 27
+### Next — a student or an officer can see it, and it is small — 28
 Class C, half a day each. Good small-change-lane work; several go together.
 
+- **TD-419** — The cockpit shows the sub-state control only at `maintenance` (awarded students are held via the API) and does not translate `hold_needs_payments`; Sprint 3 moves the control to the file. *(C · S · raised 2026-10-29 by student maintenance S1)*
 
 - **TD-406** — The `needs_officer_eye` hold a "not checked" TVET offer puts on an officer's offer request never clears by itself: if the student later uploads another offer against the same request (e.g. one that reads suspect), they keep seeing "our team is checking this". *(C · S · raised 2026-10-26 by the corpus-gaps C2 final review)*
 - **TD-405** — Confirm a living parent cannot be left off the family form: if the STR names the mother and the form omits her, the STR is judged against the father alone, called a stranger's, and no IC slot is offered for her (F8 behaviour). Check `family_incomplete` prevents it; fix the form if not. *(C · S · raised 2026-10-25 by the same review; pre-existing)*
@@ -6839,3 +6841,23 @@ accepted before today still bills — the two tests that pin that are
 `test_billing_is_gated_on_the_acceptance_not_on_the_name`. Request 38's acceptance remains
 attributed to BrightPath in prose above, which is where the attribution for pre-column rows lives.
 *(C · S)*
+
+### [TD-419] The cockpit cannot hold an awarded student, and does not translate `hold_needs_payments` - low
+
+**Raised 2026-10-29** by student maintenance Sprint 1 (adversarial review). `PostAwardPanels.tsx` shows the
+maintenance sub-state control only when `status === 'maintenance'`, so the 65 live students — all `awarded` and
+inside the maintenance predicate — can be put on hold only through the API until the control moves. And a
+reviewer who presses a hold button now gets 403 `hold_needs_payments` (a move to or from `on_hold` needs
+`payments.may_prepare`), which the panel shows as a generic failure, not a translated sentence. **Fix:** Sprint 3
+moves the sub-state control to the student's file (roadmap); show it from `can_set_substate` (served), offer
+the hold buttons only to a Prepare holder, and map `hold_needs_payments` in en/ms/ta. *(C · S)*
+
+### [TD-420] A tranche release reads the hold on a copy, without a lock - low
+
+**Raised 2026-10-29** by student maintenance Sprint 1 (adversarial review L7). `disbursement.release_tranche`
+checks `maintenance.is_on_hold(disbursement.application)` on the row the view loaded, with no lock and no
+re-read, so a hold committed between that load and the release's save does not stop the release. The window is
+one request long and tranches are the legacy money door (the live cohort is paid by runs, whose `complete`
+re-reads every application inside the approval's transaction). **Fix:** fold into TD-383's choke-point — lock
+the application row (or re-read the stored sub-state) inside `release_tranche`'s transaction before the hold
+check. *(B · S)*
