@@ -36,6 +36,20 @@ export function hoursProblem(value: string, { required }: { required: boolean })
   return ''
 }
 
+/** Does the charged figure differ from the hours spent?
+ *
+ * ⚠ Compared as NUMBERS, and a BLANK charged box means "the same as actual" — which is what the
+ * server does with it. So '4' against '4.0', and a blank against anything, are not differences,
+ * and nobody is asked to explain a trailing zero.
+ */
+export function chargedDiffers(actual: string, charged: string): boolean {
+  const chargedText = (charged || '').trim()
+  const actualText = (actual || '').trim()
+  if (chargedText === '' || actualText === '') return false
+  if (!/^\d+(\.\d)?$/.test(chargedText) || !/^\d+(\.\d)?$/.test(actualText)) return false
+  return Number(chargedText) !== Number(actualText)
+}
+
 /** Why this pair cannot be saved, as an i18n key suffix, or '' when it can. */
 export function hoursFormProblem(actual: string, charged: string, note: string): string {
   const actualProblem = hoursProblem(actual, { required: true })
@@ -45,9 +59,7 @@ export function hoursFormProblem(actual: string, charged: string, note: string):
   // ⚠ A DIFFERENCE NEEDS A REASON. An unexplained write-off is money moved with nothing on the
   // record — the same defect `OrgBuildHours.basis` exists to prevent. Compared as NUMBERS, so
   // '4' and '4.0' are the same figure and do not demand a note for a typing difference.
-  const chargedText = (charged || '').trim()
-  if (chargedText !== '' && Number(chargedText) !== Number(actual.trim())
-      && (note || '').trim() === '') return 'chargeNoteRequired'
+  if (chargedDiffers(actual, charged) && (note || '').trim() === '') return 'chargeNoteRequired'
   return ''
 }
 
@@ -64,6 +76,7 @@ export function RequestHoursForm({ analysis, t, busy, onSave }: {
 
   const recorded = analysis.charged_hours !== null
   const problem = hoursFormProblem(actual, charged, note)
+  const differs = chargedDiffers(actual, charged)
 
   if (!open) {
     return (
@@ -112,12 +125,18 @@ export function RequestHoursForm({ analysis, t, busy, onSave }: {
             className="mt-0.5 block w-24 rounded border border-ground-300 px-2 py-1 text-sm" />
         </label>
       </div>
-      <label className="mt-2 block text-xs text-ground-600">
-        {t('admin.requests.owner.hoursNote')}
-        <textarea value={note} rows={2} aria-label="charge_note"
-          onChange={(e) => setNote(e.target.value)}
-          className="mt-0.5 block w-full rounded border border-ground-300 px-2 py-1 text-sm" />
-      </label>
+      {/* ⚠ THE NOTE EXISTS ONLY TO EXPLAIN A DIFFERENCE, so it is offered only while there is
+          one — and `onSave` below does not send it otherwise. Leaving it on screen when the two
+          figures match let a write-off be reversed with its explanation still attached: a note
+          saying "our overrun, absorbed in full" sitting on a request that was charged in full. */}
+      {differs && (
+        <label className="mt-2 block text-xs text-ground-600">
+          {t('admin.requests.owner.hoursNote')}
+          <textarea value={note} rows={2} aria-label="charge_note"
+            onChange={(e) => setNote(e.target.value)}
+            className="mt-0.5 block w-full rounded border border-ground-300 px-2 py-1 text-sm" />
+        </label>
+      )}
       {problem && (
         <p className="mt-2 text-xs text-critical-600">
           {t(`admin.requests.owner.hoursError.${problem}`)}
@@ -129,7 +148,9 @@ export function RequestHoursForm({ analysis, t, busy, onSave }: {
             onSave({
               actual_hours: actual.trim(),
               charged_hours: charged.trim() || undefined,
-              charge_note: note.trim() || undefined,
+              // ⚠ Never sent when the figures match: the service stores a blank as NULL, which
+              // is how a stale explanation is cleared rather than carried forward.
+              charge_note: (differs && note.trim()) || undefined,
             })
             setOpen(false)
           }}

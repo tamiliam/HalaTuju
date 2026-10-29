@@ -6,9 +6,11 @@ import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import InvoicesSection from '@/components/admin/InvoicesSection'
 import { UnbilledSection } from '@/components/admin/UnbilledSection'
+import { ChargeCard } from '@/components/admin/ChargeCard'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
+  recordBillingCorrection, deleteBillingCorrection,
   type BillingUsagePayload, type BillingOrgBlock, type BillingCostsPayload,
   type BillingCharge, type UnbilledRequest,
 } from '@/lib/admin-api'
@@ -261,148 +263,6 @@ function CostSection({ costs, t }: {
   )
 }
 
-/** One tenant's bill: every line shown, THEN the discount. The owner's July rule — shown in
- *  full, charged nothing — only works if the subtotal survives to the screen. */
-function ChargeCard({ charge, month, t, onDiscount, busy }: {
-  charge: BillingCharge
-  month: string
-  t: (k: string, vars?: Record<string, string>) => string
-  onDiscount: (orgId: number, pct: string, reason: string) => void
-  busy: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const [pct, setPct] = useState('100')
-  const [reason, setReason] = useState('')
-
-  return (
-    <div className="rounded-xl border bg-ground-0 p-4 shadow-sm"
-      data-testid={`charge-${charge.organisation_id}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-ground-900">{charge.organisation}</h3>
-        <span className="text-2xl font-semibold text-ground-900">{formatMyr(charge.charged_myr)}</span>
-      </div>
-
-      <dl className="mt-3 space-y-1 text-sm">
-        {charge.lines.map((ln) => (
-          <div key={ln.category} className="flex justify-between gap-4">
-            <dt className="text-ground-600">
-              {t(`admin.billing.charge.line.${ln.category}`)}
-              {ln.hours ? (
-                <>
-                  <span className="text-ground-400">
-                    {' · '}{t('admin.billing.charge.workedAt', {
-                      hours: formatHours(ln.hours),
-                      rate: formatMyr(ln.rate_myr),
-                      margin: formatPct(ln.margin_pct),
-                    })}
-                  </span>
-                  {/* ⚠ WHAT THE TOOLS COST US, beside what the hours are charged at. Shown,
-                      never added — the hourly rate already recovers it, and adding it would
-                      take the same ringgit twice. It exists so "is the rate enough?" is a
-                      figure on a screen rather than a feeling. */}
-                  {ln.tool_cost_myr && Number(ln.tool_cost_myr) > 0 && (
-                    <span className="block text-[11px] text-ground-400">
-                      {t('admin.billing.charge.toolCost', { cost: formatMyr(ln.tool_cost_myr) })}
-                    </span>
-                  )}
-                </>
-              ) : (
-                /* ⚠ WHAT WE PAID, BESIDE WHAT WE CHARGE. A single marked-up figure hides the
-                   markup, and the markup is the thing the reader is here to check. */
-                <span className="text-ground-400">
-                  {' · '}{t('admin.billing.charge.costPlus', {
-                    cost: formatMyr(ln.cost_myr),
-                    margin: formatPct(ln.margin_pct),
-                  })}
-                </span>
-              )}
-              {/* The tenant's share of a platform-wide cost, and the rule behind it. With one
-                  tenant this reads 100% — which is exactly when it is worth writing down. */}
-              {ln.share_pct && (
-                <span className="block text-[11px] text-ground-400">
-                  {t('admin.billing.charge.share', { pct: formatPct(ln.share_pct) })}
-                  {ln.share_rule ? ` — ${ln.share_rule}` : ''}
-                </span>
-              )}
-            </dt>
-            <dd className="tabular-nums text-ground-900">{formatMyr(ln.amount_myr)}</dd>
-          </div>
-        ))}
-        <div className="flex justify-between gap-4 border-t pt-1">
-          <dt className="text-ground-600">{t('admin.billing.charge.subtotal')}</dt>
-          <dd className="tabular-nums text-ground-900">{formatMyr(charge.subtotal_myr)}</dd>
-        </div>
-        {/* ⚠ The discount is its own LINE, never a quietly smaller total. A waiver you cannot see
-            is indistinguishable from a bug that produced zero. */}
-        {Number(charge.discount_pct) > 0 && (
-          <div className="flex justify-between gap-4" data-testid="discount-line">
-            <dt className="text-ground-600">
-              {t('admin.billing.charge.discount', { pct: formatPct(charge.discount_pct) })}
-              {charge.discount_reason && (
-                <span className="block text-xs text-ground-400">{charge.discount_reason}</span>
-              )}
-            </dt>
-            <dd className="tabular-nums text-ground-900">−{formatMyr(charge.discount_myr)}</dd>
-          </div>
-        )}
-        <div className="flex justify-between gap-4 border-t pt-1 font-semibold">
-          <dt className="text-ground-900">{t('admin.billing.charge.charged')}</dt>
-          <dd className="tabular-nums text-ground-900">{formatMyr(charge.charged_myr)}</dd>
-        </div>
-      </dl>
-
-      {/* ⚠ Every category we could NOT price, with its reason. Never rendered as RM0.00 —
-          a line the reader can see is missing gets fixed; a zero gets believed. */}
-      {charge.blocked.length > 0 && (
-        <ul className="mt-3 space-y-1" data-testid={`blocked-${charge.organisation_id}`}>
-          {charge.blocked.map((b) => (
-            <li key={b.category} className="rounded-lg bg-ground-50 px-3 py-2 text-xs text-ground-600">
-              <span className="font-medium text-ground-700">
-                {t(`admin.billing.charge.line.${b.category}`)}
-              </span>
-              {' — '}{b.reason}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="mt-3">
-        <button type="button" className="text-xs text-ground-500 underline"
-          onClick={() => setOpen((v) => !v)}>
-          {t('admin.billing.charge.setDiscount', { month: formatMonth(month) })}
-        </button>
-        {open && (
-          <div className="mt-2 grid gap-2 sm:grid-cols-[6rem_1fr_auto] sm:items-end">
-            <label className="block">
-              <span className="block text-[11px] text-ground-500">{t('admin.billing.charge.pct')}</span>
-              <input type="number" min="0" max="100" step="0.01" inputMode="decimal"
-                className="mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm"
-                value={pct} onChange={(e) => setPct(e.target.value)}
-                aria-label={t('admin.billing.charge.pct')} />
-            </label>
-            <label className="block">
-              <span className="block text-[11px] text-ground-500">{t('admin.billing.charge.reason')}</span>
-              <input type="text"
-                className="mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm"
-                value={reason} onChange={(e) => setReason(e.target.value)}
-                aria-label={t('admin.billing.charge.reason')} />
-            </label>
-            <button type="button"
-              /* The reason is required here as well as on the server, so the refusal is a
-                 disabled button rather than a round-trip and an error message. */
-              disabled={busy || reason.trim() === ''}
-              /* The console's default disabled button, same as the rates screen's Save. */
-              className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-              onClick={() => onDiscount(charge.organisation_id, pct.trim(), reason.trim())}>
-              {t('admin.billing.charge.apply')}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 /** The services that run the WHOLE platform (2026-09-15). Named with their plan only: what each
  *  costs is a commercial disclosure that stays on the super-only costs section. They are not counted
  *  per organisation above, because nobody can honestly split a shared mailbox or database by tenant —
@@ -489,12 +349,16 @@ export default function AdminBillingPage() {
       // Re-read: a discount changes the subtotal line, the discount line and the charged total
       // at once. Patching one of the three would leave the card disagreeing with itself.
       .then(() => loadCosts(month))
-      .catch((e) => setCostError(String(e)))
+      .catch((e: unknown) => setCostError(String(e)))
       .finally(() => setBusy(false))
   }, [token, month, loadCosts])
 
   const recordRequestHours = useCallback((row: UnbilledRequest) => {
     if (!token) return
+    // ⚠ A LAST GUARD, not a fallback. `hours` is null when no closing report published a figure,
+    // and the panel already withholds the button — but the old code recorded `row.hours ?? '0'`,
+    // which would have billed zero hours for real work rather than refusing. Nothing is sent.
+    if (row.hours === null) return
     setBusy(true)
     recordBuildHours(row.organisation_id, {
       // ⚠ THE MONTH WE WORKED, not the month being viewed and not the month it was raised
@@ -502,15 +366,45 @@ export default function AdminBillingPage() {
       // page the reader happened to be on.
       period_month: row.worked_month,
       module: row.module,
-      hours: row.hours ?? '0',
+      hours: row.hours,
       // `basis` is required by the model and is the point of it: an hours figure with no stated
       // reconstruction is not auditable. Written by the code so it always names its source AND
       // how the month was decided — 'scheduled' is firm, 'last touched' is a fallback.
-      basis: `Quoted on request #${row.request_id} (${row.title}). Worked ${row.worked_on} `
-        + `(${row.worked_basis}), so recorded against ${row.worked_month}.`,
+      // ⚠ "Reported", NOT "Quoted". The old wording was literally true of the old behaviour —
+      // every billed feature's `basis` on production reads "Quoted on request #N", which is how
+      // the owner traced the defect on 2026-10-29. It is the PUBLISHED actual now, and the audit
+      // trail has to say which figure it is.
+      basis: `Reported on request #${row.request_id} (${row.title}): `
+        + `${row.actual_hours ?? row.hours}h spent, ${row.hours}h charged`
+        + `${row.quoted_hours ? `, ${row.quoted_hours}h quoted` : ''}. `
+        + `Worked ${row.worked_on} (${row.worked_basis}), so recorded against ${row.worked_month}.`,
     }, { token })
       .then(() => loadCosts(month))
-      .catch((e) => setCostError(String(e)))
+      .catch((e: unknown) => setCostError(String(e)))
+      .finally(() => setBusy(false))
+  }, [token, month, loadCosts])
+
+  const applyCorrection = useCallback((orgId: number, amountMyr: string, reason: string) => {
+    if (!token) return
+    setBusy(true)
+    // ⚠ `month` is the month CARRYING the correction — the one on screen — never the month that
+    // was wrong. The owner's rule puts it on the FOLLOWING bill, which is the bill being read.
+    recordBillingCorrection(
+      { organisation_id: orgId, period_month: month, amount_myr: amountMyr, reason }, { token })
+      // Re-read, like the discount: a correction moves its own line and the charged total.
+      .then(() => loadCosts(month))
+      .catch((e: unknown) => setCostError(String(e)))
+      .finally(() => setBusy(false))
+  }, [token, month, loadCosts])
+
+  const removeCorrection = useCallback((id: number) => {
+    if (!token) return
+    setBusy(true)
+    // The server refuses once the month is invoiced (`already_invoiced`) — the figures are frozen
+    // onto that document. The refusal is READ from the server rather than guessed here.
+    deleteBillingCorrection(id, { token })
+      .then(() => loadCosts(month))
+      .catch((e: unknown) => setCostError(String(e)))
       .finally(() => setBusy(false))
   }, [token, month, loadCosts])
 
@@ -585,6 +479,7 @@ export default function AdminBillingPage() {
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
             {costs.charges.map((c) => (
               <ChargeCard key={c.organisation_id} charge={c} month={month} t={t}
+                onCorrection={applyCorrection} onRemoveCorrection={removeCorrection}
                 onDiscount={applyDiscount} busy={busy} />
             ))}
           </div>

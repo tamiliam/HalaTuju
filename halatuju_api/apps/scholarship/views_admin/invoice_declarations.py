@@ -84,12 +84,9 @@ class AdminInvoiceDeclarationView(_InvoiceBase):
     def _digits(raw):
         """An id, or -1 for anything that is not one — which matches no row.
 
-        ⚠ DIGITS, not `int(...)`, the same rule the issue endpoint follows: `filter(pk='abc')`
-        raises, but `int()` is the wrong refusal because it ACCEPTS what this is not —
-        `int(1.5)` is 1 and `int(True)` is 1, so a float or a boolean would quietly act on
-        declaration 1.
+        The rule itself moved to `base._id_or_no_match` on 2026-10-29, when the billing
+        corrections endpoint needed the same check: two spellings of "is this an id?" eventually
+        disagree about `True`. This stays as the name this class's callers already use.
         """
-        text = '' if raw is None else str(raw).strip()
-        if isinstance(raw, bool) or not text.isdigit():
-            return -1
-        return int(text)
+        from .base import _id_or_no_match
+        return _id_or_no_match(raw)

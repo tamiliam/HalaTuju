@@ -171,8 +171,30 @@ export interface BillingCharge {
   discount_myr: string | null
   discount_reason: string
   discount_set_by: string
+  /** Corrections of EARLIER months that THIS month carries, oldest first — each with its own
+   *  words, because a netted figure is a number nobody can explain six months later.
+   *
+   *  ⚠ They apply AFTER the discount. A discount is a percentage of this month's work; a
+   *  correction is a fixed sum putting right a bill already sent, so discounting one would shrink
+   *  a refund we already owe — and July's 100% discount would have erased it entirely. */
+  corrections: BillingCorrection[]
+  /** The SIGNED total of those. Negative reduces what is owed. */
+  corrections_myr: string | null
   charged_myr: string | null
   blocked: BillingBlockedLine[]
+}
+
+/** One correction carried onto this month's bill (owner, 2026-10-29: *"When we have overcharged
+ *  or undercharged, this should be deducted or added (or written off) in the following month."*) */
+export interface BillingCorrection {
+  id: number
+  /** SIGNED. Negative = a credit to the tenant. */
+  amount_myr: string | null
+  /** REQUIRED, and PRINTED ON THE TENANT'S INVOICE. */
+  reason: string
+  /** The invoice it puts right, by number, or '' when none was named. */
+  corrects_invoice: string
+  set_by: string
 }
 
 /** Finished request work carrying quoted hours that has never reached an invoice. Reported, not
@@ -229,3 +251,30 @@ export async function setBillingAdjustment(
   return adminMutate('/api/v1/admin/scholarship/billing/costs/', 'POST', data, options)
 }
 
+
+/** Carry a correction of an EARLIER month onto a later month's invoice. Super-only.
+ *
+ * ⚠ `period_month` is the month that CARRIES it, never the month that was wrong. An invoice
+ * already sent is never edited: a billing mistake travels forward as its own line, and `reason`
+ * is required because it is PRINTED ON THE TENANT'S INVOICE.
+ *
+ * ⚠ It CREATES; it never updates. A month may carry several corrections, each about a different
+ * mistake — unlike the discount above, where a month has exactly one.
+ */
+export async function recordBillingCorrection(
+  data: {
+    organisation_id: number; period_month: string; amount_myr: string; reason: string
+    corrects_invoice_id?: number
+  },
+  options?: ApiOptions
+): Promise<{ id: number; amount_myr: string; reason: string; corrects_invoice: string }> {
+  return adminMutate('/api/v1/admin/scholarship/billing/corrections/', 'POST', data, options)
+}
+
+/** Remove a correction that has NOT yet reached an invoice. Super-only; 400 `already_invoiced`
+ *  once a live invoice exists for that month, because the figures are frozen onto it. */
+export async function deleteBillingCorrection(
+  id: number, options?: ApiOptions
+): Promise<void> {
+  return adminMutate(`/api/v1/admin/scholarship/billing/corrections/${id}/`, 'DELETE', {}, options)
+}

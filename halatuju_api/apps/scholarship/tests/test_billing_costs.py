@@ -27,12 +27,14 @@ from django.test import TestCase, override_settings
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import platform_cost
 from apps.scholarship.models import (
-    BillingRate, OrgBillingAdjustment, OrgBuildHours, OrgRequest, PlatformCost,
+    BillingRate, Invoice, OrgBillingAdjustment, OrgBillingCorrection, OrgBuildHours, OrgRequest,
+    PlatformCost,
 )
 from rest_framework.test import APIClient
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 COSTS_URL = '/api/v1/admin/scholarship/billing/costs/'
+CORRECTIONS_URL = '/api/v1/admin/scholarship/billing/corrections/'
 
 
 def _token(uid):
@@ -493,3 +495,139 @@ class TestRecordingADiscount(_Base):
         res = self._post(uid='oa')
         self.assertEqual(res.status_code, 403)
         self.assertFalse(OrgBillingAdjustment.objects.exists())
+
+
+class TestCarryingACorrectionForward(_Base):
+    """Putting right a month already sent (owner, 2026-10-29).
+
+    *"When we have overcharged or undercharged, this should be deducted or added (or written off)
+    in the following month."* August over-charged BrightPath by 5.5 hours — request 10 billed 15.0
+    against 11.5 spent, request 14 billed 2.0 after we wrote *"none of it is charged"* — RM126.50
+    at the billed hour. The sent invoice is never edited; the money travels forward.
+    """
+
+    def _post(self, uid='super-uid', **over):
+        body = {'organisation_id': self.org.id, 'period_month': '2026-09',
+                'amount_myr': '-126.50',
+                'reason': 'August: requests 10 and 14 billed the plan, not the hours reported'}
+        body.update(over)
+        return self._client(uid).post(CORRECTIONS_URL, body, format='json')
+
+    def test_a_super_records_a_credit_with_their_name_on_it(self):
+        res = self._post()
+        self.assertEqual(res.status_code, 201)
+        row = OrgBillingCorrection.objects.get()
+        self.assertEqual(row.amount_myr, Decimal('-126.50'))
+        self.assertEqual(row.period_month, '2026-09')
+        self.assertEqual(row.set_by_email, 'super@x.com')
+
+    def test_a_correction_with_no_reason_is_refused(self):
+        """⚠ The reason is PRINTED ON THE TENANT'S INVOICE. Money moving on a customer's bill
+        with nothing on the record is worse than a silent bug: they are the one left asking."""
+        res = self._post(reason='  ')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'reason_required')
+        self.assertFalse(OrgBillingCorrection.objects.exists())
+
+    def test_a_correction_of_nothing_is_refused(self):
+        """It would print a line saying we got something wrong by RM0.00."""
+        for bad in ('0', '0.00', 'abc', None):
+            with self.subTest(amount=str(bad)):
+                self.assertEqual(self._post(amount_myr=bad).status_code, 400)
+        self.assertFalse(OrgBillingCorrection.objects.exists())
+
+    def test_recording_twice_keeps_BOTH_rather_than_folding_them(self):
+        """⚠ The opposite of the discount, deliberately: a month has one discount but may carry
+        several corrections, each about a different mistake. Folding two would destroy the reason
+        that makes each one answerable."""
+        self._post()
+        self._post(amount_myr='-23.00', reason='August: request 14 charged 2.0, we said none')
+        self.assertEqual(OrgBillingCorrection.objects.count(), 2)
+        self.assertEqual(
+            platform_cost.charge_for(self.org, '2026-09')['corrections_myr'], Decimal('-149.50'))
+
+    def test_it_can_name_the_invoice_it_puts_right(self):
+        inv = Invoice.objects.create(
+            number='INV-2026-0001', organisation=self.org, period_month='2026-08',
+            issued_on=date(2026, 9, 15), due_on=date(2026, 9, 29),
+            subtotal_myr=Decimal('100.00'), total_myr=Decimal('100.00'))
+        res = self._post(corrects_invoice_id=inv.id)
+        self.assertEqual(res.data['corrects_invoice'], 'INV-2026-0001')
+
+    def test_an_invoice_belonging_to_another_tenant_is_a_404_not_a_silent_drop(self):
+        other = PartnerOrganisation.objects.create(code='other-t', name='Other Tenant')
+        theirs = Invoice.objects.create(
+            number='INV-2026-0009', organisation=other, period_month='2026-08',
+            issued_on=date(2026, 9, 15), due_on=date(2026, 9, 29),
+            subtotal_myr=Decimal('100.00'), total_myr=Decimal('100.00'))
+        self.assertEqual(self._post(corrects_invoice_id=theirs.id).status_code, 404)
+        self.assertFalse(OrgBillingCorrection.objects.exists())
+
+    def test_a_month_that_is_not_a_month_is_refused(self):
+        self.assertEqual(self._post(period_month='September').status_code, 400)
+
+    def test_org_admin_may_not_credit_or_charge_their_own_bill(self):
+        res = self._post(uid='oa')
+        self.assertEqual(res.status_code, 403)
+        self.assertFalse(OrgBillingCorrection.objects.exists())
+
+    def test_a_correction_can_be_removed_before_it_reaches_an_invoice(self):
+        self._post()
+        row = OrgBillingCorrection.objects.get()
+        res = self._client('super-uid').delete(f'{CORRECTIONS_URL}{row.id}/')
+        self.assertEqual(res.status_code, 204)
+        self.assertFalse(OrgBillingCorrection.objects.exists())
+
+    def test_once_the_month_is_invoiced_the_row_can_no_longer_be_deleted(self):
+        """⚠ The figures are FROZEN onto the document. Deleting the source row would leave the
+        invoice saying something the ledger no longer explains; the remedy is a void, or another
+        correction — never a quiet deletion behind it."""
+        self._post()
+        row = OrgBillingCorrection.objects.get()
+        Invoice.objects.create(
+            number='INV-2026-0002', organisation=self.org, period_month='2026-09',
+            issued_on=date(2026, 10, 15), due_on=date(2026, 10, 29),
+            subtotal_myr=Decimal('100.00'), total_myr=Decimal('-26.50'))
+        res = self._client('super-uid').delete(f'{CORRECTIONS_URL}{row.id}/')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'already_invoiced')
+        self.assertTrue(OrgBillingCorrection.objects.exists())
+
+    def test_a_voided_invoice_does_not_pin_the_row(self):
+        """A void withdrew the document, so the correction is free again — which is exactly the
+        case a re-issue needs."""
+        self._post()
+        row = OrgBillingCorrection.objects.get()
+        Invoice.objects.create(
+            number='INV-2026-0003', organisation=self.org, period_month='2026-09',
+            issued_on=date(2026, 10, 15), due_on=date(2026, 10, 29),
+            subtotal_myr=Decimal('100.00'), total_myr=Decimal('-26.50'),
+            voided_at=timezone.now(), void_reason='Wrong correction')
+        self.assertEqual(
+            self._client('super-uid').delete(f'{CORRECTIONS_URL}{row.id}/').status_code, 204)
+
+    def test_each_url_refuses_the_method_that_is_not_its_own_with_a_404_not_a_500(self):
+        """⚠ FOUND BY REVIEW, not by a failing test. One view serves `corrections/` and
+        `corrections/<pk>/`, so a DELETE to the collection reached a handler expecting a `pk` and
+        a POST to the item reached one that takes none — a TypeError, which DRF renders as a 500.
+        A 500 on a money endpoint reads as an outage; the honest answer is "no such thing".
+        """
+        self._post()
+        row = OrgBillingCorrection.objects.get()
+        self.assertEqual(self._client('super-uid').delete(CORRECTIONS_URL).status_code, 404)
+        res = self._client('super-uid').post(
+            f'{CORRECTIONS_URL}{row.id}/',
+            {'organisation_id': self.org.id, 'period_month': '2026-09',
+             'amount_myr': '-1.00', 'reason': 'x'}, format='json')
+        self.assertEqual(res.status_code, 404)
+        # And neither of them touched anything.
+        self.assertEqual(OrgBillingCorrection.objects.count(), 1)
+
+    def test_the_costs_payload_carries_each_correction_as_a_string(self):
+        """Money crosses as a STRING — a bare Decimal in a nested dict renders as a float."""
+        self._post()
+        res = self._client('super-uid').get(f'{COSTS_URL}?month=2026-09')
+        charge = [c for c in res.data['charges'] if c['organisation_id'] == self.org.id][0]
+        self.assertEqual(charge['corrections_myr'], '-126.50')
+        self.assertEqual(charge['corrections'][0]['amount_myr'], '-126.50')
+        self.assertIn('requests 10 and 14', charge['corrections'][0]['reason'])

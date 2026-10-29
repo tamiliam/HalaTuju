@@ -5413,6 +5413,18 @@
           "development": "Development hours",
           "metered": "Metered usage",
           "infrastructure": "Infrastructure"
+        },
+        "correctionCredit": "Credit for an earlier month",
+        "correctionCharge": "Charge for an earlier month",
+        "correctionRemove": "Remove",
+        "addCorrection": "Correct an earlier month",
+        "correctionAmount": "Amount (RM)",
+        "correctionReason": "Reason (the customer reads this)",
+        "correctionHelp": "Put a minus in front to credit them. It goes on the {month} invoice, and the reason is printed on it.",
+        "correctionError": {
+          "amountRequired": "Enter the amount, with a minus to credit them.",
+          "badAmount": "Enter an amount in ringgit and sen. It cannot be zero.",
+          "reasonRequired": "Say what is being put right — the customer reads this line."
         }
       },
       "unbilled": {

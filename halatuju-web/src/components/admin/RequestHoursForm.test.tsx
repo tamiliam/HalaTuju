@@ -17,7 +17,9 @@
  *    a comma decimal would reach the server as something it refuses.
  */
 import { fireEvent, render, within } from '@testing-library/react'
-import { RequestHoursForm, hoursFormProblem, hoursProblem } from './RequestHoursForm'
+import {
+  RequestHoursForm, chargedDiffers, hoursFormProblem, hoursProblem,
+} from './RequestHoursForm'
 import type { OrgRequestAnalysis } from '@/lib/admin-api'
 
 const t = (k: string, vars?: Record<string, string>) => (vars ? `${k}:${Object.values(vars).join('|')}` : k)
@@ -142,5 +144,40 @@ describe('the panel', () => {
       <RequestHoursForm analysis={analysis()} t={t} busy onSave={save} />)
     const button = within(container).getByText('admin.requests.owner.hoursRecord')
     expect((button as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('a stale write-off note cannot survive the figures matching', () => {
+  // ⚠ FOUND BY REVIEW, not by a failing test. The note box stayed on screen after the two
+  // figures were made equal, so a write-off could be reversed with its explanation still
+  // attached: "our overrun, absorbed in full" sitting on a request that was charged in full.
+  it('a blank charged box means "the same as actual", not a difference', () => {
+    expect(chargedDiffers('4.0', '')).toBe(false)
+    expect(chargedDiffers('4.0', '4')).toBe(false)
+    expect(chargedDiffers('4.0', '0')).toBe(true)
+  })
+
+  it('hides the note box while the figures match', () => {
+    const { container } = render(
+      <RequestHoursForm t={t} busy={false} onSave={jest.fn()}
+        analysis={analysis({ actual_hours: '5.0', charged_hours: '0.0',
+          charge_note: 'Our overrun, absorbed in full.' })} />)
+    fireEvent.click(within(container).getByText('admin.requests.owner.hoursEdit'))
+    expect(within(container).getByLabelText('charge_note')).not.toBeNull()
+    fireEvent.change(within(container).getByLabelText('charged_hours'), { target: { value: '5.0' } })
+    expect(within(container).queryByLabelText('charge_note')).toBeNull()
+  })
+
+  it('does not send the old note once the figures match', () => {
+    const save = jest.fn()
+    const { container } = render(
+      <RequestHoursForm t={t} busy={false} onSave={save}
+        analysis={analysis({ actual_hours: '5.0', charged_hours: '0.0',
+          charge_note: 'Our overrun, absorbed in full.' })} />)
+    fireEvent.click(within(container).getByText('admin.requests.owner.hoursEdit'))
+    fireEvent.change(within(container).getByLabelText('charged_hours'), { target: { value: '5.0' } })
+    fireEvent.click(within(container).getByText('admin.requests.owner.hoursSave'))
+    expect(save).toHaveBeenCalledWith({ actual_hours: '5.0', charged_hours: '5.0',
+      charge_note: undefined })
   })
 })

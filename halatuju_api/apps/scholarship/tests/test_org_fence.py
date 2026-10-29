@@ -412,6 +412,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # Same fence, same reason: retiring a draft reaches it through `req.analyses` too, so a
         # cross-org analysis id 404s rather than resolving.
         'AdminOrgRequestWithdrawAnalysisView': 'requests-org-fenced+super-only',
+        # The PUBLISHED hours against the plan (2026-10-29). Same fence and same reason again: the
+        # analysis is reached through `req.analyses`, so a cross-org analysis id 404s. Super-only
+        # because this figure DECIDES WHAT THE ORGANISATION IS CHARGED — it is the one the invoice
+        # reads — so a tenant writing its own would be setting its own price.
+        'AdminOrgRequestHoursView': 'requests-org-fenced+super-only',
         # Request #10 — the reviewers surface. A PartnerAdmin carries `owning_organisation`, so both
         # views narrow on it directly; the detail resolves THROUGH the narrowed list, so a cross-org
         # id 404s. Their workload figures are fenced on the application's owner too.
@@ -489,6 +494,13 @@ class TestFenceCoverageCompleteness(TestCase):
         # charges it returns are not org-fenced BECAUSE only a super ever sees the payload;
         # the tenant list itself comes from `.tenants()`, never a bare `is_active` filter.
         'AdminPlatformCostsView': 'super-only (platform cost ledger + every tenant\'s charge)',
+        # A correction of an EARLIER month, carried onto a later invoice (owner, 2026-10-29).
+        # Super-only, a 403 for org_admin, for the plainest reason there is: it MOVES MONEY on a
+        # customer's bill. The organisation is read from the request body and validated through
+        # `_org_or_none`, never trusted — and the one row it may NAME for provenance (the invoice
+        # being put right) is fenced to that same organisation, so a cross-tenant invoice id is a
+        # 404 rather than a silent drop.
+        'AdminBillingCorrectionView': 'super-only (moves money on a tenant bill; org validated)',
         # The System health light (2026-10-28): platform services (Gemini, Vision, email, the
         # scheduler, the AI bill) as five coloured rows — counts and timestamps, no tenant data.
         'AdminSystemHealthView': 'super-only (platform service health, no tenant data)',
@@ -656,6 +668,11 @@ class TestOrgFenceStaticGuard(TestCase):
         # Tenant invoices (2026-09-14). An invoice and its receipts are a tenant's bill and its
         # payments; an unfenced manager query is one tenant reading another's money.
         'Invoice.objects', 'InvoiceReceipt.objects',
+        # Billing corrections (2026-10-29). A row says what ONE tenant was credited or charged for
+        # an earlier month and why, and its reason is printed on their invoice — the same class of
+        # data as the invoice itself, so an unfenced manager query is one tenant reading another's
+        # money. Added on the day the model was written, per the note below this tuple.
+        'OrgBillingCorrection.objects',
         # Request #28 follow-up (2026-10-06). A flag and its notes are one organisation's private
         # working notes about a shop; an unfenced manager query is one tenant reading another's.
         'MerchantFlag.objects', 'MerchantFlagNote.objects',

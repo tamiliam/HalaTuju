@@ -153,10 +153,14 @@ export type {
 } from './admin-api/requests'
 
 // The tenant usage screen, the platform cost ledger and the rate card.
-export { getBillingUsage, getBillingCosts, setBillingAdjustment } from './admin-api/billing'
+export {
+  getBillingUsage, getBillingCosts, setBillingAdjustment, recordBillingCorrection,
+  deleteBillingCorrection,
+} from './admin-api/billing'
 export type {
   BillingServiceRow, BillingModelRow, AiJobRow, BillingOrgBlock, BillingUsagePayload,
   BillingBlockedLine, BillingUnconverted, PlatformCostBlock, BillingChargeLine, BillingCharge,
+  BillingCorrection,
   UnbilledRequest, BillingCostsPayload,
 } from './admin-api/billing'
 // Tenant invoices, receipts, build hours, and the two settings that feed an invoice: who is

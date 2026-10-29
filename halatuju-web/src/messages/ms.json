@@ -5413,6 +5413,18 @@
           "development": "Jam pembangunan",
           "metered": "Penggunaan bermeter",
           "infrastructure": "Infrastruktur"
+        },
+        "correctionCredit": "Kredit untuk bulan terdahulu",
+        "correctionCharge": "Caj untuk bulan terdahulu",
+        "correctionRemove": "Buang",
+        "addCorrection": "Betulkan bulan terdahulu",
+        "correctionAmount": "Jumlah (RM)",
+        "correctionReason": "Sebab (pelanggan membacanya)",
+        "correctionHelp": "Letak tanda tolak di depan untuk mengkreditkan mereka. Ia masuk ke invois {month}, dan sebabnya dicetak di atasnya.",
+        "correctionError": {
+          "amountRequired": "Masukkan jumlah, dengan tanda tolak untuk mengkredit.",
+          "badAmount": "Masukkan jumlah dalam ringgit dan sen. Ia tidak boleh sifar.",
+          "reasonRequired": "Nyatakan apa yang dibetulkan — pelanggan membaca baris ini."
         }
       },
       "unbilled": {

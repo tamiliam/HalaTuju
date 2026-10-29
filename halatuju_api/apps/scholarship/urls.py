@@ -147,6 +147,7 @@ from .views_admin import (
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
     AdminPaymentFundingSummaryView,
+    AdminBillingCorrectionView,
     AdminBillingRatesView,
     AdminBillingUsageView,
     AdminOrgBuildHoursView,
@@ -313,6 +314,10 @@ urlpatterns = [
     # Platform-side editable rates (SUPER only) + org-side build hours (super writes,
     # org_admin reads its own). Owner design 2026-07-27.
     path('admin/scholarship/billing/rates/', AdminBillingRatesView.as_view()),
+    # A correction of an EARLIER month, carried onto a later invoice (owner, 2026-10-29).
+    path('admin/scholarship/billing/corrections/', AdminBillingCorrectionView.as_view()),
+    path('admin/scholarship/billing/corrections/<int:pk>/',
+         AdminBillingCorrectionView.as_view()),
     path('admin/scholarship/billing/hours/<int:org_id>/', AdminOrgBuildHoursView.as_view()),
     # The COST side + the bill (2026-09-11). SUPER only, 403 not 404 — same ruling as rates.
     # GET reads the ledger through `reconcile`; POST records a per-org, per-month discount.

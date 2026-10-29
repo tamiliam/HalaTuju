@@ -4,13 +4,18 @@ Moved verbatim from the package root at code health H12. Part of the `views_admi
 package: every name below is re-exported from `views_admin/__init__.py`, so `urls.py`
 and every importer are unchanged.
 """
+import logging
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from .. import money
 
-from .base import _AdminBase, _MONTH_RE, _org_or_none
+from .base import _AdminBase, _MONTH_RE, _id_or_no_match, _org_or_none
+
+#: The package's logger name, spelled out — see the note in `requests.py`.
+logger = logging.getLogger('apps.scholarship.views_admin')
 
 
 # ── Billing & usage v1 (Sprint 13a) — the super/org_admin usage screen ────────────
@@ -222,6 +227,11 @@ class AdminPlatformCostsView(_AdminBase):
                 'discount_myr': _money(c['discount_myr']),
                 'discount_reason': c['discount_reason'],
                 'discount_set_by': c['discount_set_by'],
+                # ⚠ EACH correction, with its own words — a netted figure is a number nobody can
+                # explain. Signed: negative reduces what is owed.
+                'corrections': [{**x, 'amount_myr': _money(x['amount_myr'])}
+                                for x in c['corrections']],
+                'corrections_myr': _money(c['corrections_myr']),
                 'charged_myr': _money(c['charged_myr']),
                 'blocked': c['blocked'],
             })
@@ -276,6 +286,126 @@ class AdminPlatformCostsView(_AdminBase):
                          'discount_pct': str(row.discount_pct),
                          'reason': row.reason},
                         status=status.HTTP_201_CREATED)
+
+
+class AdminBillingCorrectionView(_AdminBase):
+    """SUPER-ONLY: carry a correction of an EARLIER month onto a later month's invoice.
+
+    ⚠ The owner's rule, 2026-10-29: *"When we have overcharged or undercharged, this should be
+    deducted or added (or written off) in the following month."* An invoice already sent is never
+    edited — that is what `void_invoice` is for, and a void is a heavy, visible act. A billing
+    MISTAKE is lighter and more common, and it travels forward as its own line instead.
+
+    POST {organisation_id, period_month, amount_myr, reason, corrects_invoice_id?} creates ONE
+    row. `period_month` is the month that CARRIES it, never the month that was wrong.
+
+    ⚠ **IT CREATES, IT DOES NOT UPDATE.** `OrgBillingAdjustment` above uses `update_or_create`
+    because a month has exactly one discount; a month may carry SEVERAL corrections, each about a
+    different mistake, and folding two into one would destroy the reason that makes each
+    answerable. Removing one wrong row is a deliberate act with its own door, not a side effect
+    of recording the next.
+
+    ⚠ `reason` is REQUIRED, like `OrgBillingAdjustment.reason` and `OrgBuildHours.basis` — and
+    unlike either of those, it is PRINTED ON THE TENANT'S INVOICE. Money moving with nothing on
+    the record is indistinguishable from a bug; money moving on a customer's bill with nothing on
+    the record is worse, because they are the one who has to ask us what it was for.
+    """
+
+    def post(self, request, pk=None):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        # ⚠ ONE VIEW SERVES TWO URLS — `corrections/` and `corrections/<pk>/` — so each method has
+        # to refuse the url that is not its own. Without this, `POST corrections/<pk>/` reached a
+        # handler with no `pk` parameter and raised a TypeError: a 500 where a 404 belongs.
+        if pk is not None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        from decimal import Decimal, InvalidOperation
+
+        from ..models import Invoice, OrgBillingCorrection
+
+        month = (request.data.get('period_month') or '').strip()
+        if not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        org = _org_or_none(request.data.get('organisation_id'))
+        if org is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            amount = Decimal(str(request.data.get('amount_myr'))).quantize(Decimal('0.01'))
+        except (InvalidOperation, TypeError, ValueError):
+            return Response({'error': 'bad_value', 'code': 'bad_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ ZERO IS REFUSED. A correction of nothing is not a decision, and it would print a line
+        # on a customer's invoice saying we got something wrong by RM0.00.
+        if not amount or not amount.is_finite():
+            return Response({'error': 'bad_value', 'code': 'bad_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        reason = (request.data.get('reason') or '').strip()
+        if not reason:
+            return Response({'error': 'reason_required', 'code': 'reason_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Provenance, and FENCED to this organisation: a correction may only name an invoice that
+        # was issued to the tenant being corrected. A blank or unknown id simply records none —
+        # the row stands on its reason — but a cross-tenant id is a 404, never a silent drop.
+        corrects = None
+        raw = request.data.get('corrects_invoice_id')
+        if raw not in (None, ''):
+            # org-fence: scoped to the organisation being corrected, so a cross-tenant invoice
+            # id resolves to nothing and becomes the 404 below.
+            corrects = Invoice.objects.filter(pk=_id_or_no_match(raw), organisation=org).first()
+            if corrects is None:
+                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # org-fence: `org` came through `_org_or_none`, so the row can only be written against
+        # a real organisation the super named — never an id taken from the body unchecked.
+        row = OrgBillingCorrection.objects.create(
+            organisation=org, period_month=month, amount_myr=amount, reason=reason,
+            corrects_invoice=corrects, set_by_email=(admin.email or ''))
+        logger.info('billing: correction %s for org=%s month=%s RM%s by %s',
+                    row.id, org.id, month, amount, admin.email or '-')
+        return Response({'id': row.id, 'organisation_id': org.id,
+                         'period_month': row.period_month,
+                         'amount_myr': str(row.amount_myr), 'reason': row.reason,
+                         'corrects_invoice': (corrects.number if corrects else '')},
+                        status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk=None):
+        """Remove a correction that has NOT yet reached an invoice. Super only.
+
+        ⚠ It refuses once a live invoice exists for that organisation and month, because the
+        figures are FROZEN onto that document: deleting the source row would leave the invoice
+        saying something the ledger no longer explains. Putting right an invoice that is already
+        wrong is a void, or another correction — never a quiet deletion behind it.
+        """
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        from ..models import Invoice, OrgBillingCorrection
+
+        # The collection url names no row. See the note in `post`: the same view serves both.
+        if pk is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        # org-fence: super-only route, and the row carries its own organisation — the invoice
+        # check below is scoped to THAT organisation, never to one from the request.
+        row = OrgBillingCorrection.objects.filter(pk=_id_or_no_match(pk)).first()
+        if row is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        # org-fence: the row's OWN organisation and month, read off the row, not the request.
+        if Invoice.objects.filter(organisation_id=row.organisation_id,
+                                  period_month=row.period_month,
+                                  voided_at__isnull=True).exists():
+            return Response({'error': 'already_invoiced', 'code': 'already_invoiced'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        row.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminBillingRatesView(_AdminBase):

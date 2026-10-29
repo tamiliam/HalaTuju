@@ -34,7 +34,11 @@ from decimal import Decimal
 # The METER half — `tenant_shares` and `reconcile` — moved to `metered_usage.py` on 2026-10-29,
 # the same way and for the same reason, alongside the new `metered_activity_without_cost` guard
 # that reads the meter against this ledger. Re-exported on the same terms.
-from . import metered_usage, request_hours
+# The two money terms applied AFTER the subtotal — the discount and corrections of earlier
+# months — moved to `charge_adjustments.py` on 2026-10-29, on the same terms and for the
+# same reason: this file reached 646 lines and had already left the oversize ledger that
+# morning. Their ORDER is the reason they are one module; see its docstring.
+from . import charge_adjustments, metered_usage, request_hours
 
 billable_kind = request_hours.billable_kind
 billable_hours = request_hours.billable_hours                   # the PUBLISHED actual, not the quote
@@ -46,6 +50,11 @@ request_module_tag = request_hours.request_module_tag
 record_hours = request_hours.record_hours                       # the owner writes the actual down
 unbilled_request_hours = request_hours.unbilled_request_hours
 worked_date = request_hours.worked_date
+
+adjustment_for = charge_adjustments.adjustment_for
+correction_block = charge_adjustments.correction_block
+corrections_for = charge_adjustments.corrections_for
+discount_block = charge_adjustments.discount_block
 
 metered_activity_without_cost = metered_usage.metered_activity_without_cost   # the busy-meter guard
 reconcile = metered_usage.reconcile
@@ -408,29 +417,34 @@ def apply_margin(amount_myr, category, period_month):
 # file, so `platform_cost.<name>` still reaches them.
 
 
-def corrections_for(organisation, period_month):
-    """Corrections of EARLIER months that this month's invoice carries. Oldest first.
+def bucket_costs(totals):
+    """What each of the three buckets cost US this month, tax included, as a triple.
 
-    ⚠ The owner's rule, 2026-10-29: *"When we have overcharged or undercharged, this should be
-    deducted or added (or written off) in the following month."* An invoice already sent is never
-    rewritten, so a mistake travels forward as its own line. `period_month` on the row is the month
-    that CARRIES it, not the month that was wrong.
+    Returns ``(metered, infrastructure, development)``. Extracted from `charge_for` on 2026-10-29
+    with `discount_block` and `correction_block`, for the same reason: the function reached 161
+    lines against a 150-line limit and the long-function ledger may only shrink.
+
+    ⚠ **TAX IS APPORTIONED PRO-RATA**, in proportion to each bucket's size, so the charged total
+    still starts from exactly what the providers charged us. Tax belongs to no bucket on its own,
+    and dropping it would quietly bill below cost.
+
+    ⚠ Guarded against a month that is ALL TAX: there is then nothing to apportion it over, and it
+    stays out rather than being invented into one bucket.
+
+    ⚠ The development figure is NOT marked up by the caller. It is what the hours COST us, carried
+    onto the development line so the rate can be judged against it. Marking it up as
+    infrastructure would recover Claude twice — once in the fee and again in the hourly rate.
     """
-    from .models import OrgBillingCorrection
+    cost_base = (totals['attributable_myr'] + totals['platform_myr']
+                 + totals['development_myr'])
+    tax = totals['tax_myr']
 
-    return (OrgBillingCorrection.objects
-            .filter(organisation=organisation, period_month=period_month)
-            .select_related('corrects_invoice')
-            .order_by('id'))
+    def with_tax(part):
+        return part if cost_base <= 0 else part + (tax * part / cost_base)
 
-
-def adjustment_for(organisation, period_month):
-    """The discount agreed for this organisation and this month, or None."""
-    from .models import OrgBillingAdjustment
-
-    return (OrgBillingAdjustment.objects
-            .filter(organisation=organisation, period_month=period_month)
-            .first())
+    return (with_tax(totals['attributable_myr']),
+            with_tax(totals['platform_myr']),
+            with_tax(totals['development_myr']).quantize(Decimal('0.01')))
 
 
 def charge_for(organisation, period_month):
@@ -475,23 +489,7 @@ def charge_for(organisation, period_month):
     share = shares.get(getattr(organisation, 'id', None),
                        {'metered': Decimal('0'), 'infrastructure': Decimal('0'), 'rule': ''})
 
-    # Tax pro-rata over the three cost buckets. Guarded against a month that is all tax — then
-    # there is nothing to apportion it over and it stays out rather than being invented into one.
-    cost_base = (totals['attributable_myr'] + totals['platform_myr']
-                 + totals['development_myr'])
-    tax = totals['tax_myr']
-    if cost_base > 0:
-        def _with_tax(part):
-            return part + (tax * part / cost_base)
-    else:
-        def _with_tax(part):
-            return part
-    metered_cost = _with_tax(totals['attributable_myr'])
-    infra_cost = _with_tax(totals['platform_myr'])
-    # ⚠ NOT marked up here. It is what the hours COST us, carried onto the development line so
-    # the rate can be judged against it. Marking it up as infrastructure would recover Claude
-    # twice — once in the fee and again in the hourly rate.
-    dev_cost = _with_tax(totals['development_myr']).quantize(Decimal('0.01'))
+    metered_cost, infra_cost, dev_cost = bucket_costs(totals)
 
     for category, cost, weight in (
         (BillingRate.CATEGORY_INFRASTRUCTURE, infra_cost, share['infrastructure']),
@@ -557,17 +555,15 @@ def charge_for(organisation, period_month):
             'reason': f'Tools for development cost RM{dev_cost} this month, and no billable '
                       f'hours were recorded against it — so nothing recovers that cost.'})
 
-    adj = adjustment_for(organisation, period_month)
-    discount_pct = adj.discount_pct if adj else Decimal('0.00')
-    discount = (subtotal * discount_pct / Decimal('100')).quantize(Decimal('0.01'))
+    discount_pct, discount, discount_reason, discount_by = discount_block(
+        subtotal, organisation, period_month)
 
     # ⚠ CORRECTIONS COME AFTER THE DISCOUNT, and that order is the point. A discount is a
     # percentage of THIS month's work; a correction is a fixed sum putting right an EARLIER
     # invoice. Discounting a correction would quietly shrink a refund we already owe — July's
     # 100% discount would have erased it entirely. So the month reads:
     #     subtotal -> discount -> corrections -> charged.
-    corrections = list(corrections_for(organisation, period_month))
-    correction_total = sum((c.amount_myr for c in corrections), Decimal('0.00'))
+    correction_rows, correction_total = correction_block(organisation, period_month)
 
     return {
         'month': period_month,
@@ -580,14 +576,9 @@ def charge_for(organisation, period_month):
         'subtotal_myr': subtotal,
         'discount_pct': discount_pct,
         'discount_myr': discount,
-        'discount_reason': adj.reason if adj else '',
-        'discount_set_by': adj.set_by_email if adj else '',
-        # Each correction keeps its own words, because each one goes on the tenant's invoice as
-        # its own line. A single netted figure would be a number nobody can explain.
-        'corrections': [{'id': c.id, 'amount_myr': c.amount_myr, 'reason': c.reason,
-                         'corrects_invoice': (c.corrects_invoice.number
-                                              if c.corrects_invoice_id else ''),
-                         'set_by': c.set_by_email} for c in corrections],
+        'discount_reason': discount_reason,
+        'discount_set_by': discount_by,
+        'corrections': correction_rows,
         'corrections_myr': correction_total,
         'charged_myr': (subtotal - discount + correction_total).quantize(Decimal('0.01')),
         # Why a category is absent. Rendered on the screen — a silent omission is the thing

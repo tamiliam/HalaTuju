@@ -373,3 +373,20 @@ def _org_or_none(org_id):
     from apps.courses.models import PartnerOrganisation
     # org-fence: super-only callers reach this; the org id is validated, not trusted.
     return PartnerOrganisation.objects.filter(pk=org_id).first()
+
+
+def _id_or_no_match(raw):
+    """A row id from untrusted input, or -1 — which matches no row.
+
+    ⚠ DIGITS, not `int(...)`. `filter(pk='abc')` raises, but `int()` is the wrong refusal because
+    it ACCEPTS what this is not: `int(1.5)` is 1 and `int(True)` is 1, so a float or a boolean
+    would quietly act on row 1.
+
+    It lives here, beside `_MONTH_RE`, for the same reason that does: more than one module in this
+    package takes an id off a request body, and two spellings of "is this an id?" eventually
+    disagree about `True`. (2026-10-29)
+    """
+    text = '' if raw is None else str(raw).strip()
+    if isinstance(raw, bool) or not text.isdigit():
+        return -1
+    return int(text)

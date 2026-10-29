@@ -70,7 +70,8 @@ const COSTS = (over: Partial<api.BillingCostsPayload> = {}): api.BillingCostsPay
       amount_myr: '4950.00', detail: [],
     }],
     subtotal_myr: '4950.00', discount_pct: '0.00', discount_myr: '0.00',
-    discount_reason: '', discount_set_by: '', charged_myr: '4950.00',
+    discount_reason: '', discount_set_by: '',
+    corrections: [], corrections_myr: null, charged_myr: '4950.00',
     blocked: [
       { category: 'metered', reason: 'No unit prices are set.' },
       { category: 'infrastructure', reason: 'No rule has been agreed for sharing it.' },
@@ -311,6 +312,46 @@ describe('finished work not yet billed', () => {
     // cell, so a whole-text match would break the moment either moves.
     const quoted = within(section).getByText('admin.billing.unbilled.quoted:7h')
     expect(quoted.parentElement?.textContent).toContain('4h')
+  })
+
+  it('records nothing at all if a blocked row somehow reaches the handler', async () => {
+    // ⚠ FOUND BY REVIEW. The handler used to send `row.hours ?? '0'`, which would have billed
+    // ZERO hours for real work rather than refusing. The button is withheld, so this is the last
+    // guard, and a last guard that silently invents a figure is worse than none.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      unbilled_requests: [{
+        request_id: 31, organisation_id: 1, organisation: 'BrightPath', title: 'Merchant flags',
+        hours: null, quoted_hours: '8.0', actual_hours: null, blocked: 'no_actual_reported',
+        module: '[REQ-31] Merchant flags', worked_on: '2026-10-05', worked_month: '2026-10',
+        worked_basis: 'scheduled',
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    expect(mockApi.recordBuildHours).not.toHaveBeenCalled()
+  })
+
+  it('the recorded basis says what was SPENT and CHARGED, never "quoted on"', async () => {
+    // ⚠ The old wording was literally true of the old behaviour: every billed feature's `basis`
+    // on production reads "Quoted on request #N", which is how the owner traced the defect.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      unbilled_requests: [{
+        request_id: 30, organisation_id: 1, organisation: 'BrightPath', title: 'Bulk invite',
+        hours: '4.0', quoted_hours: '7.0', actual_hours: '4.0', blocked: null,
+        module: '[REQ-30] Bulk invite', worked_on: '2026-10-03', worked_month: '2026-10',
+        worked_basis: 'scheduled',
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    fireEvent.click(within(section).getByText('admin.billing.unbilled.record'))
+    await waitFor(() => expect(mockApi.recordBuildHours).toHaveBeenCalled())
+    const [, body] = mockApi.recordBuildHours.mock.calls[0]
+    expect(body.hours).toBe('4.0')
+    expect(body.basis).toContain('4.0h spent')
+    expect(body.basis).toContain('4.0h charged')
+    expect(body.basis).toContain('7.0h quoted')
+    expect(body.basis).not.toContain('Quoted on')
   })
 
   it('offers NO number and NO Record button while no actual has been reported', async () => {

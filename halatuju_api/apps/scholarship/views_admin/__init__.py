@@ -90,7 +90,10 @@ from .applications import (
     AdminRefereeDetailView, AdminRejectView, AdminReportingDateView, AdminVerdictSummaryView,
     AdminVerifyAcceptView,
 )
-from .billing import AdminBillingRatesView, AdminBillingUsageView, AdminPlatformCostsView
+from .billing import (
+    AdminBillingCorrectionView, AdminBillingRatesView, AdminBillingUsageView,
+    AdminPlatformCostsView,
+)
 from .credits import (
     _CreditsBase, _credit_dict, AdminWalletCreditCancelView, AdminWalletCreditListCreateView,
     AdminWalletCreditSignView,

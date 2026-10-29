@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing: bill the hours we told them, and put a wrong month right in the next one - 2026-10-29
+
+The owner audited every billed request — 3, 5, 10, 12, 14, 18, 27, 28, 29, 30, 31, 33, 38, 39, 42, 44 — and
+found five wrong: **10, 14, 28, 30, 31**. The cause was not arithmetic. Development billing charged
+`quote_hours`, the PLAN (`org_build_hours.basis` read "Quoted on request #N" for every billed feature), while the
+closing report had already published a different number: #10 was quoted 15.0, re-scoped and spent 11.5, and
+billed 15.0; #14's report said *"approximately 5 hours spent … None of it is charged"* and it was billed 2.0;
+#30's said *"Planned: 7 hours. Actual: about 4 hours"* and it was billed 7.0. **Owner ruling: the authority is
+what was communicated back to the requester, not any figure we compute internally.**
+
+- **`OrgRequestAnalysis.actual_hours` / `charged_hours` / `charge_note`** (migration `0187`) — the published
+  figures as COLUMNS. `charged_hours` is what reaches the invoice; `0.0` is a real answer (done, deliberately
+  not charged) and is not NULL. Nothing parses prose: the owner types the numbers, because a machine guessing a
+  figure that lands on an invoice is how the five got through.
+- **`request_hours.closing_report()` / `billable_hours()`** — the latest approved, un-superseded report that
+  states what the work took. `unbilled_request_hours` now proposes the ACTUAL and reports the quote beside it;
+  a request with no closing figure offers no number and carries `blocked: 'no_actual_reported'`.
+- **`invoicing.readiness` `actual_hours_missing`** — ABSOLUTE, not overridable. A finished request whose closing
+  report never stated the hours refuses the month; "bill it anyway on the quote" is not on offer.
+- **`request_hours.record_hours()` + `POST requests/<pk>/analysis/<aid>/hours/`** (super only) — writes the pair
+  with a required reason whenever they differ, in EITHER direction (absorbed, as #14; or an accepted extra, as
+  #38). Only an APPROVED, live report may carry them — a draft nobody approved was communicated to nobody.
+  Recording late is allowed and changes no invoice: `InvoiceLine` rows are frozen snapshots.
+- **`OrgBillingCorrection`** — *"When we have overcharged or undercharged, this should be deducted or added (or
+  written off) in the following month."* A signed amount, a REQUIRED reason printed on the tenant's invoice, and
+  the invoice it puts right. `period_month` is the month that CARRIES it. **Corrections apply AFTER the discount**
+  — a discount is a percentage of this month's work, so discounting a correction would have shrunk a refund we
+  already owe, and July's 100% discount would have erased one entirely. The month reads subtotal → discount →
+  corrections → total. Frozen onto the invoice as `corrections_myr` + `corrections_snapshot`.
+- **`correction_exceeds_month`** — ABSOLUTE: a credit larger than the month refuses rather than issuing a
+  negative bill. No receipt could settle one and `status` could never read `paid`; the remedy is to split it
+  across months. By the same rule a correction needs a month that HAS a bill — a month with nothing in it still
+  stops at `no_costs` / `nothing_to_bill`, so a credit is carried to the next month that has work on it.
+- **Both audiences see the final LABEL** — `OrgRequestOrgSerializer.kind` now reports the effective
+  classification (`triaged_kind || kind`), so a charge the tenant clicks through to lands on a request labelled
+  the way it was billed. The owner: *"They don't have to see the details of the label change. It should simply
+  say the final label."* Nine requests were mislabelled on the org side.
+- **`POST billing/corrections/` + `DELETE billing/corrections/<pk>/`** (super only) — the door the owner records
+  a correction through. It CREATES rather than updating, unlike the discount: a month has one discount but may
+  carry several corrections, each about a different mistake, and folding two would destroy the reason that makes
+  each answerable. Zero is refused (it would print a line saying we got something wrong by RM0.00); an invoice
+  named for provenance must belong to the same tenant (404 otherwise); and a row can no longer be deleted once a
+  live invoice for that month exists — `already_invoiced` — because the figures are frozen onto that document.
+- **Screens** — the request page's analysis card carries a planned-against-actual panel (amber while nothing is
+  recorded, because the month's invoice will refuse); the charge card carries each correction as its own line
+  plus the form to add one, with "put a minus in front to credit them" said in words; the invoice shows each
+  correction with its reason and the invoice it corrects, on screen and in the PDF, for both audiences.
+- **Three defects found by review rather than by a failing test**, all in the money path: a `DELETE` to
+  `billing/corrections/` (and a `POST` to `billing/corrections/<pk>/`) reached a handler with the wrong signature
+  and raised a **500** where a 404 belongs; the charge-note box stayed on screen after the two hour figures were
+  made equal, so a write-off could be reversed with *"our overrun, absorbed in full"* still attached to a request
+  charged in full (it is now offered, and sent, only while they differ); and the Record handler sent
+  `row.hours ?? '0'`, which would have billed **zero hours for real work** rather than refusing.
+- **The recorded `basis` no longer says "Quoted on request #N"** — that wording was true of the old behaviour and
+  is how the owner traced the defect. It now reads what was spent, what was charged and what was quoted.
+- **`charge_adjustments.py`** (moves only) — the two money terms applied AFTER the subtotal, the discount and
+  the corrections, in one module because their ORDER is the thing worth reading in one place. `platform_cost`
+  re-exports every name. It reached 646 lines against the 600-line standard having LEFT the oversize ledger the
+  same morning, so re-adding it was not on offer.
+- **`charge_for` split into three named helpers** — `bucket_costs` (the three buckets' cost to us, tax
+  apportioned pro-rata), `discount_block` and `correction_block`. The corrections pushed it to 161 lines against
+  a 150-line limit, and the long-function ledger is frozen at what code health H4 found and may only shrink, so
+  the standard asks for helpers rather than a ledger entry. The call site now reads the order of operations
+  plainly: subtotal → discount → corrections → charged.
+- Splits for the 600-line standard (moves only): `components/admin/UnbilledSection.tsx`, `ChargeCard.tsx` and
+  `ChargeCorrections.tsx` out of the billing page — which now sits at 550 lines and **leaves the oversize ledger
+  altogether** — and `RequestAnalysisCard.tsx` out of the request page, whose entry is tightened to 624.
+  `views_admin/base._id_or_no_match` holds the one "is this an id?" rule the declarations endpoint had privately.
+
 ## Student maintenance Sprint 4a — results review and standing - 2026-10-29
 
 Roadmap Sprint 4, first half (4b = reminders, overdue and student emails). Migration **0186** (hand-apply DDL in

@@ -1560,7 +1560,7 @@ is prefetched — weight moved off a route's first load can still travel in the 
   exist; the cell's `textContent` plus the link, rather than an exact string match that any enrichment
   will split. (Billing, 2026-10-29)
 
-- **A non-null model field with a Python default cannot be rendered to DDL offline.** `JSONField(default=list)`
+- **A non-null model field with a Python default cannot be rendered to DDL offline.** (⚠ NARROWER THAN THE REAL RULE — see the broader statement further down: it is ANY default, Python or database, on ANY column added to an existing table.) `JSONField(default=list)`
   made Django compute an effective default to backfill existing rows, and adapting it to `jsonb` goes
   through the live driver — so the offline Postgres renderer (the one migrate-first depends on, because
   `sqlmigrate` emits SQLite locally) died on `connection refused`. `null=True, default=None` renders
@@ -1575,3 +1575,62 @@ is prefetched — weight moved off a route's first load can still travel in the 
 
 - **A reading of a rule that every applicant meets automatically is the wrong reading.** (Bumi Sprint D1, 2026-10-29.) The parser read "N more subjects belum diambil kira / selain di atas" independently of Syarat Am, so BM and Sejarah — which every applicant must have — always filled the "N more" slots, and ten UiTM rules asked for nothing extra. No university writes a clause that is empty by construction. **Rule:** when a parsed requirement can be met by the subjects every applicant already holds, stop and ask for the stricter reading; test each parsed clause with a student who has ONLY the general-requirement subjects. Also: a normaliser that folds two printed names into one key ("Sains Pertanian" / "Pertanian") can create a duplicate inside a list that never had one — dedupe after folding, and count distinct student subjects in every group, on every engine (SPM and STPM).
 - **A new shape in a shared JSON field is a change to EVERY reader of that field, not just the engine.** (Bumi Sprint D2, 2026-10-29.) An `any_of` group was added to `complex_requirements.count_once`; the engine, the parser and the data were tested end to end, and the course page crashed on every ATAU row because `RequirementsCard.tsx` read `group.subjects.length`. **Rule:** when a builder adds a new shape to a stored JSON structure, the brief lists every reader of that field (grep api AND web, including renderers, PDFs and exports), and a test renders each new shape through each reader using the real rows.
+
+- **The authority for a charge is what we TOLD the customer, not what we computed.** Development billing read
+  `quote_hours` — the plan — while the closing report had already published a different number to BrightPath.
+  Five of sixteen billed requests were wrong, and every one of them was arithmetically correct about the wrong
+  figure. My first diagnosis was shallower than the defect: I proposed reading the latest analysis instead of
+  the quote, and the owner ruled the real test — *"It is not what is calculated internally. What matters is,
+  what was communicated back to the requester."* **Rule:** when money is derived from a document we sent, the
+  document is the source; store the published figure as a COLUMN and make its absence REFUSE, never fall back
+  to the nearest internal number. A fallback is how a plan gets billed with nobody deciding to bill it.
+  (Billing, 2026-10-29)
+
+- **A test can encode the defect, and then it defends it.** `test_a_finished_quoted_request_is_reported_as_unbilled`
+  asserted `hours == 7.5` — the QUOTE — and had been green since September. It was not a weak test; it was an
+  accurate test of the wrong behaviour, and it would have failed the fix. **Rule:** when a bug report contradicts
+  a green test, read the test before the code: if it asserts the behaviour the owner just called wrong, the test
+  is the first thing to change, and the change needs a comment saying what it used to claim. (Billing, 2026-10-29)
+
+- **A NOT NULL column added to an EXISTING table cannot be rendered to DDL offline — the rule is broader than
+  "a Python default".** The earlier lesson blamed `JSONField(default=list)`; switching to `db_default=''` failed
+  the same way, because composing a literal default goes through a real cursor (`operations.compose_sql` →
+  `mogrify`). **Rule:** any column added to an existing table in a migrate-first project is `null=True`. A
+  default of any kind — Python or database — needs a live connection to render, and migrate-first has none.
+  (Billing, 2026-10-29)
+
+- **A scripted code move must assert what it LEAVES BEHIND.** A script that cut from a new class to end-of-file
+  dragged five existing models out of `models/billing.py` into `models/invoices.py`. Nothing failed — both files
+  were valid, every model kept its explicit `db_table`, and `makemigrations --check` was clean — so only
+  `git diff --stat` caught it. **Rule:** after any scripted move, the diff of the SOURCE file must read as
+  deletions of exactly the moved block, and the destination as insertions only; assert the source still holds
+  the things that were never meant to move, by name and by count. (Billing, 2026-10-29)
+
+- **Deriving a split order from the arithmetic, not from habit.** A correction of an earlier month had to land
+  AFTER the discount, because a discount is a percentage of this month's work while a correction is a fixed sum
+  putting right a bill already sent. Putting it before — the position the discount code made obvious — would
+  have shrunk a refund we owed, and July's 100% discount would have erased one completely. **Rule:** when a new
+  money term joins a total, write the order of operations out and test the extreme case (a 100% discount, a
+  credit larger than the month) before choosing where it goes. (Billing, 2026-10-29)
+
+- **On a money endpoint, a 500 is a worse answer than a refusal, and one view on two urls is how you get one.**
+  `AdminBillingCorrectionView` served both `corrections/` and `corrections/<pk>/`, so `DELETE` on the
+  collection reached a handler expecting a `pk` and `POST` on the item reached one that takes none —
+  a `TypeError`, rendered as a 500. Every test passed, because every test used the right url with the
+  right method. **Rule:** when one view class is routed at two url shapes, each method takes
+  `pk=None` and refuses the shape that is not its own, and a test sends the wrong method to each
+  url. A 500 on a billing route reads as an outage to whoever is holding the mouse.
+  (Billing, 2026-10-29)
+
+- **An input that explains a difference must disappear when the difference does.** The charge-note box
+  stayed on screen after the two hour figures were made equal, and the note was still sent — so a
+  write-off could be reversed with *"our overrun, absorbed in full"* still attached to a request that
+  was charged in full. The server was right (a note is only REQUIRED when they differ); the screen
+  was wrong to keep offering one. **Rule:** a field whose only meaning is "why these two disagree" is
+  rendered from that disagreement, not from whether it has a value. (Billing, 2026-10-29)
+
+- **A `?? default` on a figure that reaches an invoice is a silent lie, not a safety net.** The Record
+  handler sent `row.hours ?? '0'`. The button was already withheld for a row with no published
+  figure, so the fallback was unreachable — and if it ever became reachable it would have billed ZERO
+  hours for real work instead of refusing. **Rule:** a last guard on money REFUSES; it never invents a
+  number. `if (x === null) return` beats `x ?? 0` everywhere a figure is priced. (Billing, 2026-10-29)

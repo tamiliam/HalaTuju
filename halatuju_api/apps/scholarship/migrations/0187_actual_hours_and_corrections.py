@@ -34,7 +34,7 @@ render cannot do. Keep columns added to existing tables nullable.
 `charged_hours` on every finished request — both audiences' billing screens, so with no columns
 they 500. Migrate first.
 
-MIGRATE-FIRST, BY HAND, before the push (scholarship ledger 0185 -> 0186). `sqlmigrate` renders for
+MIGRATE-FIRST, BY HAND, before the push (scholarship ledger 0186 -> 0187). `sqlmigrate` renders for
 the LOCAL backend (SQLite), so this is the Postgres DDL to run, verbatim — rendered offline with
 Django's postgresql schema editor from this migration — with RLS and the ledger row in the SAME
 transaction:
@@ -53,7 +53,7 @@ transaction:
     CREATE INDEX "org_billing_corr_org_month_idx" ON "org_billing_corrections" ("organisation_id", "period_month");
     ALTER TABLE public.org_billing_corrections ENABLE ROW LEVEL SECURITY;
     CREATE POLICY org_billing_corrections_service_role ON public.org_billing_corrections FOR ALL TO service_role USING (true) WITH CHECK (true);
-    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0186_actual_hours_and_corrections', now());
+    INSERT INTO django_migrations (app, name, applied) VALUES ('scholarship', '0187_actual_hours_and_corrections', now());
     COMMIT;
 
 Then run the Supabase Security Advisor (0 errors before the deploy).
@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('courses', '0088_courserequirement_req_bumiputera'),
-        ('scholarship', '0185_receipt_emailed'),
+        ('scholarship', '0186_semester_result_review'),
     ]
 
     operations = [

@@ -115,7 +115,7 @@ describe('the discount is a visible line', () => {
     organisation_id: 1, organisation: 'BrightPath', lines: [],
     subtotal_myr: '1800.00', discount_pct: pct, discount_myr: '1800.00',
     discount_reason: 'Pre-launch goodwill period', discount_set_by: 'super@x.com',
-    charged_myr: '0.00', blocked: [],
+    corrections: [], corrections_myr: null, charged_myr: '0.00', blocked: [],
   })
 
   test('a discounted month is flagged as discounted', () => {
