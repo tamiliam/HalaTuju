@@ -97,7 +97,7 @@ from .stpm_doc import STPM_LISTS
 #   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
 #   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list. 1.17.1: letter-spaced headings around real prose keep the layer (doc 3919).
 #   1.18.0 (2026-10-29) — Bumi Sprint C: the 13 Islamic SPM subjects read by their slip names (`academic_engine._SUBJECT_BM`, e.g. "Manahij Al-'Ulum Al-Islamiah", was "Manahij"); an apostrophe is dropped, not spaced; the cert reader reads a subject's words together ("USUL AL-DIN", "AL - QURAN"); "&" = "dan"; old short names stay aliases. No family/weight change. Backfill: NONE BY DESIGN — 18 of 2,313 stored reads carry Islamic names (some the old short ones); the aliases and the code/band-tolerant slip key keep them matching without a re-read.
-MODEL_VERSION = '1.18.0'
+MODEL_VERSION = '1.19.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse` 1.1.0; the S2 1.10.0 precedent). No family/weight/band change. Backfill: M5 (live).
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

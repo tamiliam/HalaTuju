@@ -133,6 +133,25 @@ put on hold, or reach the in-programme page. Backend foundation; the status stat
   in its docstring). Deploying first is NOT survivable: run approval, tranche release, closure,
   sub-state changes and results would all roll back without `student_activity`.
 
+## Matric/Diploma Exact-read M2 - 2026-10-29
+
+- **A Matriculation academic transcript is read Exact** (`matric_parse` 1.1.0, from
+  `higher_results.extract` after `stpm_parse`, on a page `results_kind` reads as Matriculation):
+  name, IC, matric number, college, every semester's CORE course rows, the FINAL CGPA. Every hit is proven: each semester's PNGS and the final PNGK recomputed from the core
+  courses' credits × points; one PNGK after the last semester of a 2- or 4-semester programme, the
+  programme completed, a 4-semester transcript's own note naming the counted semesters. Unsure → Gemini.
+- Corpus (`eval/matric_parse_check.py`, production's input): 3 Exact, 6 to Gemini, **0 wrong**;
+  0 of 168 controls accepted. Semester result slips never read Exact.
+- **Pages:** a scanned PDF is read page 1 only (Vision and Gemini); a text-layer PDF whole. The reader
+  refuses a page without the final PNGK. Reading every page of a scan is proposed in
+  `docs/decisions.md`, not built.
+- `MODEL_VERSION` 1.19.0. `VERDICT_ENGINE_VERSION` unchanged.
+- **Adversarial review (parser 1.1.0):** only the CORE rows are returned (English's band and the minor
+  courses' letters count in no sum, so a misread could not be caught); each semester's fixed shape
+  (four core courses, one English row) so a dropped row refuses; a code's semester digit matches its
+  semester; the name and college end at the next label. Corpus unchanged: 3 Exact, 0 wrong.
+- Tests: `test_matric_parse.py` (28, synthetic; each rule bite-checked).
+
 ## Matric/Diploma Exact-read M1 - 2026-10-29
 
 Sprint M1 of `docs/plans/2026-10-29-matric-diploma-exact-read-roadmap.md` (BrightPath #49: a

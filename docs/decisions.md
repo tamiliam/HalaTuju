@@ -57,6 +57,55 @@ moves a post-award status, so it needs nothing. (L2) `set_substate` re-reads the
 conditionally (`changed_meanwhile` on a lost race). (L3) a run item says `on_hold`; the refusal carries the count.
 (L5) the student is served `support_paused` (= `is_on_hold`), never the raw sub-state — probation is a staff flag.
 
+## A Matriculation transcript is read Exact only when its sums prove it; reading every page of a scan is proposed, not built — 2026-10-29 (Matric/Diploma M2)
+
+**What is read.** `matric_parse` (1.1.0) reads the KPM academic transcript: name, IC, matric number,
+college, every semester's CORE course rows and the FINAL CGPA. It is tried in `higher_results.extract`
+after `stpm_parse`, only on a page `results_kind` reads as Matriculation. A hit stores
+`capture='deterministic'` and `parser_version 'matric_parse 1.0.0'`; anything unsure → Gemini.
+
+**Why a hit can be trusted.** Each semester's printed PNGS and the final PNGK are recomputed from the
+core courses (4+ credits; English carries a CEFR band and minor courses a letter, neither counted)
+as credits × points, half-up to two places, and must equal the print; a core row's letter and point
+must agree; the course code supplies the credits and the semester-of-year; the course must be in the
+vocabulary. The final CGPA (owner, 2026-10-29) is the ONE PNGK after the last semester of a 2- or
+4-semester programme read whole from Semester I, with "Lulus dan Tamat" printed; a 4-semester
+transcript must name the semesters its CGPA counts ("PNGK dikira berdasarkan keputusan Semester III
+dan IV"), or it is not read. A semester RESULT SLIP is never read Exact: one semester cannot prove a
+cumulative figure. Known blind spot: two core courses of equal credits with their grades exchanged
+add up the same; rows are paired by their own visual row and never re-ordered, so only a misplaced
+row could do it, and the row checks refuse a row that does not read cleanly.
+
+**Pages.** Read from the code (`vision.ocr_document_full`, `pdf_pages`): a digital PDF's text layer
+is read WHOLE (every page); a SCANNED PDF is rasterised page 1 only (`pdf_first_page_png`, "bounds
+the Vision cost to 1 unit per doc"), for Vision AND for the Gemini fallback (`_as_image_for_gemini`).
+So on a multi-page scan neither reader sees a final CGPA printed on a later page. The Exact reader
+refuses such a page (no final PNGK after the last semester → None); Gemini, given only page 1, may
+still report a semester GPA — the existing AI risk, unchanged. **Proposal (not built):** a new
+`higher_pages.py` that, only for a higher-results scan whose page 1 reads as Matriculation or Diploma
+and whose PDF has more pages, rasterises pages 2..N (cap 4) and OCRs each (`vision._vision_words`,
+one call), appending the rows below page 1's for the Exact reader; `higher_results.extract` calls it,
+`vision.py` is untouched. Cost: one Vision call per extra page (~US$0.0015 each), on the few such
+uploads. Not built because the corpus holds no such Matriculation or polytechnic document (0 of 13;
+the one 2-page scan is UiTM, out of scope) and the Gemini fallback would still see page 1 only; build
+it with M3 or when the first case arrives.
+
+**Review (2026-10-29), parser 1.1.0.** Only the CORE courses are returned: English's band and the
+minor courses' letters count in no sum, so nothing proves them (an OCR B2 → B1 or A- → A would read
+Exact and be wrong), and the average-grade box cannot prove them either (English B2 + C1 averages to
+B2 on one corpus transcript and C1 on another). The safer choice of the two offered: leave those rows
+OUT of the Exact read rather than refuse the whole read — the core rows, CGPA, name and IC are still
+proven. Each semester has a fixed shape (every corpus transcript: four core courses and one English
+row), so a dropped row refuses even when the sum still adds up; no corpus transcript prints a credit
+total, so there is none to check. A course code's semester digit must match its semester (odd xx01x,
+even xx02x, a minor course xx00x in either); the name and the college end at the next label.
+
+**Versions.** `MODEL_VERSION` 1.19.0 (a new recognition path, the STPM S2 1.10.0 precedent; no
+family, weight or band change). `VERDICT_ENGINE_VERSION` unchanged: the reader fills the fields
+Gemini did — the CGPA and name already feed `verdict_academic`, so a value read more exactly can
+change a fact, but that is a recognition (model) change, not an engine change; only GENUINENESS is
+still not scored for a Matriculation page (M4).
+
 ## A transcript is told by its issuer only where no kind is printed; a blank `results_kind` is filled from the results held, never from the detection — 2026-10-29 (Matric/Diploma M1, #49)
 
 **Issuer tier.** `results_kind.detect` reads fixed issuer markers ("POLITEKNIK" / "POLYTECHNIC" →
