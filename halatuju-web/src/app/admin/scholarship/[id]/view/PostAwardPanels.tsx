@@ -8,7 +8,7 @@
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
 import Link from 'next/link'
-import { useState, type Dispatch, type SetStateAction } from 'react'
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import {
   isFunded,
   disbursementTone,
@@ -32,7 +32,7 @@ export function PostAwardPanels({
   app, t, busy, isSuper, canWrite, orgSuper,
   bursary, bursaryMsg, doCountersignBursary, doWitnessBursary,
   disbAmount, setDisbAmount, disbLabel, setDisbLabel, disbMsg,
-  doScheduleTranche, doDisbursementAction,
+  doScheduleTranche, doDisbursementAction, doSetSubstate,
   closeReason, setCloseReason, closeMsg, doClose,
 }: {
   app: AdminScholarshipDetail
@@ -62,12 +62,47 @@ export function PostAwardPanels({
   // TD-352 review round 1: closing is final, so the button asks twice (the org-reject's pattern
   // and its existing "Are you sure?" / "Go back" strings — no new catalogue weight).
   const [confirmClose, setConfirmClose] = useState(false)
+  // `can_hold` is the viewer's payments right; a response that carried no viewer answers null, so
+  // the last real answer is kept (the door re-judges every request anyway).
+  const holdRight = useRef(false)
+  if (app.maintenance_controls?.can_hold != null) holdRight.current = app.maintenance_controls.can_hold
+  const noFileControl = !app.has_file && canWrite && !!app.maintenance_controls?.can_set_substate
   return (<>
 
       {/* Student maintenance S2: the scholar's maintenance file, when the SERVER says there is one
           (`has_file` — in maintenance, or closed after it). Since S3 the sub-state and the post-award
           Close live THERE (`ScholarControls`); this screen keeps a summary. A PRE-award close (TD-352)
-          stays below — that case has no file. `doSetSubstate` is still passed by view.tsx and unused. */}
+          stays below — that case has no file. ⚠ S3 review M1: a PAYABLE student WITHOUT a file (awarded,
+          an eWallet id, not yet activated) is paid by the runs but has no file to hold her from — so
+          her status control stays HERE (`maintenance_controls`), and only for her. */}
+      {noFileControl && (
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2"
+          data-testid="no-file-substate">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
+            <span className="rounded-full bg-ground-100 px-2.5 py-0.5 text-xs font-semibold text-ground-700">
+              {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
+            </span>
+          </div>
+          <p className="text-[11px] text-ground-500">{t('admin.scholars.control.noFileHint')}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
+              .filter((s) => s !== app.maintenance_substate)
+              .filter((s) => holdRight.current || (s !== 'on_hold' && app.maintenance_substate !== 'on_hold'))
+              .map((s) => (
+                <button key={s} type="button" onClick={() => doSetSubstate(s)} disabled={busy === 'disbursement'}
+                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
+                  {t(`admin.maintenance.action.${s}`)}
+                </button>
+              ))}
+          </div>
+          {!holdRight.current && (
+            <p className="text-[11px] text-ground-500">{t('admin.scholars.control.holdNeedsPayments')}</p>
+          )}
+          {disbMsg && <p className="text-xs text-caution-700">{disbMsg}</p>}
+        </div>
+      )}
+
       {app.has_file && (
         <Link href={`/admin/scholars/${app.id}`} data-testid="open-scholar-file"
           className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50">

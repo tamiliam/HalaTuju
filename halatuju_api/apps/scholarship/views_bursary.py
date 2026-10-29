@@ -38,6 +38,9 @@ def summary_payload(app):
         'application_id': app.id,
         'name': getattr(app.profile, 'name', '') or '',
         'gift': programme.name_en if programme is not None else '',
+        # Her gift in each language, falling back to English (S3 review L3); the page picks hers.
+        'gift_names': ({lang: (getattr(programme, f'name_{lang}', '') or programme.name_en)
+                        for lang in ('en', 'ms', 'ta')} if programme is not None else {}),
         'course': card_display.resolve_course(app),
         'institution': card_display.resolve_institution(app),
         'status': app.status,

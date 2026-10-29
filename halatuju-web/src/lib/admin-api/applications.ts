@@ -436,6 +436,9 @@ export interface AdminScholarshipDetail {
   maintenance_substate: MaintenanceSubstate
   /** Maintenance S2: the server's "has a scholar file" (in maintenance, or closed after it). */
   has_file?: boolean
+  /** S3 review M1: for a payable student with NO file (held from the cockpit). `can_hold` is the
+   *  viewer's payments right, null when the response carried no viewer. */
+  maintenance_controls?: { can_set_substate: boolean; can_hold: boolean | null }
   /** Post-award S6: manual-close audit (set when status='closed'). */
   closed_at: string | null
   closed_by: string

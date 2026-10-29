@@ -346,3 +346,31 @@ class TestFileControls(_Scholars):
         c = self._controls(self.org_admin, self.ezra)
         self.assertEqual((c['can_set_substate'], c['close_reasons'], c['close_refusal']),
                          (False, [], ''))
+
+
+class TestControlsReviewGaps(_Scholars):
+    """S3 adversarial review: an awarded case with NO live money is offered Close; a payable student
+    with NO file is held from the cockpit (`maintenance_controls`)."""
+
+    def test_an_awarded_case_with_no_live_money_is_offered_close(self):
+        c = self._get(self.org_admin, f'{API}{self.aisyah.id}/').json()['controls']
+        self.assertEqual(c['close_refusal'], '')
+        self.assertIn('withdrawn', c['close_reasons'])
+
+    def test_a_payable_student_with_no_file_is_held_from_the_cockpit(self):
+        pending = make_application('awarded', cohort=self.cohort, reviewer=self.reviewer,
+                                   vircle_id='8000400179999')
+        url = f'/api/v1/admin/scholarship/applications/{pending.id}/'
+        body = self._get(self.org_admin, url).json()
+        self.assertEqual((body['has_file'], body['maintenance_controls']),
+                         (False, {'can_set_substate': True, 'can_hold': True}))
+        self.assertEqual(self._get(self.reviewer, url).json()['maintenance_controls']['can_hold'], False)
+        self.assertEqual(self._get(self.org_admin, f'{API}{pending.id}/').status_code, 404)  # no file
+        r = authed_client(self.org_admin).post(f'/api/v1/admin/scholarship/applications/{pending.id}/maintenance/',
+                                               {'substate': 'on_hold'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['maintenance_controls']['can_hold'], True)
+
+    def test_an_awarded_student_with_no_wallet_takes_no_substate_anywhere(self):
+        url = f'/api/v1/admin/scholarship/applications/{self.dina.id}/'
+        self.assertFalse(self._get(self.org_admin, url).json()['maintenance_controls']['can_set_substate'])

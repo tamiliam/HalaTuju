@@ -97,6 +97,15 @@ export default function ScholarControls({ file, token, onChanged }: {
       )}
 
       {c.close_reasons.length > 0 && (
+        <div className="space-y-2">
+        {/* The funded-close note and the offboarding checklist (carried from the cockpit's card, S3
+            review M2) — read BEFORE the irreversible confirm. */}
+        <p className="text-xs text-ground-500">{t('admin.closure.note')}</p>
+        <ul className="ml-5 list-disc space-y-0.5 text-xs text-ground-500" data-testid="close-checklist">
+          {(['finalDisbursement', 'thankYou', 'records'] as const).map((k) => (
+            <li key={k}>{t(`admin.closure.checklist.${k}`)}</li>
+          ))}
+        </ul>
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-[11px] font-medium text-ground-600">
             {t('admin.closure.reasonLabel')}
@@ -127,6 +136,7 @@ export default function ScholarControls({ file, token, onChanged }: {
               </button>
             </span>
           )}
+        </div>
         </div>
       )}
 

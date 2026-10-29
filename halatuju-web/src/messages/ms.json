@@ -2781,7 +2781,7 @@
         "of": "diterima daripada {award}",
         "barLabel": "{pct}% biasiswa anda telah diterima",
         "last": "Bayaran terakhir {amount} · {date}",
-        "none": "Belum ada bayaran masuk ke dompet anda."
+        "none": "Belum ada bayaran diterima."
       },
       "latest": {
         "title": "Keputusan terkini",
@@ -2792,7 +2792,9 @@
       "card": {
         "title": "Biasiswa Saya",
         "body": "Dana anda, keputusan anda dan ucapan terima kasih kepada penaja anda, di satu tempat."
-      }
+      },
+      "loadFailed": "Kami tidak dapat memuatkan halaman ini. Cuba lagi.",
+      "retry": "Cuba lagi"
     },
     "subnav": {
       "apply": "Mohon bantuan",
@@ -6126,7 +6128,8 @@
           "bad_reason": "Pilih sebab penutupan yang sah.",
           "reason_not_allowed": "Sebab itu tidak sesuai dengan peringkat ini.",
           "generic": "Tidak dapat menukar status. Anda mungkin tiada kebenaran."
-        }
+        },
+        "noFileHint": "Dia dibayar melalui larian pembayaran tetapi belum mempunyai fail penerima (e-dompetnya belum dilaporkan aktif), jadi statusnya ditetapkan di sini."
       }
     },
     "contracts": {

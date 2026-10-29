@@ -24,6 +24,11 @@ Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-2
   The cockpit keeps a read-only status, the pre-award Close (TD-352 — that case has no file) and the link.
   **TD-419 resolved by the move.**
 - Guide sections (org admin, general admin, reviewer) updated. No FAQ entry (`faq.tsx` is at its limit, TD-413).
+- **Adversarial review fixes:** a payable awarded student with an eWallet id but no activation (paid, no file) is
+  held from the COCKPIT (`maintenance_controls` on the cockpit payload; everything else stays on the file); the
+  funded-close note and offboarding checklist come before the file's Close confirm; any sign-out drops the "My
+  Bursary" hint and the header updates the moment a page writes it; a failed hub read says so with a retry (not "not
+  in the programme"); the gift is named in her language (English fallback); "received", not "reached your wallet".
 
 ## Billing — the customer's four readings: day-first dates, linked requests, the receipt actually sent (migration 0185) - 2026-10-29
 

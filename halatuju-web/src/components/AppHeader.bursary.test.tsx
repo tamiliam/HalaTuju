@@ -5,9 +5,9 @@
  * pages have seen with a file (`rememberBursaryFile`, from the server's `has_file`). A display
  * hint, never a gate — the hub's own endpoint 404s a student with no file.
  */
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import AppHeader from './AppHeader'
-import { KEY_HAS_BURSARY_FILE } from '@/lib/storage'
+import { KEY_HAS_BURSARY_FILE, rememberBursaryFile } from '@/lib/storage'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en', setLocale: jest.fn() }) }))
 let mockAuthed = true
@@ -38,5 +38,14 @@ it('does not offer it without the hint, or when signed out', () => {
   localStorage.setItem(KEY_HAS_BURSARY_FILE, '1')
   mockAuthed = false
   render(<AppHeader />)
+  expect(screen.queryByText('scholarship.subnav.bursary')).toBeNull()
+})
+
+it('appears the moment a page writes the hint (no navigation needed)', async () => {
+  render(<AppHeader />)
+  expect(screen.queryByText('scholarship.subnav.bursary')).toBeNull()
+  act(() => rememberBursaryFile(true))
+  expect((await screen.findAllByText('scholarship.subnav.bursary')).length).toBeGreaterThan(0)
+  act(() => rememberBursaryFile(false))
   expect(screen.queryByText('scholarship.subnav.bursary')).toBeNull()
 })

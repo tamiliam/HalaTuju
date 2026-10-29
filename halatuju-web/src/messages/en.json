@@ -2781,7 +2781,7 @@
         "of": "received of {award}",
         "barLabel": "{pct}% of your bursary received",
         "last": "Last payment {amount} · {date}",
-        "none": "No payment has reached your wallet yet."
+        "none": "No payment received yet."
       },
       "latest": {
         "title": "Latest result",
@@ -2792,7 +2792,9 @@
       "card": {
         "title": "My Bursary",
         "body": "Your funds, your results and your thank-you to your sponsor, in one place."
-      }
+      },
+      "loadFailed": "We couldn't load this. Try again.",
+      "retry": "Try again"
     },
     "subnav": {
       "apply": "Apply for assistance",
@@ -6126,7 +6128,8 @@
           "bad_reason": "Choose a valid closure reason.",
           "reason_not_allowed": "That reason does not fit this stage.",
           "generic": "Could not change the status. You may not have permission."
-        }
+        },
+        "noFileHint": "She is paid by the payment runs but has no scholar file yet (her eWallet is not reported live), so her status is set here."
       }
     },
     "contracts": {

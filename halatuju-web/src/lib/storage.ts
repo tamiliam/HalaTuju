@@ -160,7 +160,12 @@ export function rememberBursaryFile(has: boolean): void {
     if (has) localStorage.setItem(KEY_HAS_BURSARY_FILE, '1')
     else localStorage.removeItem(KEY_HAS_BURSARY_FILE)
   } catch { /* storage unavailable — the link simply does not show */ }
+  // The header on screen re-reads the hint at once (S3 review L5), not at the next navigation.
+  try { window.dispatchEvent(new Event(BURSARY_FILE_EVENT)) } catch { /* no window (server) */ }
 }
+
+/** Fired by `rememberBursaryFile`; the header listens for it. */
+export const BURSARY_FILE_EVENT = 'halatuju:bursary-file'
 
 /** Whether the header should offer "My Bursary" (see `KEY_HAS_BURSARY_FILE`). */
 export function hasBursaryFile(): boolean {

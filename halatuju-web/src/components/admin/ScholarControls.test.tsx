@@ -79,6 +79,9 @@ it('Close asks twice, then closes with the chosen reason', async () => {
   const onChanged = jest.fn()
   render(<ScholarControls file={file({ close_reasons: ['graduated', 'withdrawn'] })} token="tok"
     onChanged={onChanged} />)
+  // The funded-close note and the offboarding checklist come BEFORE the confirm (S3 review M2).
+  expect(screen.getByText('admin.closure.note')).toBeTruthy()
+  expect(screen.getByTestId('close-checklist').textContent).toContain('admin.closure.checklist.finalDisbursement')
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'graduated' } })
   fireEvent.click(screen.getByRole('button', { name: 'admin.scholars.control.closeFile' }))
   expect(screen.getByTestId('close-confirm')).toBeTruthy()

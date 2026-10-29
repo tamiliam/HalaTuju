@@ -15,7 +15,7 @@ import { getProfile } from '@/lib/api'
 import { browserMovesUp } from '@/lib/qualification'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM, KEY_SPM_ALIRAN, KEY_HIGHER_CGPA, KEY_HIGHER_KOKO, KEY_HIGHER_INSTITUTION, rememberBursaryFile } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -112,6 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = getSupabase().auth.onAuthStateChange((event, session) => {
       setSession(session)
+      // Student maintenance S3 (review L1): ANY sign-out path drops the header's "My Bursary" hint.
+      if (event === 'SIGNED_OUT') rememberBursaryFile(false)
 
       // Check identity and restore profile when a non-anonymous user signs in
       if (event === 'SIGNED_IN' && session?.access_token && !session.user?.is_anonymous) {

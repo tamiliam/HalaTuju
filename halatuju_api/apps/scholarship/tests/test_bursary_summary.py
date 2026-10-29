@@ -91,3 +91,48 @@ class TestBursarySummary(TestCase):
     def test_sign_in_required(self):
         from rest_framework.test import APIClient
         self.assertIn(APIClient().get(URL).status_code, (401, 403))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestBursarySummaryReviewGaps(TestCase):
+    """S3 adversarial review L8."""
+
+    def setUp(self):
+        self.cohort = make_cohort()
+        self.student = make_student()
+
+    def _get(self):
+        return authed_client(self.student.supabase_user_id).get(URL)
+
+    def test_a_newer_live_file_wins_over_an_older_graduated_one(self):
+        make_application('closed', cohort=self.cohort, student=self.student)
+        live = make_application('maintenance', cohort=make_cohort(), student=self.student)
+        self.assertEqual(self._get().json()['application_id'], live.id)
+
+    def test_a_newer_pre_award_case_does_not_hide_an_older_funded_file(self):
+        funded = make_application('maintenance', cohort=self.cohort, student=self.student)
+        make_application('submitted', cohort=make_cohort(), student=self.student)
+        self.assertEqual(self._get().json()['application_id'], funded.id)
+
+    def test_returned_and_withheld_money_is_not_received(self):
+        app = make_application('maintenance', cohort=self.cohort, student=self.student)
+        now = timezone.now()
+        Disbursement.objects.create(application=app, amount=Decimal('200'), status='released',
+                                    sequence=1, released_at=now - timezone.timedelta(days=30))
+        Disbursement.objects.create(application=app, amount=Decimal('300'), status='returned',
+                                    sequence=2, released_at=now)
+        Disbursement.objects.create(application=app, amount=Decimal('400'), status='withheld',
+                                    sequence=3)
+        funds = self._get().json()['funds']
+        self.assertEqual((funds['received'], funds['last_payment']['amount']), ('200.00', '200.00'))
+
+    def test_a_stalled_pre_award_close_with_a_wallet_stamp_has_no_hub(self):
+        make_application('closed', cohort=self.cohort, student=self.student, active_at=None,
+                         vircle_activated_at=timezone.now(), closure_reason='stalled')
+        self.assertEqual(self._get().status_code, 404)
+
+    def test_the_gift_name_falls_back_to_english(self):
+        make_application('maintenance', cohort=self.cohort, student=self.student)
+        names = self._get().json()['gift_names']
+        self.assertEqual(names['ms'], self.cohort.programme.name_ms or self.cohort.programme.name_en)
+        self.assertEqual(set(names), {'en', 'ms', 'ta'})

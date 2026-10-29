@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { signOut } from '@/lib/supabase'
-import { clearAll, hasBursaryFile, hasGrades } from '@/lib/storage'
+import { BURSARY_FILE_EVENT, clearAll, hasBursaryFile, hasGrades } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
 import ThemeSelector from './ThemeSelector'
@@ -26,7 +26,12 @@ export default function AppHeader() {
   // — read after mount, so the server render and the first paint agree. Never a gate: the hub's
   // endpoint 404s a student with no file.
   const [bursary, setBursary] = useState(false)
-  useEffect(() => { setBursary(isAuthenticated && hasBursaryFile()) }, [isAuthenticated, pathname])
+  useEffect(() => {
+    const read = () => setBursary(isAuthenticated && hasBursaryFile())
+    read()
+    window.addEventListener(BURSARY_FILE_EVENT, read)
+    return () => window.removeEventListener(BURSARY_FILE_EVENT, read)
+  }, [isAuthenticated, pathname])
   const profileRef = useRef<HTMLDivElement>(null)
 
   // Close the profile dropdown on outside click

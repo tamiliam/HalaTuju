@@ -61,12 +61,15 @@ const TABS: readonly Tab[] = ['overview', 'results']
  *  and no result is judged against a minimum (Sprint 4). The results form shows only when the server
  *  says `can_record_results` (active / maintenance until Sprint 4). */
 export default function BursaryPage() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const { status: authStatus, token } = useAuth()
   const router = useRouter()
 
   const [app, setApp] = useState<BursarySummary | null>(null)
   const [tab, setTab] = useState<Tab>('overview')
+  // A failure that is NOT "no file" is said as such, with a retry (S3 review L2).
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const [notInProgramme, setNotInProgramme] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -110,6 +113,7 @@ export default function BursaryPage() {
       router.replace('/scholarship/apply')
       return
     }
+    setLoadFailed(false)
     getBursarySummary({ token })
       .then(async (summary) => {
         if (!active) return
@@ -121,11 +125,12 @@ export default function BursaryPage() {
       .catch((e: Error & { status?: number }) => {
         if (!active) return
         // A 404 is "no file" (never applied, not funded yet, or a pre-award close — TD-352).
-        if (e?.status === 404) rememberBursaryFile(false)
-        setNotInProgramme(true); setLoading(false)
+        if (e?.status === 404) { rememberBursaryFile(false); setNotInProgramme(true) }
+        else setLoadFailed(true)
+        setLoading(false)
       })
     return () => { active = false }
-  }, [authStatus, token, router, loadAll])
+  }, [authStatus, token, router, loadAll, attempt])
 
   const currentBand = results[0]
     ? results[0].graduated ? 'graduated'
@@ -188,6 +193,22 @@ export default function BursaryPage() {
     )
   }
 
+  if (loadFailed) {
+    return (
+      <div className="min-h-screen flex flex-col bg-ground-50">
+        <AppHeader />
+        <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 text-center" data-testid="bursary-load-failed">
+          <p className="text-ground-700">{t('scholarship.bursary.loadFailed')}</p>
+          <button type="button" onClick={() => { setLoading(true); setAttempt((n) => n + 1) }}
+            className="mt-4 rounded-xl bg-brand-fill px-5 py-2.5 text-sm font-medium text-brand-fill-ink">
+            {t('scholarship.bursary.retry')}
+          </button>
+        </main>
+        <AppFooter />
+      </div>
+    )
+  }
+
   if (notInProgramme) {
     return (
       <div className="min-h-screen flex flex-col bg-ground-50">
@@ -221,7 +242,7 @@ export default function BursaryPage() {
             <p className="text-lg font-semibold text-ground-900">
               {t('scholarship.bursary.hello', { name: firstName(app.name) })}
             </p>
-            <p className="mt-1 text-sm text-ground-600">{[app.gift, app.course].filter(Boolean).join(' · ')}</p>
+            <p className="mt-1 text-sm text-ground-600">{[app.gift_names?.[locale as 'en' | 'ms' | 'ta'] || app.gift, app.course].filter(Boolean).join(' · ')}</p>
             <span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${
               app.status === 'closed' ? 'bg-ground-100 text-ground-600'
                 : app.support_paused ? 'bg-caution-100 text-caution-700' : 'bg-positive-100 text-positive-700'}`}>

@@ -13,7 +13,10 @@ pre-award Close stays in the cockpit (that case has no file). **Alternatives con
 call on ~90 routes for one link); drawing every tab disabled (the admin file does that, for staff; a student is
 not staff). **Trade-offs:** the menu link can lag until she visits a page that reads her applications (the
 dashboard banner, the application page or the hub). **Revisit if:** the header gains a session payload that carries
-it.
+it. **Review M1 (same day):** a payable student with NO file (awarded, an eWallet id, activation not reported) is
+paid by the runs but has no file to be held from, so her status control stays in the cockpit
+(`maintenance_controls` on the cockpit payload: `can_set_substate`, and the viewer's `can_hold`); every case WITH a
+file is changed on the file.
 
 ## The Scholars list and file read by the Applications rule — 2026-10-29 (student maintenance S2)
 

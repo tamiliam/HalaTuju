@@ -91,6 +91,8 @@ export interface BursarySummary {
   application_id: number
   name: string
   gift: string
+  /** Her gift's name per language, English where a translation is missing (S3 review L3). */
+  gift_names: Partial<Record<'en' | 'ms' | 'ta', string>>
   course: string
   institution: string
   status: string

@@ -196,7 +196,7 @@ class AdminApplicationDetailView(_AdminBase):
         # rule is "no write to applicant_documents", and the stakes are why the ON==OFF matrix
         # in `test_document_snapshot.py` compares the FIRST open as well as the warmed one.
         with document_snapshot(app):
-            return Response(AdminApplicationDetailSerializer(app).data)
+            return Response(AdminApplicationDetailSerializer(app, context={'admin': admin}).data)
 
     def patch(self, request, pk):
         """Admin-editable per-application flags: mentoring-candidate. Writes are

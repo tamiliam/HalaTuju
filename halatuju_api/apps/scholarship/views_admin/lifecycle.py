@@ -191,7 +191,7 @@ class AdminMaintenanceSubstateView(_AdminBase):
                                              by_email=admin.email)
         except maintenance_service.MaintenanceError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(AdminApplicationDetailSerializer(app).data)
+        return Response(AdminApplicationDetailSerializer(app, context={'admin': admin}).data)
 
 
 class AdminScopeListView(_AdminBase):

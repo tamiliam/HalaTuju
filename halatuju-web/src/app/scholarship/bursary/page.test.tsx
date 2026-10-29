@@ -17,20 +17,24 @@ import BursaryPage from './page'
 import * as api from '@/lib/api'
 import { KEY_HAS_BURSARY_FILE } from '@/lib/storage'
 
+let mockLocale = 'en'
 jest.mock('@/lib/i18n', () => ({
-  useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
+  useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: mockLocale }),
 }))
 jest.mock('@/lib/auth-context', () => ({
   useAuth: () => ({ status: 'ready', token: 'tok', profile: null }),
 }))
-jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }))
+// A STABLE router, as Next's is — a new object per render would re-run the page's load effect.
+const mockRouter = { push: jest.fn(), replace: jest.fn() }
+jest.mock('next/navigation', () => ({ useRouter: () => mockRouter }))
 jest.mock('@/components/AppHeader', () => () => null)
 jest.mock('@/components/AppFooter', () => () => null)
 jest.mock('@/lib/api')
 const mockApi = api as jest.Mocked<typeof api>
 
 const SUMMARY: api.BursarySummary = {
-  application_id: 7, name: 'NUR AISYAH', gift: 'Flagship', course: 'Diploma in Accounting',
+  application_id: 7, name: 'NUR AISYAH', gift: 'Flagship', gift_names: { en: 'Flagship', ms: 'Unggulan', ta: 'Flagship' },
+  course: 'Diploma in Accounting',
   institution: 'Politeknik Ungku Omar', status: 'awarded', closure_reason: '',
   in_maintenance: true, can_record_results: false, support_paused: false,
   funds: { award_amount: '2000.00', received: '1200.00', remaining: '800.00',
@@ -42,6 +46,7 @@ const serve = (over: Partial<api.BursarySummary> = {}) =>
 
 beforeEach(() => {
   jest.resetAllMocks()
+  mockLocale = 'en'
   localStorage.clear()
   mockApi.getSemesterResults.mockResolvedValue({ results: [] } as never)
   mockApi.getPromotionalConsent.mockResolvedValue({ granted: false, is_minor: false } as never)
@@ -83,10 +88,12 @@ it('a paused student sees the paused notice (support_paused, never a sub-state)'
   expect(screen.getByText('scholarship.bursary.state.paused')).toBeTruthy()
 })
 
-it('a funded case that was closed still reaches the hub, read-only', async () => {
+it('a funded case that was closed still reaches the hub, read-only — and the thank-you stays open', async () => {
   serve({ status: 'closed', closure_reason: 'graduated', in_maintenance: false })
   render(<BursaryPage />)
   expect(await screen.findByText('scholarship.inProgramme.closed.graduated.title')).toBeTruthy()
+  await waitFor(() => expect(mockApi.getGraduationMessages).toHaveBeenCalledWith(7, { token: 'tok' }))
+  expect(screen.getByText('scholarship.inProgramme.grad.title')).toBeTruthy()
   fireEvent.click(screen.getByRole('tab', { name: 'scholarship.bursary.tab.results' }))
   expect(screen.queryByText(/scholarship\.inProgramme\.results\.add/)).toBeNull()
 })
@@ -98,4 +105,23 @@ it('no file (a 404) is the calm not-in-the-programme page, and the header hint g
   expect(await screen.findByText('scholarship.inProgramme.notInProgramme')).toBeTruthy()
   expect(localStorage.getItem(KEY_HAS_BURSARY_FILE)).toBeNull()
   expect(mockApi.getGraduationMessages).not.toHaveBeenCalled()
+})
+
+it('names her gift in her language, English where a translation is missing', async () => {
+  mockLocale = 'ms'
+  serve()
+  render(<BursaryPage />)
+  expect(await screen.findByText('Unggulan · Diploma in Accounting')).toBeTruthy()
+})
+
+it('a failure that is not "no file" says so, keeps the hint, and retries', async () => {
+  localStorage.setItem(KEY_HAS_BURSARY_FILE, '1')
+  mockApi.getBursarySummary.mockRejectedValueOnce(Object.assign(new Error('boom'), { status: 500 }))
+  mockApi.getBursarySummary.mockResolvedValueOnce({ ...SUMMARY })
+  render(<BursaryPage />)
+  expect(await screen.findByText('scholarship.bursary.loadFailed')).toBeTruthy()
+  expect(screen.queryByText('scholarship.inProgramme.notInProgramme')).toBeNull()
+  expect(localStorage.getItem(KEY_HAS_BURSARY_FILE)).toBe('1')
+  fireEvent.click(screen.getByRole('button', { name: 'scholarship.bursary.retry' }))
+  expect(await screen.findByTestId('bursary-hello')).toBeTruthy()
 })
