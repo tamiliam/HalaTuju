@@ -15,6 +15,7 @@ from apps.scholarship.higher_results import extract
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.tests.factories import make_application, make_student
 
+NL = '\n'
 HEADER = """KEMENTERIAN PENDIDIKAN MALAYSIA
 MINISTRY OF EDUCATION MALAYSIA
 BAHAGIAN MATRIKULASI
@@ -84,10 +85,15 @@ class TestTheReader(SimpleTestCase):
         self.assertEqual((got['candidate_name'], got['nric'], got['matric_no'], got['cgpa']),
                          ('SITI AMINAH BINTI ALI', '050101141234', 'MS2515110001', '3.29'))
         self.assertEqual(got['institution'], 'KOLEJ MATRIKULASI PERAK')
-        self.assertEqual(len(got['results']), 13)
-        self.assertEqual(got['results'][4], {'subject': 'ENGLISH 1', 'grade': 'B2'})
-        self.assertEqual(got['results'][5], {'subject': 'KOKURIKULUM/ CO-CURRICULUM', 'grade': 'A'})
         self.assertEqual(got['cgpa_label'], 'PNGK/CGPA')
+        # Review fix 1: only the CORE rows, each proven by its semester's sum — English's band and
+        # the minor courses' letters count in no sum, so they are never read Exact.
+        self.assertEqual([r['subject'] for r in got['results']][:4],
+                         ['BIOLOGY 1', 'COMPUTER SCIENCE 1', 'CHEMISTRY 1', 'MATHEMATICS 1'])
+        self.assertEqual(len(got['results']), 8)
+        self.assertEqual(got['results'][3], {'subject': 'MATHEMATICS 1', 'grade': 'C+'})
+        self.assertFalse([r for r in got['results'] if re.search(r'ENGLISH|KOKURIKULUM|MORAL|PENGAJIAN',
+                                                                  r['subject'])])
 
     def test_a_scan_reads_the_same_from_word_boxes(self):
         self.assertEqual(matric_parse.parse('', as_words(two_sem()))['cgpa'], '3.29')
@@ -97,7 +103,7 @@ class TestTheReader(SimpleTestCase):
         p1, p2 = four_sem_pages()
         got = matric_parse.parse(p1 + '\n' + p2)
         self.assertEqual(got['cgpa'], '3.54')
-        self.assertEqual(len(got['results']), 6 + 7 + 5 + 6)       # every course row, every semester
+        self.assertEqual(len(got['results']), 4 * 4)               # four core courses, four semesters
 
     def test_page_one_of_a_four_semester_scan_never_reports_a_semester_gpa(self):
         """Production OCRs page 1 of a scan: Semesters I-III, no final CGPA → None (Gemini)."""
@@ -161,6 +167,49 @@ class TestTheReader(SimpleTestCase):
         self.assertEqual(matric_parse.parse(two_sem().replace('SB025 BIOLOGY 2 5 A', 'SBO25 BIOLOGY 2 A'))['cgpa'],
                          '3.29')
 
+    def test_a_semester_has_a_fixed_shape(self):
+        """Review fix 2: a dropped row is refused even when the sum still adds up (straight A)."""
+        straight = two_sem(cgpa='4.00').replace('B+ 3.33', 'A 4.00').replace('C+ 2.33', 'A 4.00').replace(
+            'B 3.00', 'A 4.00').replace('PNGS / GPA : 3.25', 'PNGS / GPA : 4.00').replace(
+            'PNGS / GPA : 3.33', 'PNGS / GPA : 4.00')
+        self.assertEqual(matric_parse.parse(straight)['cgpa'], '4.00')
+        self.assertIsNone(matric_parse.parse(straight.replace('SK015 CHEMISTRY 1 5 A 4.00' + NL, '')))
+        self.assertIsNone(matric_parse.parse(two_sem().replace('WE013 ENGLISH 1 3 B2' + NL, '')))
+        self.assertIsNone(matric_parse.parse(two_sem().replace(
+            'WE013 ENGLISH 1 3 B2', 'WE013 ENGLISH 1 3 B2' + NL + 'WE013 ENGLISH 1 3 B2')))
+
+    def test_a_course_code_belongs_to_its_semester(self):
+        """Odd semesters print xx01x codes, even ones xx02x; a minor xx00x course sits in either."""
+        self.assertIsNone(matric_parse.parse(two_sem().replace('SB025 BIOLOGY 2', 'SB015 BIOLOGY 1')))
+        kok = 'WK002 KOKURIKULUM / CO - CURRICULUM 2 A' + NL
+        moved = two_sem().replace(kok, '').replace('WM001', kok + 'WM001')      # into Semester II
+        self.assertEqual(matric_parse.parse(moved)['cgpa'], '3.29')
+
+    def test_the_name_and_college_end_at_the_next_label(self):
+        self.assertIsNone(matric_parse.parse(two_sem().replace(
+            'NAMA / NAME : SITI AMINAH BINTI ALI', 'NAMA / NAME : SITI AMINAH BINTI ALI PEREMPUAN')))
+        got = matric_parse.parse(two_sem().replace(
+            'KOLEJ / COLLEGE : KOLEJ MATRIKULASI PERAK NO . KP / IC NO . : 050101141234',
+            'KOLEJ / COLLEGE : KOLEJ MATRIKULASI PERAK JANTINA / GENDER : PEREMPUAN' + NL
+            + 'NO . KP / IC NO . : 050101141234'))
+        self.assertEqual(got['institution'], 'KOLEJ MATRIKULASI PERAK')
+
+    def test_a_second_page_that_repeats_the_header_falls_back(self):
+        """A text layer whose page 2 prints the header again (a second NAMA row) reads two ways."""
+        p1, p2 = four_sem_pages()
+        repeat = NL.join(HEADER.format(session='2023/2024').splitlines()[:6])
+        self.assertIsNone(matric_parse.parse(p1 + NL + repeat + NL + p2))
+
+    def test_a_sign_vision_splits_into_its_own_box(self):
+        words = as_words(two_sem())
+        split = []
+        for w in words:
+            if w['text'] == 'B+':
+                split += [{**w, 'text': 'B'}, {**w, 'text': '+', 'cx': w['cx'] + 15}]
+            else:
+                split.append(w)
+        self.assertEqual(matric_parse.parse('', split)['results'][0], {'subject': 'BIOLOGY 1', 'grade': 'B+'})
+
     def test_an_unknown_course_falls_back(self):
         self.assertIsNone(matric_parse.parse(two_sem().replace('BIOLOGY 1', 'ASTRONOMY 1')))
         self.assertIsNone(matric_parse.parse(two_sem().replace('BIOLOGY 1', 'BIOLOGY SALINAN 1')))
@@ -198,7 +247,8 @@ class TestTheWiring(TestCase):
         ex = extract(self._doc(), {'text': two_sem(), 'words': None}, lambda: calls.append('image'),
                      lambda *a, **kw: calls.append('gemini'))
         self.assertEqual(calls, [])
-        self.assertEqual((ex['capture'], ex['parser_version']), ('deterministic', 'matric_parse 1.0.0'))
+        self.assertEqual((ex['capture'], ex['parser_version']),
+                         ('deterministic', f'matric_parse {matric_parse.PARSER_VERSION}'))
         self.assertEqual(ex['fields']['cgpa'], '3.29')
         self.assertEqual(ex['fields']['results_kind_detected'], 'matric')
         self.assertNotIn('stpm_rows_from_entry', ex)
@@ -209,6 +259,19 @@ class TestTheWiring(TestCase):
                      lambda text, dt, **kw: calls.append('gemini') or {'fields': {'cgpa': '3.28'},
                                                                       'warnings': [], 'error': ''})
         self.assertEqual((calls, ex['capture']), (['gemini'], 'ai'))
+
+    def test_an_stpm_or_diploma_page_never_reaches_the_matric_reader(self):
+        from unittest.mock import patch
+        def gem(text, dt, **kw):
+            return {'fields': {'cgpa': '3.1'}, 'warnings': [], 'error': ''}
+        for text in ('SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025 PNGK 3.50',
+                     'ACADEMIC TRANSCRIPT POLITEKNIK SANDAKAN DIPLOMA CGPA 3.66'):
+            with patch('apps.scholarship.matric_parse.parse') as reader:
+                extract(self._doc(), {'text': text, 'words': None}, lambda: None, gem)
+            reader.assert_not_called()
+        with patch('apps.scholarship.matric_parse.parse', return_value=None) as reader:   # the control
+            extract(self._doc(), {'text': two_sem(), 'words': None}, lambda: None, gem)
+        reader.assert_called_once()
 
     def test_the_model_version_moved(self):
         from apps.scholarship.genuineness.results_doc import MODEL_VERSION

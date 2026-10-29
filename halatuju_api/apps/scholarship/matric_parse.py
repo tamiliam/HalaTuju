@@ -14,9 +14,12 @@ CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has
   * ONE name (never wrapped onto the next row), ONE IC (every IC-shaped number on the page equal to
     it), the matric number and the college ("KOLEJ MATRIKULASI …");
   * every course row: a matric course code (its last digit is the course's credits; its middle digit
-    the semester-of-year, which must equal the course's printed number), a course from the known
-    vocabulary, a grade on the scale — a CORE course (4+ credits) with its value point agreeing with
-    the letter, English with a language band (B2, C1 …), every other course a letter and no point;
+    the semester-of-year — 1 in Semesters I and III, 2 in II and IV, 0 for a minor course — which
+    must equal the course's printed number), a course from the known vocabulary, a grade on the scale — a CORE course (4+
+    credits) with its value point agreeing with the letter, English with a language band (B2, C1 …),
+    every other course a letter and no point;
+  * every semester's SHAPE (review, 2026-10-29; every corpus transcript): exactly four core courses
+    and one English row — so a dropped core row (a straight-A semester still sums to 4.00) refuses;
   * every semester's printed PNGS (GPA) equal to the one recomputed from its core courses
     (credits × points, half-up to two places);
   * the FINAL CGPA (owner, 2026-10-29): the ONE "PNGK / CGPA" printed AFTER the last semester, with
@@ -26,13 +29,20 @@ CONSERVATIVE — a wrong Exact value is far worse than an AI read. Every hit has
     berdasarkan keputusan Semester III dan IV" — no note, no read). Never a semester GPA, never the
     first CGPA met. A scan's page 1 that stops before the last semester (production rasterises page
     1 only) therefore never reads Exact.
-One misread grade or point breaks a GPA sum. (Two equal-credit core grades swapped would not — the
-rows are paired by their own visual row, never re-ordered, so a swap needs a misplaced row, which
-the row checks above refuse.)
+One misread core grade or point breaks a GPA sum. (Two equal-credit core grades swapped would not —
+the rows are paired by their own visual row, never re-ordered, so a swap needs a misplaced row,
+which the row checks above refuse.)
+
+⚠ ONLY THE CORE COURSES ARE RETURNED (review, 2026-10-29). English's band and the minor courses'
+letters (co-curriculum, Moral / Islamic Education, General Studies) carry no value point and count
+in no sum, so nothing proves them: an OCR misread (B2 → B1, A- → A) would read Exact and be wrong.
+The average-grade box cannot prove them either (corpus: English B2 + C1 averages to B2 on one
+transcript and C1 on another). So `results` holds the core rows, each proven by its semester's sum;
+the others are left out of the Exact read, never guessed.
 
 Output mirrors the Gemini higher-results schema (`higher_results.SCHEMA`): candidate_name, exam,
-cgpa, cgpa_label, institution, results [{subject, grade}] (subject NAME only, no code, every
-semester in print order), plus nric and matric_no. The caller stores `PARSER_VERSION` beside
+cgpa, cgpa_label, institution, results [{subject, grade}] (the CORE courses: subject NAME only, no
+code, every semester in print order), plus nric and matric_no. The caller stores `PARSER_VERSION` beside
 `capture`, outside the fields. Pure + deterministic; never raises. PII-free unit tests use synthetic
 twins (`tests/test_matric_parse.py`); the real corpus is scored locally by `eval/matric_parse_check.py`.
 """
@@ -45,7 +55,8 @@ from .stpm_parse import GRADE_POINTS, _NRIC_RE, _after, _clean_name, _letters, _
 
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning rule).
 # 1.0.0 (2026-10-29): M2 — the KPM Matriculation academic transcript (2 and 4 semesters).
-PARSER_VERSION = '1.0.0'
+# 1.1.0 (2026-10-29): review — core rows only; the semester's shape; code parity; label stops.
+PARSER_VERSION = '1.1.0'
 
 #: English's language bands (CEFR), printed with no value point.
 BANDS = frozenset({'A1', 'A2', 'B1', 'B2', 'C1', 'C2'})
@@ -70,7 +81,13 @@ _COURSES = frozenset(_letters(c) for c in (
 _LABELS = ('KOLEJ', 'NOKP', 'NOMATRIK', 'JANTINA', 'JURUSAN', 'SESI')
 #: Label words that may never be part of a name read Exact.
 _NOT_IN_NAME = frozenset({'NO', 'KP', 'IC', 'MATRIK', 'MATRIC', 'KOLEJ', 'COLLEGE', 'JANTINA',
-                          'GENDER', 'JURUSAN', 'MAJOR', 'SESI', 'SESSION'})
+                          'GENDER', 'JURUSAN', 'MAJOR', 'SESI', 'SESSION', 'LELAKI', 'PEREMPUAN',
+                          'MALE', 'FEMALE'})
+#: A label that ends the college's name when it shares its row ("… LABUAN NO. KP / IC NO. …").
+_COLLEGE_ENDS = frozenset({'NO', 'JANTINA', 'GENDER', 'JURUSAN', 'MAJOR', 'SESI', 'SESSION', 'KP', 'IC'})
+#: Each semester's fixed shape on every corpus transcript (2- and 4-semester, science, accounting,
+#: engineering): four core courses and one English row.
+_CORE_PER_SEMESTER = 4
 _CORE_CREDITS = 4
 
 
@@ -120,7 +137,7 @@ def _course_row(row):
         return None
     subject = re.sub(r'\s*-\s*', '-', re.sub(r'\s*/\s*', '/ ', ' '.join(rest))).strip()
     return {'code': ''.join(code), 'subject': subject, 'credits': credits, 'grade': grade,
-            'point': point, 'english': code[0] == 'WE'}
+            'point': point, 'english': _letters(''.join(name_tokens)) == 'ENGLISH'}
 
 
 def _row_ok(r) -> bool:
@@ -153,11 +170,14 @@ def _semesters(rows, start):
             course = _course_row(row)
             if course is None or not _row_ok(course):
                 return None
+            if course['code'][3] not in ('0', '1' if cur[0] % 2 else '2'):
+                return None                     # odd semesters xx01x, even xx02x (xx00x: any)
             cur[1].append(course)
         elif cur is not None and flat.startswith('PNGS'):
             m = _GPA.match(_text(row))
-            if not m or not cur[1]:
-                return None
+            core = [c for c in cur[1] if c['credits'] >= _CORE_CREDITS and not c['english']]
+            if not m or len(core) != _CORE_PER_SEMESTER or sum(c['english'] for c in cur[1]) != 1:
+                return None                     # a dropped (or extra) row: the shape is fixed
             sems.append((cur[0], cur[1], m.group(1)))
             cur = None
         else:
@@ -198,11 +218,9 @@ def _header(rows):
     for t in _after(col_rows[0], 'COLLEGE'):
         if t in (':',):
             continue
-        if not re.fullmatch(r'[A-Z]+', t):
-            break
+        if t in _COLLEGE_ENDS or not re.fullmatch(r'[A-Z]+', t):
+            break                               # the next label on the row ends the name
         college.append(t)
-    while college and college[-1] in ('NO',):
-        college.pop()
     institution = ' '.join(college)
     if not m or not matric_no or not institution.startswith('KOLEJ MATRIKULASI '):
         return None
@@ -268,5 +286,7 @@ def _read_transcript(text, words):
         'candidate_name': head['name'], 'exam': 'TRANSKRIP AKADEMIK / ACADEMIC TRANSCRIPT',
         'nric': head['nric'], 'matric_no': head['matric_no'],
         'cgpa': cgpa, 'cgpa_label': 'PNGK/CGPA', 'institution': head['institution'],
-        'results': [{'subject': c['subject'], 'grade': c['grade']} for _n, cs, _p in sems for c in cs],
+        # The CORE courses only — each proven by its semester's sum (see the module docstring).
+        'results': [{'subject': c['subject'], 'grade': c['grade']} for _n, cs, _p in sems for c in cs
+                    if c['credits'] >= _CORE_CREDITS and not c['english']],
     }

@@ -77,6 +77,10 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
     pages); a SCANNED PDF is rasterised page 1 only (`pdf_first_page_png`) for BOTH Vision and the
     Gemini fallback. The reader therefore refuses a page that stops before the last semester or the
     final PNGK. Reading every page is PROPOSED, not built (`docs/decisions.md` 2026-10-29 M2).
+  - Review fixes (parser 1.1.0): only the core courses are returned (English and minor courses are
+    proven by no sum); each semester's fixed shape. Co-curriculum is therefore NOT in the Exact read.
+    No real multi-page text-layer transcript is in the corpus; a page 2 that repeats the header
+    falls back (two NAMA rows).
   - Labels hand-checked against the page images: two names, one transcript's rows and CGPA rebuilt,
     one transcript's average-grade box dropped from its rows.
 

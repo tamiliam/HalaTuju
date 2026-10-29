@@ -29,6 +29,10 @@ CONTROLS = ('stpm_cert', 'stpm_slip', 'spm_cert', 'spm_slip', 'fake', 'diploma',
             'spvm', 'other', 'results_slip')
 
 
+#: The courses that carry no value point (English's band, the minor courses), by name.
+_NOT_CORE = re.compile(r'^ENGLISH|KOKURIKULUM|COCURRICULUM|MORAL|ISLAM|PENGAJIANAM|GENERALSTUDIES')
+
+
 def _sq(s):
     return re.sub(r'[^A-Z0-9]', '', str(s or '').upper())
 
@@ -40,7 +44,9 @@ def matric_differences(got, exp):
                              ('cgpa', got.get('cgpa'), exp.get('cgpa')),
                              ('institution', got.get('institution'), exp.get('institution')))
            if _sq(g) != _sq(e)]
-    want = [(_sq(s['subject']), s['grade']) for s in exp.get('subjects') or []]
+    # The reader returns the CORE courses only (matric_parse 1.1.0): compare the label's core rows.
+    want = [(_sq(s['subject']), s['grade']) for s in exp.get('subjects') or []
+            if not _NOT_CORE.search(_sq(s['subject']))]
     have = [(_sq(s['subject']), s['grade']) for s in got.get('results') or []]
     if [w[0] for w in want] != [h[0] for h in have]:
         out.append('subjects')
