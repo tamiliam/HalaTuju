@@ -49,9 +49,9 @@ describe('withGiftHrefs — only the Programme rows carry it', () => {
   it('every Programme row names the gift; no other row changes', () => {
     const out = withGiftHrefs(groups, 'bp-sabah')
     const programme = hrefs(out, 'programme')
-    // A floor, so an empty group can never pass this vacuously: the six list pages (Contracts
-    // joined the Programme group on 2026-10-03, TD-229).
-    expect(programme).toHaveLength(6)
+    // A floor, so an empty group can never pass this vacuously: the seven list pages (Contracts
+    // joined the Programme group on 2026-10-03, TD-229; Scholars on 2026-10-29, maintenance S2).
+    expect(programme).toHaveLength(7)
     for (const h of programme) expect(h).toMatch(/\?programme=bp-sabah$/)
     for (const scope of ['platform', 'organisation']) {
       expect(hrefs(out, scope)).toEqual(hrefs(groups, scope))

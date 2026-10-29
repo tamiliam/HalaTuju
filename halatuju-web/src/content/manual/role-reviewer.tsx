@@ -76,6 +76,20 @@ export const roleReviewer: ManualChapter = {
       alt: 'The Applications list showing your assigned applicants',
     },
     {
+      anchor: 'reviewer-scholars',
+      perm: 'review',
+      title: 'Your scholars',
+      body: (
+        <>Once a student you reviewed is <strong>funded</strong> &mdash; her award accepted and her eWallet live
+        &mdash; she also appears on <strong>Scholars</strong>, under your gift in the menu. You see only the
+        scholars assigned to you. Her <strong>file</strong> shows her latest semester result, what has been paid
+        and what remains, whether a contract is on file, and an <strong>Activity</strong> log of what has
+        happened. Add a <strong>note</strong>, <strong>call</strong> or <strong>meeting</strong> there; switch on
+        <strong> Staff only</strong> for an entry meant for colleagues. Putting a student <strong>on hold</strong>
+        (which stops her payments) is done by the people who prepare payment runs, not by reviewers.</>
+      ),
+    },
+    {
       anchor: 'reviewer-working-a-case',
       perm: 'review',
       title: 'Working a case',

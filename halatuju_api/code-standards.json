@@ -27,6 +27,22 @@
   "_admitted_how_this_works": "Budgets set AFTER the H4 freeze, admitted by a dated record instead of a rewrite of the frozen `baseline` (TD-286, lead ruling 2026-10-04). Each record names the date, the sprint or TD that set the number, why it exists, its ledger (`query_budgets` ONLY), its key and its value. THE VALUE IS THE LIVE BUDGET: `apps/scholarship/tests/test_query_budgets.py` reads every number from here or from `budget.query_budgets`, and holds none of its own. A record may be ADDED (a new standard is stricter, not looser) or its value LOWERED (the tightness tests say by how much); it may never be RAISED, and `Settings/_tools/code_health.py` refuses a raised one at every close by comparing this array with the last recorded run's copy. `test_code_standards.py` refuses a record that is incomplete, names another ledger, or shadows a frozen key. `_admitted` is a sibling of `baseline`, so admitting a budget never moves `BASELINE_SHA256`.",
   "_admitted": [
     {
+      "on": "2026-10-29",
+      "by": "student maintenance Sprint 2",
+      "why": "The officer's Scholars list, read at two page sizes (each row: a funded student with a course id, a semester result and an activity row). Course names come from card_display.catalogue_course_names in two queries per page and the latest result / last activity are subqueries on the list query, so the two readings are EQUAL (8 and 8, measured 2026-10-29): a row costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/scholars/::GET::2-rows",
+      "value": 8
+    },
+    {
+      "on": "2026-10-29",
+      "by": "student maintenance Sprint 2",
+      "why": "The officer's Scholars list, read at two page sizes (each row: a funded student with a course id, a semester result and an activity row). Course names come from card_display.catalogue_course_names in two queries per page and the latest result / last activity are subqueries on the list query, so the two readings are EQUAL (8 and 8, measured 2026-10-29): a row costs nothing extra.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/scholars/::GET::5-rows",
+      "value": 8
+    },
+    {
       "on": "2026-09-21",
       "by": "the api audit (TD-286)",
       "why": "The student's own application list read, measured after the api audit narrowed income_shown to the members the web asks about (22 / 25 / 29 before). Three household shapes, because the cost is per declared earner and one fixture would pin a number without its slope.",

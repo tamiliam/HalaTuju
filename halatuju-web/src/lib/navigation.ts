@@ -338,6 +338,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         perms: ['see_all', 'review'], gate: { mode: 'always' } },
+      // ⚠ SCHOLARS (student maintenance S2, 2026-10-29): every funded student from award acceptance
+      // to closure. SAME roles and keys as Applications, on purpose — a scholar file is a view of an
+      // application the reader can already open, and the server fences it by the same rule
+      // (`views_admin/scholars.py`: see_all reads the organisation, a reviewer only their assigned
+      // scholars, finance never). `needsProgramme`: a list of one gift's scholars. 'M' for
+      // maintenance — 'S' is Students. No badge yet (the shell's badge needs its own count endpoint).
+      { id: 'scholars', href: '/admin/scholars', labelKey: 'admin.scholars.nav', chord: 'M',
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
+        perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },

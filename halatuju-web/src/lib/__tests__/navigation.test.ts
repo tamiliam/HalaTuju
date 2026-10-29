@@ -80,7 +80,7 @@ describe('visibleNav per role', () => {
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -101,12 +101,12 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
-      'programmeOverview', 'applications', 'payments', 'spending',
+      'programmeOverview', 'applications', 'scholars', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // ⚠ `finance` still has Payments and still has NO Spending — the move changed where the
@@ -123,8 +123,10 @@ describe('visibleNav per role', () => {
       'programmeOverview', 'payments',
       'profile', 'guide', 'faq',
     ],
-    qc: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
-    reviewer: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
+    // Maintenance S2 (2026-10-29): `scholars` carries exactly the Applications roles and keys —
+    // a scholar file is a view of an application the reader can already open (server: same rule).
+    qc: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
+    reviewer: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
   }
 
@@ -517,10 +519,12 @@ describe('visibleNav groups', () => {
   // a list. Applications keeps its place directly under it — the frequency argument above is
   // untouched, it simply now has a page above it rather than nothing.
   // ⚠ SIX SINCE 2026-10-03: Contracts joined LAST (TD-229) — the agreement is written per gift.
-  it('the programme scope is six rows, the overview first', () => {
+  // ⚠ SEVEN SINCE 2026-10-29: Scholars sits directly under Applications (maintenance S2) — the
+  // funded students are the same people, later in their story.
+  it('the programme scope is seven rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
     expect(prog.items.map((i) => i.id)).toEqual(
-      ['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts'])
+      ['programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -599,7 +603,7 @@ describe('visibleNav groups', () => {
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id)).toEqual(
-        ['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending', 'contracts'])
+        ['programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted
@@ -608,7 +612,8 @@ describe('visibleNav groups', () => {
       const scopes = visibleNav(noGift('reviewer')).map((g) => g.scope)
       expect(scopes).toContain('programme')
       const prog = visibleNav(noGift('reviewer')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'applications'])
+      // Scholars stays too: a reviewer has no door to the gifts, so the page itself asks.
+      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'applications', 'scholars'])
     })
 
     it('leaves every other scope untouched', () => {
@@ -628,9 +633,9 @@ describe('visibleNav groups', () => {
     })
 
     // Was exactly one row (`programmeConfig`) until 2026-09-28; the money rows joined it.
-    it('marks exactly the three rows that act on one gift', () => {
+    it('marks exactly the four rows that act on one gift', () => {
       expect(NAV_ITEMS.filter((i) => i.needsProgramme).map((i) => i.id))
-        .toEqual(['programmeConfig', 'payments', 'spending'])
+        .toEqual(['scholars', 'programmeConfig', 'payments', 'spending'])
     })
   })
 

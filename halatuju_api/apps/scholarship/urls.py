@@ -132,6 +132,9 @@ from .views_admin import (
     AdminSpendingView,
     AdminSpendingCategoryView,
     AdminSpendingFlagView,
+    AdminScholarActivityView,
+    AdminScholarFileView,
+    AdminScholarListView,
     AdminPaymentRunDetailView,
     AdminPaymentRunItemView,
     AdminPaymentRunSignView,
@@ -334,6 +337,10 @@ urlpatterns = [
     path('admin/scholarship/spending/category/', AdminSpendingCategoryView.as_view()),
     # Request #28 follow-up — one organisation's flag on a shop, and its notes log.
     path('admin/scholarship/spending/flag/', AdminSpendingFlagView.as_view()),
+    # Student maintenance Sprint 2 — the officer's Scholars list, maintenance file and activity log.
+    path('admin/scholarship/scholars/', AdminScholarListView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/', AdminScholarFileView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/activity/', AdminScholarActivityView.as_view()),
     # Programme Overview (2026-09-15) — the page a person LANDS on inside a gift. Open to every
     # console role and shaped by role server-side, so it sits beside the gift's other Programme
     # routes rather than under a role-specific prefix.

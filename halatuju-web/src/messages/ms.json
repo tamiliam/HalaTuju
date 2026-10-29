@@ -5950,6 +5950,124 @@
         "merchant_required": "Tiada kedai dinamakan."
       }
     },
+    "scholars": {
+      "nav": "Penerima biasiswa",
+      "title": "Penerima biasiswa",
+      "subtitle": "Pelajar yang dibiayai, dari penerimaan anugerah hingga penutupan.",
+      "search": "Cari",
+      "searchPlaceholder": "Nama, IC atau no. permohonan",
+      "summary": "Ringkasan",
+      "filtersLabel": "Tunjukkan",
+      "loadFailed": "Tidak dapat memuatkan senarai penerima.",
+      "empty": "Belum ada penerima di sini.",
+      "emptySearch": "Tiada penerima sepadan dengan carian itu.",
+      "closed": "Ditutup",
+      "tile": {
+        "inProgramme": "Dalam program",
+        "onHold": "Ditangguhkan",
+        "probation": "Percubaan",
+        "readyToClose": "Sedia ditutup"
+      },
+      "filter": {
+        "all": "Semua",
+        "underperforming": "Prestasi rendah",
+        "overdue": "Keputusan lewat",
+        "wantsMentor": "Mahukan mentor",
+        "closed": "Ditutup"
+      },
+      "col": {
+        "name": "Nama",
+        "course": "Kursus dan institusi",
+        "status": "Status",
+        "cgpa": "PNGK terkini",
+        "standing": "Kedudukan",
+        "mentor": "Mentor",
+        "lastActivity": "Aktiviti terakhir"
+      },
+      "standing": {
+        "has_result": "Keputusan direkodkan",
+        "no_result_yet": "Belum ada keputusan"
+      },
+      "tab": {
+        "overview": "Gambaran",
+        "results": "Keputusan",
+        "money": "Wang",
+        "contract": "Kontrak",
+        "letters": "Surat",
+        "mentoring": "Bimbingan",
+        "surveys": "Tinjauan",
+        "activity": "Aktiviti"
+      },
+      "card": {
+        "results": "Keputusan terkini",
+        "money": "Wang",
+        "contract": "Kontrak",
+        "mentor": "Mentor",
+        "letters": "Surat",
+        "surveys": "Tinjauan"
+      },
+      "file": {
+        "applicationNo": "Permohonan #{id}",
+        "fundedSince": "Dibiayai sejak {date}",
+        "viewApplication": "Lihat permohonan",
+        "tabsLabel": "Fail penerima",
+        "summary": "Ringkasan",
+        "cgpaFor": "PNGK · {semester}",
+        "recordedOn": "Direkodkan {date}",
+        "noResult": "Belum ada keputusan semester direkodkan.",
+        "standingLater": "Kedudukan berbanding PNGK minimum program akan tersedia bersama semakan keputusan.",
+        "openFile": "Buka fail penerima"
+      },
+      "money": {
+        "award_amount": "Anugerah",
+        "paid_to_date": "Dibayar",
+        "remaining": "Baki",
+        "lastPayment": "Bayaran terakhir {amount} · {date}",
+        "noPayment": "Belum ada bayaran dikeluarkan.",
+        "openPayments": "Buka Pembayaran",
+        "openSpending": "Buka Perbelanjaan"
+      },
+      "contract": {
+        "none": "Tiada kontrak dalam fail",
+        "draft": "Perjanjian disediakan, belum ditandatangani",
+        "student_signed": "Ditandatangani oleh pelajar",
+        "binds": "Ditandatangani oleh pelajar dan penjamin",
+        "countersigned": "Ditandatangani balas oleh organisasi",
+        "executed": "Ditandatangani dan berkuat kuasa"
+      },
+      "later": {
+        "mentor": "Mentor akan tersedia dalam kemas kini akan datang.",
+        "letters": "Surat akan tersedia dalam kemas kini akan datang.",
+        "surveys": "Tinjauan akan tersedia dalam fasa akan datang."
+      },
+      "activity": {
+        "title": "Aktiviti",
+        "kindLabel": "Jenis catatan",
+        "addLabel": "Tambah catatan",
+        "placeholder": "Apa yang berlaku?",
+        "staffOnly": "Kakitangan sahaja",
+        "save": "Simpan",
+        "saved": "Catatan disimpan.",
+        "saveFailed": "Tidak dapat menyimpan catatan.",
+        "loadFailed": "Tidak dapat memuatkan aktiviti.",
+        "empty": "Belum ada apa-apa direkodkan.",
+        "bySystem": "Sistem",
+        "kind": {
+          "note": "Nota",
+          "call": "Panggilan",
+          "meeting": "Mesyuarat",
+          "email": "E-mel",
+          "system": "Sistem"
+        }
+      },
+      "event": {
+        "substate_changed": "Status ditukar: {from} → {to}",
+        "payment_released": "Bayaran dikeluarkan · RM{amount} {ref}",
+        "result_submitted": "Keputusan dihantar · {semester}",
+        "closed": "Fail ditutup · {reason}",
+        "other": "Kemas kini sistem"
+      }
+    },
     "contracts": {
       "title": "Templat kontrak",
       "subtitle": "Karang, sahkan dan lancarkan perjanjian biasiswa — satu versi aktif bagi setiap hadiah.",

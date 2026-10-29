@@ -434,6 +434,8 @@ export interface AdminScholarshipDetail {
   disbursements: AdminDisbursement[]
   /** Post-award S5: operational sub-state within status='maintenance'. */
   maintenance_substate: MaintenanceSubstate
+  /** Maintenance S2: the server's "has a scholar file" (in maintenance, or closed after it). */
+  has_file?: boolean
   /** Post-award S6: manual-close audit (set when status='closed'). */
   closed_at: string | null
   closed_by: string

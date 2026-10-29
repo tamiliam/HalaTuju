@@ -143,6 +143,10 @@ from .spending import (
     _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,
 )
 from .spending_flags import AdminSpendingFlagView
+# Student maintenance Sprint 2 (2026-10-29) — the Scholars list, file and activity log.
+from .scholars import (
+    AdminScholarActivityView, AdminScholarFileView, AdminScholarListView,
+)
 from .sponsors import (
     _SponsorScope, _chain_organisations, _sponsor_detail_dict, _sponsor_dict,
     AdminReleaseNricLockView, AdminSponsorListView, AdminSponsorPendingCountView,

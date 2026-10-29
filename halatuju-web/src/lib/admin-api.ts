@@ -214,6 +214,15 @@ export type {
   SpendingMerchantRow, SpendingStudentRow, SpendingOverview, MerchantFlagLog, MerchantFlagNote,
 } from './admin-api/spending'
 
+// Student maintenance S2: the Scholars list, maintenance file and activity log.
+export {
+  getScholars, getScholarFile, getScholarActivity, addScholarActivity, scholarsQuery,
+} from './admin-api/scholars'
+export type {
+  ScholarStanding, ScholarResult, ScholarGift, ScholarRow, ScholarSummary,
+  ScholarList, ScholarListQuery, ScholarFile, ActivityKind, ScholarActivity, ScholarActivityPage,
+} from './admin-api/scholars'
+
 // Org-owned versioned bursary contract templates.
 export {
   getContractTemplates, createContractTemplate, getContractTemplate, updateContractConfig,

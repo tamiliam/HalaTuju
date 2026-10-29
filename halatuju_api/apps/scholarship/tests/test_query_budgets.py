@@ -756,6 +756,59 @@ class TestTheStaffListsQueryBudget(TestCase):
             self.assertEqual(resolve('/' + route).route, route)
 
 
+#: Student maintenance S2 (2026-10-29): the officer's Scholars list, read at two page sizes so the
+#: pair separates the fixed cost from the per-row one. Each row is a funded student with a course
+#: id, a semester result and an activity row — everything a row reads. The course names come from
+#: `card_display.catalogue_course_names` (two queries for the page), and the latest result and last
+#: activity are subqueries on the list query, so the two readings must be EQUAL: a row costs nothing.
+SCHOLARS_ROUTE = 'api/v1/admin/scholarship/scholars/'
+SCHOLARS_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{SCHOLARS_ROUTE}::GET::2-rows', f'{SCHOLARS_ROUTE}::GET::5-rows')}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheScholarsListQueryBudget(TestCase):
+    """The Scholars list, counted — a per-row read fails the larger reading."""
+
+    def _reading(self, key):
+        from django.utils import timezone
+        from apps.scholarship import activity
+        from apps.scholarship.models import SemesterResult
+        n = int(key.split('::')[2].split('-')[0])
+        org = make_org()
+        cohort = make_cohort(programme=make_programme(organisation=org), owning_organisation=org)
+        for i in range(n):
+            app = make_application('awarded', cohort=cohort, vircle_activated_at=timezone.now(),
+                                   chosen_programme={'course_id': f'QB-{i}', 'course_name': 'X',
+                                                     'institution': 'Y'})
+            SemesterResult.objects.create(application=app, semester='Sem 1', cgpa='3.10')
+            activity.add_entry(app, 'note', 'x', actor_email='a@example.test')
+        client = authed_client(make_admin('org_admin', owning_org=org))
+        url = f'/{SCHOLARS_ROUTE}'
+        self.assertEqual(client.get(url).status_code, 200)               # warm-up
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        self.assertEqual(len(response.json()['results']), n)
+        return len(captured.captured_queries)
+
+    def test_each_list_stays_inside_its_budget(self):
+        for key, limit in SCHOLARS_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(now, limit, f'{key} now costs {now} queries; budget {limit}. '
+                                     '⚠ DO NOT RAISE IT — a per-row read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'SCHOLARS_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in SCHOLARS_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], LOWER_IT + '\n' + '\n'.join(loose))
+
+    def test_the_budgeted_route_still_resolves(self):
+        self.assertEqual(resolve('/' + SCHOLARS_ROUTE).route, SCHOLARS_ROUTE)
+
+
 class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
     """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
     file measures that the record lacks reads None above; this names it. And the reverse: an
@@ -772,6 +825,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
            for k, v in SYNC_CHECK2_BUDGETS.items()},
         **REQUESTS_BUDGETS,
         **STAFF_LIST_BUDGETS,
+        **SCHOLARS_BUDGETS,
     }
 
     def test_every_measured_key_has_a_budget(self):

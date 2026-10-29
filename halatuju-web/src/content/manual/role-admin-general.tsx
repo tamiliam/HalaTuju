@@ -33,6 +33,17 @@ export const roleAdminGeneral: ManualChapter = {
       ),
     },
     {
+      anchor: 'admin-general-scholars',
+      title: 'Scholars',
+      body: (
+        <><strong>Scholars</strong> (in the menu, inside a gift) lists every funded student, from award
+        acceptance to closure, with tiles for how many are in the programme, on probation, on hold and ready to
+        close. Open a student for her <strong>file</strong>: her latest result, the money paid and remaining,
+        the contract, and an <strong>Activity</strong> log where you can add a note, call or meeting. Results
+        review, letters and mentors are coming in later updates; the cards for them say so.</>
+      ),
+    },
+    {
       anchor: 'admin-general-overview',
       title: 'The gift’s overview',
       body: (

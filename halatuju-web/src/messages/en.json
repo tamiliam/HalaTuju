@@ -5950,6 +5950,124 @@
         "merchant_required": "No shop was named."
       }
     },
+    "scholars": {
+      "nav": "Scholars",
+      "title": "Scholars",
+      "subtitle": "Funded students, from award acceptance to closure.",
+      "search": "Search",
+      "searchPlaceholder": "Name, IC or application no.",
+      "summary": "Summary",
+      "filtersLabel": "Show",
+      "loadFailed": "Could not load the scholars.",
+      "empty": "No scholars here yet.",
+      "emptySearch": "No scholar matches that search.",
+      "closed": "Closed",
+      "tile": {
+        "inProgramme": "In programme",
+        "onHold": "On hold",
+        "probation": "Probation",
+        "readyToClose": "Ready to close"
+      },
+      "filter": {
+        "all": "All",
+        "underperforming": "Underperforming",
+        "overdue": "Results overdue",
+        "wantsMentor": "Wants a mentor",
+        "closed": "Closed"
+      },
+      "col": {
+        "name": "Name",
+        "course": "Course and institution",
+        "status": "Status",
+        "cgpa": "Latest CGPA",
+        "standing": "Standing",
+        "mentor": "Mentor",
+        "lastActivity": "Last activity"
+      },
+      "standing": {
+        "has_result": "Result recorded",
+        "no_result_yet": "No result yet"
+      },
+      "tab": {
+        "overview": "Overview",
+        "results": "Results",
+        "money": "Money",
+        "contract": "Contract",
+        "letters": "Letters",
+        "mentoring": "Mentoring",
+        "surveys": "Surveys",
+        "activity": "Activity"
+      },
+      "card": {
+        "results": "Latest results",
+        "money": "Money",
+        "contract": "Contract",
+        "mentor": "Mentor",
+        "letters": "Letters",
+        "surveys": "Surveys"
+      },
+      "file": {
+        "applicationNo": "Application #{id}",
+        "fundedSince": "Funded since {date}",
+        "viewApplication": "View application",
+        "tabsLabel": "Scholar file",
+        "summary": "Summary",
+        "cgpaFor": "CGPA · {semester}",
+        "recordedOn": "Recorded {date}",
+        "noResult": "No semester result recorded yet.",
+        "standingLater": "Standing against the programme's minimum CGPA arrives with results review.",
+        "openFile": "Open scholar file"
+      },
+      "money": {
+        "award_amount": "Award",
+        "paid_to_date": "Paid",
+        "remaining": "Remaining",
+        "lastPayment": "Last payment {amount} · {date}",
+        "noPayment": "No payment released yet.",
+        "openPayments": "Open Payments",
+        "openSpending": "Open Spending"
+      },
+      "contract": {
+        "none": "No contract on file",
+        "draft": "Agreement prepared, not yet signed",
+        "student_signed": "Signed by the student",
+        "binds": "Signed by the student and guarantor",
+        "countersigned": "Countersigned by the organisation",
+        "executed": "Signed and executed"
+      },
+      "later": {
+        "mentor": "Mentors are coming in a later update.",
+        "letters": "Letters are coming in a later update.",
+        "surveys": "Surveys are coming in a later phase."
+      },
+      "activity": {
+        "title": "Activity",
+        "kindLabel": "Entry type",
+        "addLabel": "Add an entry",
+        "placeholder": "What happened?",
+        "staffOnly": "Staff only",
+        "save": "Save",
+        "saved": "Entry saved.",
+        "saveFailed": "Could not save the entry.",
+        "loadFailed": "Could not load the activity.",
+        "empty": "Nothing recorded yet.",
+        "bySystem": "System",
+        "kind": {
+          "note": "Note",
+          "call": "Call",
+          "meeting": "Meeting",
+          "email": "Email",
+          "system": "System"
+        }
+      },
+      "event": {
+        "substate_changed": "Status changed: {from} → {to}",
+        "payment_released": "Payment released · RM{amount} {ref}",
+        "result_submitted": "Result submitted · {semester}",
+        "closed": "File closed · {reason}",
+        "other": "System update"
+      }
+    },
     "contracts": {
       "title": "Contract templates",
       "subtitle": "Author, vet and deploy the bursary agreement — one active version per gift.",

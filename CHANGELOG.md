@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
+
+Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
+(2026-10-29). No migration.
+
+- **`/admin/scholars`** — every funded student from award acceptance to closure (the S1 predicate), inside a gift:
+  tiles (in programme, on hold, probation, ready to close), filters (all, on track, probation, on hold, ready to
+  close, closed — Underperforming, Results overdue and Wants a mentor are drawn disabled until their sprints),
+  search by name, IC or application number, sort by name / CGPA / last activity, server-side pages, phone cards.
+  Menu row "Scholars" under Applications (chord **G M**), same roles and keys as Applications.
+- **`/admin/scholars/<id>`** — the file: header (status read-only; "View application" to the cockpit), tabs
+  Overview · Results · Money · Contract · Letters · Mentoring · Surveys · Activity. Overview cards read the server's
+  payload (latest result, money paid / remaining / last payment, contract status or "No contract on file");
+  Mentor, Letters and Surveys say they are coming. No standing is judged before Sprint 4.
+- **Activity log** — timeline + composer (note / call / meeting, staff-only via the site Toggle); system rows read
+  as translated sentences from their event codes.
+- **API** — `GET admin/scholarship/scholars/`, `GET …/scholars/<id>/`, `GET/POST …/scholars/<id>/activity/`,
+  fenced by the Applications rule (decisions.md); the cockpit payload gains `has_file` and the cockpit an "Open
+  scholar file" link. `card_display.catalogue_course_names` reads a page's course names in two queries (query
+  budget 8 at 2 and 5 rows).
+- Guide updated (reviewer, general admin and org admin chapters each gain a Scholars section); role matrix gains
+  a Scholars section. ⚠ No FAQ entry: `content/manual/faq.tsx` sits at its 600-line limit (TD-413 — the next
+  entry must split it first), so the FAQ question waits for that split.
+
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 
 Both from the owner reading BrightPath's own billing page after the declaration sprint shipped.
