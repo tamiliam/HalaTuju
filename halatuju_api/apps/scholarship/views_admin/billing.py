@@ -205,6 +205,12 @@ class AdminPlatformCostsView(_AdminBase):
                                        'amount_myr': _money(d.get('amount_myr'))}
                                       for d in ln.get('detail', [])]}
                           for ln in c['lines']],
+                # Counted, never priced — and `hours` is None when no analysis measured them, so
+                # it is stringified like every other figure but may legitimately be null.
+                'bug_reports_fixed': {
+                    'count': c['bug_reports_fixed']['count'],
+                    'hours': _money(c['bug_reports_fixed']['hours']),
+                },
                 'subtotal_myr': _money(c['subtotal_myr']),
                 'discount_pct': _money(c['discount_pct']),
                 'discount_myr': _money(c['discount_myr']),

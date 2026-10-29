@@ -102,6 +102,11 @@ export interface OrgRequestDetail {
   quote_note: string
   quoted_at: string | null
   approved_at: string | null
+  /** WHO accepted the quote (TD-418). Empty for every row accepted before 2026-10-29 — the name
+   *  is missing there, not the consent, so never treat a blank as "not accepted". */
+  approved_by_name: string
+  /** 'org_admin' (the customer accepted) or 'super' (accepted on their behalf). */
+  approved_by_role: string
   scheduled_for: string | null
   decline_reason: string
   created_at: string

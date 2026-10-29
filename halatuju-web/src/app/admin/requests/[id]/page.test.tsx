@@ -95,6 +95,9 @@ const detail = (over: Partial<api.OrgRequestDetail> = {}): api.OrgRequestDetail 
   quote_note: '',
   quoted_at: null,
   approved_at: null,
+  // Unnamed by default: that is the state of every row accepted before 2026-10-29.
+  approved_by_name: '',
+  approved_by_role: '',
   scheduled_for: null,
   decline_reason: '',
   created_at: '2026-07-30T00:00:00Z',
@@ -567,5 +570,39 @@ describe('the kind pill shows what the organisation is CHARGED on (owner, 2026-1
     await show({ status: 'submitted', kind: 'bug', triaged_kind: '' })
     expect(screen.getByText('admin.requests.kind.bug')).toBeTruthy()
     expect(screen.queryByTestId('filed-kind-differs')).toBeNull()
+  })
+})
+
+describe('who accepted the quote (TD-418, owner 2026-10-29)', () => {
+  /** A feature cannot be billed without an acceptance, so this line is the provenance of a
+   *  charge. The owner holds an org_admin account for the organisation as well as a super
+   *  account, so "the customer accepted" and "accepted on their behalf" must read differently. */
+  it('names the customer who accepted their own quote', async () => {
+    await show({ quote_hours: '82.0', approved_at: '2026-10-26T17:15:00Z',
+      approved_by_name: 'Suresh Thiru', approved_by_role: 'org_admin' })
+    expect(screen.getByTestId('accepted-by').textContent)
+      .toContain('admin.requests.detail.acceptedBy')
+  })
+
+  it('reads differently when a super accepted on the organisation behalf', async () => {
+    await show({ quote_hours: '82.0', approved_at: '2026-10-26T17:15:00Z',
+      approved_by_name: 'tamiliam', approved_by_role: 'super' })
+    expect(screen.getByTestId('accepted-by').textContent)
+      .toContain('admin.requests.detail.acceptedBySuper')
+  })
+
+  it('still shows the DATE for an acceptance recorded before the name existed', async () => {
+    // ⚠ The name is missing on those rows, not the consent. A blank must never read as
+    // "not accepted" — billing is gated on the date, not the name.
+    await show({ quote_hours: '82.0', approved_at: '2026-10-26T17:15:00Z',
+      approved_by_name: '', approved_by_role: '' })
+    const line = screen.getByTestId('accepted-by').textContent || ''
+    expect(line).toContain('admin.requests.detail.acceptedOn')
+    expect(line).not.toContain('acceptedBy')
+  })
+
+  it('says nothing at all when the quote has not been accepted', async () => {
+    await show({ quote_hours: '82.0', approved_at: null })
+    expect(screen.queryByTestId('accepted-by')).toBeNull()
   })
 })

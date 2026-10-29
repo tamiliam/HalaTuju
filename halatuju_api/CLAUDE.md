@@ -918,6 +918,21 @@ timeout raised to 300 s for it) — the commands, their order and what each may 
 
 Each was learned the hard way; the story is in `docs/sprint-history.md` and `docs/lessons.md`.
 
+- **ALL WORK IS PLANNED IN HOURS, AND EVERY COMPLETION REPORT COMPARES PLAN AGAINST ACTUAL**
+  (owner, 2026-10-29). Two halves, and the second is the one that gets skipped:
+  - **The plan.** Every analysis carries `estimated_hours`. No exceptions, and *"it is only a small
+    bug"* is not one — free work is still work, and an hour nobody wrote down cannot be learned
+    from. An analysis without an estimate is not an analysis; it is a note.
+  - **The report.** The COMPLETION REPORT posted when the work is finished states the hours it
+    ACTUALLY took, beside the hours that were planned, and says in one line why they differ. Over
+    by a factor of two is not a failure — not knowing is.
+  ⚠ **This exists because the data proved the gap.** Every October 2026 bug report carries an
+  estimate *and* a completion report, and not one of those reports records an actual. The invoice
+  read "ten bugs fixed, no hours" until `request_hours._hours_bearing_analysis` learned to look
+  past the report to the estimate underneath. Two requests (36, 43) still have no figure anywhere.
+  ⚠ **The point is continuous improvement, not billing.** A bug is free either way. What the
+  comparison buys is an honest hourly rate: RM20/hour is only right if we know how long things
+  take, and today we know how long we *thought* they would.
 - **Never raise a budget, a floor or a ledger** — split the file first, in its own commit, moves only.
   ⚠ The tight ones: `pathway_engine.py` (0 lines of room) and `models/applications.py` (1); `serializers.py`
   and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.
@@ -1006,8 +1021,16 @@ never sent it) and an issue-date box, in `halatuju-web/src/components/admin/Invo
   `readiness` raises `feature_not_accepted` and it is **ABSOLUTE — the override does not work on
   it**, because the remedy is to quote it and have it accepted. ⚠ Two deliberate exemptions: a BUG
   (free, so nothing to consent to) and an hours row with NO `[REQ-n]` tag (a super typed it and
-  meant it). An acceptance from the org's own org_admin counts — and is the only answer available,
-  since `approve()` throws away the `by_role` it is handed (TD-418).
+  meant it). An acceptance from the org's own org_admin counts.
+- **AN ACCEPTANCE RECORDS WHO MADE IT** (TD-418, raised and closed 2026-10-29).
+  `OrgRequest.approved_by` + `approved_by_role`, migration **`scholarship/0182`**; `approve()` stores
+  both from the arguments it was already handed. The request page prints "Accepted on … · accepted
+  by …", and `acceptedBySuper` reads differently when a super accepted on the organisation's behalf
+  — the owner holds a BrightPath org_admin account as well as a super one, so the two are not the
+  same fact. ⚠ **Rows accepted before 2026-10-29 are UNNAMED and must stay that way** — a guessed
+  name on a consent record is worse than a blank. `consent_gaps` reads `approved_at`, NEVER the
+  name, so no older month is gated on it. Request 38's acceptance is attributed to BrightPath by
+  the owner, in TD-418's prose.
 - ⚠ **THE REQUEST PILL SHOWS THE KIND THAT PRICES, NOT THE ONE THAT WAS FILED.** Both screens used
   to print `kind`, so request 5 read "Bug report" while being billed as a feature from
   `triaged_kind`, with nothing saying so. `requestStatus.effectiveKind` is now the single rule

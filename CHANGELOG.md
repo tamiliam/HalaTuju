@@ -65,9 +65,18 @@ found the work — none of it was visible from reading the code.
 - ⚠ **Still open:** `metered margin_pct` has no 1 July row, so July prints one line instead of two
   (a rate-table gap, not a code fault); the September bills and October's Anthropic + Supabase are
   not imported; August's 27.0 hours and September's 0.5 are not recorded.
-- **Raised, not fixed:** TD-417 (supplier tax is pooled and apportioned pro-rata, so Anthropic's
-  SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is excluded —
-  pre-existing, never billed) and TD-418 (an acceptance carries a date but no name).
+- **An acceptance now records WHO accepted** (TD-418, closed the same day it was raised).
+  `OrgRequest.approved_by` + `approved_by_role` (migration `scholarship/0182`); `approve()` stores
+  both from the arguments it was already being handed and discarding. The request page prints
+  "Accepted on <date> · accepted by <name>", and a super accepting on the organisation's behalf
+  reads differently from the customer accepting their own quote — the distinction that made it
+  worth fixing, since the owner holds an org_admin account for BrightPath as well as a super one.
+  ⚠ **Older rows stay unnamed** — no back-fill, because a guessed name on a consent record is worse
+  than a blank one; `consent_gaps` reads the date, never the name, so every earlier month still
+  bills.
+- **Raised, not fixed:** TD-417 — supplier tax is pooled and apportioned pro-rata, so Anthropic's
+  SST puts ~RM9 of marked-up tax on a tenant's charge although Anthropic's own cost is excluded.
+  Pre-existing and never billed; the fix changes what a customer pays, so it is the owner's ruling.
 
 ## Small change: STPM results page streams follow the MPM grouping - 2026-10-29
 

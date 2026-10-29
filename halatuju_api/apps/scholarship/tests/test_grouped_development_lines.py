@@ -19,6 +19,7 @@ the last may move money, and these tests pin that from both sides — a bug file
 feature is CHARGED, and a feature filed and triaged as a bug is FREE. Getting this backwards would
 let an AI guess set a customer's price.
 """
+from datetime import date
 from decimal import Decimal
 
 from django.test import TestCase
@@ -26,7 +27,8 @@ from django.test import TestCase
 from apps.courses.models import PartnerOrganisation
 from apps.courses.models_staff import PartnerAdmin
 from apps.scholarship import invoice_pdf, invoicing, platform_cost
-from apps.scholarship.models import InvoiceLine, OrgBuildHours, OrgRequest
+from apps.scholarship.models import (InvoiceLine, OrgBuildHours, OrgRequest,
+                                     OrgRequestAnalysis)
 from apps.scholarship.tests.test_invoicing import SEPT_15, InvoiceWorld
 
 
@@ -43,6 +45,27 @@ class RequestWorld(InvoiceWorld):
         cls.admin = PartnerAdmin.objects.create(
             owning_organisation=cls.org, role='org_admin', is_active=True,
             email='finance@brightpath.example')
+
+    def a_bug_report(self, request_id, *, hours, worked):
+        """A FINISHED BUG: no quote, no billable-hours row, and an approved analysis behind it.
+
+        ⚠ That shape is the whole point. A bug is free, so it is never quoted and nothing is ever
+        recorded in `OrgBuildHours` against it — which is exactly why an hours-only bug line
+        showed almost nothing. The engineer's `estimated_hours` is the measurement that exists.
+        `cited_files` is NON-EMPTY because `org_requests.approved_analysis` refuses an analysis
+        without one, and a fixture that quietly fails that rule would test nothing.
+        """
+        from django.utils import timezone
+
+        req = OrgRequest.objects.create(
+            pk=request_id, organisation=self.org, submitted_by=self.admin, kind='bug',
+            title=f'Bug {request_id}', description='x', status='done', triaged_kind='bug',
+            scheduled_for=worked)
+        OrgRequestAnalysis.objects.create(
+            org_request=req, body='read the code', authored_by='claude-opus-5',
+            estimated_hours=Decimal(hours) if hours is not None else None,
+            cited_files=['apps/scholarship/services.py'], approved_at=timezone.now())
+        return req
 
     def a_request(self, request_id, *, filed, triaged, hours, title, month='2026-08'):
         """One finished request and the billable-hours row that names it.
@@ -133,15 +156,42 @@ class TestBugHoursAreFree(RequestWorld):
         # The two cost lines still stand, so the month is not "nothing to bill".
         self.assertEqual(charge['subtotal_myr'], Decimal('138.00'))
 
-    def test_the_invoice_prints_the_bug_line_with_hours_and_a_zero_rate(self):
-        """Exactly what the owner asked for: the hours and the rate, which is zero."""
-        self.a_request(14, filed='bug', triaged='bug', hours='4.0', title='STPM tagged as SPM')
+    def test_the_invoice_COUNTS_the_bug_reports_fixed(self):
+        """⚠ COUNTED, not summed from billable hours. The owner compared the first invoice against
+        the request list on 2026-10-29: a bug is never quoted, so it has no `OrgBuildHours` row,
+        so an hours-only line showed almost none of the bug work actually done."""
+        self.a_bug_report(14, hours='4.0', worked=date(2026, 8, 18))
         inv = self.issue()
-        bug = InvoiceLine.objects.get(invoice=inv, description='Bug reports, August 2026')
-        self.assertEqual(bug.quantity, Decimal('4.0'))
+        bug = [ln for ln in inv.lines.all() if ln.description.startswith('Bug reports fixed')][0]
+        self.assertIn('1 report', bug.description)
+        self.assertEqual(bug.quantity, Decimal('4.0'))        # the ENGINEER's hours
         self.assertEqual(bug.unit_amount_myr, Decimal('0.00'))
         self.assertEqual(bug.amount_myr, Decimal('0.00'))
         self.assertFalse(bug.children.exists(), 'bug reports are deliberately NOT itemised')
+
+    def test_a_bug_with_NO_hours_anywhere_still_appears_as_a_count(self):
+        """October 2026 on production: ten fixed bugs, not one with an estimate on its current
+        analysis. The count is the truth; printing 0.0 hours would be a confident lie."""
+        self.a_bug_report(14, hours=None, worked=date(2026, 8, 18))
+        bug = [ln for ln in self.issue().lines.all()
+               if ln.description.startswith('Bug reports fixed')][0]
+        self.assertIn('1 report', bug.description)
+        self.assertIsNone(bug.quantity)
+
+    def test_bug_reports_are_counted_even_with_no_billable_hours_at_all(self):
+        """A month can be ALL bug fixing. The line must not hang off the development group."""
+        OrgBuildHours.objects.filter(organisation=self.org, period_month='2026-08').delete()
+        self.a_bug_report(14, hours='4.0', worked=date(2026, 8, 18))
+        self.a_bug_report(15, hours='1.0', worked=date(2026, 8, 19))
+        bug = [ln for ln in self.issue().lines.all()
+               if ln.description.startswith('Bug reports fixed')][0]
+        self.assertIn('2 reports', bug.description)
+        self.assertEqual(bug.quantity, Decimal('5.0'))
+
+    def test_the_count_follows_the_WORKED_month_not_the_raised_one(self):
+        self.a_bug_report(14, hours='4.0', worked=date(2026, 9, 2))
+        self.assertEqual(platform_cost.bug_reports_fixed(self.org, '2026-08')['count'], 0)
+        self.assertEqual(platform_cost.bug_reports_fixed(self.org, '2026-09')['count'], 1)
 
     def test_no_bug_line_at_all_when_nothing_was_a_bug(self):
         """A standing RM0.00 row on every invoice would read as something having been waived."""
@@ -157,8 +207,10 @@ class TestTheGroupedLayout(RequestWorld):
     def setUp(self):
         self.a_request(12, filed='feature', triaged='feature', hours='6.0',
                        title='show year SPM was taken')
-        self.a_request(14, filed='bug', triaged='bug', hours='2.0',
-                       title='STPM tagged as SPM')
+        # ⚠ A real bug: no quote, no billable-hours row, worked IN the billed month. The bug line
+        # is counted from the request table, so a bug with no `scheduled_for` would fall back to
+        # `updated_at` (today) and land in the wrong month entirely.
+        self.a_bug_report(14, hours='2.0', worked=date(2026, 8, 18))
 
     def test_the_group_carries_the_money_and_the_sub_items_carry_the_hours(self):
         inv = self.issue()
@@ -207,7 +259,8 @@ class TestTheGroupedLayout(RequestWorld):
         html = invoice_pdf.render_invoice_html(self.issue())
         self.assertIn('show year SPM was taken (REQ-12)', html)
         self.assertIn('padding-left:18px', html)          # the indent that marks a sub-item
-        self.assertIn('Bug reports, August 2026', html)
+        self.assertIn('Bug reports fixed, August 2026', html)
+        self.assertIn('1 report', html)
 
     def test_the_pdf_still_renders(self):
         self.assertTrue(invoice_pdf.invoice_pdf(self.issue()).startswith(b'%PDF'))
@@ -346,3 +399,72 @@ class TestEveryFeatureNeedsAQuoteAndAnAcceptance(RequestWorld):
         OrgRequest.objects.filter(pk=12).update(quoted_at=timezone.now(), approved_at=None)
         self.assertEqual(platform_cost.consent_gaps(self.org, '2026-08'), [])
         self.assertEqual(len(platform_cost.consent_gaps(self.org, '2026-09')), 1)
+
+
+# ── WHO accepted the quote (TD-418) ──────────────────────────────────────────
+
+class TestTheAcceptanceCarriesAName(RequestWorld):
+    """Owner, 2026-10-29. `approve()` was handed `admin` and `by_role` and discarded both, so a
+    row proved an acceptance happened and could not say who made it.
+
+    ⚠ This is the provenance of a CHARGE: a feature cannot be billed without an acceptance, and
+    the owner holds an org_admin account for the organisation as well as a super account, so the
+    customer's own acceptance and the owner's acceptance on their behalf must be distinguishable.
+    """
+
+    def quoted(self, request_id=12):
+        """A request sitting at 'quoted', the state `approve` is allowed from."""
+        from django.utils import timezone
+        OrgRequest.objects.create(
+            pk=request_id, organisation=self.org, submitted_by=self.admin, kind='feature',
+            title='Awaiting acceptance', description='x', status='quoted',
+            triaged_kind='feature', quote_hours=Decimal('4.0'), quoted_at=timezone.now())
+        return OrgRequest.objects.get(pk=request_id)
+
+    def test_the_customers_own_acceptance_records_them(self):
+        from apps.scholarship import org_requests
+        req = org_requests.approve(self.quoted(), self.admin, by_role='org_admin')
+        req.refresh_from_db()
+        self.assertEqual(req.approved_by_id, self.admin.pk)
+        self.assertEqual(req.approved_by_role, 'org_admin')
+        self.assertIsNotNone(req.approved_at)
+
+    def test_a_super_accepting_on_their_behalf_is_recorded_AS_a_super(self):
+        """The distinction the owner asked for. Both are legitimate; they are not the same fact."""
+        from apps.courses.models_staff import PartnerAdmin
+        from apps.scholarship import org_requests
+        boss = PartnerAdmin.objects.create(
+            owning_organisation=self.org, role='super_admin', is_active=True,
+            email='tamiliam@gmail.com')
+        req = org_requests.approve(self.quoted(), boss, by_role='super')
+        req.refresh_from_db()
+        self.assertEqual(req.approved_by_id, boss.pk)
+        self.assertEqual(req.approved_by_role, 'super')
+
+    def test_an_admin_with_no_primary_key_does_not_break_the_acceptance(self):
+        """A test double or a detached object must not stop a quote being accepted. The acceptance
+        is the fact that matters; the name is provenance on top of it."""
+        from apps.courses.models_staff import PartnerAdmin
+        from apps.scholarship import org_requests
+        req = org_requests.approve(self.quoted(), PartnerAdmin(), by_role='org_admin')
+        req.refresh_from_db()
+        self.assertIsNone(req.approved_by_id)
+        self.assertEqual(req.approved_by_role, 'org_admin')
+        self.assertIsNotNone(req.approved_at)
+
+    def test_rows_accepted_before_this_column_existed_stay_UNNAMED(self):
+        """⚠ Never back-filled with a guess. `consent_gaps` reads `approved_at`, so an older
+        acceptance still bills — the name is missing, not the consent."""
+        self.a_request(14, filed='feature', triaged='feature', hours='4.0', title='Older')
+        OrgRequest.objects.filter(pk=14).update(approved_by=None, approved_by_role='')
+        req = OrgRequest.objects.get(pk=14)
+        self.assertIsNone(req.approved_by_id)
+        self.assertEqual(req.approved_by_role, '')
+        self.assertEqual(platform_cost.consent_gaps(self.org, '2026-08'), [])
+        self.assertNotIn('feature_not_accepted', self.codes())
+
+    def test_billing_is_gated_on_the_acceptance_not_on_the_name(self):
+        """The guard must not start refusing every pre-2026-10-29 month because of a blank name."""
+        self.a_request(14, filed='feature', triaged='feature', hours='4.0', title='Older')
+        OrgRequest.objects.filter(pk=14).update(approved_by=None, approved_by_role='')
+        self.assertTrue(self.issue().number.startswith('INV-'))

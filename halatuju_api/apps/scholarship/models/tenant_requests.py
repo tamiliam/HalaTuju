@@ -154,6 +154,28 @@ class OrgRequest(models.Model):
     quoted_at = models.DateTimeField(null=True, blank=True)
 
     approved_at = models.DateTimeField(null=True, blank=True)
+    # ⚠ WHO ACCEPTED THE QUOTE, and in which capacity (TD-418, owner 2026-10-29). `approve()` was
+    # handed both and threw them away, so a row proved an acceptance happened and could not say who
+    # made it. That matters because the owner holds an org_admin account for the organisation as
+    # well as a super account and `approve` admits both: the customer's own acceptance and the
+    # owner's acceptance on their behalf are both legitimate, and they are not the same fact. A
+    # feature cannot be billed without an acceptance (`request_hours.consent_gaps`), so this is the
+    # provenance of a charge.
+    #
+    # ⚠ EXISTING ROWS STAY NULL — honestly unknown, never back-filled with a guess. `approved_at`
+    # is what the billing guard reads, so nothing is gated on a name nobody recorded. Request 38's
+    # acceptance is attributed to BrightPath in TD-418 by the owner, in prose, because that is
+    # where the attribution actually lives for the rows that predate this column.
+    #
+    # SET_NULL, matching `RequestAnalysis.approved_by`: deactivating an admin must never delete the
+    # record that somebody accepted a quote.
+    approved_by = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='approved_org_requests',
+    )
+    approved_by_role = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="'org_admin' (the customer accepted) or 'super' (accepted on their behalf).")
     scheduled_for = models.DateField(null=True, blank=True)
     decline_reason = models.TextField(blank=True, default='')
     # Who ended it at 'declined': 'super' (decline) or 'org_admin' (withdraw) — audit.

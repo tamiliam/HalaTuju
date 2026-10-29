@@ -195,3 +195,75 @@ def consent_gaps(organisation, period_month):
         out.append({'request_id': request_id, 'title': '(no such request)',
                     'hours': None, 'missing': 'a quote and an acceptance'})
     return out
+
+
+def bug_reports_fixed(organisation, period_month):
+    """The bug reports FIXED in this month: how many, and the engineer's hours where known.
+
+    Returns ``{'count': int, 'hours': Decimal|None}``. Free work either way — this is what the
+    organisation GOT, never what it pays.
+
+    ⚠ **THE HOURS ARE THE ENGINEER'S, NOT A QUOTE.** The owner compared the first invoice against
+    the request list on 2026-10-29 and found most finished requests missing. The first diagnosis
+    here — "there are no hours for free work" — was WRONG, and the owner disproved it with request
+    7's analysis showing 5.0 hours. A bug is never *quoted*, so `quote_hours` is null and no
+    `OrgBuildHours` row exists; but the engineer's reading of the code carries
+    `estimated_hours`, and that is a real measurement of real work.
+
+    ⚠ **THE LATEST ANALYSIS IS OFTEN THE WRONG ONE.** A finished request carries the ESTIMATE and
+    then, since October 2026, a COMPLETION REPORT written after the work — and a completion report
+    carries no hours, because it reports rather than estimates. `org_requests.approved_analysis`
+    takes the latest, which for every October bug is that report, which is why the first version of
+    this function reported October as "ten bugs, no hours" when the estimates were sitting one row
+    below. This takes the most recent analysis that actually CARRIES a figure. It still reads the
+    same candidates (approved, not superseded, with a cited file) so it cannot drift from the
+    screen about which analyses count — only about which of them answers "how long?".
+
+    ⚠ **That also makes it right AFTER the hours rule lands.** Once a completion report records the
+    ACTUAL hours against the plan, the newest figure is the actual one, and this picks it up with
+    no change.
+
+    ⚠ **`hours` is None when nothing is known, NEVER 0.0.** Two October bugs (36 and 43) still
+    carry no estimate anywhere. Printing "0.0 hours" for work that was done would be a confident
+    lie; a blank says "not measured". The caller decides how to say that.
+    """
+    from decimal import Decimal as _D
+
+    from . import org_requests
+    from .models import OrgRequest
+
+    qs = OrgRequest.objects.filter(status='done')
+    if organisation is not None:
+        qs = qs.filter(organisation=organisation)
+
+    count = 0
+    hours = _D('0.0')
+    measured = 0
+    for req in qs.prefetch_related('analyses'):
+        if (req.triaged_kind or req.kind or 'feature').strip() != 'bug':
+            continue
+        worked_on, _basis = worked_date(req)
+        if worked_on.strftime('%Y-%m') != period_month:
+            continue
+        count += 1
+        planned = _hours_bearing_analysis(req)
+        if planned is not None:
+            hours += planned
+            measured += 1
+    return {'count': count, 'hours': hours if measured else None}
+
+
+def _hours_bearing_analysis(req):
+    """The hours on the most recent analysis that HAS an hours figure, or None.
+
+    Same candidate set as `org_requests.approved_analysis` — approved, not superseded, carrying at
+    least one cited file — so the two cannot disagree about which analyses are real. It differs in
+    one way only: it skips the ones that answer no question about time, which is every completion
+    report.
+    """
+    rows = [a for a in req.analyses.all()
+            if a.approved_at and not a.superseded_at and a.cited_files
+            and a.estimated_hours is not None]
+    if not rows:
+        return None
+    return max(rows, key=lambda a: (a.approved_at, a.id)).estimated_hours

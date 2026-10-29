@@ -274,14 +274,31 @@ def build_lines(charge, period_month):
                                    'description': _sub_description(d, label),
                                    'amount_myr': Decimal('0.00')} for d in features],
                 })
-            if bugs:
-                out.append({
-                    'category': cat,
-                    'quantity': ln.get('bug_hours'),
-                    'unit_amount_myr': Decimal('0.00'),
-                    'description': f'Bug reports, {label}'[:300],
-                    'amount_myr': Decimal('0.00'),
-                })
+    # ⚠ THE BUG LINE IS COUNTED, AND IT SITS OUTSIDE THE LOOP ABOVE. Two reasons, both found by
+    # the owner comparing the first invoice against the request list on 2026-10-29:
+    #
+    #   1. A bug is free, so nobody quotes one, so no hours row is ever recorded against it. A
+    #      line that summed HOURS showed "2.0" for an August in which six bug reports were fixed.
+    #      It now shows the COUNT, which is the thing we actually know.
+    #   2. A month can have bug fixes and NO billable hours at all (July 2026). Inside the loop
+    #      this line would never render for exactly those months.
+    #
+    # Hours and rate are left BLANK rather than printed as zero: we do not know the hours, and a
+    # rate column on a line with no quantity says nothing. The RM0.00 in the amount is the point.
+    fixed = charge.get('bug_reports_fixed') or {}
+    count = int(fixed.get('count') or 0)
+    if count:
+        # ⚠ The hours go in the HOURS column only when they are known. October 2026 has ten fixed
+        # bugs and no estimate on any of their current analyses: printing 0.0 there would read as
+        # "ten bugs took no time", which is a confident lie. A blank says "not measured".
+        out.append({
+            'category': 'development',
+            'quantity': fixed.get('hours'),
+            'unit_amount_myr': Decimal('0.00'),
+            'description': (f'Bug reports fixed, {label} — {count} '
+                            f'{"report" if count == 1 else "reports"}, not charged')[:300],
+            'amount_myr': Decimal('0.00'),
+        })
     total = sum((Decimal(x['amount_myr']) for x in out), Decimal('0.00'))
     total += sum((Decimal(c['amount_myr']) for x in out for c in x.get('_children', [])),
                  Decimal('0.00'))

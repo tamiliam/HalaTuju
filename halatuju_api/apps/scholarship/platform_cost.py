@@ -34,6 +34,7 @@ from decimal import Decimal
 from . import request_hours
 
 billable_kind = request_hours.billable_kind
+bug_reports_fixed = request_hours.bug_reports_fixed             # counted, never priced
 consent_gaps = request_hours.consent_gaps                       # the quote + acceptance check
 request_id_from_module = request_hours.request_id_from_module
 request_module_tag = request_hours.request_module_tag
@@ -601,6 +602,10 @@ def charge_for(organisation, period_month):
         'month': period_month,
         'organisation_id': organisation.id if organisation else None,
         'lines': lines,
+        # ⚠ TOP LEVEL, not inside the development line, because a month can have bug fixes and NO
+        # billable hours at all — July 2026 has two bugs and nothing else. Hanging this off the
+        # development line would hide exactly the months the owner noticed were missing work.
+        'bug_reports_fixed': bug_reports_fixed(organisation, period_month),
         'subtotal_myr': subtotal,
         'discount_pct': discount_pct,
         'discount_myr': discount,

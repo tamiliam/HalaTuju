@@ -5639,7 +5639,10 @@
         "askLabel": "Tanya sesuatu kepada pemohon",
         "askPlaceholder": "cth. Menambah penaja secara terus akan melangkau terma dan persetujuan — bolehkah jemputan digunakan?",
         "askSend": "Hantar soalan",
-        "askHint": "Mereka akan dimaklumkan melalui e-mel, dan soalan anda ditunjukkan sebagai soalan anda. Ia juga memandu semakan AI seterusnya."
+        "askHint": "Mereka akan dimaklumkan melalui e-mel, dan soalan anda ditunjukkan sebagai soalan anda. Ia juga memandu semakan AI seterusnya.",
+        "acceptedOn": "Diterima pada",
+        "acceptedBy": "diterima oleh {name}",
+        "acceptedBySuper": "diterima oleh {name} bagi pihak organisasi"
       },
       "action": {
         "accept": "Terima sebut harga",

@@ -371,6 +371,20 @@ export default function AdminRequestDetailPage() {
             {t('admin.requests.detail.quoteValue', { hours: req.quote_hours })}
           </p>
           {req.quote_note && <p className="text-sm text-ground-600 mt-1 whitespace-pre-wrap">{req.quote_note}</p>}
+          {/* WHO accepted, and in which capacity (TD-418). A feature cannot be billed without an
+              acceptance, so this line is the provenance of a charge. The date shows on its own for
+              the rows accepted before the column existed — the name is missing there, not the
+              consent, and inventing one would be worse than leaving it blank. */}
+          {req.approved_at && (
+            <p className="text-sm text-ground-500 mt-2" data-testid="accepted-by">
+              {t('admin.requests.detail.acceptedOn')}: {formatDate(req.approved_at)}
+              {req.approved_by_name
+                ? ` · ${t(req.approved_by_role === 'super'
+                  ? 'admin.requests.detail.acceptedBySuper'
+                  : 'admin.requests.detail.acceptedBy', { name: req.approved_by_name })}`
+                : ''}
+            </p>
+          )}
           {req.scheduled_for && (
             <p className="text-sm text-ground-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
           )}

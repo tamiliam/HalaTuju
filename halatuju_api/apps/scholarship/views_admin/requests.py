@@ -61,7 +61,7 @@ class _OrgRequestsBase(_AdminBase):
         # org-fence: fetch then re-gate to the caller's organisation (super global); a cross-org
         # id returns None -> 404 (no existence leak). This is the ONLY OrgRequest.objects read.
         req = (OrgRequest.objects
-               .select_related('organisation', 'submitted_by').filter(pk=pk).first())
+               .select_related('organisation', 'submitted_by', 'approved_by').filter(pk=pk).first())
         if req is None:
             return None
         if self.has_role(admin, 'super'):
@@ -141,7 +141,7 @@ class AdminOrgRequestListView(_OrgRequestsBase):
                                      OrgRequestAnalysis.objects.select_related('approved_by')))
         # org-fence: list scoped to the caller's organisation (super global) via _org_scoped.
         qs = self._org_scoped(
-            OrgRequest.objects.select_related('organisation', 'submitted_by')
+            OrgRequest.objects.select_related('organisation', 'submitted_by', 'approved_by')
             .prefetch_related(*prefetch),
             admin, field='organisation_id')
         if org is not None:
