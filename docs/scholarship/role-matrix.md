@@ -207,6 +207,19 @@ the cases awaiting QC and their own pace. Neither sees a funnel or a ringgit.
 are reached only through that scope, never from their own managers. The `?programme=` gift
 narrows **inside** the organisation fence and can never widen it.
 
+## Scholars (student maintenance) — access
+
+`/admin/scholars` (list) and `/admin/scholars/<id>` (one scholar's maintenance file), added
+2026-10-29 (maintenance S2). **The Applications rule, unchanged — no new reach for anyone:**
+`_b40_scope` decides. `see_all` (super, org_admin, admin, qc presets) reads every scholar in the
+organisation; `review` without `see_all` (reviewer) reads ONLY the scholars assigned to them;
+`finance` and `partner` are refused (403) — finance never sees a name beside case data (the Spending
+rule). Another organisation's scholar is 404. Anybody who may read a file may add an activity entry
+(note / call / meeting, optionally staff-only) — a record, not a decision. **Placing or lifting a
+hold** stays on the cockpit's sub-state endpoint and needs `payments.may_prepare` (super, org_admin,
+a `payments_prepare` holder) since maintenance S1. Menu row: same roles and keys as Applications,
+inside a gift (`needsProgramme`).
+
 ## Payments module (Vircle payment runs) — access
 
 The Payments module (`/admin/payments`, entered via the Administration ORGANISATION-section card;

@@ -7,6 +7,7 @@
  *
  * ⚠ Lifted out of `view.tsx` whole at code health H14. Every line below is the line it was.
  */
+import Link from 'next/link'
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import {
   isFunded,
@@ -62,6 +63,16 @@ export function PostAwardPanels({
   // and its existing "Are you sure?" / "Go back" strings — no new catalogue weight).
   const [confirmClose, setConfirmClose] = useState(false)
   return (<>
+
+      {/* Student maintenance S2: the scholar's maintenance file, when the SERVER says there is one
+          (`has_file` — in maintenance, or closed after it). The sub-state and Close controls below
+          stay here until Sprint 3 moves them to the file. */}
+      {app.has_file && (
+        <Link href={`/admin/scholars/${app.id}`} data-testid="open-scholar-file"
+          className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50">
+          {t('admin.scholars.file.openFile')} →
+        </Link>
+      )}
 
       {/* ── Conditional Bursary Award Agreement (flag-gated; dark by default) ──
           Shown once the award has been accepted (the student + guarantor have

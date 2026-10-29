@@ -41,6 +41,7 @@ export const WIDTH_CLASS: Record<PageWidth, string> = {
  *  read narrow by being listed in READING_ROUTES — `/admin/students/<id>` is the shape. */
 export const WIDE_ROUTES: readonly string[] = [
   '/admin/scholarship',              // Applications
+  '/admin/scholars',                 // Scholars list + file (summary cards beside the activity log)
   '/admin/organisation/reviewers',
   '/admin/organisation/staff',
   '/admin/organisation/programmes',  // gift list + intake years

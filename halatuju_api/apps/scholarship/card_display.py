@@ -91,6 +91,27 @@ def catalogue_course_name(course_id):
             .values_list('course_name', flat=True).first() or '').strip()
 
 
+def catalogue_course_names(course_ids):
+    """``{course_id: name}`` for many course ids in TWO queries — ``catalogue_course_name``'s answer
+    for a whole page at once (the officer's Scholars list, maintenance S2). Pass the result to
+    ``programme_split`` / ``resolve_course`` as ``names`` so a list costs no query per row."""
+    from apps.courses.models import Course, StpmCourse
+    ids = {(c or '').strip() for c in course_ids if (c or '').strip()}
+    if not ids:
+        return {}
+    names = {cid: (name or '').strip() for cid, name in StpmCourse.objects.filter(
+        course_id__in=ids).values_list('course_id', 'course_name')}
+    names.update({cid: (name or '').strip() for cid, name in Course.objects.filter(
+        course_id__in=ids).values_list('course_id', 'course') if (name or '').strip()})
+    return names
+
+
+def _catalogue_name(course_id, names):
+    if names is None:
+        return catalogue_course_name(course_id)
+    return names.get((course_id or '').strip(), '')
+
+
 def catalogue_single_institution(course_id):
     """The catalogue institution ONLY when the course is offered at exactly one — else ''
     (a course offered at many, e.g. Asasi TVET at 10 polytechnics, can't be disambiguated
@@ -189,7 +210,7 @@ def preu_label(chosen_pathway, pre_u_track):
 
 # ── read-side resolution (the sponsor card / anywhere anonymous) ─────────────────
 
-def programme_split(app, lang='en'):
+def programme_split(app, lang='en', names=None):
     """Split a chosen programme into a display ``{'title', 'stream'}`` pair — the ONE home for the
     "constant degree + specialisation" shape, so the cockpit, sponsor card + emails read it
     identically. By pathway:
@@ -202,13 +223,14 @@ def programme_split(app, lang='en'):
       ("Sains Sosial"/"Perakaunan");
     - everything else (poly/UA diploma/asasi/degree): title = the resolved course name, stream = ''.
     Base name order (never junk/school): catalogue name via course_id > sane free-text course_name >
-    canonical pre-U label > field-taxonomy name. Pure bar the catalogue read."""
+    canonical pre-U label > field-taxonomy name. Pure bar the catalogue read (``names``, from
+    ``catalogue_course_names``, answers it for a whole page with no query per row)."""
     cp = app.chosen_programme if isinstance(getattr(app, 'chosen_programme', None), dict) else {}
     pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
     degree = _DEGREE_TITLE.get(pw, '')
     if degree:
-        return {'title': degree, 'stream': catalogue_course_name(cp.get('course_id'))}
-    base = catalogue_course_name(cp.get('course_id'))
+        return {'title': degree, 'stream': _catalogue_name(cp.get('course_id'), names)}
+    base = _catalogue_name(cp.get('course_id'), names)
     if not base:
         name = (cp.get('course_name') or '').strip()
         if name and not looks_like_institution(name) and not looks_like_date(name) and not looks_like_school(name):
@@ -221,7 +243,7 @@ def programme_split(app, lang='en'):
     return {'title': title, 'stream': stream}
 
 
-def resolve_course(app, lang='en'):
+def resolve_course(app, lang='en', names=None):
     """The single-line programme title a sponsor sees. Built on ``programme_split``: the
     specialisation — the bidang for a degree+specialisation pathway (PISMP), the track for
     STPM/Matric — is appended after a MIDDOT ("Tingkatan Enam · Sains Sosial", "Ijazah Sarjana Muda
@@ -233,7 +255,7 @@ def resolve_course(app, lang='en'):
     against the cockpit's ` · ` for all three. Standardising the other way was rejected on sight:
     parens nest badly on PISMP, whose bidang already carries its own ("… (Bahasa Tamil Pendidikan
     Rendah (SJKT))"). Same rule as ``preu_label`` above, which already used the middot."""
-    sp = programme_split(app, lang)
+    sp = programme_split(app, lang, names)
     title, stream = sp['title'], sp['stream']
     if not title or not stream:
         return title

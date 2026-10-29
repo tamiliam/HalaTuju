@@ -304,6 +304,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
     # Request #31: the place of birth the IC states, re-checked against the intake's CURRENT rule
     # on every load (`birth_state.for_cockpit`). Admin-only.
     birth_state = serializers.SerializerMethodField()
+    has_file = serializers.SerializerMethodField()   # maintenance S2: the cockpit's "Open scholar file"
     # Academic + financial data is read live from the canonical profile.
     # The qualification we hold RESULTS for, not the one declared at sign-up — see
     # `held_qualification`. A Form Six student holds SPM results and reads SPM.
@@ -492,7 +493,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
             # The QC floor override — who accepted a case over a RED fact, when, and why.
             'qc_override_by', 'qc_override_by_name', 'qc_override_at', 'qc_override_reason',
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
-            'maintenance_substate',
+            'maintenance_substate', 'has_file',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
             # its reveal date — drives the cockpit "scheduled — cancel/hold" banners.
             'pending_rejection_category', 'decline_due_at', 'award_due_at',
@@ -555,6 +556,10 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
     def get_disbursements(self, obj):
         from .disbursement import disbursement_dict
         return [disbursement_dict(d) for d in obj.disbursements.all()]
+
+    def get_has_file(self, obj):
+        from .maintenance_scope import has_file
+        return has_file(obj)
 
     def get_paid_to_date(self, obj):
         from . import payments

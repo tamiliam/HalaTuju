@@ -289,6 +289,13 @@ class TestFenceCoverageCompleteness(TestCase):
         # students used (`_txns`). Unlike a CATEGORY, a flag is never shared between organisations,
         # and another's reads exactly like none (`test_merchant_flags.py`).
         'AdminSpendingFlagView': 'spending-flag-org-fenced',
+        # Student maintenance S2 (2026-10-29). ONE door, `_ScholarsBase`: `_b40_scope` (finance and
+        # partner refused), the list through `_org_scoped` (+ `assigned_to` for a reviewer) and the
+        # gift narrowing; a file / activity read through `_org_allows` — cross-org is 404.
+        '_ScholarsBase': 'scholars-org-fenced',
+        'AdminScholarListView': 'scholars-org-fenced',
+        'AdminScholarFileView': 'scholars-org-fenced',
+        'AdminScholarActivityView': 'scholars-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only
@@ -666,6 +673,8 @@ class TestOrgFenceStaticGuard(TestCase):
                'programme_overview.py',
                # Request #28 follow-up (2026-10-06) — the flag service, on the day it was written.
                'merchant_flags.py',
+               # Student maintenance S2 (2026-10-29) — the Scholars reads, on the day written.
+               'scholars.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')
@@ -769,7 +778,7 @@ class TestOrgFenceStaticGuard(TestCase):
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
                       'spend_report.py', 'spend_category.py', 'spending_import.py',
                       'spend_summary.py', 'spend_sponsor.py', 'invoicing.py', 'invoice_pdf.py',
-                      'programme_overview.py', 'merchant_flags.py')
+                      'programme_overview.py', 'merchant_flags.py', 'scholars.py')
         unscanned = []
         for filename in candidates:
             path = os.path.join(_APP_DIR, filename)

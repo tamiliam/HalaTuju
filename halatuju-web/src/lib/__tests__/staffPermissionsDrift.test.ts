@@ -83,8 +83,9 @@ describe('TEAM_ROLES vs staff_permissions.TEAM_ROLES (#39 S3)', () => {
 describe('admitsRow — the registry rows that read permissions (#39 S3)', () => {
   const permRows = NAV_ITEMS.filter((i) => i.perms)
 
-  test('exactly Applications, Payments and Spending carry perms', () => {
-    expect(permRows.map((i) => i.id).sort()).toEqual(['applications', 'payments', 'spending'])
+  // Scholars (maintenance S2) carries Applications' keys exactly — the same server rule.
+  test('exactly Applications, Scholars, Payments and Spending carry perms', () => {
+    expect(permRows.map((i) => i.id).sort()).toEqual(['applications', 'payments', 'scholars', 'spending'])
   })
 
   /** THE PRESET GUARANTEE ON THE WEB: for every team role, a row's `perms` asked of the role's

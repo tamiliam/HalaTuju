@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## The Scholars list and file read by the Applications rule — 2026-10-29 (student maintenance S2)
+
+**Decision:** `/admin/scholars` and the maintenance file are fenced exactly as the Applications cockpit is
+(`_b40_scope`): `see_all` reads the organisation, a reviewer only their assigned scholars, finance and partner are
+refused, another organisation is 404. Anyone who may read a file may add a manual activity entry; the hold stays on
+the payments-gated cockpit door (S1). **Alternatives considered:** lead tier + admin only (reviewers shut out of the
+students they reviewed, though they can open the same application in the cockpit); letting finance read (a list of
+names beside case data, which the Spending rule refuses). **Rationale:** a scholar file is a VIEW of an application
+the reader can already open, so a second rule would either widen reach or make two pages disagree about one person.
+**Trade-offs:** a `see_all` admin who is not assigned may still write a note on any file in the organisation (a note
+is a record, not a decision). **Revisit if:** mentors get logins (Sprint 11) or a file gains a control that is a
+decision rather than a record. Also: the list never judges a CGPA — `standing` is only `has_result` /
+`no_result_yet` until Sprint 4 derives it from the organisation's settings; the course names for a page come from
+`card_display.catalogue_course_names` (two queries), so a row costs no query (budget: 8 queries at 2 and 5 rows).
+No nav badge yet: the shell's badge plumbing needs its own count endpoint, and an on-hold count is a Sprint 3 item.
+
 ## A funded student has one file from award acceptance to closure — 2026-10-29 (student maintenance roadmap, owner rulings)
 
 The owner asked for a whole system to look after students who were awarded and accepted, until their file is

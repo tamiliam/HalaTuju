@@ -35,6 +35,36 @@ Four things the owner found by reading BrightPath's own billing page.
   docstring). `_invoice_payload` reads `emailed_at` for both audiences, so deploying first 500s
   both billing screens the moment a receipt exists.
 
+## Student maintenance Sprint 2 — the admin Scholars list and maintenance file - 2026-10-29
+
+Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record: the owner-approved canvas
+(2026-10-29). No migration.
+
+- **`/admin/scholars`** — every funded student from award acceptance to closure (the S1 predicate), inside a gift:
+  tiles (in programme, on hold, probation, ready to close), filters (all, on track, probation, on hold, ready to
+  close, closed — Underperforming, Results overdue and Wants a mentor are drawn disabled until their sprints),
+  search by name, IC or application number, sort by name / CGPA / last activity, server-side pages, phone cards.
+  Menu row "Scholars" under Applications (chord **G M**), same roles and keys as Applications.
+- **`/admin/scholars/<id>`** — the file: header (status read-only; "View application" to the cockpit), tabs
+  Overview · Results · Money · Contract · Letters · Mentoring · Surveys · Activity. Overview cards read the server's
+  payload (latest result, money paid / remaining / last payment, contract status or "No contract on file");
+  Mentor, Letters and Surveys say they are coming. No standing is judged before Sprint 4.
+- **Activity log** — timeline + composer (note / call / meeting, staff-only via the site Toggle); system rows read
+  as translated sentences from their event codes.
+- **API** — `GET admin/scholarship/scholars/`, `GET …/scholars/<id>/`, `GET/POST …/scholars/<id>/activity/`,
+  fenced by the Applications rule (decisions.md); the cockpit payload gains `has_file` and the cockpit an "Open
+  scholar file" link. `card_display.catalogue_course_names` reads a page's course names in two queries (query
+  budget 8 at 2 and 5 rows).
+- **Adversarial review fixes:** search uses the Applications people-search rules (IC digits-only both sides, so an
+  undashed IC or a 6-digit prefix finds the student; `#104` is an application number); a student with no result /
+  activity sorts last in both directions (`nulls_last`); a CLOSED file is read-only (409 `file_closed`, no
+  composer); a moved round's scholars list under their new gift (the Applications gift rule); the file's money
+  links show only to a viewer who may open Payments / Spending and carry the gift; "remaining" is the funding
+  summary's own rule (`payments._remaining`). TD-421 raised (an IC in a search URL reaches the request logs).
+- Guide updated (reviewer, general admin and org admin chapters each gain a Scholars section); role matrix gains
+  a Scholars section. ⚠ No FAQ entry: `content/manual/faq.tsx` sits at its 600-line limit (TD-413 — the next
+  entry must split it first), so the FAQ question waits for that split.
+
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 
 Both from the owner reading BrightPath's own billing page after the declaration sprint shipped.

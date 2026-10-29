@@ -132,7 +132,7 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 8
+### Now — money, identity, eligibility or security — 9
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 
@@ -145,6 +145,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-348** — Two submits at the same moment to two different rounds can both pass the one-application-in-play check (a script could; a person realistically cannot); nothing in the database holds that rule. Fix: a short locked transaction with the acknowledgement email on `on_commit`. *(B · M · raised 2026-10-05 by the one-application-per-organisation sprint)*
 - **TD-347** — A sign-invitation's accept deadline can lapse while the offer waits for a parent call. **MUST FIX BEFORE `BURSARY_AGREEMENT_ENABLED` IS SET.** **RULED 2026-10-06 (option B): when the parent call is recorded, re-arm a FRESH full accept window (not pause-and-extend); the email tells her the new deadline. Ready to build.** *(A · M · raised 2026-10-05 by request #26's final review)*
 - **TD-252** — An award nobody answers holds the sponsor's money for ever. The lapse job is written but never scheduled. *(A · S · partly done)*
+- **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)*
 - **TD-420** — A tranche release reads the hold on a copy without a lock, so a hold committed mid-request does not stop it; fold into TD-383. *(B · S · raised 2026-10-29 by student maintenance S1)*
 
 ### Next — a student or an officer can see it, and it is small — 28
@@ -6861,3 +6862,13 @@ one request long and tranches are the legacy money door (the live cohort is paid
 re-reads every application inside the approval's transaction). **Fix:** fold into TD-383's choke-point — lock
 the application row (or re-read the stored sub-state) inside `release_tranche`'s transaction before the hold
 check. *(B · S)*
+
+### [TD-421] An IC typed into an admin list search lands in the request logs - low
+
+**Raised 2026-10-29** by the student maintenance Sprint 2 adversarial review (finding 7). The Applications list
+(`?q=`) and the Scholars list (`?search=`) take the search text in the QUERY STRING, and an officer searching by
+IC types the student's full NRIC there. Cloud Run's request logs record the URL, so the IC is written to a log
+that is kept and readable by anyone with log access — outside the organisation fence the database enforces.
+Pre-existing on Applications; Scholars copied the shape. **Fix:** move people-search to a POST body (or a
+header), or log the path without its query string; a hashed IC would also serve an exact match. Check the
+retention on the existing logs when this is fixed. *(B · S)*
