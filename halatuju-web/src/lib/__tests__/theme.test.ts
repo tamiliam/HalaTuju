@@ -1129,7 +1129,7 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     // `graduated` was `indigo` — outside the vocabulary — because the set needs two good states a
     // student can tell apart. A category swatch would have been wrong (it IS a state); a second
     // tone would have lied about it. Same tone, filled instead of tinted.
-    const src = read('src/app/scholarship/in-programme/page.tsx')
+    const src = read('src/app/scholarship/bursary/page.tsx')
     // ⚠ Respelled onto the F7e fill role. The WEIGHT contrast between the two — filled vs tinted,
     // same tone — is the claim, and it is unchanged; `on_track` is a TINT and deliberately does
     // not move (a tinted panel and a filled control want opposite things when the ground inverts,

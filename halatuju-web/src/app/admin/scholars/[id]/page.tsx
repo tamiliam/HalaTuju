@@ -6,9 +6,9 @@
 // Contract cards read the server's payload; Mentor (Sprint 7), Letters (Sprint 6) and Surveys (later)
 // say calmly that they are coming — never sample data. Real standing is Sprint 4, spending Sprint 5,
 // the signed-PDF link Sprint 5.
-// ⚠ THE STATUS IS READ-ONLY HERE. The sub-state control and the Close button stay in the cockpit
-// until Sprint 3 moves them (a hold is a money act: `AdminMaintenanceSubstateView` needs payments
-// rights). "View application" takes you there.
+// ⚠ THE SUB-STATE AND CLOSE LIVE HERE since Sprint 3 (`ScholarControls`, moved from the cockpit's
+// PostAwardPanels): drawn from the server's `controls` offer, judged again by the cockpit doors. A
+// hold is a money act (payments rights, S1 M1). "View application" opens the full review screen.
 // ⚠ A record this admin may not read, another organisation's, or one with no file all come back
 // 404 — `RecordState` says so neutrally (never "does not exist", never "no access").
 
@@ -20,6 +20,7 @@ import { useT } from '@/lib/i18n'
 import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
 import RecordState from '@/components/admin/RecordState'
 import ScholarActivity from '@/components/admin/ScholarActivity'
+import ScholarControls from '@/components/admin/ScholarControls'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
@@ -64,6 +65,8 @@ export default function ScholarFilePage() {
   const [file, setFile] = useState<ScholarFile | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('overview')
+  // A control's change re-reads the file (sub-state, close and the activity log all move together).
+  const [reloads, setReloads] = useState(0)
 
   useEffect(() => {
     if (!token || !allowed || !Number.isFinite(id)) { setLoading(false); return }
@@ -74,7 +77,7 @@ export default function ScholarFilePage() {
       .catch(() => { if (live) setFile(null) })
       .finally(() => { if (live) setLoading(false) })
     return () => { live = false }
-  }, [id, token, allowed])
+  }, [id, token, allowed, reloads])
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!file) return <RecordState loading={loading} />
@@ -184,6 +187,10 @@ export default function ScholarFilePage() {
           className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50">
           {t('admin.scholars.file.viewApplication')}
         </Link>
+        <div className="basis-full">
+          <ScholarControls key={`${file.status}-${file.maintenance_substate}`} file={file} token={token}
+            onChanged={() => setReloads((n) => n + 1)} />
+        </div>
       </header>
 
       <PanelTabs tabs={TABS} active={tab} onSelect={setTab} ariaLabelKey="admin.scholars.file.tabsLabel" />
@@ -195,7 +202,7 @@ export default function ScholarFilePage() {
             {resultsCard}{moneyCard}{contractCard}{later('mentor')}{later('letters')}{later('surveys')}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
-            <ScholarActivity id={file.id} token={token} compact readOnly={!file.in_maintenance} />
+            <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.in_maintenance} />
           </div>
         </div>
       )}
@@ -205,7 +212,7 @@ export default function ScholarFilePage() {
       {tab === 'letters' && <div className="max-w-xl">{later('letters')}</div>}
       {tab === 'mentoring' && <div className="max-w-xl">{later('mentor')}</div>}
       {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}
-      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
+      {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>
   )
 }

@@ -397,7 +397,7 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor', SliceRule> = {
       '/admin/scholarship', '/admin/scholarship/[id]', '/admin/sources', '/admin/students',
       '/admin/students/[id]', '/onboarding/profile', '/profile', '/sandbox', '/sandbox/[surface]',
       '/scholarship', '/scholarship/application', '/scholarship/apply', '/scholarship/award',
-      '/scholarship/in-programme', '/scholarship/onboarding',
+      '/scholarship/bursary', '/scholarship/onboarding',
     ],
   },
   sponsor: {

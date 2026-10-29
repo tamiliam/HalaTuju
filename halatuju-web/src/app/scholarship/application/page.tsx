@@ -15,6 +15,8 @@ import InterviewBookingPanel from '@/components/scholarship/LazyInterviewBooking
 import AwardPanels from '@/components/scholarship/LazyApplicationAwardPanels'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+// Already in this route's bundle through AppHeader — no new weight (the route is at its budget).
+import { rememberBursaryFile } from '@/lib/storage'
 
 /**
  * The post-submission home for an applicant. A shortlisted student completes
@@ -55,6 +57,7 @@ export default function ScholarshipApplicationPage() {
         // `applicationScreen` shows nothing rather than one of several, and — the same rule the
         // apply form sends students here by — never answers "you haven't applied" to a student
         // the form turned away (a lone `submitted`, or only finished ones).
+        rememberBursaryFile(res.applications.some((a) => a.has_file))   // the header's "My Bursary"
         const screen = applicationScreen(res.applications)
         setApp(screen.kind === 'one' || screen.kind === 'finished' ? screen.app : null)
         setFinished(screen.kind === 'finished')
@@ -218,6 +221,15 @@ export default function ScholarshipApplicationPage() {
       <>
         {/* The interview booking panel is for the pre-award review states only. */}
         {!funded && <InterviewBookingPanel applicationId={app.id} token={token} />}
+        {/* Maintenance S3: a LINK-ONLY card to "My Bursary" (this route is at its bundle budget, so
+            nothing of the hub is imported here) — shown when the server says she has a file. */}
+        {app.has_file && (
+          <Link href="/scholarship/bursary" data-testid="bursary-card"
+            className="mb-4 block rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 hover:bg-primary-100">
+            <span className="block text-sm font-semibold text-ground-900">{t('scholarship.bursary.card.title')}</span>
+            <span className="block text-xs text-ground-600">{t('scholarship.bursary.card.body')}</span>
+          </Link>
+        )}
         <ActionCentre
           token={token}
           studentName={profile?.name}

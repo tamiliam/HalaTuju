@@ -106,10 +106,12 @@ class AdminScholarFileView(_ScholarsBase):
     """GET admin/scholarship/scholars/<pk>/ — the file header + Overview cards."""
 
     def get(self, request, pk):
-        app, _admin, err = self._file_for(request, pk)
+        app, admin, err = self._file_for(request, pk)
         if err:
             return err
-        return Response(scholars.file_payload(app))
+        from .. import payments
+        return Response({**scholars.file_payload(app), 'controls': scholars.controls(
+            app, can_write=self._can_review_app(admin, app), can_hold=payments.may_prepare(admin))})
 
 
 class AdminScholarActivityView(_ScholarsBase):

@@ -99,7 +99,8 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    **Carry-over from S1 review (M2):** widen the results gate (`in_programme.can_record_results`, still
    active/maintenance) to the maintenance predicate + make the sponsor readers consistent:
    `derive_progress_state` on the predicate, with a cross-reader test (support status, portfolio badge,
-   progress band agree for every status x wallet x sub-state).
+   progress band agree for every status x wallet x sub-state). **Carry-over from S3 review:** the results
+   form's "graduated" tick box becomes the site Toggle (house rule: a student's on/off choice is a Toggle).
    Accept: changing `maintenance_min_cgpa` changes chips with no deploy; reminders idempotent + metered.
 5. **Money summary + contract** (~20 files). Admin Money tab: paid to date, remaining, last 3 releases,
    spending by category (spending block needs `spending` permission; finance sees payments only), links to

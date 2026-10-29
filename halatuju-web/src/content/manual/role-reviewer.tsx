@@ -85,8 +85,10 @@ export const roleReviewer: ManualChapter = {
         scholars assigned to you. Her <strong>file</strong> shows her latest semester result, what has been paid
         and what remains, whether a contract is on file, and an <strong>Activity</strong> log of what has
         happened. Add a <strong>note</strong>, <strong>call</strong> or <strong>meeting</strong> there; switch on
-        <strong> Staff only</strong> for an entry meant for colleagues. Putting a student <strong>on hold</strong>
-        (which stops her payments) is done by the people who prepare payment runs, not by reviewers.</>
+        <strong> Staff only</strong> for an entry meant for colleagues. On her file&rsquo;s header you can change her
+        status &mdash; <strong>probation</strong> or <strong>ready to close</strong> &mdash; and close the file when
+        her support ends. Putting a student <strong>on hold</strong> (which stops her payments) is done by the
+        people who prepare payment runs, not by reviewers.</>
       ),
     },
     {

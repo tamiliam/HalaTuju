@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29
+
+Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-29). No migration.
+
+- **`/scholarship/bursary` "My Bursary"** (the in-programme page moved here; `/scholarship/in-programme` redirects):
+  a greeting with her gift and course and one plain sentence of state (in the programme / support paused / file
+  closed); tabs **Overview** (her funds — received of the award, a progress bar, the last payment — her latest
+  result, the 18+ sharing toggle and the thank-you to her sponsor) and **Results** (the list, and the form only
+  when the server says `can_record_results`). The paused and closed notices are kept. Funds, Contract, Letters,
+  News and Mentoring tabs are HIDDEN until their sprints (the roadmap's "a tab appears when its module is on").
+- **`GET scholarship/bursary/summary/`** — her OWN file only (404 `no_file` otherwise, whatever the reason); money
+  from the ledger with the funding summary's "remaining"; `support_paused` the only maintenance signal — never a
+  sub-state word, an officer, a note or an IC.
+- **"My Bursary" in the BrightPath menu** for a student with a file (a display hint the pages that already read
+  her applications leave in `localStorage`; never a gate), and a link-only card on `/scholarship/application`.
+- **Admin:** the sub-state control and the post-award **Close** moved from the cockpit into the scholar file's
+  header (`ScholarControls`), drawn from a server `controls` offer: hold buttons only with payments rights (the
+  reason said otherwise), close reasons for the stage, and for an awarded case still holding the sponsor's offer a
+  plain "cannot be closed here" (`sponsorship_open`, TD-366 — S1 review L4). Refusals read as sentences (en/ms/ta).
+  The cockpit keeps a read-only status, the pre-award Close (TD-352 — that case has no file) and the link.
+  **TD-419 resolved by the move.**
+- Guide sections (org admin, general admin, reviewer) updated. No FAQ entry (`faq.tsx` is at its limit, TD-413).
+- **Adversarial review fixes:** a payable awarded student with an eWallet id but no activation (paid, no file) is
+  held from the COCKPIT (`maintenance_controls` on the cockpit payload; everything else stays on the file); the
+  funded-close note and offboarding checklist come before the file's Close confirm; any sign-out drops the "My
+  Bursary" hint and the header updates the moment a page writes it; a failed hub read says so with a retry (not "not
+  in the programme"); the gift is named in her language (English fallback); "received", not "reached your wallet".
+
 ## Billing — the customer's four readings: day-first dates, linked requests, the receipt actually sent (migration 0185) - 2026-10-29
 
 Four things the owner found by reading BrightPath's own billing page.

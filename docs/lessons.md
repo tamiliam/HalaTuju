@@ -1566,4 +1566,11 @@ is prefetched — weight moved off a route's first load can still travel in the 
   `sqlmigrate` emits SQLite locally) died on `connection refused`. `null=True, default=None` renders
   cleanly AND models the state better: NULL on both `emailed_at` and `emailed_to` says "never emailed"
   more plainly than an empty list beside a NULL timestamp. (Billing, 2026-10-29)
+- **An ORDER BY on a nullable column has a backend-dependent default — Postgres puts NULLs FIRST on DESC, SQLite
+  last — so a SQLite-green sort can be wrong in production.** Scholars S2 sorted `latest_cgpa` / `last_activity_at`
+  (subquery annotations, NULL for a student with no result) by name only; "highest CGPA first" would have opened on
+  every student without a result. **Rule:** every sort on a nullable field or annotation states its NULL place
+  (`F(x).desc(nulls_last=True)`), and the test asserts the NULL rows' position in BOTH directions — that pins the
+  order on SQLite too, where the default would have passed silently. (Student maintenance S2, 2026-10-29)
+
 - **A reading of a rule that every applicant meets automatically is the wrong reading.** (Bumi Sprint D1, 2026-10-29.) The parser read "N more subjects belum diambil kira / selain di atas" independently of Syarat Am, so BM and Sejarah — which every applicant must have — always filled the "N more" slots, and ten UiTM rules asked for nothing extra. No university writes a clause that is empty by construction. **Rule:** when a parsed requirement can be met by the subjects every applicant already holds, stop and ask for the stricter reading; test each parsed clause with a student who has ONLY the general-requirement subjects. Also: a normaliser that folds two printed names into one key ("Sains Pertanian" / "Pertanian") can create a duplicate inside a list that never had one — dedupe after folding, and count distinct student subjects in every group, on every engine (SPM and STPM).

@@ -117,6 +117,12 @@ export const KEY_SPONSOR_REF = 'halatuju_sponsor_ref'
 
 // ── Display constants ────────────────────────────────────────────────
 
+/** Student maintenance S3: '1' when the signed-in student has a "My Bursary" file. A DISPLAY HINT
+ *  for the header's link only — written by the pages that already read her applications
+ *  (`rememberBursaryFile`), wiped with every other `halatuju_` key at sign-out. Never a gate: the
+ *  hub's own endpoint answers 404 for a student with no file. */
+export const KEY_HAS_BURSARY_FILE = 'halatuju_has_bursary_file'
+
 /** Number of course cards shown initially (anon and logged-in). Anon users hit auth gate on "Load More". */
 export const COURSE_PAGE_SIZE = 9
 
@@ -146,4 +152,22 @@ export function hasGrades(): boolean {
     // Malformed JSON — treat as no grades
   }
   return false
+}
+
+/** Record whether the student has a bursary file (the header's "My Bursary" link reads it). */
+export function rememberBursaryFile(has: boolean): void {
+  try {
+    if (has) localStorage.setItem(KEY_HAS_BURSARY_FILE, '1')
+    else localStorage.removeItem(KEY_HAS_BURSARY_FILE)
+  } catch { /* storage unavailable — the link simply does not show */ }
+  // The header on screen re-reads the hint at once (S3 review L5), not at the next navigation.
+  try { window.dispatchEvent(new Event(BURSARY_FILE_EVENT)) } catch { /* no window (server) */ }
+}
+
+/** Fired by `rememberBursaryFile`; the header listens for it. */
+export const BURSARY_FILE_EVENT = 'halatuju:bursary-file'
+
+/** Whether the header should offer "My Bursary" (see `KEY_HAS_BURSARY_FILE`). */
+export function hasBursaryFile(): boolean {
+  try { return localStorage.getItem(KEY_HAS_BURSARY_FILE) === '1' } catch { return false }
 }

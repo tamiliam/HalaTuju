@@ -2764,9 +2764,42 @@
         }
       }
     },
+    "bursary": {
+      "title": "My Bursary",
+      "hello": "Hi {name}",
+      "state": {
+        "in": "You are in the programme",
+        "paused": "Your support is paused",
+        "closed": "Your file is closed"
+      },
+      "tab": {
+        "overview": "Overview",
+        "results": "Results"
+      },
+      "funds": {
+        "title": "Your funds",
+        "of": "received of {award}",
+        "barLabel": "{pct}% of your bursary received",
+        "last": "Last payment {amount} · {date}",
+        "none": "No payment received yet."
+      },
+      "latest": {
+        "title": "Latest result",
+        "line": "{semester} · CGPA {cgpa}",
+        "none": "No semester result recorded yet.",
+        "open": "Open results"
+      },
+      "card": {
+        "title": "My Bursary",
+        "body": "Your funds, your results and your thank-you to your sponsor, in one place."
+      },
+      "loadFailed": "We couldn't load this. Try again.",
+      "retry": "Try again"
+    },
     "subnav": {
       "apply": "Apply for assistance",
-      "sponsor": "Become a sponsor"
+      "sponsor": "Become a sponsor",
+      "bursary": "My Bursary"
     }
   },
   "authGate": {
@@ -6073,6 +6106,30 @@
         "result_submitted": "Result submitted · {semester}",
         "closed": "File closed · {reason}",
         "other": "System update"
+      },
+      "control": {
+        "title": "Maintenance controls",
+        "substate": "Maintenance status",
+        "closeFile": "Close file",
+        "holdNeedsPayments": "Putting a student on hold, or lifting a hold, stops or restarts her payments, so it needs payment-run rights.",
+        "onHoldHint": "Support is paused: she is left out of payment runs and tranche releases until you resume.",
+        "movedToFile": "Change the status, or close the file, on the scholar file.",
+        "refusal": {
+          "sponsorship_open": "This award still holds the sponsor's offer or paid money, so the file cannot be closed here. Ask the platform owner."
+        },
+        "error": {
+          "hold_needs_payments": "Only someone with payment-run rights can place or lift a hold.",
+          "not_in_maintenance": "This student cannot take that status.",
+          "changed_meanwhile": "Someone changed the status just now. Reload and try again.",
+          "bad_substate": "Choose a valid status.",
+          "sponsorship_open": "This award still holds the sponsor's offer or paid money. It cannot be closed here.",
+          "decline_pending": "A decline is pending. Cancel it first.",
+          "not_closeable": "This file is already finished.",
+          "bad_reason": "Choose a valid closure reason.",
+          "reason_not_allowed": "That reason does not fit this stage.",
+          "generic": "Could not change the status. You may not have permission."
+        },
+        "noFileHint": "She is paid by the payment runs but has no scholar file yet (her eWallet is not reported live), so her status is set here."
       }
     },
     "contracts": {

@@ -25,10 +25,12 @@ export const roleOrgAdmin: ManualChapter = {
         <><strong>Scholars</strong>, directly under Applications in a gift&rsquo;s menu, is every funded
         student from award acceptance to closure. Each has a <strong>file</strong>: her latest result, what has
         been paid and what remains, the contract, and an <strong>Activity</strong> log that records holds,
-        payments, results and closures by itself, and the notes, calls and meetings your team adds. For now the
-        maintenance status and <strong>Close</strong> stay on the application&rsquo;s review screen &mdash;
-        <strong> View application</strong> takes you there. Placing or lifting a <strong>hold</strong> stops or
-        restarts payments, so it needs payment-run rights.</>
+        payments, results and closures by itself, and the notes, calls and meetings your team adds. The file&rsquo;s
+        header is where you change her <strong>maintenance status</strong> (on track, probation, on hold, ready to
+        close) and <strong>close the file</strong> with a reason; the review screen keeps a summary and a link
+        here. Placing or lifting a <strong>hold</strong> stops or restarts payments, so it needs payment-run
+        rights. A student whose award still holds the sponsor&rsquo;s offer cannot be closed here &mdash; the file
+        says so; ask the platform owner. Funded students see their own <strong>My Bursary</strong> page.</>
       ),
     },
     {

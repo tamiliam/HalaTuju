@@ -39,8 +39,10 @@ export const roleAdminGeneral: ManualChapter = {
         <><strong>Scholars</strong> (in the menu, inside a gift) lists every funded student, from award
         acceptance to closure, with tiles for how many are in the programme, on probation, on hold and ready to
         close. Open a student for her <strong>file</strong>: her latest result, the money paid and remaining,
-        the contract, and an <strong>Activity</strong> log where you can add a note, call or meeting. Results
-        review, letters and mentors are coming in later updates; the cards for them say so.</>
+        the contract, and an <strong>Activity</strong> log where you can add a note, call or meeting. Because you
+        prepare payment runs, you can also put a student <strong>on hold</strong> (she is left out of runs until
+        you resume) from the file&rsquo;s header &mdash; on a student assigned to you, where you may also change her
+        status or close the file. Results review, letters and mentors are coming in later updates.</>
       ),
     },
     {

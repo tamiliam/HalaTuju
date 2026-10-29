@@ -65,10 +65,10 @@ export type {
 // A student already on the programme: results, 18+ consent, graduation.
 export {
   getSemesterResults, addSemesterResult, getPromotionalConsent, setPromotionalConsent,
-  getGraduationMessages, submitGraduationMessage, getSponsorGraduationMessages,
+  getGraduationMessages, submitGraduationMessage, getSponsorGraduationMessages, getBursarySummary,
 } from './api/inProgramme'
 export type {
-  SemesterResult, PromotionalConsentState, GraduationMessage, GraduationRelayMessage,
+  SemesterResult, PromotionalConsentState, GraduationMessage, GraduationRelayMessage, BursarySummary,
 } from './api/inProgramme'
 
 // The STPM/Form-6 arm: eligibility, ranking, its own quiz and its own search.

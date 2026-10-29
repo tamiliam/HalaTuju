@@ -1046,21 +1046,21 @@ rows for October and November once each month ends. **Blocked on permissions:** 
 
 ---
 
-**Student maintenance Sprint 1 is LIVE (2026-10-29, `99ee813b`; migration `scholarship/0183` applied by hand
-with RLS + policy + ledger row; retro `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 2 (admin Scholars list + file shell) and
-Sprint 3 (student "My Bursary" hub)** — design approved by the owner 2026-10-29 at
-https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (Stitch did not render; that canvas is the design of record).
-- ONE predicate, `maintenance_scope.py` (awarded + `vircle_activated_at`, or active/maintenance); the MONEY hold is
-  separate: `maintenance.is_on_hold` = stored `on_hold` + a payable status, never the wallet stamp. Moving to/from
-  `on_hold` needs `payments.may_prepare` (403 `hold_needs_payments`).
-- ⚠ **MIGRATE FIRST for anything that writes `student_activity`** — `activity.log_event` writes inside the caller's
-  transaction, so a missing table rolls back run approvals, tranche releases, closures, holds and results. Deploy
-  the api before the web.
-- `can_record_results` stays active/maintenance until Sprint 4 (results review + one sponsor-reader rule); the
-  student gets `support_paused`, never the raw sub-state.
-- The cockpit's sub-state control (`PostAwardPanels.tsx`) still shows only at `maintenance`, so an awarded
-  student is held through the API until Sprint 3 moves the control to the file (TD-419/TD-420).
+**Student maintenance Sprints 1 and 2 are LIVE (2026-10-29; S1 `99ee813b` + migration `scholarship/0183`, S2
+`1debc6cc`, no migration; retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` and `…-s2.md`;
+roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT = Sprint 3 (student "My Bursary" hub
+`/scholarship/bursary`, and the sub-state + Close controls move from the cockpit into the scholar file)** — design
+approved by the owner 2026-10-29 at https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (the canvas is the design of
+record).
+- ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold` = stored `on_hold` + a
+  payable status). Moving to/from `on_hold` needs `payments.may_prepare` (403 `hold_needs_payments`).
+- `/admin/scholars` (+ `/<id>`) reads by the Applications rule (`_b40_scope`; finance refused; cross-org 404); search
+  reuses `apps.courses.search` (IC digits-only); nullable sorts are `nulls_last`; a closed file is read-only
+  (409 `file_closed`). `standing` is only `has_result` / `no_result_yet` until Sprint 4.
+- ⚠ **MIGRATE FIRST for anything that writes `student_activity`** (it writes inside the caller's transaction).
+  Deploy the api before the web.
+- `can_record_results` stays active/maintenance until Sprint 4; the student gets `support_paused`, never the raw
+  sub-state. Until Sprint 3 the cockpit's sub-state control shows only at `maintenance` (TD-419).
 
 ---
 

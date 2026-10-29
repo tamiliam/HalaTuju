@@ -9,7 +9,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
-import type { MaintenanceSubstate } from './lifecycle'
+import type { ClosureReason, MaintenanceSubstate } from './lifecycle'
 export type ScholarStanding = 'no_result_yet' | 'has_result'
 
 export interface ScholarResult { cgpa: string | null; semester: string; at: string }
@@ -73,6 +73,19 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
   mentor: null
   letters: never[]
   last_activity_at: string | null
+  /** Maintenance S3: what the header may OFFER this officer (the server judges every request again). */
+  controls?: ScholarControls
+}
+
+export interface ScholarControls {
+  /** May write this case and the case takes a sub-state. */
+  can_set_substate: boolean
+  /** May move it to or from `on_hold` (payments rights — S1 M1). */
+  can_hold: boolean
+  /** The closure reasons for this status; empty when a close would be refused or is not theirs. */
+  close_reasons: ClosureReason[]
+  /** 'sponsorship_open' for an awarded case still holding the sponsor's offer (TD-366); '' otherwise. */
+  close_refusal: '' | 'sponsorship_open'
 }
 
 export type ActivityKind = 'note' | 'call' | 'meeting' | 'email' | 'system'

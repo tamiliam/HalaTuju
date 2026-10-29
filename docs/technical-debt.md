@@ -148,10 +148,9 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-421** — An IC typed into an admin list search (`?q=` on Applications, `?search=` on Scholars) travels in the URL, so it lands in Cloud Run request logs; move people-search to a POST body, or hash before logging. *(B · S · raised 2026-10-29 by the maintenance S2 review)*
 - **TD-420** — A tranche release reads the hold on a copy without a lock, so a hold committed mid-request does not stop it; fold into TD-383. *(B · S · raised 2026-10-29 by student maintenance S1)*
 
-### Next — a student or an officer can see it, and it is small — 28
+### Next — a student or an officer can see it, and it is small — 27
 Class C, half a day each. Good small-change-lane work; several go together.
 
-- **TD-419** — The cockpit shows the sub-state control only at `maintenance` (awarded students are held via the API) and does not translate `hold_needs_payments`; Sprint 3 moves the control to the file. *(C · S · raised 2026-10-29 by student maintenance S1)*
 
 - **TD-406** — The `needs_officer_eye` hold a "not checked" TVET offer puts on an officer's offer request never clears by itself: if the student later uploads another offer against the same request (e.g. one that reads suspect), they keep seeing "our team is checking this". *(C · S · raised 2026-10-26 by the corpus-gaps C2 final review)*
 - **TD-405** — Confirm a living parent cannot be left off the family form: if the STR names the mother and the form omits her, the STR is judged against the father alone, called a stranger's, and no IC slot is offered for her (F8 behaviour). Check `family_incomplete` prevents it; fix the form if not. *(C · S · raised 2026-10-25 by the same review; pre-existing)*
@@ -6843,7 +6842,7 @@ accepted before today still bills — the two tests that pin that are
 attributed to BrightPath in prose above, which is where the attribution for pre-column rows lives.
 *(C · S)*
 
-### [TD-419] The cockpit cannot hold an awarded student, and does not translate `hold_needs_payments` - low
+### [TD-419] The cockpit cannot hold an awarded student, and does not translate `hold_needs_payments` - low - RESOLVED 2026-10-29
 
 **Raised 2026-10-29** by student maintenance Sprint 1 (adversarial review). `PostAwardPanels.tsx` shows the
 maintenance sub-state control only when `status === 'maintenance'`, so the 65 live students — all `awarded` and
@@ -6852,6 +6851,11 @@ reviewer who presses a hold button now gets 403 `hold_needs_payments` (a move to
 `payments.may_prepare`), which the panel shows as a generic failure, not a translated sentence. **Fix:** Sprint 3
 moves the sub-state control to the student's file (roadmap); show it from `can_set_substate` (served), offer
 the hold buttons only to a Prepare holder, and map `hold_needs_payments` in en/ms/ta. *(C · S)*
+
+**RESOLVED 2026-10-29** by student maintenance Sprint 3: the sub-state control and the post-award Close moved to
+the scholar file's header (`ScholarControls`), shown for every case that takes a sub-state (awarded included) from
+the server's `controls` offer; hold buttons appear only with payments rights, and every refusal code reads as a
+translated sentence (`admin.scholars.control.error.*`).
 
 ### [TD-420] A tranche release reads the hold on a copy, without a lock - low
 

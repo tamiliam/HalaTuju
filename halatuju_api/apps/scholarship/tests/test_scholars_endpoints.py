@@ -310,3 +310,67 @@ class TestBatchedCatalogueNames(TestCase):
                                                                 'course_name': 'junk'})
         self.assertEqual(card_display.resolve_course(app, names=names),
                          card_display.resolve_course(app))
+
+
+class TestFileControls(_Scholars):
+    """Maintenance S3: the header OFFERS the sub-state and Close (moved from the cockpit). An offer,
+    never the gate — the cockpit doors judge every request again."""
+
+    def _controls(self, admin, app):
+        return self._get(admin, f'{API}{app.id}/').json()['controls']
+
+    def test_the_org_admin_may_hold_and_close_a_funded_case(self):
+        c = self._controls(self.org_admin, self.bala)                    # active
+        self.assertEqual((c['can_set_substate'], c['can_hold'], c['close_refusal']), (True, True, ''))
+        self.assertIn('graduated', c['close_reasons'])
+
+    def test_an_awarded_case_holding_the_offer_says_why_it_cannot_close(self):
+        from apps.scholarship.models import Sponsor, Sponsorship
+        sponsor = Sponsor.objects.create(supabase_user_id='spn-x', name='S', email='s@example.test',
+                                         status='approved')
+        Sponsorship.objects.create(sponsor=sponsor, application=self.aisyah, amount=Decimal('2000'),
+                                   status='active')
+        c = self._controls(self.org_admin, self.aisyah)
+        self.assertEqual((c['close_reasons'], c['close_refusal']), ([], 'sponsorship_open'))
+        self.assertTrue(c['can_set_substate'])
+
+    def test_a_reviewer_may_not_hold(self):
+        c = self._controls(self.reviewer, self.aisyah)                   # assigned to them
+        self.assertEqual((c['can_set_substate'], c['can_hold']), (True, False))
+
+    def test_a_reader_who_cannot_write_is_offered_nothing(self):
+        c = self._controls(self.officer, self.bala)                      # see_all, not assigned
+        self.assertEqual((c['can_set_substate'], c['close_reasons']), (False, []))
+
+    def test_a_closed_file_offers_nothing(self):
+        c = self._controls(self.org_admin, self.ezra)
+        self.assertEqual((c['can_set_substate'], c['close_reasons'], c['close_refusal']),
+                         (False, [], ''))
+
+
+class TestControlsReviewGaps(_Scholars):
+    """S3 adversarial review: an awarded case with NO live money is offered Close; a payable student
+    with NO file is held from the cockpit (`maintenance_controls`)."""
+
+    def test_an_awarded_case_with_no_live_money_is_offered_close(self):
+        c = self._get(self.org_admin, f'{API}{self.aisyah.id}/').json()['controls']
+        self.assertEqual(c['close_refusal'], '')
+        self.assertIn('withdrawn', c['close_reasons'])
+
+    def test_a_payable_student_with_no_file_is_held_from_the_cockpit(self):
+        pending = make_application('awarded', cohort=self.cohort, reviewer=self.reviewer,
+                                   vircle_id='8000400179999')
+        url = f'/api/v1/admin/scholarship/applications/{pending.id}/'
+        body = self._get(self.org_admin, url).json()
+        self.assertEqual((body['has_file'], body['maintenance_controls']),
+                         (False, {'can_set_substate': True, 'can_hold': True}))
+        self.assertEqual(self._get(self.reviewer, url).json()['maintenance_controls']['can_hold'], False)
+        self.assertEqual(self._get(self.org_admin, f'{API}{pending.id}/').status_code, 404)  # no file
+        r = authed_client(self.org_admin).post(f'/api/v1/admin/scholarship/applications/{pending.id}/maintenance/',
+                                               {'substate': 'on_hold'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()['maintenance_controls']['can_hold'], True)
+
+    def test_an_awarded_student_with_no_wallet_takes_no_substate_anywhere(self):
+        url = f'/api/v1/admin/scholarship/applications/{self.dina.id}/'
+        self.assertFalse(self._get(self.org_admin, url).json()['maintenance_controls']['can_set_substate'])
