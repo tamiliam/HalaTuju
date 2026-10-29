@@ -16,6 +16,33 @@ decision rather than a record. Also: the list never judges a CGPA — `standing`
 `card_display.catalogue_course_names` (two queries), so a row costs no query (budget: 8 queries at 2 and 5 rows).
 No nav badge yet: the shell's badge plumbing needs its own count endpoint, and an on-hold count is a Sprint 3 item.
 
+## A polytechnic transcript is read Exact from its text layer only, every graded row proven by a sum — 2026-10-29 (Matric/Diploma M3)
+
+**What the corpus allowed.** Of the four polytechnic documents, ONE is an academic transcript (a
+digital PDF); two are semester result slips (a running HPNM, never final) and one a portal screen.
+A reader calibrated on one document can be trusted only where arithmetic proves every value, and
+only on the input it was calibrated on: so `poly_diploma_parse` reads the TEXT LAYER of the JPPKK
+transcript layout and nothing else — a scan (word boxes of a two-column page never seen) goes to
+Gemini. It is reached only through `higher_results._exact_read` on a page `results_kind` reads as
+Diploma that also prints a polytechnic's own name (`prints_polytechnic`, the JPPKK department's name
+not counted), so a UiTM or private-college diploma never meets it.
+
+**The proof.** The two-column text layer prints the summary boxes out of step with their semesters,
+so a box is paired by its own running Total Credits (each box's total = the last + its Credit
+Earned), never by position. Then for every graded semester: its rows' credits = its Credit Earned (a
+dropped or extra row refuses), its GPA and the running CGPA = the recomputed ones (credits × grade
+points on the polytechnic scale, A+ = A = 4.00, half-up). The final CGPA is the box whose Total
+Credits equal the programme's — a running figure is never final. An industrial-training semester is
+accepted only last, with credits, no rows, no GPA and the CGPA unchanged. A 0-credit row counts in
+no sum, so it is left out of `results`. Same blind spot as M2: two equal-credit grades of one
+semester exchanged add up the same; each text-layer row is printed whole on its own line.
+
+**Versions.** `MODEL_VERSION` 1.20.0 (a new recognition path). `VERDICT_ENGINE_VERSION` unchanged:
+the reader fills the fields Gemini did; the CGPA and name feed `verdict_academic`, so a value read
+more exactly can change a fact — a model change, not an engine change; genuineness is still unscored
+(M4). The one corpus transcript's Gemini read had a grade wrong (its semester GPA proves the print);
+the live stored read of that document (fetched 2026-10-29) carries the same misread, and M5's re-read corrects it.
+
 ## A funded student has one file from award acceptance to closure — 2026-10-29 (student maintenance roadmap, owner rulings)
 
 The owner asked for a whole system to look after students who were awarded and accepted, until their file is

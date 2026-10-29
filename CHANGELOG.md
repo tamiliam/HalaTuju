@@ -107,6 +107,23 @@ Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`; design of record
   a Scholars section. ⚠ No FAQ entry: `content/manual/faq.tsx` sits at its 600-line limit (TD-413 — the next
   entry must split it first), so the FAQ question waits for that split.
 
+## Matric/Diploma Exact-read M3 - 2026-10-29
+
+- **A polytechnic Diploma academic transcript is read Exact** (`poly_diploma_parse` 1.0.0, from
+  `higher_results.extract`, only on a page `results_kind` reads as Diploma AND that prints a
+  polytechnic's own name, `results_kind.prints_polytechnic`; UiTM and other diplomas never reach it).
+  Name, IC, registration number, polytechnic, every graded course row, the FINAL CGPA.
+- Every hit is proven: each semester's credits equal its box's Credit Earned (a dropped row refuses),
+  its GPA and the running CGPA recomputed (credits × grade points); the two-column page's boxes are
+  paired by their own running Total Credits; the final CGPA is the box whose Total Credits equal the
+  programme's (92.0 / 92.0); 5 or 6 semesters, industrial training only last; STATUS COMPLETED.
+  0-credit rows are left out (no sum proves them). TEXT LAYER ONLY: the corpus has no scanned
+  transcript, so a scan goes to Gemini.
+- Corpus (`eval/poly_parse_check.py`): 1 Exact, 7 Gemini, **0 wrong**; 0 of 169 controls accepted.
+  The one transcript's Gemini-seeded label had a grade wrong — the semester GPA proves the print.
+- `MODEL_VERSION` 1.20.0. `VERDICT_ENGINE_VERSION` unchanged (the M2 reasoning).
+- Tests: `test_poly_diploma_parse.py` (17, synthetic twins of the text layer; every rule bite-checked).
+
 ## Billing — nothing owed is never late, and the owner is told when a tenant declares - 2026-10-29
 
 Both from the owner reading BrightPath's own billing page after the declaration sprint shipped.
