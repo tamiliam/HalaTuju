@@ -177,12 +177,14 @@ function SearchPageInner() {
 
   // Bumi coverage Sprint B: the eligible set was worked out under one Bumiputera answer. A new
   // answer drops it (and re-fetches when the toggle is on), so it never shows the old answer's.
+  // Sprint D2: the pick-lists too — they load once, so they are dropped and re-loaded.
   const bumiSeen = useRef(bumi)
   useEffect(() => {
     if (bumiSeen.current === bumi) return
     bumiSeen.current = bumi
     setEligibleIds(null)
     setEligibleMap(null)
+    setFilters(null)
     if (eligibleOnly) fetchEligibleIds()
   }, [bumi, eligibleOnly, fetchEligibleIds])
 
@@ -241,6 +243,7 @@ function SearchPageInner() {
         bumiputera: bumi || undefined,
         limit: 10000,
       })
+      if (bumi !== bumiSeen.current) return   // asked under an older answer (Bumi D2): drop it
       setCourses(data.courses)
       setTotalCount(data.total_count)
       if (!filters) {
