@@ -64,6 +64,12 @@ Sprint D2 of `docs/plans/2026-10-28-bumi-and-islamic-coverage-roadmap.md`: 66 ro
 - Hand-run `eval/matric_poly_genuineness_check.py`; tests `test_matric_poly_doc.py` (18, synthetic, one through the live read to the Academic band;
   every rule bite-checked).
 
+- **Live 2026-10-29** in `914d4a5b` (web f4ab3724 / api 53b5e475 SUCCESS). Ingested by the `release-decisions`
+  job after both revisions served 100%: dry run = CREATE INSTITUTION MARA-BPT + 66 CREATE (52 Bumi-only),
+  0 UPDATE, 0 flagged; prod now 516 courses, 136 Bumi-only; re-revision `halatuju-api-01188-45h`. Live smoke
+  (all-A students): science non-Bumi 0 D2 Bumi rows, Bumi 44; Islamic-subject non-Bumi 13 open rows and 0 Bumi
+  rows, Bumi 31 + 13; a foreigner answering yes 0 + 0; the ATAU course pages render.
+
 ## Student maintenance Sprint 3 — the student's "My Bursary" hub; the sub-state and Close move to the scholar file - 2026-10-29
 
 Roadmap Sprint 3; design of record: the owner-approved phone artboard (2026-10-29). No migration.

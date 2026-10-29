@@ -1083,13 +1083,13 @@ record).
 
 ---
 
-**Bumi + Islamic coverage: Sprints A, B, C, TD-416 and D1 are LIVE (D1 2026-10-29, `f5282643`; retro
-`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d1.md`). NEXT in that arc = Sprint D2:** the other 63
-SPM courses (UIAM, MARA, the 14 open Islamic, UMS / UNIMAS / UM), the 2 Bumi-only Matrikulasi tracks (owner),
-the 3 flagged UiTM rows (ATAU; "A- in ONE AND B in THREE"), the search pick-list refresh for a Bumi student,
-and the 2 prod rows the fixture lacks (UL0481001, FB0500001). Reuse `spm_syarat.py` + `ingest_spm_courses`;
-strict reading of "belum diambil kira"; the D1 runbook (0088 docstring) is the ingest order. The Bumi answer
-stays course-guide only. Adversarial review before push.
+**Bumi + Islamic coverage: Sprints A to D2 are LIVE (D2 2026-10-29, `914d4a5b`; retro
+`docs/retrospectives/retrospective-2026-10-29-bumi-sprint-d2.md`). All 150 Sprint A SPM courses are in (136
+Bumi-only, 14 open Islamic) plus 2 Bumi-only matric tracks. NEXT in that arc = Sprint F:** UP_TVET ingest incl.
+MARA (~544 rows in `data/tvet/uptvet_latest.csv`; parse the public `info_url` "Syarat Kursus", the Bumi flag
+from "Taraf Bumiputera"). Follow-ups: the 2 prod rows the fixture lacks (UL0481001, FB0500001); college lists
+for the 2 Bumi matric tracks (then offer them in the pickers). The Bumi answer stays course-guide only.
+Adversarial review before push.
 
 **Back-issuing invoices is READY TO PUSH (2026-10-28; retro
 `docs/retrospectives/retrospective-2026-10-28-back-issue-invoices.md`).** A super may now set an invoice's
