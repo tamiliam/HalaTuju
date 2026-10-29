@@ -1027,10 +1027,18 @@ void, re-issue or re-number anything under scholarship billing without asking th
 `halatuju-api-01175-xll`, `halatuju-web-01009-x22`. Migrations `scholarship/0181` and `0182` were
 applied MIGRATE-FIRST and recorded — never re-apply that DDL.
 
-**ALL OF THE BILLING WORK IS LIVE (2026-10-29, main `1065c447`; `halatuju-api-01184-w9l`,
-`halatuju-web-01016-wbr`, both 100%, api health 200).** Migrations `scholarship/0184` and `0185`
-were applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL. Backend 10,097 pass,
-web 4,888, bundle 1.6 kB under the 148 kB line.
+**ALL OF THE BILLING WORK IS LIVE (2026-10-30, main `d602faaf`; `halatuju-api-01192-m29` on 100%,
+api health 200).** Migrations `scholarship/0184`, `0185` and `0187` were applied MIGRATE-FIRST by
+hand and recorded — **never re-apply that DDL**. Backend 10,302 pass / 3 skipped, web 4,981 / 319
+suites.
+
+⚠ **DEVELOPMENT BILLING NO LONGER READS `quote_hours`.** The owner audited all sixteen billed
+requests on 2026-10-29 and found five wrong (10, 14, 28, 30, 31) because billing charged the PLAN
+while the closing report had published a different number. **The authority is what was
+communicated back to the requester.** `OrgRequestAnalysis.charged_hours` is what reaches an
+invoice; a finished request with none REFUSES the month (`actual_hours_missing`, absolute, not
+overridable). `charged_hours = 0.0` is a real answer and is not NULL. **Nothing parses the prose
+— a person types the figures.**
 
 1. **The busy-meter guard** (`metered_without_cost` in `invoicing.readiness`, `metered_usage.py`).
    An invoice REFUSES when the meter recorded this tenant's billable calls for the month but the
@@ -1065,10 +1073,31 @@ web 4,888, bundle 1.6 kB under the 148 kB line.
    - **Answered, not changed:** the invoice PDF is already attached when a super presses Send.
      Issuing stays silent by the owner's standing rule.
 
-**Owner still to do:** record October's 149.5 billable hours (`/admin/billing` → *Finished work not
-yet billed*); obtain the October Supabase, Twilio and Workspace bills; convert the held Anthropic
-rows for October and November once each month ends. **Blocked on permissions:** deleting the orphan
-`.worktrees/budget-base` (already git-pruned, no junctions, three harmless files).
+4. **The published hours, and corrections of an earlier month** (2026-10-30, `0187`;
+   `request_hours.record_hours`, `charge_adjustments.py`, `OrgBillingCorrection`).
+   - **The hours panel sits ONCE, under the QUOTE** (`RequestHoursForm`, super-only), writing to
+     the analysis the invoice reads (`requestStatus.hoursAnalysisId`, pinned to the server's
+     `closing_report` by `hoursAnalysisDrift.test.ts`). ⚠ It was first rendered on every approved
+     analysis card, and request #3 has two — the second kept claiming the invoice would refuse
+     after the figures were already recorded. One claim about the request, one place on the screen.
+   - **A wrong month is corrected in a LATER one, never by editing a sent invoice.**
+     `OrgBillingCorrection`: signed amount, a REQUIRED reason that is PRINTED on the tenant's
+     invoice, optionally the invoice it puts right. `period_month` is the month that CARRIES it.
+     ⚠ **The order is load-bearing: subtotal → discount → corrections → total.** A discount is a
+     percentage of this month's work; a correction is a fixed sum putting an earlier bill right,
+     so discounting one would shrink a refund we owe and July's 100% discount would erase it.
+     Frozen onto the invoice at issue (`corrections_myr`, `corrections_snapshot`).
+     A credit bigger than the month REFUSES (`correction_exceeds_month`) — split it by hand.
+   - **Both audiences see the FINAL label** (`OrgRequestOrgSerializer.kind` → `_effective_kind`),
+     so a charge links to a request labelled the way it was billed. Nine were mislabelled.
+
+**Owner still to do:** record the five audited actuals on each request page (10 → 11.5/11.5,
+14 → 5.0/0.0, 28 → 5.0/5.0, 30 → 4.0/4.0, 31 → 5.0/5.0) and the actuals for #38, #39, #29, #33,
+#42, #44 — **October cannot issue until every finished request has one**; then create October's
+−RM126.50 credit (5.5 h × RM23.00, reason naming requests 10 and 14). Also: the October Supabase,
+Twilio and Workspace bills; convert the held Anthropic rows for October and November once each
+month ends. **Blocked on permissions:** deleting the orphan `.worktrees/budget-base` (already
+git-pruned, no junctions, three harmless files).
 
 ---
 

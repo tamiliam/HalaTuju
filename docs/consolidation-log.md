@@ -30,6 +30,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-29 Matric/Diploma Exact-read M2 (the Matriculation transcript is read Exact) — b0cdcd9d 6ce290ed _(logged by the billing session at its close, as above)_
 - 2026-10-29 Matric/Diploma Exact-read M3 (a polytechnic Diploma transcript is read Exact) — 814ffa0f 128a8fab _(logged by the billing session at its close, as above)_
 - 2026-10-29 Default payment schedule mirrors contract 10 (sprint: money; no migration) — e6a03fb3
+- 2026-10-30 Billing reads the published hours + corrections of an earlier month (sprint: money; migration scholarship/0187) — cbfa2a59 375edb62
 
 ## Reviews
 

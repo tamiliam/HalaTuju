@@ -1636,3 +1636,25 @@ is prefetched — weight moved off a route's first load can still travel in the 
   number. `if (x === null) return` beats `x ?? 0` everywhere a figure is priced. (Billing, 2026-10-29)
 - **A change to WHO IS PAYABLE does not reach a payment run already drafted.** (Default schedule, 2026-10-29.) `create_run` snapshots eligibility and `complete()` never re-checks it, so a November draft kept 14 students the new schedule skips. **Rule:** before pushing any change to payment eligibility, list the open (draft / signed) runs and tell the owner to cancel and re-create them after the deploy.
 - **When a change removes an "always true" property, grep every test that leans on it before the suite tells you one at a time.** (Default schedule, 2026-10-29.) Two test files assumed "last year's matric cohort is always payable", true only while the schedule had no end; fixing the failure in sight left the twin red for an 18-minute gate run.
+
+- **An injected fault has to break what the test ASSERTS, not merely edit the line the guard sits on.**
+  Three bites "stayed green" and only one was a real finding. One swapped `a - b + c` for `a + c - b` — the
+  same arithmetic. One blanked a field the test never reads. Read naively, both said "this guard is asleep",
+  and the safe-looking reaction (loosen the code, add more guard) would have been wrong in a direction nobody
+  would have questioned. **Rule:** before accepting a green bite as a finding, re-read the test's assertions
+  and check the injection changes one of them; a bite that cannot change the asserted value is UNPROVEN, the
+  same as a needle that did not land. (Billing, 2026-10-30)
+
+- **A rule written twice has a copy nobody can see break.** "May these hours be recorded?" lived once as the
+  Record button's condition and once as a guard inside the handler. Every test reached the handler through the
+  button, so the handler's copy had no coverage at all — injecting a fault into it changed nothing, and that
+  one WAS a real finding. **Rule:** when a UI withholds an action and the handler guards it again, the two are
+  one rule: extract it, have both read it, and make it a type guard where the language allows, so the caller
+  cannot reach past it for a `?? 0` fallback. (Billing, 2026-10-30)
+
+- **A warning that is true of the request can be false on the card it is drawn on.** The hours panel rendered
+  on every approved analysis, so after the owner recorded the figures on the one the invoice reads, a second
+  card kept saying *"the invoice for this month will refuse until they are"* — a sentence about the REQUEST,
+  printed in a place where it was not true, asking for the same work twice. **Rule:** a claim about the whole
+  record belongs in one place on the screen; before repeating a status line per row, ask whether the sentence
+  is still true on the second row. (Billing, 2026-10-30)

@@ -16019,3 +16019,67 @@ rule for template and default, so the two can differ only in their numbers.
 A student who starts a month late gets one fewer payment than their award (the schedule ends first) —
 the same as contract 10 would do; no live student is in that position today.
 **Revisit if:** contract 10 (or another template) is activated for the gift — the default then governs nobody.
+
+## 2026-10-30 — Billing reads the hours we PUBLISHED, not the quote (owner)
+**Decision:** development billing reads `OrgRequestAnalysis.charged_hours`, recorded by a person from the
+closing report, and REFUSES the month (`actual_hours_missing`, absolute) when a finished request carries none.
+`quote_hours` is reported beside it and never billed. `charged_hours = 0.0` is a real answer and is not NULL.
+**Alternatives considered:** (a) keep billing the quote — the defect; (b) read the latest analysis's
+`estimated_hours`, which was my first proposal and the owner rejected as still an internal figure;
+(c) parse the hours out of the closing report's prose — rejected: a machine guessing a number that lands
+on an invoice is how five of sixteen billed requests went wrong.
+**Rationale:** owner, 2026-10-29: *"It is not what is calculated internally. What matters is, what was
+communicated back to the requester."* The audit found #10 billed 15.0 for 11.5 spent, #14 billed 2.0 after
+we wrote "none of it is charged", #30 billed 7.0 against "about 4 hours".
+**Trade-offs:** a month cannot issue until every finished request has a figure typed in — deliberate
+friction, and the remedy is to record the actual, not to click past it.
+**Revisit if:** the closing report ever becomes structured enough that a figure can be read from it without
+a guess — then the typing is transcription a machine could do, but the REFUSE-on-absent rule still stands.
+
+## 2026-10-30 — A wrong month is corrected in a later one, AFTER the discount (owner)
+**Decision:** `OrgBillingCorrection` carries a signed amount, a required reason that is PRINTED on the
+tenant's invoice, and optionally the invoice it puts right. `period_month` is the month that CARRIES it.
+The month reads: subtotal → discount → corrections → total. Corrections are frozen onto the invoice at
+issue (`corrections_myr`, `corrections_snapshot`) exactly as the discount and the issuer are.
+**Alternatives considered:** (a) void and re-issue the wrong invoice — too heavy for a billing mistake,
+and a void is a visible withdrawal of a document the customer already filed; (b) edit the sent invoice —
+never, that is the one thing an invoice may not do; (c) apply corrections BEFORE the discount, which is
+where the discount code made it obvious to put them.
+**Rationale:** owner, 2026-10-29: *"When we have overcharged or undercharged, this should be deducted or
+added (or written off) in the following month."* The order matters because a discount is a percentage of
+THIS month's work while a correction is a fixed sum putting right an earlier bill: discounting a correction
+shrinks a refund we already owe, and July's 100% discount would have erased one entirely.
+**Trade-offs:** a credit larger than the month refuses (`correction_exceeds_month`) rather than issuing a
+negative invoice, so a large over-charge has to be split across months by hand. A correction also needs a
+month that HAS a bill — an empty month still stops at `no_costs`.
+**Revisit if:** the platform ever gains a real credit-note document that a tenant can be paid against.
+
+## 2026-10-30 — Both audiences see the FINAL label (owner)
+**Decision:** `OrgRequestOrgSerializer.kind` reports the effective classification (`triaged_kind || kind`),
+so a tenant clicking a charge lands on a request labelled the way it was billed. Only the classification
+moves; the rest of the org payload is unchanged.
+**Alternatives considered:** showing the organisation the label change and its reasoning — rejected by the
+owner: *"They don't have to see the details of the label change. It should simply say the final label."*
+**Rationale:** nine requests read "bug" to the organisation while being billed as features. A charge that
+links to a request labelled free is incoherent on the customer's side.
+**Trade-offs:** narrows the 2026-07-30 ruling that the org payload shows what the submitter filed. The
+reasoning stays readable in the discussion thread, which is where the owner put it.
+**Revisit if:** a tenant ever needs the filed label for their own records.
+
+## 2026-10-30 — The hours panel lives under the QUOTE, once per request (owner)
+**Decision:** one `RequestHoursForm`, rendered under the quote block, super-only, writing to the analysis
+the invoice reads (`requestStatus.hoursAnalysisId`, mirroring the server's `closing_report`). The figures
+are still STORED on the published analysis.
+**Alternatives considered:** (a) one panel per approved analysis card — what shipped first, and what the
+owner hit: request #3 has two approved analyses, so after recording on the one the invoice reads, the other
+went on saying the invoice would refuse. That sentence was false; (b) compute which card "wins" and render
+there — still asks the reader to understand a rule they should not have to; (c) move the figures onto
+`OrgRequest` — rejected: the owner's ruling is about which number is authoritative, and that only means
+something if the DOCUMENT that published it is known.
+**Rationale:** owner, 2026-10-30: *"Why can't this be under the quote section? There is just one. And I
+think every single billed req has quote."* Both halves are true — `consent_gaps` refuses to bill a feature
+without a quote — and the plan and the actual are the two numbers a reader wants side by side.
+**Trade-offs:** the UI's location and the storage row are now separate concerns, so `hoursAnalysisId` must
+keep mirroring `closing_report`. If they drift, the screen offers to edit a number the invoice does not read;
+both carry a warning saying so.
+**Revisit if:** a request ever needs figures recorded against a report OTHER than the one billing reads.
