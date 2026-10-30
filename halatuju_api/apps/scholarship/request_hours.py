@@ -348,9 +348,9 @@ def bug_reports_fixed(organisation, period_month):
     same candidates (approved, not superseded, with a cited file) so it cannot drift from the
     screen about which analyses count — only about which of them answers "how long?".
 
-    ⚠ **That also makes it right AFTER the hours rule lands.** Once a completion report records the
-    ACTUAL hours against the plan, the newest figure is the actual one, and this picks it up with
-    no change.
+    ⚠ **THE ACTUAL BEATS THE PLAN once a completion report records one.** That was promised here
+    from the start and was NOT true in the code until 2026-10-30 — see `_hours_bearing_analysis`,
+    which read the estimate alone and so skipped the very row carrying the answer.
 
     ⚠ **`hours` is None when nothing is known, NEVER 0.0.** Two October bugs (36 and 43) still
     carry no estimate anywhere. Printing "0.0 hours" for work that was done would be a confident
@@ -387,12 +387,25 @@ def _hours_bearing_analysis(req):
 
     Same candidate set as `org_requests.approved_analysis` — approved, not superseded, carrying at
     least one cited file — so the two cannot disagree about which analyses are real. It differs in
-    one way only: it skips the ones that answer no question about time, which is every completion
-    report.
+    one way only: it skips the ones that answer no question about time, which is every analysis
+    carrying neither a plan nor an actual.
+
+    ⚠⚠ **AN ACTUAL BEATS A PLAN, AND A LATER ROW BEATS AN EARLIER ONE.** A completion report
+    carries `actual_hours` and NO `estimated_hours`, so a candidate set keyed on the estimate alone
+    skipped the one row that answers the question and fell back to the PLAN sitting below it. The
+    docstring above has promised the actual since this function was written; the code returned the
+    plan until 2026-10-30. Request #49 was planned at 30.0 and took 15.0, both approved — it would
+    have told BrightPath we absorbed thirty hours when we absorbed fifteen. Caught by the Request
+    session while #49 was still `scheduled`, so nothing was ever printed wrong.
+
+    ⚠ **`charged_hours` IS THE WRONG COLUMN HERE AND MUST STAY WRONG.** A bug is absorbed, so its
+    charge is 0.0 by construction. This line counts what the organisation GOT, never what it paid —
+    `billable_hours` is the one that reads the charge.
     """
     rows = [a for a in req.analyses.all()
             if a.approved_at and not a.superseded_at and a.cited_files
-            and a.estimated_hours is not None]
+            and (a.actual_hours is not None or a.estimated_hours is not None)]
     if not rows:
         return None
-    return max(rows, key=lambda a: (a.approved_at, a.id)).estimated_hours
+    latest = max(rows, key=lambda a: (a.approved_at, a.id))
+    return latest.actual_hours if latest.actual_hours is not None else latest.estimated_hours

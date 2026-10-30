@@ -269,6 +269,71 @@ class TestWhatTheInvoiceReads(_Base):
         self.assertEqual(request_hours.closing_report(req).id, with_hours.id)
 
 
+class TestWhatTheBugLineCounts(_Base):
+    """`bug_reports_fixed` prints what we ABSORBED, and its docstring promised the ACTUAL from the
+    day it was written. The code read the plan until 2026-10-30.
+
+    Request #49 is the live case: planned 30.0, spent 15.0, both approved, charge 0.0 because the
+    owner triaged it as a bug. The completion report carries `actual_hours` and NO
+    `estimated_hours`, so a candidate set keyed on the estimate skipped it and read the 30.0 one
+    row below — the invoice would have told BrightPath we gave away thirty hours, not fifteen.
+    Caught by a peer session while #49 was still `scheduled`, so nothing was ever printed wrong.
+    """
+
+    def _bug(self):
+        req = self._req()
+        req.kind = req.triaged_kind = 'bug'
+        req.save(update_fields=['kind', 'triaged_kind'])
+        return req
+
+    def _analysis(self, req, *, body, estimated_hours=None):
+        return org_requests.approve_analysis(
+            org_requests.record_analysis(
+                req, self.super, body=body, estimated_hours=estimated_hours,
+                cited_files=[A_REAL_FILE], authored_by='claude-opus-5', repo_sha='a' * 40),
+            self.super)
+
+    def test_a_completion_report_s_ACTUAL_beats_the_PLAN_below_it(self):
+        req = self._bug()
+        self._analysis(req, body='We think this is about 30 hours.', estimated_hours='30.0')
+        report = self._analysis(req, body='Finished and live. It took about 15 hours.')
+        request_hours.record_hours(report, self.super, actual_hours='15.0', charged_hours='0',
+                                   charge_note='Triaged as a bug: absorbed, no charge.')
+        self._finish(req)
+        line = request_hours.bug_reports_fixed(self.org, '2026-10')
+        self.assertEqual(line['count'], 1)
+        self.assertEqual(line['hours'], Decimal('15.0'))
+
+    def test_the_charge_of_zero_is_NOT_what_this_line_counts(self):
+        """A bug is absorbed, so `charged_hours` is 0.0 by construction. Reading the charge here
+        would report every absorbed bug as nothing given away, which is the opposite of true."""
+        req = self._bug()
+        report = self._analysis(req, body='Finished. About 15 hours.')
+        request_hours.record_hours(report, self.super, actual_hours='15.0', charged_hours='0',
+                                   charge_note='Absorbed.')
+        self._finish(req)
+        self.assertEqual(request_hours.bug_reports_fixed(self.org, '2026-10')['hours'],
+                         Decimal('15.0'))
+
+    def test_with_no_actual_anywhere_it_still_reports_the_plan(self):
+        """Every bug fixed before October has an estimate and no completion figure. The fix must
+        leave all of them reading exactly as they did."""
+        req = self._bug()
+        self._approved(req)                       # estimated 7.0, nothing recorded against it
+        self._finish(req)
+        self.assertEqual(request_hours.bug_reports_fixed(self.org, '2026-10')['hours'],
+                         Decimal('7.0'))
+
+    def test_a_request_with_no_figure_anywhere_is_counted_but_not_measured(self):
+        """⚠ None, never 0.0 — "we fixed it and never timed it" must not read as "it was free"."""
+        req = self._bug()
+        self._analysis(req, body='Finished and live.')      # prose only
+        self._finish(req)
+        line = request_hours.bug_reports_fixed(self.org, '2026-10')
+        self.assertEqual(line['count'], 1)
+        self.assertIsNone(line['hours'])
+
+
 class TestTheUnbilledPanel(_Base):
     """The panel the owner read on 2026-10-29, which proposed 7h for #30 and 8h for #31 — the
     PLANS — while the closing reports had told BrightPath 4 and 5. Pressing Record filed the wrong
