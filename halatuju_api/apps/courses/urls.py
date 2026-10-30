@@ -2,7 +2,7 @@
 URL patterns for the courses app.
 """
 from django.urls import path
-from . import health, views, views_stpm_quiz
+from . import health, views, views_offerings, views_stpm_quiz
 from .views_admin import (
     AdminRoleView, AdminOrgsView, AdminSetPasswordView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
@@ -53,6 +53,8 @@ urlpatterns = [
 
     # Course catalog
     path('courses/search/', views.CourseSearchView.as_view(), name='course-search'),
+    # Scholarship My Plans (2026-10-30): one pathway's institutions + their courses, unfiltered.
+    path('courses/offerings/', views_offerings.PathwayOfferingsView.as_view(), name='course-offerings'),
     path('courses/', views.CourseListView.as_view(), name='course-list'),
     path('courses/<str:course_id>/', views.CourseDetailView.as_view(), name='course-detail'),
 
