@@ -108,6 +108,25 @@ F1's parser, builder and command, as Bumi-only courses where the page says so, o
   tsc 0; jest 5,246 / 327 suites;
   bundle median 146.608 / 148 kB. Bites: dropping `req_bumiputera` on one F2 row turns the golden master
   red (non-Bumi gain 199 -> 248); disabling the existing-id refusal turns the F2 refusal test red.
+## Billing — the close gate reads the LAST report, not any report - 2026-10-30
+
+Same-day follow-up to the entry below, found by the first real traffic through that guard.
+
+- **`org_requests.done` now tests `request_hours.closes_cleanly`**: the NEWEST approved,
+  un-superseded analysis must carry the charged figure. Asking only whether *some* approved
+  analysis carried one was not enough, and request #50 proved it within the hour: report 125 was
+  recorded at 1.0 and the request closed; the owner re-opened it; a second report 126 told
+  BrightPath 1.5; and `done` succeeded again before 1.5 was recorded, because 125 still satisfied
+  the old test. In that window the invoice would have billed 1.0 against a document the customer
+  had just read as 1.5 — the sprint's own defect, rebuilt one layer up.
+- ⚠ **Only the GATE moved. `closing_report` still looks past a figure-less analysis** to the
+  figure underneath, and must: 24 requests already closed carry a note approved after their hours,
+  several already invoiced, and tightening the reader would un-bill them retroactively. A gate
+  binds nothing already through it.
+- The habit this asks for is one line: **record last, close next.** There is no "post the note
+  afterwards" escape — `can_comment` refuses a terminal request, so nothing can be added to a
+  closed one at all.
+
 ## Billing — a request cannot close without its figures - 2026-10-30
 
 Owner's ruling: *"agent that complete a request MUST: 1) write post-completion report with planned,

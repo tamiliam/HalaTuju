@@ -291,6 +291,51 @@ class TestClosingAReport(_Base):
             svc.done(r, self.org_admin)
         self.assertEqual(e.exception.code, 'wrong_role')
 
+    def test_a_SECOND_report_with_no_figures_yet_blocks_the_close(self):
+        """⚠⚠ REQUEST #50, VERBATIM, AND THE FIRST GUARD LET IT THROUGH.
+
+        Report one was recorded at 1.0 and the request closed. The owner re-opened it, a SECOND
+        report told BrightPath 1.5, and `done` succeeded BEFORE anyone recorded 1.5 — because the
+        first guard asked only whether SOME approved analysis carried a charge, and report one
+        still did. In that window the bill would have read 1.0 while the document the customer had
+        just read said 1.5.
+
+        The newest approved analysis is the last thing we told them, so it is the one that has to
+        carry the figure.
+        """
+        r = self._scheduled()
+        self._reported(r, actual_hours='1.0')          # first report, recorded
+        second = self._analysed(r)                     # approved, tells them a new number, no figures
+        with self.assertRaises(svc.OrgRequestError) as e:
+            svc.done(r, self.super)
+        self.assertEqual(e.exception.code, 'closing_report_required')
+
+        from apps.scholarship import request_hours
+        request_hours.record_hours(second, self.super, actual_hours='1.5')
+        svc.done(r, self.super)
+        r.refresh_from_db()
+        self.assertEqual(r.status, 'done')
+        self.assertEqual(request_hours.billable_hours(r), Decimal('1.5'))
+
+    def test_the_READER_still_looks_past_a_figureless_note(self):
+        """⚠ The gate tightened; `closing_report` did NOT, and must not.
+
+        A figure-less analysis must never erase a recorded figure. 24 requests already closed have
+        exactly that shape — a note approved after the hours were recorded, while the request was
+        still open — and several are already invoiced. Tightening the READER would un-bill them
+        retroactively, which is why only the GATE moved.
+
+        ⚠ The note has to be staged BEFORE `done`: `can_comment` refuses a terminal request, so no
+        analysis can ever be added to a closed one. That is also why this shape only ever arises
+        while the work is still open.
+        """
+        from apps.scholarship import request_hours
+        r = self._scheduled()
+        self._reported(r, actual_hours='4.0')
+        self._analysed(r)                              # a note approved after it, no figures
+        self.assertEqual(request_hours.billable_hours(r), Decimal('4.0'))
+        self.assertFalse(request_hours.closes_cleanly(r))   # ...but it may not close like this
+
 
 class TestRequesteeResponses(_Base):
     def _quoted(self):

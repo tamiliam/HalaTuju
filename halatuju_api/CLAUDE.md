@@ -1040,6 +1040,12 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
   asked to record the hours is the failure.
   ⚠ **A BUG IS NOT EXEMPT.** Its charge is `0.0`, which is a real answer and is exactly what
   `bug_reports_fixed` counts as free work given away. A blank is not an answer.
+  ⚠ **RECORD LAST, CLOSE NEXT.** The gate (`request_hours.closes_cleanly`) tests the NEWEST
+  approved analysis, not merely some analysis with a charge on it. Approving a figure-less note
+  between recording the hours and closing blocks the close — correctly: the last thing we sent the
+  organisation is the thing the bill has to match. Request #50 closed on a stale 1.0 while its
+  freshly approved second report told BrightPath 1.5, an hour after the first version shipped.
+  There is no "post the note afterwards" escape either: `can_comment` refuses a terminal request.
 - **Never raise a budget, a floor or a ledger** — split the file first, in its own commit, moves only.
   ⚠ The tight ones: `pathway_engine.py` (0 lines of room) and `models/applications.py` (1); `serializers.py`
   and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.

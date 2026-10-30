@@ -730,9 +730,9 @@ def done(req, admin):
     billed on their PLAN. `invoicing.actual_hours_missing` refuses that month ABSOLUTELY — correct,
     and four weeks too late. The full story is in `TestClosingAReport`.
 
-    ⚠ ONE check suffices because `record_hours` requires `actual_hours`, so a row carrying
-    `charged_hours` carries the actual too — and `closing_report` reads what the organisation was
-    SENT, the only honest source for a bill.
+    ⚠ The test is `closes_cleanly`: the NEWEST approved analysis must carry the charge, not merely
+    some analysis somewhere. Asking only for the latter let request #50 close on a stale 1.0 an
+    hour after this guard shipped — read that function before loosening this.
     ⚠ **A BUG IS NOT EXEMPT**: its charge is `0.0`, which is what `bug_reports_fixed` counts as
     free work given away — an answer, where a blank is not.
 
@@ -743,7 +743,7 @@ def done(req, admin):
         raise OrgRequestError('wrong_role')
     _check_transition(req, 'done')
     from . import request_hours
-    if request_hours.closing_report(req) is None:
+    if not request_hours.closes_cleanly(req):
         raise OrgRequestError('closing_report_required')
     req.status = 'done'
     req.save(update_fields=['status', 'updated_at'])

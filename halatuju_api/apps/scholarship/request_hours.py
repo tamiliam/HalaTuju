@@ -156,6 +156,49 @@ def closing_report(req):
     return max(rows, key=lambda a: (a.approved_at, a.id))
 
 
+def latest_approved_analysis(req):
+    """The newest approved, un-superseded analysis — figure-bearing or not.
+
+    Deliberately NOT `closing_report`: this one does not care whether hours were recorded, because
+    the question it answers is *"what did we tell them LAST?"* rather than *"what is the bill?"*.
+    Same `(approved_at, id)` ordering, so the two agree about which row is newest.
+    """
+    rows = [a for a in req.analyses.all() if a.approved_at and not a.superseded_at]
+    if not rows:
+        return None
+    return max(rows, key=lambda a: (a.approved_at, a.id))
+
+
+def closes_cleanly(req) -> bool:
+    """Whether `org_requests.done` may close this request: the LAST word carries its figures.
+
+    ⚠⚠ **"ANY APPROVED ANALYSIS WITH A CHARGE" WAS NOT ENOUGH, AND PRODUCTION PROVED IT WITHIN THE
+    HOUR.** The guard shipped on 2026-10-30 asking only for `closing_report(req) is not None`.
+    Request #50 then went: report 125 approved and recorded at 1.0 → the owner re-opened it → a
+    SECOND report 126 was approved telling BrightPath 1.5 → and `done` SUCCEEDED before anybody
+    recorded 1.5, because 125 still satisfied "some approved analysis has a charge". In that
+    window `closing_report` returned 125, so the invoice would have billed 1.0 while the document
+    the customer had just read said 1.5 — the exact defect the whole sprint exists to remove,
+    rebuilt one layer up. Found by the Request session as the first real traffic through the guard.
+
+    So the test is on the NEWEST approved analysis, not on any of them. If the last thing we sent
+    carries no figure, we do not know what we told them, and for money the safe answer is to refuse.
+
+    ⚠ **THIS IS NOT THE SAME RULE AS `closing_report`, AND MUST NOT BE.** `closing_report`
+    deliberately looks past a figure-less analysis to the figure underneath, because a later
+    *note* ("shipped and verified") must not erase a recorded figure — 24 requests already closed
+    have exactly that shape, several already invoiced, and tightening the READER would make them
+    unbillable retroactively. Only the GATE is tightened, and a gate binds nothing that is already
+    through it.
+
+    ⚠ The cost is one habit: do not approve a figure-less analysis between recording the hours and
+    closing. Record last, close next. There is no "post the note afterwards" escape — `can_comment`
+    refuses a terminal request, so nothing can be added to a closed one at all.
+    """
+    latest = latest_approved_analysis(req)
+    return latest is not None and latest.charged_hours is not None
+
+
 def billable_hours(req):
     """What this request puts on an invoice: ``Decimal`` hours, or None when nothing is reported.
 
