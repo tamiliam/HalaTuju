@@ -29,6 +29,52 @@ or SPM school"* — which school the card's field means has to be settled first.
 **Measured before the change, on live data:** programme tick gained on 9 records, tertiary institution tick on 16,
 6 blank institutions now show the letter's; no tick lost.
 
+## The scholarship "My Plans" step asks about an OFFER, names the institution first, and is not filtered by results — 2026-10-30 (owner rulings; supersedes the eligible-only Plans step, the PISMP eligible-only chips and the question wording)
+
+**Owner rulings, 2026-10-30.** HalaTuju has two parts. The COURSE GUIDE (dashboard, search, course and pathway
+pages) stays filtered by the student's results. The SCHOLARSHIP side does not filter by results by default: its
+pickers exist so a student NAMES the course and the institution she holds (or awaits) an offer for, so we can match
+it to the offer letter. Entry rules change from year to year, and a student already enrolled may have entered under
+rules her saved grades no longer meet (UE4545004, a UiTM Diploma Sains student, could not pick her own course).
+
+**Decision.**
+1. **The opening question is about an offer** — "Have you received an offer for your next step of study?" — answered
+   "Yes, I have an offer" (stored as today's `pathway_certainty = 'sure'`) or "Not yet, I'm waiting" (`'uncertain'`).
+   Labels only: same stored values, branches and validation. The waiting branch keeps its optional fields and says
+   "We can fund you once your offer letter arrives". Under the offer branch, once the place is named, the step reads
+   it back ("<course> · <institution>, <state>") with "You will upload this offer letter once you are shortlisted. We
+   fund only a confirmed place with a reporting date." No fast track, no upload in the form, no change to reminders,
+   the ~58-day auto-close, shortlisting, verdicts, blockers or awards.
+2. **Institution first, then course**: university / Asasi University → Course; polytechnic State → Polytechnic →
+   Course; community college, MARA, ILJTM, ILKBS and other public skills training State → Campus → Course; PISMP
+   School type → Subject; matriculation Track → College; Form 6 Stream → School; STPM and third-route holders
+   University → Degree. No state step for the universities (29 at most; the owner's rule: the box she types into
+   must not hold too many items). The pathway dropdown lists every pathway in `PATHWAY_ORDER`, with no counts.
+3. **Unfiltered by default; "Eligible only" is opt-in.** A quiet switch in the step card's top-right ("Only show
+   courses I qualify for", the site `Toggle`), default OFF, narrows every list to what her results qualify for (the
+   pathways too). It is not offered without results, or to a Matriculation / Asasi / Diploma holder (no entry rules,
+   D2). The switch is the only road to the eligibility endpoints (`lib/planEligibility.ts`, loaded by `import()` when
+   switched on); `lib/planPicker.scope.test.ts` guards it, beside `lib/bumiputera.scope.test.ts`.
+4. **The pick records the institution.** `chosen_programme` gains `institution` (the CATALOGUE spelling:
+   `Institution.institution_name`, or `StpmCourse.university` for a degree — the spelling `offer_pathway` compares an
+   offer letter against) and `institution_id`. The keys are left out when there is none (PISMP, which names no
+   campus). Every server reader takes the extra keys as they are (no migration): the sponsor card and the contract
+   now show her pick until the offer settles it; `_declared_pathway` reads it; on a multi-campus course the offer
+   comparison can now say "match" or "clash" where it said "unknown"; the catalogue fill never overwrites it.
+5. **The catalogue the pickers read** is `GET /api/v1/courses/offerings/?pathway=` — one pathway's institutions (id,
+   name, state) and the courses each offers, Bumiputera-only and inactive courses included, public and read-only,
+   cacheable for an hour. The course guide does not call it, and `/stpm/search/` is unchanged.
+6. **Option A stands**, and the split stays: SPM-results students choose SPM-entry courses; STPM holders degrees.
+
+**Supersedes:** "Your Plans step = one progressive-disclosure question, eligible-only, derived destination"
+(2026-05-26) — its question wording and the eligible-only dropdown with counts; the PISMP picker's "Aliran chips are
+eligible-only" (2026-06-19); and the third-route ruling's "both degree pickers list every degree unfiltered via
+`lib/degreeChoices.ts`" (2026-10-26), now every student's default, via the offerings endpoint.
+
+**Revisit if:** students name the wrong campus often enough that the offer comparison raises avoidable clashes (a
+shorter campus list per course, or "I don't know the campus yet", would be the next step); or a funder wants the
+scholarship side to refuse a course the student does not qualify for (that would be a server rule, not a picker).
+
 ## One Student communications page; the organisation may switch off only the safe emails — 2026-10-30 (student maintenance S6a, owner rulings)
 
 **Owner rulings, 2026-10-30 (all four recorded here; the last three bind Sprint 6b):**
@@ -6475,6 +6521,9 @@ better an absent badge than a fabricated assurance.
 **Revisit if:** an automated institution-enrolment-confirmation feed is built → set the flag from it.
 
 ## PISMP picker: aliran on the eligibility payload, browse replaces type-search — Sprint 2 (PISMP), 2026-06-19
+
+> **Amended 2026-10-30:** the school types and subjects are no longer eligible-only — they come from the catalogue
+> (`/courses/offerings/?pathway=pismp`, `aliran` served there) and narrow only under "Eligible only".
 **Decision:** The PISMP Aliran→Bidang picker consumes an `aliran` field added to the eligible-courses payload
 (backend-derived via `pismp_taxonomy.aliran_of`), and the school-type→subject browse **replaces** the type-a-course-name
 box for PISMP (other programme pathways keep the plain `ProgrammePicker`). The subject step reuses that same compact
@@ -7627,6 +7676,9 @@ referrals still flow through the named partner orgs, so reach is unaffected in p
 or legal advice changes.
 
 ## "Your Plans" step = one progressive-disclosure question, eligible-only, derived destination — plans-redesign P2, 2026-05-26
+
+> **SUPERSEDED 2026-10-30** (owner rulings) — the question now asks about an offer, every pathway is listed with no
+> counts, and the lists are unfiltered unless the student switches "Eligible only" on. See the entry of that date.
 
 **Decision:** The apply-form Plans step opens with a single question — *"Do you know which pathway you'll take?"* →
 **Decided / Still deciding** — and reveals everything else only after it's answered. The **Decided** branch (SPM
@@ -16209,7 +16261,9 @@ agreed on every programme on 2026-10-28. The listing's "Feeder Bumiputera" badge
 
 ## 2026-10-28 — The scholarship programme pickers show every course and never read the Bumiputera answer (owner, Option A)
 **Decision:** the scholarship apply page and the /profile "Your Plans" picker (`loadDegreeChoices(..., { allCourses: true })`)
-list every course, Bumi-only included, to every student, and never read `StudentProfile.bumiputera`.
+list every course, Bumi-only included, to every student, and never read `StudentProfile.bumiputera` — and (owner,
+2026-10-30) never the results either, unless the student switches "Eligible only" on (which still includes
+Bumi-only courses). `loadDegreeChoices` left with `lib/degreeChoices.ts`; the lists come from the catalogue.
 **Why:** a picker filtered on the answer would let a reviewer or sponsor infer it from the programme chosen. A
 non-Bumi student who picks a Bumi-only course simply will not get a place, and the offer letter corrects it.
 Sponsors are never told the answer; a guess from the institution is accepted (owner).

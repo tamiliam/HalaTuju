@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## Scholarship My Plans redesign — offer question, institution first, unfiltered (no migration) - 2026-10-30
+
+Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers-unfiltered`; NOT pushed.
+
+- **"My Plans" asks about an offer.** "Have you received an offer for your next step of study?" — "Yes, I have an
+  offer" / "Not yet, I'm waiting". Same stored values (`pathway_certainty` sure / uncertain), branches and
+  validation; the waiting branch says "We can fund you once your offer letter arrives". With an offer, the step
+  reads the place back ("<course> · <institution>, <state>") with "You will upload this offer letter once you are
+  shortlisted. We fund only a confirmed place with a reporting date."
+- **Institution first, then course**, for every pathway: University → Course (university, Asasi, an STPM degree);
+  State → Polytechnic / Campus → Course (polytechnic, community college, MARA, ILJTM, ILKBS, other public skills
+  training); PISMP, matriculation and Form 6 keep their two steps. Every pathway is listed, with no counts.
+- **Not filtered by results by default.** A quiet "Eligible only" switch (top-right of the card, default off; not
+  offered without results or on the third route) narrows the lists. The course guide is unchanged.
+- **`chosen_programme` names the institution** — `institution` (catalogue spelling) and `institution_id`. Every
+  server reader checked; the extra keys flow through the submit, the intake snapshot and the two-way profile sync.
+- **New endpoint** `GET /api/v1/courses/offerings/?pathway=` (public, read-only, one hour cacheable): one pathway's
+  institutions and the courses each offers, Bumi-only and inactive courses included (`apps/courses/views_offerings.py`).
+- **One picker**: `/scholarship/apply` now draws its Plans step with the same `PathwayPicker` as `/profile`, behind
+  `LazyPathwayPicker`; new `InstitutionCoursePicker`, `lib/planPicker.ts` (the rules) and `lib/planEligibility.ts`
+  (the switch; replaces `lib/degreeChoices.ts`). The apply page fell 1,074 → 732 lines, `lib/scholarship.ts`
+  1,092 → 1,005; their ledger lines were lowered and two reasonless `exhaustive-deps` disables left the ledger.
+- **Documents page:** the never-drawn section notes and pills were deleted, among them the pathway note that called
+  the offer letter optional ("if you already have one"). Whether a document is needed stays the programme's answer,
+  shown on each card.
+- Tests: api `test_pathway_offerings.py`, `test_chosen_programme_institution.py`; web `PathwayPicker.test.tsx`
+  (rewritten), `planPicker.test.ts`, `planPicker.scope.test.ts` (the guard), `page.plans.test.tsx`; the apply-page
+  results / Bumi Option A / third-route tests now assert the catalogue and no eligibility call.
+
 ## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — LIVE 2026-10-30 (main 14537b10; api-01211-psc, web-01034-n7j). Migrations courses 0089, scholarship 0190, 0191 applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL
 
 The six entries below are one arc on branch `source-signin`: S1, S2, S3, S4 (backend), the backend review fixes, and
