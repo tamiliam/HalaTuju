@@ -715,8 +715,9 @@ class SponsorTermsAcceptView(_TermsBase):
 
 
 def _client_ip(request):
-    """Best-effort caller IP for the acceptance record. Cloud Run sits behind a proxy, so the
-    first X-Forwarded-For hop is the real client; a malformed header simply yields None rather
-    than storing rubbish."""
-    fwd = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip()
-    return fwd or request.META.get('REMOTE_ADDR') or None
+    """Best-effort caller IP for the acceptance record: the first X-Forwarded-For hop (Cloud Run
+    sits behind a proxy), else REMOTE_ADDR. Its one home is now `request_ip.forwarded_ip` (moved
+    unchanged, review L4, 2026-10-30), shared with the source's witness record. ⚠ A malformed header
+    is NOT turned into None here, whatever this used to say — TD-429."""
+    from .request_ip import forwarded_ip
+    return forwarded_ip(request)

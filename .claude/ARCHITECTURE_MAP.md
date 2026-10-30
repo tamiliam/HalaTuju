@@ -444,7 +444,14 @@ source is active AND an active user of it has signed in (`source_invite.has_join
 (first ask and reminder) carries a button to `<frontend>/admin/scholarship/<id>` (the web routes a source user to its
 own view) and the executed copy to the witness keeps its link; otherwise "reply to this email" and no link. The PDF's
 witness block names `witness_name`, else the organisation — never `witness_signed_by`. Tests:
-`tests/test_source_witness.py`.
+`tests/test_source_witness.py`. **Review fixes (2026-10-30, `tests/test_source_signin_review.py`):** the scholar set
+(`source_console.scholar_q`) and witness eligibility (`contract_live`) read the STUDENT-FACING status, so a decline
+in its cool-off changes nothing yet; once witnessed, access and `witness_is_you` follow `agreement.witness_org`
+(`is_the_witness`; `source_access.applications_for` includes the contracts a source has witnessed); the agreement
+GET before a witness only while `can_witness` (`may_read_agreement`); a witness-only case is 404 until the guarantor
+has signed (`witness_case_open`); `record_once` locks the application then the agreement and re-checks the witness
+organisation (`WitnessChanged`); `witness_ip` = `request_ip.signer_ip`; non-text body values are 400 `bad_request`
+(`views_admin/sources.text_of`).
 
 ⚠ **EACH APPLICATION KEEPS ITS OWN "WHO REFERRED YOU?"** (sources Sprint C, 2026-10-19; owner's rulings
 2026-10-09). `ScholarshipApplication.referral_code` (the answer as given, fixed choices included, `''`

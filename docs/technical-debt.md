@@ -6958,3 +6958,27 @@ says every email goes through the metered seam. S6a did not move it because rout
 way `profile_claim.send_claim_code_email` does (the existing lazy `_scholarship('emails')` door, which already counts
 in the budget), named `send_*` so the meter tags it; forward-only like every S6a billing fix, no backfill.
 *(B · S)*
+
+### [TD-429] The student's and the guarantor's signatures record the proxy's address, not theirs - low
+
+**Raised 2026-10-30 by the source sign-in adversarial review (L4).** `sponsorship.respond_to_award` stores
+`student_ip` / `guarantor_ip` (and the consent's `ip`) from `request.META['REMOTE_ADDR']` (`views.py`, four
+call sites), which behind Cloud Run is the proxy's address, so every signature carries the same useless value. The
+source's witness now records the FORWARDED caller (`request_ip.signer_ip`: the first `X-Forwarded-For` hop, kept
+only when it parses as an address). Not changed for the student on purpose: it changes what her signed record says,
+so it wants its own decision. Also: the sponsor terms acceptance's `views_sponsor._client_ip` (now
+`request_ip.forwarded_ip`, moved unchanged) said "a malformed header simply yields None" and never did — a forged
+`X-Forwarded-For` reaches a `GenericIPAddressField` that Postgres stores as `inet` and would refuse (a 500 on the
+acceptance). **Fix:** route all four signing call sites and the sponsor acceptance through `request_ip.signer_ip`,
+with a test of a forged header on each; nothing to backfill (0 agreements in production). *(B · S)*
+
+### [TD-430] The weekly partner email counts a decline still in its cool-off as "Rejected" - medium
+
+**Raised 2026-10-30 by source sign-in S3 (found) and its adversarial review (L5, not fixed there).**
+`partner_comms.stage_counts` tallies the RAW `status`, so a decline still inside the 24-hour cool-off (status
+`rejected`, `pending_rejection_category` set, the student not yet emailed) is counted under "Rejected" in the
+weekly summary a source receives — the source can learn the outcome before the student does, and a cancelled
+decline would have been counted and then vanish. The source console (`source_console.stage_of`, `scholar_q`) already
+folds what the student sees (`student_status.student_facing_status`). **Fix:** count on the student-facing status
+(fold `rejected` + pending marker to its `pre_decline_status`, the console's rule), keep the `total` reconciliation,
+and add the cool-off case to the digest tests. *(B · S)*

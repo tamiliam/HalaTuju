@@ -133,11 +133,33 @@ def witness_is(app, source):
     return org is not None and org.pk == source.pk
 
 
+# ── What the STUDENT sees decides the scholar set and the witness step (review H1) ───────────────
+#: A decline still inside its cool-off: `rejected` with the pending marker set — the student has NOT
+#: been told, and `student_status.student_facing_status` still shows her the stage she was declined
+#: FROM. Read the raw status and the console would change (a scholar gone, a contract no longer
+#: witnessable) before the student is told — the C12 leak by another road.
+def held_decline_q():
+    return Q(status='rejected') & ~Q(pending_rejection_category='')
+
+
+def scholar_q():
+    """The source's SCHOLARS as the student sees her own status: `maintenance_scope.has_file_q`,
+    plus a held decline whose pre-decline status had a file (in maintenance: `active` /
+    `maintenance`, or `awarded` with a live wallet — `maintenance_scope.in_maintenance_q` applied to
+    `pre_decline_status`). `cancel_pending_decline` puts the status back, so the case simply stays."""
+    from .closure import FUNDED_STATUSES
+    from .maintenance_scope import has_file_q
+    pre_in_file = (Q(pre_decline_status='awarded', vircle_activated_at__isnull=False)
+                   | Q(pre_decline_status__in=FUNDED_STATUSES))
+    return has_file_q() | (held_decline_q() & pre_in_file)
+
+
 # ── The witness step (source sign-in S4) ─────────────────────────────────────────────────────────
 #: The application states in which the contract is LIVE, so its witness may still be recorded: being
 #: signed (`awarded`), or already executed by the organisation's countersignature (`active`, then
 #: `maintenance`) — the witness is non-blocking and `bursary.record_witness` handles one that comes
-#: last. A declined, withdrawn, closed or expired application's contract is never witnessed.
+#: last. A declined, withdrawn, closed or expired application's contract is never witnessed. Read on
+#: the STUDENT-FACING status (review H1): a decline in its cool-off is still its pre-decline stage.
 WITNESS_STATUSES = ('awarded', 'active', 'maintenance')
 
 
@@ -148,13 +170,33 @@ def agreements_on():
     return bool(getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False))
 
 
-def witness_step_reached(app, source):
-    """The witness source may OPEN the contract (owner ruling 2026-10-30: the full contract, on the
-    witness step and after): agreements are on, the agreement exists, the guarantor has signed, and
-    ``source`` IS the resolved witness. Stays true once it has witnessed."""
+def contract_live(app):
+    """The contract is live as the STUDENT sees it (`WITNESS_STATUSES` on `student_facing_status`)."""
+    return student_facing_status(app) in WITNESS_STATUSES
+
+
+def is_the_witness(app, source):
+    """Is ``source`` THIS contract's witness? Once a witness is recorded, the one that RECORDED it
+    (`agreement.witness_org`) — an override moved afterwards never hands its signed contract to a
+    source that did not sign it (review M1). Before, the live resolution (`witness_is`)."""
     agreement = agreement_of(app)
-    return bool(agreements_on() and agreement is not None and agreement.guarantor_signed_at
-                and witness_is(app, source))
+    if agreement is not None and agreement.witness_signed_at is not None:
+        return agreement.witness_org_id == source.pk
+    return witness_is(app, source)
+
+
+def witness_case_open(app, source):
+    """A case this source only WITNESSES may be shown to it (review L6b): the agreement exists, the
+    guarantor has signed, and ``source`` is the witness (`is_the_witness`). Before that, a source
+    named only by the override learns nothing — not even the student's name."""
+    agreement = agreement_of(app)
+    return bool(agreement is not None and agreement.guarantor_signed_at
+                and is_the_witness(app, source))
+
+
+def witness_step_reached(app, source):
+    """Agreements are on and `witness_case_open`."""
+    return agreements_on() and witness_case_open(app, source)
 
 
 def can_witness(app, source):
@@ -163,7 +205,17 @@ def can_witness(app, source):
     all read it, so they cannot disagree."""
     agreement = agreement_of(app)
     return bool(witness_step_reached(app, source) and agreement.witness_signed_at is None
-                and app.status in WITNESS_STATUSES)
+                and contract_live(app))
+
+
+def may_read_agreement(app, source):
+    """The agreement GET (owner ruling 2026-10-30: the full contract, on the witness step and after).
+    Before the witness: only while `can_witness` — a live contract (review L1). After: only the source
+    that RECORDED the witness, for as long as agreements are on (review M1)."""
+    agreement = agreement_of(app)
+    if agreement is not None and agreement.witness_signed_at is not None:
+        return agreements_on() and agreement.witness_org_id == source.pk
+    return can_witness(app, source)
 
 
 def contract_dict(app, source):
@@ -177,14 +229,14 @@ def contract_dict(app, source):
         'guarantor_signed_at': agreement.guarantor_signed_at,
         'witness_signed_at': agreement.witness_signed_at,
         'foundation_signed_at': agreement.foundation_signed_at,
-        'witness_is_you': witness_is(app, source),
+        'witness_is_you': is_the_witness(app, source),
         'can_witness': can_witness(app, source),
     }
 
 
 def agreement_dict(app, source, *, with_link=False):
     """The witness source's view of the contract (S4) — the caller has checked
-    `witness_step_reached`. The signing dates, and the signed PDF itself as a short-lived link,
+    `may_read_agreement`. The signing dates, and the signed PDF itself as a short-lived link,
     minted only `with_link` (a click — the Scholars contract tab's rule, `scholar_money.pdf_url`,
     300 seconds, and only for this application's own file). The rendered HTML is never served
     (`rendered: false`): the PDF is the document."""

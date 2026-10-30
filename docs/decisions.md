@@ -16618,3 +16618,37 @@ super's record — rejected: the Contract tab already ruled the officer is not t
 **Trade-offs:** a source that never signs in is witnessed only by a super, as today. A `witness_admin` whose row is
 later switched off still names them (the FK is SET_NULL only on a delete, which does not happen).
 **Revisit if:** the owner wants the super's door closed once a source has joined, or the witness becomes required.
+
+## 2026-10-30 — Source sign-in: the adversarial review's fixes (backend; lead rulings)
+**Decision:** the review of the source sign-in backend (S1–S4) found one high, two medium and several low issues; each
+is fixed with a test that failed before it (`tests/test_source_signin_review.py`).
+- **H1 — the console reads what the STUDENT sees, for scholars and the witness too.** A decline in its cool-off
+  (`rejected` + `pending_rejection_category`) still shows the student her pre-decline stage, so the console must not
+  move first: the scholar set is `source_console.scholar_q` (`has_file_q`, plus a held decline whose
+  `pre_decline_status` had a file), and witness eligibility is `source_console.contract_live` (`WITNESS_STATUSES` on
+  `student_facing_status`). The source may therefore still witness during the cool-off; `cancel_pending_decline`
+  restores the status and nothing moves. Staff screens keep the raw status (`maintenance_scope` is unchanged).
+- **M1 — a recorded witness belongs to the source that signed it.** After `witness_signed_at`, who may read the
+  contract (GET and `?link=1`) and who is `witness_is_you` follow `agreement.witness_org`, not the live override;
+  `source_access.applications_for` gains a third set (the contracts this source has witnessed), so a moved override
+  neither takes the signed contract from its witness nor hands it to the new source.
+- **L1 — before a witness, the full contract only while it is live** (`may_read_agreement` = `can_witness`);
+  afterwards the witness keeps it (M1). The owner's "full contract" ruling stands; the lead will tell the owner it
+  includes the NRICs and the amounts.
+- **L6b — an override alone reveals nothing.** A witness-only case (another source's student) is 404 — not even the
+  name — until the agreement exists and the guarantor has signed (`witness_case_open`), then per M1.
+- **L2 — the witness organisation is re-checked under the lock** (`source_witness.record_once` locks the application,
+  then the agreement, and raises `WitnessChanged`: the source's door 404, the super's 409 `witness_changed`). The slow
+  side effects were NOT moved to `transaction.on_commit`: the super's path and its suite assert the re-render and the
+  mails on the same call (inside `TestCase`, where on-commit never runs), and the brief allowed the move only if the
+  super's behaviour and tests were unchanged. Cost: a longer-held lock on one row, at a handful of witnesses a month.
+- **L3 — a value that is not text is 400 `bad_request`, never a 500**, on every source write: the profile PATCH, the
+  source invite (and its `audience`), a new source's fields, the Sources PATCH and the witness POST
+  (`views_admin/sources.text_of` / `detail_values`). No coercion — a number is not a phone number.
+- **L4 — `witness_ip` is the forwarded caller** (`request_ip.signer_ip`: the sponsor acceptance's helper, moved
+  unchanged to `request_ip.forwarded_ip`, plus a parse so a forged header stores None rather than failing the
+  signature). The student's and guarantor's IP are unchanged: TD-429.
+- **M2 — the witness email link is a deploy precondition:** web and api deploy in the same push (roadmap Close).
+**Left as notes:** L5 (the weekly partner email counts raw statuses — an existing bug, TD-430); L6a (revoke → edit →
+re-invite), for the lead.
+**Revisit if:** staff screens should also fold a held decline (they deliberately show the truth today).

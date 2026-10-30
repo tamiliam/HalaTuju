@@ -91,15 +91,47 @@ HOUSE_ORG_CODE = 'brightpath'
 DETAIL_FIELDS = (('name', 200), ('contact_person', 200), ('contact_email', 254), ('phone', 30))
 
 
+def text_of(value):
+    """`(text, None)` for a request value that is text or absent (None → ''), else `('', 400
+    bad_request)`. A number, a list or an object must never reach `.strip()` — that was a 500 on every
+    source write (review L3, 2026-10-30)."""
+    if value is None:
+        return '', None
+    if isinstance(value, str):
+        return value, None
+    return '', Response({'error': 'bad_request', 'code': 'bad_request'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+def detail_values(data):
+    """`(cleaned, error)` — the `DETAIL_FIELDS` present in ``data``, trimmed and cut to width; a value
+    that is not text is the `text_of` 400."""
+    cleaned = {}
+    for field, width in DETAIL_FIELDS:
+        if field in data:
+            value, bad = text_of(data.get(field))
+            if bad:
+                return None, bad
+            cleaned[field] = value.strip()[:width]
+    return cleaned, None
+
+
 def new_source_fields(data, *, code_key='code', name_key='name'):
-    """The cleaned columns of a NEW source from a request body. The keys default to the old Add
-    source's; the source invite (source sign-in S2) names them `source_code` / `source_name`, since
-    its own `name` is the person's."""
-    fields = {'code': (data.get(code_key) or '').strip().lower(),
+    """`(fields, error)` — the cleaned columns of a NEW source from a request body (``error`` is the
+    `text_of` 400 for a value that is not text). The keys default to the old Add source's; the
+    source invite (source sign-in S2) names them `source_code` / `source_name`, since its own `name`
+    is the person's."""
+    code, bad = text_of(data.get(code_key))
+    if bad:
+        return None, bad
+    fields = {'code': code.strip().lower(),
               'show_in_apply': bool(data.get('show_in_apply', False))}
     for field, width in DETAIL_FIELDS:
-        fields[field] = (data.get(name_key if field == 'name' else field) or '').strip()[:width]
-    return fields
+        value, bad = text_of(data.get(name_key if field == 'name' else field))
+        if bad:
+            return None, bad
+        fields[field] = value.strip()[:width]
+    return fields, None
 
 
 def new_source_refusal(owner, fields):
@@ -303,8 +335,9 @@ class AdminSourceDetailView(_SourcesBase):
         if 'programme_id' in request.data:
             return Response({'error': 'programme_id_retired', 'code': 'programme_id_retired'},
                             status=status.HTTP_400_BAD_REQUEST)
-        details = {field: (request.data.get(field) or '').strip()[:width]
-                   for field, width in DETAIL_FIELDS if field in request.data}
+        details, bad = detail_values(request.data)
+        if bad:
+            return bad
         # ⚠ ONCE THE SOURCE HAS SIGNED IN, ITS DETAILS ARE ITS OWN (owner ruling 2026-10-30, source
         # sign-in S2, roadmap C6): a CHANGE to name / contact person / contact email / phone is
         # refused 409 `managed_by_source` — the source edits them itself (S3's profile). The

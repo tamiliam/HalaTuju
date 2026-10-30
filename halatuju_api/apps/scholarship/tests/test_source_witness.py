@@ -136,9 +136,9 @@ class TestTheAgreement(_Fixture):
         self.assertEqual((body['can_witness'], body['witness_is_you']), (False, True))
         self.assertIsNotNone(body['witness_signed_at'])
 
-    def test_a_dead_contract_is_readable_but_not_witnessable(self):
-        body = self.client.get(agreement_url(self.dead)).json()
-        self.assertEqual(body['can_witness'], False)
+    def test_a_dead_contract_nobody_witnessed_is_404(self):
+        # Review L1: before a witness, the contract is shown only while it is live (`can_witness`).
+        self.assertEqual(self.client.get(agreement_url(self.dead)).status_code, 404)
 
     def test_agreements_off_is_404(self):
         with self.settings(BURSARY_AGREEMENT_ENABLED=False):
@@ -217,7 +217,7 @@ class TestTheSourceWitnesses(_Fixture):
                  ({'witness_name': 'Kala', 'confirm': 1}, 'confirm_required'),
                  ({'witness_name': 'Kala'}, 'confirm_required'),
                  ({'witness_name': '   ', 'confirm': True}, 'name_required'),
-                 ({'witness_name': 42, 'confirm': True}, 'name_required'),
+                 ({'witness_name': 42, 'confirm': True}, 'bad_request'),      # review L3
                  ({'witness_name': 'K' * 201, 'confirm': True}, 'name_too_long'))
         for body, code in cases:
             resp = self.client.post(witness_url(self.ready), body, format='json')

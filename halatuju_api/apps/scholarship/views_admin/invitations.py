@@ -156,7 +156,8 @@ class AdminInvitationsView(_ReviewersBase):
             return self._deny_role()
 
         from .. import invitations as inv_service
-        audience = (request.data.get('audience') or '').strip()
+        audience = request.data.get('audience')
+        audience = audience.strip() if isinstance(audience, str) else ''   # review L3: never a 500
         if audience == 'source_partner':
             from .source_users import invite_source
             return invite_source(request, admin)

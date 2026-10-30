@@ -154,4 +154,8 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
         except source_witness.AlreadyWitnessed:
             return Response({'error': 'already_witnessed', 'code': 'already_witnessed'},
                             status=status.HTTP_409_CONFLICT)
+        except source_witness.WitnessChanged:
+            # The override moved between the read above and the row lock (review L2): ask again.
+            return Response({'error': 'witness_changed', 'code': 'witness_changed'},
+                            status=status.HTTP_409_CONFLICT)
         return Response(BursaryAgreementSerializer(agreement).data)

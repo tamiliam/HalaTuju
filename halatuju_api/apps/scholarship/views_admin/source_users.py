@@ -25,7 +25,9 @@ from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
 
 from .base import _AdminBase
-from .sources import _SourcesBase, _one_source_dict, new_source_fields, new_source_refusal
+from .sources import (
+    _SourcesBase, _one_source_dict, new_source_fields, new_source_refusal, text_of,
+)
 
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
 logger = logging.getLogger('apps.scholarship.views_admin')
@@ -62,8 +64,12 @@ def invite_source(request, admin):
         return Response({'error': 'Your admin role cannot perform this action.'},
                         status=status.HTTP_403_FORBIDDEN)
     data = request.data
-    email = (data.get('email') or '').strip().lower()
-    name = (data.get('name') or '').strip()[:200]
+    # A value that is not text is 400 `bad_request`, never a 500 (review L3).
+    email, bad_email = text_of(data.get('email'))
+    name, bad_name = text_of(data.get('name'))
+    if bad_email or bad_name:
+        return bad_email or bad_name
+    email, name = email.strip().lower(), name.strip()[:200]
     if _bad_email(email):
         return _error('bad_email', status.HTTP_400_BAD_REQUEST)
     if not name:
@@ -86,7 +92,9 @@ def invite_source(request, admin):
         owner, err = sources._new_source_owner(request, admin)
         if err:
             return err
-        fields = new_source_fields(data, code_key='source_code', name_key='source_name')
+        fields, bad = new_source_fields(data, code_key='source_code', name_key='source_name')
+        if bad:
+            return bad
         refusal = new_source_refusal(owner, fields)
         if refusal:
             return _error(refusal, status.HTTP_400_BAD_REQUEST)

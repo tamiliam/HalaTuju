@@ -76,6 +76,7 @@ and each one has a fix in a sprint.
 - Guide/FAQ text for sources; `docs/decisions.md`, `.claude/ARCHITECTURE_MAP.md`, CHANGELOG, technical-debt.
 - **Adversarial review before push** (identity / PII rule).
 - Deploy: migrate-first (courses 0089, scholarship 0190, 0191), then API, then web. **Owner says go before deploy.**
+- Web and api deploy in the same push; with BURSARY_AGREEMENT_ENABLED off no witness email is sent anyway. (The witness emails' link `/admin/scholarship/<id>` needs the web to route a source user to its own view — review M2.)
 
 ## Verification
 - `pytest` full suite + `jest` full suite each sprint; `next build` before push.

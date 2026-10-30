@@ -37,7 +37,7 @@ from halatuju.pagination import FlexiblePageNumberPagination
 
 from .. import source_access, source_console
 from .base import _AdminBase
-from .sources import DETAIL_FIELDS
+from .sources import DETAIL_FIELDS, detail_values, text_of
 from .source_users import _bad_email
 
 #: What the profile PATCH may change. The code, the organisation, `show_in_apply` and `is_active`
@@ -124,11 +124,15 @@ class AdminSourceProfileView(_SourceConsoleBase):
             return _error('not_editable', status.HTTP_400_BAD_REQUEST, fields=refused)
         name = None
         if 'name' in user:
-            name = (user.get('name') or '').strip()[:200]
+            name, bad = text_of(user.get('name'))
+            if bad:
+                return bad
+            name = name.strip()[:200]
             if not name:
                 return _error('name_required', status.HTTP_400_BAD_REQUEST)
-        cleaned = {field: (details.get(field) or '').strip()[:width]
-                   for field, width in DETAIL_FIELDS if field in details}
+        cleaned, bad = detail_values(details)
+        if bad:
+            return bad
         if 'name' in cleaned and not cleaned['name']:
             return _error('source_name_required', status.HTTP_400_BAD_REQUEST)
         if cleaned.get('contact_email') and _bad_email(cleaned['contact_email']):
@@ -160,7 +164,6 @@ class AdminSourceOverviewView(_SourceConsoleBase):
         if err:
             return err
         from django.conf import settings
-        from .. import maintenance_scope
         listed = _listed(admin, gift)
         apps = list(listed.only(
             'id', 'status', 'pending_rejection_category', 'pre_decline_status'))
@@ -174,7 +177,7 @@ class AdminSourceOverviewView(_SourceConsoleBase):
         return Response({
             'programme': source_console.gift_dict(gift),
             'counts': source_console.stage_counts(apps),
-            'scholars': listed.filter(maintenance_scope.has_file_q()).count(),
+            'scholars': listed.filter(source_console.scholar_q()).count(),
             'witness_waiting': waiting,
             'missing_items': source_console.missing_items(listed),
         })
@@ -219,7 +222,9 @@ class AdminSourceApplicationDetailView(_SourceConsoleBase):
 
     A LISTED application: `{id, kind: 'listed', student_name, school, state, level, programme,
     submitted_at, stage, phone, email, told_at, missing_items: [part, …], contract}`. A case this
-    source only WITNESSES: `{id, kind: 'witness_only', student_name, programme, contract}` and
+    source only WITNESSES (404 until the agreement exists and the guarantor has signed, then only
+    while it is this contract's witness — `source_console.witness_case_open`, review L6b / M1):
+    `{id, kind: 'witness_only', student_name, programme, contract}` and
     nothing else. `contract` is `{status, student_signed_at, guarantor_signed_at, witness_signed_at,
     foundation_signed_at, witness_is_you}` or null. No side effects.
     """
@@ -233,14 +238,19 @@ class AdminSourceApplicationDetailView(_SourceConsoleBase):
             return self._not_found()
         if app.source_id == source.pk:
             return Response(source_console.application_detail(app, source))
+        # A case this source only WITNESSES stays hidden — not even the name — until the witness
+        # step is reached, and then only while it is this contract's witness (review L6b, M1).
+        if not source_console.witness_case_open(app, source):
+            return self._not_found()
         return Response(source_console.witness_only_detail(app, source))
 
 
 def _scholars(admin, gift):
     """The source's scholars: LISTED applications with a maintenance file (the officer Scholars
-    list's population, `maintenance_scope.has_file_q`). A witness-only case is never one."""
-    from .. import maintenance_scope
-    return _with_rows(_listed(admin, gift).filter(maintenance_scope.has_file_q()))
+    list's population, `maintenance_scope.has_file_q`) AS THE STUDENT SEES HER STATUS — a decline
+    still in its cool-off stays (`source_console.scholar_q`, review H1). A witness-only case is
+    never one."""
+    return _with_rows(_listed(admin, gift).filter(source_console.scholar_q()))
 
 
 class AdminSourceScholarListView(_SourceConsoleBase):
@@ -283,11 +293,15 @@ class AdminSourceScholarDetailView(_SourceConsoleBase):
 WITNESS_NAME_MAX = 200
 
 
+def _in_scope(admin, pk):
+    return _with_rows(source_access.applications_for(admin)).filter(pk=pk).first()
+
+
 def _witness_case(admin, source, pk):
-    """The application, when it is in this source's scope (`applications_for`) AND this source is
-    its resolved witness; else None (a 404). Re-resolved on every call, so an override moved to
-    another source after the page was opened takes the case away at once."""
-    app = _with_rows(source_access.applications_for(admin)).filter(pk=pk).first()
+    """For the POST: the application, when it is in this source's scope (`applications_for`) AND
+    this source is its resolved witness NOW; else None (a 404). Re-resolved on every call, so an
+    override moved to another source after the page was opened takes the case away at once."""
+    app = _in_scope(admin, pk)
     if (app is None or not source_console.agreements_on()
             or not source_console.witness_is(app, source)):
         return None
@@ -304,17 +318,19 @@ class AdminSourceAgreementView(_SourceConsoleBase):
 
     `pdf_url` is null unless `?link=1` (a click), then a signed link to the PDF for
     `pdf_expires_in` (300) seconds — the Scholars contract tab's rule (`scholar_money.pdf_url`).
-    404 unless `source_console.witness_step_reached`: the applicant's own source that is NOT the
-    witness, an agreement the guarantor has not signed, or agreements switched off. No side
-    effects.
+    404 unless `source_console.may_read_agreement`: before the witness, only while this source
+    `can_witness` (a live contract, read on the student-facing status — review L1, H1); after it,
+    only the source that RECORDED the witness, whatever the override says since (review M1). So the
+    applicant's own source that is not the witness, an agreement the guarantor has not signed, a
+    dead contract nobody witnessed, or agreements switched off: 404. No side effects.
     """
 
     def get(self, request, pk):
         admin, source, err = self._source_caller(request)
         if err:
             return err
-        app = _witness_case(admin, source, pk)
-        if app is None or not source_console.witness_step_reached(app, source):
+        app = _in_scope(admin, pk)
+        if app is None or not source_console.may_read_agreement(app, source):
             return self._not_found()
         with_link = request.query_params.get('link') == '1'
         return Response(source_console.agreement_dict(app, source, with_link=with_link))
@@ -327,13 +343,15 @@ class AdminSourceWitnessView(_SourceConsoleBase):
     Refusals, in this order: 403 not a source user (or `source_unavailable`); 404 out of scope, not
     the resolved witness, or agreements switched off; 400 `not_ready` (no agreement, or the
     guarantor has not signed); 409 `already_witnessed`; 409 `contract_not_live` (the application is
-    no longer `awarded` / `active` / `maintenance` — `source_console.WITNESS_STATUSES`); 400
-    `confirm_required` (`confirm` is not literally true); 400 `name_required` (blank once trimmed);
-    400 `name_too_long` (over `WITNESS_NAME_MAX`).
+    no longer `awarded` / `active` / `maintenance` AS THE STUDENT SEES IT —
+    `source_console.contract_live`, so a decline in its cool-off changes nothing yet, review H1);
+    400 `confirm_required` (`confirm` is not literally true); 400 `bad_request` (`witness_name` is
+    not text); 400 `name_required` (blank once trimmed); 400 `name_too_long` (over
+    `WITNESS_NAME_MAX`). A witness override moved between the read and the row lock: 404.
 
     The record is `source_witness.record_once` → `bursary.record_witness` with `by_name` = the
     caller's name and `witness_name` = the typed one, under a row lock; then `witness_ip` (the
-    caller's address, read as the student's and guarantor's signing reads it) and `witness_admin`
+    caller's forwarded address, `request_ip.signer_ip`, review L4) and `witness_admin`
     (the caller). Everything after — the re-render, the Foundation's nudge or the executed
     distribution — is `record_witness`'s, unchanged.
     """
@@ -351,23 +369,27 @@ class AdminSourceWitnessView(_SourceConsoleBase):
             return _error('not_ready', status.HTTP_400_BAD_REQUEST)
         if agreement.witness_signed_at is not None:
             return _error('already_witnessed', status.HTTP_409_CONFLICT)
-        if app.status not in source_console.WITNESS_STATUSES:
+        if not source_console.contract_live(app):
             return _error('contract_not_live', status.HTTP_409_CONFLICT)
         data = request.data if isinstance(request.data, dict) else {}
         if data.get('confirm') is not True:
             return _error('confirm_required', status.HTTP_400_BAD_REQUEST)
-        raw = data.get('witness_name')
-        name = raw.strip() if isinstance(raw, str) else ''
+        name, bad = text_of(data.get('witness_name'))
+        if bad:
+            return bad
+        name = name.strip()
         if not name:
             return _error('name_required', status.HTTP_400_BAD_REQUEST)
         if len(name) > WITNESS_NAME_MAX:
             return _error('name_too_long', status.HTTP_400_BAD_REQUEST, max_length=WITNESS_NAME_MAX)
-        from .. import source_witness
+        from .. import request_ip, source_witness
         try:
             source_witness.record_once(
                 agreement, org=source, by_name=(admin.name or admin.email or ''),
-                witness_name=name, admin=admin, ip=request.META.get('REMOTE_ADDR'))
+                witness_name=name, admin=admin, ip=request_ip.signer_ip(request))
         except source_witness.AlreadyWitnessed:
             return _error('already_witnessed', status.HTTP_409_CONFLICT)
+        except source_witness.WitnessChanged:
+            return self._not_found()
         app = _with_rows(source_access.applications_for(admin)).get(pk=app.pk)
         return Response(source_console.agreement_dict(app, source))

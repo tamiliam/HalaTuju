@@ -27,6 +27,11 @@ class AlreadyWitnessed(Exception):
     """The witness is already recorded on this agreement."""
 
 
+class WitnessChanged(Exception):
+    """The application's resolved witness is no longer the organisation the caller checked — the
+    override moved between the caller's read and the row lock (review L2)."""
+
+
 def has_console(source):
     """Can somebody at ``source`` open its console today? (The witness emails' button rule.)"""
     if source is None or not getattr(source, 'is_active', False):
@@ -37,7 +42,11 @@ def has_console(source):
 
 def console_link(source, application):
     """The address a witness email may carry for ``source``: the application's page, which the web
-    routes a source user to its own view of (S4) — or '' when nobody there can sign in."""
+    routes a source user to its own view of (S4) — or '' when nobody there can sign in.
+
+    ⚠ DEPLOY PRECONDITION (review M2): the web route `/admin/scholarship/<id>` must send a SOURCE user
+    to its own view of the application before this link can land anywhere — web and api deploy in
+    the same push. With `BURSARY_AGREEMENT_ENABLED` off no witness email is sent anyway."""
     if not has_console(source):
         return ''
     from .bursary import _cockpit_link
@@ -47,17 +56,33 @@ def console_link(source, application):
 def record_once(agreement, *, org, by_name, witness_name='', admin=None, ip=None):
     """Record the witness through `bursary.record_witness`, exactly once; returns the agreement.
 
-    ``admin`` / ``ip`` are the SOURCE user and their address (a super passes neither). Raises
-    `AlreadyWitnessed` when a witness is already on the agreement — read under the row lock, never
-    from the caller's possibly stale copy."""
+    ``admin`` / ``ip`` are the SOURCE user and their address (a super passes neither). Under the row
+    locks — never from the caller's possibly stale copies — it raises `AlreadyWitnessed` when a
+    witness is already on the agreement, and `WitnessChanged` when the application's resolved
+    witness (`bursary._resolve_witness_org`, re-read now) is no longer ``org`` (review L2).
+
+    ⚠ THE SIDE EFFECTS STAY INSIDE THE TRANSACTION (review L2 asked to move them to
+    `transaction.on_commit` only if the super's path and its tests were unchanged — they are not):
+    `record_witness` re-renders and uploads the PDF and sends the Foundation's nudge or the executed
+    distribution inline, and the super's fallback and its suite (`test_bursary_agreement.py`, which
+    asserts the re-render and the mail on the same call, inside `TestCase` where on-commit callbacks
+    never run) rely on that. The cost is a longer-held lock on ONE agreement row, at a volume of a
+    handful of witnesses a month."""
     from . import bursary
-    from .models import BursaryAgreement
+    from .models import BursaryAgreement, ScholarshipApplication
     with transaction.atomic():
-        # No select_related: Postgres refuses FOR UPDATE on the nullable side of an outer join
-        # (`witness_org`), and SQLite (the tests) would never show it.
+        # The application FIRST (the override lives on it), then the agreement. `of=('self',)` and
+        # no select_related on the agreement: Postgres refuses FOR UPDATE on the nullable side of an
+        # outer join, and SQLite (the tests) would never show it.
+        application = (ScholarshipApplication.objects.select_for_update(of=('self',))
+                       .select_related('witness_org', 'source').get(pk=agreement.application_id))
         locked = BursaryAgreement.objects.select_for_update().get(pk=agreement.pk)
         if locked.witness_signed_at is not None:
             raise AlreadyWitnessed()
+        resolved = bursary._resolve_witness_org(application)
+        if resolved is None or org is None or resolved.pk != org.pk:
+            raise WitnessChanged()
+        locked.application = application
         bursary.record_witness(locked, org=org, by_name=by_name, witness_name=witness_name)
         if admin is not None or ip is not None:
             locked.witness_admin = admin

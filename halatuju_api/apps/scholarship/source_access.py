@@ -16,8 +16,8 @@ missing, or whose source has been switched off (`ReferralSource.is_active=False`
 form and does NOT reach here.
 
 ⚠ TWO SETS, ON PURPOSE (C14). `applications_for` also holds the cases where this source is the
-WITNESS by override (`witness_org`) without being the applicant's source: such a case shows the
-contract task only (S4), never a row on the Applications list — that list is
+WITNESS by override (`witness_org`), or has witnessed (S4 review M1), without being the applicant's
+source: such a case shows the contract task only (S4), never a row on the Applications list — that list is
 `listed_applications_for`, which is exactly the partner emails' own "this source's students"
 (`partner_comms.partner_applications`), so the console and the emails cannot disagree.
 """
@@ -48,14 +48,24 @@ def listed_applications_for(admin):
 
 def applications_for(admin):
     """Every application this source user may open: the listed ones, plus the cases it witnesses
-    by override (`witness_org`) — both inside the source's own organisation."""
+    by override (`witness_org`), plus the contracts it HAS witnessed (`bursary_agreement.witness_org`,
+    stamped by `record_witness`) — all inside the source's own organisation.
+
+    ⚠ THE THIRD SET (review M1, 2026-10-30): a witness, once recorded, belongs to the source that
+    signed it. An override moved AFTERWARDS must neither take the signed contract away from that
+    source nor hand it to the new one (`source_console.is_the_witness` reads the same stamp)."""
     source = source_of(admin)
     if source is None:
         return ScholarshipApplication.objects.none()   # org-fence: the empty set
     # org-fence: the source's own organisation, in the same filter.
-    witnessed = ScholarshipApplication.objects.filter(
+    by_override = ScholarshipApplication.objects.filter(
         witness_org_id=source.pk, owning_organisation_id=source.organisation_id)
-    return partner_applications(source) | witnessed
+    # org-fence: the source's own organisation, in the same filter.
+    signed = ScholarshipApplication.objects.filter(
+        bursary_agreement__witness_org_id=source.pk,
+        bursary_agreement__witness_signed_at__isnull=False,
+        owning_organisation_id=source.organisation_id)
+    return partner_applications(source) | by_override | signed
 
 
 def programmes_for(admin):
