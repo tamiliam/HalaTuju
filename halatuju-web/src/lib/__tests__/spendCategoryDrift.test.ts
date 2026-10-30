@@ -7,8 +7,8 @@
  * still counts it. Request #28 (2026-10-06) added `micro_stall` to `SPEND_CATEGORY_CHOICES`; before
  * this test, nothing would have noticed the web list falling behind.
  *
- * Also pinned: every code has a label in all three locales on BOTH screens that name it — the
- * Overview chart and the sponsor's spending card.
+ * Also pinned: every code has a label in all three locales on EVERY screen that names it — the
+ * Overview chart, the sponsor's spending card and the scholar file's Money tab (S5a).
  */
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -40,6 +40,7 @@ describe('every category has words, in every locale, on both screens', () => {
     const missing = modelCodes.flatMap((c) => [
       `admin.programmeOverview.category.${c}`,
       `sponsorPortal.myStudents.detail.spend.cat.${c}`,
+      `admin.scholars.moneyTab.category.${c}`,          // the scholar file's Money tab (S5a)
     ]).filter((k) => typeof resolve(cat, k) !== 'string' || !String(resolve(cat, k)).trim())
     expect(missing).toEqual([])
   })

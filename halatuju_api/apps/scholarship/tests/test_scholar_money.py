@@ -49,8 +49,11 @@ def _spend(app, amount, on, category='food'):
 
 
 def _executed(app, **over):
+    from apps.scholarship.storage import build_doc_key
     now = timezone.now()
-    fields = dict(application=app, version='2026-v1', pdf_storage_path=f'{app.owning_organisation_id}/{app.id}/agreement.pdf',
+    # The REAL key shape (`bursary.py`): `<org>/<app>/bursary_agreement_<version>_<ts>.pdf`.
+    path = build_doc_key(app, app.id, 'bursary_agreement_2026-v1_1767225600.pdf')
+    fields = dict(application=app, version='2026-v1', pdf_storage_path=path,
                   student_signed_name='NUR AISYAH', student_signed_nric=IC, student_signed_at=now,
                   guarantor_name='SITI', guarantor_nric=IC, guarantor_relationship='mother', guarantor_signed_at=now,
                   foundation_signatory_name='DR KUMAR', foundation_signatory_title='Chair',
@@ -78,6 +81,9 @@ class _Base(TestCase):
 
     def _contract_url(self, pk):
         return f'/api/v1/admin/scholarship/scholars/{pk}/contract/'
+
+    def _link(self, admin):
+        return authed_client(admin).get(f'/api/v1/admin/scholarship/scholars/{self.app.id}/contract/?link=1')
 
     def _get(self, admin, what, app=None):
         pk = (app or self.app).id
@@ -153,15 +159,33 @@ class TestSpendingBlock(_Base):
         self.assertEqual([c['code'] for c in term['categories']], ['food'])
         self.assertNotIn('KEDAI', json.dumps(term))                     # categories and totals only
 
+    def test_a_lapsed_term_is_not_this_term(self):
+        """Review L5: only a term that has begun AND not yet ended is "this term"."""
+        today = timezone.localdate()
+        ResultsExpectation.objects.create(application=self.app, term_index=1, term_starts_on=today - timedelta(days=200),
+                                          term_ends_on=today - timedelta(days=20), due_on=today + timedelta(days=25))
+        self.assertEqual(scholar_money.spending_since(self.app)[1], 'funded')
+
+    def test_every_category_unfolded_by_code_with_no_english_label(self):
+        """Review M2: the officer sees EVERY category (the Spending page's view, not the sponsor
+        card's top six + "other"), keyed by code for the screen to translate."""
+        codes = ['food', 'groceries', 'transport', 'study', 'phone', 'hostel', 'health', 'clothing']
+        for i, code in enumerate(codes):
+            _spend(self.app, f'{10 + i}.00', timezone.localdate(), category=code)
+        cats = self._get(self.org_admin, 'money').json()['spending']['categories']
+        self.assertEqual(sorted(c['code'] for c in cats), sorted(codes))
+        self.assertNotIn('other', [c['code'] for c in cats])
+        self.assertTrue(all(set(c) == {'code', 'total'} for c in cats))
+
 
 class TestContract(_Base):
     @mock.patch('apps.scholarship.storage.create_signed_download_url', return_value=SIGNED)
     def test_executed_shows_dates_parties_and_a_300_second_link_with_no_ic(self, signed):
         _executed(self.app)
         with override_settings(BURSARY_AGREEMENT_ENABLED=False):       # the signing flag is not read
-            r = self._get(self.org_admin, 'contract')
+            r = self._link(self.org_admin)
         body = r.json()
-        self.assertTrue(body['exists'])
+        self.assertTrue(body['exists'] and body['witnessed'])
         self.assertEqual(body['pdf_url'], SIGNED)
         self.assertEqual(signed.call_args.kwargs['expires_in'], 300)
         self.assertEqual([p['role'] for p in body['parties']], ['student', 'guarantor', 'foundation', 'witness'])
@@ -170,19 +194,56 @@ class TestContract(_Base):
         self.assertNotIn('nric', r.content.decode())
 
     @mock.patch('apps.scholarship.storage.create_signed_download_url', return_value=SIGNED)
-    def test_not_executed_or_no_agreement_is_no_contract_on_file(self, _signed):
+    def test_countersigned_without_a_witness_is_on_file(self, _signed):
+        """Review H1: the witness is NON-BLOCKING (`bursary._maybe_activate`) — a countersigned
+        agreement is the platform-signed contract; its date is the organisation's and there is no
+        witness row."""
         self.assertEqual(self._get(self.org_admin, 'contract').json(), {'exists': False})
-        _executed(self.app, witness_signed_at=None)                     # countersigned, not executed
+        ag = _executed(self.app, witness_signed_at=None, witness_name='')
+        body = self._get(self.org_admin, 'contract').json()
+        self.assertTrue(body['exists'])
+        self.assertFalse(body['witnessed'])
+        self.assertEqual(body['executed_on'], timezone.localtime(ag.foundation_signed_at).date().isoformat())
+        self.assertNotIn('witness', [p['role'] for p in body['parties']])
+
+    def test_before_the_organisation_signs_it_is_no_contract_on_file(self):
+        _executed(self.app, foundation_signed_at=None)
         self.assertEqual(self._get(self.org_admin, 'contract').json(), {'exists': False})
 
     @mock.patch('apps.scholarship.storage.create_signed_download_url', return_value=SIGNED)
-    def test_a_pdf_path_from_another_organisation_gets_no_link(self, signed):
-        other = make_cohort().owning_organisation_id
-        _executed(self.app, pdf_storage_path=f'{other}/{self.app.id}/bursary/agreement.pdf')
-        body = self._get(self.org_admin, 'contract').json()
-        self.assertTrue(body['exists'])
-        self.assertIsNone(body['pdf_url'])
+    def test_the_first_load_mints_no_link_only_a_request_does(self, signed):
+        """Review L6: the tab's first read carries no link; `?link=1` (a click) mints one."""
+        _executed(self.app)
+        self.assertIsNone(self._get(self.org_admin, 'contract').json()['pdf_url'])
         signed.assert_not_called()
+        self.assertEqual(self._link(self.org_admin).json()['pdf_url'], SIGNED)
+
+    @mock.patch('apps.scholarship.storage.create_signed_download_url', return_value=SIGNED)
+    def test_a_pdf_path_that_is_not_this_applications_gets_no_link(self, signed):
+        """Review L3: the real key is 3 segments (`<org>/<app>/file`), which `resolve_org_for_path`
+        cannot read an org from — so the check is on the first two segments themselves."""
+        other_org = make_cohort().owning_organisation_id
+        for path in (f'{other_org}/{self.app.id}/bursary_agreement_x.pdf',
+                     f'{self.app.owning_organisation_id}/{self.app.id + 999}/bursary_agreement_x.pdf',
+                     f'{self.app.id}/bursary_agreement_x.pdf'):
+            with self.subTest(path=path):
+                BursaryAgreement.objects.filter(application=self.app).delete()
+                _executed(self.app, pdf_storage_path=path)
+                body = self._link(self.org_admin).json()
+                self.assertTrue(body['exists'])
+                self.assertIsNone(body['pdf_url'])
+        signed.assert_not_called()
+
+    def test_the_witness_is_never_named_after_the_recording_officer(self):
+        """Review L4: `witness_signed_by` is the super who RECORDED the attestation."""
+        from apps.scholarship.models import ReferralSource
+        org = ReferralSource.objects.create(code=unique_suffix('ws'), name='Kuil Sri Murugan',
+                                            organisation=self.cohort.owning_organisation)
+        _executed(self.app, witness_name='', witness_signed_by='super@halatuju.test', witness_org=org)
+        body = self._get(self.org_admin, 'contract').json()
+        witness = next(p for p in body['parties'] if p['role'] == 'witness')
+        self.assertEqual(witness['name'], 'Kuil Sri Murugan')
+        self.assertNotIn('super@halatuju.test', json.dumps(body))
 
 
 class TestTheFence(_Base):

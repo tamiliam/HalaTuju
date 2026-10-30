@@ -98,7 +98,8 @@ export default function ScholarMoney({ id, token, links }: {
             <ul className="mt-2 divide-y divide-ground-100 text-sm">
               {spending.categories.map((c) => (
                 <li key={c.code} className="flex items-center justify-between py-1.5">
-                  <span className="text-ground-700">{c.label}</span>
+                  {/* By CODE, in her officer's language — never the server's English label. */}
+                  <span className="text-ground-700">{t(`admin.scholars.moneyTab.category.${c.code}`)}</span>
                   <span className="tabular-nums text-ground-900">{money(c.total)}</span>
                 </li>
               ))}

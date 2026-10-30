@@ -186,7 +186,8 @@ export interface ScholarMoney {
     basis: 'term' | 'funded' | 'all'
     spent: string
     as_at: string | null
-    categories: { code: string; label: string; total: string }[]
+    /** EVERY category (unfolded, as the Spending page lists them), by CODE — translate it. */
+    categories: { code: string; total: string }[]
   }
 }
 
@@ -199,19 +200,22 @@ export interface ScholarContractParty {
   signed_on: string | null
 }
 
-/** S5a: the Contract tab — an EXECUTED platform-signed agreement, or `{exists: false}`. The PDF link
- *  lives `pdf_expires_in` seconds, so the tab fetches a fresh one each time it opens the PDF. */
+/** S5a: the Contract tab — a platform-signed (countersigned) agreement, or `{exists: false}`.
+ *  `witnessed` says whether the (non-blocking) witness has signed too. `pdf_url` is null unless the
+ *  read asked for a link (`link: true`); it lives `pdf_expires_in` seconds. */
 export type ScholarContract =
   | { exists: false }
-  | { exists: true; executed_on: string | null; version: string; parties: ScholarContractParty[];
-      pdf_url: string | null; pdf_expires_in: number }
+  | { exists: true; executed_on: string | null; witnessed: boolean; version: string;
+      parties: ScholarContractParty[]; pdf_url: string | null; pdf_expires_in: number }
 
 export async function getScholarMoney(id: number, options?: ApiOptions) {
   return adminFetch<ScholarMoney>(`${BASE}${id}/money/`, options)
 }
 
-export async function getScholarContract(id: number, options?: ApiOptions) {
-  return adminFetch<ScholarContract>(`${BASE}${id}/contract/`, options)
+/** `link: true` mints a five-minute PDF link — only when someone opens the PDF (review L6). */
+export async function getScholarContract(id: number, options?: ApiOptions & { link?: boolean }) {
+  const { link, ...rest } = options ?? {}
+  return adminFetch<ScholarContract>(`${BASE}${id}/contract/${link ? '?link=1' : ''}`, rest)
 }
 
 export async function reviewScholarResult(

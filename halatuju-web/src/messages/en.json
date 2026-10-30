@@ -6276,11 +6276,25 @@
           "all": "All spending"
         },
         "asAt": "as at {date}",
-        "noSpending": "No spending reported for this period."
+        "noSpending": "No spending reported for this period.",
+        "category": {
+          "food": "Food & drink",
+          "groceries": "Groceries",
+          "transport": "Transport",
+          "study": "Books & study supplies",
+          "phone": "Phone & internet",
+          "hostel": "Hostel & bills",
+          "health": "Health & pharmacy",
+          "clothing": "Clothing & shoes",
+          "micro_stall": "Micro stall – no online info",
+          "transfer": "Sent to a person",
+          "unsorted": "Not categorised",
+          "other": "Other"
+        }
       },
       "contractTab": {
         "loadFailed": "Could not load the contract.",
-        "executedOn": "Signed and executed {date}",
+        "executedOn": "Signed and executed · {date}",
         "role": {
           "student": "Student",
           "guarantor": "Guarantor",
@@ -6288,7 +6302,8 @@
           "witness": "Witness"
         },
         "viewPdf": "View signed PDF",
-        "noPdf": "The signed PDF is not available right now."
+        "noPdf": "The signed PDF is not available right now.",
+        "countersignedOn": "Countersigned by the organisation · {date}"
       }
     },
     "contracts": {

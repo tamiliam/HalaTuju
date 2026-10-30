@@ -9,12 +9,18 @@ award, `payments.paid_to_date` (released disbursements), `payments._remaining` (
 last 3 released disbursements — every amount a string. One test holds the Overview card, her My Bursary summary, this
 tab, the Payments funding summary and the sponsor card's "released" to the same number. (3) **Spending this term by
 category** only with `has_perm('spending')` — the key is ABSENT otherwise (the Spending page's rule; finance never
-reaches the file). "This term" = her current S4b result term's stored `term_starts_on`, else since she was funded;
-categories and totals only, the Spending page's arithmetic. (4) **Contract = an EXECUTED agreement with its PDF**
-(platform-signed, owner ruling 2026-10-29), else `{exists: false}` → "No contract on file". Not gated on
-`BURSARY_AGREEMENT_ENABLED`. Parties are names, roles and dates — never an IC number. The PDF is a signed URL into the
-private bucket, minted per request for **300 seconds**, refused when the storage path's organisation is not the
-application's; the tab fetches a fresh link each time it opens the PDF.
+reaches the file). "This term" = the S4b result term she is IN (stored `term_starts_on` <= today <= `term_ends_on`), else since she
+was funded; EVERY category, unfolded, as the Spending page lists them, sent by CODE and translated on screen (the
+sponsor card's top-six + "other" fold is its own presentation). (4) **Contract = a platform-signed agreement: it binds
+(student + guarantor) and the organisation has countersigned, with its PDF** — the witness is non-blocking
+(`bursary._maybe_activate`), so it is not required (review H1; there are 0 agreements live today). Otherwise
+`{exists: false}` → "No contract on file". The line uses the Overview card's words: "Countersigned by the organisation"
+until the witness signs, then "Signed and executed"; the date is the organisation's, or the witness's if later; the
+witness row appears only once signed and is named `witness_name` or the witness organisation — never
+`witness_signed_by` (the recording officer). Not gated on `BURSARY_AGREEMENT_ENABLED`. Parties are names, roles and
+dates — never an IC number. The PDF is a signed URL into the private bucket, minted ONLY on request (`?link=1`, a
+click) for **300 seconds**, and only when the path is this application's own (`<org>/<app>/…` — the real 3-segment
+key `resolve_org_for_path` cannot read an org from).
 
 **The doors (readers added):** `scholar_money.money_payload`, `spending_block`, `contract_payload`, `pdf_url` (via the
 two admin views). Nothing writes. **Readers that must agree:** `scholars.file_payload` (S2 card),

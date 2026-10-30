@@ -39,13 +39,14 @@ it('shows the server figures and her last releases, with no spending block when 
 it('draws the spending block, its period and the links when they are there', async () => {
   mockApi.getScholarMoney.mockResolvedValue({ ...BASE, spending: {
     since: '2026-09-01', basis: 'term', spent: '42.00', as_at: '2026-10-28',
-    categories: [{ code: 'food', label: 'Food', total: '30.00' }, { code: 'transport', label: 'Transport', total: '12.00' }],
+    categories: [{ code: 'food', total: '30.00' }, { code: 'transport', total: '12.00' }],
   } })
   render(<ScholarMoney id={7} token="tok" links={[{ page: 'payments', href: '/admin/payments?programme=flag' },
     { page: 'spending', href: '/admin/spending?programme=flag' }]} />)
   const block = await screen.findByTestId('money-spending')
   expect(block.textContent).toContain('admin.scholars.moneyTab.since.term')
-  expect(block.textContent).toContain('Food')
+  // Translated by CODE (review M2) — never a label from the server.
+  expect(block.textContent).toContain('admin.scholars.moneyTab.category.food')
   expect(block.textContent).toContain('RM42.00')
   expect(screen.getByRole('link', { name: 'admin.scholars.money.openPayments' }).getAttribute('href'))
     .toBe('/admin/payments?programme=flag')

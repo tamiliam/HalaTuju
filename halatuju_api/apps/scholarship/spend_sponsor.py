@@ -54,11 +54,13 @@ def _rounded(value):
     return (value or _ZERO).quantize(Decimal('0.01'))
 
 
-def category_rows(pairs, labels):
+def category_rows(pairs, labels, *, fold=True):
     """`[(category, amount)]` → the ranked list the card draws, with `other` already folded.
 
     Pure — no database, no application, nothing identifying can reach it. Returns
     `[{'code', 'label', 'total'}]` ordered by value, with `other` last when it exists.
+    `fold=False` (the officer's Money tab, S5a review M2) keeps EVERY category, as the Spending
+    page shows them — folding is the sponsor card's presentation, not a rule about the money.
     """
     totals: dict[str, Decimal] = {}
     for code, amount in pairs:
@@ -78,7 +80,7 @@ def category_rows(pairs, labels):
     ranked = sorted(totals.items(), key=lambda kv: (-kv[1], labels.get(kv[0], kv[0])))
     kept, folded = [], _ZERO
     for index, (code, total) in enumerate(ranked):
-        if index < TOP_SLICES or code in NEVER_FOLDED:
+        if not fold or index < TOP_SLICES or code in NEVER_FOLDED:
             kept.append({'code': code, 'label': labels.get(code, code), 'total': _rounded(total)})
         else:
             folded += total

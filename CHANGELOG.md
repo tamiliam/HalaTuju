@@ -9,9 +9,13 @@ Roadmap Sprint 5, admin half (5b = her Funds and Contract tabs). No migration.
 - **Money tab:** award, paid to date and remaining by the Payments page's own rules (the same figures as Payments,
   My Bursary and the sponsor card), her last three payments, and — for staff who may open Spending — her spending
   this result term by category, with links to Payments and Spending.
-- **Contract tab:** a contract signed on the platform — "Signed and executed <date>", the parties (no IC numbers),
-  and the signed PDF in the viewer through a five-minute link fetched fresh each time; anything else reads "No
-  contract on file". Works whether or not signing is switched on.
+- **Contract tab:** a contract signed on the platform (countersigned by the organisation; the witness is optional) —
+  "Countersigned by the organisation" or "Signed and executed" with the date, the parties (no IC numbers), and the
+  signed PDF in the viewer through a five-minute link fetched only when opened; anything else reads "No contract on
+  file". Works whether or not signing is switched on.
+- **Review fixes:** a countersigned contract without a witness now shows; spending categories are listed in full and
+  translated; the PDF link is only for this application's own file; the witness is never named after the recording
+  officer; "this term" means a term not yet ended; the PDF button can be retried.
 - Guide (org admin, general admin, reviewer) updated.
 
 ## Bumi F1b — held TVET flag fix (no migration) - 2026-10-30

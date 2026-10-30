@@ -12,10 +12,12 @@ const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
  * The scholar file's Contract tab (student maintenance S5a). Design of record: the canvas file's
  * Contract card — "Signed and executed <date>", the parties, View signed PDF.
  *
- * ⚠ PLATFORM-SIGNED ONLY (owner ruling, 2026-10-29): the server sends an EXECUTED agreement or
- * `{exists: false}`, and this says "No contract on file" for the second — never a scan, never a draft.
- * ⚠ THE PDF LINK LIVES FIVE MINUTES. "View signed PDF" asks the server for a FRESH one each time,
- * so a tab left open for an hour still opens the document. No IC number is ever in the payload.
+ * ⚠ PLATFORM-SIGNED ONLY (owner ruling, 2026-10-29): the server sends a COUNTERSIGNED agreement (the
+ * witness is non-blocking) or `{exists: false}` → "No contract on file" — never a scan, never a draft.
+ * The line says "Countersigned by the organisation" until the witness signs, then "Signed and
+ * executed" — the same words as the Overview card.
+ * ⚠ NO LINK ON THE FIRST READ. "View signed PDF" asks for a five-minute link only when clicked, and
+ * a fresh one each time, so a tab left open for an hour still opens it. No IC number is ever sent.
  */
 export default function ScholarContract({ id, token }: { id: number; token: string | null }) {
   const { t } = useT()
@@ -24,20 +26,26 @@ export default function ScholarContract({ id, token }: { id: number; token: stri
   const [viewing, setViewing] = useState<ViewerDoc | null>(null)
   const [opening, setOpening] = useState(false)
 
+  const [noPdf, setNoPdf] = useState(false)
+
   useEffect(() => {
     if (!token) return
-    getScholarContract(id, { token }).then(setData).catch(() => setFailed(true))
+    getScholarContract(id, { token })
+      .then((d) => { setData(d); setFailed(false) })
+      .catch(() => setFailed(true))
   }, [id, token])
 
   const open = async () => {
     if (!token) return
     setOpening(true)
     try {
-      const fresh = await getScholarContract(id, { token })
+      const fresh = await getScholarContract(id, { token, link: true })
+      setFailed(false)
       if (fresh.exists && fresh.pdf_url) {
+        setNoPdf(false)
         setViewing({ label: t('admin.scholars.card.contract'), filename: 'agreement.pdf', url: fresh.pdf_url, kind: 'pdf' })
       } else {
-        setFailed(true)
+        setNoPdf(true)            // the button stays: try again
       }
     } catch { setFailed(true) } finally { setOpening(false) }
   }
@@ -54,7 +62,8 @@ export default function ScholarContract({ id, token }: { id: number; token: stri
       {data && data.exists && (
         <>
           <p className="mt-2 text-sm font-medium text-positive-700" data-testid="contract-executed">
-            {t('admin.scholars.contractTab.executedOn', { date: data.executed_on ? formatDate(data.executed_on) : '—' })}
+            {t(data.witnessed ? 'admin.scholars.contractTab.executedOn' : 'admin.scholars.contractTab.countersignedOn',
+              { date: data.executed_on ? formatDate(data.executed_on) : '—' })}
           </p>
           <ul className="mt-3 divide-y divide-ground-100 text-sm" data-testid="contract-parties">
             {data.parties.map((p) => (
@@ -70,11 +79,11 @@ export default function ScholarContract({ id, token }: { id: number; token: stri
               </li>
             ))}
           </ul>
-          <button type="button" onClick={open} disabled={opening || !data.pdf_url}
+          <button type="button" onClick={open} disabled={opening}
             className="mt-4 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50 disabled:opacity-50">
             {t('admin.scholars.contractTab.viewPdf')}
           </button>
-          {!data.pdf_url && <p className="mt-1 text-xs text-ground-500">{t('admin.scholars.contractTab.noPdf')}</p>}
+          {noPdf && <p className="mt-1 text-xs text-ground-500" data-testid="contract-no-pdf">{t('admin.scholars.contractTab.noPdf')}</p>}
         </>
       )}
       <DocViewer doc={viewing} onClose={() => setViewing(null)} />

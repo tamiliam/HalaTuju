@@ -12,17 +12,20 @@ student (`test_scholar_money.TestOneTruthForMoney`). Every amount leaves as a ST
 reaches the wire as a float through DRF's renderer.
 
 SPENDING ("this term by category"). Only for a viewer holding the `spending` permission — the
-Spending page's rule; without it the key is ABSENT from the payload, not null. Categories and totals
-from her `SPEND` transactions since the start of the S4b result term she is IN (its STORED
-`term_starts_on`), else since she was funded. The officer sees the Spending page's arithmetic, not
-the sponsor's floored "left".
+Spending page's rule; without it the key is ABSENT from the payload, not null. Totals per category
+CODE (the screen translates the code; no English label travels) from her `SPEND` transactions since
+the start of the S4b result term she is IN — stored `term_starts_on` <= today <= `term_ends_on` —
+else since she was funded. EVERY category is listed (no folding into "other": that is the sponsor
+card's presentation, not the Spending page's). The officer sees the Spending page's arithmetic,
+not the sponsor's floored "left".
 
-CONTRACT. A platform-signed agreement only (owner ruling, 2026-10-29): an EXECUTED `BursaryAgreement`
-with its stored PDF; anything else is "No contract on file". The signing feature flag is NOT read —
-an executed agreement stays viewable when signing is switched off. The PDF is a signed URL into the
-private bucket, minted per request, expiring in `PDF_URL_SECONDS`, and refused when the storage
-path's organisation is not the application's (the tenant path check every document reader uses).
-The parties carry names, roles and dates — never an IC number.
+CONTRACT. A platform-signed agreement only (owner ruling, 2026-10-29): COUNTERSIGNED — the student
+and guarantor bind it and the organisation has signed (`bursary._maybe_activate`'s own rule; the
+partner witness is NON-BLOCKING, so it is not required) — with its stored PDF; anything else is
+"No contract on file". The signing feature flag is NOT read. The PDF is a signed URL into the
+private bucket, minted ONLY when asked (`with_link`), expiring in `PDF_URL_SECONDS`, and refused
+unless the path is this application's own (`<org>/<app>/…`). The parties carry names, roles and
+dates — never an IC number; the witness row appears only once the witness has signed.
 """
 from decimal import Decimal
 
@@ -50,7 +53,9 @@ def spending_since(application, today=None):
     from .models import ResultsExpectation
     from .results_expectations import funded_since
     today = today or timezone.localdate()
-    current = (ResultsExpectation.objects.filter(application=application, term_starts_on__lte=today)
+    # The term she is IN: begun and not yet ended (review L5) — a lapsed term is not "this term".
+    current = (ResultsExpectation.objects.filter(application=application, term_starts_on__lte=today,
+                                                 term_ends_on__gte=today)
                .order_by('-term_starts_on', '-id').values_list('term_starts_on', flat=True).first())
     if current is not None:
         return current, 'term'
@@ -78,8 +83,9 @@ def spending_block(application, today=None):
         'basis': basis,
         'spent': _money(spent),
         'as_at': _day(newest),
-        'categories': [{'code': r['code'], 'label': r['label'], 'total': str(r['total'])}
-                       for r in category_rows(rows, dict(SPEND_CATEGORY_CHOICES))],
+        # By CODE only — the screen translates it (review M2); every category, unfolded.
+        'categories': [{'code': r['code'], 'total': str(r['total'])}
+                       for r in category_rows(rows, dict(SPEND_CATEGORY_CHOICES), fold=False)],
     }
 
 
@@ -106,41 +112,58 @@ def _agreement(application):
             .filter(application=application).first())
 
 
+def own_path(path, application):
+    """The agreement PDF lives at `<org>/<app>/…` (`storage.build_doc_key`); anything else is not this
+    application's file (review L3 — `resolve_org_for_path` reads no org from a 3-segment key)."""
+    parts = (path or '').split('/')
+    return (len(parts) >= 3 and parts[0] == str(application.owning_organisation_id)
+            and parts[1] == str(application.id) and '..' not in parts)
+
+
 def pdf_url(agreement, application):
-    """A short-lived signed link to the executed PDF, or None (no file, a path from another
-    organisation, or storage refused)."""
-    from .storage import create_signed_download_url, resolve_org_for_path
-    if not agreement.pdf_storage_path:
-        return None
-    path_org = resolve_org_for_path(agreement.pdf_storage_path)
-    if path_org is not None and path_org != application.owning_organisation_id:
+    """A short-lived signed link to the signed PDF, or None (no file, not this application's path,
+    or storage refused)."""
+    from .storage import create_signed_download_url
+    if not agreement.pdf_storage_path or not own_path(agreement.pdf_storage_path, application):
         return None
     return create_signed_download_url(agreement.pdf_storage_path, expires_in=PDF_URL_SECONDS)
 
 
-def contract_payload(application):
-    """`{'exists': False}` unless she has an EXECUTED agreement with its PDF. No IC number anywhere."""
+def platform_signed(agreement):
+    """Countersigned: it binds (student + guarantor) and the organisation has signed. The witness
+    is non-blocking (`bursary._maybe_activate`), so it is never required here (review H1)."""
+    return bool(agreement is not None and agreement.binds and agreement.foundation_signed_at
+                and agreement.pdf_storage_path)
+
+
+def contract_payload(application, *, with_link=False):
+    """`{'exists': False}` unless she has a platform-signed agreement with its PDF. The link is
+    minted only `with_link` (the tab asks when someone opens the PDF). No IC number anywhere."""
     agreement = _agreement(application)
-    if agreement is None or not agreement.is_executed or not agreement.pdf_storage_path:
+    if not platform_signed(agreement):
         return {'exists': False}
-    executed = max(d for d in (agreement.foundation_signed_at, agreement.witness_signed_at) if d)
+    signed = [d for d in (agreement.foundation_signed_at, agreement.witness_signed_at) if d]
+    parties = [
+        {'role': 'student', 'name': agreement.student_signed_name,
+         'signed_on': _day(agreement.student_signed_at)},
+        {'role': 'guarantor', 'name': agreement.guarantor_name,
+         'relationship': agreement.guarantor_relationship,
+         'signed_on': _day(agreement.guarantor_signed_at)},
+        {'role': 'foundation', 'name': agreement.foundation_signed_by or agreement.foundation_signatory_name,
+         'title': agreement.foundation_signatory_title,
+         'signed_on': _day(agreement.foundation_signed_at)},
+    ]
+    if agreement.witness_signed_at:
+        # ⚠ Never `witness_signed_by` — that is the officer who RECORDED the witness (review L4).
+        org = agreement.witness_org.name if agreement.witness_org else ''
+        parties.append({'role': 'witness', 'name': agreement.witness_name or org, 'organisation': org,
+                        'signed_on': _day(agreement.witness_signed_at)})
     return {
         'exists': True,
-        'executed_on': _day(executed),
+        'executed_on': _day(max(signed)),   # the organisation's date, or the witness's if later
+        'witnessed': bool(agreement.witness_signed_at),
         'version': agreement.version or '',
-        'parties': [
-            {'role': 'student', 'name': agreement.student_signed_name,
-             'signed_on': _day(agreement.student_signed_at)},
-            {'role': 'guarantor', 'name': agreement.guarantor_name,
-             'relationship': agreement.guarantor_relationship,
-             'signed_on': _day(agreement.guarantor_signed_at)},
-            {'role': 'foundation', 'name': agreement.foundation_signed_by or agreement.foundation_signatory_name,
-             'title': agreement.foundation_signatory_title,
-             'signed_on': _day(agreement.foundation_signed_at)},
-            {'role': 'witness', 'name': agreement.witness_name or agreement.witness_signed_by,
-             'organisation': agreement.witness_org.name if agreement.witness_org else '',
-             'signed_on': _day(agreement.witness_signed_at)},
-        ],
-        'pdf_url': pdf_url(agreement, application),
+        'parties': parties,
+        'pdf_url': pdf_url(agreement, application) if with_link else None,
         'pdf_expires_in': PDF_URL_SECONDS,
     }

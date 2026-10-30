@@ -6276,11 +6276,25 @@
           "all": "Semua perbelanjaan"
         },
         "asAt": "setakat {date}",
-        "noSpending": "Tiada perbelanjaan dilaporkan bagi tempoh ini."
+        "noSpending": "Tiada perbelanjaan dilaporkan bagi tempoh ini.",
+        "category": {
+          "food": "Makanan & minuman",
+          "groceries": "Barangan runcit",
+          "transport": "Pengangkutan",
+          "study": "Buku & alat tulis",
+          "phone": "Telefon & internet",
+          "hostel": "Asrama & bil",
+          "health": "Kesihatan & farmasi",
+          "clothing": "Pakaian & kasut",
+          "micro_stall": "Gerai mikro – tiada maklumat dalam talian",
+          "transfer": "Dihantar kepada seseorang",
+          "unsorted": "Belum dikategorikan",
+          "other": "Lain-lain"
+        }
       },
       "contractTab": {
         "loadFailed": "Tidak dapat memuatkan kontrak.",
-        "executedOn": "Ditandatangani dan berkuat kuasa {date}",
+        "executedOn": "Ditandatangani dan berkuat kuasa · {date}",
         "role": {
           "student": "Pelajar",
           "guarantor": "Penjamin",
@@ -6288,7 +6302,8 @@
           "witness": "Saksi"
         },
         "viewPdf": "Lihat PDF bertandatangan",
-        "noPdf": "PDF bertandatangan tidak tersedia buat masa ini."
+        "noPdf": "PDF bertandatangan tidak tersedia buat masa ini.",
+        "countersignedOn": "Ditandatangani balas oleh organisasi · {date}"
       }
     },
     "contracts": {
