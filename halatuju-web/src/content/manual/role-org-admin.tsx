@@ -54,6 +54,17 @@ export const roleOrgAdmin: ManualChapter = {
         application waits on. The three results emails (due soon, overdue, and your query) are your own wording:
         <strong> Edit wording</strong> opens a tab for each of English, Malay and Tamil, and &ldquo;Use the
         default&rdquo; brings back ours. For the others, <strong>Show wording</strong> shows what she receives.</p>
+        <p className="mt-2">The file&rsquo;s <strong>Letters</strong> tab holds the formal letters you send her:
+        general, discipline, close-out &mdash; and suspension and termination, which only a super admin or an
+        organisation admin may issue. <strong>Issue a letter</strong> shows a draft of the letter (a PDF in English
+        or Malay) and of the email she gets in her own language; for a discipline or termination letter you type
+        her full name to issue it. A letter is a document only: it never changes her status or her payments
+        &mdash; after a termination letter the tab offers to take you to the file&rsquo;s <strong>Close</strong>
+        control. A letter is never edited or deleted; an organisation admin can <strong>Withdraw</strong> it, with
+        a reason. Each row says whether the email went (<strong>Resend email</strong> if it did not) and whether
+        she has acknowledged it by the reply date &mdash; she presses &ldquo;I have read this letter&rdquo; on My
+        Bursary, which does not mean she agrees. The letters&rsquo; wording is yours, under <strong>Student
+        communications &rarr; Letters</strong>; the reply time is under <strong>Configuration</strong>.</p>
         <p className="mt-2">The file&rsquo;s <strong>Money</strong> tab shows her award, what has been paid and what
         remains &mdash; the same figures as the Payments page &mdash; with her last three payments and, for anyone
         who may open Spending, what she has spent this term by category. The <strong>Contract</strong> tab shows a

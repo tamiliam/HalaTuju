@@ -6218,7 +6218,10 @@
         "other": "Kemas kini sistem",
         "result_accepted": "Keputusan diterima · {semester}",
         "result_queried": "Keputusan dipersoalkan · {semester}",
-        "results_overdue": "Keputusan tidak dihantar (tarikh akhir {date})"
+        "results_overdue": "Keputusan tidak dihantar (tarikh akhir {date})",
+        "letter_issued": "Surat dikeluarkan · {subject}",
+        "letter_withdrawn": "Surat ditarik balik · {subject}",
+        "letter_acknowledged": "Pelajar mengakui surat · {subject}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6313,6 +6316,80 @@
         "viewPdf": "Lihat PDF bertandatangan",
         "noPdf": "PDF bertandatangan tidak tersedia buat masa ini.",
         "countersignedOn": "Ditandatangani balas oleh organisasi · {date}"
+      },
+      "letters": {
+        "title": "Surat",
+        "issue": "Keluarkan surat",
+        "empty": "Belum ada surat.",
+        "loadError": "Surat tidak dapat dimuatkan.",
+        "open": "Buka surat",
+        "cardCounts": "{count} surat · {awaiting} menunggu pengakuan",
+        "cardOverdue": "{count} lewat",
+        "issuedLine": "Dikeluarkan {date} oleh {name} · PDF dalam {language}",
+        "emailed": "Dihantar melalui e-mel {date} kepada {to}",
+        "notEmailed": "Belum dihantar melalui e-mel",
+        "resend": "Hantar semula e-mel",
+        "resent": "E-mel telah dihantar.",
+        "resendFailed": "E-mel tidak dihantar. Sila cuba lagi.",
+        "withdrawnLine": "Ditarik balik {date} oleh {name} — \"{reason}\"",
+        "viewPdf": "Lihat PDF",
+        "openPdf": "Buka PDF",
+        "pdfFailed": "PDF tidak dapat dibuka. Sila cuba lagi.",
+        "withdraw": "Tarik balik",
+        "withdrawReason": "Mengapa ditarik balik? (disimpan dalam fail)",
+        "withdrawConfirm": "Tarik balik surat",
+        "actionFailed": "Itu tidak dapat dilakukan. Sila cuba lagi.",
+        "closePrompt": "Surat penamatan telah dikeluarkan pada {date}. Tutup fail?",
+        "closeFile": "Tutup fail",
+        "notNow": "Bukan sekarang",
+        "issued": "Surat dikeluarkan: {subject}. Status e-melnya ditunjukkan di bawah.",
+        "kind": {
+          "general": "Am",
+          "discipline": "Disiplin",
+          "suspension": "Penggantungan",
+          "termination": "Penamatan",
+          "close_out": "Penutupan fail"
+        },
+        "lang": {
+          "en": "Bahasa Inggeris",
+          "ms": "Bahasa Melayu"
+        },
+        "emailLang": {
+          "en": "Bahasa Inggeris",
+          "ms": "Bahasa Melayu",
+          "ta": "Bahasa Tamil"
+        },
+        "state": {
+          "awaiting": "Menunggu pengakuan · tarikh akhir {date}",
+          "overdue": "Lewat · tarikh akhir {date}",
+          "acknowledged": "Diakui {date}"
+        },
+        "dialog": {
+          "kind": "1. Jenis",
+          "seniorOnly": "Penggantungan dan Penamatan: pentadbir super atau pentadbir organisasi sahaja.",
+          "language": "2. Bahasa PDF",
+          "clause": "3. Fasal kontrak",
+          "note": "Catatan (dimasukkan dalam surat)",
+          "replyBy": "Balas sebelum",
+          "replyByValue": "{date} ({days} hari, daripada Tetapan)",
+          "wordingWhere": "Kata-katanya milik organisasi anda: Organisasi → Tetapan → Komunikasi pelajar → Surat.",
+          "draft": "DRAF — BELUM DIKELUARKAN",
+          "emailPreview": "E-mel yang diterimanya (bahasanya: {language})",
+          "documentsOnly": "Surat ini tidak mengubah status atau bayarannya. Gunakan Tahan atau Tutup pada fail.",
+          "typeName": "Taip nama penuh pelajar untuk mengeluarkan",
+          "issueAndEmail": "Keluarkan dan e-mel"
+        },
+        "error": {
+          "forbidden": "Anda tidak boleh mengeluarkan surat jenis ini.",
+          "file_closed": "Fail ini telah ditutup: hanya surat am atau surat penutupan fail boleh dikeluarkan.",
+          "confirm_mismatch": "Nama yang ditaip tidak sepadan dengan nama penuh pelajar.",
+          "clause_required": "Kata-kata surat ini menyebut fasal — isikan nombor fasal.",
+          "clause_too_long": "Fasal terlalu panjang.",
+          "note_too_long": "Catatan terlalu panjang.",
+          "pdf_failed": "PDF tidak dapat dihasilkan. Tiada surat dikeluarkan.",
+          "storage_failed": "PDF tidak dapat disimpan. Tiada surat dikeluarkan.",
+          "generic": "Surat tidak dapat dikeluarkan. Sila cuba lagi."
+        }
       }
     },
     "contracts": {
@@ -7186,6 +7263,10 @@
           "results_reminder_every_days": {
             "label": "Peringatan keputusan — ulang setiap (hari)",
             "desc": "Berapa kerap peringatan diulang sehingga tarikh akhir keputusan."
+          },
+          "letter_response_days": {
+            "label": "Surat — hari untuk mengakui",
+            "desc": "Berapa lama pelajar diberi untuk mengesahkan dia menerima surat rasmi. Ditetapkan pada setiap surat semasa ia dikeluarkan."
           }
         },
         "unit": {
@@ -7320,7 +7401,8 @@
           "award_confirmed": "Anugerah disahkan",
           "agreement_executed": "Perjanjian ditandatangani dan berkuat kuasa",
           "vircle_setup": "Sediakan dompet Vircle anda",
-          "closed_by_officer": "Permohonan ditutup oleh pasukan kami"
+          "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
+          "letter_issued": "Surat telah dikeluarkan"
         },
         "when": {
           "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
@@ -7351,7 +7433,8 @@
           "award_confirmed": "Apabila dia menerima anugerahnya (apabila tiada perjanjian ditandatangani di platform).",
           "agreement_executed": "Apabila semua pihak telah menandatangani. Salinan perjanjian yang ditandatangani dilampirkan.",
           "vircle_setup": "Apabila perjanjiannya berkuat kuasa: cara menyediakan dompet yang menerima bayaran bursari.",
-          "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya."
+          "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
+          "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas."
         },
         "language": {
           "en": "Inggeris",
@@ -7404,7 +7487,8 @@
           "offer_clock": "Sentiasa dihantar: tempohnya untuk menandatangani hanya bermula selepas e-mel ini dihantar.",
           "contract_copy": "Sentiasa dihantar: inilah salinan perjanjian yang ditandatanganinya.",
           "wallet_task": "Sentiasa dihantar: ia mewujudkan tugasan dompetnya, dan dia tidak boleh dibayar tanpa dompet itu.",
-          "managed_elsewhere": "Kata-kata dan suisnya di Sumber."
+          "managed_elsewhere": "Kata-kata dan suisnya di Sumber.",
+          "letter_notice": "Sentiasa dihantar: inilah cara dia mengetahui surat rasmi telah dikeluarkan."
         },
         "group": {
           "account": "Akaunnya",
@@ -7412,7 +7496,8 @@
           "interview": "Temu duga",
           "award": "Anugerah dan perjanjian",
           "results": "Keputusan",
-          "closure": "Penutupan"
+          "closure": "Penutupan",
+          "letters": "Surat"
         },
         "chip": {
           "en": "EN",
@@ -7424,7 +7509,30 @@
           "en_ms": "Bahasa Inggeris, atau Inggeris dengan salinan Melayu, dalam satu e-mel",
           "en": "Bahasa Inggeris sahaja"
         },
-        "switchBackNote": "Menghidupkan semula satu akan menghantarnya kepada setiap pelajar yang kini layak menerimanya: bagi e-mel Keputusan, setiap pelajar yang keputusannya perlu dihantar atau sudah lewat hari ini."
+        "switchBackNote": "Menghidupkan semula satu akan menghantarnya kepada setiap pelajar yang kini layak menerimanya: bagi e-mel Keputusan, setiap pelajar yang keputusannya perlu dihantar atau sudah lewat hari ini.",
+        "letters": {
+          "loadError": "Kata-kata surat tidak dapat dimuatkan.",
+          "responseDays": "Tempoh balas: {days} hari (Organisasi → Tetapan → Konfigurasi).",
+          "pdf": "PDF",
+          "kind": {
+            "general": "Surat am",
+            "discipline": "Surat disiplin",
+            "termination": "Surat penamatan",
+            "suspension": "Surat penggantungan",
+            "close_out": "Surat penutupan fail"
+          },
+          "when": {
+            "general": "Sebarang notis rasmi, contohnya perubahan tarikh bayaran.",
+            "discipline": "Amaran rasmi, contohnya keputusan tidak dihantar.",
+            "termination": "Menamatkan bursari. Dokumen sahaja — mengeluarkannya tidak mengubah status atau bayarannya.",
+            "suspension": "Menggantung bursari. Dokumen sahaja — mengeluarkannya tidak mengubah status atau bayarannya.",
+            "close_out": "Apabila failnya ditutup, contohnya selepas tamat pengajian."
+          },
+          "tab": {
+            "en": "PDF · Bahasa Inggeris",
+            "ms": "PDF · Bahasa Melayu"
+          }
+        }
       }
     },
     "programmeScope": {
@@ -8011,6 +8119,41 @@
       "noPdf": "PDF tidak tersedia buat masa ini. Sila cuba lagi.",
       "loadFailed": "Tidak dapat memuatkan kontrak anda. Sila cuba lagi.",
       "openPdf": "Buka PDF"
+    },
+    "letters": {
+      "tab": "Surat",
+      "title": "Surat anda",
+      "empty": "Tiada surat.",
+      "loadFailed": "Surat anda tidak dapat dimuatkan.",
+      "badge": "Surat yang menunggu pengakuan anda: {count}",
+      "unread": "Belum dibaca",
+      "readLabel": "Surat",
+      "ackBy": "Sila akui sebelum {date}.",
+      "download": "Muat turun surat (PDF, {language})",
+      "openPdf": "Buka PDF",
+      "pdfFailed": "PDF tidak dapat dibuka. Sila cuba lagi.",
+      "withdrawnNote": "Surat ini telah ditarik balik. Anda tidak perlu berbuat apa-apa.",
+      "acknowledgedOn": "Anda mengakui surat ini pada {date}.",
+      "acknowledge": "Saya telah membaca surat ini",
+      "notAgreement": "Ini memberitahu {organisation} bahawa anda telah menerima dan membacanya. Ia tidak bermakna anda bersetuju.",
+      "ackFailed": "Itu tidak berjaya. Sila cuba lagi.",
+      "kind": {
+        "general": "Am",
+        "discipline": "Amaran",
+        "suspension": "Penggantungan",
+        "termination": "Penamatan",
+        "close_out": "Penutupan fail"
+      },
+      "state": {
+        "awaiting": "Sila akui sebelum {date}",
+        "overdue": "Lewat — sila akui",
+        "acknowledged": "Diakui pada {date}",
+        "withdrawn": "Ditarik balik pada {date} — anda tidak perlu berbuat apa-apa"
+      },
+      "pdfLang": {
+        "en": "Bahasa Inggeris",
+        "ms": "Bahasa Melayu"
+      }
     }
   }
 }

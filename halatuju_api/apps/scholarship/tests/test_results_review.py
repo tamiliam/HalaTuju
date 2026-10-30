@@ -216,10 +216,12 @@ class TestSettings(TestCase):
 
     def test_every_maintenance_key_has_its_reader(self):
         """M1: a setting arrives with its reader. S4b's timing keys are read by
-        `results_expectations.settings_for`; the two reminder keys by `send_due_reminders`."""
+        `results_expectations.settings_for`; the two reminder keys by `send_due_reminders`; S6b's
+        `letter_response_days` by `letters.response_days` (stamped on each letter at issue)."""
         from apps.courses.org_config_registry import SETTINGS
         self.assertEqual(sorted(k for k, v in SETTINGS.items() if v['group'] == 'maintenance'),
-                         ['maintenance_failing_cgpa', 'maintenance_min_cgpa', 'results_due_days_after_term',
+                         ['letter_response_days', 'maintenance_failing_cgpa', 'maintenance_min_cgpa',
+                          'results_due_days_after_term',
                           'results_overdue_grace_days', 'results_reminder_every_days',
                           'results_reminder_lead_days', 'results_terms_per_year'])
 

@@ -118,6 +118,9 @@ export interface BursarySummary {
   next_result_due?: string | null
   /** S4b review L10: the server's "she is late" (past due AND the organisation's grace). */
   next_result_overdue?: boolean
+  /** S6b: she has at least one letter (the Letters tab shows), and how many await her acknowledgement. */
+  has_letters?: boolean
+  letters_to_acknowledge?: number
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

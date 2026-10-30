@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31
+
+Roadmap Sprint 6, second half (owner-approved design: LettersAdmin, LettersStudent, CommsLetters). Migration
+`scholarship/0192_letters` — MIGRATE FIRST, by hand (two new tables, RLS + service_role policy each). Not pushed.
+
+- **The scholar file's Letters tab:** every letter with its kind, who issued it and when, the PDF language, whether
+  the email went (or "Not emailed — Resend email"), and its state — awaiting acknowledgement, overdue, acknowledged
+  or withdrawn (struck through, with the reason). **Issue a letter**: kind (suspension and termination for super /
+  organisation admin only), PDF language (English or Malay), contract clause, a note, the reply-by date from
+  Settings, the server's DRAFT of the letter and of the email she gets in her language, "this letter does not change
+  her status or payments" for suspension and termination, and the student's full name typed for discipline and
+  termination. **Withdraw** with a reason (super / organisation admin); nothing is ever edited or deleted. After a
+  termination letter the tab asks "Close the file?" and takes the officer to the file's own Close control.
+- **The Overview card** counts letters, those awaiting acknowledgement and those overdue.
+- **Her Letters tab on My Bursary** (it appears once she has a letter): her letters with an unread dot and their
+  state in her words; the letter as issued, its PDF on her tap, and **"I have read this letter" — "It does not mean
+  you agree."** A withdrawn letter asks nothing of her. Her Overview says how many wait for her.
+- **Student communications → Letters:** the notice email "A letter has been issued" (locked: always sent; the
+  organisation's wording in English, Malay and Tamil) and the five letters' own wording, a tab per PDF language,
+  "Use the default" per language; the response time from Configuration.
+- **New:** `Letter`, `LetterTemplate` (0192); `letters.py`, `letter_defaults.py`, `letters_pdf.py`,
+  `views_admin/letters.py`, `urls_letters.py`; her views in `views_bursary.py`; the `letter_response_days` setting
+  (maintenance, default 14); activity events `letter_issued`, `letter_withdrawn`, `letter_acknowledged`; the
+  `letter_issued` kind in `student_comms` (outside the results flag) and the catalogue (Letters heading, locked).
+- **Not changed:** status, sub-state, payments — letters are documents only. TD-367 left to TD-383 (decisions.md).
+- **TD-427 (bundle) — weight reclaimed, the gate green again.** The tree 6b started from already exited 1 locally
+  (median 147.759 kB: 0.241 kB of room, under the 0.25 kB floor). `activityDot` / `activityText` moved verbatim from
+  `lib/scholars.ts` to `lib/scholarActivity.ts`: only the file's timeline uses them, and the Scholars LIST — one of
+  the two routes that set the median — carried them. Median **147.642 kB, 0.358 kB of room, "first-load-JS budget:
+  ok"**; no other route moved. Tried first and REVERTED: moving `effectiveRole` out of `navigation.ts` (a new leaf,
+  then `superRole.ts`) made webpack cut a new 7 kB shared chunk onto 34 routes and pushed `/profile` and
+  `/scholarship/application` over their lines. 6b's own code is on `/admin/scholars/[id]`, Settings and
+  `/scholarship/bursary`, all above the median; her words are in the bursary slice.
+
 ## Scholarship My Plans redesign — offer question, institution first, unfiltered (no migration) - 2026-10-30 — LIVE 2026-10-30 (main 53706f21; api-01212-lr2, web-01035-m7b)
 
 Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers-unfiltered`; pushed 2026-10-30 ~17:30

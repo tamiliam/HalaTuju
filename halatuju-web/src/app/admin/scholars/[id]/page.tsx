@@ -14,7 +14,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
@@ -24,6 +24,7 @@ import ScholarControls from '@/components/admin/ScholarControls'
 import ScholarResults from '@/components/admin/ScholarResults'
 import ScholarMoney from '@/components/admin/ScholarMoney'
 import ScholarContract from '@/components/admin/ScholarContract'
+import ScholarLetters from '@/components/admin/ScholarLetters'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
@@ -83,6 +84,8 @@ function StaffScholarFile() {
   const [tab, setTab] = useState<Tab>('overview')
   // A control's change re-reads the file (sub-state, close and the activity log all move together).
   const [reloads, setReloads] = useState(0)
+  // S6b: a termination letter's "Close the file" brings the officer to the header's OWN Close control.
+  const controlsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!token || !allowed || !Number.isFinite(id)) { setLoading(false); return }
@@ -175,7 +178,32 @@ function StaffScholarFile() {
       </p>
     </Card>
   )
-  const later = (key: 'mentor' | 'letters' | 'surveys') => (
+  const lettersCard = (
+    <Card title={t('admin.scholars.card.letters')} testId="card-letters">
+      {file.letters.count === 0 ? <Later text={t('admin.scholars.letters.empty')} /> : (
+        <>
+          <p className="text-sm text-ground-700">
+            {t('admin.scholars.letters.cardCounts', { count: String(file.letters.count),
+              awaiting: String(file.letters.awaiting) })}
+          </p>
+          {file.letters.overdue > 0 && (
+            <p className="text-sm text-critical-700" data-testid="card-letters-overdue">
+              {t('admin.scholars.letters.cardOverdue', { count: String(file.letters.overdue) })}
+            </p>
+          )}
+          <ul className="space-y-1 text-sm text-ground-700">
+            {file.letters.latest.map((l, i) => (
+              <li key={i}>{t(`admin.scholars.letters.kind.${l.kind}`)} · {l.subject} · {formatDate(l.issued_at)}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      <button type="button" onClick={() => setTab('letters')} className="self-start text-sm text-primary-600 hover:underline">
+        {t('admin.scholars.letters.open')}
+      </button>
+    </Card>
+  )
+  const later = (key: 'mentor' | 'surveys') => (
     <Card title={t(`admin.scholars.card.${key}`)} testId={`card-${key}`}>
       <Later text={t(`admin.scholars.later.${key}`)} />
     </Card>
@@ -215,7 +243,7 @@ function StaffScholarFile() {
           className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50">
           {t('admin.scholars.file.viewApplication')}
         </Link>
-        <div className="basis-full">
+        <div className="basis-full" ref={controlsRef}>
           <ScholarControls key={`${file.status}-${file.maintenance_substate}`} file={file} token={token}
             onChanged={() => setReloads((n) => n + 1)} />
         </div>
@@ -227,7 +255,7 @@ function StaffScholarFile() {
         <div className="flex flex-wrap items-start gap-5">
           <section aria-label={t('admin.scholars.file.summary')}
             className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-4 md:grid-cols-2">
-            {resultsCard}{moneyCard}{contractCard}{later('mentor')}{later('letters')}{later('surveys')}
+            {resultsCard}{moneyCard}{contractCard}{lettersCard}{later('mentor')}{later('surveys')}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
             <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.in_maintenance} />
@@ -247,7 +275,14 @@ function StaffScholarFile() {
         </div>
       )}
       {tab === 'contract' && <div className="max-w-3xl"><ScholarContract id={file.id} token={token} /></div>}
-      {tab === 'letters' && <div className="max-w-xl">{later('letters')}</div>}
+      {tab === 'letters' && (
+        <div className="max-w-4xl">
+          <ScholarLetters id={file.id} token={token}
+            canClose={(file.controls?.close_reasons.length ?? 0) > 0}
+            onGoToClose={() => controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            onChanged={() => setReloads((n) => n + 1)} />
+        </div>
+      )}
       {tab === 'mentoring' && <div className="max-w-xl">{later('mentor')}</div>}
       {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}

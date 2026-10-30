@@ -87,7 +87,13 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
   /** S4b: when her next result is due (null: no open term). */
   next_due?: string | null
   mentor: null
-  letters: never[]
+  /** S6b: the Overview's letters card — counts and the newest three. */
+  letters: {
+    count: number
+    awaiting: number
+    overdue: number
+    latest: { kind: string; subject: string; issued_at: string; state: string }[]
+  }
   last_activity_at: string | null
   /** Maintenance S3: what the header may OFFER this officer (the server judges every request again). */
   controls?: ScholarControls

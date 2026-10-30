@@ -29,7 +29,10 @@ from django.db import transaction
 from . import email_templates
 from .models import StudentEmailTemplate
 
-KINDS = ('results_due', 'results_overdue', 'result_queried')
+KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued')
+#: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
+#: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
+PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
 LANGUAGES = ('en', 'ms', 'ta')
 
 _COMMON = ('name', 'programme', 'link', 'support', 'signoff')
@@ -38,6 +41,7 @@ PLACEHOLDERS = {
     'results_due': _COMMON + ('due_date',),
     'results_overdue': _COMMON + ('due_date',),
     'result_queried': _COMMON + ('semester', 'note'),
+    'letter_issued': _COMMON + ('response_due', 'letter_subject'),
 }
 
 DEFAULTS = {
@@ -89,6 +93,24 @@ DEFAULTS = {
                'அன்புள்ள {name},\n\n{programme}-க்காக நீங்கள் அனுப்பிய {semester} முடிவைப் பார்த்தோம்; நீங்கள் '
                'ஒன்றைச் சரிபார்க்க வேண்டும்:\n\n{note}\n\nஉங்கள் எனது உதவித்தொகை பக்கத்தைத் திறந்து, முடிவைச் '
                'சீட்டுடன் மீண்டும் அனுப்புங்கள்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.'
+               '\n\n{signoff}'),
+    },
+    # S6b: an officer has issued her a formal letter. The letter itself is on My Bursary (and its
+    # PDF, English or Malay); this email is how she learns of it, in HER language.
+    'letter_issued': {
+        'en': ('{programme}: a formal letter for you',
+               'Dear {name},\n\nWe have issued a formal letter to you about your {programme}: '
+               '"{letter_subject}".\n\nPlease read it on your My Bursary page and confirm you have received '
+               'it by {response_due}:\n{link}\n\nIf you have a question, write to {support}.\n\n{signoff}'),
+        'ms': ('{programme}: surat rasmi untuk anda',
+               'Salam {name},\n\nKami telah mengeluarkan surat rasmi kepada anda mengenai {programme} anda: '
+               '"{letter_subject}".\n\nSila bacanya di halaman Biasiswa Saya dan sahkan anda telah '
+               'menerimanya sebelum {response_due}:\n{link}\n\nJika ada pertanyaan, tulis kepada {support}.'
+               '\n\n{signoff}'),
+        'ta': ('{programme}: உங்களுக்கு ஒரு முறையான கடிதம்',
+               'அன்புள்ள {name},\n\n{programme} தொடர்பாக உங்களுக்கு ஒரு முறையான கடிதத்தை அனுப்பியுள்ளோம்: '
+               '"{letter_subject}".\n\nஎனது உதவித்தொகை பக்கத்தில் அதைப் படித்து, {response_due}-க்குள் அது '
+               'கிடைத்ததை உறுதிசெய்யுங்கள்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.'
                '\n\n{signoff}'),
     },
 }
@@ -185,23 +207,14 @@ def send_student_email(application, kind, **values):
     ⚠ The name starts `send_` on purpose: the meter (`emails.shared._meter_email`) names the row
     after the nearest `send_*` caller."""
     from . import student_email_catalogue
-    if not enabled() or not student_email_catalogue.may_send(application, kind):
+    if (kind in PLATFORM_SWITCHED and not enabled()) or not student_email_catalogue.may_send(application, kind):
         return False
     to = (application.notify_email or '').strip()
     if not to:
         return False
-    from . import branding as _branding, usage
+    from . import usage
     from .emails.sending import _html_email_shell, _send_html
-    from .emails.student_decisions import normalise_lang
-    lang = normalise_lang(application.locale)
-    b = _branding.for_application(application)
-    subject, body, _custom = wording(application.owning_organisation, kind, lang)
-    prof = getattr(application, 'profile', None)
-    scalars = {'name': (getattr(prof, 'name', '') or '').strip() or '—',
-               'programme': b.programme_name(lang), 'link': f'{b.frontend_url}/scholarship/bursary',
-               'support': b.email_support, 'signoff': b.team_signoff(lang),
-               **{k: _value(v, lang) for k, v in values.items()}}
-    out_subject, text, html = email_templates.render(subject, body, scalars, {})
+    b, out_subject, text, html = _compose(application, kind, values)
     with usage.usage_context(application=application):
         ok = _send_html(to, out_subject, text, _html_email_shell(html),
                         from_email=b.email_from, reply_to=[b.email_reply_to])
@@ -215,6 +228,33 @@ def send_student_email(application, kind, **values):
             logging.getLogger('apps.scholarship.student_comms').exception(
                 'StudentEmailLog write failed (app %s, %s)', application.id, kind)
     return ok
+
+
+def language_of(application):
+    from .emails.student_decisions import normalise_lang
+    return normalise_lang(application.locale)
+
+
+def _compose(application, kind, values):
+    """(branding, subject, text, html) for this student, in her language — the ONE renderer the send
+    and the issue dialog's preview share (so the preview cannot drift from the mail)."""
+    from . import branding as _branding
+    lang = language_of(application)
+    b = _branding.for_application(application)
+    subject, body, _custom = wording(application.owning_organisation, kind, lang)
+    prof = getattr(application, 'profile', None)
+    scalars = {'name': (getattr(prof, 'name', '') or '').strip() or '—',
+               'programme': b.programme_name(lang), 'link': f'{b.frontend_url}/scholarship/bursary',
+               'support': b.email_support, 'signoff': b.team_signoff(lang),
+               **{k: _value(v, lang) for k, v in values.items()}}
+    out_subject, text, html = email_templates.render(subject, body, scalars, {})
+    return b, out_subject, text, html
+
+
+def preview_student_email(application, kind, **values):
+    """(subject, text) as she would receive it — sends nothing (the letters dialog, S6b)."""
+    _b, subject, text, _html = _compose(application, kind, values)
+    return subject, text
 
 
 def _value(value, lang):

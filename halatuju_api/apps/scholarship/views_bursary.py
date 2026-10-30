@@ -65,7 +65,15 @@ def summary_payload(app):
         # The SERVER says whether she is late (due date + the organisation's grace, nothing she sent
         # this term waiting for review) — the page never works it out (review L10).
         'next_result_overdue': late(app),
+        # S6b: her letters — whether the tab shows, and how many still wait for her acknowledgement.
+        'has_letters': app.letters.exists(),
+        'letters_to_acknowledge': _letters_to_acknowledge(app),
     }
+
+
+def _letters_to_acknowledge(app):
+    from .letters import to_acknowledge
+    return to_acknowledge(app)
 
 
 def _own_file(request):
@@ -117,3 +125,66 @@ class BursarySummaryView(APIView):
         if app is None:
             return _no_file()
         return Response(summary_payload(app))
+
+
+# ── Her letters (student maintenance S6b, 2026-10-31) ──────────────────────────────────────────
+# HER OWN file only (`_own_file`); a letter of any other application is 404. She reads the letter as
+# it was issued (English or Malay), downloads its PDF (a 300-second link on her tap), and
+# acknowledges it — which "does not mean you agree". A withdrawn letter reads but cannot be
+# acknowledged. Never who issued it, the address it went to, or any staff note.
+
+def _her_letter(app, lid):
+    from .models import Letter
+    return Letter.objects.filter(pk=lid, application=app).select_related('application').first()
+
+
+class BursaryLettersView(APIView):
+    """GET scholarship/bursary/letters/ — her letters, newest first."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import letters
+        return Response({'organisation': getattr(app.owning_organisation, 'name', '') or '',
+                         'letters': [letters.student_dict(r) for r in letters.for_file(app)]})
+
+
+class BursaryLetterActionView(APIView):
+    """POST scholarship/bursary/letters/<lid>/acknowledge/ or .../read/ — her own letter only."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, lid, action):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import letters
+        letter = _her_letter(app, lid)
+        if letter is None or action not in ('acknowledge', 'read'):
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if action == 'read':
+            letters.mark_read(letter)
+            letter.refresh_from_db()
+            return Response(letters.student_dict(letter))
+        try:
+            letter = letters.acknowledge(letter)
+        except letters.LetterError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_409_CONFLICT)
+        return Response(letters.student_dict(letter))
+
+
+class BursaryLetterPdfView(APIView):
+    """GET scholarship/bursary/letters/<lid>/pdf/ — a 300-second link to HER letter's PDF."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request, lid):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import letters
+        letter = _her_letter(app, lid)
+        url = letters.pdf_url(letter) if letter is not None else None
+        if not url:
+            return Response({'error': 'no_pdf', 'code': 'no_pdf'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'url': url, 'expires_in': 300})

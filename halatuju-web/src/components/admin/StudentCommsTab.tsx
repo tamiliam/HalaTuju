@@ -8,6 +8,7 @@ import {
   type StudentEmailRow as Row, type StudentEmailTemplate, type StudentEmailsPayload, type StudentEmailsSaved,
 } from '@/lib/admin-api'
 import StudentEmailRow from './StudentEmailRow'
+import StudentLetterTemplates from './StudentLetterTemplates'
 import type { EditorRow } from './StudentEmailLanguages'
 
 const PREFIX = 'admin.orgSettings.studentComms'
@@ -138,6 +139,8 @@ export default function StudentCommsTab() {
                   onSave={save} onReset={(tpl) => { void reset(tpl) }} t={t} />
               ))}
             </ul>
+            {/* S6b: the letters' own wording sits under the same heading as the notice email. */}
+            {group === 'letters' && <StudentLetterTemplates org={org} token={token} t={t} />}
           </section>
         )
       })}

@@ -36,7 +36,8 @@ const FILE: api.ScholarFile = {
   closed_at: null, latest_result: null, standing: 'no_result_yet',
   money: { award_amount: '2000.00', paid_to_date: '1200.00', remaining: '800.00',
     last_payment: { amount: '200.00', at: '2026-10-01T00:00:00Z' } },
-  contract: { exists: false, status: null }, mentor: null, letters: [], last_activity_at: null,
+  contract: { exists: false, status: null }, mentor: null, last_activity_at: null,
+  letters: { count: 0, awaiting: 0, overdue: 0, latest: [] },
 }
 
 beforeEach(() => {
@@ -54,9 +55,12 @@ it('draws the header and the cards from the payload', async () => {
   expect(screen.getByText('RM800.00')).toBeTruthy()
   expect(screen.getByText('admin.scholars.file.noResult')).toBeTruthy()
   expect(screen.getByText('admin.scholars.contract.none')).toBeTruthy()
-  for (const key of ['mentor', 'letters', 'surveys']) {
+  for (const key of ['mentor', 'surveys']) {
     expect(screen.getByText(`admin.scholars.later.${key}`)).toBeTruthy()
   }
+  // S6b: Letters is no longer a "later" card — it reads the file's own letters summary.
+  expect(screen.queryByText('admin.scholars.later.letters')).toBeNull()
+  expect(screen.getByTestId('card-letters').textContent).toContain('admin.scholars.letters.empty')
   const view = screen.getByRole('link', { name: 'admin.scholars.file.viewApplication' })
   expect(view.getAttribute('href')).toBe('/admin/scholarship/104')
 })

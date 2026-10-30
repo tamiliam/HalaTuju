@@ -208,7 +208,7 @@ class TestFile(_Scholars):
         self.assertEqual(money['last_payment']['amount'], '200.00')
         self.assertEqual(body['contract'], {'exists': False, 'status': None})
         self.assertEqual((body['mentor'], body['letters'], body['standing']),
-                         (None, [], 'underperforming'))
+                         (None, {'count': 0, 'awaiting': 0, 'overdue': 0, 'latest': []}, 'underperforming'))   # S6b
         self.assertEqual(body['latest_result']['cgpa'], '2.10')
         self.assertNotIn('spending', body)
 

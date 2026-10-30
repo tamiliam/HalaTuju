@@ -6948,6 +6948,21 @@ exists to refuse. **Fix:** before 6b, find the weight to give back (the TD-416 m
 gz(A ∪ B) before any split; move words a route never shows into the slice of the route that does), and give 6b's
 student strings their own place in the `bursary` slice, which only `/scholarship/bursary` loads. *(B · S)*
 
+**2026-10-31, S6b — a reclaim tried and reverted.** Twelve admin pages import `navigation.ts` only for
+`effectiveRole`. Moving it to a new leaf (`adminRole.ts`), and then into the existing leaf `superRole.ts`, dropped
+those pages ~2 kB each but made webpack cut a NEW 7 kB shared chunk (the admin Supabase sign-in module and its
+neighbours) onto 34 routes, student routes included: the median ROSE (147.759 → 147.934 / 147.986 kB) and `/profile`
+and `/scholarship/application` crossed their lines. Lesson for the next attempt: measure on the BUILT chunk graph
+(`app-build-manifest.json`, per-route chunk lists) — changing which pages import a big module re-cuts the shared
+chunks, and the saving on the importers can be paid for by every other route. 6b itself adds nothing at or below the
+median. **What DID work (same sprint):** the median is the mean of the two middle routes (47th and 48th of 94:
+`/admin/scholars` 147.162 and `/sponsor/(portal)/students` 148.360), so 1 kB off either is 0.5 kB of median. The
+Scholars LIST carried the activity timeline's wording inside its OWN page chunk (`lib/scholars.ts`); moving
+`activityDot` / `activityText` to `lib/scholarActivity.ts` (imported by `ScholarActivity` only) touched no shared
+chunk and took the list to 146.833 — median 147.642, 0.358 kB of room. Find the two middle routes FIRST (the
+scratch reader in the S6b hand-over sorts `app-build-manifest.json` exactly as the budget does), then look for code
+inside their page chunks that they never call.
+
 **Status 2026-10-30 (source sign-in close):** still open and tighter — the median reads 147.751 kB against 148,
 0.249 kB of room (was 0.507). The arc's own screens went behind `components/source/LazySource.tsx` because imported
 statically they put the median at 148.6. The rule stands: measure before the push, give weight back, never raise

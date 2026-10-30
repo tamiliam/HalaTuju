@@ -1239,9 +1239,12 @@ S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarshi
 `2b62a6f8`, S6a `a1c9f85b` + review `002c6ad7` + `scholarship/0189` (api-01209-74s, 2026-10-30 ~08:20 UTC; 0189
 applied by hand first, recorded — never re-apply that DDL); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` …
 `-s4a.md`, `retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`, `-s5b.md`, `-s6a.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT (roadmap) = Sprint 6b: LETTERS — NOT started; it needs
-an owner-approved DESIGN first (the Letters tab on the scholar file, the student's Letters tab, the Letters heading
-on Student communications).** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). Sprint 6b, LETTERS, is BUILT on branch `maint-s6b`
+(committed, NOT pushed; migration `scholarship/0192_letters` NOT applied — the lead applies it by hand first).**
+- Letters (S6b): `letters.py` is the rule (who issues which kind, the typed name, closed-file kinds, withdraw,
+  acknowledge, the one `state`), `views_admin/letters.py` the fence, `urls_letters.py` the routes (urls.py is at 600).
+  Documents only: never a status or money write. The notice email `letter_issued` is locked and NOT behind
+  `MAINTENANCE_REMINDERS_ENABLED`; `emailed_at` only when it went. PDFs en/ms only, `<org>/<app>/letters/<id>.pdf`. Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
 - **6b rulings already made (owner, 2026-10-30, decisions.md):** termination/suspension letters are DOCUMENTS ONLY
   (staff use Hold and Close; after a termination letter the file prompts "close the file?"); letter PDFs in English
   or Malay (the PDF stack cannot shape Tamil), the notice email and screen in her language. A funded student's close

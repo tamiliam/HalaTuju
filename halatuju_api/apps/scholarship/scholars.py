@@ -298,7 +298,7 @@ def file_payload(app):
         'contract': {'exists': agreement is not None,
                      'status': agreement.status if agreement is not None else None},
         'mentor': None,
-        'letters': [],
+        'letters': _letters_summary(app),   # S6b
         'last_activity_at': last_activity,
     }
 
@@ -359,3 +359,8 @@ def activity_dict(row):
         'meta': row.meta or {}, 'actor_email': row.actor_email, 'internal': row.internal,
         'created_at': row.created_at,
     }
+
+
+def _letters_summary(app):
+    from .letters import summary
+    return summary(app)

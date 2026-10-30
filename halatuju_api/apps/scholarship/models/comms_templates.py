@@ -430,6 +430,7 @@ class StudentEmailTemplate(models.Model):
         ('results_due', 'A result is due soon'),
         ('results_overdue', 'A result is overdue'),
         ('result_queried', 'An officer queried a result'),
+        ('letter_issued', 'A letter has been issued'),   # S6b: always sent (locked in the catalogue)
     ]
     LANGUAGE_CHOICES = [('en', 'English'), ('ms', 'Malay'), ('ta', 'Tamil')]
     organisation = models.ForeignKey(

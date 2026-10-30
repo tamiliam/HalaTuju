@@ -6218,7 +6218,10 @@
         "other": "System update",
         "result_accepted": "Result accepted · {semester}",
         "result_queried": "Result queried · {semester}",
-        "results_overdue": "Result not submitted (due {date})"
+        "results_overdue": "Result not submitted (due {date})",
+        "letter_issued": "Letter issued · {subject}",
+        "letter_withdrawn": "Letter withdrawn · {subject}",
+        "letter_acknowledged": "Letter acknowledged by the student · {subject}"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6313,6 +6316,80 @@
         "viewPdf": "View signed PDF",
         "noPdf": "The signed PDF is not available right now.",
         "countersignedOn": "Countersigned by the organisation · {date}"
+      },
+      "letters": {
+        "title": "Letters",
+        "issue": "Issue a letter",
+        "empty": "No letters yet.",
+        "loadError": "The letters could not be loaded.",
+        "open": "Open letters",
+        "cardCounts": "{count} letters · {awaiting} awaiting acknowledgement",
+        "cardOverdue": "{count} overdue",
+        "issuedLine": "Issued {date} by {name} · PDF in {language}",
+        "emailed": "Emailed {date} to {to}",
+        "notEmailed": "Not emailed",
+        "resend": "Resend email",
+        "resent": "The email has gone.",
+        "resendFailed": "The email did not go. Please try again.",
+        "withdrawnLine": "Withdrawn {date} by {name} — \"{reason}\"",
+        "viewPdf": "View PDF",
+        "openPdf": "Open the PDF",
+        "pdfFailed": "The PDF could not be opened. Please try again.",
+        "withdraw": "Withdraw",
+        "withdrawReason": "Why is it withdrawn? (kept on the file)",
+        "withdrawConfirm": "Withdraw the letter",
+        "actionFailed": "That could not be done. Please try again.",
+        "closePrompt": "A termination letter was issued on {date}. Close the file?",
+        "closeFile": "Close the file",
+        "notNow": "Not now",
+        "issued": "Letter issued: {subject}. Its email status is shown below.",
+        "kind": {
+          "general": "General",
+          "discipline": "Discipline",
+          "suspension": "Suspension",
+          "termination": "Termination",
+          "close_out": "Close-out"
+        },
+        "lang": {
+          "en": "English",
+          "ms": "Malay"
+        },
+        "emailLang": {
+          "en": "English",
+          "ms": "Malay",
+          "ta": "Tamil"
+        },
+        "state": {
+          "awaiting": "Awaiting acknowledgement · due {date}",
+          "overdue": "Overdue · was due {date}",
+          "acknowledged": "Acknowledged {date}"
+        },
+        "dialog": {
+          "kind": "1. Kind",
+          "seniorOnly": "Suspension and Termination: super admin or organisation admin only.",
+          "language": "2. PDF language",
+          "clause": "3. Contract clause",
+          "note": "Note (goes in the letter)",
+          "replyBy": "Reply by",
+          "replyByValue": "{date} ({days} days, from Settings)",
+          "wordingWhere": "The wording is your organisation's: Organisation → Settings → Student communications → Letters.",
+          "draft": "DRAFT — NOT ISSUED",
+          "emailPreview": "The email she gets (her language: {language})",
+          "documentsOnly": "This letter does not change her status or payments. Use Hold or Close on the file.",
+          "typeName": "Type the student's full name to issue",
+          "issueAndEmail": "Issue and email"
+        },
+        "error": {
+          "forbidden": "You may not issue this kind of letter.",
+          "file_closed": "This file is closed: only a general or close-out letter can be issued.",
+          "confirm_mismatch": "The name typed does not match the student's full name.",
+          "clause_required": "This letter's wording names a clause — enter the clause number.",
+          "clause_too_long": "The clause is too long.",
+          "note_too_long": "The note is too long.",
+          "pdf_failed": "The PDF could not be made. No letter was issued.",
+          "storage_failed": "The PDF could not be stored. No letter was issued.",
+          "generic": "The letter could not be issued. Please try again."
+        }
       }
     },
     "contracts": {
@@ -7186,6 +7263,10 @@
           "results_reminder_every_days": {
             "label": "Result reminder — repeat every (days)",
             "desc": "How often the reminder repeats until the result is due."
+          },
+          "letter_response_days": {
+            "label": "Letters — days to acknowledge",
+            "desc": "How long a student has to confirm she received a formal letter. Fixed on each letter when it is issued."
           }
         },
         "unit": {
@@ -7320,7 +7401,8 @@
           "award_confirmed": "Award confirmed",
           "agreement_executed": "Agreement signed and in effect",
           "vircle_setup": "Set up your Vircle wallet",
-          "closed_by_officer": "Application closed by our team"
+          "closed_by_officer": "Application closed by our team",
+          "letter_issued": "A letter has been issued"
         },
         "when": {
           "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
@@ -7351,7 +7433,8 @@
           "award_confirmed": "When she accepts her award (when no agreement is signed on the platform).",
           "agreement_executed": "When every party has signed. Her copy of the signed agreement is attached.",
           "vircle_setup": "When her agreement takes effect: how to set up the wallet the bursary is paid into.",
-          "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request."
+          "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request.",
+          "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date."
         },
         "language": {
           "en": "English",
@@ -7404,7 +7487,8 @@
           "offer_clock": "Always sent: her time to sign starts only once it has gone.",
           "contract_copy": "Always sent: it is her copy of a signed agreement.",
           "wallet_task": "Always sent: it creates her wallet task, and she cannot be paid without the wallet.",
-          "managed_elsewhere": "Worded and switched on Sources."
+          "managed_elsewhere": "Worded and switched on Sources.",
+          "letter_notice": "Always sent: it is how she learns a formal letter was issued."
         },
         "group": {
           "account": "Her account",
@@ -7412,7 +7496,8 @@
           "interview": "Interview",
           "award": "Award and contract",
           "results": "Results",
-          "closure": "Closure"
+          "closure": "Closure",
+          "letters": "Letters"
         },
         "chip": {
           "en": "EN",
@@ -7424,7 +7509,30 @@
           "en_ms": "English, or English with a Malay copy, in one email",
           "en": "English only"
         },
-        "switchBackNote": "Switching one back on sends it to every student it is now due for: for the results emails, every student whose result is due or late today."
+        "switchBackNote": "Switching one back on sends it to every student it is now due for: for the results emails, every student whose result is due or late today.",
+        "letters": {
+          "loadError": "The letters' wording could not be loaded.",
+          "responseDays": "Response time: {days} days (Organisation → Settings → Configuration).",
+          "pdf": "PDF",
+          "kind": {
+            "general": "General letter",
+            "discipline": "Discipline letter",
+            "termination": "Termination letter",
+            "suspension": "Suspension letter",
+            "close_out": "Close-out letter"
+          },
+          "when": {
+            "general": "Any formal notice, for example a change of payment date.",
+            "discipline": "A formal warning, for example results not sent.",
+            "termination": "Ends the bursary. Documents only — issuing does not change her status or payments.",
+            "suspension": "Pauses the bursary. Documents only — issuing does not change her status or payments.",
+            "close_out": "When her file closes, for example on graduation."
+          },
+          "tab": {
+            "en": "PDF · English",
+            "ms": "PDF · Malay"
+          }
+        }
       }
     },
     "programmeScope": {
@@ -8011,6 +8119,41 @@
       "noPdf": "The PDF is not available right now. Please try again.",
       "loadFailed": "Could not load your contract. Please try again.",
       "openPdf": "Open the PDF"
+    },
+    "letters": {
+      "tab": "Letters",
+      "title": "Your letters",
+      "empty": "No letters.",
+      "loadFailed": "Your letters could not be loaded.",
+      "badge": "Letters waiting for your acknowledgement: {count}",
+      "unread": "Unread",
+      "readLabel": "Letter",
+      "ackBy": "Please acknowledge by {date}.",
+      "download": "Download the letter (PDF, {language})",
+      "openPdf": "Open the PDF",
+      "pdfFailed": "The PDF could not be opened. Please try again.",
+      "withdrawnNote": "This letter was withdrawn. You do not need to do anything.",
+      "acknowledgedOn": "You acknowledged this letter on {date}.",
+      "acknowledge": "I have read this letter",
+      "notAgreement": "This tells {organisation} you received and read it. It does not mean you agree.",
+      "ackFailed": "That did not go through. Please try again.",
+      "kind": {
+        "general": "General",
+        "discipline": "Warning",
+        "suspension": "Suspension",
+        "termination": "Termination",
+        "close_out": "Close-out"
+      },
+      "state": {
+        "awaiting": "Please acknowledge by {date}",
+        "overdue": "Overdue — please acknowledge",
+        "acknowledged": "Acknowledged on {date}",
+        "withdrawn": "Withdrawn on {date} — you do not need to do anything"
+      },
+      "pdfLang": {
+        "en": "English",
+        "ms": "Malay"
+      }
     }
   }
 }

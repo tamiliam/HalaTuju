@@ -293,6 +293,7 @@ class TestFenceCoverageCompleteness(TestCase):
         # partner refused), the list through `_org_scoped` (+ `assigned_to` for a reviewer) and the
         # gift narrowing; a file / activity read through `_org_allows` — cross-org is 404.
         '_ScholarsBase': 'scholars-org-fenced',
+        '_LettersBase': 'scholars-org-fenced',   # S6b: a `_ScholarsBase`
         'AdminScholarListView': 'scholars-org-fenced',
         'AdminScholarFileView': 'scholars-org-fenced',
         'AdminScholarActivityView': 'scholars-org-fenced',
@@ -301,6 +302,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarResultsView': 'scholars-org-fenced',
         'AdminScholarMoneyView': 'scholars-org-fenced',      # S5a: `_file_for`
         'AdminScholarContractView': 'scholars-org-fenced',   # S5a: `_file_for`
+        'AdminScholarLettersView': 'scholars-org-fenced',   # S6b: `_file_for`
+        'AdminScholarLetterPreviewView': 'scholars-org-fenced',   # S6b: `_file_for`
+        'AdminScholarLetterActionView': 'scholars-org-fenced',   # S6b: `_file_for`
+        'AdminScholarLetterPdfView': 'scholars-org-fenced',   # S6b: `_file_for`
         'AdminScholarResultReviewView': 'scholars-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
@@ -352,6 +357,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminOrganisationConfigurationView': 'organisation-config-org-fenced',
         'AdminStudentEmailsView': 'organisation-config-org-fenced',   # S4b: inherits its fence
         'AdminStudentEmailSwitchView': 'organisation-config-org-fenced',   # S6a: inherits its fence
+        'AdminLetterTemplatesView': 'organisation-config-org-fenced',   # S6b: inherits its fence
         # Programme Overview phase 2 (2026-09-18). The organisation's widget layout — the SAME
         # derivation as the configuration view (organisation from `admin.owning_organisation`;
         # super names `?org=`; cross-org 404, never 403), a MIRROR again. Payload = five keys and

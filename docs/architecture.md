@@ -116,6 +116,10 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
 - Migrations are applied to production BY HAND before the code that needs them (the triggers never
   run `migrate`); `docs/releases/v3.0.0-migrations.md` lists every file.
 - Rate limits use the database cache table `django_cache` (shared across instances).
+- Student maintenance tables (2026-10-29 onward): `student_activity` (the file's log), `results_expectations`,
+  `student_email_templates` / `student_email_switches` / `student_email_log` (Student communications, S4b–S6a) and
+  `letters` / `letter_templates` (S6b): a letter's text frozen at issue, its PDF at `<org>/<app>/letters/<id>.pdf`
+  in the private bucket, never edited or deleted (withdrawn with a reason instead).
 
 ## Scheduled work
 

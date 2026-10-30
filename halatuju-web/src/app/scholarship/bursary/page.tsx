@@ -31,6 +31,7 @@ import {
 import { rememberBursaryFile } from '@/lib/storage'
 import BursaryFunds from '@/components/bursary/BursaryFunds'
 import BursaryContract from '@/components/bursary/BursaryContract'
+import BursaryLetters from '@/components/bursary/BursaryLetters'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import { formatDate } from '@/lib/formatDate'
 
@@ -50,7 +51,7 @@ const REVIEW_TONE: Record<string, string> = {
 }
 const GRADUATED_TONE = 'bg-positive-fill text-positive-fill-ink'
 
-type Tab = 'overview' | 'results' | 'funds' | 'contract'
+type Tab = 'overview' | 'results' | 'funds' | 'contract' | 'letters'
 const TABS: readonly Tab[] = ['overview', 'results', 'funds', 'contract']
 /** How many of her categories the Overview's funds card names before "See all spending". */
 const OVERVIEW_CATEGORIES = 4
@@ -276,15 +277,29 @@ export default function BursaryPage() {
         )}
 
         <div role="tablist" aria-label={t('scholarship.bursary.title')} className="flex gap-2">
-          {TABS.map((k) => (
+          {/* S6b: Letters appears only once she has one (the server's `has_letters`); its label lives
+              in the bursary slice, so the scholarship slice the apply routes load does not grow. */}
+          {[...TABS, ...(app?.has_letters ? (['letters'] as const) : [])].map((k) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
               className={`h-10 rounded-full border px-4 text-sm font-medium ${tab === k
                 ? 'border-brand-shape bg-brand-fill text-brand-fill-ink'
                 : 'border-ground-300 bg-ground-0 text-ground-700'}`}>
-              {t(`scholarship.bursary.tab.${k}`)}
+              {t(k === 'letters' ? 'bursaryTabs.letters.tab' : `scholarship.bursary.tab.${k}`)}
             </button>
           ))}
         </div>
+
+        {/* S6b: a letter that waits for her acknowledgement, said on every tab but its own. */}
+        {!!app?.letters_to_acknowledge && tab !== 'letters' && (
+          <button type="button" onClick={() => setTab('letters')} data-testid="letters-to-acknowledge"
+            className="w-full rounded-2xl border border-info-200 bg-info-50 p-4 text-left text-sm text-info-800">
+            {t('bursaryTabs.letters.badge', { count: String(app.letters_to_acknowledge) })}
+          </button>
+        )}
+        {tab === 'letters' && (
+          <BursaryLetters token={token} onAcknowledged={() => setApp((a) => (a ? {
+            ...a, letters_to_acknowledge: Math.max((a.letters_to_acknowledge ?? 1) - 1, 0) } : a))} />
+        )}
 
         {/* S5: a paused (on-hold) student sees a clear, non-alarming notice. */}
         {app?.in_maintenance && app?.support_paused && (

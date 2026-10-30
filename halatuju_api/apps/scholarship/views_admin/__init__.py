@@ -120,6 +120,10 @@ from .lifecycle import (
 )
 from .org_config import AdminOrganisationConfigurationView, AdminProgrammeConfigurationView
 from .student_comms import AdminStudentEmailSwitchView, AdminStudentEmailsView
+from .letters import (
+    AdminLetterTemplatesView, AdminScholarLetterActionView, AdminScholarLetterPdfView,
+    AdminScholarLetterPreviewView, AdminScholarLettersView,
+)
 from .org_emails import (
     _SponsorEmailsBase, _partner_email_dict, _sponsor_email_dict, AdminPartnerEmailDetailView,
     AdminPartnerEmailsView, AdminSponsorEmailDetailView, AdminSponsorEmailsView,

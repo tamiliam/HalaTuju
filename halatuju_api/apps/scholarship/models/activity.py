@@ -22,7 +22,9 @@ KIND_CHOICES = [
 EVENT_SUBSTATE_CHANGED = 'substate_changed'     # WIRED: maintenance.set_substate
 EVENT_RESULT_SUBMITTED = 'result_submitted'     # WIRED: in_programme.record_semester_result
 EVENT_RESULT_REVIEWED = 'result_reviewed'       # Sprint 4 (results review)
-EVENT_LETTER_ISSUED = 'letter_issued'           # Sprint 6 (letters)
+EVENT_LETTER_ISSUED = 'letter_issued'           # WIRED: letters.issue (S6b)
+EVENT_LETTER_WITHDRAWN = 'letter_withdrawn'     # WIRED: letters.withdraw (S6b)
+EVENT_LETTER_ACKNOWLEDGED = 'letter_acknowledged'   # WIRED: letters.acknowledge (S6b, the student)
 EVENT_MENTOR_ASSIGNED = 'mentor_assigned'       # Sprint 7 (mentors)
 EVENT_SESSION_LOGGED = 'session_logged'         # Sprint 7 (mentors)
 EVENT_PAYMENT_RELEASED = 'payment_released'     # WIRED: payments.complete, disbursement.release_tranche
@@ -31,7 +33,7 @@ EVENT_RESULTS_OVERDUE = 'results_overdue'       # WIRED: results_expectations.fl
 EVENTS = (
     EVENT_SUBSTATE_CHANGED, EVENT_RESULT_SUBMITTED, EVENT_RESULT_REVIEWED, EVENT_LETTER_ISSUED,
     EVENT_MENTOR_ASSIGNED, EVENT_SESSION_LOGGED, EVENT_PAYMENT_RELEASED, EVENT_CLOSED,
-    EVENT_RESULTS_OVERDUE,
+    EVENT_RESULTS_OVERDUE, EVENT_LETTER_WITHDRAWN, EVENT_LETTER_ACKNOWLEDGED,
 )
 
 

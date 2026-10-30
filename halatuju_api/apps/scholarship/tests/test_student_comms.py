@@ -250,7 +250,7 @@ class TestTheSettingsTab(TestCase):
     def test_fenced_to_the_callers_own_organisation(self):
         body = authed_client(self.admin).get(API).json()
         self.assertEqual(body['organisation']['code'], self.mine.code)
-        self.assertEqual(len(body['templates']), 9)                 # 3 kinds x 3 languages
+        self.assertEqual(len(body['templates']), 12)                # 4 kinds (S6b: + letter_issued) x 3 languages
         self.assertNotIn('THEIRS', [t['subject'] for t in body['templates']])
         self.assertEqual(authed_client(self.admin).get(API, {'org': self.theirs.code}).status_code, 404)
         r = authed_client(self.admin).put(API, {'kind': 'results_due', 'language': 'en', 'subject': 'Mine',

@@ -45,6 +45,16 @@ it('reads a system row as a sentence and an officer row as its own words', async
   expect(screen.getAllByTestId('activity-row')).toHaveLength(2)
 })
 
+it('words the three letter events with the subject of each letter (S6b)', async () => {
+  const letterRow = (id: number, event: string): api.ScholarActivity => ({ ...SYSTEM, id, event, meta: { subject: 'Warning (clause 5)' } })
+  mockApi.getScholarActivity.mockResolvedValue({ count: 3, page: 1, page_size: 50, results: [
+    letterRow(11, 'letter_issued'), letterRow(12, 'letter_withdrawn'), letterRow(13, 'letter_acknowledged')] })
+  render(<ScholarActivity id={7} token="tok" />)
+  for (const event of ['letter_issued', 'letter_withdrawn', 'letter_acknowledged']) {
+    expect(await screen.findByText(`admin.scholars.event.${event}|{"subject":"Warning (clause 5)"}`)).toBeTruthy()
+  }
+})
+
 it('sends the kind, the text and the staff-only flag, then re-reads', async () => {
   render(<ScholarActivity id={7} token="tok" />)
   await screen.findByText('Talked through a study plan.')

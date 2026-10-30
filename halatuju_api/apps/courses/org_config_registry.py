@@ -572,6 +572,12 @@ SETTINGS = {
         'group': 'maintenance', 'unit': 'days', 'min': 1, 'max': 30,
         'default': lambda: 7,
     },
+    # S6b: how long a student has to acknowledge a formal letter (`scholarship/letters.py`). STAMPED on
+    # the letter at issue (`Letter.response_due_on`), so a later change never moves a date she was given.
+    'letter_response_days': {
+        'group': 'maintenance', 'unit': 'days', 'min': 3, 'max': 60,
+        'default': lambda: 14,
+    },
 }
 
 # ⚠ THE FOUNDATION SIGNATORY IS NOT HERE, AND MUST NOT BE ADDED. The roadmap's Sprint F line said

@@ -77,6 +77,10 @@ class TestTheCatalogueCoversEveryStudentEmail(TestCase):
     def test_the_switchable_set_is_exactly_the_owners_ruling(self):
         self.assertEqual(set(cat.SWITCHABLE), OWNER_SWITCHABLE)
         self.assertEqual(cat.BY_KEY['award_confirmed'].lock, 'next_step')     # review M1, owner ruling
+        # S6b: the letter notice is locked (always sent) under its own Letters heading.
+        notice = cat.BY_KEY['letter_issued']
+        self.assertEqual((notice.group, notice.lock, notice.switchable, notice.tracked), ('letters', 'letter_notice', False, 'log'))
+        self.assertEqual(cat.GROUPS.index('letters'), cat.GROUPS.index('results') + 1)
 
     def test_usage_events_carries_the_last_sent_index(self):
         """Review L4: "last sent" reads max(created_at) per (organisation, service, source)."""

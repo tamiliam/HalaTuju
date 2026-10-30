@@ -1,5 +1,42 @@
 # Architectural Decisions — HalaTuju
 
+## Letters on the scholar file are documents only; the student acknowledges, never agrees — 2026-10-31 (student maintenance S6b, owner rulings 2026-10-30, design approved)
+
+**Decision.** (1) **Five kinds** — general, discipline, suspension, termination, close-out (`Letter`, `letters.py`).
+**Suspension and termination: super or org_admin only**; general, discipline and close-out: whoever may WRITE on the
+case (`_can_review_app`). The page reads `can_issue` from the server and never decides it. (2) **Documents only**
+(owner ruling): issuing writes no status, sub-state, payment run, tranche or sponsorship. A standing termination
+letter makes the file PROMPT "Close the file?", whose button brings the officer to the header's existing Close
+control — the close keeps every rule it had. (3) **A typed full name** confirms discipline and termination, compared
+ON THE SERVER (case and spaces ignored, never a partial match; `confirm_mismatch`). (4) **Never edited, never
+deleted**: subject and body are frozen as rendered; Withdraw (super / org_admin, a reason required, once) is the only
+way out and the row stays; a withdrawn letter cannot be acknowledged or re-sent. (5) **The PDF is English or Malay
+only** (the PDF stack cannot shape Tamil); `letters_pdf.render_pdf` (xhtml2pdf, the contract's font) stores it at
+`<org>/<app>/letters/<id>.pdf` in the private bucket; a failed render or upload issues NOTHING. Its link is minted
+on a click for 300 s, and only for THIS application's own path (`scholar_money.own_path`, the S5a rule). (6) **The
+notice email** `letter_issued` is in the `student_comms` family (her language: en/ms/ta; the organisation's
+wording), LOCKED in the catalogue under a new Letters heading — not behind `MAINTENANCE_REMINDERS_ENABLED` (a letter
+is an officer's act); `emailed_at` / `emailed_to` are stamped ONLY when it went, and Resend is offered while they are
+empty. (7) **`response_due_on` is stamped at issue** from `letter_response_days` (maintenance group, default 14), so
+a later change never moves a date she was given. (8) **She acknowledges on her own file only** (`_own_file`), once;
+the page says "It does not mean you agree." State is ONE judgement (`letters.state`): withdrawn / acknowledged /
+overdue (past the reply date) / awaiting. (9) **Wording per organisation** (`LetterTemplate`, kind x en/ms; no row =
+the default in `letter_defaults.py`), edited on Student communications → Letters; wording that names `{clause}`
+refuses to issue without one. (10) **Readers:** the file's Letters tab and Overview card, the activity log
+(`letter_issued`, `letter_withdrawn`, `letter_acknowledged`), her Letters tab and Overview badge, the notice email.
+**Never a sponsor, partner or source reader** — no module serving them imports letters, and the activity log's only
+reader is the staff file (both pinned by tests).
+
+**Not done here — TD-367** (a payment run can pay a CLOSED student). Letters create no new path to it — they change
+no status — and the close a termination prompt leads to is the existing Close, which already has this gap. The fix
+is a money write in `payments.complete` and belongs to TD-383's one-choke-point sprint (TD-367 first), with its own
+adversarial review; folding it into a documents sprint would ship a money change without that review.
+
+**Alternatives considered:** a termination that closes the file itself (owner: no — documents only); a Tamil PDF
+(no shaping in the stack); letting a reviewer issue any kind (owner: suspension and termination are senior).
+**Revisit if:** the owner wants an automatic reminder for an overdue acknowledgement (today it is a state on two
+screens, no job), or a Tamil PDF once the stack can shape it.
+
 ## A tick means a document backs the value — 2026-10-30 (owner, cockpit tick consistency)
 
 **Context:** the owner compared the flagship's Academic card with the Sabah programme's and found the ticks

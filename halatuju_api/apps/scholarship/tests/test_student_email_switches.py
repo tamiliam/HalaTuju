@@ -306,7 +306,7 @@ class TestTheSwitchEndpoint(TestCase):
         self.assertEqual(body['groups'], list(cat.GROUPS))
         self.assertEqual([r['key'] for r in body['catalogue']],
                          [e.key for e in sorted(cat.CATALOGUE, key=lambda e: cat.GROUPS.index(e.group))])
-        self.assertEqual(len(body['templates']), 9)                     # the S4b editor still has its rows
+        self.assertEqual(len(body['templates']), 12)                    # 4 worded kinds (S6b: + letter_issued) x 3
 
     def test_an_org_admin_switches_a_safe_email_for_her_own_organisation_only(self):
         with patch.object(cat, 'last_sent', side_effect=AssertionError('last sent read on a write')):
@@ -330,7 +330,7 @@ class TestTheSwitchEndpoint(TestCase):
                                                     'body': 'Hi {name} {link}'}, format='json')
         self.assertEqual(r.status_code, 200)
         self.assertNotIn('catalogue', r.json())
-        self.assertEqual(len(r.json()['templates']), 9)
+        self.assertEqual(len(r.json()['templates']), 12)
 
     def test_a_locked_or_unknown_email_or_a_non_bool_is_refused(self):
         client = authed_client(self.admin)

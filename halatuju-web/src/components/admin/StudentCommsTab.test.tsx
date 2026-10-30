@@ -14,6 +14,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import StudentCommsTab from './StudentCommsTab'
 import * as api from '@/lib/admin-api'
+import * as letterApi from '@/lib/admin-api/letters'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
@@ -22,6 +23,8 @@ jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'to
 jest.mock('next/link', () => ({ __esModule: true, default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
+jest.mock('@/lib/admin-api/letters')
+const mockLetters = letterApi as jest.Mocked<typeof letterApi>
 const P = 'admin.orgSettings.studentComms'
 
 const tpl = (kind: api.StudentEmailKind, language: api.StudentEmailLanguage, customised = false): api.StudentEmailTemplate => ({
@@ -34,7 +37,7 @@ const row = (key: string, over: Partial<api.StudentEmailRow> = {}): api.StudentE
 })
 const PAYLOAD = (over: Partial<api.StudentEmailsPayload> = {}): api.StudentEmailsPayload => ({
   organisation: { code: 'alpha', name: 'Alpha' }, enabled: false,
-  groups: ['account', 'applying', 'interview', 'award', 'results', 'closure'],
+  groups: ['account', 'applying', 'interview', 'award', 'results', 'letters', 'closure'],
   catalogue: [
     row('verify_email', { group: 'account', lock: 'credential', tracked: false }),
     row('application_received', { switchable: true, lock: null, last_sent_at: '2026-10-29T08:00:00Z',
@@ -156,4 +159,49 @@ it('a super with several organisations chooses one, sent as org', async () => {
   fireEvent.click(await screen.findByText('beta'))
   expect((await screen.findByTestId('student-comms-switch')).textContent).toBe(`${P}.on`)
   expect(mockApi.getStudentEmails).toHaveBeenLastCalledWith('beta', { token: 'tok' })
+})
+
+describe('the Letters heading (S6b)', () => {
+  const tplRow = (kind: letterApi.LetterKind, language: letterApi.LetterLanguage, customised = false): letterApi.LetterTemplateRow => ({
+    key: `${kind}.${language}`, kind, language, subject: `${kind} ${language}`, body: 'Dear {name}',
+    customised, placeholders: ['name', 'clause'], updated_by_email: '', updated_at: null,
+  })
+  const LETTERS: letterApi.LetterTemplatesPayload = {
+    organisation: { code: 'alpha', name: 'Alpha' }, response_days: 14,
+    templates: (['general', 'discipline', 'suspension', 'termination', 'close_out'] as const).flatMap((k) =>
+      (['en', 'ms'] as const).map((l) => tplRow(k, l, k === 'discipline' && l === 'en'))),
+  }
+
+  beforeEach(() => {
+    mockApi.getStudentEmails.mockResolvedValue(PAYLOAD({
+      catalogue: [row('letter_issued', { group: 'letters', lock: 'letter_notice', editable: true, tracked: true })],
+    }))
+    mockLetters.getLetterTemplates.mockResolvedValue(LETTERS)
+    mockLetters.saveLetterTemplate.mockResolvedValue(LETTERS)
+  })
+
+  it('the notice email is locked; the five letters each have a row with EN and MS chips', async () => {
+    render(<StudentCommsTab />)
+    const group = await screen.findByTestId('student-comms-group-letters')
+    const notice = within(group).getByTestId('student-email-letter_issued')
+    expect(within(notice).queryByRole('switch')).toBeNull()
+    expect(within(notice).getByText(`${P}.lock.letter_notice`)).toBeTruthy()
+    expect((await within(group).findByTestId('letter-response-days')).textContent).toContain('"days":"14"')
+    for (const kind of ['general', 'discipline', 'termination', 'suspension', 'close_out']) {
+      expect(within(group).getByTestId(`letter-template-${kind}`)).toBeTruthy()
+    }
+    const chips = within(within(group).getByTestId('letter-template-discipline')).getAllByText(/chip\.(en|ms)/)
+    expect(chips.map((c) => c.getAttribute('data-customised'))).toEqual(['true', 'false'])
+  })
+
+  it('Edit wording opens a tab per PDF language and saves kind + language', async () => {
+    render(<StudentCommsTab />)
+    const li = await screen.findByTestId('letter-template-termination')
+    fireEvent.click(within(li).getByText(`${P}.edit`))
+    fireEvent.click(within(li).getByTestId('letter-template-tab-termination.ms'))
+    fireEvent.change(within(li).getAllByRole('textbox')[0], { target: { value: 'Penamatan' } })
+    fireEvent.click(within(li).getByText('admin.sources.save'))
+    await waitFor(() => expect(mockLetters.saveLetterTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'termination', language: 'ms', subject: 'Penamatan' }), undefined, { token: 'tok' }))
+  })
 })

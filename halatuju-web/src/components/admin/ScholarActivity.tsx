@@ -5,7 +5,7 @@ import { useT } from '@/lib/i18n'
 import Toggle from '@/components/Toggle'
 import { useToast } from '@/components/ToastContext'
 import { formatDateTime } from '@/lib/formatDate'
-import { activityDot, activityText } from '@/lib/scholars'
+import { activityDot, activityText } from '@/lib/scholarActivity'
 import {
   addScholarActivity, getScholarActivity, type ScholarActivity as Entry,
 } from '@/lib/admin-api'
@@ -20,7 +20,7 @@ type Kind = (typeof KINDS)[number]
  * ⚠ "Staff only" is the site `Toggle`, never a checkbox (house rule). Nothing in this log reaches a
  * student today — the flag is recorded now so the day a student view of the log exists, the rows an
  * officer meant for colleagues are already marked.
- * ⚠ A system row is a translated sentence from its event code (`lib/scholars.activityText`), never
+ * ⚠ A system row is a translated sentence from its event code (`lib/scholarActivity.activityText`), never
  * the raw meta, so a payment's run reference reads as a sentence and nothing internal leaks as JSON.
  */
 export default function ScholarActivity({ id, token, compact = false, readOnly = false }: {

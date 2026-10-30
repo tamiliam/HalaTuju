@@ -77,6 +77,7 @@ from .comms_templates import (
     SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion, StudentEmailLog,
     StudentEmailSwitch, StudentEmailTemplate,
 )
+from .letters import LETTER_KINDS, LETTER_LANGUAGES, Letter, LetterTemplate
 from .items import (
     ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,
     ProgrammeReferralSource,

@@ -40,7 +40,7 @@ from django.conf import settings
 
 logger = logging.getLogger('apps.scholarship.student_email_catalogue')
 
-GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'closure')
+GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'letters', 'closure')
 
 
 @dataclass(frozen=True)
@@ -128,6 +128,11 @@ CATALOGUE = (
     _E('results_due', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
     _E('results_overdue', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
     _E('result_queried', 'results', switchable=True, flag=_FLAG_RESULTS, tracked='log', editable=True),
+    # ── Letters (S6b) ───────────────────────────────────────────────────────────────────────
+    # LOCKED (owner ruling): a letter is a formal act, and this email is how she learns of it. Its
+    # wording is the organisation's (the `student_comms` family, three languages); the letters'
+    # own wording is `LetterTemplate`, edited under the same heading.
+    _E('letter_issued', 'letters', lock='letter_notice', tracked='log', editable=True),
     # ── Closure ─────────────────────────────────────────────────────────────────────────────
     _E('closed_by_officer', 'closure', ('send_application_closed_email',), status='closed',
        lock='closure_notice', wording=('student_reminders', 'CLOSED_SUBJECTS', 'CLOSED_BY_OFFICER_BODIES')),
