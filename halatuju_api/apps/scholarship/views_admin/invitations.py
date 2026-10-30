@@ -50,7 +50,8 @@ class AdminInvitationsView(_ReviewersBase):
         from ..models import Invitation
 
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
-        qs = Invitation.objects.select_related('partner_admin', 'invited_by', 'programme').all()
+        qs = Invitation.objects.select_related(
+            'partner_admin', 'invited_by', 'programme', 'referral_source').all()
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
 
@@ -96,7 +97,18 @@ class AdminInvitationsView(_ReviewersBase):
                 'programme': i.programme.code if i.programme_id else '',
                 'programme_name': (i.programme.name_en or i.programme.code)
                                   if i.programme_id else '',
+                # Which SOURCE a source invitation signs somebody in for (source sign-in S2). None
+                # for every other kind.
+                'source_id': i.referral_source_id,
+                'source_name': i.referral_source.name if i.referral_source_id else None,
+                'source_code': i.referral_source.code if i.referral_source_id else None,
             })
+
+        extras = {}
+        if kind == inv_service.KIND_SOURCE:
+            # The Source tab's roster and the invite form's choices (source sign-in S2).
+            from .source_users import source_kind_extras
+            extras = source_kind_extras(admin, org_id)
 
         return Response({
             'kind': kind,
@@ -118,11 +130,14 @@ class AdminInvitationsView(_ReviewersBase):
                 for p in AdminProgrammeListView()._programmes_for(admin)
                                                  .filter(is_active=True).order_by('code')
             ],
+            **extras,
         })
 
     def post(self, request):
-        """Invite a SPONSOR. The other kinds go through `AdminInviteView`, which provisions an
-        account; this one deliberately provisions nothing.
+        """Invite a SPONSOR — or, since source sign-in S2, a SOURCE's person
+        (`audience='source_partner'`, `source_users.invite_source`, which provisions their account
+        through the staff invite's own branches). Staff go through `AdminInviteView`; a sponsor
+        invitation deliberately provisions nothing.
 
         ⚠ **AN INVITATION IS A PROMPT, NEVER A WAY ROUND THE FRONT DOOR.** Owner's constraint:
         *"invite, but nothing is skipped."* No `Sponsor` row is created, no account, no vetting
@@ -142,6 +157,9 @@ class AdminInvitationsView(_ReviewersBase):
 
         from .. import invitations as inv_service
         audience = (request.data.get('audience') or '').strip()
+        if audience == 'source_partner':
+            from .source_users import invite_source
+            return invite_source(request, admin)
         if audience != 'sponsor':
             return Response({'error': 'unsupported_audience', 'code': 'unsupported_audience'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -223,6 +241,8 @@ class AdminInvitationCancelView(_ReviewersBase):
     Fenced like the list: an invitation of another organisation is 404, never 403. Only a super or
     an org_admin acts, and an org_admin only on what this page could have sent
     (`KIND_INVITABLE_ROLES`) — never an organisation-admin invitation, which a super appoints.
+    A SOURCE invitation (source sign-in S2) is cancelled the same way — its never-used account
+    switched off, its password killed — by a super or its own organisation's admin.
     Audited: the AUDIT line names who cancelled what.
     """
 
@@ -241,7 +261,10 @@ class AdminInvitationCancelView(_ReviewersBase):
             qs = qs.filter(organisation_id=org_id)
         inv = qs.first()
         invitable = {r for roles in inv_service.KIND_INVITABLE_ROLES.values() for r in roles}
-        account = inv.partner_admin if inv is not None and inv.audience == 'staff' else None
+        # ⚠ A SOURCE invitation provisioned an account too (source sign-in S2), so it is switched
+        # off with the invitation exactly as a staff one is (`ACCOUNT_AUDIENCES`).
+        account = (inv.partner_admin if inv is not None
+                   and inv.audience in inv_service.ACCOUNT_AUDIENCES else None)
         # An org_admin acts only on what this page could have sent — judged on the invitation's
         # role AND the account's role NOW (a never-signed-in invitee a super has since promoted to
         # org_admin is not theirs to switch off; review fix 2026-10-05).
@@ -250,6 +273,12 @@ class AdminInvitationCancelView(_ReviewersBase):
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         if account is not None and account.is_super:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        # A source invitation: only a source user this caller may manage (`source_invite.manageable`
+        # — a super, or the organisation admin of the source's own organisation).
+        from .. import source_invite
+        if inv.audience == 'source_partner' and not source_invite.manageable(admin, account):
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         not_open = Response({'error': 'not_open', 'code': 'not_open'},

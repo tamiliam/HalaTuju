@@ -1,10 +1,11 @@
-"""Sponsor and source invitation bodies, and the sponsor invitation send.
+"""Sponsor and source invitation bodies, and their two sends.
 
 Moved here VERBATIM from `emails.py` at code health H16 (2026-09-20).
-Moves only: not a line of this body was reworded. See `__init__.py`.
+Moves only: not a line of this body was reworded. See `__init__.py`. The source invitation's send
+was added with source sign-in S2 (2026-10-30).
 """
 from django.core.mail import EmailMessage
-from .reviewer_mail import _invite_render
+from .reviewer_mail import _invite_render, _welcome_access_block
 from .shared import _P, _PROG_EN, logger
 
 
@@ -56,16 +57,14 @@ def build_sponsor_invitation_email(*, org_name='', note='', code='', invited_by=
 def build_source_invitation_email(*, org_name='', contact_person='', login_link='', access=''):
     """The wording of a SOURCE PARTNER's invitation to the console → ``(subject, body)``.
 
-    ⚠ **NOTHING SENDS THIS YET, AND THAT IS THE POINT OF IT EXISTING.** No Source Partner has a
-    login and the Invitations page offers no way to invite one; the console is the next piece of
-    work. The owner asked for the wording now so it is settled before the screen is built
-    (2026-08-04). It is written for the console it will announce — *sign in and follow the students
-    your organisation referred* — which is the whole reason it must not go out before that console
-    does. `docs/decisions.md` records the standing rule: nothing may move out of an email into a
-    console nobody can reach.
+    ⚠ **ONE SENDER, `send_source_invitation_email`, AND NOTHING ELSE CALLS IT** (source sign-in S2,
+    2026-10-30). The wording was settled ahead of the console (owner, 2026-08-04) and nothing sent
+    it while no source could sign in — the standing rule that nothing may move out of an email
+    into a console nobody can reach. S2 gives a source its login, so the rule is REVISED for this
+    letter (and, in S4, the witness emails) only: `docs/decisions.md`, 2026-10-30 "Sources sign in".
 
-    A builder rather than seed-only prose so the eventual sender inherits a fallback body the way
-    every other invitation has one, and so a test can assert the seed matches it word for word.
+    A builder rather than seed-only prose so the sender inherits a fallback body the way every
+    other invitation has one, and so a test can assert the seed matches it word for word.
 
     ⚠ **A SOURCE PARTNER IS AN ORGANISATION-LEVEL BURSARY REFERRER, NEVER A REFERRAL PARTNER.**
     Those are separate relationships and the owner has ruled they stay named apart — do not widen
@@ -115,4 +114,30 @@ def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', in
         return True, ''
     except Exception as e:      # noqa: BLE001
         logger.warning('Failed to send sponsor invitation to %s', to_email, exc_info=True)
+        return False, str(e)[:300]
+
+
+def send_source_invitation_email(to_email, *, name='', source_name='', temp_password=None,
+                                 google=False):
+    """Invite a SOURCE's person to sign in (source sign-in S2). Returns ``(ok, error)``, so the
+    invitation records both, like the sponsor letter.
+
+    ⚠ THE ONLY SENDER OF `build_source_invitation_email`. ``source_name`` fills ``{org_name}`` (the
+    letter is about the SOURCE's students) and ``name`` fills ``{contact_person}`` (the person it is
+    addressed to). The sign-in paragraph is the staff letters' own (`_welcome_access_block`): the
+    same three branches — a temporary password, Google, an address that already has a login — so a
+    source is told how to get in in exactly the words a colleague is. Replies go to support, as for
+    a staff invitation: somebody who cannot get in needs the people who can let them in.
+    """
+    if not to_email:
+        return False, 'no address'
+    subject, body = build_source_invitation_email(
+        org_name=source_name, contact_person=name, login_link=f'{_P.frontend_url}/admin/login',
+        access=_welcome_access_block(to_email, temp_password, google))
+    try:
+        EmailMessage(subject=subject, body=body, from_email=_P.email_from,
+                     to=[to_email], reply_to=[_P.email_support]).send()
+        return True, ''
+    except Exception as e:
+        logger.warning('Failed to send the source invitation to %s', to_email, exc_info=True)
         return False, str(e)[:300]

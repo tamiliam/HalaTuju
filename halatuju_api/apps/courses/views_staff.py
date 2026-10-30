@@ -25,13 +25,12 @@ from django.db import DatabaseError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import referral_links, staff_reinvite, supabase_admin
+from . import referral_links, staff_reinvite
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES,
                           PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
                           _record_invitation, _record_invitation_send, _staff_target_manageable,
-                          generate_temp_password, is_google_email, scholarship_staff,
-                          send_partner_welcome_email)
+                          scholarship_staff, send_partner_welcome_email)
 
 logger = logging.getLogger('apps.courses.views_admin')
 
@@ -292,71 +291,55 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not service_role_key or not supabase_url:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
-        # Option 1 (owner 2026-07-14): a Google address signs in with Google — never issue it a
-        # password. Create ONLY the PartnerAdmin row (supabase_user_id stays None and links by
-        # verified email on first Google sign-in, exactly like the already-registered path), and
-        # send the no-password "sign in with Google" email. No Supabase account is created here — it
-        # materialises when they first sign in with Google.
-        if is_google_email(email):
-            created, _, err = staff_reinvite.provision(
-                reuse, email=email, name=name, role=role, org=org, owning_org=owning_org)
-            if err:
-                return exists
-            # ⚠ `credential_issued=False`: a Google invitee is never given a password, so nothing of
-            # theirs can EXPIRE. The screen must say "no reply", not "expired", or an org_admin goes
-            # hunting for a password that never existed. This is the one moment we know which
-            # branch was taken.
-            inv = _record_invitation(created, role, owning_org or org, request,
-                                     credential_issued=False)
-            emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
-            _record_invitation_send(inv, emailed)
-            message = f'{name} added — they sign in with Google ({email}).'
-            if not emailed:
-                message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
-            return Response({
-                'message': message, 'org': (org or owning_org).name if (org or owning_org) else None, 'role': role,
-                'already_registered': False, 'google': True, 'emailed': emailed,
-            }, status=201)
-
-        # Non-Google: create the Supabase account OURSELVES rather than sending a Supabase invite
-        # (see `_create_supabase_user` for why). The temp password never leaves this request except
-        # in the welcome email, and expires after the 7-day TTL (login gate + expire cron).
-        # The row (new, or the cancelled one brought back — TD-335) is written by `provision`.
-        temp_password = generate_temp_password()
-        created, already_registered, err = staff_reinvite.provision(
-            reuse, email=email, name=name, role=role, org=org, owning_org=owning_org,
-            temp_password=temp_password)
-        if err == 'not_reusable':
+        # The THREE account branches (Google / a fresh temp password / already registered) live in
+        # `staff_reinvite.provision_for_invite`, shared with the source invite (source sign-in S2).
+        # Option 1 (owner 2026-07-14): a Google address is never issued a password — only the row is
+        # written, and it links by verified email on the first Google sign-in. Otherwise we create
+        # the Supabase account OURSELVES (see `_create_supabase_user` for why); the temp password
+        # never leaves this request except in the welcome email, and expires after the TTL. The
+        # row (new, or the cancelled one brought back — TD-335) is written by `provision`.
+        made = staff_reinvite.provision_for_invite(
+            reuse, email=email, name=name, role=role, org=org, owning_org=owning_org)
+        if made.error == 'not_reusable':
             return exists
-        if err:
+        if made.error:
             return Response({'error': 'Failed to create the partner account'}, status=502)
+        google, already_registered = made.google, made.already_registered
 
-        # ⚠ `credential_issued` is FALSE on the already-registered branch — that person keeps the
-        # login they already had and is sent no password, so like a Google invitee they can go
-        # unanswered but cannot expire.
-        inv = _record_invitation(created, role, owning_org or org, request,
-                                 credential_issued=not already_registered)
+        # ⚠ `credential_issued` is FALSE for a Google invitee and on the already-registered branch —
+        # neither is given a password, so they can go unanswered but nothing of theirs can EXPIRE.
+        # The screen must say "no reply", not "expired", or an org_admin goes hunting for a
+        # password that never existed. This is the one moment we know which branch was taken.
+        inv = _record_invitation(made.account, role, owning_org or org, request,
+                                 credential_issued=made.temp_password is not None)
 
         # The email is the ONLY carrier of the temp password, so a failed send strands the
         # invitee — report it instead of swallowing it, and the UI tells the owner to Resend.
-        emailed = send_partner_welcome_email(
-            email, name, role, temp_password=None if already_registered else temp_password,
-        )
+        if google:
+            emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
+        else:
+            emailed = send_partner_welcome_email(email, name, role, temp_password=made.temp_password)
         _record_invitation_send(inv, emailed)
 
-        message = (
-            f'{name} already has an account — access granted. They can sign in as they always do.'
-            if already_registered else f'Account created. Sign-in details emailed to {email}.'
-        )
+        if google:
+            message = f'{name} added — they sign in with Google ({email}).'
+        elif already_registered:
+            message = (f'{name} already has an account — access granted. They can sign in as they '
+                       f'always do.')
+        else:
+            message = f'Account created. Sign-in details emailed to {email}.'
         if not emailed:
             message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
-        return Response({
+        body = {
             'message': message,
             'org': (org or owning_org).name if (org or owning_org) else None,
             'role': role,
             'already_registered': already_registered,
             'emailed': emailed,
-        }, status=201)
+        }
+        if google:
+            body['google'] = True
+        return Response(body, status=201)
 
 
 class AdminResendView(PartnerAdminMixin, APIView):
@@ -383,18 +366,15 @@ class AdminResendView(PartnerAdminMixin, APIView):
         if not target.is_active:
             return Response({'error': f'{target.name} cannot sign in — restore them first.',
                              'code': 'not_active'}, status=400)
-        if supabase_admin.supabase_config() is None:
-            return Response({'error': 'Supabase service role key not configured'}, status=500)
-
         # No UID = the account pre-existed ours (student/Google sign-up), so we never issued a
         # password and must not reset theirs. Re-send the "sign in as you always do" note.
-        # A Resend gives a fresh temp password AND a fresh TTL clock (`issue_temp_password`).
-        temp_password = None
-        if target.supabase_user_id:
-            temp_password = generate_temp_password()
-            if not supabase_admin.issue_temp_password(
-                    target.supabase_user_id, target.name, temp_password):
-                return Response({'error': 'Failed to reset the password'}, status=502)
+        # A Resend gives a fresh temp password AND a fresh TTL clock (`staff_reinvite.
+        # reissue_credential`, shared with the source Resend since source sign-in S2).
+        temp_password, err = staff_reinvite.reissue_credential(target)
+        if err == 'not_configured':
+            return Response({'error': 'Supabase service role key not configured'}, status=500)
+        if err:
+            return Response({'error': 'Failed to reset the password'}, status=502)
 
         # ⚠ A RE-SEND REFRESHES THE INVITATION, IT DOES NOT START A NEW ONE. `create_or_refresh`
         # finds the open row and moves ONE clock — the same clock the temp-password TTL just reset

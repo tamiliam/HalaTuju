@@ -20,7 +20,7 @@ from .gift_programmes import AdminProgrammeListView
 # the caller's own organisation, else the sole tenant (`_new_source_owner`). The house organisation
 # is not a source and no longer appears in the list; a platform referral partner never did.
 
-def _source_dict(org, student_count=None, gift_count=0, gift_total=0):
+def _source_dict(org, student_count=None, gift_count=0, gift_total=0, sign_in=('none', 0)):
     return {
         'id': org.id,
         'code': org.code,
@@ -46,6 +46,11 @@ def _source_dict(org, student_count=None, gift_count=0, gift_total=0):
         'gift_total': gift_total,
         'is_active': bool(org.is_active),
         'student_count': student_count,
+        # SOURCE SIGN-IN (S2, 2026-10-30): `none` | `invited` | `joined`, and how many ACTIVE people
+        # sign in for this source (`source_invite.sign_in_states`). `joined` is also what locks the
+        # source's own details here (`AdminSourceDetailView`, 409 `managed_by_source`).
+        'sign_in': sign_in[0],
+        'user_count': sign_in[1],
     }
 
 
@@ -65,12 +70,13 @@ def _gift_totals(scope):
 
 def _one_source_dict(admin, org):
     """One row, counted the same way as the list (a PATCH answers with the row it changed)."""
-    from .. import gift_sources
+    from .. import gift_sources, source_invite
     scope = _gift_scope(admin)
     counted = gift_sources.gift_counts(type(org).objects.filter(pk=org.pk), scope).first()
     return _source_dict(org, _source_application_counts().get(org.id, 0),
                         counted.gift_count if counted else 0,
-                        _gift_totals(scope).get(org.organisation_id, 0))
+                        _gift_totals(scope).get(org.organisation_id, 0),
+                        source_invite.sign_in_states([org.pk]).get(org.pk, ('none', 0)))
 
 
 # The platform's own bursary programme — the "house" organisation. Its code is RESERVED: no source
@@ -78,6 +84,43 @@ def _one_source_dict(admin, org):
 # Sprint B it is not a source at all and leaves the Sources list (with the residual count it used
 # to carry). Kept as a code, mirrored in `partner_comms` and `apps.courses.referral_links`.
 HOUSE_ORG_CODE = 'brightpath'
+
+
+#: The text fields a source's details are made of, with the column width each is cut to. ONE table
+#: for Add (now the source invite) and Edit, so the two cannot cut a value differently.
+DETAIL_FIELDS = (('name', 200), ('contact_person', 200), ('contact_email', 254), ('phone', 30))
+
+
+def new_source_fields(data, *, code_key='code', name_key='name'):
+    """The cleaned columns of a NEW source from a request body. The keys default to the old Add
+    source's; the source invite (source sign-in S2) names them `source_code` / `source_name`, since
+    its own `name` is the person's."""
+    fields = {'code': (data.get(code_key) or '').strip().lower(),
+              'show_in_apply': bool(data.get('show_in_apply', False))}
+    for field, width in DETAIL_FIELDS:
+        fields[field] = (data.get(name_key if field == 'name' else field) or '').strip()[:width]
+    return fields
+
+
+def new_source_refusal(owner, fields):
+    """None, or the 400 code a NEW source of ``owner`` is refused with. THE rules Add source
+    applied (sources Sprint B); since source sign-in S2 the source invite applies them, because a
+    source is now created by inviting its person (`views_admin/source_users.py`)."""
+    from .. import gift_sources
+    from ..models import ReferralSource
+    if not fields['code'] or not fields['name']:
+        return 'code_and_name_required'
+    # ⚠ RESERVED CODES (review, 2026-10-08): the three fixed form choices are referral CHIPS on
+    # every student who picked them. A source row named `other` would collect every "Other"
+    # student (profile_sync links, partner_notify / partner_comms email on chip == code), and the
+    # house org's code is ours. Refused before the clash check.
+    if fields['code'] in gift_sources.FIXED_CODES or fields['code'] == HOUSE_ORG_CODE:
+        return 'code_reserved'
+    # Unique WITHIN the organisation (another organisation's `smc` is not a clash, and saying
+    # "taken" would confirm it exists).
+    if ReferralSource.objects.filter(organisation=owner, code=fields['code']).exists():
+        return 'code_taken'
+    return None
 
 
 def _source_application_counts():
@@ -149,9 +192,9 @@ class _SourcesBase(_AdminBase):
 
 
 class AdminSourcesView(_SourcesBase):
-    """GET  .../admin/scholarship/sources/ — the caller's organisation's sources + student counts.
-    POST .../admin/scholarship/sources/ {code, name, contact_person?, contact_email?, phone?,
-         show_in_apply?} — create a source owned by the caller's organisation."""
+    """GET  .../admin/scholarship/sources/ — the caller's organisation's sources + student counts
+         and, since source sign-in S2, each one's `sign_in` and `user_count`.
+    POST — RETIRED (410 `use_source_invitation`): a source is added by inviting its person."""
     def get(self, request):
         admin, err = self._sources_admin(request)
         if err:
@@ -160,52 +203,32 @@ class AdminSourcesView(_SourcesBase):
         sources, err = self._sources_in_scope(request, admin)
         if err:
             return err
+        from .. import source_invite
         counts = _source_application_counts()
         scope = _gift_scope(admin)
         totals = _gift_totals(scope)
+        # ONE query for every row's sign-in state, like the gift count below (never one per row).
+        signed = source_invite.sign_in_states(sources.values('pk'))
         # ONE annotated query for every row's gift count (never one per row).
         rows = (gift_sources.gift_counts(sources, scope).select_related('organisation')
                 .order_by('name', 'pk'))
         return Response({
             'sources': [_source_dict(s, counts.get(s.id, 0), s.gift_count,
-                                     totals.get(s.organisation_id, 0)) for s in rows],
+                                     totals.get(s.organisation_id, 0),
+                                     signed.get(s.id, ('none', 0))) for s in rows],
         })
 
     def post(self, request):
+        """⚠ RETIRED (source sign-in S2, 2026-10-30, roadmap conflict C6): a source is now ADDED by
+        inviting its person — `POST admin/invitations/` with `audience='source_partner'` and a new
+        `source_name` + `source_code`, under exactly the rules this POST applied
+        (`new_source_refusal`). 410 with a code rather than removing the method: a 405 would read
+        as a bug to an old client, and says nothing about where the door went."""
         admin, err = self._sources_admin(request)
         if err:
             return err
-        from ..models import ReferralSource
-        owner, err = self._new_source_owner(request, admin)
-        if err:
-            return err
-        code = (request.data.get('code') or '').strip().lower()
-        name = (request.data.get('name') or '').strip()
-        if not code or not name:
-            return Response({'error': 'code_and_name_required', 'code': 'code_and_name_required'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # ⚠ RESERVED CODES (review, 2026-10-08): the three fixed form choices are referral CHIPS on
-        # every student who picked them. A source row named `other` would collect every "Other"
-        # student (profile_sync links, partner_notify / partner_comms email on chip == code), and the
-        # house org's code is ours. Refused before the clash check.
-        from .. import gift_sources
-        if code in gift_sources.FIXED_CODES or code == HOUSE_ORG_CODE:
-            return Response({'error': 'code_reserved', 'code': 'code_reserved'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        # Unique WITHIN the organisation (another organisation's `smc` is not a clash, and saying
-        # "taken" would confirm it exists).
-        if ReferralSource.objects.filter(organisation=owner, code=code).exists():
-            return Response({'error': 'code_taken', 'code': 'code_taken'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        org = ReferralSource.objects.create(
-            organisation=owner, code=code, name=name,
-            contact_person=(request.data.get('contact_person') or '').strip()[:200],
-            contact_email=(request.data.get('contact_email') or '').strip()[:254],
-            phone=(request.data.get('phone') or '').strip()[:30],
-            show_in_apply=bool(request.data.get('show_in_apply', False)),
-        )
-        # A new source joins NO gift (owner, 2026-10-08) — each gift switches it on itself.
-        return Response(_one_source_dict(admin, org), status=status.HTTP_201_CREATED)
+        return Response({'error': 'Sources are added by inviting them, on Invitations → Source.',
+                         'code': 'use_source_invitation'}, status=status.HTTP_410_GONE)
 
 
 class AdminSourceNamesView(_AdminBase):
@@ -280,19 +303,25 @@ class AdminSourceDetailView(_SourcesBase):
         if 'programme_id' in request.data:
             return Response({'error': 'programme_id_retired', 'code': 'programme_id_retired'},
                             status=status.HTTP_400_BAD_REQUEST)
+        details = {field: (request.data.get(field) or '').strip()[:width]
+                   for field, width in DETAIL_FIELDS if field in request.data}
+        # ⚠ ONCE THE SOURCE HAS SIGNED IN, ITS DETAILS ARE ITS OWN (owner ruling 2026-10-30, source
+        # sign-in S2, roadmap C6): a CHANGE to name / contact person / contact email / phone is
+        # refused 409 `managed_by_source` — the source edits them itself (S3's profile). The
+        # organisation keeps `show_in_apply` (the Active toggle) and `is_active` (switching the
+        # source off is how its sign-in is taken away). The same value sent back is not a change,
+        # so a form that re-sends what it was given is not refused for it.
+        changed = [field for field, value in details.items() if value != getattr(org, field)]
+        if changed:
+            from .. import source_invite
+            if source_invite.has_joined(org):
+                return Response({'error': 'This source has signed in and now keeps its own '
+                                          'details.', 'code': 'managed_by_source',
+                                 'fields': changed}, status=status.HTTP_409_CONFLICT)
         fields = []
-        if 'name' in request.data:
-            org.name = (request.data.get('name') or '').strip()[:200]
-            fields.append('name')
-        if 'contact_person' in request.data:
-            org.contact_person = (request.data.get('contact_person') or '').strip()[:200]
-            fields.append('contact_person')
-        if 'contact_email' in request.data:
-            org.contact_email = (request.data.get('contact_email') or '').strip()[:254]
-            fields.append('contact_email')
-        if 'phone' in request.data:
-            org.phone = (request.data.get('phone') or '').strip()[:30]
-            fields.append('phone')
+        for field, value in details.items():
+            setattr(org, field, value)
+            fields.append(field)
         if 'show_in_apply' in request.data:
             org.show_in_apply = bool(request.data.get('show_in_apply'))
             fields.append('show_in_apply')

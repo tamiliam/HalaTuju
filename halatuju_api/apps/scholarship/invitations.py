@@ -27,8 +27,9 @@ def staff_ttl_days(organisation=None):
     return int(org_config.value(organisation, 'temp_password_ttl_days'))
 
 
-#: A sponsor or source-partner invitee has consented to nothing, so their name and address are PII
-#: we hold on no lawful basis once the invitation is dead. Same 60 days as `referrals.py`.
+#: A sponsor invitee has consented to nothing, so their name and address are PII we hold on no
+#: lawful basis once the invitation is dead. Same 60 days as `referrals.py`. (A source-partner
+#: invitee was on this line until source sign-in S2 gave them an account — see `purge_expired`.)
 PII_RETENTION_DAYS = 60
 
 #: How long since somebody last opened the console before the screen calls them dormant. Descriptive
@@ -69,16 +70,28 @@ KIND_AUDIENCE = {
     KIND_SPONSORS: 'sponsor',
 }
 
-#: kind → the roles LISTED under it (staff kinds only).
+#: kind → the roles LISTED under it. ⚠ `source` since source sign-in S2 (2026-10-30): a source
+#: invitation carries the role `source_partner`, so `for_kind` lists it and the letter it is sent is
+#: chosen from here (`emails.reviewer_mail._invite_kind_for_role` → `invite_source`), the same rule
+#: that picks the admin and reviewer letters.
 KIND_ROLES = {
     KIND_ADMINS: ('admin', 'finance', 'org_admin'),
     KIND_REVIEWERS: ('reviewer', 'qc'),
+    KIND_SOURCE: ('source_partner',),
 }
+
+#: The audiences whose invitation PROVISIONS an account up front, so accepting means signing in for
+#: the first time (`accept_for_admin`) and the address sits on a `PartnerAdmin` row anyway
+#: (`purge_expired` leaves it alone). Staff since the start; source users since source sign-in S2.
+ACCOUNT_AUDIENCES = ('staff', 'source_partner')
 
 #: kind → the roles INVITABLE from this page. Note `org_admin`'s absence; see above.
 KIND_INVITABLE_ROLES = {
     KIND_ADMINS: ('admin', 'finance'),
     KIND_REVIEWERS: ('reviewer', 'qc'),
+    # Source sign-in S2: invited through `POST admin/invitations/` with `audience='source_partner'`
+    # (`views_admin/source_users.py`), never through the staff invite.
+    KIND_SOURCE: ('source_partner',),
 }
 
 
@@ -184,7 +197,7 @@ def open_invitation(audience, email):
 
 def create_or_refresh(*, audience, email, name='', role='', organisation=None, invited_by=None,
                       partner_admin=None, credential_issued=False, programme=None,
-                      ttl_days=None, now=None):
+                      referral_source=None, ttl_days=None, now=None):
     """The one way an invitation comes into being, and the one way a re-invite is handled.
 
     Idempotent on an OPEN invitation to the same address: a second invite finds the existing row and
@@ -199,6 +212,8 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
     rule as `name`, `role` and `organisation`: a truthy value overwrites, None leaves the existing
     one alone. Re-inviting somebody into a DIFFERENT gift is a real correction and must land; a
     re-send that names no gift must not silently erase the one already stated.
+
+    `referral_source` (source invitations only, source sign-in S2) follows the same rule.
     """
     now = now or timezone.now()
     from datetime import timedelta
@@ -216,15 +231,18 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
         inv.partner_admin = partner_admin or inv.partner_admin
         inv.credential_issued = credential_issued or inv.credential_issued
         inv.programme = programme or inv.programme
+        inv.referral_source = referral_source or inv.referral_source
         inv.expires_at = expires
         inv.save(update_fields=['name', 'role', 'organisation', 'partner_admin',
-                                'credential_issued', 'programme', 'expires_at', 'updated_at'])
+                                'credential_issued', 'programme', 'referral_source', 'expires_at',
+                                'updated_at'])
         return inv
 
     return Invitation.objects.create(
         audience=audience, email=email, name=name, role=role, organisation=organisation,
         invited_by=invited_by, partner_admin=partner_admin, code=_new_code(),
-        credential_issued=credential_issued, programme=programme, expires_at=expires)
+        credential_issued=credential_issued, programme=programme,
+        referral_source=referral_source, expires_at=expires)
 
 
 def record_send(inv, ok, error=''):
@@ -247,7 +265,11 @@ def record_send(inv, ok, error=''):
 
 
 def accept_for_admin(admin, now=None):
-    """Close this person's open staff invitation, because they have just arrived.
+    """Close this person's open staff — or SOURCE — invitation, because they have just arrived.
+
+    ⚠ A SOURCE USER'S TOO (source sign-in S2, roadmap conflict C4). Its invitation provisions a
+    `PartnerAdmin` up front exactly as a staff one does, so its first sign-in is its acceptance; left
+    out, a source who had arrived would sit in Waiting for ever. (`ACCOUNT_AUDIENCES`.)
 
     ⚠ Called from `_touch_seen`'s FIRST-ARRIVAL rowcount, which is `1` exactly once in a row's life.
     That is what makes acceptance un-repeatable: there is no second moment at which this fires, so
@@ -259,7 +281,7 @@ def accept_for_admin(admin, now=None):
     try:
         now = now or timezone.now()
         return Invitation.objects.filter(
-            audience='staff', partner_admin=admin,
+            audience__in=ACCOUNT_AUDIENCES, partner_admin=admin,
             accepted_at__isnull=True, revoked_at__isnull=True).update(accepted_at=now)
     except Exception:   # noqa: BLE001
         return 0
@@ -281,11 +303,13 @@ def purge_expired(now=None, days=None):
     ⚠ Staff are EXEMPT: a staff invitee is a colleague whose address the organisation holds anyway
     (they are a `PartnerAdmin` row with that email on it), so scrubbing it here would delete half a
     record while the other half stayed. Only the audiences who consented to nothing are purged.
+    ⚠ SO ARE SOURCE USERS (source sign-in S2, C4): the invite provisions their `PartnerAdmin` row
+    too, so the same half-a-record argument holds (`ACCOUNT_AUDIENCES`). Only sponsors are purged.
     """
     from datetime import timedelta
     now = now or timezone.now()
     cutoff = now - timedelta(days=days or PII_RETENTION_DAYS)
     stale = Invitation.objects.filter(
         accepted_at__isnull=True, pii_purged_at__isnull=True,
-        expires_at__lt=cutoff).exclude(audience='staff')
+        expires_at__lt=cutoff).exclude(audience__in=ACCOUNT_AUDIENCES)
     return stale.update(email='', name='', pii_purged_at=now)

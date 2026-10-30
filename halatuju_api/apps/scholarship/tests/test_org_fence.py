@@ -442,6 +442,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # fencing through the invitee would silently drop that whole kind.
         'AdminInvitationsView': 'invitation-org-fenced',
         'AdminInvitationCancelView': 'invitation-org-fenced',   # TD-214: 404 on another org's
+        # Source sign-in S2 (2026-10-30): a source user's Resend / Revoke. Fenced through
+        # `source_invite.manageable` — a super, or the organisation admin of the source user's OWN
+        # organisation; another organisation's id is 404 (`test_source_invite.py`).
+        '_SourceUserBase': 'base — super/org_admin gate + source_invite.manageable',
+        'AdminSourceUserResendView': 'source-user-fenced (source_invite.manageable)',
+        'AdminSourceUserRevokeView': 'source-user-fenced (source_invite.manageable)',
         # People → Change role (staff lifecycle, 2026-10-09). Fenced through
         # `_staff_target_manageable`, the courses staff fence Revoke / Resend / Delete use: an
         # org_admin reaches only their OWN organisation's non-org_admin staff; anything else 404s.

@@ -643,7 +643,7 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
     ONLY, on the real JWT subject (review F3): a student or sponsor with a reset link never
     reaches the service-role write, and a TD-254 profile alias never redirects it.
     """
-    permission_classes = [SupabaseIsAuthenticated]
+    source_partner_methods = ('post',)   # source sign-in S2: a temp-password source invitee too
 
     def post(self, request):
         uid = auth_sub(request)

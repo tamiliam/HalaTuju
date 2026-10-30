@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in S2 (backend) — 2026-10-30
+
+Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S2, backend half (the UI half waits for the owner's
+visual approval). Migration `scholarship/0190` (MIGRATE-FIRST; DDL and ledger row in its docstring). NOT deployed.
+
+- **Invite a source:** `POST admin/invitations/` with `audience='source_partner'` and `name`, `email`, and either
+  `source_id` or a NEW `source_name` + `source_code` (+ contact person / email / phone / `show_in_apply`). Super or
+  org_admin only. The account comes from the staff invite's own three branches, now one helper
+  (`staff_reinvite.provision_for_invite`, shared with `AdminInviteView`); the Resend's password rotation likewise
+  (`staff_reinvite.reissue_credential`). New source = the old Add source's rules, extracted
+  (`sources.new_source_fields` / `new_source_refusal`). Refusals: 409 `already_staff` (any existing row, except a
+  switched-off user of the same source, which comes back), 404 another organisation's source, 400 `source_inactive`,
+  403 any other role. Blank `contact_email` filled with the invitee's.
+- **`apps/scholarship/source_invite.py`** (the rules) and **`views_admin/source_users.py`** (the HTTP):
+  `POST admin/source-users/<id>/resend/` and `.../revoke/`; `admin/invitations/<id>/cancel/` now cancels a source
+  invitation too. `GET admin/invitations/?kind=source` adds `source_users` and `sources`; every row carries
+  `source_id` / `source_name` / `source_code`.
+- **`Invitation.referral_source`** (scholarship 0190). `invitations.KIND_ROLES['source']`, `ACCOUNT_AUDIENCES`:
+  first sign-in closes a source invitation, the PII purge leaves it alone.
+- **The source letter is wired:** `emails.send_source_invitation_email`, its one sender; the staff welcome refuses a
+  source role. `test_NOTHING_SENDS_IT` and `test_THE_SOURCE_LETTER_IS_STILL_INSIDE_THE_GUARD` flipped on purpose;
+  `invite_source` joins `CONSOLE_AUDIENCE_KINDS` (decisions.md 2026-10-30 "Sources sign in").
+- **Sources API:** POST 410 `use_source_invitation`; PATCH 409 `managed_by_source` on a detail change once joined;
+  rows gain `sign_in` and `user_count`.
+- `admin/set-password/` POST is open to a source user (a temp-password invitee sets a password).
+- `AdminInviteView.post` fell 183 -> 151 lines; its long_functions entry lowered to match.
+- Tests: `test_source_invite.py` (41), flips in `test_invitations.py` / `test_partner_comms.py`; org-fence map
+  classifies the two new endpoints; the deny-everywhere sweep lists set-password as REACHED (400 on an empty body).
+  The old Add source tests (`test_sources_b.py`, `test_gift_sources.py`, `test_contract_golive_t1.py`) now add
+  through the invite (`test_sources_b.add_source`) and keep their assertions — same fence, same codes.
+- ⚠ Behaviour change: the **Admin** role could Add a source (owner 2026-07-19); adding is now inviting, which only a
+  super or an org_admin may do. Admin keeps the list, Edit and the toggles.
+
 ## Source sign-in S1 — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S1: the role and access foundation. Nothing

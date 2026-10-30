@@ -352,9 +352,8 @@ SEEDS = {
             '{team_signoff}'
         ),
     },
-    # ⚠ NOTHING SENDS THIS YET — no Source Partner has a login and the page offers no way to invite
-    # one. It is wording agreed ahead of the Source console (owner, 2026-08-04), and it describes
-    # that console, so it must not be wired to a sender before the console exists.
+    # Wording agreed ahead of the Source console (owner, 2026-08-04). Sent since source sign-in S2
+    # (2026-10-30) by `send_source_invitation_email` alone, when a source's person is invited.
     'invite_source': {
         'subject': 'Access to the {programme_name} for {org_name}',
         'body': (

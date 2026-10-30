@@ -153,6 +153,7 @@ NOT_STUDENT_SENDERS = frozenset({
     'send_executed_copy_email', 'send_witness_pending_email', 'send_countersign_pending_email',
     'send_sponsor_email', 'send_spending_alert_email', 'send_vircle_wallet_alert_email',
     'send_contact_submission_admin_email', 'send_sponsor_invitation_email',
+    'send_source_invitation_email',     # a source's person (source sign-in S2)
     'send_sponsor_new_student_email', 'send_sponsor_digest_email', 'send_invoice_email',
     'send_receipt_email', 'send_payment_declared_email', 'send_invoicing_alert_email',
     # `send_partner_email` is the shared partner sender. Its ONE student-facing use (the partner

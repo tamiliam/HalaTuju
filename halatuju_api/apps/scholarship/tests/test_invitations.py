@@ -229,6 +229,15 @@ class TestTheFourKinds(TestCase):
         # Another organisation's invitation — must never appear.
         Invitation.objects.create(audience='sponsor', email='intruder@k2.test',
                                   code='spon-x', organisation=cls.other)
+        # A SOURCE invitation (source sign-in S2): its own kind, and no other.
+        from apps.scholarship.tests.factories import make_source
+        source = make_source(organisation=cls.org)
+        user = PartnerAdmin.objects.create(
+            supabase_user_id='k-src', role='source_partner', source=source, is_active=True,
+            owning_organisation=cls.org, name='Devi', email='src@k.test')
+        invitations.create_or_refresh(
+            audience='source_partner', email='src@k.test', name='Devi', role='source_partner',
+            organisation=cls.org, partner_admin=user, referral_source=source)
 
     def setUp(self):
         self.client = APIClient()
@@ -262,9 +271,13 @@ class TestTheFourKinds(TestCase):
         # A sponsor invitation creates nothing — that is the point of it.
         self.assertIsNone(rows[0]['admin_id'])
 
-    def test_source_is_empty_today(self):
-        # No Source Partner has ever been invited; the role does not exist yet.
-        self.assertEqual(self._get('source')['invitations'], [])
+    def test_source_holds_source_invitations_and_nothing_else(self):
+        # ⚠ FLIPPED ON PURPOSE (source sign-in S2, 2026-10-30). It was `test_source_is_empty_today`
+        # while no source could be invited; now a source invitation is listed here, under its own
+        # kind, and never under a staff kind (`KIND_ROLES['source']`).
+        self.assertEqual([x['email'] for x in self._get('source')['invitations']], ['src@k.test'])
+        for kind in ('admins', 'reviewers', 'sponsors'):
+            self.assertNotIn('src@k.test', {x['email'] for x in self._get(kind)['invitations']})
 
     def test_another_organisations_invitation_is_never_visible(self):
         for kind in invitations.KINDS:
@@ -278,7 +291,7 @@ class TestTheFourKinds(TestCase):
         self.assertEqual(waiting['reviewers'], 2)
         self.assertEqual(waiting['admins'], 3)
         self.assertEqual(waiting['sponsors'], 1)
-        self.assertEqual(waiting['source'], 0)
+        self.assertEqual(waiting['source'], 1)
 
     def test_an_accepted_invitation_stops_counting_as_waiting(self):
         pa = PartnerAdmin.objects.get(email='rev@k.test')
@@ -632,8 +645,9 @@ class TestOneInvitationLetterPerGroup(TestCase):
                 self.assertEqual(after, before)
 
 
-class TestTheSourceInvitationIsWrittenButNotWired(TestCase):
-    """Wording agreed ahead of the Source console (owner, 2026-08-04)."""
+class TestTheSourceInvitation(TestCase):
+    """Wording agreed ahead of the Source console (owner, 2026-08-04); wired with its sender at
+    source sign-in S2 (2026-10-30). The class was `TestTheSourceInvitationIsWrittenButNotWired`."""
 
     def setUp(self):
         from django.core.management import call_command
@@ -667,11 +681,50 @@ class TestTheSourceInvitationIsWrittenButNotWired(TestCase):
         self.assertIn('access', missing)
         self.assertIn('login_link', missing)
 
-    def test_NOTHING_SENDS_IT(self):
-        # ⚠ The letter describes a console that does not exist. If a sender is ever added, this
-        # test should fail and be replaced deliberately — not deleted in passing.
+    def test_ONE_SENDER_AND_IT_IS_THE_ONLY_CALLER_PATH(self):
+        # ⚠ REPLACED ON PURPOSE (source sign-in S2, 2026-10-30). It was `test_NOTHING_SENDS_IT`, and
+        # said: if a sender is ever added, fail and be replaced deliberately. S2 gives a source its
+        # login, so the letter now has ONE sender, and the only code that calls it is the source
+        # invite service (`source_invite.send`) — the invite, the Resend. The staff welcome cannot
+        # send it either (`build_partner_welcome_email` refuses a source role).
+        import pathlib
+        import re
+        from apps import scholarship
         from apps.scholarship import emails
-        self.assertFalse(hasattr(emails, 'send_source_invitation_email'))
+        self.assertTrue(hasattr(emails, 'send_source_invitation_email'))
+        root = pathlib.Path(scholarship.__file__).parent.parent
+        builds, sends = set(), set()
+        for path in root.rglob('*.py'):
+            if 'tests' in path.parts or 'migrations' in path.parts:
+                continue
+            text = path.read_text(encoding='utf-8')
+            rel = path.relative_to(root).as_posix()
+            if re.search(r'build_source_invitation_email\(', text):
+                builds.add(rel)
+            if re.search(r'(?<!def )send_source_invitation_email\(', text):
+                sends.add(rel)
+        self.assertEqual(builds, {'scholarship/emails/invitation_mail.py'})
+        self.assertEqual(sends, {'scholarship/source_invite.py'})
+
+    def test_the_sender_fills_the_letter_for_the_source(self):
+        from django.core import mail
+        from apps.scholarship import emails
+        ok, error = emails.send_source_invitation_email(
+            'devi@example.org', name='Devi', source_name='Sri Murugan Centre',
+            temp_password='Kx7m-Pq4t-Rd92')
+        self.assertEqual((ok, error), (True, ''))
+        letter = mail.outbox[-1]
+        self.assertIn('Sri Murugan Centre', letter.subject)
+        self.assertIn('Dear Devi', letter.body)
+        self.assertIn('Kx7m-Pq4t-Rd92', letter.body)
+        self.assertIn('/admin/login', letter.body)
+
+    def test_the_letter_is_chosen_from_KIND_ROLES_and_a_staff_letter_refuses_a_source(self):
+        from apps.scholarship import emails
+        self.assertEqual(emails._invite_kind_for_role('source_partner'), 'invite_source')
+        with self.assertRaises(ValueError):
+            emails.build_partner_welcome_email('x@example.org', 'Devi', 'source_partner',
+                                               temp_password='Kx7m-Pq4t-Rd92')
 
 
 class TestTheSponsorInvitationIsTheORGANISATIONPitching(TestCase):

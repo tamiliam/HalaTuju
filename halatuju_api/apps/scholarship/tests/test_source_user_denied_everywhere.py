@@ -37,6 +37,14 @@ ALLOWED = {
     ('api/v1/admin/profile/', 'get'),
 }
 
+#: (route, method) pairs a source user's call REACHES since S2, which serve no data: the view runs
+#: and answers on its own terms. Here, with an empty body: set-password refuses it 400
+#: `password_too_short` before anything else (it only ever sets the CALLER'S own password, while a
+#: temporary one is still owed — a temp-password source invitee needs it; source sign-in S2).
+REACHED = {
+    ('api/v1/admin/set-password/', 'post'): 400,
+}
+
 #: What a refused call may answer: not an admin (403), not found / dark (404), or a method the view
 #: does not take (405). A 400 or a 500 would mean the view ran past its gate, so neither is here.
 REFUSED = {403, 404, 405}
@@ -125,11 +133,15 @@ class TestSourceUserIsDeniedEveryAdminRoute(TestCase):
                     if resp.status_code != 200:
                         leaks.append(f'{method.upper()} {url} -> {resp.status_code} (allowed, '
                                      f'expected 200)')
+                elif (route, method) in REACHED:
+                    if resp.status_code != REACHED[(route, method)]:
+                        leaks.append(f'{method.upper()} {url} -> {resp.status_code} (reached, '
+                                     f'expected {REACHED[(route, method)]})')
                 elif resp.status_code not in REFUSED:
                     leaks.append(f'{method.upper()} {url} -> {resp.status_code}')
         self.assertEqual(leaks, [], 'a source user reached an admin route:\n' + '\n'.join(leaks))
         # Every allowed pair really exists, so the list cannot rot into naming nothing.
-        self.assertEqual(ALLOWED - seen, set())
+        self.assertEqual((ALLOWED | set(REACHED)) - seen, set())
 
     def test_the_allowed_routes_serve_only_the_callers_own_things(self):
         client = authed_client(self.user)

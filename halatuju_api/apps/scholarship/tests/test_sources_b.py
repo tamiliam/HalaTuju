@@ -14,6 +14,7 @@ organisation (decisions.md "Sources become their own table, owned by an organisa
    creates is marked; never onto a tenant or a source's old row; an `org_admin` never onto a
    referral partner. `GET /admin/orgs/` lists referral partners only.
 """
+import itertools
 from unittest.mock import MagicMock, patch
 
 from django.core import mail
@@ -35,6 +36,21 @@ EMAILS = '/api/v1/admin/scholarship/partner-emails/'
 INVITE = '/api/v1/admin/invite/'
 ORGS = '/api/v1/admin/orgs/'
 PARTNER_LIST = '/api/v1/admin/students/'
+
+
+def add_source(client, code, name, query='', **extra):
+    """ADD a source the one way there is since source sign-in S2: by inviting its first person
+    (`POST admin/invitations/`, `audience='source_partner'`). Sources' POST is 410. The new source is
+    `resp.json()['source']`; the account side is stubbed (no Supabase in tests)."""
+    n = next(_ADDED)
+    body = {'audience': 'source_partner', 'name': 'First Person', 'email': f'first{n}@add.test',
+            'source_code': code, 'source_name': name, **extra}
+    with override_settings(SUPABASE_SERVICE_ROLE_KEY='k', SUPABASE_URL='https://x.supabase.co'), \
+            patch('apps.courses.staff_reinvite._new_login', return_value=(f'add-uid-{n}', False, None)):
+        return client.post('/api/v1/admin/invitations/' + query, body, format='json')
+
+
+_ADDED = itertools.count(1)
 
 
 
@@ -118,20 +134,19 @@ class TestTheSourcesFence(_TwoOrganisations):
         for code in ('brightpath', 'sb-a', 'sb-b', 'cumig'):
             self.assertNotIn(code, codes)
 
+    # ⚠ The four "add" tests below moved onto the source invite on purpose (source sign-in S2): Add
+    # source is retired into it, and the SAME fence and rules must hold there (`add_source`).
     def test_a_new_source_belongs_to_the_callers_organisation(self):
-        resp = authed_client(self.oa_a).post(SOURCES, {'code': 'fresh', 'name': 'Fresh'},
-                                             format='json')
+        resp = add_source(authed_client(self.oa_a), 'fresh', 'Fresh')
         self.assertEqual(resp.status_code, 201, resp.content)
-        self.assertEqual(resp.json()['organisation'], 'sb-a')
+        self.assertEqual(resp.json()['source']['organisation'], 'sb-a')
         self.assertEqual(ReferralSource.objects.get(code='fresh').organisation, self.a)
         self.assertFalse(PartnerOrganisation.objects.filter(code='fresh').exists())
 
     def test_another_organisations_code_is_not_taken_and_ours_is(self):
-        resp = authed_client(self.oa_a).post(SOURCES, {'code': 'only-b', 'name': 'Mine'},
-                                             format='json')
+        resp = add_source(authed_client(self.oa_a), 'only-b', 'Mine')
         self.assertEqual(resp.status_code, 201, resp.content)
-        resp = authed_client(self.oa_a).post(SOURCES, {'code': 'smc', 'name': 'Again'},
-                                             format='json')
+        resp = add_source(authed_client(self.oa_a), 'smc', 'Again')
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'code_taken'))
 
     def test_another_organisations_source_is_a_404_and_untouched(self):
@@ -145,7 +160,10 @@ class TestTheSourcesFence(_TwoOrganisations):
     def test_an_organisation_less_admin_sees_none_and_cannot_add(self):
         loose = make_admin('admin')
         self.assertEqual(self._codes(authed_client(loose)), [])
-        resp = authed_client(loose).post(SOURCES, {'code': 'x', 'name': 'X'}, format='json')
+        # Since source sign-in S2 only a super or an org_admin may add (= invite); an admin is 403.
+        self.assertEqual(add_source(authed_client(loose), 'x', 'X').status_code, 403)
+        loose_lead = make_admin('org_admin')
+        resp = add_source(authed_client(loose_lead), 'x', 'X')
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'organisation_required'))
         self.assertFalse(ReferralSource.objects.filter(code='x').exists())
 
@@ -158,12 +176,12 @@ class TestTheSourcesFence(_TwoOrganisations):
 
     def test_a_super_must_name_a_tenant_to_create_one(self):
         client = authed_client(self.super)
-        resp = client.post(SOURCES, {'code': 'sup', 'name': 'Sup'}, format='json')
+        resp = add_source(client, 'sup', 'Sup')
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'organisation_required'))
         # A referral partner is not an owner of sources (it is platform data, owned by nobody).
-        resp = client.post(SOURCES + '?org=cumig', {'code': 'sup', 'name': 'Sup'}, format='json')
+        resp = add_source(client, 'sup', 'Sup', '?org=cumig')
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'organisation_required'))
-        resp = client.post(SOURCES + '?org=sb-b', {'code': 'sup', 'name': 'Sup'}, format='json')
+        resp = add_source(client, 'sup', 'Sup', '?org=sb-b')
         self.assertEqual(resp.status_code, 201, resp.content)
         self.assertEqual(ReferralSource.objects.get(code='sup').organisation, self.b)
 
@@ -222,11 +240,11 @@ class TestASuperOnAOneTenantPlatform(TestCase):
         sup = make_admin('super', super_admin=True)
         self.assertEqual(list(PartnerOrganisation.objects.tenants().values_list('code', flat=True)),
                          [partner_comms.HOUSE_ORG_CODE])
-        resp = authed_client(sup).post(SOURCES, {'code': 'one', 'name': 'One'}, format='json')
+        resp = add_source(authed_client(sup), 'one', 'One')     # the invite since S2
         self.assertEqual(resp.status_code, 201, resp.content)
         self.assertEqual(ReferralSource.objects.get(code='one').organisation, _house())
         make_programme(organisation=make_org('sb-two'), is_active=True)       # a second tenant
-        resp = authed_client(sup).post(SOURCES, {'code': 'two', 'name': 'Two'}, format='json')
+        resp = add_source(authed_client(sup), 'two', 'Two')
         self.assertEqual((resp.status_code, resp.json()['code']), (400, 'organisation_required'))
         self.assertFalse(ReferralSource.objects.filter(code='two').exists())
 

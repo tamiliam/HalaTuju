@@ -489,14 +489,17 @@ class TestSourcesAdminAPI(TestCase):
         self.assertEqual(rows['src-a']['student_count'], 1)       # unchanged by the drift
         self.assertEqual(set(rows), {'src-a'})                    # no partner, no house row
 
-    def test_admin_role_can_create(self):
+    def test_add_source_moved_into_the_invite_which_an_admin_may_not_send(self):
+        # ⚠ FLIPPED ON PURPOSE (source sign-in S2, 2026-10-30): the Sources POST is retired (410) —
+        # a source is added by inviting its person, which only a super or an org_admin may do. The
+        # Admin role keeps the list and Edit (owner 2026-07-19), not Add.
         from apps.scholarship.models import ReferralSource
+        from apps.scholarship.tests.test_sources_b import add_source
         self._auth('gl-adm')
         r = self.client.post(self.SOURCES, {'code': 'admincreated', 'name': 'By Admin'}, format='json')
-        self.assertEqual(r.status_code, 201)
-        # Owned by the caller's organisation (sources Sprint B); no partner_organisations row.
-        self.assertTrue(ReferralSource.objects.filter(code='admincreated',
-                                                      organisation=self.org).exists())
+        self.assertEqual((r.status_code, r.json()['code']), (410, 'use_source_invitation'))
+        self.assertEqual(add_source(self.client, 'admincreated', 'By Admin').status_code, 403)
+        self.assertFalse(ReferralSource.objects.filter(code='admincreated').exists())
         self.assertFalse(PartnerOrganisation.objects.filter(code='admincreated').exists())
 
     def test_reviewer_and_qc_forbidden(self):
@@ -507,16 +510,19 @@ class TestSourcesAdminAPI(TestCase):
 
     def test_create_source(self):
         # A super with no organisation of its own names the owner with the crumb (`?org=`).
+        # Through the source invite since source sign-in S2.
         from apps.scholarship.models import ReferralSource
+        from apps.scholarship.tests.test_sources_b import add_source
         self._auth('gl-super')
-        r = self.client.post(self.SOURCES + '?org=brightpath',
-                             {'code': 'NewOrg', 'name': 'New Org', 'phone': '0999'}, format='json')
-        self.assertEqual(r.status_code, 201)
-        self.assertTrue(ReferralSource.objects.filter(code='neworg', organisation=self.org).exists())
+        r = add_source(self.client, 'NewOrg', 'New Org', '?org=brightpath', phone='0999')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertTrue(ReferralSource.objects.filter(code='neworg', organisation=self.org,
+                                                      phone='0999').exists())
 
     def test_create_duplicate_code_rejected(self):
+        from apps.scholarship.tests.test_sources_b import add_source
         self._auth('gl-oa')
-        r = self.client.post(self.SOURCES, {'code': 'src-a', 'name': 'Dup'}, format='json')
+        r = add_source(self.client, 'src-a', 'Dup')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'code_taken')
 

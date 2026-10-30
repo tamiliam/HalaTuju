@@ -250,6 +250,15 @@ class Invitation(models.Model):
         help_text='Sponsor invitations only: the gift the organisation is inviting them into. '
                   'NULL = not stated, and registration resolves it if it can.',
     )
+    #: WHICH SOURCE a `source_partner` invitation signs somebody in for (source sign-in S2,
+    #: 2026-10-30, roadmap conflict C5). `organisation` above stays the TENANT, as for staff — the
+    #: fence every Invitations reader cuts on — and this names the source inside it. NULL for every
+    #: other audience. PROTECT, like `PartnerAdmin.source`: a source with a login is switched off,
+    #: never deleted, and an invitation's history must go on naming the source it was for.
+    referral_source = models.ForeignKey(
+        'ReferralSource', on_delete=models.PROTECT, null=True, blank=True, related_name='invitations',
+        help_text='Source-partner invitations only: the referral source the invitee signs in for.',
+    )
 
     expires_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)

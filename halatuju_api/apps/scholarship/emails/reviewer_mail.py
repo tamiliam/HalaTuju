@@ -132,10 +132,16 @@ def _invite_kind_for_role(role):
     platform-level account is told. `org_admin` is NOT in that exclusion: they are listed under
     Admins because an organisation admin belongs to the organisation, even though appointing one
     is a super's act.
+
+    ⚠ `source_partner` → `invite_source` (source sign-in S2, 2026-10-30), read from the same map.
+    That letter has its OWN builder and sender (`invitation_mail.send_source_invitation_email`),
+    because it is addressed to a source, not to a team member — so the welcome builder below
+    REFUSES a source role rather than send a source the wrong letter.
     """
     from .. import invitations
     for kind, template_kind in ((invitations.KIND_ADMINS, 'invite_admin'),
-                                (invitations.KIND_REVIEWERS, 'invite_reviewer')):
+                                (invitations.KIND_REVIEWERS, 'invite_reviewer'),
+                                (invitations.KIND_SOURCE, 'invite_source')):
         if role in invitations.KIND_ROLES.get(kind, ()):
             return template_kind
     return None
@@ -255,6 +261,9 @@ def build_partner_welcome_email(to_email, name, role, temp_password=None, google
     # A role this page never invites (`partner`, `super`) reads no stored template at all — see
     # `_invite_kind_for_role`.
     template_kind = _invite_kind_for_role(role)
+    if template_kind == 'invite_source':
+        # ⚠ FAIL CLOSED (source sign-in S2): no staff path may send a source user a staff letter.
+        raise ValueError('A source user is sent the source letter: send_source_invitation_email.')
     stored = _invite_render(template_kind, {
         'name': who, 'role_label': role_label, 'login_link': link, 'access': access,
         'org_name': org, 'programme_name': _P.programme_name('en'),

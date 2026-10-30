@@ -17,6 +17,8 @@ is issued only while one is still owed or the login has never been used; a login
 in to and set their own password on means they arrived, so the 409 stands (review H1, 2026-10-09).
 A row with any work on record is never brought back either (`may_reuse`).
 """
+from collections import namedtuple
+
 from django.db import transaction
 
 from . import password_change_flag, supabase_admin
@@ -100,7 +102,59 @@ def _new_login(email, name, temp_password):
     return None, True, None
 
 
-def provision(reuse, *, email, name, role, org, owning_org, temp_password=None):
+#: What `provision_for_invite` did: the account, which of the THREE invite branches it took (``google``
+#: / ``already_registered`` / neither = a fresh login with ``temp_password``), and ``error``.
+Provisioned = namedtuple('Provisioned', 'account google already_registered temp_password error')
+
+
+def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=None):
+    """THE THREE ACCOUNT BRANCHES OF AN INVITE, in one place — the staff invite
+    (`views_staff.AdminInviteView`) and, since source sign-in S2 (2026-10-30), the source invite
+    (`apps.scholarship.source_invite`) both land here, so the two cannot drift apart:
+
+    - a **Google** address (owner 2026-07-14) is never issued a password: only the row is written,
+      and it links by verified email on the first Google sign-in;
+    - any other address gets a login WE create with a fresh temporary password
+      (`_create_supabase_user` says why) — or, when the address already has a HalaTuju login, keeps
+      that login (``already_registered``) and is sent no password.
+
+    ``reuse`` set → that switched-off row is brought back (`bring_back`). ``error`` is
+    ``'not_reusable'`` (the caller's 409) or ``'create_failed'`` (its 502). ``temp_password`` is
+    None unless one was really issued.
+    """
+    from .views_admin import generate_temp_password, is_google_email
+    if is_google_email(email):
+        account, _, err = provision(reuse, email=email, name=name, role=role, org=org,
+                                    owning_org=owning_org, source=source)
+        return Provisioned(account, True, False, None, err)
+    temp_password = generate_temp_password()
+    account, already, err = provision(reuse, email=email, name=name, role=role, org=org,
+                                      owning_org=owning_org, temp_password=temp_password,
+                                      source=source)
+    return Provisioned(account, False, already, None if (already or err) else temp_password, err)
+
+
+def reissue_credential(target):
+    """A Resend's credential: ``(temp_password|None, error|None)``. Shared by the staff Resend and
+    the source Resend (source sign-in S2) so the two rotate a password the same way.
+
+    No UID = the account pre-existed ours (student / Google sign-up), so we never issued a password
+    and must not reset theirs: ``(None, None)`` and the caller re-sends the "sign in as you always
+    do" note. Otherwise a fresh temporary password AND a fresh TTL clock (`issue_temp_password`).
+    ``error``: ``'not_configured'`` (the caller's 500) or ``'reset_failed'`` (its 502).
+    """
+    from .views_admin import generate_temp_password
+    if supabase_admin.supabase_config() is None:
+        return None, 'not_configured'
+    if not target.supabase_user_id:
+        return None, None
+    temp_password = generate_temp_password()
+    if not supabase_admin.issue_temp_password(target.supabase_user_id, target.name, temp_password):
+        return None, 'reset_failed'
+    return temp_password, None
+
+
+def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, source=None):
     """The account a staff invite lands on. Returns ``(account, already_registered, error)``.
 
     ``reuse`` set → that switched-off row is brought back (`bring_back`). Otherwise a NEW row,
@@ -110,6 +164,10 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None):
     `is_super_admin` is kept in lockstep with the role (expand-contract: several call sites still
     gate on it directly). Moved here from `AdminInviteView.post` so that function stays inside its
     long-function allowance.
+
+    ``source`` (source sign-in S2) is the referral source a NEW `source_partner` row signs in for;
+    None for every staff role. A brought-back row keeps the source it already has (the source
+    invite reuses only a row of the SAME source; `PartnerAdmin.save` refuses any other binding).
     """
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
@@ -121,7 +179,7 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None):
             return None, False, err
     created = PartnerAdmin.objects.create(
         email=email, name=name, org=org, role=role, owning_organisation=owning_org,
-        supabase_user_id=uid, is_super_admin=(role == 'super'))
+        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source)
     return created, already, None
 
 

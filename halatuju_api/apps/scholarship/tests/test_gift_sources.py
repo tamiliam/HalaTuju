@@ -238,23 +238,24 @@ class TestTheSourcesPageCounts(TestCase):
     def test_a_reserved_code_is_refused_and_nothing_created(self):
         """Review fix: a source named after a fixed form choice would collect every student who
         picked it (profile links, partner emails on chip == code); the house org's code is the
-        Sources count's residual."""
+        Sources count's residual. Through the source invite since source sign-in S2."""
+        from apps.scholarship.tests.test_sources_b import add_source
         for code in ('other', 'social', 'halatuju', 'brightpath', ' Other '):
             with self.subTest(code=code):
                 before = (ReferralSource.objects.count(), PartnerOrganisation.objects.count())
-                resp = authed_client(self.oa).post(
-                    SOURCES, {'code': code, 'name': 'Reserved'}, format='json')
+                resp = add_source(authed_client(self.oa), code, 'Reserved')
                 self.assertEqual(resp.status_code, 400, resp.content)
                 self.assertEqual(resp.json()['code'], 'code_reserved')
                 self.assertEqual((ReferralSource.objects.count(),
                                   PartnerOrganisation.objects.count()), before)
 
     def test_a_new_source_joins_no_gift(self):
-        resp = authed_client(self.oa).post(
-            SOURCES, {'code': 'newsrc', 'name': 'New Source', 'show_in_apply': True},
-            format='json')
+        # Added through the source invite since source sign-in S2 (Sources' POST is retired).
+        from apps.scholarship.tests.test_sources_b import add_source
+        resp = add_source(authed_client(self.oa), 'newsrc', 'New Source', show_in_apply=True)
         self.assertEqual(resp.status_code, 201, resp.content)
-        self.assertEqual((resp.json()['gift_count'], resp.json()['gift_total']), (0, 2))
+        row = resp.json()['source']
+        self.assertEqual((row['gift_count'], row['gift_total'], row['show_in_apply']), (0, 2, True))
         self.assertFalse(ProgrammeReferralSource.objects.filter(source__code='newsrc').exists())
 
 

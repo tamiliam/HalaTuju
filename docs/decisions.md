@@ -16510,3 +16510,36 @@ without a quote — and the plan and the actual are the two numbers a reader wan
 keep mirroring `closing_report`. If they drift, the screen offers to edit a number the invoice does not read;
 both carry a warning saying so.
 **Revisit if:** a request ever needs figures recorded against a report OTHER than the one billing reads.
+
+## 2026-10-30 — Sources sign in (source sign-in S2; owner rulings)
+**Decision:** a referral SOURCE gets its own login (`role='source_partner'`, S1), and its person is INVITED from
+Invitations → Source. **Add source moves into that invite:** a new source is created by inviting its first person
+(`POST admin/invitations/`, `audience='source_partner'`, under exactly the old Add source's rules); the Sources
+page's POST answers 410 `use_source_invitation`. Owner rulings, 2026-10-30:
+- **Edit on the Sources page locks once the source has signed in** — any active source user with a first sign-in;
+  a change to name / contact person / contact email / phone is then 409 `managed_by_source`. The organisation keeps
+  the Active toggle (`show_in_apply`) and switching the source off (`is_active`), which is how its sign-in is taken
+  away. Before anyone has signed in, the organisation edits as before.
+- **A source sees its students' phone and email** (S3's allowlist).
+- **The witness source sees the full contract** on the witness step (S4).
+
+**Revision of "no email may link to a partner console"** (2026-07-26 / 2026-08-04): the rule stood because no
+partner had a console. It is revised for exactly two letters — the source invitation (`invite_source`, wired now to
+its one sender, `send_source_invitation_email`) and, in S4, the witness emails — because their reader now HAS a
+console and their whole subject is getting into it. Every other partner email keeps the rule; the guard test
+(`test_no_email_points_at_a_partner_console`) now lists `invite_source` among the console audiences, in the same
+change that wired the sender, as its own note demanded.
+
+**Also decided in S2:** several people may sign in for one source (like several reviewers per organisation); one
+email holds one `PartnerAdmin` row, so an address with ANY row is refused (409 `already_staff`), except a
+switched-off source user of the SAME source, which a re-invite brings back (another source's or another role's never);
+a source's blank contact email is filled with its invitee's, never overwriting one on file; Resend / Revoke are new
+`admin/source-users/<id>/…` endpoints rather than the staff ones, which keep refusing source users; Cancel is shared.
+**Alternatives considered:** (A) keep Add source beside the invite — rejected: two doors create a source, and the
+Edit lock would sit beside an Add that bypasses it. (B) one person per source — rejected: a source is an
+organisation with a team. (C) let the staff Resend / Revoke take a source user through a second check — rejected:
+`_staff_target_manageable` refusing every source user is S1's guarantee, and a second check inside the staff views
+is a second place for the staff rules to drift.
+**Trade-offs:** the invitation letter now goes out before S3's console exists; nothing is deployed until S4 closes,
+so no source receives it before there is something to sign in to.
+**Revisit if:** a source ever needs to be added with nobody to invite (then a super-only "add without a person").

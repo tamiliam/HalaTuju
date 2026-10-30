@@ -385,13 +385,14 @@ class TestSeededTemplates(TestCase):
     #: promise. The guard below is about a surface that does not exist FOR THE READER — never about
     #: the word — so this list follows the audience, not the table they happen to sit in.
     #:
-    #: ⚠ `invite_source` is deliberately NOT here. A Source Partner has no login yet; that letter
-    #: describes the console being built and is the one case the rule exists for. What keeps it
-    #: safe is that **nothing sends it** (`test_NOTHING_SENDS_IT` in test_invitations.py) — not its
-    #: choice of words. When the Source console ships, add it here in the same change that wires a
-    #: sender, and not before.
+    #: ⚠ `invite_source` JOINED at source sign-in S2 (2026-10-30), in the same change that wired
+    #: its sender (`send_source_invitation_email`), exactly as this note asked: a source now gets a
+    #: login, and its invitation's whole subject is that access. The rule "no email may link to a
+    #: partner console" is REVISED for this letter (and, in S4, the witness emails) only —
+    #: docs/decisions.md, 2026-10-30 "Sources sign in". Every other partner email stays inside.
     CONSOLE_AUDIENCE_KINDS = (
-        set(PartnerEmailTemplate.REVIEWER_KINDS) | {'invite_admin', 'invite_reviewer'}
+        set(PartnerEmailTemplate.REVIEWER_KINDS)
+        | {'invite_admin', 'invite_reviewer', 'invite_source'}
     )
 
     def test_no_email_points_at_a_partner_console(self):
@@ -406,11 +407,16 @@ class TestSeededTemplates(TestCase):
             for word in ('partner console', 'log in', 'dashboard'):
                 self.assertNotIn(word, tpl.body.lower(), f'{tpl.kind} links somewhere that is not built')
 
-    def test_THE_SOURCE_LETTER_IS_STILL_INSIDE_THE_GUARD(self):
-        # ⚠ It describes a console that does not exist. Excluding it "for consistency" with the
-        # other invitations is the mistake this asserts against — its safety is that nothing sends
-        # it, and the day that changes the exclusion must be a deliberate edit.
-        self.assertNotIn('invite_source', self.CONSOLE_AUDIENCE_KINDS)
+    def test_THE_SOURCE_LETTER_LEFT_THE_GUARD_WITH_ITS_SENDER(self):
+        # ⚠ FLIPPED ON PURPOSE (source sign-in S2). It was `..._IS_STILL_INSIDE_THE_GUARD`: the
+        # letter could only leave the guard on the day a sender was wired, and the two move
+        # together — so both halves are asserted here, and neither may be undone alone.
+        from apps.scholarship import emails
+        self.assertIn('invite_source', self.CONSOLE_AUDIENCE_KINDS)
+        self.assertTrue(hasattr(emails, 'send_source_invitation_email'))
+        # Only the source letter left: the partner emails proper are still inside.
+        self.assertFalse(self.CONSOLE_AUDIENCE_KINDS
+                         & {'awarded', 'invite_sponsor'})
 
     def test_every_reviewer_email_DOES_point_at_the_reviewer_dashboard(self):
         # The other half of the rule above: the five reviewer emails exist to get somebody back to

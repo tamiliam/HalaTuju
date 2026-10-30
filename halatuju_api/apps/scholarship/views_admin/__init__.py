@@ -143,6 +143,8 @@ from .sources import (
     _SourcesBase, _source_application_counts, _source_dict, AdminSourceDetailView,
     AdminSourceNamesView, AdminSourcesView, HOUSE_ORG_CODE,
 )
+# Source sign-in S2 (2026-10-30) — inviting a source's person, Resend and Revoke.
+from .source_users import AdminSourceUserResendView, AdminSourceUserRevokeView
 from .spending import (
     _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,
 )
