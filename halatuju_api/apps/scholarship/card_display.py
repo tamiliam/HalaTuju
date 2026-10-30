@@ -307,6 +307,42 @@ def resolve_institution(app):
 
 # ── write-side sanity (offer-confirm / autofill / repair) ────────────────────────
 
+def with_institution(cp, name):
+    """``chosen_programme`` naming ``name`` as WHERE she studies — the ONE way to rewrite that key.
+
+    Since the My Plans redesign (2026-10-30) the student's pick stores the campus's catalogue
+    ``institution_id`` beside its name, and /profile re-opens the picker BY THAT ID. A writer that
+    puts a DIFFERENT place in ``institution`` (an offer naming another campus, a repair) must not
+    leave the old id beside the new name. Same place (a casing or spelling tidy) keeps the id; a
+    different place takes the catalogue id when exactly one institution carries that name, else
+    loses the key. A row with no id on file (every row before 2026-10-30) costs no query.
+    Returns a new dict; ``cp`` is not mutated."""
+    out = dict(cp) if isinstance(cp, dict) else {}
+    old = (out.get('institution') or '').strip()
+    new = (name or '').strip()
+    out['institution'] = name
+    if 'institution_id' in out and old.casefold() != new.casefold():
+        iid = _catalogue_institution_id(new)
+        if iid:
+            out['institution_id'] = iid
+        else:
+            out.pop('institution_id')
+    return out
+
+
+def _catalogue_institution_id(name):
+    """The one catalogue id for an institution NAME (an SPM ``Institution`` row, else the linked
+    institution of the STPM degrees that spell their university so), or '' when none or several."""
+    if not name:
+        return ''
+    from apps.courses.models import Institution, StpmCourse
+    ids = set(Institution.objects.filter(institution_name__iexact=name)
+              .values_list('institution_id', flat=True)[:2])
+    if not ids:
+        ids = set(StpmCourse.objects.filter(university__iexact=name, institution__isnull=False)
+                  .values_list('institution_id', flat=True).distinct()[:2])
+    return next(iter(ids)) if len(ids) == 1 else ''
+
 def sanitise_offer_slots(programme, institution):
     """Clean a (programme, institution) pair parsed off an offer BEFORE it is stored.
     Returns ``(programme, institution, reporting_date_str)``:

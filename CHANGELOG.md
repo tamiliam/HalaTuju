@@ -30,6 +30,14 @@ Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers
 - Tests: api `test_pathway_offerings.py`, `test_chosen_programme_institution.py`; web `PathwayPicker.test.tsx`
   (rewritten), `planPicker.test.ts`, `planPicker.scope.test.ts` (the guard), `page.plans.test.tsx`; the apply-page
   results / Bumi Option A / third-route tests now assert the catalogue and no eligibility call.
+- **Review fixes (adversarial review, 2026-10-30):** every writer of `chosen_programme.institution` (offer
+  confirm and its pre-U, PISMP and catalogue-alignment steps; the catalogue fill and autofill normalisation in
+  `offer_sync`; `align_institution_to_catalogue`, `repair_chosen_programme`, `standardise_stpm_institution`) now
+  goes through `card_display.with_institution`, so a different place never keeps the old campus's
+  `institution_id` (it takes the new place's catalogue id, or loses the key). The offerings route retries a failed
+  boot load (`ensure_data`) and never sends a public cache header on an empty answer. The picker clears a failed
+  catalogue fetch on every pathway change and offers "Retry". The catalogue-fill test now feeds the other
+  campus's letter, so it can fail. Each fix bitten.
 
 ## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — LIVE 2026-10-30 (main 14537b10; api-01211-psc, web-01034-n7j). Migrations courses 0089, scholarship 0190, 0191 applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL
 

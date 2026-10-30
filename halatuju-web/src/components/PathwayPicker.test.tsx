@@ -273,3 +273,31 @@ it('never reads the stored Bumiputera answer, even with "Eligible only" on', asy
   await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
   expect(reads).toEqual([])
 })
+
+// Review 2026-10-30: a failed catalogue fetch must not outlive the pathway it was for, and can be retried.
+describe('a failed catalogue fetch', () => {
+  const failOnce = () => (getPathwayOfferings as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('down')))
+
+  it('clears when she switches to a pathway that fetches nothing (matriculation)', async () => {
+    failOnce()
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    choose('scholarship.apply.plan.pathwayLabel', 'poly')
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    choose('scholarship.apply.plan.pathwayLabel', 'matric')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByText('scholarship.apply.plan.track.sains')).toBeTruthy()
+  })
+
+  it('"Retry" asks again and draws the steps', async () => {
+    failOnce()
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    choose('scholarship.apply.plan.pathwayLabel', 'poly')
+    const alert = await screen.findByRole('alert')
+    fireEvent.click(within(alert).getByText('common.retry'))
+    expect(await screen.findByLabelText('scholarship.apply.plan.stateLabel')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(getPathwayOfferings).toHaveBeenCalledTimes(2)
+  })
+})

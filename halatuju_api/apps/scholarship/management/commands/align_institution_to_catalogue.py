@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ScholarshipApplication, ApplicantDocument
+from apps.scholarship import card_display
 from apps.scholarship import offer_pathway as op
 
 
@@ -65,8 +66,7 @@ class Command(BaseCommand):
             nm = (getattr(app.profile, 'name', '') or '').strip()[:24]
             self.stdout.write(f"  app {app.id} {nm} [{cid}]: {cur!r} -> {canon!r}")
             if not dry:
-                cp = dict(cp)
-                cp['institution'] = canon
+                cp = card_display.with_institution(cp, canon)
                 app.chosen_programme = cp
                 app.save(update_fields=['chosen_programme'])
             updated += 1

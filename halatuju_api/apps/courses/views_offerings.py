@@ -48,7 +48,9 @@ MAX_AGE_SECONDS = 3600
 def _spm_offerings(pathway):
     """The SPM catalogue's courses whose pathway is `pathway`, and where each is taught."""
     from .models import Course, CourseInstitution
-    pathway_map = getattr(apps.get_app_config('courses'), 'course_pathway_map', {}) or {}
+    config = apps.get_app_config('courses')
+    config.ensure_data()   # TD-047: a failed boot load leaves the pathway map empty; retry it once
+    pathway_map = getattr(config, 'course_pathway_map', {}) or {}
     ids = [cid for cid, pt in pathway_map.items() if pt == pathway]
     courses = []
     for cid, name, field_key in (Course.objects.filter(course_id__in=ids)
@@ -99,5 +101,10 @@ class PathwayOfferingsView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         institutions, courses = _degree_offerings() if pathway == DEGREE else _spm_offerings(pathway)
         response = Response({'pathway': pathway, 'institutions': institutions, 'courses': courses})
-        patch_cache_control(response, public=True, max_age=MAX_AGE_SECONDS)
+        # An empty list is a fault (every pathway has courses), never an answer worth keeping for an
+        # hour: a public cache would serve a student nothing to pick long after the data came back.
+        if courses:
+            patch_cache_control(response, public=True, max_age=MAX_AGE_SECONDS)
+        else:
+            patch_cache_control(response, no_store=True)
         return response

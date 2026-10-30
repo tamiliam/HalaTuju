@@ -111,6 +111,30 @@ class TestPathwayOfferings:
         assert resp.status_code == 200
         assert 'public' in resp['Cache-Control'] and 'max-age=3600' in resp['Cache-Control']
 
+    def test_a_failed_boot_load_is_retried_before_answering(self, catalogue, monkeypatch):
+        # Review 2026-10-30: the boot load failed, so the pathway map is empty; the route asks the
+        # app to retry (TD-047's `ensure_data`) instead of answering "no courses" for an hour.
+        config = apps.get_app_config('courses')
+        monkeypatch.setattr(config, 'course_pathway_map', {}, raising=False)
+        retried = []
+
+        def ensure_data():
+            retried.append(True)
+            config.course_pathway_map = {'P-ELEK': 'poly'}
+            return None
+        monkeypatch.setattr(config, 'ensure_data', ensure_data)
+        body = _get(pathway='poly').json()
+        assert retried
+        assert [c['course_id'] for c in body['courses']] == ['P-ELEK']
+
+    def test_an_empty_answer_is_never_cached(self, catalogue, monkeypatch):
+        config = apps.get_app_config('courses')
+        monkeypatch.setattr(config, 'course_pathway_map', {}, raising=False)
+        monkeypatch.setattr(config, 'ensure_data', lambda: None)
+        resp = _get(pathway='poly')
+        assert resp.status_code == 200 and resp.json()['courses'] == []
+        assert 'public' not in resp['Cache-Control'] and 'no-store' in resp['Cache-Control']
+
     def test_pismp_rows_carry_their_school_type(self, catalogue, monkeypatch):
         c = _course('PISMP-SJKT', 'Pendidikan Bahasa Tamil (SJKT)', source_type='pismp')
         monkeypatch.setattr(apps.get_app_config('courses'), 'course_pathway_map', {c.course_id: 'pismp'})

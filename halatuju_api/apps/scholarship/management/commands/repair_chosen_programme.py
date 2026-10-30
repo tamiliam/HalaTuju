@@ -93,7 +93,7 @@ class Command(BaseCommand):
             if apply:
                 new_cp = dict(cp)
                 new_cp['course_name'] = rep['course_name']
-                new_cp['institution'] = rep['institution']
+                new_cp = card_display.with_institution(new_cp, rep['institution'])
                 new_cp['source'] = 'repair_chosen_programme'
                 app.chosen_programme = new_cp
                 fields = ['chosen_programme']

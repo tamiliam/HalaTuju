@@ -111,10 +111,14 @@ class TestReaders:
         assert offer_pathway.institution_agreement('P-ELEK', '', 'Politeknik Kota Bharu') == 'unknown'
 
     def test_the_catalogue_fill_never_overwrites_her_pick(self, catalogue):
+        # Her own letter names the OTHER campus of this two-campus course, which the fill would
+        # otherwise resolve and write (review 2026-10-30: with no letter the test could not fail).
         app = make_application('submitted', chosen_programme=PICK)
-        assert sync_institution_from_catalogue(app, offer_check={}) is False
+        other = {'institution': 'Politeknik Kota Bharu', 'name': 'match', 'ic': 'match'}
+        assert sync_institution_from_catalogue(app, offer_check=other) is False
         app.refresh_from_db()
         assert app.chosen_programme['institution'] == 'Politeknik Ungku Omar'
+        assert app.chosen_programme['institution_id'] == 'POLY-PUO'
 
     def test_the_extra_keys_change_nothing_the_funding_estimate_reads(self):
         three = {k: PICK[k] for k in ('course_id', 'course_name', 'field_key')}
@@ -125,3 +129,43 @@ class TestReaders:
         with_inst = make_application('submitted', chosen_pathway='poly', chosen_programme=PICK)
         without = make_application('submitted', chosen_pathway='poly', chosen_programme=three)
         assert results_route.destination(with_inst) == results_route.destination(without)
+
+
+@pytest.mark.django_db
+class TestInstitutionIdFollowsTheName:
+    """Review 2026-10-30: a writer that puts ANOTHER place in ``institution`` must not leave her
+    old ``institution_id`` beside it — /profile re-opens the picker by that id. Every writer goes
+    through ``card_display.with_institution``."""
+
+    def test_another_place_takes_its_own_catalogue_id(self, catalogue):
+        out = card_display.with_institution(PICK, 'Politeknik Kota Bharu')
+        assert out['institution'] == 'Politeknik Kota Bharu' and out['institution_id'] == 'POLY-PKB'
+        assert PICK['institution_id'] == 'POLY-PUO'                    # the input is not mutated
+
+    def test_a_place_the_catalogue_cannot_name_loses_the_id(self, catalogue):
+        out = card_display.with_institution(PICK, 'Kolej Swasta Tiada Dalam Katalog')
+        assert 'institution_id' not in out
+        assert 'institution_id' not in card_display.with_institution(PICK, '')
+
+    def test_the_same_place_respelt_keeps_the_id_and_costs_no_query(self, catalogue, django_assert_num_queries):
+        with django_assert_num_queries(0):
+            out = card_display.with_institution(PICK, 'POLITEKNIK UNGKU OMAR')
+        assert out['institution_id'] == 'POLY-PUO'
+        with django_assert_num_queries(0):                              # an old row: no id, no query
+            card_display.with_institution({'course_name': 'X', 'institution': 'A'}, 'B')
+
+    def test_confirming_an_offer_for_the_other_campus_moves_the_id_too(self, catalogue):
+        from django.utils import timezone
+        from apps.scholarship.models import ApplicantDocument
+        from apps.scholarship.services import confirm_pathway
+        app = make_application('shortlisted', chosen_pathway='poly', chosen_programme=PICK)
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
+            vision_fields={'fields': {'institution': 'Politeknik Kota Bharu',
+                                      'programme': 'Diploma Kejuruteraan Elektrik', 'stream': ''},
+                           'student_verdict': 'ok', 'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        assert confirm_pathway(app)
+        app.refresh_from_db()
+        assert app.chosen_programme['institution'] == 'Politeknik Kota Bharu'
+        assert app.chosen_programme.get('institution_id') == 'POLY-PKB'   # never PUO's id beside PKB

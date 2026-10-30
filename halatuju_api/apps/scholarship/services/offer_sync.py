@@ -137,7 +137,7 @@ def sync_institution_from_catalogue(application, offer=None, offer_check=None):
 
     if not resolved:
         return False
-    application.chosen_programme = {**cp, 'institution': resolved}
+    application.chosen_programme = card_display.with_institution(cp, resolved)
     application.save(update_fields=['chosen_programme'])
     return True
 
@@ -342,7 +342,7 @@ def autofill_pathway_from_offer(application):
     if cid_now and inst_now:
         canon_inst = op.catalogue_institution(cid_now, inst_now)
         if canon_inst and canon_inst != inst_now:
-            application.chosen_programme = {**cp_now, 'institution': canon_inst}
+            application.chosen_programme = card_display.with_institution(cp_now, canon_inst)
             if 'chosen_programme' not in fields:
                 fields.append('chosen_programme')
     elif cid_now:

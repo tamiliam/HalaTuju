@@ -130,10 +130,10 @@ def confirm_pathway(application):
     # Offer letters are often ALL-CAPS; re-case a shouty programme name to Title Case so it
     # never reaches the sponsor pool / profile shouting (catalogue names are already cased — this
     # is the one path that writes raw offer text). Already-cased names pass through untouched.
-    cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
-    cp.update({'course_name': op.title_case_programme(prog),
-               'institution': inst,
-               'source': 'offer_letter_confirmed'})
+    # The offer's institution may be ANOTHER campus than the one she picked: `with_institution`
+    # keeps `institution_id` true to the name (2026-10-30 review), never the old campus's id.
+    cp = card_display.with_institution(application.chosen_programme, inst)
+    cp.update({'course_name': op.title_case_programme(prog), 'source': 'offer_letter_confirmed'})
     application.chosen_programme = cp
     application.pathway_confirmed_at = timezone.now()
     update_fields = ['chosen_programme', 'pathway_confirmed_at']
@@ -211,7 +211,7 @@ def confirm_pathway(application):
             if canon:
                 cp_std['course_name'] = canon
             if inst:
-                cp_std['institution'] = inst
+                cp_std = card_display.with_institution(cp_std, inst)
             application.chosen_programme = cp_std   # chosen_programme already in update_fields
 
     # PISMP (owner 2026-07-18): pin the SPECIFIC catalogue course from the offer's stated BIDANG when it
@@ -222,8 +222,8 @@ def confirm_pathway(application):
         resolved = op.resolve_pismp_course((chk.get('bidang') or '').strip())
         if resolved:
             cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
+            cp = card_display.with_institution(cp, cp.get('institution') or chk['institution'])
             cp.update({'course_id': resolved['course_id'], 'course_name': resolved['course_name'],
-                       'institution': cp.get('institution') or chk['institution'],
                        'source': 'offer_letter_confirmed'})
             application.chosen_programme = cp
             if 'chosen_programme' not in update_fields:
@@ -243,8 +243,7 @@ def confirm_pathway(application):
     if _cid and _inst and not op.is_pre_u(application.chosen_pathway or ''):
         canon = op.catalogue_institution(_cid, _inst)
         if canon and canon != _inst:
-            cp = dict(cp)
-            cp['institution'] = canon
+            cp = card_display.with_institution(cp, canon)
             application.chosen_programme = cp
             if 'chosen_programme' not in update_fields:
                 update_fields.append('chosen_programme')

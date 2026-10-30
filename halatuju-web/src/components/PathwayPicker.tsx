@@ -99,15 +99,16 @@ export default function PathwayPicker({
   const needOfferings = !!offeringKey && (offer || (tertiary && !!onTopChoices && form.pathwayCertainty === 'uncertain'))
   const [offerings, setOfferings] = useState<PathwayOfferings | null>(null)
   const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)   // "Retry" asks again (a failed fetch is not kept)
   useEffect(() => {
+    setFailed(false)   // every pathway change starts clean — matric / Form 6 fetch nothing (review 2026-10-30)
     if (!needOfferings) return
     let live = true
-    setFailed(false)
     getPathwayOfferings(offeringKey)
       .then((o) => { if (live) setOfferings(o) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }
-  }, [offeringKey, needOfferings])
+  }, [offeringKey, needOfferings, attempt])
   const current = offerings && offerings.pathway === offeringKey ? offerings : null
   const listLoading = !current || eligLoading
 
@@ -147,6 +148,12 @@ export default function PathwayPicker({
     </FieldLabel>
   )
   const loadingLine = <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
+  const failedLine = (
+    <p role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-caution-200 bg-caution-50 px-4 py-3 text-sm text-caution-800">
+      {t('verifyEmail.networkError')}
+      <button type="button" className="font-medium underline" onClick={() => setAttempt((a) => a + 1)}>{t('common.retry')}</button>
+    </p>
+  )
   const caution = (key: string) => (
     <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t(`scholarship.apply.plan.${key}`)}</p>
   )
@@ -211,11 +218,7 @@ export default function PathwayPicker({
         </div>
       )}
 
-      {offer && failed && (
-        <p role="alert" className="rounded-lg border border-caution-200 bg-caution-50 px-4 py-3 text-sm text-caution-800">
-          {t('verifyEmail.networkError')}
-        </p>
-      )}
+      {offer && failed && failedLine}
 
       {offer && !failed && (tertiary || (form.chosenPathway && form.chosenPathway !== 'pismp' && isOfferingPathway(form.chosenPathway))) && (
         <InstitutionCoursePicker key={offeringKey} pathway={offeringKey} offerings={current} loading={listLoading}
@@ -321,7 +324,7 @@ export default function PathwayPicker({
           {tertiary && onTopChoices && (
             <div>
               {label('topProgrammesLabel', 'topProgrammesTip', false)}
-              {!current ? (failed ? caution('noProgrammes') : loadingLine) : (
+              {!current ? (failed ? failedLine : loadingLine) : (
                 <div className="space-y-2">
                   {[0, 1, 2].map((i) => {
                     const tc = topChoices?.[i] ?? null

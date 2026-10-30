@@ -55,8 +55,9 @@ class CoursesConfig(AppConfig):
         container restarted. Now the request that finds it empty tries again — rate-limited to
         once per `DATA_RETRY_INTERVAL_SECONDS`, inline, no thread. Never raises.
 
-        ⚠ Only the ELIGIBILITY route calls this. The ranking route reads the maps as they are, so
-        it stays empty until an eligibility check (which every student runs first) has retried.
+        ⚠ Only the ELIGIBILITY route and the scholarship offerings route (2026-10-30) call this.
+        The ranking route reads the maps as they are, so it stays empty until an eligibility check
+        (which every student runs first) has retried.
         """
         if self.data_loaded() or not self._retry_due():
             return self.requirements_df

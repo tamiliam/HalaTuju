@@ -6,6 +6,7 @@ STPM offers normalised. Idempotent; pass --apply to write.
 """
 from django.core.management.base import BaseCommand
 from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship import card_display
 from apps.scholarship import offer_pathway as op
 
 
@@ -29,7 +30,7 @@ class Command(BaseCommand):
             self.stdout.write(f"  app {app.id} {nm}: {cur!r} -> {clean!r}")
             if apply:
                 cp = dict(cp)
-                cp['institution'] = clean
+                cp = card_display.with_institution(cp, clean)
                 app.chosen_programme = cp
                 app.save(update_fields=['chosen_programme'])
             updated += 1
