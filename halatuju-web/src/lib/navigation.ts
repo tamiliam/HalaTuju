@@ -36,14 +36,17 @@ export type NavScope = 'platform' | 'organisation' | 'programme' | 'utility'
 /** Scopes the sidebar renders as groups (N2). `utility` lives in the help/account menus. */
 export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 'programme']
 
-/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models.py) — same seven, same
- *  order, asserted on every run.
+/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same eight,
+ *  same order, asserted on every run.
+ *  ⚠ `source_partner` (source sign-in S1, 2026-10-30) is named here so `effectiveRole` never folds
+ *  a source user into 'reviewer': with only the Profile row it lands on Profile and sees nothing
+ *  else until S3 gives it rows. The server denies it every existing view regardless.
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
-  | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance'
+  | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
 
 export const ROLE_NAMES: readonly AdminRoleName[] =
-  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance']
+  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner']
 
 /** Dark-shipped features. One key per probe the shell runs; see `NavGate`. */
 export type ProbeKey = 'requests' | 'billing'

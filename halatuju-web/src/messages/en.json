@@ -5115,7 +5115,8 @@
       "partner": "Partner",
       "qc": "Quality control",
       "org_admin": "Organisation admin",
-      "finance": "Finance admin"
+      "finance": "Finance admin",
+      "source_partner": "Source"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",

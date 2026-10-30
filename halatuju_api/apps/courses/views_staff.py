@@ -426,7 +426,10 @@ class AdminListView(PartnerAdminMixin, APIView):
         if not admin or not (admin.is_super or admin.role in ('org_admin', 'admin')):
             return Response({'error': 'Super admin access required'}, status=403)
 
-        admins = PartnerAdmin.objects.select_related('org', 'owning_organisation').order_by('-created_at')
+        # ⚠ A SOURCE USER IS NOT STAFF (source sign-in S1, C3), so not even a super's roster lists one;
+        # the org list below already narrows to PROGRAMME_STAFF_ROLES. S2 gives sources their own list.
+        admins = (PartnerAdmin.objects.select_related('org', 'owning_organisation')
+                  .exclude(role=PartnerAdmin.SOURCE_ROLE).order_by('-created_at'))
         if not admin.is_super:
             # ⚠ **SEEING IS NOT MANAGING (2026-09-09).** This used to filter the LIST by
             # `_ORG_ADMIN_MANAGEABLE_ROLES`, so an org_admin could not see the OTHER org_admins of

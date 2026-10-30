@@ -9,9 +9,14 @@ the two foreign keys name `'PartnerOrganisation'` as a string — the same model
 Django's registry — because a module imported from the foot of `models.py` must not import
 `models.py` back (the `models_stpm.py` precedent).
 """
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 
 from . import staff_permissions
+
+#: Source sign-in S1 (2026-10-30): the role of a referral SOURCE's own login. See `PartnerAdmin.source`.
+SOURCE_ROLE = 'source_partner'
 
 
 class PartnerAdmin(models.Model):
@@ -46,6 +51,11 @@ class PartnerAdmin(models.Model):
     #              view-only; Administration view-only. Never reviews, QCs or takes an
     #              assignment. **The chain's finance step is DORMANT until the organisation has
     #              ≥1 active finance admin** — evaluated live, never stored on the run.
+    #   source_partner — a referral SOURCE's own login (source sign-in S1, 2026-10-30; roadmap
+    #              docs/plans/2026-10-30-source-sign-in-roadmap.md). NOT STAFF: it holds no
+    #              permission (`staff_permissions.resolve` → ()), and `PartnerAdminMixin.get_admin`
+    #              answers None for it on every view that has not opted in — DENY BY DEFAULT. Bound
+    #              to one `source` and to that source's organisation (see `source` below).
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
@@ -55,7 +65,9 @@ class PartnerAdmin(models.Model):
         ('reviewer', 'Reviewer'),
         ('qc', 'Quality control'),
         ('finance', 'Finance admin'),
+        ('source_partner', 'Source partner'),   # a literal: the web's drift test parses this list
     ]
+    SOURCE_ROLE = SOURCE_ROLE
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,
         help_text='Set on first login via UID or email match',
@@ -98,6 +110,19 @@ class PartnerAdmin(models.Model):
         null=True, blank=True, related_name='staff',
         help_text='Gift programme this person is scoped to. NULL = every gift the organisation '
                   'runs, which is the default and what every existing staff member has.',
+    )
+    # ⚠ THE SOURCE A `source_partner` SIGNS IN FOR, AND NO OTHER ROW CARRIES ONE (source sign-in S1,
+    # 2026-10-30). A `scholarship.ReferralSource`, NEVER `org` above: `org` is the platform REFERRAL
+    # partner, a different thing (roadmap conflict C2). "role `source_partner` ⇔ source set, and
+    # never a super" is a DATABASE check (Meta), so an `.update()` cannot break it either; `save`
+    # adds the half a check cannot see — `owning_organisation` IS the source's organisation, which
+    # is the fence every reader cuts on. PROTECT: a source with a login is switched off
+    # (`ReferralSource.is_active`), never deleted. A string reference: no `courses → scholarship`
+    # import. NOT access control on its own — `apps/scholarship/source_access.py` decides what it sees.
+    source = models.ForeignKey(
+        'scholarship.ReferralSource', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='users', db_column='source_id',
+        help_text='The referral source a source_partner signs in for. NULL for every other role.',
     )
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
@@ -168,6 +193,50 @@ class PartnerAdmin(models.Model):
 
     class Meta:
         db_table = 'partner_admins'
+        constraints = [
+            # Source sign-in S1: every row alive on 2026-10-30 has `source` NULL and another role,
+            # so this holds for production as it stands and is added with the column (courses 0089).
+            models.CheckConstraint(
+                condition=(Q(role=SOURCE_ROLE, source__isnull=False, is_super_admin=False)
+                           | (~Q(role=SOURCE_ROLE) & Q(source__isnull=True))),
+                name='partner_admin_source_iff_source_partner'),
+        ]
+
+    #: The columns a change to which can break the source binding; a `save(update_fields=…)` that
+    #: names none of them (a sign-in stamp, a name edit) is not re-checked.
+    _SOURCE_BINDING_FIELDS = frozenset({'role', 'source', 'source_id', 'owning_organisation',
+                                        'owning_organisation_id', 'is_super_admin'})
+
+    @property
+    def is_source_user(self):
+        """True for a referral source's own login (source sign-in S1). Never staff."""
+        return self.role == SOURCE_ROLE
+
+    def source_binding_problem(self):
+        """Why this row breaks the source binding, or None. Reads the source only for a source user."""
+        if self.is_source_user != (self.source_id is not None):
+            return 'A source user needs its source, and no other account may have one.'
+        if not self.is_source_user:
+            return None
+        if self.is_super_admin:
+            return 'A source user is never a super admin.'
+        if self.owning_organisation_id != self.source.organisation_id:
+            return "A source user belongs to its source's organisation."
+        return None
+
+    def clean(self):
+        super().clean()
+        problem = self.source_binding_problem()
+        if problem:
+            raise ValidationError(problem)
+
+    def save(self, *args, **kwargs):
+        fields = kwargs.get('update_fields')
+        if fields is None or self._SOURCE_BINDING_FIELDS & set(fields):
+            problem = self.source_binding_problem()
+            if problem:
+                raise ValidationError(problem)
+        super().save(*args, **kwargs)
 
     @property
     def is_super(self):

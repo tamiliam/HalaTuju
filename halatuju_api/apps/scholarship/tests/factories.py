@@ -306,6 +306,11 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
         raise _StageError(
             f'unknown admin role {role!r}; PartnerAdmin.ROLE_CHOICES are: '
             f'{", ".join(code for code, _ in PartnerAdmin.ROLE_CHOICES)}')
+    if role == PartnerAdmin.SOURCE_ROLE and 'source' not in kw:
+        # ⚠ A SOURCE USER WITHOUT ITS SOURCE IS A ROW THE PRODUCT CANNOT HOLD (source sign-in S1:
+        # a database check refuses it), so one is made — owned by `owning_org`, or by a new one.
+        owning_org = owning_org if owning_org is not None else make_org()
+        kw['source'] = make_source(organisation=owning_org)
     n = _n()
     kw.setdefault('name', f'Test {role.replace("_", " ").title()} {n}')
     kw.setdefault('email', f'{role}{n}@example.test')

@@ -692,15 +692,20 @@ class ReverseSweep(TestCase):
 
     def test_every_stored_role_resolves(self):
         roles = [r for r, _ in PartnerAdmin.ROLE_CHOICES]
-        self.assertEqual(sorted(roles), sorted(ROLES))
+        # Source sign-in S1 (2026-10-30): `source_partner` is outside this table — it reaches no
+        # staff gate at all (deny by default, `test_source_user_denied_everywhere.py`) and holds
+        # nothing, which is asserted here instead of in every golden row.
+        self.assertEqual(sorted(set(roles) - {'source_partner'}), sorted(ROLES))
+        self.assertEqual(PartnerAdmin(role='source_partner').permission_set, ())
         for role in roles:
             with self.subTest(role=role):
                 a = PartnerAdmin(role=role, is_super_admin=(role == 'super'))
                 held = a.permission_set
                 self.assertTrue(set(held) <= set(sp.CATALOGUE))
         self.assertEqual(sorted(sp.PRESETS), sorted(sp.TEAM_ROLES))
-        self.assertEqual(sorted(set(sp.TEAM_ROLES) | {'org_admin', 'super', 'partner'}),
-                         sorted(roles))
+        self.assertEqual(
+            sorted(set(sp.TEAM_ROLES) | {'org_admin', 'super', 'partner', 'source_partner'}),
+            sorted(roles))
 
     def test_every_s2_row_names_the_ruling_and_keeps_what_it_was(self):
         for gate, row in GOLDEN.items():

@@ -88,8 +88,16 @@ class PartnerAdminMixin:
     2. By email from JWT (first-login backfill)
     """
     permission_classes = [SupabaseIsAuthenticated]
+    #: ⚠ DENY BY DEFAULT (source sign-in S1): a source user is "not an admin" bar the methods listed.
+    source_partner_methods = ()
 
     def get_admin(self, request):
+        admin = self._find_admin(request)
+        if admin is not None and admin.is_source_user:
+            return admin if request.method.lower() in self.source_partner_methods else None
+        return admin
+
+    def _find_admin(self, request):
         # ⚠ THE REAL JWT SUBJECT, NEVER `request.user_id` (TD-254). A student's profile alias
         # redirects `user_id` at the auth seam; staff identity must not follow it.
         user_id = auth_sub(request)
@@ -278,6 +286,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
     which is the question. `PartnerAdminMixin.get_admin` runs on every admin request instead, so
     stamping there would count a replayed token against any endpoint as a visit.
     """
+    source_partner_methods = ('get',)
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -321,6 +330,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             'permissions': list(admin.permission_set),
             'preset': 'super' if admin.is_super else admin.role,
             'custom': staff_permissions.is_custom(admin),
+            # Source sign-in S1: the source a `source_partner` signs in for; None for staff.
+            'source_id': admin.source_id,
+            'source_name': admin.source.name if admin.source_id else None,
         })
 
 
@@ -601,8 +613,8 @@ def _staff_target_manageable(caller, target):
     super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
     (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
     Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
-    if caller is None or target is None:
-        return False
+    if caller is None or target is None or target.is_source_user:
+        return False        # a source user is not staff (source sign-in S1; S2 adds its own doors)
     if caller.is_super:
         return True
     if caller.role == 'org_admin':
@@ -701,6 +713,7 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
 
 class AdminProfileView(PartnerAdminMixin, APIView):
     """GET/PUT /api/v1/admin/profile/ - View/edit own admin profile."""
+    source_partner_methods = ('get',)   # their own row; S3 gives a source its own profile write
 
     def get(self, request):
         admin = self.get_admin(request)

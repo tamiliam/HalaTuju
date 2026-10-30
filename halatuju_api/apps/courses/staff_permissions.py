@@ -110,7 +110,8 @@ def resolve(admin):
       super        → every key (a super passes every check; payments still lets them fill ONE slot)
       org_admin    → the lead tier, whatever `permissions` says (never editable)
       team member  → `permissions` cleaned, or the preset of `role` when it is NULL
-      anyone else  → nothing (a referral partner, an unknown role, None)
+      anyone else  → nothing (a referral partner, a SOURCE user — source sign-in S1 —, an unknown
+                     role, None). A source user is never a team member, whatever `permissions` says.
     """
     if admin is None:
         return ()

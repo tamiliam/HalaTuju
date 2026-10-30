@@ -700,6 +700,8 @@ class TestOrgFenceStaticGuard(TestCase):
                'merchant_flags.py',
                # Student maintenance S2 (2026-10-29) — the Scholars reads, on the day written.
                'scholars.py',
+               # Source sign-in S1 (2026-10-30) — what a source user may reach, on the day written.
+               'source_access.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')

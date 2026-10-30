@@ -217,6 +217,11 @@ class AdminScopeListView(_AdminBase):
       partner    — nothing. A referral organisation is an attribution relationship, NEVER an
                    access scope (`PartnerAdmin.org` / `referred_by_org`); handing a school a
                    scope switcher would say otherwise.
+      source     — (`source_partner`, source sign-in S1) its source's organisation, and ONLY the
+                   gifts `source_access.programmes_for` gives it: those listing the source, or
+                   holding one of its students' applications — never every gift of the
+                   organisation (roadmap C10). A switched-off source gets empty lists. The one
+                   `_AdminBase` view a source user may call (`source_partner_methods`).
       no org     — empty lists, not a 500. A reviewer with `owning_organisation` NULL is a real
                    row in production and must get a usable console.
 
@@ -226,6 +231,7 @@ class AdminScopeListView(_AdminBase):
     Names come from the trilingual `name_*` columns with the en-fallback convention used across
     branding: a blank `ms`/`ta` falls back to `en` rather than rendering empty.
     """
+    source_partner_methods = ('get',)
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -257,7 +263,14 @@ class AdminScopeListView(_AdminBase):
         # question, and nobody configures one.
         programmes = (Programme.objects.all()
                       .select_related('organisation').order_by('organisation__name', 'code'))
-        if not self.has_role(admin, 'super'):
+        if admin.is_source_user:
+            # Derived from the SOURCE, never the role's org-wide default (C10). Same payload shape.
+            from .. import source_access
+            source = source_access.source_of(admin)
+            orgs = orgs.filter(id=source.organisation_id) if source else orgs.none()
+            programmes = programmes.filter(
+                pk__in=source_access.programmes_for(admin).values('pk'))
+        elif not self.has_role(admin, 'super'):
             # Derived from the SAME column the fence uses — so this can never widen access.
             # NULL owning_organisation narrows to nothing, which is correct and not an error.
             org_id = admin.owning_organisation_id

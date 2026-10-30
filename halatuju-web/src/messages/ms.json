@@ -5115,7 +5115,8 @@
       "partner": "Rakan kongsi",
       "qc": "Kawalan mutu",
       "org_admin": "Pentadbir organisasi",
-      "finance": "Pentadbir kewangan"
+      "finance": "Pentadbir kewangan",
+      "source_partner": "Sumber"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",

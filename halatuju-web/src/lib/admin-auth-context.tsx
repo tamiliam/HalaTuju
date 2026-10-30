@@ -14,7 +14,7 @@ import type { Session } from '@supabase/supabase-js'
 interface AdminRole {
   is_admin: boolean
   is_super_admin: boolean
-  role?: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance'
+  role?: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
   admin_id?: number | null
   org_name: string | null
   // The B40 tenant this staff member administers (their access boundary) — NOT the
@@ -34,6 +34,10 @@ interface AdminRole {
   permissions?: string[]
   preset?: string
   custom?: boolean
+  /** Source sign-in S1: the referral source a `source_partner` signs in for; null for every
+   *  other role (absent on a payload from before S1). */
+  source_id?: number | null
+  source_name?: string | null
 }
 
 interface AdminAuthContextValue {

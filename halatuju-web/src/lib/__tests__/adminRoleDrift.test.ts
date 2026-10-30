@@ -14,7 +14,7 @@
  *
  * `navigation.test.ts` already snapshots which PAGES each role reaches; that is the web's own
  * decision and stays there. This file guards only the VOCABULARY — that the two sides know the
- * same seven roles.
+ * same roles: eight since source sign-in S1 (2026-10-30) added `source_partner`.
  */
 import { NAV_ITEMS, ROLE_NAMES, type AdminRoleName } from '@/lib/navigation'
 import { pyChoiceValues, readApi } from '@/test/apiSource'
@@ -25,8 +25,9 @@ const backendRoles = pyChoiceValues(readApi(MODELS), 'ROLE_CHOICES')
 
 describe('ROLE_NAMES vs PartnerAdmin.ROLE_CHOICES', () => {
   test('the parse found a real role list (parse sanity)', () => {
-    expect(backendRoles.length).toBe(7)
+    expect(backendRoles.length).toBe(8)
     expect(backendRoles).toContain('super')
+    expect(backendRoles).toContain('source_partner')
     expect(backendRoles).toContain('reviewer')
   })
 

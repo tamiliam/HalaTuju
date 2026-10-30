@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in S1 — 2026-10-30
+
+Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S1: the role and access foundation. Nothing
+visible to users yet — no path creates a source user until S2. Migration `courses/0089` (MIGRATE-FIRST; DDL and
+ledger row in its docstring). NOT deployed.
+
+- **New role `source_partner` and `PartnerAdmin.source`** (nullable FK → `ReferralSource`, PROTECT, related name
+  `users`). A database CHECK holds "role `source_partner` ⇔ `source` set, never a super"; `save` / `clean` add that
+  the user's `owning_organisation` is the source's organisation.
+- **Deny by default.** `PartnerAdminMixin.get_admin` answers None ("not an admin") to a source user on every view
+  except the methods a view opts into (`source_partner_methods`): `GET admin/role/`, `GET admin/profile/`,
+  `GET admin/scholarship/scopes/`. Without it the role would have reached the assignment picker's staff list.
+  `staff_permissions.resolve` gives the role nothing.
+- **`apps/scholarship/source_access.py`**: `applications_for` (own source + witness override, org-fenced),
+  `listed_applications_for` (= `partner_comms.partner_applications`), `programmes_for` (gifts listing the source or
+  holding its students' applications). No reader yet; S3's endpoints are the first.
+- **`/admin/role/`** serves `source_id` and `source_name`; **scopes** give a source user its source's organisation
+  and `programmes_for` only (C10).
+- **C3 — a source user is not staff:** left out of the super's Team roster; `_staff_target_manageable` refuses the
+  row, so resend / revoke / delete / change role / permissions answer 404 and a re-invite never reuses it; the
+  invite cannot grant the role. Every other `PartnerAdmin` staff list already filtered by role or permission.
+- Web: `source_partner` in `ROLE_NAMES` (never folded into reviewer; only the Profile row), its role label in
+  en/ms/ta, and `source_id` / `source_name` on the role payload type.
+- Tests: `test_source_access.py`, `test_source_user_is_not_staff.py`, `test_source_user_denied_everywhere.py`
+  (every `api/v1/admin/` route, every method, read off the resolver); `source_access.py` joins the org-fence scan;
+  `make_admin('source_partner')` builds the row with its source; the oversight-gate vocabulary and the permission
+  golden table's role check name the new role (placed outside every gate); navigation snapshot + role drift updated.
+- Bite-checked: with the get_admin gate off the sweep goes red on 5 routes (the assignment picker's staff list GET
+  200, own profile PUT 200, and three that ran past auth to a 400); with the roster / manageable / scope fixes off,
+  their 6 tests go red; with the gift query's organisation filter off, 2 go red.
 ## Cockpit ticks made consistent (owner, 2026-10-30)
 
 A tick means a document backs the value. Web only, no migration.

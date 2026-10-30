@@ -128,6 +128,9 @@ describe('visibleNav per role', () => {
     qc: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     reviewer: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
+    // Source sign-in S1 (2026-10-30): a source user's ONLY row is its own Profile. The server
+    // denies the role every existing view (deny by default); S3 adds its Programme rows.
+    source_partner: ['profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -192,6 +195,12 @@ describe('visibleNav per role', () => {
   it('a reviewer reaches neither the organisation nor the platform scope', () => {
     const scopes = visibleNav(ctx('reviewer')).map((g) => g.scope)
     expect(scopes).toEqual(['programme', 'utility'])
+  })
+
+  it('a source user is its own role, never folded into reviewer, and lands on Profile', () => {
+    expect(effectiveRole({ role: 'source_partner' })).toBe('source_partner')
+    expect(canAccess('/admin/scholarship', 'source_partner')).toBe(false)
+    expect(defaultRoute({ role: 'source_partner', permissions: [] })).toBe('/admin/profile')
   })
 })
 
