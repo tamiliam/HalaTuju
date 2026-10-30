@@ -873,20 +873,18 @@
       "strLabel": "Keluarga saya menerima STR (Sumbangan Tunai Rahmah).",
       "jkmLabel": "Keluarga saya menerima bantuan JKM.",
       "plan": {
-        "question": "Adakah anda sudah tahu laluan yang akan diambil?",
-        "sure": "Ya, saya sudah putuskan",
-        "uncertain": "Saya masih menimbang",
-        "tip": "Pilih laluan yang telah anda putuskan. Kami hanya tunjukkan laluan yang layak berdasarkan keputusan anda.",
-        "pathwayLabel": "Laluan mana yang anda pilih?",
+        "question": "Have you received an offer for your next step of study?",
+        "sure": "Yes, I have an offer",
+        "uncertain": "Not yet, I'm waiting",
+        "tip": "Answer Yes if you hold an offer letter for your next place of study. If you are still waiting for one, you can apply now.",
+        "pathwayLabel": "Which pathway is your offer for?",
         "pathwayPlaceholder": "Pilih laluan anda",
-        "eligibleCount": "{count} layak",
-        "loading": "Mencari laluan yang anda layak…",
-        "noPathways": "Kami belum boleh tunjukkan laluan anda — kami tiada keputusan peperiksaan anda. Sila pergi ke langkah \"Keputusan SPM / STPM Saya\" dan masukkan keputusan anda dahulu, kemudian kembali ke sini untuk memilih laluan.",
+        "loading": "Loading the list…",
+        "noPathways": "None of the pathways matches your results. Switch off \"Eligible only\" to see them all.",
         "degreeLabel": "Ijazah yang mana?",
-        "degreeTip": "Cari ijazah yang keputusan STPM anda melayakkan anda, dan pilih yang telah anda putuskan — bidang pengajian anda diambil daripadanya.",
-        "uncertainIntro": "Tidak mengapa — ramai pelajar masih menimbang pilihan mereka. Apa-apa yang anda kongsi di bawah adalah pilihan dan hanya membantu kami membimbing anda.",
-        "leaningLabel": "Cenderung kepada mana-mana ini?",
-        "leaningTip": "Ketik mana-mana laluan yang anda pertimbangkan — kami akan mengingatinya, walaupun anda belum putuskan.",
+        "uncertainIntro": "That's fine. Many offers arrive later in the year. You can still apply now. We can fund you once your offer letter arrives.",
+        "leaningLabel": "What did you apply for? (optional, pick any)",
+        "leaningTip": "Tap every pathway you have applied for. We will keep them in mind.",
         "reasonLabel": "Di mana anda sekarang?",
         "reasonTip": "Beritahu kami apa yang ada di fikiran anda — ia membantu kami menawarkan sokongan yang tepat.",
         "reason": {
@@ -900,10 +898,9 @@
         "uncertainNotePlaceholder": "Beritahu kami apa yang anda fikirkan…",
         "programmeLabel": "Kursus yang mana?",
         "programmePlaceholder": "Mula menaip kursus anda…",
-        "programmeTip": "Cari kursus yang anda layak pada laluan ini dan pilih yang telah anda putuskan — bidang pengajian anda diambil daripadanya.",
+        "programmeTip": "Pick the course named on your offer letter. Your field of study is taken from it.",
         "programmeNoMatch": "Tiada padanan — cuba perkataan lain.",
-        "programmeAtN": "{n} institusi",
-        "noProgrammes": "Kami tidak menemui kursus yang anda layak untuk laluan ini. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
+        "noProgrammes": "There are no courses to show here. If \"Eligible only\" is on, switch it off; or tell us about your course in the note below.",
         "aliranLabel": "Jenis sekolah",
         "aliranTip": "Pilih jenis sekolah tempat anda mahu mengajar — ia menentukan mata pelajaran pengajaran yang boleh anda pilih.",
         "aliran": {
@@ -919,20 +916,20 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Mata pelajaran yang anda mahu ajar",
-        "topProgrammesLabel": "3 program pilihan utama anda",
-        "topProgrammesTip": "Pilih sehingga tiga ijazah yang anda sedang pertimbangkan — daripada yang layak dengan keputusan STPM anda. Kami akan ambil kira walaupun anda belum putuskan.",
+        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
+        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
         "trackLabel": "Trek matrikulasi yang mana?",
-        "trackTip": "Pilih trek yang anda layak dan telah putuskan — ia menentukan kolej yang boleh anda pilih.",
+        "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
           "sains": "Sains",
           "kejuruteraan": "Kejuruteraan",
           "sains_komputer": "Sains Komputer",
           "perakaunan": "Perakaunan"
         },
-        "noTracks": "Kami tidak dapat memadankan trek matrikulasi dengan keputusan anda. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
+        "noTracks": "No matriculation track matches your results. Switch off \"Eligible only\" to see them all.",
         "collegeLabel": "Kolej matrikulasi yang mana?",
         "collegePlaceholder": "Mula menaip kolej, cth. KM Perak",
-        "collegeTip": "Pilih kolej matrikulasi yang telah anda putuskan — hanya yang menawarkan trek anda ditunjukkan.",
+        "collegeTip": "Choose the college named on your offer letter. Only colleges offering your track are shown.",
         "streamLabel": "Aliran yang mana?",
         "streamTip": "Pilih aliran Tingkatan 6 anda — ia menentukan sekolah yang boleh anda pilih. Pilih \"Belum pasti\" jika anda belum putuskan.",
         "stream": {
@@ -942,7 +939,7 @@
         },
         "schoolLabel": "Sekolah Tingkatan 6 yang mana?",
         "schoolPlaceholder": "Mula menaip nama sekolah",
-        "schoolTip": "Pilih pusat Tingkatan 6 yang telah anda putuskan — hanya yang menawarkan aliran anda ditunjukkan.",
+        "schoolTip": "Choose the Form 6 centre named on your offer letter. Only centres offering your stream are shown.",
         "institutionNoMatch": "Tiada padanan — cuba perkataan lain.",
         "institutionMore": "Menunjukkan padanan pertama — terus menaip untuk menyempitkan.",
         "pathway": {
@@ -957,7 +954,19 @@
           "ilkbs": "Institut kemahiran belia (ILKBS)",
           "mara": "Institut kemahiran MARA",
           "tvet_other": "Latihan kemahiran awam lain"
-        }
+        },
+        "pathwayTip": "Choose the kind of place your offer letter is from. Every pathway is listed.",
+        "stateLabel": "Which state?",
+        "statePlaceholder": "Choose a state",
+        "institutionLabel": {
+          "university": "Which university?",
+          "poly": "Which polytechnic?",
+          "campus": "Which campus?"
+        },
+        "institutionPlaceholder": "Choose one",
+        "institutionTip": "Choose the place named on your offer letter.",
+        "coursesHere": "Courses here: {count}. Type to narrow the list.",
+        "offerNote": "You will upload this offer letter once you are shortlisted. We fund only a confirmed place with a reporting date."
       },
       "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
       "notesPlaceholder": "Rancangan, harapan atau keadaan anda…",
@@ -1488,30 +1497,18 @@
           "satisfiedNote": "Bukti anda telah diterima dan disahkan. Anda dialu-alukan untuk menambah lagi — slip gaji, penyata KWSP, atau bil — bagi menguatkan kes anda, tetapi tiada apa-apa lagi yang diperlukan."
         }
       },
-      "requiredPill": "Wajib",
-      "optionalPill": "Pilihan",
-      "requiredNote": "Kami memerlukan dokumen ini untuk memproses permohonan anda.",
-      "pill": {
-        "compulsory": "Wajib",
-        "important": "Penting",
-        "optional": "Pilihan"
-      },
       "section": {
         "identity": {
-          "title": "Identiti",
-          "note": "Bukti siapa anda."
+          "title": "Identiti"
         },
         "academic": {
-          "title": "Keputusan akademik",
-          "note": "Slip keputusan peperiksaan terkini anda."
+          "title": "Keputusan akademik"
         },
         "pathway": {
-          "title": "Laluan anda",
-          "note": "Surat tawaran universiti atau kolej anda, jika sudah ada."
+          "title": "Laluan anda"
         },
         "income": {
-          "title": "Pendapatan isi rumah",
-          "note": "Dokumen yang menunjukkan keperluan kewangan keluarga anda. Bil adalah pilihan tetapi membantu."
+          "title": "Pendapatan isi rumah"
         },
         "other": {
           "title": "Dokumen tambahan",

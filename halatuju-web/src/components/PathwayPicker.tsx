@@ -1,31 +1,46 @@
 'use client'
 
-// Self-contained pathway / "Your Plans" picker, reused on /profile so a shortlisted
-// student (locked out of /apply) can still change their pathway. It REUSES the exact
-// leaf pickers from /apply (PathwaySelect / ProgrammePicker / InstitutionPicker) and the
-// same pure helpers, and runs its own eligibility fetch (the dropdowns are eligible-only).
-// Covers the pathway fields only — the apply-only extras (top-3 ranking, other
-// scholarships) are deliberately left out. i18n reuses the `scholarship.apply.plan.*` keys.
+/**
+ * THE SCHOLARSHIP "MY PLANS" PICKER — one component for `/scholarship/apply` (its Plans step) and
+ * `/profile` ("Your Plans", where a shortlisted student locked out of /apply can still change it).
+ * Both pages reach it through `components/scholarship/LazyPathwayPicker.tsx`.
+ *
+ * Owner rulings 2026-10-30 (decisions.md):
+ *  - It opens on ONE question, "Have you received an offer for your next step of study?" — stored as
+ *    today's `pathway_certainty` ('sure' = an offer, 'uncertain' = waiting), same branches.
+ *  - With an offer, she NAMES the place: pathway, then institution first, then the course
+ *    (`InstitutionCoursePicker`; PISMP by school type then subject; matriculation by track then
+ *    college; Form 6 by stream then school; an STPM or third-route holder University → Degree).
+ *  - The lists are NOT filtered by her results. "Eligible only" (default OFF, top-right — portalled
+ *    into the apply card's header when the page gives a `switchSlot`) narrows them, and is offered
+ *    only where HalaTuju holds entry rules for the results she has. `lib/planPicker.ts` holds the
+ *    rules; `lib/planPicker.scope.test.ts` guards that nothing here asks about results unless the
+ *    switch is on.
+ *  - Option A stands: every course, Bumiputera-only ones included; her answer is never read here.
+ */
 import { useEffect, useState } from 'react'
-import { useT } from '@/lib/i18n'
+import { createPortal } from 'react-dom'
+
 import FieldLabel from '@/components/FieldLabel'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
-import InstitutionPicker from '@/components/InstitutionPicker'
-import AliranPicker from '@/components/AliranPicker'
+import Toggle from '@/components/Toggle'
+import InstitutionCoursePicker from '@/components/scholarship/InstitutionCoursePicker'
+import LazyAliranPicker from '@/components/scholarship/LazyAliranPicker'
+import LazyMatricCollegePicker from '@/components/scholarship/LazyMatricCollegePicker'
+import LazyStpmSchoolPicker from '@/components/scholarship/LazyStpmSchoolPicker'
+import { getPathwayOfferings, type PathwayOfferings, type StudentProfile } from '@/lib/api'
+import { useT } from '@/lib/i18n'
+import type { PlanEligibility } from '@/lib/planEligibility'
 import {
-  checkEligibility, calculatePathways,
-  type EligibleCourse, type StudentProfile,
-} from '@/lib/api'
-import { isTertiary, type Qualification } from '@/lib/qualification'
+  DEGREE_PATHWAY, MATRIC_TRACKS, aliranOfCourse, degreeChoices, institutionOf, isOfferingPathway,
+  pismpAliransOf, pismpBidang, type Allowed,
+} from '@/lib/planPicker'
+import { isTertiary, isThirdRoute } from '@/lib/qualification'
 import {
-  eligiblePathways, PATHWAY_ORDER, programmesForPathway, isProgrammePathway,
-  eligibleMatricTracks, STPM_STREAMS, UNCERTAINTY_REASONS,
-  pismpAlirans, bidangForAliran, aliranForChosen, profileAcademicSummary,
-  type ChosenProgramme, type PismpAliran,
+  PATHWAY_ORDER, STPM_STREAMS, UNCERTAINTY_REASONS, profileAcademicSummary,
+  type ChosenProgramme, type PismpAliran, type TopChoice,
 } from '@/lib/scholarship'
-import { collegesForTrack } from '@/data/matric-colleges'
-import { stpmSchoolsForStream } from '@/data/stpm-schools'
 
 export interface PathwayForm {
   pathwayCertainty: '' | 'sure' | 'uncertain'
@@ -39,75 +54,74 @@ export interface PathwayForm {
 }
 
 export default function PathwayPicker({
-  value: form, onChange, profile, token,
+  value: form, onChange, profile, token, apply = false, switchSlot = null, topChoices, onTopChoices,
 }: {
   value: PathwayForm
   onChange: (patch: Partial<PathwayForm>) => void
   profile: StudentProfile | null
   token: string | null
+  /** the apply form: required marks and tips on the labels */
+  apply?: boolean
+  /** where to draw "Eligible only" (the apply card's header); inline when absent */
+  switchSlot?: HTMLElement | null
+  /** the apply form's waiting branch: a tertiary student's top-3 degrees */
+  topChoices?: (TopChoice | null)[]
+  onTopChoices?: (slots: (TopChoice | null)[]) => void
 }) {
   const { t } = useT()
-  // The RESULTS we hold, not the declared exam (TD-325) — the same rule as /apply's Plans step.
-  // `tertiary` = STPM or the third route (S2b): a degree picker, no SPM pathway step.
-  const examType: Qualification = profileAcademicSummary(profile).examType
+  // The RESULTS we hold, not the declared exam (TD-325).
+  const summary = profileAcademicSummary(profile)
+  const examType = summary.examType
   const tertiary = isTertiary(examType)
+  const offer = form.pathwayCertainty === 'sure'
+  // "Eligible only" exists where HalaTuju holds entry rules for her results: not without results,
+  // not for Matriculation / Asasi / Diploma holders (ruling D2).
+  const canNarrow = summary.hasData && !isThirdRoute(examType)
 
-  // Eligibility data feeds the eligible-only dropdowns (same call /apply makes).
-  const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
-  const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([])
-  const [matricTracks, setMatricTracks] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-
-  // PISMP: the chosen school type (Aliran) is local to this picker — the bidang list and
-  // the committed course both derive from it. The eligible PISMP courses already carry an
-  // `aliran` from the backend.
-  const pismpCourses = programmesForPathway(eligibleCourses, 'pismp')
-  const availableAlirans = pismpAlirans(pismpCourses)
-  const [pismpAliran, setPismpAliran] = useState<string>('')
-
-  // Keep the selected school type in sync: derive it from an already-chosen course (so
-  // editing on /profile re-opens on the right Aliran), else auto-select when there's only
-  // one school type to choose from.
+  const [eligibleOnly, setEligibleOnly] = useState(false)
+  const [elig, setElig] = useState<PlanEligibility | null>(null)
   useEffect(() => {
-    if (form.chosenPathway !== 'pismp') return
-    const fromChosen = aliranForChosen(pismpCourses, form.chosenProgramme?.courseId)
-    if (fromChosen) { if (fromChosen !== pismpAliran) setPismpAliran(fromChosen); return }
-    if (pismpAliran) return
-    // TD-161: a PISMP switch / undeclared hand-off from the Action Centre carries the inferred school
-    // type as ?aliran=SJKT|SJKC|SK — pre-select it when it's an eligible aliran (the student can still
-    // change it). Read from the URL directly (no useSearchParams → no extra Suspense boundary).
-    const hint = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('aliran') : null
-    if (hint && (availableAlirans as string[]).includes(hint)) { setPismpAliran(hint); return }
-    if (availableAlirans.length === 1) setPismpAliran(availableAlirans[0])
-  }, [form.chosenPathway, form.chosenProgramme, eligibleCourses]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!eligibleOnly || elig || !profile || !token) return
+    let live = true
+    // The ONLY road to the eligibility endpoints, and only once she switches it on.
+    import('@/lib/planEligibility')
+      .then((m) => m.loadPlanEligibility(examType, profile, token))
+      .then((e) => { if (live) setElig(e) })
+      .catch(() => { if (live) setEligibleOnly(false) })
+    return () => { live = false }
+  }, [eligibleOnly, elig, profile, token, examType])
+  const narrowing = eligibleOnly && canNarrow
+  const eligLoading = narrowing && !elig
+  const allowed: Allowed = narrowing && elig ? elig.courseIds : null
 
-  // Switching school type clears the bidang (it belonged to the old Aliran).
-  const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }
-
+  // The catalogue of the pathway on screen; a tertiary holder's is the degree list.
+  const offeringKey = tertiary ? DEGREE_PATHWAY : (isOfferingPathway(form.chosenPathway) ? form.chosenPathway : '')
+  const needOfferings = !!offeringKey && (offer || (tertiary && !!onTopChoices && form.pathwayCertainty === 'uncertain'))
+  const [offerings, setOfferings] = useState<PathwayOfferings | null>(null)
+  const [failed, setFailed] = useState(false)
   useEffect(() => {
-    if (!token || !profile) return
-    setLoading(true)
-    const held = profileAcademicSummary(profile).examType
-    if (isTertiary(held)) {
-      // STPM: the degrees its results qualify for; the third route: every degree, unfiltered (D2).
-      // Owner ruling 2026-10-28 (Bumi coverage, Option A): EVERY course, Bumi-only included, for every
-      // student — the Bumiputera answer is course-guide only and is never read here.
-      import('@/lib/degreeChoices').then(({ loadDegreeChoices }) => loadDegreeChoices(held, profile, token, { allCourses: true }))
-        .then(setEligibleCourses)
-        .catch(() => setEligibleCourses([]))
-        .finally(() => setLoading(false))
-      setPathwayStats({}); setMatricTracks([])
-      return
-    }
-    Promise.all([
-      checkEligibility({ ...profile, bumiputera: true }, { token })   // Option A: every course, Bumi-only too (D1)
-        .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) }),
-      calculatePathways(profile.grades || {}, profile.coq_score ?? 0, null, { token })
-        .then((res) => setMatricTracks(eligibleMatricTracks(res.pathways))),
-    ]).catch(() => { setPathwayStats(null); setEligibleCourses([]); setMatricTracks([]) })
-      .finally(() => setLoading(false))
-  }, [token, profile])
+    if (!needOfferings) return
+    let live = true
+    setFailed(false)
+    getPathwayOfferings(offeringKey)
+      .then((o) => { if (live) setOfferings(o) })
+      .catch(() => { if (live) setFailed(true) })
+    return () => { live = false }
+  }, [offeringKey, needOfferings])
+  const current = offerings && offerings.pathway === offeringKey ? offerings : null
+  const listLoading = !current || eligLoading
+
+  // PISMP: the school type is local; it re-opens on a saved pick, or the Action Centre's ?aliran hint.
+  const [pismpAliran, setPismpAliran] = useState('')
+  const alirans = form.chosenPathway === 'pismp' ? pismpAliransOf(current, allowed) : []
+  useEffect(() => {
+    if (form.chosenPathway !== 'pismp' || !current) return
+    const fromChosen = aliranOfCourse(current, form.chosenProgramme?.courseId)
+    if (fromChosen) { setPismpAliran(fromChosen); return }
+    const present: string[] = pismpAliransOf(current, allowed)
+    const hint = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('aliran') : null
+    setPismpAliran((a) => a || (hint && present.includes(hint) ? hint : present.length === 1 ? present[0] : ''))
+  }, [form.chosenPathway, form.chosenProgramme, current, allowed])
 
   const setCertainty = (c: 'sure' | 'uncertain') => onChange(
     c === 'sure'
@@ -118,31 +132,66 @@ export default function PathwayPicker({
           uncertaintyReasons: form.uncertaintyReasons.length ? form.uncertaintyReasons : ['exploring'],
         }
   )
-  const setPathway = (key: string) => onChange({
-    chosenPathway: key, chosenProgramme: null, preUTrack: '', preUInstitution: '',
-  })
+  const setPathway = (key: string) => {
+    setPismpAliran('')
+    onChange({ chosenPathway: key, chosenProgramme: null, preUTrack: '', preUInstitution: '' })
+  }
   const setProgramme = (c: ChosenProgramme | null) => onChange({ chosenProgramme: c })
-  const setPreUTrack = (key: string) => onChange({ preUTrack: key, preUInstitution: '' })
-  const setPreUInstitution = (name: string) => onChange({ preUInstitution: name })
-  const toggleLeaning = (key: string) => onChange({
-    pathwaysConsidered: form.pathwaysConsidered.includes(key)
-      ? form.pathwaysConsidered.filter((k) => k !== key)
-      : [...form.pathwaysConsidered, key],
-  })
-  const toggleReason = (key: string) => onChange({
-    uncertaintyReasons: form.uncertaintyReasons.includes(key)
-      ? form.uncertaintyReasons.filter((k) => k !== key)
-      : [...form.uncertaintyReasons, key],
-  })
-
+  const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }
+  const toggle = (list: string[], key: string) => (list.includes(key) ? list.filter((k) => k !== key) : [...list, key])
   const chip = (on: boolean) =>
     `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`
+  const label = (key: string, tip?: string, required = apply) => (
+    <FieldLabel required={required} tip={apply && tip ? t(`scholarship.apply.plan.${tip}`) : undefined}>
+      {t(`scholarship.apply.plan.${key}`)}
+    </FieldLabel>
+  )
+  const loadingLine = <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
+  const caution = (key: string) => (
+    <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t(`scholarship.apply.plan.${key}`)}</p>
+  )
+
+  const pathways = narrowing && elig
+    ? PATHWAY_ORDER.filter((k) => elig.pathways.has(k) || k === form.chosenPathway) : PATHWAY_ORDER
+  const tracks = narrowing && elig
+    ? MATRIC_TRACKS.filter((tr) => elig.matricTracks.includes(tr) || tr === form.preUTrack) : MATRIC_TRACKS
+
+  // What she named, read back to her: "<course> · <institution>, <state>" (or the pre-U track / school).
+  const cp = form.chosenProgramme
+  const preU = form.chosenPathway === 'matric' ? 'track' : 'stream'
+  const named = !offer ? '' : cp
+    ? [cp.courseName, [cp.institution, institutionOf(current, cp)?.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')
+    : form.preUInstitution && form.preUTrack
+      ? `${t(`scholarship.apply.plan.${preU}.${form.preUTrack}`)} · ${form.preUInstitution}` : ''
+
+  const switchEl = (
+    <div className="flex items-center gap-3">
+      <span className="min-w-0 text-right">
+        <span className="block text-sm font-medium text-ground-700">{t('search.eligibleOnly')}</span>
+        <span className="block text-xs text-ground-500">{t('search.eligibleToggleDesc')}</span>
+      </span>
+      <Toggle on={eligibleOnly} onChange={setEligibleOnly} label={t('search.eligibleOnly')} />
+    </div>
+  )
+  const showSwitch = canNarrow && offer
+
+  const tertiaryTop = degreeChoices(current, null)
+  const setTop = (i: number, prog: ChosenProgramme | null) => {
+    const slots: (TopChoice | null)[] = [0, 1, 2].map((j) => topChoices?.[j] ?? null)
+    slots[i] = prog
+      ? { courseId: prog.courseId, courseName: prog.courseName,
+          institution: tertiaryTop.find((c) => c.course_id === prog.courseId)?.institution_name ?? '' }
+      : null
+    onTopChoices?.(slots)
+  }
 
   return (
     <div className="space-y-5">
+      {showSwitch && (switchSlot ? createPortal(switchEl, switchSlot) : <div className="flex justify-end">{switchEl}</div>)}
+
       {/* The whole step turns on one question. */}
       <div>
-        <FieldLabel>{t('scholarship.apply.plan.question')}</FieldLabel>
+        {label('question', 'tip')}
         <div className="grid grid-cols-2 gap-3">
           {(['sure', 'uncertain'] as const).map((c) => (
             <button key={c} type="button" onClick={() => setCertainty(c)}
@@ -153,39 +202,151 @@ export default function PathwayPicker({
         </div>
       </div>
 
-      {/* Decided → eligible pathway dropdown (SPM) or degree picker (STPM). */}
-      {form.pathwayCertainty === 'sure' && (tertiary ? (
+      {/* An offer: which pathway (an SPM leaver), then the place. */}
+      {offer && !tertiary && (
         <div>
-          <FieldLabel>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
-          <ProgrammePicker courses={eligibleCourses} value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
+          {label('pathwayLabel', 'pathwayTip')}
+          <PathwaySelect pathways={pathways} value={form.chosenPathway} onChange={setPathway}
+            loading={eligLoading} label={t('scholarship.apply.plan.pathwayLabel')} />
         </div>
-      ) : (
-        <div>
-          <FieldLabel>{t('scholarship.apply.plan.pathwayLabel')}</FieldLabel>
-          <PathwaySelect pathways={eligiblePathways(pathwayStats)} value={form.chosenPathway} onChange={setPathway} loading={loading} />
-        </div>
-      ))}
+      )}
 
-      {/* Still deciding → optional leanings (SPM) + reasons + note. */}
+      {offer && failed && (
+        <p role="alert" className="rounded-lg border border-caution-200 bg-caution-50 px-4 py-3 text-sm text-caution-800">
+          {t('verifyEmail.networkError')}
+        </p>
+      )}
+
+      {offer && !failed && (tertiary || (form.chosenPathway && form.chosenPathway !== 'pismp' && isOfferingPathway(form.chosenPathway))) && (
+        <InstitutionCoursePicker key={offeringKey} pathway={offeringKey} offerings={current} loading={listLoading}
+          allowed={allowed} value={form.chosenProgramme} onChange={setProgramme} apply={apply} />
+      )}
+
+      {offer && !failed && !tertiary && form.chosenPathway === 'pismp' && (
+        // Teacher training: school type (Aliran) → subject (Bidang), not a typed course name.
+        <div className="space-y-4">
+          <div>
+            {label('aliranLabel', 'aliranTip')}
+            {listLoading ? loadingLine : alirans.length === 0 ? caution('noProgrammes')
+              : <LazyAliranPicker alirans={alirans} value={pismpAliran} onChange={chooseAliran} />}
+          </div>
+          {pismpAliran && !listLoading && (
+            <div>
+              {label('bidangLabel', 'programmeTip')}
+              <ProgrammePicker key={pismpAliran} courses={pismpBidang(current, pismpAliran, allowed)}
+                value={form.chosenProgramme} onChange={setProgramme} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {offer && !tertiary && form.chosenPathway === 'matric' && (
+        <div className="space-y-4">
+          <div>
+            {label('trackLabel', 'trackTip')}
+            {eligLoading ? loadingLine : tracks.length === 0 ? caution('noTracks') : (
+              <div className="flex flex-wrap gap-2">
+                {tracks.map((tr) => (
+                  <button key={tr} type="button" onClick={() => onChange({ preUTrack: tr, preUInstitution: '' })} className={chip(form.preUTrack === tr)}>
+                    {t(`scholarship.apply.plan.track.${tr}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {form.preUTrack && (
+            <div>
+              {label('collegeLabel', 'collegeTip')}
+              <LazyMatricCollegePicker key={`m-${form.preUTrack}`} track={form.preUTrack} value={form.preUInstitution}
+                onChange={(name) => onChange({ preUInstitution: name })} placeholder={t('scholarship.apply.plan.collegePlaceholder')} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {offer && !tertiary && form.chosenPathway === 'stpm' && (
+        <div className="space-y-4">
+          <div>
+            {label('streamLabel', 'streamTip')}
+            <div className="flex flex-wrap gap-2">
+              {STPM_STREAMS.map((s) => (
+                <button key={s} type="button" onClick={() => onChange({ preUTrack: s, preUInstitution: '' })} className={chip(form.preUTrack === s)}>
+                  {t(`scholarship.apply.plan.stream.${s}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {form.preUTrack && (
+            <div>
+              {label('schoolLabel', 'schoolTip')}
+              <LazyStpmSchoolPicker key={`s-${form.preUTrack}`} stream={form.preUTrack} value={form.preUInstitution}
+                onChange={(name) => onChange({ preUInstitution: name })} placeholder={t('scholarship.apply.plan.schoolPlaceholder')} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Read back what she named, and what happens to the letter. */}
+      {named && (
+        <>
+          <p className="flex items-center gap-2 rounded-xl border border-positive-200 bg-positive-50 p-3 text-sm text-positive-800">
+            <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12l5 5L20 7" />
+            </svg>
+            <span data-testid="plan-named">{named}</span>
+          </p>
+          <p className="rounded-xl bg-primary-50 p-3 text-sm text-primary-800">{t('scholarship.apply.plan.offerNote')}</p>
+        </>
+      )}
+
+      {/* Waiting: the same optional answers as before. */}
       {form.pathwayCertainty === 'uncertain' && (
         <div className="space-y-5">
+          <p className="rounded-xl border border-ground-200 bg-ground-50 p-3 text-sm text-ground-600">
+            {t('scholarship.apply.plan.uncertainIntro')}
+          </p>
           {!tertiary && (
             <div>
-              <FieldLabel>{t('scholarship.apply.plan.leaningLabel')}</FieldLabel>
+              {label('leaningLabel', 'leaningTip', false)}
               <div className="flex flex-wrap gap-2">
                 {PATHWAY_ORDER.map((key) => (
-                  <button key={key} type="button" onClick={() => toggleLeaning(key)} className={chip(form.pathwaysConsidered.includes(key))}>
+                  <button key={key} type="button" className={chip(form.pathwaysConsidered.includes(key))}
+                    onClick={() => onChange({ pathwaysConsidered: toggle(form.pathwaysConsidered, key) })}>
                     {t(`scholarship.apply.plan.pathway.${key}`)}
                   </button>
                 ))}
               </div>
             </div>
           )}
+          {tertiary && onTopChoices && (
+            <div>
+              {label('topProgrammesLabel', 'topProgrammesTip', false)}
+              {!current ? (failed ? caution('noProgrammes') : loadingLine) : (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => {
+                    const tc = topChoices?.[i] ?? null
+                    const taken = (topChoices ?? []).filter((c, j) => j !== i && c).map((c) => (c as TopChoice).courseId)
+                    return (
+                      <div key={`top-${i}`} className="flex items-center gap-2">
+                        <span className="w-5 shrink-0 text-sm font-medium text-ground-400">{i + 1}.</span>
+                        <div className="min-w-0 flex-1">
+                          <ProgrammePicker courses={tertiaryTop.filter((c) => !taken.includes(c.course_id))}
+                            value={tc ? { courseId: tc.courseId, courseName: tc.courseName, fieldKey: '' } : null}
+                            onChange={(prog) => setTop(i, prog)} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           <div>
-            <FieldLabel>{t('scholarship.apply.plan.reasonLabel')}</FieldLabel>
+            {label('reasonLabel', 'reasonTip', false)}
             <div className="flex flex-wrap gap-2">
               {UNCERTAINTY_REASONS.map((r) => (
-                <button key={r} type="button" onClick={() => toggleReason(r)} className={chip(form.uncertaintyReasons.includes(r))}>
+                <button key={r} type="button" className={chip(form.uncertaintyReasons.includes(r))}
+                  onClick={() => onChange({ uncertaintyReasons: toggle(form.uncertaintyReasons, r) })}>
                   {t(`scholarship.apply.plan.reason.${r}`)}
                 </button>
               ))}
@@ -193,90 +354,6 @@ export default function PathwayPicker({
           </div>
         </div>
       )}
-
-      {/* Decided SPM pathway → programme combobox, or matric track / STPM stream → institution. */}
-      {form.pathwayCertainty === 'sure' && !tertiary && form.chosenPathway && (
-        form.chosenPathway === 'pismp' ? (
-          // Teacher-training: navigate Aliran (school type) → Bidang (subject), instead
-          // of type-searching a course name the student may not know.
-          <div className="space-y-4">
-            <div>
-              <FieldLabel>{t('scholarship.apply.plan.aliranLabel')}</FieldLabel>
-              {loading ? (
-                <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
-              ) : availableAlirans.length === 0 ? (
-                <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noProgrammes')}</p>
-              ) : (
-                <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
-              )}
-            </div>
-            {pismpAliran && (
-              <div>
-                <FieldLabel>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
-                <ProgrammePicker key={pismpAliran}
-                  courses={bidangForAliran(pismpCourses, pismpAliran)}
-                  value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
-              </div>
-            )}
-          </div>
-        ) : isProgrammePathway(form.chosenPathway) ? (
-          <div>
-            <FieldLabel>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
-            <ProgrammePicker key={form.chosenPathway}
-              courses={programmesForPathway(eligibleCourses, form.chosenPathway)}
-              value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
-          </div>
-        ) : form.chosenPathway === 'matric' ? (
-          <div className="space-y-4">
-            <div>
-              <FieldLabel>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
-              {loading ? <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
-                : matricTracks.length === 0 ? <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noTracks')}</p>
-                : (
-                  <div className="flex flex-wrap gap-2">
-                    {matricTracks.map((tr) => (
-                      <button key={tr} type="button" onClick={() => setPreUTrack(tr)} className={chip(form.preUTrack === tr)}>
-                        {t(`scholarship.apply.plan.track.${tr}`)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </div>
-            {form.preUTrack && (
-              <div>
-                <FieldLabel>{t('scholarship.apply.plan.collegeLabel')}</FieldLabel>
-                <InstitutionPicker key={`m-${form.preUTrack}`}
-                  options={collegesForTrack(form.preUTrack).map((c) => ({ name: c.name, hint: c.state }))}
-                  value={form.preUInstitution} onChange={setPreUInstitution}
-                  placeholder={t('scholarship.apply.plan.collegePlaceholder')} />
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <FieldLabel>{t('scholarship.apply.plan.streamLabel')}</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {STPM_STREAMS.map((s) => (
-                  <button key={s} type="button" onClick={() => setPreUTrack(s)} className={chip(form.preUTrack === s)}>
-                    {t(`scholarship.apply.plan.stream.${s}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {form.preUTrack && (
-              <div>
-                <FieldLabel>{t('scholarship.apply.plan.schoolLabel')}</FieldLabel>
-                <InstitutionPicker key={`s-${form.preUTrack}`}
-                  options={stpmSchoolsForStream(form.preUTrack).map((s) => ({ name: s.name, hint: s.state }))}
-                  value={form.preUInstitution} onChange={setPreUInstitution}
-                  placeholder={t('scholarship.apply.plan.schoolPlaceholder')} />
-              </div>
-            )}
-          </div>
-        )
-      )}
-
     </div>
   )
 }

@@ -152,29 +152,12 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     />
   )
 
-  // Section header: title + a status pill (compulsory / important / optional) + note.
-  type SectionPill = 'compulsory' | 'important' | 'optional'
-  const pillClass: Record<SectionPill, string> = {
-    compulsory: 'bg-caution-100 text-caution-800',
-    important: 'bg-info-100 text-info-800',
-    optional: 'bg-ground-100 text-ground-600',
-  }
-  // pill null → a bare section title (no badge, no note); the compulsory status is
-  // shown on the cards themselves (a red * after the title).
-  const sectionHead = (key: string, pill: SectionPill | null, showNote = false) => (
-    <div className="mb-2">
-      <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-ground-800">
-          {t(`scholarship.docs.section.${key}.title`)}
-        </h3>
-        {pill && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pillClass[pill]}`}>
-            {t(`scholarship.docs.pill.${pill}`)}
-          </span>
-        )}
-      </div>
-      {(pill || showNote) && <p className="text-xs text-ground-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
-    </div>
+  // Section header: a bare title. Whether a document is needed is the PROGRAMME's answer, shown
+  // on each card (a red * after its title). The section pills and notes this header could once
+  // draw were never switched on, and were deleted 2026-10-30 — the pathway note told a student
+  // her offer letter was optional ("if you already have one"), which the owner's rule is not.
+  const sectionHead = (key: string) => (
+    <h3 className="mb-2 text-sm font-semibold text-ground-800">{t(`scholarship.docs.section.${key}.title`)}</h3>
   )
 
   // The guardianship letter belongs to the INCOME cluster (it proves a guardian earner's
@@ -208,7 +191,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     if (state === 'off') return null
     return (
       <section>
-        {sectionHead(key, null)}
+        {sectionHead(key)}
         <div className="space-y-3">{card(dt, { ...extra, required: state === 'required' })}</div>
       </section>
     )
@@ -223,7 +206,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   const slipState = docState('results_slip')
   const academic = higherState === 'off' ? section('academic', 'results_slip') : (
     <section>
-      {sectionHead('academic', null)}
+      {sectionHead('academic')}
       <div className="space-y-3">
         {card('higher_results', {
           required: higherState === 'required',
@@ -257,7 +240,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           assessment nobody designed. */}
       {asksForDocument(req, 'income_proof') && (
       <section id="income-wizard" className="scroll-mt-6">
-        {sectionHead('income', null)}
+        {sectionHead('income')}
         {app ? (
           /* Guided wizard → dynamic checklist (Check-1 item 3). */
           <IncomeWizard app={app} token={token} t={t} onChange={onChange}

@@ -873,20 +873,18 @@
       "strLabel": "My family receives STR (Sumbangan Tunai Rahmah).",
       "jkmLabel": "My family receives JKM assistance.",
       "plan": {
-        "question": "Do you know which pathway you'll take?",
-        "sure": "Yes, I've decided",
-        "uncertain": "I'm still deciding",
-        "tip": "Choose the pathway you've decided on. We only show the ones your results qualify you for.",
-        "pathwayLabel": "Which pathway have you chosen?",
+        "question": "Have you received an offer for your next step of study?",
+        "sure": "Yes, I have an offer",
+        "uncertain": "Not yet, I'm waiting",
+        "tip": "Answer Yes if you hold an offer letter for your next place of study. If you are still waiting for one, you can apply now.",
+        "pathwayLabel": "Which pathway is your offer for?",
         "pathwayPlaceholder": "Choose your pathway",
-        "eligibleCount": "{count} eligible",
-        "loading": "Finding the pathways you qualify for…",
-        "noPathways": "We can't show your pathways yet — we don't have your exam results. Please go to the \"My SPM / STPM Results\" step and add your results first, then come back here to choose a pathway.",
+        "loading": "Loading the list…",
+        "noPathways": "None of the pathways matches your results. Switch off \"Eligible only\" to see them all.",
         "degreeLabel": "Which degree?",
-        "degreeTip": "Search the degrees your STPM results qualify you for, and pick the one you've decided on — your field of study is taken from it.",
-        "uncertainIntro": "That's completely fine — many students are still weighing their options. Anything you share below is optional and just helps us guide you.",
-        "leaningLabel": "Leaning towards any of these?",
-        "leaningTip": "Tap any pathways you're considering — we'll keep them in mind, even if you haven't decided.",
+        "uncertainIntro": "That's fine. Many offers arrive later in the year. You can still apply now. We can fund you once your offer letter arrives.",
+        "leaningLabel": "What did you apply for? (optional, pick any)",
+        "leaningTip": "Tap every pathway you have applied for. We will keep them in mind.",
         "reasonLabel": "Where are you right now?",
         "reasonTip": "Tell us what's on your mind — it helps us offer the right support.",
         "reason": {
@@ -900,10 +898,9 @@
         "uncertainNotePlaceholder": "Tell us what you're thinking…",
         "programmeLabel": "Which course?",
         "programmePlaceholder": "Start typing your course…",
-        "programmeTip": "Search the courses you qualify for on this pathway and pick the one you've decided on — your field of study is taken from it.",
+        "programmeTip": "Pick the course named on your offer letter. Your field of study is taken from it.",
         "programmeNoMatch": "No match — try a different word.",
-        "programmeAtN": "{n} institutions",
-        "noProgrammes": "We couldn't find eligible courses for this pathway. Try another pathway, or tell us more in the next step.",
+        "noProgrammes": "There are no courses to show here. If \"Eligible only\" is on, switch it off; or tell us about your course in the note below.",
         "aliranLabel": "School type",
         "aliranTip": "Pick the type of school you want to teach in — it sets which teaching subjects you can choose from.",
         "aliran": {
@@ -919,20 +916,20 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Subject you want to teach",
-        "topProgrammesLabel": "Your top 3 programmes",
-        "topProgrammesTip": "Pick up to three degrees you're weighing up — from the ones your STPM results qualify you for. We'll keep them in mind even if you haven't decided.",
+        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
+        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
         "trackLabel": "Which matriculation track?",
-        "trackTip": "Pick the track you qualify for and have decided on — it sets which colleges you can choose from.",
+        "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
           "sains": "Science",
           "kejuruteraan": "Engineering",
           "sains_komputer": "Computer Science",
           "perakaunan": "Accounting"
         },
-        "noTracks": "We couldn't match a matriculation track to your results. Try another pathway, or tell us more in the next step.",
+        "noTracks": "No matriculation track matches your results. Switch off \"Eligible only\" to see them all.",
         "collegeLabel": "Which matriculation college?",
         "collegePlaceholder": "Start typing a college, e.g. KM Perak",
-        "collegeTip": "Choose the matriculation college you've decided on — only those offering your track are shown.",
+        "collegeTip": "Choose the college named on your offer letter. Only colleges offering your track are shown.",
         "streamLabel": "Which stream?",
         "streamTip": "Pick your Form 6 stream — it sets which schools you can choose from. Choose \"Not sure yet\" if you haven't decided.",
         "stream": {
@@ -942,7 +939,7 @@
         },
         "schoolLabel": "Which Form 6 school?",
         "schoolPlaceholder": "Start typing a school name",
-        "schoolTip": "Choose the Form 6 centre you've decided on — only those offering your stream are shown.",
+        "schoolTip": "Choose the Form 6 centre named on your offer letter. Only centres offering your stream are shown.",
         "institutionNoMatch": "No match — try a different word.",
         "institutionMore": "Showing the first matches — keep typing to narrow down.",
         "pathway": {
@@ -957,7 +954,19 @@
           "ilkbs": "Youth skills institute (ILKBS)",
           "mara": "MARA skills institute",
           "tvet_other": "Other public skills training"
-        }
+        },
+        "pathwayTip": "Choose the kind of place your offer letter is from. Every pathway is listed.",
+        "stateLabel": "Which state?",
+        "statePlaceholder": "Choose a state",
+        "institutionLabel": {
+          "university": "Which university?",
+          "poly": "Which polytechnic?",
+          "campus": "Which campus?"
+        },
+        "institutionPlaceholder": "Choose one",
+        "institutionTip": "Choose the place named on your offer letter.",
+        "coursesHere": "Courses here: {count}. Type to narrow the list.",
+        "offerNote": "You will upload this offer letter once you are shortlisted. We fund only a confirmed place with a reporting date."
       },
       "notesLabel": "Tell us briefly why you need assistance and what would help",
       "notesPlaceholder": "Your plans, hopes, or circumstances…",
@@ -1488,30 +1497,18 @@
           "satisfiedNote": "Your evidence is in and checks out. You're welcome to add more — a payslip, EPF statement, or a bill — to strengthen your case, but nothing more is required."
         }
       },
-      "requiredPill": "Required",
-      "optionalPill": "Optional",
-      "requiredNote": "We need these documents to process your application.",
-      "pill": {
-        "compulsory": "Compulsory",
-        "important": "Important",
-        "optional": "Optional"
-      },
       "section": {
         "identity": {
-          "title": "Identity",
-          "note": "Proof of who you are."
+          "title": "Identity"
         },
         "academic": {
-          "title": "Academic results",
-          "note": "Your latest exam results slip."
+          "title": "Academic results"
         },
         "pathway": {
-          "title": "Your pathway",
-          "note": "Your university or college offer letter, if you already have one."
+          "title": "Your pathway"
         },
         "income": {
-          "title": "Household income",
-          "note": "Documents that show your family's financial need. Bills are optional but help."
+          "title": "Household income"
         },
         "other": {
           "title": "Additional documents",

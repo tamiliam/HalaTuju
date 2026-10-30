@@ -2,16 +2,27 @@
 
 import { useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import type { EligibleCourse } from '@/lib/api'
 import type { ChosenProgramme } from '@/lib/scholarship'
 
+/** What a row needs: a catalogue offering, or a degree with its university on the line below. */
+export interface PickerCourse {
+  course_id: string
+  course_name: string
+  field_key?: string
+  field?: string
+  institution_name?: string
+}
+
+/** Rows drawn at once; typing narrows the rest (a degree list can hold a thousand). */
+const SHOWN = 100
+
 /**
- * Single-select course picker for the B40 apply form's "decided" branch. Lists ONLY
- * the courses the student is eligible for on the chosen pathway (passed in already
- * filtered + sorted A–Z), as a type-to-search combobox (same UX as the School field).
- * Selection is constrained to the list — there is no free-text fallback, because the
- * whole point is that they pick one eligible course. The query is local; the parent's
- * `value` is the source of truth, so on blur the input snaps back to the selection.
+ * Single-select course picker for the scholarship "My Plans" step. Lists the courses it is GIVEN
+ * (sorted A–Z by the caller) — since 2026-10-30 the whole catalogue of one institution, or of one
+ * PISMP school type, unless the student switched "Eligible only" on (`lib/planPicker.ts`) — as a
+ * type-to-search combobox (same UX as the School field). Selection is constrained to the list;
+ * there is no free-text fallback (a course she cannot find goes in the note below). The query is
+ * local; the parent's `value` is the source of truth, so on blur the input snaps back.
  *
  * Loading + empty states are handled here so the parent stays declarative.
  */
@@ -21,7 +32,7 @@ export default function ProgrammePicker({
   onChange,
   loading = false,
 }: {
-  courses: EligibleCourse[]
+  courses: PickerCourse[]
   value: ChosenProgramme | null
   onChange: (programme: ChosenProgramme | null) => void
   loading?: boolean
@@ -48,7 +59,7 @@ export default function ProgrammePicker({
   const q = query.trim().toLowerCase()
   const matches = q ? courses.filter((c) => c.course_name.toLowerCase().includes(q)) : courses
 
-  const choose = (c: EligibleCourse) => {
+  const choose = (c: PickerCourse) => {
     onChange({ courseId: c.course_id, courseName: c.course_name, fieldKey: c.field_key || c.field || '' })
     setQuery(c.course_name)
     setOpen(false)
@@ -77,7 +88,7 @@ export default function ProgrammePicker({
         onBlur={() => { blurTimer.current = setTimeout(() => { setOpen(false); setQuery(value?.courseName ?? '') }, 120) }}
         onKeyDown={(e) => {
           if (!open || matches.length === 0) return
-          if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, matches.length - 1)) }
+          if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, Math.min(matches.length, SHOWN) - 1)) }
           else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
           else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); choose(matches[active]) }
           else if (e.key === 'Escape') { setOpen(false); setActive(-1) }
@@ -90,7 +101,7 @@ export default function ProgrammePicker({
         >
           {matches.length > 0 ? (
             <ul className="max-h-64 overflow-auto py-1" role="listbox">
-              {matches.map((c, i) => (
+              {matches.slice(0, SHOWN).map((c, i) => (
                 <li key={c.course_id} role="option" aria-selected={i === active}>
                   <button
                     type="button"
@@ -99,16 +110,13 @@ export default function ProgrammePicker({
                     className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm ${i === active ? 'bg-primary-50' : 'hover:bg-ground-50'}`}
                   >
                     <span className="text-ground-900">{c.course_name}</span>
-                    {c.institution_name && (
-                      <span className="text-xs text-ground-400">
-                        {c.institution_count && c.institution_count > 1
-                          ? t('scholarship.apply.plan.programmeAtN', { n: String(c.institution_count) })
-                          : c.institution_name}
-                      </span>
-                    )}
+                    {c.institution_name && <span className="text-xs text-ground-400">{c.institution_name}</span>}
                   </button>
                 </li>
               ))}
+              {matches.length > SHOWN && (
+                <li className="px-3 py-2 text-xs text-ground-500">{t('scholarship.apply.plan.institutionMore')}</li>
+              )}
             </ul>
           ) : (
             <p className="px-3 py-2 text-xs text-ground-500">{t('scholarship.apply.plan.programmeNoMatch')}</p>

@@ -5,9 +5,10 @@
  *
  *  - "My Results" names the qualification and shows the SERVER's overall CGPA (`overall_cgpa`),
  *    never an SPM A-count and never "we don't have your results yet".
- *  - "My Plans": a tertiary student picks a degree directly, and for this route the picker is
- *    UNFILTERED (ruling D2: no entry rules exist for these qualifications) — every degree from
- *    `/stpm/search/`, never an STPM eligibility check fed no STPM grades.
+ *  - "My Plans": a tertiary student names a university, then a degree, and for this route the
+ *    picker is UNFILTERED (ruling D2: no entry rules exist for these qualifications) — every degree
+ *    from the catalogue (`/courses/offerings/?pathway=degree` since 2026-10-30; `/stpm/search/`
+ *    before), never an STPM eligibility check fed no STPM grades, and no "Eligible only" switch.
  *
  * Mounted, because both claims are about what the page draws and which call it makes. `t` echoes.
  */
@@ -16,7 +17,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
-import { checkEligibility, checkStpmEligibility, searchStpmCourses } from '@/lib/api'
+import { checkEligibility, checkStpmEligibility, getPathwayOfferings } from '@/lib/api'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -37,11 +38,15 @@ jest.mock('@/lib/api', () => ({
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),
-  searchStpmCourses: jest.fn(() => Promise.resolve({
-    total_count: 2, filters: { universities: [], streams: [] },
+  getPathwayOfferings: jest.fn(() => Promise.resolve({
+    pathway: 'degree',
+    institutions: [
+      { id: 'UM', institution_id: 'UM', name: 'Universiti Malaya', state: 'Kuala Lumpur', course_ids: ['UM1'] },
+      { id: 'UKM', institution_id: 'UKM', name: 'Universiti Kebangsaan Malaysia', state: 'Selangor', course_ids: ['UKM2'] },
+    ],
     courses: [
-      { course_id: 'UM1', course_name: 'Bachelor of Accounting', university: 'UM', stream: 'arts', field: '', min_cgpa: 3, min_muet_band: 3, stpm_req_physics: false, req_interview: false, no_colorblind: false, merit_score: 80 },
-      { course_id: 'UKM2', course_name: 'Bachelor of Science', university: 'UKM', stream: 'science', field: '', min_cgpa: 3.5, min_muet_band: 4, stpm_req_physics: true, req_interview: false, no_colorblind: false, merit_score: 95 },
+      { course_id: 'UM1', course_name: 'Bachelor of Accounting', field_key: 'acc', aliran: null },
+      { course_id: 'UKM2', course_name: 'Bachelor of Science', field_key: 'sci', aliran: null },
     ],
   })),
 }))
@@ -71,7 +76,7 @@ const openTab = async (key: string, heading: RegExp) => {
 beforeEach(() => {
   (checkEligibility as jest.Mock).mockClear();
   (checkStpmEligibility as jest.Mock).mockClear();
-  (searchStpmCourses as jest.Mock).mockClear()
+  (getPathwayOfferings as jest.Mock).mockClear()
 })
 
 it('My Results names the qualification and shows the served overall CGPA', async () => {
@@ -86,17 +91,24 @@ it('My Results names the qualification and shows the served overall CGPA', async
 
 it.each(['matric', 'asasi', 'diploma'])('My Plans offers a %s holder EVERY degree, unfiltered (D2)', async (kind) => {
   mount({ ...MATRIC, exam_type: kind, results_exam_type: kind, results_held: kind })
-  // Every degree, Bumiputera-only ones included (owner ruling 2026-10-28, Bumi coverage Option A).
-  await waitFor(() => expect(searchStpmCourses).toHaveBeenCalledWith({ bumiputera: true }, { token: 'tkn' }))
+  await openTab('scholarship.apply.section.plans', /^4\. scholarship\.apply\.section\.plans$/)
+  fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
+  // Every degree, Bumiputera-only ones included (Option A) — the catalogue, not a check.
+  await waitFor(() => expect(getPathwayOfferings).toHaveBeenCalledWith('degree'))
   expect(checkStpmEligibility).not.toHaveBeenCalled()
   expect(checkEligibility).not.toHaveBeenCalled()
+  expect(screen.queryByRole('switch', { name: 'search.eligibleOnly' })).toBeNull()   // no entry rules to narrow by
 })
 
-it('the decided branch is the degree picker, fed by that list', async () => {
+it('the offer branch is University → Degree, fed by that list', async () => {
   mount(MATRIC)
-  await waitFor(() => expect(searchStpmCourses).toHaveBeenCalled())
   await openTab('scholarship.apply.section.plans', /^4\. scholarship\.apply\.section\.plans$/)
-  fireEvent.click(screen.getByText('scholarship.apply.plan.sure').closest('button') as HTMLButtonElement)
+  fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
+  expect(screen.queryByLabelText('scholarship.apply.plan.pathwayLabel')).toBeNull()
+  const uni = await screen.findByLabelText('scholarship.apply.plan.institutionLabel.university')
+  fireEvent.change(uni, { target: { value: 'UKM' } })
   expect(screen.getByText('scholarship.apply.plan.degreeLabel')).toBeTruthy()
-  expect(screen.queryByText('scholarship.apply.plan.pathwayLabel')).toBeNull()
+  fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+  expect(screen.getByText('Bachelor of Science')).toBeTruthy()
+  expect(screen.queryByText('Bachelor of Accounting')).toBeNull()   // UM's, not UKM's
 })

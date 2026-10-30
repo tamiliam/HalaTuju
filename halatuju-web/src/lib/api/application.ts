@@ -143,7 +143,7 @@ export interface ScholarshipApplication {
   // student sees what they're funding. Empty/uncertain when still exploring.
   pathway_certainty?: string
   chosen_pathway?: string
-  chosen_programme?: { course_id?: string; course_name?: string; field_key?: string } | null
+  chosen_programme?: { course_id?: string; course_name?: string; field_key?: string; institution?: string; institution_id?: string } | null
   pre_u_track?: string
   uncertainty_reasons?: string[]
   uncertainty_note?: string

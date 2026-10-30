@@ -873,20 +873,18 @@
       "strLabel": "என் குடும்பம் STR (Sumbangan Tunai Rahmah) பெறுகிறது.",
       "jkmLabel": "என் குடும்பம் JKM உதவி பெறுகிறது.",
       "plan": {
-        "question": "எந்த வழியில் செல்வீர்கள் என்று உங்களுக்குத் தெரியுமா?",
-        "sure": "ஆம், முடிவு செய்துவிட்டேன்",
-        "uncertain": "இன்னும் யோசித்துக் கொண்டிருக்கிறேன்",
-        "tip": "நீங்கள் முடிவு செய்த வழியைத் தேர்ந்தெடுக்கவும். உங்கள் தேர்வு முடிவுகளின்படி தகுதியான வழிகளை மட்டுமே காட்டுகிறோம்.",
-        "pathwayLabel": "எந்த வழியைத் தேர்ந்தெடுத்தீர்கள்?",
+        "question": "Have you received an offer for your next step of study?",
+        "sure": "Yes, I have an offer",
+        "uncertain": "Not yet, I'm waiting",
+        "tip": "Answer Yes if you hold an offer letter for your next place of study. If you are still waiting for one, you can apply now.",
+        "pathwayLabel": "Which pathway is your offer for?",
         "pathwayPlaceholder": "உங்கள் வழியைத் தேர்ந்தெடுக்கவும்",
-        "eligibleCount": "{count} தகுதி",
-        "loading": "நீங்கள் தகுதியுள்ள வழிகளைக் கண்டறிகிறோம்…",
-        "noPathways": "உங்கள் வழிகளை இன்னும் காட்ட முடியாது — உங்கள் தேர்வு முடிவுகள் எங்களிடம் இல்லை. முதலில் \"என் SPM / STPM முடிவுகள்\" படிநிலைக்குச் சென்று உங்கள் முடிவுகளைச் சேர்க்கவும், பின்னர் ஒரு வழியைத் தேர்ந்தெடுக்க இங்கு திரும்பி வாருங்கள்.",
+        "loading": "Loading the list…",
+        "noPathways": "None of the pathways matches your results. Switch off \"Eligible only\" to see them all.",
         "degreeLabel": "எந்தப் பட்டப்படிப்பு?",
-        "degreeTip": "உங்கள் STPM முடிவுகள் தகுதியளிக்கும் பட்டப்படிப்புகளைத் தேடி, நீங்கள் முடிவு செய்ததைத் தேர்ந்தெடுக்கவும் — உங்கள் படிப்புத் துறை அதிலிருந்து எடுக்கப்படுகிறது.",
-        "uncertainIntro": "பரவாயில்லை — பல மாணவர்கள் இன்னும் தங்கள் விருப்பங்களை எடைபோட்டுக் கொண்டிருக்கிறார்கள். கீழே நீங்கள் பகிர்வது விருப்பத்தேர்வு, உங்களுக்கு வழிகாட்டவே உதவுகிறது.",
-        "leaningLabel": "இவற்றில் ஏதேனும் நாட்டம் உள்ளதா?",
-        "leaningTip": "நீங்கள் பரிசீலிக்கும் வழிகளைத் தட்டவும் — நீங்கள் முடிவு செய்யாவிட்டாலும், நாங்கள் அவற்றை மனதில் கொள்வோம்.",
+        "uncertainIntro": "That's fine. Many offers arrive later in the year. You can still apply now. We can fund you once your offer letter arrives.",
+        "leaningLabel": "What did you apply for? (optional, pick any)",
+        "leaningTip": "Tap every pathway you have applied for. We will keep them in mind.",
         "reasonLabel": "நீங்கள் இப்போது எங்கே இருக்கிறீர்கள்?",
         "reasonTip": "உங்கள் மனதில் உள்ளதைச் சொல்லுங்கள் — சரியான ஆதரவை வழங்க இது உதவுகிறது.",
         "reason": {
@@ -900,10 +898,9 @@
         "uncertainNotePlaceholder": "நீங்கள் என்ன நினைக்கிறீர்கள் எனச் சொல்லுங்கள்…",
         "programmeLabel": "எந்தப் பாடநெறி?",
         "programmePlaceholder": "உங்கள் பாடநெறியைத் தட்டச்சு செய்யத் தொடங்குங்கள்…",
-        "programmeTip": "இந்த வழியில் நீங்கள் தகுதியான பாடநெறிகளைத் தேடி, நீங்கள் முடிவு செய்ததைத் தேர்ந்தெடுக்கவும் — உங்கள் படிப்புத் துறை அதிலிருந்து எடுக்கப்படுகிறது.",
+        "programmeTip": "Pick the course named on your offer letter. Your field of study is taken from it.",
         "programmeNoMatch": "பொருத்தம் இல்லை — வேறு வார்த்தையை முயற்சிக்கவும்.",
-        "programmeAtN": "{n} நிறுவனங்கள்",
-        "noProgrammes": "இந்த வழிக்கு நீங்கள் தகுதியான பாடநெறிகளைக் கண்டறிய முடியவில்லை. வேறு வழியை முயற்சிக்கவும், அல்லது அடுத்த படிநிலையில் மேலும் தெரிவிக்கவும்.",
+        "noProgrammes": "There are no courses to show here. If \"Eligible only\" is on, switch it off; or tell us about your course in the note below.",
         "aliranLabel": "பள்ளி வகை",
         "aliranTip": "நீங்கள் கற்பிக்க விரும்பும் பள்ளி வகையைத் தேர்ந்தெடுக்கவும் — இது நீங்கள் தேர்வு செய்யக்கூடிய கற்பித்தல் பாடங்களை நிர்ணயிக்கிறது.",
         "aliran": {
@@ -919,20 +916,20 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "நீங்கள் கற்பிக்க விரும்பும் பாடம்",
-        "topProgrammesLabel": "உங்கள் முதல் 3 பாடநெறிகள்",
-        "topProgrammesTip": "நீங்கள் பரிசீலித்து வரும் மூன்று பட்டப்படிப்புகள் வரை தேர்ந்தெடுக்கவும் — உங்கள் STPM முடிவுகளுக்கு நீங்கள் தகுதியான பாடநெறிகளிலிருந்து. நீங்கள் இன்னும் முடிவு செய்யாவிட்டாலும் அவற்றை நாங்கள் கருத்தில் கொள்வோம்.",
+        "topProgrammesLabel": "Which degrees did you apply for? (up to 3)",
+        "topProgrammesTip": "Pick up to three degrees you have applied for. This is optional.",
         "trackLabel": "எந்த மெட்ரிகுலேஷன் பாதை?",
-        "trackTip": "நீங்கள் தகுதியுள்ள, முடிவு செய்த பாதையைத் தேர்ந்தெடுக்கவும் — இது நீங்கள் தேர்வு செய்யக்கூடிய கல்லூரிகளை நிர்ணயிக்கிறது.",
+        "trackTip": "Pick the track your offer is for. It sets which colleges you can choose from.",
         "track": {
           "sains": "அறிவியல்",
           "kejuruteraan": "பொறியியல்",
           "sains_komputer": "கணினி அறிவியல்",
           "perakaunan": "கணக்கியல்"
         },
-        "noTracks": "உங்கள் முடிவுகளுக்கு ஏற்ற மெட்ரிகுலேஷன் பாதையைப் பொருத்த முடியவில்லை. வேறு வழியை முயற்சிக்கவும், அல்லது அடுத்த படிநிலையில் மேலும் தெரிவிக்கவும்.",
+        "noTracks": "No matriculation track matches your results. Switch off \"Eligible only\" to see them all.",
         "collegeLabel": "எந்த மெட்ரிகுலேஷன் கல்லூரி?",
         "collegePlaceholder": "கல்லூரியைத் தட்டச்சு செய்யத் தொடங்குங்கள், எ.கா. KM Perak",
-        "collegeTip": "நீங்கள் முடிவு செய்த மெட்ரிகுலேஷன் கல்லூரியைத் தேர்ந்தெடுக்கவும் — உங்கள் பாதையை வழங்கும் கல்லூரிகள் மட்டுமே காட்டப்படும்.",
+        "collegeTip": "Choose the college named on your offer letter. Only colleges offering your track are shown.",
         "streamLabel": "எந்தப் பிரிவு?",
         "streamTip": "உங்கள் படிவம் 6 பிரிவைத் தேர்ந்தெடுக்கவும் — இது நீங்கள் தேர்வு செய்யக்கூடிய பள்ளிகளை நிர்ணயிக்கிறது. முடிவு செய்யவில்லை எனில் \"இன்னும் உறுதியில்லை\" என்பதைத் தேர்வுசெய்க.",
         "stream": {
@@ -942,7 +939,7 @@
         },
         "schoolLabel": "எந்த படிவம் 6 பள்ளி?",
         "schoolPlaceholder": "பள்ளியின் பெயரைத் தட்டச்சு செய்யத் தொடங்குங்கள்",
-        "schoolTip": "நீங்கள் முடிவு செய்த படிவம் 6 மையத்தைத் தேர்ந்தெடுக்கவும் — உங்கள் பிரிவை வழங்கும் மையங்கள் மட்டுமே காட்டப்படும்.",
+        "schoolTip": "Choose the Form 6 centre named on your offer letter. Only centres offering your stream are shown.",
         "institutionNoMatch": "பொருத்தம் இல்லை — வேறு வார்த்தையை முயற்சிக்கவும்.",
         "institutionMore": "முதல் பொருத்தங்கள் காட்டப்படுகின்றன — சுருக்கத் தொடர்ந்து தட்டச்சு செய்யவும்.",
         "pathway": {
@@ -957,7 +954,19 @@
           "ilkbs": "இளைஞர் திறன் நிறுவனம் (ILKBS)",
           "mara": "MARA skills institute",
           "tvet_other": "Other public skills training"
-        }
+        },
+        "pathwayTip": "Choose the kind of place your offer letter is from. Every pathway is listed.",
+        "stateLabel": "Which state?",
+        "statePlaceholder": "Choose a state",
+        "institutionLabel": {
+          "university": "Which university?",
+          "poly": "Which polytechnic?",
+          "campus": "Which campus?"
+        },
+        "institutionPlaceholder": "Choose one",
+        "institutionTip": "Choose the place named on your offer letter.",
+        "coursesHere": "Courses here: {count}. Type to narrow the list.",
+        "offerNote": "You will upload this offer letter once you are shortlisted. We fund only a confirmed place with a reporting date."
       },
       "notesLabel": "உங்களுக்கு உதவி ஏன் தேவை, என்ன உதவும் என்பதைச் சுருக்கமாகக் கூறுங்கள்",
       "notesPlaceholder": "உங்கள் திட்டங்கள், நம்பிக்கைகள் அல்லது சூழ்நிலைகள்…",
@@ -1488,30 +1497,18 @@
           "satisfiedNote": "உங்கள் சான்று பெறப்பட்டுச் சரிபார்க்கப்பட்டது. உங்கள் வழக்கை வலுப்படுத்த மேலும் சேர்க்க வரவேற்கிறோம் — சம்பளச் சீட்டு, KWSP அறிக்கை, அல்லது ஒரு கட்டண ரசீது — ஆனால் இதற்கு மேல் எதுவும் தேவையில்லை."
         }
       },
-      "requiredPill": "கட்டாயம்",
-      "optionalPill": "விருப்பத்திற்கு",
-      "requiredNote": "உங்கள் விண்ணப்பத்தை செயலாக்க இந்த ஆவணங்கள் தேவை.",
-      "pill": {
-        "compulsory": "கட்டாயம்",
-        "important": "முக்கியம்",
-        "optional": "விருப்பத்தேர்வு"
-      },
       "section": {
         "identity": {
-          "title": "அடையாளம்",
-          "note": "நீங்கள் யார் என்பதற்கான ஆதாரம்."
+          "title": "அடையாளம்"
         },
         "academic": {
-          "title": "கல்வி முடிவுகள்",
-          "note": "உங்கள் சமீபத்திய தேர்வு முடிவுச் சீட்டு."
+          "title": "கல்வி முடிவுகள்"
         },
         "pathway": {
-          "title": "உங்கள் பாதை",
-          "note": "உங்கள் பல்கலைக்கழக அல்லது கல்லூரி சலுகைக் கடிதம், ஏற்கனவே இருந்தால்."
+          "title": "உங்கள் பாதை"
         },
         "income": {
-          "title": "குடும்ப வருமானம்",
-          "note": "உங்கள் குடும்பத்தின் நிதித் தேவையைக் காட்டும் ஆவணங்கள். பில்கள் விருப்பத்தேர்வு ஆனால் உதவும்."
+          "title": "குடும்ப வருமானம்"
         },
         "other": {
           "title": "கூடுதல் ஆவணங்கள்",

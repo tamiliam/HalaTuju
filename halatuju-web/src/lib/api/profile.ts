@@ -110,7 +110,7 @@ export interface StudentProfile {
   chosen_pathway?: string
   pre_u_track?: string          // STPM stream / Matric track, when applicable
   pre_u_institution?: string
-  chosen_programme?: Record<string, unknown>   // stored snake: {course_id, course_name, field_key}
+  chosen_programme?: Record<string, unknown>   // stored snake: {course_id, course_name, field_key[, institution, institution_id]}
   pathways_considered?: string[]
   uncertainty_reasons?: string[]
   uncertainty_note?: string

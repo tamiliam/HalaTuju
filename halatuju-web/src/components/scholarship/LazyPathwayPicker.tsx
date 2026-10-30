@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * `/profile`'s pathway picker, fetched when the student opens the section that holds it instead of
- * riding in the page's first-load JS (third results route S3b, 2026-10-26).
+ * The "My Plans" picker, fetched when it is drawn instead of riding in the page's first-load JS:
+ * `/profile`'s section (third results route S3b, 2026-10-26) and, since 2026-10-30, the apply
+ * form's Plans step (Scholarship My Plans redesign — `/scholarship/apply` fell ~2.7 kB).
  *
  * WHY: `/profile` sat 0.07 kB under its budget once the higher-results upload's words joined the
  * English catalogue every route loads. The picker (with its course, college and school pickers) is

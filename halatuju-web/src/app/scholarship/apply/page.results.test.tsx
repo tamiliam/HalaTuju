@@ -17,7 +17,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileFormSix, sandboxProfileSpm, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
-import { checkEligibility, checkStpmEligibility } from '@/lib/api'
+import { checkEligibility, checkStpmEligibility, getPathwayOfferings } from '@/lib/api'
 
 // ONE router object: the page's effects depend on it, and a fresh object per render re-runs
 // the applications fetch for ever (the page never leaves "loading").
@@ -40,6 +40,7 @@ jest.mock('@/lib/api', () => ({
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),
+  getPathwayOfferings: jest.fn((p: string) => Promise.resolve({ pathway: p, institutions: [], courses: [] })),
 }))
 jest.mock('next/link', () => ({
   __esModule: true,
@@ -79,30 +80,40 @@ describe('the Results step for the Form Six explorer', () => {
   })
 })
 
-// TD-325 (2026-10-04): the PLANS step picks its branch — the SPM pathway dropdown or the STPM
-// degree picker — by the results we HOLD, not the declared exam. Both branches are eligibility
-// checks on results, so the explorer was sent to an STPM degree check fed no STPM grades and
-// shown an empty picker. Which check the page asks for is what decides the branch.
-describe('the Plans step chooses its eligibility check by the results held (TD-325)', () => {
-  const mount = (profile: Record<string, unknown>) => render(
-    <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', showAuthGate: () => {} } as never}>
-      <ScholarshipApplyPage />
-    </AuthContext.Provider>,
-  )
+// TD-325 (2026-10-04): the PLANS step picks its BRANCH — the SPM pathway dropdown or the degree
+// picker — by the results we HOLD, not the declared exam. Until 2026-10-30 both branches were
+// eligibility checks run on mount, and this block asserted WHICH check the page asked for. Since
+// the owner's rulings of 2026-10-30 the picker asks for NO check unless the student switches
+// "Eligible only" on; the results-held rule still decides the branch, which is what is asserted.
+describe('the Plans step chooses its branch by the results held (TD-325), and checks nothing', () => {
+  const openPlans = async (profile: Record<string, unknown>) => {
+    render(
+      <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', showAuthGate: () => {} } as never}>
+        <ScholarshipApplyPage />
+      </AuthContext.Provider>,
+    )
+    const tabs = await screen.findAllByText('scholarship.apply.section.plans')
+    fireEvent.click(tabs[0].closest('button') as HTMLButtonElement)
+    fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
+  }
   beforeEach(() => {
     (checkEligibility as jest.Mock).mockClear();
-    (checkStpmEligibility as jest.Mock).mockClear()
+    (checkStpmEligibility as jest.Mock).mockClear();
+    (getPathwayOfferings as jest.Mock).mockClear()
   })
 
-  it('asks the SPM check for the Form Six explorer the server says holds SPM', async () => {
-    mount({ ...sandboxProfileFormSix, results_held: 'spm' })
-    await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+  it('the Form Six explorer the server says holds SPM names a pathway', async () => {
+    await openPlans({ ...sandboxProfileFormSix, results_held: 'spm' })
+    expect(screen.getByLabelText('scholarship.apply.plan.pathwayLabel')).toBeTruthy()
+    expect(getPathwayOfferings).not.toHaveBeenCalledWith('degree')
+    expect(checkEligibility).not.toHaveBeenCalled()
+  })
+
+  it('a student who holds STPM results names a university, then a degree', async () => {
+    await openPlans({ ...sandboxProfileStpm, results_held: 'stpm' })
+    await waitFor(() => expect(getPathwayOfferings).toHaveBeenCalledWith('degree'))
+    expect(screen.queryByLabelText('scholarship.apply.plan.pathwayLabel')).toBeNull()
     expect(checkStpmEligibility).not.toHaveBeenCalled()
-  })
-
-  it('asks the STPM degree check for a student who holds STPM results', async () => {
-    mount({ ...sandboxProfileStpm, results_held: 'stpm' })
-    await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
     expect(checkEligibility).not.toHaveBeenCalled()
   })
 })

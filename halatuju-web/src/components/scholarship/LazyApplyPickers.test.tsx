@@ -6,7 +6,7 @@
  * college list. The facts a later tidy-up could quietly undo:
  *   1. each still ARRIVES drawing what the static version drew (this file);
  *   2. a chunk that cannot be fetched says so in place (the two `.failure.test.tsx` files);
- *   3. the apply page does not go back to a STATIC import of either — the whole saving (jest
+ *   3. neither the apply page nor the Plans picker goes back to a STATIC import of either (jest
  *      cannot weigh it; `npm run bundle-budget` does).
  */
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -43,11 +43,17 @@ describe('the saving is the import line', () => {
   const page = readWeb('src/app/scholarship/apply/page.tsx',
     'the apply form — first-load JS of /scholarship/apply, which these boundaries pay for')
 
-  it('the apply page reaches both only through their lazy boundaries', () => {
-    expect(page).toContain("from '@/components/scholarship/LazyAliranPicker'")
-    expect(page).toContain("from '@/components/scholarship/LazyMatricCollegePicker'")
+  // Since 2026-10-30 the Plans step is the shared PathwayPicker, behind its own lazy boundary;
+  // the picker reaches these two only through theirs.
+  it('the apply page loads the Plans picker lazily, and the picker reaches both lazily', () => {
+    expect(page).toContain("from '@/components/scholarship/LazyPathwayPicker'")
     expect(page).not.toMatch(/from\s+'@\/components\/AliranPicker'/)
     expect(page).not.toMatch(/from\s+'@\/data\/matric-colleges'/)
+    const picker = readWeb('src/components/PathwayPicker.tsx', 'the Plans picker /apply and /profile share')
+    expect(picker).toContain("from '@/components/scholarship/LazyAliranPicker'")
+    expect(picker).toContain("from '@/components/scholarship/LazyMatricCollegePicker'")
+    expect(picker).not.toMatch(/from\s+'@\/components\/AliranPicker'/)
+    expect(picker).not.toMatch(/from\s+'@\/data\/matric-colleges'/)
   })
 
   it('each lazy module owns a LITERAL import() — a variable specifier emits no chunk', () => {

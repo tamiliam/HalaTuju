@@ -36,6 +36,9 @@ export type {
   InsightsFieldItem, InsightsLevelItem, Insights, SearchCourse, AliranOption, SearchFilters,
   SearchParams, SavedCourseWithStatus,
 } from './api/courses'
+// One pathway's institutions and the courses each offers — the scholarship pickers (2026-10-30).
+export { getPathwayOfferings } from './api/offerings'
+export type { PathwayOfferings, OfferingInstitution, OfferingCourse } from './api/offerings'
 
 // The interest quiz, the ranked results, the reports, and applying elsewhere.
 export {

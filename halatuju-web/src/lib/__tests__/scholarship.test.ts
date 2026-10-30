@@ -11,18 +11,10 @@ import {
   expandMatricInstitution,
   formatAddress,
   isValidPhone,
-  eligiblePathways,
-  PATHWAY_ORDER,
-  programmesForPathway,
   isProgrammePathway,
   isInstitutionPathway,
-  eligibleMatricTracks,
   STPM_STREAMS,
-  stpmDegreesToCourses,
   UNCERTAINTY_REASONS,
-  pismpAlirans,
-  bidangForAliran,
-  aliranForChosen,
   nricChanged,
   emptyDetailsForm,
   applicationToDetailsForm,
@@ -71,7 +63,7 @@ import { enterApplyPage, setApplyProgramme, clearApplyProgramme } from '@/lib/ap
 // — the same six labels, the same nulls, plus a parity guard against `messages/ms.json` that the
 // FE version never had. The words the officer reads are pinned by
 // `src/app/admin/scholarship/[id]/view.preUTrack.test.tsx`.
-import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
 
@@ -270,6 +262,13 @@ describe('buildApplicationPayload', () => {
       chosenProgramme: { courseId: 'DKA', courseName: 'Diploma Kejuruteraan Awam', fieldKey: 'engineering' },
     }))
     expect(p.chosen_programme).toEqual({ course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', field_key: 'engineering' })
+    // Since 2026-10-30 the pick names the INSTITUTION too (catalogue spelling + id) — carried snake.
+    const withInst = buildApplicationPayload(baseForm({
+      chosenProgramme: { courseId: 'DKE', courseName: 'Diploma Kejuruteraan Elektrik', fieldKey: 'engineering',
+        institution: 'Politeknik Ungku Omar', institutionId: 'POLY-PUO' },
+    }))
+    expect(withInst.chosen_programme).toEqual({ course_id: 'DKE', course_name: 'Diploma Kejuruteraan Elektrik',
+      field_key: 'engineering', institution: 'Politeknik Ungku Omar', institution_id: 'POLY-PUO' })
     const none = buildApplicationPayload(baseForm({ chosenProgramme: null }))
     expect(none.chosen_programme).toEqual({})
   })
@@ -441,23 +440,6 @@ describe('applyFormError — Plans pathway question', () => {
   })
 })
 
-describe('stpmDegreesToCourses', () => {
-  const degrees = [
-    { course_id: 'z', course_name: 'Zoology', university: 'UM', field: 'science', field_key: 'science' },
-    { course_id: 'a', course_name: 'Accounting', university: 'USM', field: 'business', field_key: 'business' },
-  ] as unknown as StpmEligibleCourse[]
-  it('maps to the course shape (university → institution) and sorts A–Z', () => {
-    const out = stpmDegreesToCourses(degrees)
-    expect(out.map((c) => c.course_name)).toEqual(['Accounting', 'Zoology'])
-    expect(out[0].institution_name).toBe('USM')
-    expect(out[0].field_key).toBe('business')
-  })
-  it('handles null/empty', () => {
-    expect(stpmDegreesToCourses(null)).toEqual([])
-    expect(stpmDegreesToCourses([])).toEqual([])
-  })
-})
-
 describe('buildDetailsPayload — income_nonearning (Phase 2B)', () => {
   it('keeps unemployment detail only for currently-unemployed members, trimmed', () => {
     const f = {
@@ -491,22 +473,6 @@ describe('isInstitutionPathway', () => {
     expect(isInstitutionPathway('stpm')).toBe(true)
     expect(isInstitutionPathway('poly')).toBe(false)
     expect(isInstitutionPathway('')).toBe(false)
-  })
-})
-
-describe('eligibleMatricTracks', () => {
-  const pathways = [
-    { pathway: 'matric', trackId: 'sains', eligible: true },
-    { pathway: 'matric', trackId: 'kejuruteraan', eligible: false },
-    { pathway: 'matric', trackId: 'perakaunan', eligible: true },
-    { pathway: 'stpm', trackId: 'sains', eligible: true },
-  ] as unknown as PathwayResult[]
-  it('returns eligible matric track ids in order, ignoring ineligible + stpm', () => {
-    expect(eligibleMatricTracks(pathways)).toEqual(['sains', 'perakaunan'])
-  })
-  it('handles null/empty', () => {
-    expect(eligibleMatricTracks(null)).toEqual([])
-    expect(eligibleMatricTracks([])).toEqual([])
   })
 })
 
@@ -548,69 +514,6 @@ describe('isProgrammePathway', () => {
     expect(isProgrammePathway('stpm')).toBe(false)
     expect(isProgrammePathway('')).toBe(false)
     expect(isProgrammePathway('foo')).toBe(false)
-  })
-})
-
-describe('programmesForPathway', () => {
-  const courses = [
-    { course_id: '1', course_name: 'Zoology', pathway_type: 'university' },
-    { course_id: '2', course_name: 'Accounting', pathway_type: 'poly' },
-    { course_id: '3', course_name: 'Botany', pathway_type: 'university' },
-    { course_id: '4', course_name: 'Welding', pathway_type: 'poly' },
-  ] as unknown as EligibleCourse[]
-  it('filters to the chosen pathway and sorts alphabetically by name', () => {
-    expect(programmesForPathway(courses, 'poly').map((c) => c.course_name)).toEqual(['Accounting', 'Welding'])
-    expect(programmesForPathway(courses, 'university').map((c) => c.course_name)).toEqual(['Botany', 'Zoology'])
-  })
-  it('returns [] for a pathway with no eligible courses, or null/empty input', () => {
-    expect(programmesForPathway(courses, 'pismp')).toEqual([])
-    expect(programmesForPathway(null, 'poly')).toEqual([])
-    expect(programmesForPathway(courses, '')).toEqual([])
-  })
-})
-
-describe('PISMP Aliran → Bidang picker helpers', () => {
-  const pismp = [
-    { course_id: '50PD041S00P', course_name: 'Sains (SJKT)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
-    { course_id: '50PD040M00P', course_name: 'Matematik (SJKT)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
-    { course_id: '50BK047M00P', course_name: 'Muzik (SJKT-MBPK)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
-    { course_id: '50PD010B00P', course_name: 'Bahasa Inggeris (SK)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sk' },
-    { course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', source_type: 'poly', pathway_type: 'poly' },
-  ] as unknown as EligibleCourse[]
-
-  describe('pismpAlirans', () => {
-    it('returns the distinct school types present among PISMP courses, in display order', () => {
-      expect(pismpAlirans(pismp)).toEqual(['sk', 'sjkt'])
-    })
-    it('ignores non-PISMP courses and handles null', () => {
-      expect(pismpAlirans([{ course_id: 'x', course_name: 'X', source_type: 'poly' }] as unknown as EligibleCourse[])).toEqual([])
-      expect(pismpAlirans(null)).toEqual([])
-    })
-  })
-
-  describe('bidangForAliran', () => {
-    it('filters to one school type and sorts A–Z by bidang label', () => {
-      expect(bidangForAliran(pismp, 'sjkt').map((c) => c.course_id))
-        .toEqual(['50PD040M00P', '50BK047M00P', '50PD041S00P']) // Matematik, Muzik (MBPK), Sains
-    })
-    it('returns [] for an absent aliran or null/empty input', () => {
-      expect(bidangForAliran(pismp, 'sjkc')).toEqual([])
-      expect(bidangForAliran(null, 'sjkt')).toEqual([])
-      expect(bidangForAliran(pismp, '')).toEqual([])
-    })
-  })
-
-  describe('aliranForChosen', () => {
-    it('looks up the aliran of an already-chosen PISMP course by id', () => {
-      expect(aliranForChosen(pismp, '50PD010B00P')).toBe('sk')
-      expect(aliranForChosen(pismp, '50PD040M00P')).toBe('sjkt')
-    })
-    it('returns "" for a non-PISMP course, an unknown id, or null input', () => {
-      expect(aliranForChosen(pismp, 'DKA')).toBe('')
-      expect(aliranForChosen(pismp, 'nope')).toBe('')
-      expect(aliranForChosen(null, '50PD010B00P')).toBe('')
-      expect(aliranForChosen(pismp, null)).toBe('')
-    })
   })
 })
 
@@ -720,28 +623,6 @@ describe('applyFormError — phone + parent phone', () => {
     expect(applyFormError(baseForm({ parentPhone: '' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '012-345 6789' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '123' }))).toBe('parentPhone')
-  })
-})
-
-describe('eligiblePathways', () => {
-  it('returns count>0 pathways in fixed display order, with counts', () => {
-    const res = eligiblePathways({
-      poly: 85, asasi: 6, matric: 3, university: 49, kkom: 53, iljtm: 48, ilkbs: 35, stpm: 2,
-    })
-    expect(res.map((p) => p.key)).toEqual(
-      ['matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'iljtm', 'ilkbs'])
-    expect(res.find((p) => p.key === 'poly')!.count).toBe(85)
-  })
-  it('drops zero/absent pathways and unknown keys (e.g. un-split tvet)', () => {
-    expect(eligiblePathways({ poly: 0, tvet: 10, pismp: 3 })).toEqual([{ key: 'pismp', count: 3 }])
-  })
-  it('handles null/empty input', () => {
-    expect(eligiblePathways(null)).toEqual([])
-    expect(eligiblePathways({})).toEqual([])
-  })
-  it('only ever emits keys from PATHWAY_ORDER', () => {
-    const keys = eligiblePathways({ matric: 1, foo: 9, bar: 2 }).map((p) => p.key)
-    expect(keys.every((k) => (PATHWAY_ORDER as readonly string[]).includes(k))).toBe(true)
   })
 })
 

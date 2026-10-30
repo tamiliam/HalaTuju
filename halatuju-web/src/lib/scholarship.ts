@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
 import { APPLY_RETURN_KEY, safeSession, type StorageLike } from './applyReturn'
 import { asQualification, isThirdRoute, isTertiary, type Qualification } from './qualification'
@@ -187,27 +187,22 @@ export function isValidPhone(s: string): boolean {
   return /^0[2-9]/.test(d) && (d.length === 9 || d.length === 10)
 }
 
-// ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ──
-// Display ORDER for the "Sure" branch pathway dropdown (SPM leavers). The pathway VALUES are the
-// server's — the page renders the eligible pathways it was sent, and this list only says what
-// order to draw them in (iljtm/ilkbs arrive already split server-side). There is no taxonomy
-// constant on the api side to hold this against: `pathway_type` is a column of data, not an enum,
-// so a drift test would have nothing stable to read. ⚠ A pathway the server sends that is missing
-// from this list is not drawn at all — check this list when a new pathway is introduced.
+// ── My Plans: the pathway dropdown (Scholarship My Plans redesign, 2026-10-30) ──
+// Display ORDER of the pathways the offer branch lists — ALL of them, unfiltered by results (the
+// picker's rules are `lib/planPicker.ts`). The values are the server's `pathway_type`s; there is no
+// taxonomy constant on the api side to hold this against (`pathway_type` is a column of data, not an
+// enum). ⚠ A pathway missing from this list is not drawn — check it when a pathway is introduced.
 export const PATHWAY_ORDER = [
   'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
 ] as const
 export type PathwayKey = typeof PATHWAY_ORDER[number]
 
-export interface EligiblePathway { key: PathwayKey; count: number }
-
 // Has the student decided on a pathway, or are they still exploring? Drives the
 // progressive-disclosure split at the top of the Plans step.
 export type PathwayCertainty = '' | 'sure' | 'uncertain'
 
-// ── Plans redesign P3: eligible-programme course picker (the decided course) ──
-// Pathways whose "decided" branch is a programme list (→ course combobox). The two
-// institution pathways (matric, stpm) take the stream→school / track→college flow (P4).
+// Pathways whose offer branch names a PROGRAMME (institution first, then the course; PISMP by
+// school type then subject). The two pre-U pathways (matric, stpm) name a college / school instead.
 export const PROGRAMME_PATHWAYS = [
   'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
 ] as const
@@ -215,74 +210,45 @@ export function isProgrammePathway(key: string): boolean {
   return (PROGRAMME_PATHWAYS as readonly string[]).includes(key)
 }
 
-/** The single decided programme (Sure branch). Persisted as JSON in `chosen_programme`. */
+/** The single decided programme (offer branch). Persisted as JSON in `chosen_programme`. Since
+ *  2026-10-30 it names the INSTITUTION too, where the pathway has one (catalogue spelling). */
 export interface ChosenProgramme {
   courseId: string
   courseName: string
   fieldKey: string
+  institution?: string
+  institutionId?: string
 }
 
 /**
- * The eligible programmes for a chosen pathway: the student's eligible courses
- * (already narrowed by the engine to what their results qualify them for) filtered
- * to that `pathway_type`, sorted alphabetically by name. Feeds the course combobox.
+ * `chosen_programme` as stored — SNAKE, the shape every server reader takes (card_display,
+ * offer_sync, pathway_engine, the profile sync). The institution keys are left out when there is
+ * none, so such a pick keeps the old three-key shape.
  */
-export function programmesForPathway(
-  courses: EligibleCourse[] | null | undefined,
-  pathwayKey: string,
-): EligibleCourse[] {
-  if (!courses || !pathwayKey) return []
-  return courses
-    .filter((c) => c.pathway_type === pathwayKey)
-    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+export function chosenProgrammeToApi(cp: ChosenProgramme | null): Record<string, string> {
+  if (!cp) return {}
+  const out: Record<string, string> = { course_id: cp.courseId, course_name: cp.courseName, field_key: cp.fieldKey }
+  if (cp.institution) out.institution = cp.institution
+  if (cp.institutionId) out.institution_id = cp.institutionId
+  return out
 }
 
-// ── PISMP Aliran → Bidang picker (the teacher-training pathway) ──
-// PISMP courses form a tree: Aliran (school type) → Bidang (subject). A student picks
-// the school type they want to teach in, then the subject — instead of type-searching a
-// course name they may not know. The backend tags each eligible PISMP course with an
-// `aliran` (derived read-time by pismp_taxonomy.aliran_of); the bidang label is the
-// course name minus its school-type suffix. Elektif (the minor) is out of scope here.
+/** The stored `chosen_programme` back into the picker's shape (null when it names no course). */
+export function chosenProgrammeFromApi(raw: unknown): ChosenProgramme | null {
+  const cp = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const s = (v: unknown) => (v == null ? '' : String(v))
+  const courseId = s(cp.course_id ?? cp.courseId)
+  const courseName = s(cp.course_name ?? cp.courseName)
+  if (!courseId && !courseName) return null
+  const out: ChosenProgramme = { courseId, courseName, fieldKey: s(cp.field_key ?? cp.fieldKey) }
+  if (s(cp.institution)) out.institution = s(cp.institution)
+  if (s(cp.institution_id)) out.institutionId = s(cp.institution_id)
+  return out
+}
+
+// ── PISMP: School type (Aliran) → Subject (Bidang). The picker's helpers are `lib/planPicker.ts`.
 export const PISMP_ALIRAN_ORDER = ['sk', 'sjkc', 'sjkt', 'khas'] as const
 export type PismpAliran = typeof PISMP_ALIRAN_ORDER[number]
-
-/** The distinct alirans present among the eligible PISMP courses, in display order. */
-export function pismpAlirans(courses: EligibleCourse[] | null | undefined): PismpAliran[] {
-  if (!courses) return []
-  const present = new Set(
-    courses.filter((c) => c.source_type === 'pismp' && c.aliran).map((c) => c.aliran as string),
-  )
-  return PISMP_ALIRAN_ORDER.filter((a) => present.has(a))
-}
-
-/**
- * Eligible PISMP courses for one aliran (school type), sorted A–Z by course name —
- * feeds the course combobox (the same compact picker the UA pathway uses) once a
- * school type is chosen. The name already carries its "(SJKT)" suffix as the identifier.
- */
-export function bidangForAliran(
-  courses: EligibleCourse[] | null | undefined,
-  aliran: string,
-): EligibleCourse[] {
-  if (!courses || !aliran) return []
-  return courses
-    .filter((c) => c.source_type === 'pismp' && c.aliran === aliran)
-    .sort((a, b) => a.course_name.localeCompare(b.course_name))
-}
-
-/**
- * The aliran of an already-chosen PISMP course, looked up from the eligible list by id —
- * used to re-open the picker on the right school type when a student edits their pathway
- * on /profile. Returns '' if the course isn't a PISMP course in the list.
- */
-export function aliranForChosen(
-  courses: EligibleCourse[] | null | undefined,
-  courseId: string | null | undefined,
-): string {
-  if (!courses || !courseId) return ''
-  const c = courses.find((x) => x.course_id === courseId)
-  return (c && c.source_type === 'pismp' && c.aliran) || ''
-}
 
 // ── Plans redesign P4: institution pathways (Matriculation + STPM Form 6) ──
 // The two pathways whose decided branch is an institution (track/stream → college/school),
@@ -295,61 +261,10 @@ export function isInstitutionPathway(key: string): boolean {
 // school. Keys map to the school data's stream labels (Sains / Sains Sosial).
 export const STPM_STREAMS = ['sains', 'sains_sosial', 'not_sure'] as const
 
-/**
- * The matriculation tracks the student qualifies for, from a /calculate/pathways/
- * response — the matric entries flagged eligible, in the engine's order. Track ids
- * (sains/kejuruteraan/sains_komputer/perakaunan) match the college data's track keys.
- */
-export function eligibleMatricTracks(pathways: PathwayResult[] | null | undefined): string[] {
-  if (!pathways) return []
-  return pathways.filter((p) => p.pathway === 'matric' && p.eligible).map((p) => p.trackId)
-}
-
 // ── Plans redesign P5: STPM-student degree branch + Uncertain branch ──
 // "Where are you right now?" reasons for the Uncertain branch (multi-select, optional).
 // Stored in uncertainty_reasons; a coordinator decides mentoring from them (not auto-set).
 export const UNCERTAINTY_REASONS = ['exploring', 'results', 'guidance', 'family', 'finance'] as const
-
-/**
- * Map STPM eligible degrees to the course shape <ProgrammePicker> consumes, sorted
- * alphabetically — the university becomes the institution line. Lets the SPM course
- * combobox be reused for the post-STPM-student degree pick (no pathway step for them).
- */
-export function stpmDegreesToCourses(degrees: StpmEligibleCourse[] | null | undefined): EligibleCourse[] {
-  if (!degrees) return []
-  return degrees
-    .map((d) => ({
-      course_id: d.course_id,
-      course_name: d.course_name,
-      level: 'Degree',
-      field: d.field,
-      field_key: d.field_key,
-      source_type: 'stpm',
-      pathway_type: 'stpm',
-      merit_cutoff: null,
-      student_merit: null,
-      merit_label: null,
-      merit_color: null,
-      institution_name: d.university,
-    } as EligibleCourse))
-    .sort((a, b) => a.course_name.localeCompare(b.course_name))
-}
-
-/**
- * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
- * pathways the student qualifies for (count > 0) in a fixed display order, each with
- * its eligible-programme count. Drives the single-select pathway dropdown. Unknown
- * keys (e.g. the un-split 'tvet' fallback) are ignored — only the 9 known pathways show.
- */
-export function eligiblePathways(pathwayStats?: Record<string, number> | null): EligiblePathway[] {
-  if (!pathwayStats) return []
-  const out: EligiblePathway[] = []
-  for (const key of PATHWAY_ORDER) {
-    const count = pathwayStats[key] || 0
-    if (count > 0) out.push({ key, count })
-  }
-  return out
-}
 
 // ── My Plans + My Support (Sprint 10) ────────────────────────────────────
 // UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
@@ -582,9 +497,7 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     // My Plans + My Support — rank is derived from the top-3 selection order.
     pathway_certainty: form.pathwayCertainty,
     chosen_pathway: form.chosenPathway,
-    chosen_programme: form.chosenProgramme
-      ? { course_id: form.chosenProgramme.courseId, course_name: form.chosenProgramme.courseName, field_key: form.chosenProgramme.fieldKey }
-      : {},
+    chosen_programme: chosenProgrammeToApi(form.chosenProgramme),
     pre_u_track: form.preUTrack,
     pre_u_institution: form.preUInstitution,
     uncertainty_reasons: form.uncertaintyReasons,
@@ -639,9 +552,9 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   // Parent/guardian phone is optional, but if given it must be a valid number.
   if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'
-  // My Plans — the student must answer whether they've decided; "uncertain" is a
-  // valid answer (it never traps an unsure student). A decided SPM leaver must then
-  // pick a pathway from the eligible-only dropdown.
+  // My Plans — the student must answer whether she holds an offer ('sure') or is waiting
+  // ('uncertain'); waiting is a valid answer (it never traps her). With an offer, an SPM leaver
+  // must then name the pathway it is for.
   if (!form.pathwayCertainty) return 'pathwayCertainty'
   // A tertiary student (STPM or the third route, S2b) has no SPM pathway step: a degree instead.
   const tertiary = isTertiary(examType)

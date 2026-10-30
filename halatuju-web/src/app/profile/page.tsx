@@ -20,7 +20,9 @@ import {
   checkPhoneVerification,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
-import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
+import {
+  isValidPhone, formatPhone, setOnboardingReturn, chosenProgrammeFromApi, chosenProgrammeToApi,
+} from '@/lib/scholarship'
 import { isThirdRoute, resultsEditPath } from '@/lib/qualification'
 import { isMalaysian } from '@/lib/bumiputera'
 import BumiputeraField from '@/components/profile/BumiputeraField'
@@ -191,17 +193,9 @@ export default function ProfilePage() {
       setPathwayForm({
         pathwayCertainty: (profileData.pathway_certainty as PathwayForm['pathwayCertainty']) || '',
         chosenPathway: profileData.chosen_pathway || '',
-        // chosen_programme is stored SNAKE ({course_id, course_name, field_key}) — the shape
-        // /apply writes and the cockpit/verdict read. ProgrammePicker wants CAMEL, so map it.
-        chosenProgramme: (() => {
-          const cp = profileData.chosen_programme as Record<string, unknown> | null | undefined
-          const id = cp && (cp.course_id ?? (cp as Record<string, unknown>).courseId)
-          const nm = cp && (cp.course_name ?? (cp as Record<string, unknown>).courseName)
-          return (id || nm)
-            ? { courseId: String(id ?? ''), courseName: String(nm ?? ''),
-                fieldKey: String((cp!.field_key ?? (cp as Record<string, unknown>).fieldKey) ?? '') }
-            : null
-        })(),
+        // chosen_programme is stored SNAKE ({course_id, course_name, field_key, institution,
+        // institution_id}) — the shape /apply writes and the cockpit/verdict read; the picker is CAMEL.
+        chosenProgramme: chosenProgrammeFromApi(profileData.chosen_programme),
         preUTrack: profileData.pre_u_track || '',
         preUInstitution: profileData.pre_u_institution || '',
         pathwaysConsidered: Array.isArray(profileData.pathways_considered) ? profileData.pathways_considered : [],
@@ -357,11 +351,9 @@ export default function ProfilePage() {
         chosen_pathway: pathwayForm.chosenPathway,
         pre_u_track: pathwayForm.preUTrack,
         pre_u_institution: pathwayForm.preUInstitution,
-        // Write back the SNAKE shape /apply uses + the cockpit/verdict read (course_name/
+        // Write back the SNAKE shape /apply uses + the cockpit/verdict read (course_name /
         // institution), so a /profile edit can't drift the stored programme's keys.
-        chosen_programme: pathwayForm.chosenProgramme
-          ? { course_id: pathwayForm.chosenProgramme.courseId, course_name: pathwayForm.chosenProgramme.courseName, field_key: pathwayForm.chosenProgramme.fieldKey }
-          : {},
+        chosen_programme: chosenProgrammeToApi(pathwayForm.chosenProgramme),
         pathways_considered: pathwayForm.pathwaysConsidered,
         uncertainty_reasons: pathwayForm.uncertaintyReasons,
         uncertainty_note: pathwayForm.uncertaintyNote,

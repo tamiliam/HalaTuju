@@ -6,8 +6,8 @@
  *   1. the picker still ARRIVES with the same options the static call drew — the centres for the
  *      chosen stream, name and state — and the chosen value (this file);
  *   2. a chunk that cannot be fetched says so IN PLACE — `LazyStpmSchoolPicker.failure.test.tsx`;
- *   3. the apply page does not go back to a STATIC import of `@/data/stpm-schools`, which is the
- *      whole saving on `/scholarship/apply` (jest cannot weigh it; `npm run bundle-budget` does).
+ *   3. neither the apply page nor the Plans picker it loads goes back to a STATIC import of
+ *      `@/data/stpm-schools` (jest cannot weigh it; `npm run bundle-budget` does).
  */
 import { fireEvent, render, screen } from '@testing-library/react'
 import { readWeb } from '@/test/sourceGuard'
@@ -44,11 +44,17 @@ describe('the Form 6 school picker arrives on demand', () => {
 })
 
 describe('the saving is the import line', () => {
-  it('the apply page reaches the centre list only through the LAZY boundary', () => {
+  // Since 2026-10-30 the apply page draws its Plans step with the shared PathwayPicker, itself
+  // behind a lazy boundary; the picker in turn reaches the centre list only through this one.
+  it('the apply page reaches the Plans picker lazily, and the picker the centre list lazily', () => {
     const page = readWeb('src/app/scholarship/apply/page.tsx',
       'the apply form — first-load JS of /scholarship/apply, which this boundary pays for')
-    expect(page).toContain("from '@/components/scholarship/LazyStpmSchoolPicker'")
+    expect(page).toContain("from '@/components/scholarship/LazyPathwayPicker'")
+    expect(page).not.toMatch(/from\s+'@\/components\/PathwayPicker'/)
     expect(page).not.toMatch(/from\s+'@\/data\/stpm-schools'/)
+    const picker = readWeb('src/components/PathwayPicker.tsx', 'the Plans picker /apply and /profile share')
+    expect(picker).toContain("from '@/components/scholarship/LazyStpmSchoolPicker'")
+    expect(picker).not.toMatch(/from\s+'@\/data\/stpm-schools'/)
   })
 
   it('the lazy module owns a LITERAL import() of the data — a variable specifier emits no chunk', () => {

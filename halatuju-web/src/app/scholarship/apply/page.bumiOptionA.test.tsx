@@ -6,6 +6,10 @@
  * That answer is course-guide only (the s44(6) stance: the bursary does not collect ethnicity); a
  * wrong pick is corrected by the offer letter.
  *
+ * Since 2026-10-30 the picker lists the CATALOGUE (`getPathwayOfferings`), which serves every course
+ * with no student in the request at all; "Eligible only" (opt-in) still sends `bumiputera: true`.
+ * Until then this file asserted the eligibility check's `bumiputera: true` on mount.
+ *
  * Mounted: the claims are about the request the page makes and the list the student can pick from.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -13,7 +17,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm, sandboxProfileStpm } from '@/sandbox/fixtures/scholarship'
-import { checkEligibility, checkStpmEligibility } from '@/lib/api'
+import { checkEligibility, checkStpmEligibility, getPathwayOfferings } from '@/lib/api'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -25,11 +29,6 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string) => k, locale: 'en' }),
   tOr: (t: (k: string) => string, k: string, fallback: string) => (t(k) === k ? fallback : t(k)),
 }))
-const UITM = {
-  course_id: 'UITM-BUMI', course_name: 'Ijazah Sarjana Muda Seni Bina (UiTM)', university: 'UiTM',
-  stream: 'arts', field: '', min_cgpa: 3, min_muet_band: 3, stpm_req_physics: false,
-  req_interview: false, no_colorblind: false, merit_score: 80,
-}
 jest.mock('@/lib/api', () => ({
   __esModule: true,
   ...jest.requireActual('@/lib/api'),
@@ -39,8 +38,13 @@ jest.mock('@/lib/api', () => ({
   checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
   calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
   // What the server answers to bumiputera=true: the Bumi-only UiTM course is in the list.
-  checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [UITM], total_eligible: 1 })),
-  searchStpmCourses: jest.fn(() => Promise.resolve({ courses: [], total_count: 0, filters: {} })),
+  checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [{ course_id: 'UITM-BUMI' }], total_eligible: 1 })),
+  // The catalogue: the Bumi-only UiTM degree is served like any other.
+  getPathwayOfferings: jest.fn(() => Promise.resolve({
+    pathway: 'degree',
+    institutions: [{ id: 'UITM', institution_id: 'UITM', name: 'Universiti Teknologi MARA', state: 'Selangor', course_ids: ['UITM-BUMI'] }],
+    courses: [{ course_id: 'UITM-BUMI', course_name: 'Ijazah Sarjana Muda Seni Bina (UiTM)', field_key: 'senibina', aliran: null }],
+  })),
 }))
 jest.mock('next/link', () => ({
   __esModule: true,
@@ -54,8 +58,13 @@ const mount = (profile: Record<string, unknown>) => render(
     <ScholarshipApplyPage />
   </AuthContext.Provider>,
 )
+const openOffer = async () => {
+  const tabs = await screen.findAllByText('scholarship.apply.section.plans')
+  fireEvent.click(tabs[0].closest('button') as HTMLButtonElement)
+  fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
+}
 
-beforeEach(() => { (checkStpmEligibility as jest.Mock).mockClear() })
+beforeEach(() => { jest.clearAllMocks() })
 
 it.each([
   ['answered No', { bumiputera: false }],
@@ -63,21 +72,30 @@ it.each([
   ['an older profile without the field', {}],
 ])('a student who %s is offered the Bumi-only course in the programme picker', async (_label, answer) => {
   mount({ ...STPM, ...answer })
-  await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
-  expect((checkStpmEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)   // include everything
-
-  const tabs = await screen.findAllByText('scholarship.apply.section.plans')
-  fireEvent.click(tabs[0].closest('button') as HTMLButtonElement)
-  fireEvent.click((await screen.findByText('scholarship.apply.plan.sure')).closest('button') as HTMLButtonElement)
-  fireEvent.focus(await screen.findByRole('combobox'))
+  await openOffer()
+  const uni = await screen.findByLabelText('scholarship.apply.plan.institutionLabel.university')
+  fireEvent.change(uni, { target: { value: 'UITM' } })
+  fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
   expect(await screen.findByText(/Seni Bina \(UiTM\)/)).toBeTruthy()
+  expect(getPathwayOfferings).toHaveBeenCalledWith('degree')       // the catalogue: no student in it
+  expect(checkStpmEligibility).not.toHaveBeenCalled()
 })
 
-// Bumi Sprint D1: the SPM course list has Bumi-only (UiTM) rows too. The SPM check reads the profile
-// it is sent, so the picker overrides the answer with `bumiputera: true` — every course, as above.
+it('"Eligible only" still includes Bumi-only courses: the STPM check is sent bumiputera: true', async () => {
+  mount({ ...STPM, bumiputera: false })
+  await openOffer()
+  fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+  await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
+  expect((checkStpmEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
+})
+
+// Bumi Sprint D1: the SPM course list has Bumi-only (UiTM) rows too. "Eligible only" sends the SPM
+// check `bumiputera: true` whatever the stored answer — every course, as above.
 it.each([false, null, undefined])('an SPM student (stored answer %s) is sent the whole SPM list', async (answer) => {
-  (checkEligibility as jest.Mock).mockClear()
   mount({ ...sandboxProfileSpm, results_exam_type: 'spm', results_held: 'spm', bumiputera: answer })
+  await openOffer()
+  expect(checkEligibility).not.toHaveBeenCalled()                   // nothing asked until she switches it on
+  fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
   await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
   expect((checkEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
 })
@@ -91,6 +109,8 @@ it('never reads the stored Bumiputera answer', async () => {
     },
   })
   mount(profile)
+  await openOffer()
+  fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
   await waitFor(() => expect(checkStpmEligibility).toHaveBeenCalled())
   expect(reads).toEqual([])
 })

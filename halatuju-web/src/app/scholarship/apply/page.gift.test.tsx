@@ -39,9 +39,8 @@ jest.mock('@/lib/api', () => ({
   getMyScholarshipApplications: jest.fn(),
   getApplyGate: jest.fn(),
   submitScholarshipApplication: jest.fn(() => Promise.resolve({})),
-  checkEligibility: jest.fn(() => Promise.resolve({ pathway_stats: {}, eligible_courses: [] })),
-  calculatePathways: jest.fn(() => Promise.resolve({ pathways: [] })),
-  checkStpmEligibility: jest.fn(() => Promise.resolve({ eligible_courses: [] })),
+  // My Plans' catalogue (2026-10-30); the picker asks for no eligibility unless switched on.
+  getPathwayOfferings: jest.fn(() => Promise.resolve({ pathway: '', institutions: [], courses: [] })),
 }))
 jest.mock('next/link', () => ({
   __esModule: true,
