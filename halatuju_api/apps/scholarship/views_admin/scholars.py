@@ -131,6 +131,33 @@ class AdminScholarResultsView(_ScholarsBase):
                                      for r in results_review.results_for_file(app)]})
 
 
+class AdminScholarMoneyView(_ScholarsBase):
+    """GET admin/scholarship/scholars/<pk>/money/ — the file's Money tab (S5a): award, paid,
+    remaining and her last releases by the Payments rules (`scholar_money`), all as strings, plus
+    her spending this term by category ONLY for a viewer holding the `spending` permission (the
+    key is absent otherwise). Read-only, so a closed file reads the same."""
+
+    def get(self, request, pk):
+        app, admin, err = self._file_for(request, pk)
+        if err:
+            return err
+        from .. import scholar_money
+        return Response(scholar_money.money_payload(app, may_see_spending=admin.has_perm('spending')))
+
+
+class AdminScholarContractView(_ScholarsBase):
+    """GET admin/scholarship/scholars/<pk>/contract/ — the file's Contract tab (S5a): the EXECUTED
+    platform-signed agreement (dates, parties without IC numbers, a 300-second signed PDF link) or
+    `{exists: false}`. Not gated on the signing feature flag. Read-only."""
+
+    def get(self, request, pk):
+        app, _admin, err = self._file_for(request, pk)
+        if err:
+            return err
+        from .. import scholar_money
+        return Response(scholar_money.contract_payload(app))
+
+
 class AdminScholarResultReviewView(_ScholarsBase):
     """POST admin/scholarship/scholars/<pk>/results/<result_id>/review/ {decision: accepted|queried,
     note} — accept or query a result (a query needs a note the student sees). S4a.

@@ -95,7 +95,10 @@ export const roleReviewer: ManualChapter = {
         people who prepare payment runs, not by reviewers. Her <strong>Results</strong> tab lists each result
         she sends with her slip: <strong>Accept</strong> it, or <strong>Query</strong> it with a note she will
         see. Only an accepted result counts. A result needs the slip she uploaded at the portal &mdash; slips sent
-        by email are not accepted and you cannot attach one for her, so query her to upload it.</>
+        by email are not accepted and you cannot attach one for her, so query her to upload it. Her
+        <strong> Money</strong> tab shows her award, what has been paid and what remains, and her last three
+        payments (spending detail is for staff who may open Spending); her <strong>Contract</strong> tab shows the
+        contract signed on the platform and its signed PDF.</>
       ),
     },
     {

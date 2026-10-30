@@ -45,7 +45,10 @@ export const roleAdminGeneral: ManualChapter = {
         status or close the file. On a student assigned to you, the <strong>Results</strong> tab is where you
         accept or query each result she sends; only an accepted result counts. Every result needs the slip she
         uploaded at the portal &mdash; one sent by email is not accepted, and you cannot attach it for her: query
-        her to upload it. Letters and mentors are coming in later updates.</>
+        her to upload it. The <strong>Money</strong> tab shows her award, paid and remaining (the Payments
+        page&rsquo;s figures), her last three payments and her spending this term by category; the
+        <strong> Contract</strong> tab shows the contract signed on the platform and its signed PDF. Letters and mentors
+        are coming in later updates.</>
       ),
     },
     {

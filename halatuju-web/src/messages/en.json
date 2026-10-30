@@ -6265,6 +6265,30 @@
           "slip_required": "A result can be accepted only with the slip she uploaded. Query her to upload it.",
           "generic": "Could not save the review. You may not have permission."
         }
+      },
+      "moneyTab": {
+        "loadFailed": "Could not load the money for this scholar.",
+        "releases": "Last payments",
+        "spendingTitle": "Spending this term, by category",
+        "since": {
+          "term": "Since {date} (this result term)",
+          "funded": "Since {date} (funded)",
+          "all": "All spending"
+        },
+        "asAt": "as at {date}",
+        "noSpending": "No spending reported for this period."
+      },
+      "contractTab": {
+        "loadFailed": "Could not load the contract.",
+        "executedOn": "Signed and executed {date}",
+        "role": {
+          "student": "Student",
+          "guarantor": "Guarantor",
+          "foundation": "For the organisation",
+          "witness": "Witness"
+        },
+        "viewPdf": "View signed PDF",
+        "noPdf": "The signed PDF is not available right now."
       }
     },
     "contracts": {

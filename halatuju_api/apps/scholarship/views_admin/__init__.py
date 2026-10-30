@@ -150,7 +150,7 @@ from .spending_flags import AdminSpendingFlagView
 # Student maintenance Sprint 2 (2026-10-29) — the Scholars list, file and activity log.
 from .scholars import (
     AdminScholarActivityView, AdminScholarFileView, AdminScholarListView,
-    AdminScholarResultReviewView, AdminScholarResultsView,
+    AdminScholarContractView, AdminScholarMoneyView, AdminScholarResultReviewView, AdminScholarResultsView,
 )
 from .sponsors import (
     _SponsorScope, _chain_organisations, _sponsor_detail_dict, _sponsor_dict,

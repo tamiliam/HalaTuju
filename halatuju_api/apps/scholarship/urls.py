@@ -139,6 +139,8 @@ from .views_admin import (
     AdminScholarListView,
     AdminScholarResultReviewView,
     AdminScholarResultsView,
+    AdminScholarMoneyView,
+    AdminScholarContractView,
     AdminPaymentRunDetailView,
     AdminPaymentRunItemView,
     AdminPaymentRunSignView,
@@ -354,6 +356,8 @@ urlpatterns = [
     path('admin/scholarship/scholars/<int:pk>/', AdminScholarFileView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/activity/', AdminScholarActivityView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/results/', AdminScholarResultsView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/money/', AdminScholarMoneyView.as_view()),
+    path('admin/scholarship/scholars/<int:pk>/contract/', AdminScholarContractView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/results/<int:result_id>/review/',
          AdminScholarResultReviewView.as_view()),
     # Programme Overview (2026-09-15) — the page a person LANDS on inside a gift. Open to every

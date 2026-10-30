@@ -173,6 +173,47 @@ export async function getScholarResults(id: number, options?: ApiOptions) {
   return adminFetch<{ results: ScholarResultRow[] }>(`${BASE}${id}/results/`, options)
 }
 
+/** S5a: the Money tab. Every amount a STRING (format at the edge). `spending` is ABSENT unless the
+ *  viewer holds the `spending` permission — never null. */
+export interface ScholarMoney {
+  award_amount: string | null
+  paid_to_date: string
+  remaining: string
+  releases: { amount: string; released_on: string | null; label: string; reference: string }[]
+  spending?: {
+    /** Her current result term's start (`term`), else the day she was funded (`funded`). */
+    since: string | null
+    basis: 'term' | 'funded' | 'all'
+    spent: string
+    as_at: string | null
+    categories: { code: string; label: string; total: string }[]
+  }
+}
+
+export interface ScholarContractParty {
+  role: 'student' | 'guarantor' | 'foundation' | 'witness'
+  name: string
+  relationship?: string
+  title?: string
+  organisation?: string
+  signed_on: string | null
+}
+
+/** S5a: the Contract tab — an EXECUTED platform-signed agreement, or `{exists: false}`. The PDF link
+ *  lives `pdf_expires_in` seconds, so the tab fetches a fresh one each time it opens the PDF. */
+export type ScholarContract =
+  | { exists: false }
+  | { exists: true; executed_on: string | null; version: string; parties: ScholarContractParty[];
+      pdf_url: string | null; pdf_expires_in: number }
+
+export async function getScholarMoney(id: number, options?: ApiOptions) {
+  return adminFetch<ScholarMoney>(`${BASE}${id}/money/`, options)
+}
+
+export async function getScholarContract(id: number, options?: ApiOptions) {
+  return adminFetch<ScholarContract>(`${BASE}${id}/contract/`, options)
+}
+
 export async function reviewScholarResult(
   id: number, resultId: number, review: { decision: 'accepted' | 'queried'; note: string },
   options?: ApiOptions,

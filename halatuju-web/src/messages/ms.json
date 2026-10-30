@@ -6265,6 +6265,30 @@
           "slip_required": "Keputusan hanya boleh diterima dengan slip yang dimuat naik olehnya. Minta dia memuat naiknya.",
           "generic": "Tidak dapat menyimpan semakan. Anda mungkin tiada kebenaran."
         }
+      },
+      "moneyTab": {
+        "loadFailed": "Tidak dapat memuatkan maklumat wang untuk pelajar ini.",
+        "releases": "Bayaran terakhir",
+        "spendingTitle": "Perbelanjaan penggal ini, mengikut kategori",
+        "since": {
+          "term": "Sejak {date} (penggal keputusan ini)",
+          "funded": "Sejak {date} (dibiayai)",
+          "all": "Semua perbelanjaan"
+        },
+        "asAt": "setakat {date}",
+        "noSpending": "Tiada perbelanjaan dilaporkan bagi tempoh ini."
+      },
+      "contractTab": {
+        "loadFailed": "Tidak dapat memuatkan kontrak.",
+        "executedOn": "Ditandatangani dan berkuat kuasa {date}",
+        "role": {
+          "student": "Pelajar",
+          "guarantor": "Penjamin",
+          "foundation": "Bagi pihak organisasi",
+          "witness": "Saksi"
+        },
+        "viewPdf": "Lihat PDF bertandatangan",
+        "noPdf": "PDF bertandatangan tidak tersedia buat masa ini."
       }
     },
     "contracts": {

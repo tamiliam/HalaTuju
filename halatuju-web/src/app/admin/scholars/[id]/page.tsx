@@ -4,8 +4,8 @@
 //
 // ⚠ A SHELL, HONESTLY: only what exists is shown. The header and the Overview's Results, Money and
 // Contract cards read the server's payload; Mentor (Sprint 7), Letters (Sprint 6) and Surveys (later)
-// say calmly that they are coming — never sample data. Real standing is Sprint 4, spending Sprint 5,
-// the signed-PDF link Sprint 5.
+// say calmly that they are coming — never sample data. The Money and Contract TABS (S5a) read their
+// own endpoints: releases, spending (with the `spending` permission only) and the executed PDF.
 // ⚠ THE SUB-STATE AND CLOSE LIVE HERE since Sprint 3 (`ScholarControls`, moved from the cockpit's
 // PostAwardPanels): drawn from the server's `controls` offer, judged again by the cockpit doors. A
 // hold is a money act (payments rights, S1 M1). "View application" opens the full review screen.
@@ -22,6 +22,8 @@ import RecordState from '@/components/admin/RecordState'
 import ScholarActivity from '@/components/admin/ScholarActivity'
 import ScholarControls from '@/components/admin/ScholarControls'
 import ScholarResults from '@/components/admin/ScholarResults'
+import ScholarMoney from '@/components/admin/ScholarMoney'
+import ScholarContract from '@/components/admin/ScholarContract'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
@@ -225,8 +227,13 @@ export default function ScholarFilePage() {
             onChanged={() => setReloads((n) => n + 1)} />
         </div>
       )}
-      {tab === 'money' && <div className="max-w-xl">{moneyCard}</div>}
-      {tab === 'contract' && <div className="max-w-xl">{contractCard}</div>}
+      {tab === 'money' && (
+        <div className="max-w-3xl">
+          <ScholarMoney id={file.id} token={token} links={moneyLinks.map((page) => ({
+            page, href: `/admin/${page}${giftQuery}` }))} />
+        </div>
+      )}
+      {tab === 'contract' && <div className="max-w-3xl"><ScholarContract id={file.id} token={token} /></div>}
       {tab === 'letters' && <div className="max-w-xl">{later('letters')}</div>}
       {tab === 'mentoring' && <div className="max-w-xl">{later('mentor')}</div>}
       {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}

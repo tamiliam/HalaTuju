@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## The scholar file's Money and Contract tabs read the Payments rules and the executed agreement only — 2026-10-30 (student maintenance S5a)
+
+**Decision:** (1) `GET admin/scholarship/scholars/<id>/money/` and `.../contract/` behind the scholar-file fence
+(`_file_for`: the Applications rule — finance and partner refused, a reviewer only for an assigned scholar, another
+organisation 404). Reads only; a closed file reads the same. (2) **Money is THE Payments rules** (`scholar_money`):
+award, `payments.paid_to_date` (released disbursements), `payments._remaining` (floored at 0, 0 with no award) and the
+last 3 released disbursements — every amount a string. One test holds the Overview card, her My Bursary summary, this
+tab, the Payments funding summary and the sponsor card's "released" to the same number. (3) **Spending this term by
+category** only with `has_perm('spending')` — the key is ABSENT otherwise (the Spending page's rule; finance never
+reaches the file). "This term" = her current S4b result term's stored `term_starts_on`, else since she was funded;
+categories and totals only, the Spending page's arithmetic. (4) **Contract = an EXECUTED agreement with its PDF**
+(platform-signed, owner ruling 2026-10-29), else `{exists: false}` → "No contract on file". Not gated on
+`BURSARY_AGREEMENT_ENABLED`. Parties are names, roles and dates — never an IC number. The PDF is a signed URL into the
+private bucket, minted per request for **300 seconds**, refused when the storage path's organisation is not the
+application's; the tab fetches a fresh link each time it opens the PDF.
+
+**The doors (readers added):** `scholar_money.money_payload`, `spending_block`, `contract_payload`, `pdf_url` (via the
+two admin views). Nothing writes. **Readers that must agree:** `scholars.file_payload` (S2 card),
+`views_bursary.summary_payload` (S3), `AdminPaymentFundingSummaryView`, `spend_sponsor.sponsor_card`.
+
+**Owner ruling (2026-10-30), applies in 5b:** the STUDENT's Funds tab shows totals plus categories — the same card
+her sponsor sees — with no merchants and no dates.
+
 ## Held UP_TVET courses take their pages' three gate flags and F1's remark — 2026-10-30 (Bumi F1b, owner rulings 2026-10-29/30 + review, executed)
 
 **Decision.** The held TVET courses (IJTM-* / IKBN-*: ONE `course_requirements` row each, many campuses)

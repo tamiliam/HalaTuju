@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 5a — the scholar file's Money and Contract tabs - 2026-10-30
+
+Roadmap Sprint 5, admin half (5b = her Funds and Contract tabs). No migration.
+
+- **Money tab:** award, paid to date and remaining by the Payments page's own rules (the same figures as Payments,
+  My Bursary and the sponsor card), her last three payments, and — for staff who may open Spending — her spending
+  this result term by category, with links to Payments and Spending.
+- **Contract tab:** a contract signed on the platform — "Signed and executed <date>", the parties (no IC numbers),
+  and the signed PDF in the viewer through a five-minute link fetched fresh each time; anything else reads "No
+  contract on file". Works whether or not signing is switched on.
+- Guide (org admin, general admin, reviewer) updated.
+
 ## Bumi F1b — held TVET flag fix (no migration) - 2026-10-30
 
 **Live 2026-10-30** in `579e27ca` (api-01199-vz4; fix re-revision api-01200-s7p): dry run and apply

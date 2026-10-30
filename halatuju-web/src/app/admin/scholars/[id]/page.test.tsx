@@ -96,6 +96,19 @@ it('the money links open on THIS gift, and only for a viewer who may open them',
     .getAttribute('href')).toBe('/admin/spending?programme=flag')
 })
 
+it('the Money and Contract tabs read their own endpoints (S5a)', async () => {
+  mockApi.getScholarMoney.mockResolvedValue({ award_amount: '2000.00', paid_to_date: '1200.00', remaining: '800.00', releases: [] })
+  mockApi.getScholarContract.mockResolvedValue({ exists: false })
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+  fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.money' }))
+  expect((await screen.findByTestId('money-remaining')).textContent).toBe('RM800.00')
+  expect(mockApi.getScholarMoney).toHaveBeenCalledWith(104, { token: 'tok' })
+  fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.contract' }))
+  expect(await screen.findByTestId('contract-none')).toBeTruthy()
+  expect(mockApi.getScholarContract).toHaveBeenCalledWith(104, { token: 'tok' })
+})
+
 it('a reviewer gets no money links (Payments and Spending are not theirs)', async () => {
   mockRole = { role: 'reviewer', owning_org_id: 11 }
   render(<ScholarFilePage />)

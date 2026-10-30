@@ -43,7 +43,12 @@ export const roleOrgAdmin: ManualChapter = {
         A result past its due date and the grace shows as <strong>Not submitted</strong>, and the list&rsquo;s
         <strong> Results overdue</strong> filter finds those students. The emails students receive about their
         results &mdash; due soon, overdue, and your query &mdash; are worded on <strong>Organisation &rarr; Settings
-        &rarr; Student communications</strong>, in English, Malay and Tamil.</p></>
+        &rarr; Student communications</strong>, in English, Malay and Tamil.</p>
+        <p className="mt-2">The file&rsquo;s <strong>Money</strong> tab shows her award, what has been paid and what
+        remains &mdash; the same figures as the Payments page &mdash; with her last three payments and, for anyone
+        who may open Spending, what she has spent this term by category. The <strong>Contract</strong> tab shows a
+        contract signed on the platform: the date it took effect, who signed it, and the signed PDF. Anything else
+        reads &ldquo;No contract on file&rdquo;.</p></>
       ),
     },
     {
