@@ -28,7 +28,7 @@ _D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_cours
 _D2_FILE = _D1_FILE.with_name('spm_new_courses_D2.json')
 _F1_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F1.json'
 _F1B_FILE = _D1_FILE.parents[1] / 'tvet' / 'held_flag_fix_F1b.json'
-# Sprint F2 appended the 182 public MARA UP_TVET courses of `data/tvet/tvet_new_courses_F2.json`.
+# Sprint F2 appended the 181 public MARA UP_TVET courses of `data/tvet/tvet_new_courses_F2.json`.
 _F2_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F2.json'
 ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
@@ -50,7 +50,7 @@ PRE_F1B_BASELINE = 5319
 # gains EXACTLY those F1 rows she meets, and nothing else: pinned as a count and a digest.
 GOLDEN_F1_NON_BUMI_GAIN = 1494        # 30-33 per citizen, 20 if colour-blind, 0 for the non-citizen
 F1_NON_BUMI_GAIN_SHA256 = '07d39bf4539eecbf8a31d5652a6fea97e566cef3c6fbd393e15b0b6021c9eb85'
-# Sprint F2: 178 of the 182 MARA courses are Bumi-only; the other 4 are GIATMARA campuses whose pages are
+# Sprint F2: 177 of the 181 MARA courses are Bumi-only; the other 4 are GIATMARA campuses whose pages are
 # silent on Bumiputera (3 also on citizenship). A non-Bumi student gains EXACTLY those 4 open rows she meets
 # (49-50 x 4: the non-citizen meets the 3 that do not ask citizenship), pinned by count and digest.
 GOLDEN_F2_NON_BUMI_GAIN = 199
@@ -64,9 +64,9 @@ GOLDEN_BASELINE_BUMI_BEFORE_F2 = 7552
 #: one digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
 BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
 #: Sprint F2: what the Bumiputera twins gain from the MARA rows, pinned by count and digest.
-GOLDEN_F2_BUMI_GAIN = 5079
-F2_BUMI_GAIN_SHA256 = '254c50a42800997e0a82eaf2f3e6274ac85aa246105a7803b5c7a8b1a57d9ec3'
-GOLDEN_BASELINE_BUMI = GOLDEN_BASELINE_BUMI_BEFORE_F2 + GOLDEN_F2_BUMI_GAIN   # 12,631
+GOLDEN_F2_BUMI_GAIN = 5069   # 5,079 before review round 1 flagged TVET-48245 (item-level ATAU)
+F2_BUMI_GAIN_SHA256 = 'be74a9b849a58a13fb0b29d1e011b8338420896befd20fea39163417f31a5e84'
+GOLDEN_BASELINE_BUMI = GOLDEN_BASELINE_BUMI_BEFORE_F2 + GOLDEN_F2_BUMI_GAIN   # 12,621
 
 
 def _digest(lines):

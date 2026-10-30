@@ -8,13 +8,13 @@
   "header_mismatches": 30,
   "remark_variants": 21,
   "rows": 665,
-  "flagged_rows": 58,
-  "new_courses": 182,
-  "new_offerings": 607,
+  "flagged_rows": 59,
+  "new_courses": 181,
+  "new_offerings": 606,
   "held_links": 0,
   "held_links_new": 0,
   "held_rule_differences": 0,
-  "split_by_rule": 10,
+  "split_by_rule": 9,
   "open_courses": 86,
   "new_institutions": 233
  },
@@ -23506,128 +23506,6 @@
    ]
   },
   {
-   "course_id": "TVET-48245",
-   "course": "Diploma Kompetensi Elektrik (Kuasa)",
-   "level": "Diploma",
-   "department": "Elektrik & Elektronik",
-   "field": "Elektrik & Elektronik",
-   "field_key": "elektrik",
-   "semesters": 6,
-   "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan oleh MARA Diploma Kompetensi Elektrik dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik (Sistem Voltan Rendah Tanpa Stesen Jana kuasa).",
-   "family": "mara",
-   "requirement": {
-    "source_type": "tvet",
-    "merit_type": "standard",
-    "merit_cutoff": null,
-    "min_credits": 0,
-    "min_pass": 0,
-    "req_bumiputera": true,
-    "req_interview": false,
-    "req_malaysian": true,
-    "no_colorblind": true,
-    "no_disability": true,
-    "single": false,
-    "complex_requirements": {
-     "count_once": [
-      {
-       "counted": [
-        "bm",
-        "hist"
-       ],
-       "groups": [
-        {
-         "count": 1,
-         "grade": "C",
-         "subjects": [
-          "math",
-          "sci",
-          "addmath",
-          "phy",
-          "chem",
-          "bio",
-          "eng_draw",
-          "gkt",
-          "reka_cipta",
-          "pembuatan_perabot",
-          "landskap_nurseri",
-          "voc_construct",
-          "kerja_paip",
-          "voc_elec_serv",
-          "voc_weld",
-          "voc_auto",
-          "menservis_motosikal",
-          "penyejukan",
-          "menservis_elektrik",
-          "voc_tailoring",
-          "produksi_multimedia",
-          "produksi_reka_tanda",
-          "hiasan_dalaman",
-          "digital_gfx",
-          "eng_mech",
-          "eng_civil",
-          "eng_elec",
-          "kelestarian",
-          "aplikasi_elektrik",
-          "teknologi_binaan",
-          "teknologi_kej"
-         ]
-        },
-        {
-         "count": 1,
-         "grade": "C",
-         "subjects": [
-          "business",
-          "poa",
-          "geo",
-          "psv",
-          "islam",
-          "eng",
-          "tasawwur_islam",
-          "al_syariah",
-          "srt",
-          "lit_bm"
-         ]
-        }
-       ],
-       "remaining": []
-      }
-     ]
-    },
-    "subject_group_req": null,
-    "remarks": "Umur 17-45 tahun. Sihat tubuh badan.",
-    "pass_bm": true,
-    "pass_history": true
-   },
-   "offerings": [
-    {
-     "id_kursus": "48245",
-     "institution_id": "MARA-223",
-     "campus": "TVETMARA LUMUT (INSTITUT KEMAHIRAN MARA LUMUT)",
-     "kod_tauliah": "TVET(S1)/K12001/F432-005-4:2019-ST-D",
-     "hyperlink": "https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=48245",
-     "tuition_fee_semester": "",
-     "registration_fee": "RM 350"
-    }
-   ],
-   "source": [
-    "01 Taraf Warganegara / (Warganegara Malaysia (Wajib)) / [Syarat Wajib] Warganegara / Warganegara Malaysia Sahaja",
-    "02 Taraf Bumiputera / (Bumiputera (Wajib)) / [Syarat Wajib] Bumiputera / Calon Bumiputera Sahaja",
-    "03 Tahap Kesihatan / (Sihat tubuh badan (Tidak menerima sebarang OKU)) / [Syarat Wajib] Tidak menerima sebarang jenis Orang Kurang Upaya (OKU) / 1. Sihat Tubuh Badan (Wajib) / 2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)",
-    "04 Kelayakan Akademik / (Sijil Pelajaran Malaysia (SPM) ATAU Sijil Kemahiran Malaysia (SKM) ATAU Sijil Vokasional Malaysia (SVM)) / [Syarat Pilihan 1] Lulus Sijil Pelajaran Malaysia (SPM) dengan dua (2) Kepujian dalam mana-mana mata pelajaran, 1) Mana-mana satu (1) mata pelajaran Matematik/Kumpulan Sains / Kumpulan Mata Pelajaran Vokasional (MPV) / Kumpulan Mata Pelajaran Aliran Vokasional (MPAV). 2) Mana-mana satu (1) mata pelajaran lain. / 1. LULUS Sijil Pelajaran Malaysia (SPM) / Bil. Subjek : 2 / Gred Minimum : E / 1103 | BAHASA MELAYU ; 1249 | SEJARAH / 2. Mana-mana satu (1) mata pelajaran lain / Kumpulan Matematik/Kumpulan Sains/Kumpulan Vokasional & Teknologi/MPV/Kumpulan MPAV / Bil. Subjek : 1 / Gred Minimum : C / 1449 | MATEMATIK ; 1511 | SAINS ; 3472 | MATEMATIK TAMBAHAN ; 4531 | FIZIK ; 4541 | KIMIA ; 4551 | BIOLOGI ; 3759 | LUKISAN KEJURUTERAAN ; 3771 | GRAFIK KOMUNIKASI TEKNIKAL ; 3763 | REKA CIPTA ; 7110 | PEMBUATAN PERABOT ; 7301 | LANDSKAP DAN NURSERI ; 7101 | PEMBINAAN DOMESTIK ; 7103 | KERJA PAIP DOMESTIK ; 7104 | PENDAWAIAN DOMESTIK ; 7105 | KIMPALAN ARKA DAN GAS ; 7106 | MENSERVIS AUTOMOBIL ; 7107 | MENSERVIS MOTOSIKAL ; 7108 | MENSERVIS PERALATAN PENYEJUKAN DAN PENYAMAN UDARA ; 7109 | MENSERVIS PERALATAN ELEKTRIK DOMESTIK ; 7201 | REKAAN DAN JAHITAN PAKAIAN ; 7403 | PRODUKSI MULTIMEDIA ; 7405 | PRODUKSI REKA TANDA ; 7406 | HIASAN DALAMAN ; 7407 | REKA BENTUK GRAFIK DIGITAL ; 3760 | PENGAJIAN KEJURUTERAAN MEKANIKAL ; 3761 | PENGAJIAN KEJURUTERAAN AWAM ; 3762 | PENGAJIAN KEJURUTERAAN ELEKTRIK DAN ELEKTRONIK ; 3768 | ASAS KELESTARIAN ; 8302 | AMALAN BENGKEL MEKANIKAL ; 8202 | APLIKASI ELEKTRIK DAN ELEKTRONIK ; 8811 | TEKNOLOGI BENGKEL MESIN ; 8826 | TEKNOLOGI AUTOMOTIF ; 8102 | TEKNOLOGI BINAAN ; 8814 | TEKNOLOGI BINAAN BANGUNAN ; 8817 | TEKNOLOGI ELEKTRIK ; 8820 | TEKNOLOGI ELEKTRONIK ; 3764 | TEKNOLOGI KEJURUTERAAN ; 8823 | TEKNOLOGI KIMPALAN & FABRIKASI LOGAM ; 8829 | TEKNOLOGI PENYEJUKAN & PENYAMANAN UDARA ; 8863 | TEKNOLOGI REKAAN FESYEN & MEMBUAT PAKAIAN / Atau / Mana-mana satu (1) mata pelajaran lain / Bil. Subjek : 1 / Gred Minimum : C / 3766 | PERNIAGAAN ; 3756 | PRINSIP PERAKAUNAN ; 2280 | GEOGRAFI ; 2611 | PENDIDIKAN SENI VISUAL ; 1223 | PENDIDIKAN ISLAM ; 3755 | PERDAGANGAN ; 1119 | BAHASA INGGERIS ; 5226 | TASAWWUR ISLAM ; 5402 | AL-SYARIAH ; 3769 | SAINS RUMAH TANGGA ; 2215 | KESUSASTERAAN MELAYU / ATAU / [Syarat Pilihan 2] LULUS Sijil Kemahiran Malaysia (SKM) Tahap 2 dalam bidang berkaitan yang diiktiraf atau setara DAN dengan kelayakan minima tamat tingkatan lima (5) sekolah bantuan kerajaan /Sijil Tamat Kolej Vokasional / Juruelektrik (Pendawaian) [EE-310-2] Atau / Penjaga Jentera Elektrik Voltan Rendah [C-030-2] Atau / Juruteknik Elektrik [C-050-2] Atau / Pemasangan & Penyelenggaraan Elektrik-Satu Fasa [EE-320-2:2012] Atau / Pemasangan dan Penyelenggaraan Elektrik Satu Fasa [F432-005-2:2019] / ATAU / [Syarat Pilihan 3] LULUS Sijil Vokasional Malaysia dalam bidang berkaitan / (empty table) / 1104 | BAHASA MELAYU | Wajib | C",
-    "05 Umur / (Berumur sekurang-kurangnya 17 tahun) / [Syarat Wajib] Berumur 17 - 45 tahun / Umur Minimum : 17 / Umur Maksimum : 45"
-   ],
-   "warnings": [
-    "no grade-form key, dropped from its list: 'AMALAN BENGKEL MEKANIKAL'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI BENGKEL MESIN'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI AUTOMOTIF'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI ELEKTRIK'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI ELEKTRONIK'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI KIMPALAN & FABRIKASI LOGAM'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI PENYEJUKAN & PENYAMANAN UDARA'",
-    "no grade-form key, dropped from its list: 'TEKNOLOGI REKAAN FESYEN & MEMBUAT PAKAIAN'"
-   ]
-  },
-  {
    "course_id": "TVET-48260",
    "course": "Diploma Teknologi Pengeluaran Perabot Kontemporari",
    "level": "Diploma",
@@ -25942,6 +25820,23 @@
    ]
   },
   {
+   "id_kursus": "48245",
+   "name": "DIPLOMA KOMPETENSI ELEKTRIK (KUASA)",
+   "family": "mara",
+   "campus": "TVETMARA LUMUT (INSTITUT KEMAHIRAN MARA LUMUT)",
+   "held_course": null,
+   "reasons": [
+    "item-level ATAU inside an SPM option: and/or unclear"
+   ],
+   "source": [
+    "01 Taraf Warganegara / (Warganegara Malaysia (Wajib)) / [Syarat Wajib] Warganegara / Warganegara Malaysia Sahaja",
+    "02 Taraf Bumiputera / (Bumiputera (Wajib)) / [Syarat Wajib] Bumiputera / Calon Bumiputera Sahaja",
+    "03 Tahap Kesihatan / (Sihat tubuh badan (Tidak menerima sebarang OKU)) / [Syarat Wajib] Tidak menerima sebarang jenis Orang Kurang Upaya (OKU) / 1. Sihat Tubuh Badan (Wajib) / 2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)",
+    "04 Kelayakan Akademik / (Sijil Pelajaran Malaysia (SPM) ATAU Sijil Kemahiran Malaysia (SKM) ATAU Sijil Vokasional Malaysia (SVM)) / [Syarat Pilihan 1] Lulus Sijil Pelajaran Malaysia (SPM) dengan dua (2) Kepujian dalam mana-mana mata pelajaran, 1) Mana-mana satu (1) mata pelajaran Matematik/Kumpulan Sains / Kumpulan Mata Pelajaran Vokasional (MPV) / Kumpulan Mata Pelajaran Aliran Vokasional (MPAV). 2) Mana-mana satu (1) mata pelajaran lain. / 1. LULUS Sijil Pelajaran Malaysia (SPM) / Bil. Subjek : 2 / Gred Minimum : E / 1103 | BAHASA MELAYU ; 1249 | SEJARAH / 2. Mana-mana satu (1) mata pelajaran lain / Kumpulan Matematik/Kumpulan Sains/Kumpulan Vokasional & Teknologi/MPV/Kumpulan MPAV / Bil. Subjek : 1 / Gred Minimum : C / 1449 | MATEMATIK ; 1511 | SAINS ; 3472 | MATEMATIK TAMBAHAN ; 4531 | FIZIK ; 4541 | KIMIA ; 4551 | BIOLOGI ; 3759 | LUKISAN KEJURUTERAAN ; 3771 | GRAFIK KOMUNIKASI TEKNIKAL ; 3763 | REKA CIPTA ; 7110 | PEMBUATAN PERABOT ; 7301 | LANDSKAP DAN NURSERI ; 7101 | PEMBINAAN DOMESTIK ; 7103 | KERJA PAIP DOMESTIK ; 7104 | PENDAWAIAN DOMESTIK ; 7105 | KIMPALAN ARKA DAN GAS ; 7106 | MENSERVIS AUTOMOBIL ; 7107 | MENSERVIS MOTOSIKAL ; 7108 | MENSERVIS PERALATAN PENYEJUKAN DAN PENYAMAN UDARA ; 7109 | MENSERVIS PERALATAN ELEKTRIK DOMESTIK ; 7201 | REKAAN DAN JAHITAN PAKAIAN ; 7403 | PRODUKSI MULTIMEDIA ; 7405 | PRODUKSI REKA TANDA ; 7406 | HIASAN DALAMAN ; 7407 | REKA BENTUK GRAFIK DIGITAL ; 3760 | PENGAJIAN KEJURUTERAAN MEKANIKAL ; 3761 | PENGAJIAN KEJURUTERAAN AWAM ; 3762 | PENGAJIAN KEJURUTERAAN ELEKTRIK DAN ELEKTRONIK ; 3768 | ASAS KELESTARIAN ; 8302 | AMALAN BENGKEL MEKANIKAL ; 8202 | APLIKASI ELEKTRIK DAN ELEKTRONIK ; 8811 | TEKNOLOGI BENGKEL MESIN ; 8826 | TEKNOLOGI AUTOMOTIF ; 8102 | TEKNOLOGI BINAAN ; 8814 | TEKNOLOGI BINAAN BANGUNAN ; 8817 | TEKNOLOGI ELEKTRIK ; 8820 | TEKNOLOGI ELEKTRONIK ; 3764 | TEKNOLOGI KEJURUTERAAN ; 8823 | TEKNOLOGI KIMPALAN & FABRIKASI LOGAM ; 8829 | TEKNOLOGI PENYEJUKAN & PENYAMANAN UDARA ; 8863 | TEKNOLOGI REKAAN FESYEN & MEMBUAT PAKAIAN / Atau / Mana-mana satu (1) mata pelajaran lain / Bil. Subjek : 1 / Gred Minimum : C / 3766 | PERNIAGAAN ; 3756 | PRINSIP PERAKAUNAN ; 2280 | GEOGRAFI ; 2611 | PENDIDIKAN SENI VISUAL ; 1223 | PENDIDIKAN ISLAM ; 3755 | PERDAGANGAN ; 1119 | BAHASA INGGERIS ; 5226 | TASAWWUR ISLAM ; 5402 | AL-SYARIAH ; 3769 | SAINS RUMAH TANGGA ; 2215 | KESUSASTERAAN MELAYU / ATAU / [Syarat Pilihan 2] LULUS Sijil Kemahiran Malaysia (SKM) Tahap 2 dalam bidang berkaitan yang diiktiraf atau setara DAN dengan kelayakan minima tamat tingkatan lima (5) sekolah bantuan kerajaan /Sijil Tamat Kolej Vokasional / Juruelektrik (Pendawaian) [EE-310-2] Atau / Penjaga Jentera Elektrik Voltan Rendah [C-030-2] Atau / Juruteknik Elektrik [C-050-2] Atau / Pemasangan & Penyelenggaraan Elektrik-Satu Fasa [EE-320-2:2012] Atau / Pemasangan dan Penyelenggaraan Elektrik Satu Fasa [F432-005-2:2019] / ATAU / [Syarat Pilihan 3] LULUS Sijil Vokasional Malaysia dalam bidang berkaitan / (empty table) / 1104 | BAHASA MELAYU | Wajib | C",
+    "05 Umur / (Berumur sekurang-kurangnya 17 tahun) / [Syarat Wajib] Berumur 17 - 45 tahun / Umur Minimum : 17 / Umur Maksimum : 45"
+   ]
+  },
+  {
    "id_kursus": "48248",
    "name": "DIPLOMA LANJUTAN KOMPETENSI ELEKTRIK (PENJANAAN)",
    "family": "mara",
@@ -26093,11 +25988,11 @@
   }
  ],
  "summary": {
-  "bumi_only_courses": 178,
+  "bumi_only_courses": 177,
   "open_to_non_bumi_courses": 4,
   "open_to_non_citizens_courses": 3,
-  "no_disability_courses": 97,
-  "no_colorblind_courses": 77,
+  "no_disability_courses": 96,
+  "no_colorblind_courses": 76,
   "colour_from_some_campuses": 3,
   "split_programmes": [
    {
@@ -26107,8 +26002,7 @@
     ],
     "courses": {
      "TVET-45703": 1,
-     "TVET-48203": 5,
-     "TVET-48245": 1
+     "TVET-48203": 5
     }
    },
    {
@@ -26205,6 +26099,7 @@
    "condition not recognised: '...'": 4,
    "Pilihan category '...' cannot be read (grades ['C', 'E'])": 1,
    "Pilihan subjects with no '...' count": 1,
+   "item-level ATAU inside an SPM option: and/or unclear": 1,
    "no academic requirement card": 1
   }
  }

@@ -57,7 +57,8 @@ Geometri & Mesin" are real SPM papers off the grade form (dropped from "any of" 
 **Grouping.** One course per programme (family + name + identical rule), every campus linked, id
 `TVET-<lowest id_kursus>`. **Colour never splits a programme**: the course hides from a colour-blind student
 when ANY campus page excludes colour blindness (owner, F1b), and `colour_excluded_by` lists those campuses (3
-courses). Any other rule difference splits (9 programmes, listed in the file's `summary.split_programmes`).
+courses). Any other rule difference splits (9 programmes, listed in the file's `summary.split_programmes`;
+after round 1 "Diploma Kompetensi Elektrik (Kuasa)" splits in two, TVET-45703 / TVET-48203).
 **Pages silent on Bumiputera are open.** 4 GIATMARA campuses (Ayer Hitam, Tanjung, Gombak, Kuala Kedah) print
 no Bumiputera card (3 no citizenship card either), so their rows are open to everyone those pages admit,
 each split from its Bumi-only programme. Owner question raised; until ruled, the page decides.
@@ -65,9 +66,20 @@ each split from its Bumi-only programme. Owner question raised; until ruled, the
 MJII 1), type ILKA, category MARA (-> pathway `mara`), subcategory = acronym = the kind; the name is the
 bracketed official name ("Institut Kemahiran MARA Sik") or the GIATMARA campus; states in prod's spelling
 ("W.PERSEKUTUAN (KL)" -> "WP Kuala Lumpur"); misprinted GIATMARA web addresses -> the one site.
-**Result.** 607 of 665 rows read; 182 courses (607 campus offerings); 178 Bumi-only, 4 open; 58 flagged (54 no
-SPM route — SKM / certificate / experience / PW licence only; 2 unreadable wide tables; 1 empty education
-card; 1 GIG-worker programme). F1's file and F1b's fix rebuild byte for byte under the new parser.
+**Result (after review round 1).** 606 of 665 rows read; 181 courses (606 campus offerings); 177 Bumi-only, 4
+open; 59 flagged (54 no SPM route — SKM / certificate / experience / PW licence only; 2 unreadable wide tables;
+1 empty education card; 1 GIG-worker programme; 1 item-level ATAU, 48245). F1's file and F1b's fix rebuild byte for byte under the new parser.
+**Review round 1 (lead, 2026-10-30).** (13) A bare "Atau" line BETWEEN two subject rules of one SPM option
+(48245: a Maths / science group, "Atau", an "other subject" group) is unparsed ("item-level ATAU inside an SPM
+option: and/or unclear"): read as a line it made the second rule REQUIRED, an "and" the page may not mean.
+(14) A card summary's gate wording that no rule turned into a gate is unparsed even when another rule matched
+the line ("Berumur 17 tahun, bukan OKU"); an ATAU card whose alternatives disagree on a gate never gets it back
+from its summary (unparsed instead). No F1, F1b or F2 output moved. (15) The 17 "Sekurang-kurangnya tamat
+Tingkatan 3" pages (the 1030 group) and every PT3 / PMR / PBD route are not routes an SPM leaver is judged by;
+only the SPM route decides, and on those pages the SPM route is BM + Sejarah at a pass. (16) Count-once on
+"Mana-mana satu (1) mata pelajaran lain" (e.g. 1142) follows the owner's STRICT ruling of 2026-10-29: a subject
+NAMED above (BM, Sejarah) cannot fill the "other subject" slot even when the slot's table lists it — 45 F2
+courses, deliberately.
 **Revisit if:** the owner rules on the 4 silent GIATMARA pages or on "Bumiputera Sabah atau Sarawak" meaning
 only those states (then a narrower gate is needed), or prefers the heading's credit count over the table.
 

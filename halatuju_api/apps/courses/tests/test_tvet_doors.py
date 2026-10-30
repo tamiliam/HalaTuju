@@ -115,7 +115,7 @@ _F2 = Path(__file__).resolve().parents[3] / 'data' / 'tvet' / 'tvet_new_courses_
 @pytest.mark.django_db
 class TestMaraDoors:
     """Bumi Sprint F2: the REAL MARA rows (`tvet_new_courses_F2.json`) through every door, linked to their
-    MARA-NNN campuses as `ingest_tvet_courses --apply` links them. 178 are Bumi-only; the 4 GIATMARA
+    MARA-NNN campuses as `ingest_tvet_courses --apply` links them. 177 are Bumi-only; the 4 GIATMARA
     campus pages silent on Bumiputera are open. A non-Bumi or foreign student sees no Bumi-only row."""
 
     @pytest.fixture(autouse=True)
@@ -148,7 +148,7 @@ class TestMaraDoors:
     def test_every_mara_row_is_on_the_mara_pathway(self):
         pathway = apps.get_app_config('courses').course_pathway_map
         assert {pathway[cid] for cid in self.ids} == {'mara'}
-        assert len(self.bumi_only) == 178 and len(self.open) == 4
+        assert len(self.bumi_only) == 177 and len(self.open) == 4
 
     def test_the_search_filter_hides_bumi_only_rows_from_a_non_bumi_student(self):
         plain = {r['course_id'] for r in self._search(source_type='mara')['courses']}

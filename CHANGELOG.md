@@ -8,7 +8,7 @@ The public (Awam) MARA programmes of the October UP_TVET catalogue (GIATMARA, IK
 F1's parser, builder and command, as Bumi-only courses where the page says so, on the `mara` pathway
 (decisions.md 2026-10-30, Sprint F2). Built, not deployed. Runbook: halatuju_api/CLAUDE.md "Bumi F2 order".
 
-- **Parser (MARA's wording).** 607 of 665 MARA pages now read (21 before). New line rules: the bare
+- **Parser (MARA's wording).** 606 of 665 MARA pages now read (21 before). New line rules: the bare
   "Warganegara" / "Bumiputera" / "Calon Bumiputera" headings, "Bumiputera / Bumiputera Sabah atau Sarawak",
   "Tidak Buta / Rabun Warna", MARA's blanket "Tidak menerima sebarang jenis Orang Kurang Upaya" (-> no OKU);
   label headings. A line stating two gates gives both; a card's summary line is read for gates (gender /
@@ -18,21 +18,29 @@ F1's parser, builder and command, as Bumi-only courses where the page says so, o
   than its table goes into the remarks (the table wins). MPAK papers are off the grade form. F1's review file
   and F1b's fix rebuild byte for byte.
 - **Review file** `halatuju_api/data/tvet/tvet_new_courses_F2.json` from the frozen `uptvet_F2_source.json`
-  (rebuilt by a test): 182 courses (607 campus offerings), 178 Bumi-only, 4 open (GIATMARA Ayer Hitam,
+  (rebuilt by a test): 181 courses (606 campus offerings), 177 Bumi-only, 4 open (GIATMARA Ayer Hitam,
   Tanjung, Gombak, Kuala Kedah print no Bumiputera card), 233 proposed `MARA-NNN` institutions (GIATMARA 209,
-  IKM 13, KKTM 10, MJII 1; prod's state spellings), 58 flagged (54 with no SPM route). Colour never splits a
+  IKM 13, KKTM 10, MJII 1; prod's state spellings), 59 flagged (54 with no SPM route). Colour never splits a
   programme (hidden if ANY campus page excludes it); 9 programmes split on another rule difference; a
   `summary` block for the reviewer. No programme duplicates D2's OM / OP MARA rows.
 - **`ingest_tvet_courses`**: `--sql` prints the read-only prod pre-check of a file, `--rollback-sql` the
   pre-rollback checks and the one-transaction rollback; field rules for MARA programme names (appended).
-- **Fixtures** gain the 182 rows. **Doors** tested with the real rows: pathway map, search filter and
+- **Fixtures** gain the 181 rows. **Doors** tested with the real rows: pathway map, search filter and
   pick-list, eligibility check and dashboard counts, course page chip and remarks, sort, funding estimate;
   a non-Bumi or foreign student sees no Bumi-only MARA row. Web: every F2 row renders in RequirementsCard
   with the MARA chip and named subjects.
 - **Golden master**: original 389 = 5,293 identical (digest); a non-Bumi student gains exactly the 4 open F2
-  rows she meets (199, digest) beside F1's 1,494 (unchanged digest); full bumi=False 6,986; bumi=True 12,631
-  (D1 + D2 + F1 gain digest unchanged; F2 +5,079, digest); STPM 2,025.
-- **Gates**: 10,568 pytest passed / 3 skipped (`-n auto`); no migration; tsc 0; jest 5,246 / 327 suites;
+  rows she meets (199, digest) beside F1's 1,494 (unchanged digest); full bumi=False 6,986; bumi=True 12,621
+  (D1 + D2 + F1 gain digest unchanged; F2 +5,069, digest); STPM 2,025.
+- **Review round 1**: a bare "Atau" between two subject rules of one SPM option is flagged (and/or unclear):
+  TVET-48245 (IKM Lumut, Diploma Kompetensi Elektrik (Kuasa)) leaves the file (182 -> 181 courses, 58 -> 59
+  flagged, Bumi gain 5,079 -> 5,069; nothing else moved). A card summary's unrecognised gate wording is
+  flagged even beside another rule, and never re-adds a gate an ATAU card's alternatives dropped. `--sql` /
+  `--rollback-sql` refuse ids outside the TVET- / MARA-NNN (and F1) shapes or holding a quote; the
+  pre-rollback checks count `saved_courses`. Each MARA line rule now has a test that only it can pass
+  (mutated once each: red, then restored).
+- **Gates**: 10,602 pytest passed / 3 skipped (`-n auto`, after review round 1; 10,568 before); no migration;
+  tsc 0; jest 5,246 / 327 suites;
   bundle median 146.608 / 148 kB. Bites: dropping `req_bumiputera` on one F2 row turns the golden master
   red (non-Bumi gain 199 -> 248); disabling the existing-id refusal turns the F2 refusal test red.
 

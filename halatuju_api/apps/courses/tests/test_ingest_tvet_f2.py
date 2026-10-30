@@ -13,6 +13,7 @@ from django.core.management.base import CommandError
 
 from apps.courses.management.commands.ingest_tvet_courses import (
     held_courses_from_fixtures, load_held_links, load_not_in_prod, precheck_sql, rollback_sql,
+    check_sql_ids,
 )
 from apps.courses.models import Course, CourseInstitution, Institution
 from apps.courses.tvet_catalogue_rows import build_review, norm_name, review_summary
@@ -184,5 +185,33 @@ class TestSql:
 
     def test_the_command_prints_them(self):
         out = _run('--file', str(F2), '--sql')
-        assert out.startswith('-- 1. none of the 182 new course ids') and 'DELETE' not in out
+        assert out.startswith('-- 1. none of the 181 new course ids') and 'DELETE' not in out
         assert 'BEGIN;' in _run('--file', str(F2), '--rollback-sql')
+
+    def test_the_pre_rollback_checks_count_saved_courses(self):
+        lines = rollback_sql(_review()).splitlines()
+        checks = lines[:lines.index('BEGIN;')]
+        assert any(s.startswith('SELECT count(*) FROM saved_courses WHERE course_id IN (') for s in checks)
+
+    @pytest.mark.parametrize('field, value', [
+        ('course_id', "TVET-1'; DROP TABLE courses; --"), ('course_id', 'IJTM-CET-001'), ('course_id', 'TVET-12a'),
+        ('institution', "MARA-001'"), ('institution', 'MARA-1'), ('institution', 'UNIV-012'),
+    ])
+    def test_sql_refuses_an_id_outside_the_expected_shapes(self, field, value, tmp_path):
+        review = _review()
+        if field == 'course_id':
+            review['courses'][0]['course_id'] = value
+        else:
+            review['new_institutions'][value] = dict(next(iter(review['new_institutions'].values())),
+                                                     institution_id=value)
+        with pytest.raises(CommandError, match='outside the expected shapes'):
+            check_sql_ids(review)
+        path = tmp_path / 'bad.json'
+        path.write_text(json.dumps(review, ensure_ascii=False), encoding='utf-8')
+        for flag in ('--sql', '--rollback-sql'):
+            with pytest.raises(CommandError, match='outside the expected shapes'):
+                _run('--file', str(path), flag)
+
+    def test_the_f1_and_f2_files_pass_the_id_check(self):
+        check_sql_ids(_review())
+        check_sql_ids(json.loads((DATA / 'tvet' / 'tvet_new_courses_F1.json').read_text(encoding='utf-8')))

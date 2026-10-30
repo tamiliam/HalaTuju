@@ -37,6 +37,7 @@ eligibility frame in memory). Runbook + rollback: halatuju_api/CLAUDE.md ("Bumi 
 import csv
 import json
 import os
+import re
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -92,6 +93,25 @@ def write_json(path, payload, compact=False):
             f.write('\n')
 
 
+#: Ids the printed SQL may carry (review round 1): a new course is TVET-<id_kursus>; a campus link may name
+#: a held IJTM-* / IKBN-* course (F1); an institution is MARA-NNN (F2) or F1's IKBN- / ILKA- / IJTM-NNN.
+_COURSE_ID = re.compile(r'^TVET-\d+$')
+_HELD_COURSE_ID = re.compile(r'^(IJTM|IKBN)-[A-Z]+-\d{3}$')
+_INSTITUTION_ID = re.compile(r'^(MARA|IKBN|ILKA|IJTM)-\d{3}$')
+
+
+def check_sql_ids(data):
+    """Refuse (CommandError) to print SQL for any id outside those shapes, or holding a quote: the SQL is
+    pasted into a prod console, so nothing in it may come from a hand-edited file unchecked."""
+    links = [x for x in data.get('held_links', []) if not x['already_linked']]
+    bad = [f'course id {c["course_id"]!r}' for c in data.get('courses', []) if not _COURSE_ID.match(c['course_id'])]
+    bad += [f'held course id {x["course_id"]!r}' for x in links if not _HELD_COURSE_ID.match(x['course_id'])]
+    bad += [f'institution id {i!r}' for i in list(data.get('new_institutions', {})) + [x['institution_id'] for x in links]
+            if not _INSTITUTION_ID.match(i)]
+    if bad:
+        raise CommandError('Refusing to print SQL for ids outside the expected shapes:\n  ' + '\n  '.join(bad))
+
+
 def _in(values):
     return '(' + ', '.join(f"'{v}'" for v in values) + ')'
 
@@ -124,6 +144,7 @@ def rollback_sql(data):
            f"SELECT id, status FROM scholarship_applications WHERE chosen_programme->>'course_id' IN {ids} OR EXISTS "
            f"(SELECT 1 FROM jsonb_array_elements(top_choices) e WHERE e->>'course_id' IN {ids});",
            f"SELECT count(*) FROM api_student_profiles WHERE chosen_programme->>'course_id' IN {ids};",
+           f'SELECT count(*) FROM saved_courses WHERE course_id IN {ids};',
            f'SELECT count(*) FROM admission_outcomes WHERE institution_id IN {institutions};',
            f'SELECT count(*) FROM stpm_courses WHERE institution_id IN {institutions};',
            '-- ROLLBACK, one transaction:', 'BEGIN;']
@@ -174,6 +195,7 @@ class Command(CatalogueIngestMixin, BaseCommand):
         with open(options['file'], encoding='utf-8') as f:
             data = json.load(f)
         if options['sql'] or options['rollback_sql']:
+            check_sql_ids(data)
             return self.stdout.write(precheck_sql(data) if options['sql'] else rollback_sql(data))
         self._ingest(data, options['create_institutions'], options['apply'], options['allow_update'])
 

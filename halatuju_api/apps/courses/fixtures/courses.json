@@ -12513,23 +12513,6 @@
   },
   {
     "model": "courses.course",
-    "pk": "TVET-48245",
-    "fields": {
-      "course": "Diploma Kompetensi Elektrik (Kuasa)",
-      "wbl": false,
-      "level": "Diploma",
-      "department": "Elektrik & Elektronik",
-      "field": "Elektrik & Elektronik",
-      "semesters": 6,
-      "headline": "",
-      "headline_en": "",
-      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan oleh MARA Diploma Kompetensi Elektrik dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik (Sistem Voltan Rendah Tanpa Stesen Jana kuasa).",
-      "description_en": "",
-      "field_key": "elektrik"
-    }
-  },
-  {
-    "model": "courses.course",
     "pk": "TVET-48260",
     "fields": {
       "course": "Diploma Teknologi Pengeluaran Perabot Kontemporari",

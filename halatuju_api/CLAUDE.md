@@ -186,24 +186,27 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    the new api AND web revisions both serve 100% (the F2 parser and fixtures ship with the api; the rows
    themselves only need F1's `mara` pathway, already live) → `ingest_tvet_courses --file
    data/tvet/tvet_new_courses_F2.json --create-institutions` (dry run: expect 233 `CREATE INSTITUTION
-   MARA-001..233` lines, 182 `CREATE TVET-…`, 0 UPDATE, 0 `LINK`, the line "182 new courses (607 campus
-   offerings); 0 new campus links to held courses (0 already held); 58 flagged rows NOT ingested.", and
-   no "Refusing") → the same with `--apply` ("Applied 182 courses, 0 held-course links; created 233
+   MARA-001..233` lines, 181 `CREATE TVET-…`, 0 UPDATE, 0 `LINK`, the line "181 new courses (606 campus
+   offerings); 0 new campus links to held courses (0 already held); 59 flagged rows NOT ingested.", and
+   no "Refusing") → the same with `--apply` ("Applied 181 courses, 0 held-course links; created 233
    institutions.") → a re-revision so the eligibility frame reloads. A reviewed RE-run of the same file needs
    `--allow-update`. Read-only SQL before `--apply`: `python manage.py ingest_tvet_courses --file
-   data/tvet/tvet_new_courses_F2.json --sql` prints two SELECTs (the 182 course ids in `courses`; the 233
+   data/tvet/tvet_new_courses_F2.json --sql` prints two SELECTs (the 181 course ids in `courses`; the 233
    `MARA-NNN` ids in `institutions`), each must return 0 rows; any row → stop (the file's picture is not
-   prod's). Smoke after the re-revision: a Bumi citizen's search on `source_type=mara` returns 182 rows, a
+   prod's). Smoke after the re-revision: a Bumi citizen's search on `source_type=mara` returns 181 rows, a
    non-Bumi one 4 (the GIATMARA pages silent on Bumiputera), a foreigner who says Bumi the same 4 at most.
    ROLLBACK: `python manage.py ingest_tvet_courses --file data/tvet/tvet_new_courses_F2.json --rollback-sql`
    prints, first, the read-only checks to run BEFORE any rollback (who chose an F2 course:
-   `scholarship_applications` chosen_programme / top_choices and `api_student_profiles` chosen_programme;
+   `scholarship_applications` chosen_programme / top_choices, `api_student_profiles` chosen_programme and
+   `saved_courses`;
    `admission_outcomes` / `stpm_courses` rows naming a MARA-NNN institution; non-zero → the owner decides
    first), then the rollback in ONE transaction: `DELETE FROM saved_courses / admission_outcomes /
    course_tags / courses_career_occupations / course_requirements / course_institutions WHERE course_id IN
    (F2)`, then `DELETE FROM courses WHERE course_id IN (F2)`, then `DELETE FROM institutions WHERE
    institution_id IN (MARA-001..MARA-233)` (only after their links are gone; MARA-BPT is never touched),
-   `COMMIT`, then a re-revision. F2 = the 182 `courses[].course_id` of the file. The F2 code may stay deployed.
+   `COMMIT`, then a re-revision. F2 = the 181 `courses[].course_id` of the file. The F2 code may stay deployed.
+   Both SQL flags refuse a file whose ids are not `TVET-<digits>` / `MARA-NNN` (or F1's IKBN- / ILKA- / IJTM-
+   shapes and held IJTM- / IKBN- course ids) or hold a quote, so nothing hand-edited reaches the console.
    **Bumi F1b order (no migration; held TVET flags + remarks):** read-only SQL first → push (api) → CONFIRM
    the new api revision serves 100% → `fix_held_tvet_flags --file data/tvet/held_flag_fix_F1b.json` (dry run,
    through the `release-decisions` job, item 12's form: `--args=manage.py,fix_held_tvet_flags,--file,data/tvet/held_flag_fix_F1b.json`
@@ -1217,7 +1220,10 @@ in that arc:** Sprint F2 = MARA: 665 pages saved in the gitignored page cache,
 the parser reads 21 cleanly, so add condition wording first, then build with `--families mara`
 (`MARA-NNN`, category MARA). Follow-ups: the 20 held TVET courses with no October page (still no `req_malaysian`); the 92 out-of-scope held
 differences in `held_flag_fix_F1b.json` (`three_m_only`, subject rules); the 90 flagged rows; fixture drift — UL0481001, FB0500001 (prod
-only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks. The Bumi answer stays
+only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks; F2 (built, branch
+`bumi-sprint-f2`): a grouped TVET course's DISPLAY text (the age remark, level, duration) comes from its FIRST
+campus only — TVET-30715 shows age 15-55 though 7 of its 8 campuses say 15-70; TVET-30733, 30754, 34179 and
+48236 have mixed duration or level across campuses (not fixed in F2; eligibility is unaffected). The Bumi answer stays
 course-guide only. Adversarial review before push; the lead's read-only prod SQL checks the review file's
 own ids and pairs before the push.
 

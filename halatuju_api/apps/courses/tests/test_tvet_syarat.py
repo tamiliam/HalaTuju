@@ -348,3 +348,75 @@ class TestMaraOnTheEngine:
     def test_a_disabled_student_is_refused_a_blanket_oku_row(self):
         assert not self._eligible('51470', {'bm': 'E', 'hist': 'E'}, disability=True)
         assert self._eligible('51470', {'bm': 'E', 'hist': 'E'})
+
+
+def _condition_card(number, heading, lines=(), subtitle='', alternatives=None):
+    """A synthetic condition card: one option (heading + text lines), or ATAU alternatives."""
+    options = alternatives or [(heading, lines)]
+    return {'number': number, 'title': 'Syarat', 'subtitle': subtitle, 'joiner': 'DAN',
+            'options': [{'label': f'Syarat Pilihan {n}', 'heading': h, 'joiner': 'ATAU' if n > 1 else None,
+                         'body': [('text', line) for line in body]}
+                        for n, (h, body) in enumerate(options, 1)]}
+
+
+def _silent_page_with(*cards):
+    """GIATMARA Ayer Hitam (30784): no citizenship, Bumiputera, colour or OKU wording anywhere."""
+    p = copy.deepcopy(page('30784'))
+    p['cards'] += list(cards)
+    return parse_requirements(p)
+
+
+class TestF2ReviewRound1:
+    """F2 review round 1: each MARA line rule bites on its own, unknown and/or wording is flagged, and a
+    card summary never hides gate wording behind another rule nor re-adds a gate its alternatives dropped."""
+
+    def test_the_silent_page_sets_no_gate(self):
+        r = _silent_page_with()
+        assert not r['unparsed'] and not any(r['fields'][f] for f in
+                                             ('req_malaysian', 'req_bumiputera', 'no_colorblind', 'no_disability'))
+
+    @pytest.mark.parametrize('heading', ['Warganegara', 'Warganegara (wajib)', 'Warganegara Malaysia (Wajib)'])
+    def test_a_bare_citizenship_heading_alone_sets_req_malaysian(self, heading):
+        r = _silent_page_with(_condition_card('06', heading))
+        assert not r['unparsed'] and r['fields']['req_malaysian'] and not r['fields']['req_bumiputera']
+
+    @pytest.mark.parametrize('heading', ['Bumiputera', 'Calon Bumiputera', 'Bumiputera (Wajib)',
+                                         'Bumiputera / Bumiputera Sabah atau Sarawak'])
+    def test_a_bare_bumiputera_heading_alone_sets_req_bumiputera(self, heading):
+        r = _silent_page_with(_condition_card('06', heading))
+        assert not r['unparsed'] and r['fields']['req_bumiputera'] and r['fields']['req_malaysian']
+
+    @pytest.mark.parametrize('line', ['2. Tidak Buta Warna', 'Tidak Rabun Warna'])
+    def test_not_colour_blind_wording_sets_no_colorblind(self, line):
+        r = _silent_page_with(_condition_card('06', 'Tahap Kesihatan', [line]))
+        assert not r['unparsed'] and r['fields']['no_colorblind']
+
+    @pytest.mark.parametrize('line', ['Tidak menerima sebaran jenis Orang Kurang Upaya',
+                                      '1. Tidak Menerima Sebarang Jenis Kurang Upaya',
+                                      'Tidak menerima sebarang Orang Kurang Upaya (OKU)'])
+    def test_the_blanket_oku_wording_and_its_typo_set_no_disability(self, line):
+        r = _silent_page_with(_condition_card('06', line))
+        assert not r['unparsed'] and r['fields']['no_disability']
+
+    def test_a_bare_atau_between_two_spm_rules_is_flagged(self):
+        r = parsed('48245')   # "2. ... Kumpulan Matematik/Sains ... C" / "Atau" / "... mata pelajaran lain C"
+        assert 'item-level ATAU inside an SPM option: and/or unclear' in r['unparsed']
+
+    def test_gate_wording_beside_another_rule_in_a_summary_is_flagged(self):
+        card = _condition_card('06', 'Umur Calon', ['Umur Minimum : 17'], subtitle='Berumur 17 tahun, bukan OKU')
+        r = _silent_page_with(card)
+        assert any(u.startswith("no_disability wording in card 06's summary") for u in r['unparsed'])
+        assert not r['fields']['no_disability']
+
+    def test_a_summary_never_re_adds_a_gate_its_alternatives_dropped(self):
+        card = _condition_card('06', '', subtitle='Bumiputera (Wajib)', alternatives=[
+            ('Bumiputera', ['Calon Bumiputera Sahaja']), ('Warganegara', ['Warganegara Malaysia Sahaja'])])
+        r = _silent_page_with(card)
+        assert not r['fields']['req_bumiputera'] and r['fields']['req_malaysian']
+        assert any('alternatives disagree' in u for u in r['unparsed'])
+
+    def test_the_same_atau_card_without_a_summary_is_citizen_only(self):
+        card = _condition_card('06', '', alternatives=[
+            ('Bumiputera', ['Calon Bumiputera Sahaja']), ('Warganegara', ['Warganegara Malaysia Sahaja'])])
+        r = _silent_page_with(card)
+        assert not r['unparsed'] and r['fields']['req_malaysian'] and not r['fields']['req_bumiputera']

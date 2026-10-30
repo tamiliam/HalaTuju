@@ -154,6 +154,12 @@ def _items(option, problems):
             current['wide'] = len(value['headers']) == 6
             continue
         m = _ITEM_RE.match(value)
+        if current is not None and value.strip().lower() == 'atau':
+            # F2 review round 1: a bare "Atau" between two subject rules of ONE SPM option (48245) would
+            # otherwise be read as one more line, and the next rule as a second REQUIRED one ("and").
+            # Whether the page means "either rule" or "both" is a person's call: never guessed.
+            problems.append('item-level ATAU inside an SPM option: and/or unclear')
+            continue
         if current is not None and not m and (current['rows'] is not None or current['exclusion']) \
                 and (value.lower() == 'dan' or _COUNT_RE.match(value)):
             # A second rule inside one numbered item ("KEPUJIAN bagi subjek: Bahasa Inggeris ... Dan
@@ -407,36 +413,47 @@ def _apply_condition_card(card, out, problems):
         if len(per_option) > 1 and common != set.union(*per_option):
             out['warnings'].append(f"card {card['number']} alternatives: only {sorted(common)} kept")
         out['flags'] |= common
-    _apply_card_summary(card, common, out, problems)
+    dropped = set.union(*per_option) - common if per_option else set()
+    _apply_card_summary(card, common, dropped, out, problems)
 
 
 _GATE_FLAGS = ('req_malaysian', 'req_bumiputera', 'no_colorblind', 'no_disability')
 
 
-def _apply_card_summary(card, card_flags, out, problems):
+def _apply_card_summary(card, card_flags, dropped, out, problems):
     """A condition card's SUMMARY line (the subtitle under its title) is part of the page (Sprint F2).
     MARA prints "Sihat tubuh badan (Tidak menerima sebarang OKU)" there over a body that only says
     "Sihat Tubuh Badan": a blanket exclusion stated anywhere is a gate (owner: blanket OKU wording ->
-    `no_disability`; colour hides on any statement). Gender / religion there is UNPARSED; gate wording
-    no rule recognises, for a gate the card's body does not set, is UNPARSED (never guessed)."""
+    `no_disability`; colour hides on any statement). Gender / religion there is UNPARSED. Gate wording
+    for a gate neither the card nor a rule on the summary sets is UNPARSED even when ANOTHER rule
+    matched the line ("Berumur 17 tahun, bukan OKU"; review round 1). An ATAU card whose alternatives
+    disagree on a gate (`dropped`) never gets it back from its summary: that is UNPARSED too."""
     text = card['subtitle']
     if not text:
         return
     recognised = _line_actions([text], [])
+    actions = {action for action, _, _ in recognised}
     for action, line, _ in recognised:
         if action in ('gender', 'religion'):
             if not any(p.startswith(f'{action} condition') for p in problems):   # the body said it already
                 problems.append(f"{action} condition in card {card['number']}'s summary: {line!r}")
+        elif action in dropped:
+            problems.append(f"{action} in card {card['number']}'s summary, but its alternatives disagree on "
+                            f"it: {line!r}")
         elif action in _GATE_FLAGS and action not in out['flags']:
             out['flags'].add(action)
             out['warnings'].append(f"card {card['number']}: {action} read from its summary {line!r}")
-    if 'req_bumiputera' in out['flags']:
+    if 'req_bumiputera' in out['flags'] and 'req_malaysian' not in dropped:
         out['flags'].add('req_malaysian')
-    if recognised or _QUALIFIED_DISABILITY.search(text):
-        return
+    # What the line's words are accounted for by: the card's own gates, the gates a rule read on the
+    # summary, and the qualified disability sentence (text, never a gate: owner ruling 2026-10-29).
+    accounted = set(card_flags) | (actions & set(_GATE_FLAGS))
+    if 'remark_disability' in actions or _QUALIFIED_DISABILITY.search(text):
+        accounted.add('no_disability')
     for gate, pattern in ACADEMIC_GATES:
-        if pattern.search(text) and gate not in card_flags:
-            problems.append(f"{gate} wording in card {card['number']}'s summary not recognised: {text!r}")
+        if not pattern.search(text) or gate in accounted or gate in actions:
+            continue
+        problems.append(f"{gate} wording in card {card['number']}'s summary not recognised: {text!r}")
 
 
 #: Conditions a student can be refused on. In an ACADEMIC card they are read on EVERY line of every
