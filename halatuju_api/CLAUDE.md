@@ -1227,17 +1227,17 @@ templates in the `StudentEmailTemplate` family.** Design of record: https://clau
 
 ---
 
-**Bumi + Islamic coverage: Sprints A to F1b are LIVE (F1 2026-10-30, `a60662cc`; retro
-`docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`; F1b held flag fix `579e27ca`, retro
-`retrospective-2026-10-30-bumi-sprint-f1b.md`). F1 added 35 public non-MARA UP_TVET courses
+**Bumi + Islamic coverage: Sprints A to F2 are LIVE; the arc is COMPLETE (Sprint E dropped). F1 2026-10-30,
+`a60662cc`; retro `docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`; F1b held flag fix
+`579e27ca`, retro `retrospective-2026-10-30-bumi-sprint-f1b.md`; F2 MARA `2127fda6`, retro
+`retrospective-2026-10-30-bumi-sprint-f2.md`). F1 added 35 public non-MARA UP_TVET courses
 (`TVET-<id_kursus>`; 2 Bumi-only KEMAS), 33 campus links to held courses, institutions IKBN-022 / ILKA-001..003,
-and pathways `mara` + `tvet_other`. F1b set the 63 held courses' flags from their pages (rollback: `fix_held_tvet_flags --reverse --apply`). NEXT
-in that arc:** Sprint F2 = MARA: 665 pages saved in the gitignored page cache,
-the parser reads 21 cleanly, so add condition wording first, then build with `--families mara`
-(`MARA-NNN`, category MARA). Follow-ups: the 20 held TVET courses with no October page (still no `req_malaysian`); the 92 out-of-scope held
+and pathways `mara` + `tvet_other`. F1b set the 63 held courses' flags from their pages (rollback: `fix_held_tvet_flags --reverse --apply`). F2
+added 181 public MARA courses (177 Bumi-only; 4 GIATMARA pages silent on Bumi stay open), 606 offerings and
+institutions MARA-001..233 (rollback: `ingest_tvet_courses --file data/tvet/tvet_new_courses_F2.json
+--rollback-sql`, read-only checks first).** Follow-ups: the 59 flagged F2 rows (54 no SPM route); the 20 held TVET courses with no October page (still no `req_malaysian`); the 92 out-of-scope held
 differences in `held_flag_fix_F1b.json` (`three_m_only`, subject rules); the 90 flagged rows; fixture drift — UL0481001, FB0500001 (prod
-only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks; F2 (built, branch
-`bumi-sprint-f2`): a grouped TVET course's DISPLAY text (the age remark, level, duration) comes from its FIRST
+only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks; F2: a grouped TVET course's DISPLAY text (the age remark, level, duration) comes from its FIRST
 campus only — TVET-30715 shows age 15-55 though 7 of its 8 campuses say 15-70; TVET-30733, 30754, 34179 and
 48236 have mixed duration or level across campuses (not fixed in F2; eligibility is unaffected). The Bumi answer stays
 course-guide only. Adversarial review before push; the lead's read-only prod SQL checks the review file's

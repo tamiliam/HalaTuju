@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 
 ## Bumi coverage Sprint F2 — MARA UP_TVET programmes (no migration) - 2026-10-30
 
+**Live 2026-10-30** in `2127fda6` (api-01205-sgc / web-01030-cv7; ingest re-revision api-01206-r7r):
+dry run and apply 181 courses, 606 campus offerings, 233 institutions; 59 flagged rows not ingested. Smoke:
+non-Bumi citizen 4 F2 courses, Bumi citizen 181 (177 Bumi-only), foreigner who says Bumi 3 (0 Bumi-only).
+Retro `docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f2.md`.
+
 The public (Awam) MARA programmes of the October UP_TVET catalogue (GIATMARA, IKM, KKTM, MJII), through
 F1's parser, builder and command, as Bumi-only courses where the page says so, on the `mara` pathway
 (decisions.md 2026-10-30, Sprint F2). Built, not deployed. Runbook: halatuju_api/CLAUDE.md "Bumi F2 order".

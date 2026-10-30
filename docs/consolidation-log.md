@@ -24,6 +24,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-29 Bumi coverage Sprint D2 (other SPM courses, ATAU, Bumi matric tracks) — 17e4b0a2 0679e368 e8de21dc 1948c6b7 733649b5 de10ccda 6d806eb4
 - 2026-10-30 Bumi coverage Sprint F1 (public UP_TVET, non-MARA; pathways mara + tvet_other) — cb4676a8 ee50749e a1a7585a f4c4f30b 91b1123d 814d28c2 590c85a6 5ce776ab a60662cc
 - 2026-10-30 Bumi coverage Sprint F1b (held TVET flag fix) — 948f3e59 4186e78a 579e27ca
+- 2026-10-30 Bumi coverage Sprint F2 (MARA UP_TVET) — 896cdd25 ef6f53e6 6c9d15ad 2127fda6
 - 2026-10-29 Student maintenance Sprint 1 (one predicate, on hold stops money, activity log, migration 0183) — ad299d31 901c63d5 ae939213 99ee813b
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list + maintenance file) — 3b27acbd 1debc6cc
 - 2026-10-29 Student maintenance Sprint 3 (My Bursary hub; sub-state + Close move to the scholar file) — 1f78c76a c007883e

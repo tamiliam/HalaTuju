@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-30 | 2127fda | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | 579e27c | 90 | 52 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | b9028b4 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | 5ce4ee6 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
@@ -110,7 +111,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-30, 579e27c, window 2026-08-01 onward)
+## Latest run (2026-10-30, 2127fda, window 2026-08-01 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -127,7 +128,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/courses/views.py` | 3 | 2190 | 6.6 |
 
 ### Fix ratio
-- 229 fix / 215 feat commits since 2026-08-01
+- 232 fix / 220 feat commits since 2026-08-01
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -193,7 +194,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 37 of 300 web test files read source text (signals: readFileSync, apiSource); drift 24 (*Drift.test.ts, counted apart)
+- 38 of 305 web test files read source text (signals: readFileSync, apiSource); drift 24 (*Drift.test.ts, counted apart)
 
 ### Debt register
 - 423 entries have a defining line; 144 carry no resolution marker on it
@@ -222,7 +223,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at b9028b4
+- budgets no looser than at 579e27c
 
 ### tsc
 - 0 errors in 0 files
@@ -230,11 +231,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6093
+- Total keys per locale: 6166
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-30 (2127fda, Bumi Sprint F2 close) — 0 FAIL; nothing to promote
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against 579e27c (F1b close): `fix%` 52 -> 51; `hot#1`, `big`, `long`,
+`dup`, `xapp`, `mirror`, `td_open` 144 unchanged. F2 grew `tvet_syarat.py` and `ingest_tvet_courses.py`, both under
+budget. Source-text tests 37 -> 38: F2's `RequirementsCard.tvetF2.test.tsx` reads the F2 data file, not source
+text. **Accepted, no action.**
 
 ### 2026-10-30 (579e27c, Bumi Sprint F1b close) — 0 FAIL; nothing to promote
 
