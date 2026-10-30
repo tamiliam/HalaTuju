@@ -17,6 +17,9 @@ export type ManualRole = 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'finance' |
 /** FAQ audiences (also the role-chapter audiences). `everyone` = shown to all roles. */
 export type Audience = 'everyone' | 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'finance'
 
+/** One FAQ entry. Here, not in `faq.tsx`, so the per-audience FAQ files import it without a loop. */
+export type QA = { q: ReactNode; a: ReactNode }
+
 export interface ManualSection {
   /** Stable, unique anchor for deep links, e.g. `org-admin-assigning`
    *  (→ /admin/guide#org-admin-assigning). Never rename casually — emails/queries link here. */
