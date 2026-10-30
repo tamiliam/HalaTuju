@@ -8,8 +8,15 @@
  * hydration mismatch. Manual formatting sidesteps both. Uses the local timezone,
  * matching the calls this replaces.
  */
+/** `YYYY-MM-DD` with nothing after it — a calendar day, not an instant. */
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+
 export function formatDate(value: string | number | Date | null | undefined): string {
   if (value === null || value === undefined || value === '') return ''
+  // ⚠ A DATE-ONLY STRING IS READ BY HAND, as the local calendar day. `new Date('2026-10-01')` is UTC
+  // midnight, which every timezone west of Greenwich renders as 30 September (S5b review L7).
+  const day = typeof value === 'string' ? value.match(DATE_ONLY) : null
+  if (day) return `${day[3]}/${day[2]}/${day[1]}`
   const d = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(d.getTime())) return ''
   const dd = String(d.getDate()).padStart(2, '0')

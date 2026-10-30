@@ -56,6 +56,15 @@ describe('the words belong to whoever is reading (S5b)', () => {
   })
 })
 
+describe('the as-at date (S5b review L4)', () => {
+  it('is shown as a British date, not the ISO string', () => {
+    render(<SpendingCard copy={SPONSOR} spending={CARD} />)
+    const card = screen.getByTestId('spending-card').textContent ?? ''
+    expect(card).toContain('10/09/2026')
+    expect(card).not.toContain('2026-09-10')
+  })
+})
+
 describe('the four numbers', () => {
   it('shows all four, formatted from the STRING the server sent', () => {
     render(<SpendingCard spending={CARD} copy={SPONSOR} />)
@@ -153,7 +162,7 @@ describe('the stamp and the note', () => {
   it('stamps the date the server gave it', () => {
     render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(document.body.textContent)
-      .toContain('sponsorPortal.myStudents.detail.spend.asAt:2026-09-10')
+      .toContain('sponsorPortal.myStudents.detail.spend.asAt:10/09/2026')   // formatDate (S5b review L4)
   })
 
   it('carries the assumptions note', () => {

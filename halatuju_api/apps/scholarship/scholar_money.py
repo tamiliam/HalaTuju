@@ -177,7 +177,9 @@ def student_funds(application):
     Payments rules (S3's figures), as strings. `spending` is None — not four zeroes — when no
     spending report has reached us for her (the sponsor card's own rule: an empty card would claim
     she has spent nothing). Categories are EVERY category, by code (the screen translates), all time
-    — the sponsor card's period; `left` floors at zero (a parent may top her wallet up)."""
+    — the sponsor card's period, "since your award began" (the officer's Money tab shows THIS TERM, so
+    the two Spent figures differ on purpose); `left` floors at zero (a parent may top her wallet up).
+    A CLOSED file sends `closed: true` and `remaining: null` — never a promise."""
     from .models import Disbursement, SPEND_CATEGORY_CHOICES, BursarySpendTxn
     from .payments import _remaining, paid_to_date
     from .spend_sponsor import category_rows
@@ -203,10 +205,16 @@ def student_funds(application):
             'categories': [{'code': r['code'], 'total': str(r['total'])}
                            for r in category_rows(rows, dict(SPEND_CATEGORY_CHOICES), fold=False)],
         }
+    # A CLOSED file promises nothing (review M1): "RM X still to come" would be untrue for a
+    # terminated or withdrawn student. `payments._remaining` is unchanged (Payments shares it); this
+    # payload simply does not send it once the file has closed.
+    from .maintenance_scope import is_in_maintenance
+    closed = not is_in_maintenance(application)
     return {
+        'closed': closed,
         'award_amount': _money(application.award_amount) if application.award_amount is not None else None,
         'received': _money(released),
-        'remaining': _money(_remaining(application)),
+        'remaining': None if closed else _money(_remaining(application)),
         # Her own payments: the amount and the day it reached her (never a purchase).
         'releases': [{'amount': _money(d.amount), 'released_on': _day(d.released_at)} for d in releases],
         'spending': spending,

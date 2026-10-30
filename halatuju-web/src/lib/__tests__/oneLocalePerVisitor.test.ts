@@ -193,7 +193,7 @@ describe('one locale per visitor', () => {
     // `import('@/messages/' + locale + '.json')`, never a computed `?slice=${…}`.
     const chunks = stripComments(fs.readFileSync(path.join(SRC, 'lib', 'messageChunks.ts'), 'utf8'))
     for (const locale of ['ms', 'ta']) {
-      for (const slice of ['core', 'admin', 'documents', 'scholarship', 'sponsor']) {
+      for (const slice of ['core', 'admin', 'documents', 'scholarship', 'sponsor', 'bursary']) {
         expect(chunks).toContain(`import('@/messages/${locale}.json?slice=${slice}')`)
       }
     }

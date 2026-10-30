@@ -102,9 +102,54 @@ class TestOneTruthForHerMoney(_Base):
                           body['spending']['released']}, {'550.50'})
         self.assertEqual({body['remaining'], hub['remaining'], officer['remaining']}, {'1449.50'})
         self.assertEqual((body['spending']['spent'], body['spending']['left']), (sponsor['spent'], sponsor['left']))
+        self.assertIs(body['closed'], False)
         self.assertEqual([r['amount'] for r in body['releases']], ['250.50', '300.00'])
         self.assertNotRegex(self._funds().content.decode(),
                             r'"(amount|received|remaining|award_amount|spent|left|released|promised|total)":\s*\d')
+
+
+class TestTwoSpentFiguresDifferOnPurpose(_Base):
+    def test_her_card_is_all_time_like_the_sponsor_the_officer_tab_is_this_term(self):
+        """Review L5: her card is "since your award began" (the sponsor's period); the officer's Money tab
+        is THIS TERM — so spending before the term began is on hers and the sponsor's, not the officer's."""
+        from apps.scholarship.models import ResultsExpectation
+        today = timezone.localdate()
+        _release(self.app, '500.00', 50)
+        BursarySpendTxn.objects.create(
+            application=self.app, txn_id=unique_suffix('TX'), txn_date=today - timedelta(days=40),
+            wallet_id=self.app.vircle_id, merchant='M', amount=Decimal('70.00'), duitnow_type='',
+            entry_type='CREDIT', tx_type='SPEND', status='00', category='food', decided_by='', source_file='f')
+        BursarySpendTxn.objects.create(
+            application=self.app, txn_id=unique_suffix('TX'), txn_date=today - timedelta(days=2),
+            wallet_id=self.app.vircle_id, merchant='M', amount=Decimal('30.00'), duitnow_type='',
+            entry_type='CREDIT', tx_type='SPEND', status='00', category='food', decided_by='', source_file='f')
+        ResultsExpectation.objects.create(application=self.app, term_index=1, term_starts_on=today - timedelta(days=10),
+                                          term_ends_on=today + timedelta(days=170), due_on=today + timedelta(days=215))
+        hers = self._funds().json()['spending']['spent']
+        sponsor = spend_sponsor.sponsor_card(type(self.app).objects.get(pk=self.app.pk))['spent']
+        admin = make_admin('org_admin', owning_org=self.cohort.owning_organisation)
+        officer = authed_client(admin).get(f'/api/v1/admin/scholarship/scholars/{self.app.id}/money/').json()
+        self.assertEqual((hers, sponsor), ('100.00', '100.00'))
+        self.assertEqual(officer['spending']['spent'], '30.00')
+
+
+class TestAClosedFilePromisesNothing(_Base):
+    """Review M1: "RM X still to come" is untrue once the file has closed."""
+
+    def test_a_terminated_file(self):
+        _release(self.app, '400.00', 30)
+        type(self.app).objects.filter(pk=self.app.pk).update(status='closed', closure_reason='terminated')
+        body = self._funds().json()
+        self.assertEqual((body['closed'], body['remaining'], body['received']), (True, None, '400.00'))
+
+    def test_a_withdrawn_file_with_a_returned_tranche(self):
+        _release(self.app, '400.00', 30)
+        Disbursement.objects.create(application=self.app, amount=Decimal('200'), status='returned', sequence=2,
+                                    released_at=timezone.now() - timedelta(days=5))
+        type(self.app).objects.filter(pk=self.app.pk).update(status='closed', closure_reason='withdrawn')
+        body = self._funds().json()
+        self.assertEqual((body['closed'], body['remaining'], body['received']), (True, None, '400.00'))
+        self.assertEqual([r['amount'] for r in body['releases']], ['400.00'])      # a return is not a payment
 
 
 class TestOwnerRulingA(_Base):

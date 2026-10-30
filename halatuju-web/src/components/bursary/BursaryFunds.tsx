@@ -1,13 +1,13 @@
 'use client'
 
-import '@/lib/messagesBursary'   // S5b: these tabs' words, their own slice
 import SpendingCard from '@/components/sponsor/SpendingCard'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import type { BursaryFunds as FundsPayload } from '@/lib/api'
 
-/** The student's own words for the spending card — the `bursary` slice, never `sponsorPortal`. */
+/** The student's own words for the spending card — the `bursary` slice (loaded by the route's page,
+ *  `app/scholarship/bursary/page.tsx`, rule D), never `sponsorPortal`. */
 export const STUDENT_SPEND_COPY = 'bursaryTabs.spend'
 
 /**
@@ -27,9 +27,12 @@ export default function BursaryFunds({ funds }: { funds: FundsPayload }) {
         <h2 className="text-lg font-bold text-ground-900">{t('scholarship.bursary.funds.title')}</h2>
         <p className="mt-2 text-sm text-ground-600">
           <strong className="text-xl text-ground-900" data-testid="funds-received">RM{rm(funds.received)}</strong>{' '}
-          {funds.award_amount && t('scholarship.bursary.funds.of', { award: `RM${rm(funds.award_amount)}` })}
+          {!funds.closed && funds.award_amount && t('scholarship.bursary.funds.of', { award: `RM${rm(funds.award_amount)}` })}
+          {funds.closed && t('bursaryTabs.funds.receivedInAll')}
         </p>
-        {funds.award_amount && (
+        {funds.closed ? (
+          <p className="mt-1 text-xs text-ground-500" data-testid="funds-ended">{t('bursaryTabs.funds.ended')}</p>
+        ) : funds.award_amount && funds.remaining && (
           <p className="mt-1 text-xs text-ground-500" data-testid="funds-remaining">
             {t('bursaryTabs.funds.remaining', { amount: `RM${rm(funds.remaining)}` })}
           </p>

@@ -18,6 +18,7 @@
 // thirty lines — and the project carries no charting dependency for it.
 
 import { useT } from '@/lib/i18n'
+import { formatDate } from '@/lib/formatDate'
 
 /** What the card draws — the SPONSOR's payload and the STUDENT's (S5b) both fit it. Categories by
  *  CODE; the label is always this card's own translation, never a server string. */
@@ -31,7 +32,7 @@ export interface SpendingFigures {
 }
 
 /* ⚠ THE WORDS ARE THE CALLER'S, AND THERE IS NO DEFAULT (S5b). The sponsor page passes its own
- * `sponsorPortal…spend` prefix, the student's page `scholarship.bursary.spend`. A default here would
+ * `sponsorPortal…spend` prefix, the student's page `bursaryTabs.spend`. A default here would
  * put a sponsor-slice key inside this file, and the slice guard (`sliceReach.test.ts`) would rightly
  * flag every student route that renders the card — her page must never need the sponsor slice. */
 
@@ -115,7 +116,7 @@ export default function SpendingCard({ spending, copy }: {
         </h2>
         {/* ⚠ The date we last UPDATED, never the day the student last bought something. */}
         <span className="text-xs text-ground-400">
-          {t(`${copy}.asAt`, { date: spending.as_at })}
+          {t(`${copy}.asAt`, { date: formatDate(spending.as_at) })}
         </span>
       </div>
 

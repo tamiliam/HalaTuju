@@ -1,6 +1,5 @@
 'use client'
 
-import '@/lib/messagesBursary'   // S5b: these tabs' words, their own slice
 import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
@@ -16,7 +15,8 @@ import { getBursaryContract, type BursaryContract as ContractPayload } from '@/l
  * one each time, and the button stays usable if a try fails.
  * ⚠ A NEW TAB, NOT THE STAFF `DocViewer` (its words live in the admin message slice, which this page
  * never loads). The tab is opened SYNCHRONOUSLY on the click and pointed at the link once it arrives,
- * so a phone's pop-up blocker does not swallow it; a failed fetch closes it again.
+ * so a phone's pop-up blocker does not swallow it; a failed fetch closes it again. If the browser blocks
+ * it anyway (`window.open` returns null) the page is NEVER navigated away — she gets a link to tap.
  */
 export default function BursaryContract({ contract, token, compact = false }: {
   contract: ContractPayload
@@ -26,6 +26,8 @@ export default function BursaryContract({ contract, token, compact = false }: {
   const { t } = useT()
   const [opening, setOpening] = useState(false)
   const [noPdf, setNoPdf] = useState(false)
+  // A blocked pop-up (window.open returned null): the fresh link, for her to tap (review L6).
+  const [fallback, setFallback] = useState<string | null>(null)
 
   const open = async () => {
     if (!token) return
@@ -35,7 +37,7 @@ export default function BursaryContract({ contract, token, compact = false }: {
       const fresh = await getBursaryContract({ token, link: true })
       if (fresh.exists && fresh.pdf_url) {
         setNoPdf(false)
-        if (tab) { tab.opener = null; tab.location.href = fresh.pdf_url } else window.location.assign(fresh.pdf_url)
+        if (tab) { tab.opener = null; tab.location.href = fresh.pdf_url; setFallback(null) } else setFallback(fresh.pdf_url)
       } else {
         tab?.close()
         setNoPdf(true)
@@ -72,6 +74,10 @@ export default function BursaryContract({ contract, token, compact = false }: {
             {t('bursaryTabs.contract.viewPdf')}
           </button>
           {noPdf && <p className="mt-1 text-xs text-ground-500" data-testid="contract-no-pdf">{t('bursaryTabs.contract.noPdf')}</p>}
+          {fallback && (
+            <a href={fallback} target="_blank" rel="noopener noreferrer" data-testid="contract-pdf-link"
+              className="mt-2 text-sm font-medium text-primary-600 underline">{t('bursaryTabs.contract.openPdf')}</a>
+          )}
         </>
       )}
     </section>

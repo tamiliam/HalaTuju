@@ -58,7 +58,7 @@ beforeEach(() => {
 })
 
 const FUNDS: api.BursaryFunds = {
-  award_amount: '2000.00', received: '1200.00', remaining: '800.00',
+  closed: false, award_amount: '2000.00', received: '1200.00', remaining: '800.00',
   releases: [{ amount: '200.00', released_on: '2026-10-01' }],
   spending: { promised: '2000.00', released: '1200.00', spent: '300.00', left: '900.00', as_at: '2026-10-28',
     categories: [{ code: 'food', total: '120.00' }, { code: 'study', total: '90.00' }, { code: 'transport', total: '50.00' },

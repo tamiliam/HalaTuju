@@ -384,9 +384,12 @@ interface SliceRule {
   notKey: RegExp
   /** The routes that load it — the production routes, plus the sandbox where it mounts one. */
   owners: string[]
+  /** The walk's floors for THIS slice (files reading a key; files importing the loader), when a
+   *  one-route slice cannot meet the wide slices' defaults (40 or 10 key files, 10 importers). */
+  floors?: { keyFiles: number; importers: number; loaders: number }
 }
 
-const SLICE_RULES: Record<'scholarship' | 'sponsor', SliceRule> = {
+const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary', SliceRule> = {
   scholarship: {
     loader: path.join(SRC, 'lib', 'messagesScholarship.ts'),
     key: new RegExp(`^scholarship\\.(?!(?:${KEPT.join('|')})(?:\\.|$))|\\$\\{\\}scholarship\\.`),
@@ -411,6 +414,15 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor', SliceRule> = {
       '/sponsor', '/sponsor/account', '/sponsor/auth/reset', '/sponsor/login', '/sponsor/my-students/[id]',
       '/sponsor/register', '/sponsor/students', '/sponsor/students/[id]', '/sponsor/terms', '/sponsor/trust',
     ],
+  },
+  // Student maintenance S5b (2026-10-30): her My Bursary Funds and Contract tabs' words — one route.
+  bursary: {
+    loader: path.join(SRC, 'lib', 'messagesBursary.ts'),
+    key: /^bursaryTabs\.|\$\{\}bursaryTabs\./,
+    notKey: /^bursaryTabs\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    owners: ['/scholarship/bursary'],
+    // One route: the page and its two tab components read the keys; only the page imports the loader.
+    floors: { keyFiles: 3, importers: 1, loaders: 1 },
   },
 }
 
@@ -503,8 +515,8 @@ describe.each(Object.entries(SLICE_RULES))('TD-416: the %s slice is loaded where
   test('the walk really read the tree (floors)', () => {
     expect(PAGES.length).toBeGreaterThanOrEqual(80)
     expect(SPECIALS.map(rel)).toContain('app/loading.tsx')
-    expect(keyFiles.length).toBeGreaterThanOrEqual(name === 'scholarship' ? 40 : 10)
-    expect(loaders.length).toBeGreaterThanOrEqual(10)
+    expect(keyFiles.length).toBeGreaterThanOrEqual(rule.floors?.keyFiles ?? (name === 'scholarship' ? 40 : 10))
+    expect(loaders.length).toBeGreaterThanOrEqual(rule.floors?.loaders ?? 10)
   })
 
   test('⚠ A: every route that can reach a key of the slice loads it before it renders', () => {
@@ -536,7 +548,7 @@ describe.each(Object.entries(SLICE_RULES))('TD-416: the %s slice is loaded where
 
   test('D: only client route files (a page or a layout) import the loader', () => {
     const importers = FILES.filter((f) => (EDGES.get(f) ?? []).includes(rule.loader))
-    expect(importers.length).toBeGreaterThanOrEqual(10)
+    expect(importers.length).toBeGreaterThanOrEqual(rule.floors?.importers ?? 10)
     expect(importers.filter((f) => !isClientRouteFile(f)).map(rel)).toEqual([])
   })
 

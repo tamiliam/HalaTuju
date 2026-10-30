@@ -17,7 +17,7 @@ jest.mock('@/lib/i18n', () => ({
 }))
 
 const FUNDS: FundsPayload = {
-  award_amount: '2000.00', received: '550.50', remaining: '1449.50',
+  closed: false, award_amount: '2000.00', received: '550.50', remaining: '1449.50',
   releases: [{ amount: '250.50', released_on: '2026-10-01' }, { amount: '300.00', released_on: '2026-09-01' }],
   spending: { promised: '2000.00', released: '550.50', spent: '120.00', left: '430.50', as_at: '2026-10-28',
     categories: [{ code: 'food', total: '80.00' }, { code: 'micro_stall', total: '40.00' }] },
@@ -32,6 +32,14 @@ it('shows her money and payments, and the spending card in her own words', () =>
   expect(card.textContent).toContain('bursaryTabs.spend.title')
   expect(card.textContent).toContain('bursaryTabs.spend.cat.micro_stall')
   expect(card.textContent).not.toContain('sponsorPortal')
+})
+
+it('a closed file says the bursary has ended and what she received — never a promise (review M1)', () => {
+  render(<BursaryFunds funds={{ ...FUNDS, closed: true, remaining: null }} />)
+  expect(screen.getByTestId('funds-ended').textContent).toBe('bursaryTabs.funds.ended')
+  expect(screen.getByTestId('funds-received').textContent).toBe('RM550.50')
+  expect(screen.queryByTestId('funds-remaining')).toBeNull()
+  expect(document.body.textContent).not.toContain('scholarship.bursary.funds.of')
 })
 
 it('says so when no spending report has reached us', () => {

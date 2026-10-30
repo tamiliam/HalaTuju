@@ -7633,7 +7633,7 @@
   },
   "bursaryTabs": {
     "spend": {
-      "title": "How you are spending",
+      "title": "Your spending since your award began",
       "asAt": "as at {date}",
       "promised": "Your award",
       "released": "Received",
@@ -7643,7 +7643,7 @@
       "chartLabel": "Your spending by category",
       "other": "Other",
       "noteTitle": "How we work this out.",
-      "note": "We are told the shop’s name and the amount, never what you bought. Where the shop’s name says what it sells, we use that; where it does not and you visit often for small amounts, we count it as food. Anything we cannot place shows as Not yet sorted. Your sponsor sees these same totals and nothing more.",
+      "note": "We are told the shop’s name and the amount, never what you bought. Where the shop’s name says what it sells, we use that; where it does not and you visit often for small amounts, we count it as food. Anything we cannot place shows as Not yet sorted. Your sponsor sees only totals by category — never the shops or what you bought.",
       "cat": {
         "food": "Food & drink",
         "groceries": "Groceries",
@@ -7664,7 +7664,9 @@
       "remaining": "{amount} still to come",
       "seeAll": "See all spending",
       "noSpending": "We have not received any spending information for you yet.",
-      "loadFailed": "Could not load your funds. Please try again."
+      "loadFailed": "Could not load your funds. Please try again.",
+      "ended": "Your bursary has ended.",
+      "receivedInAll": "received in all"
     },
     "contract": {
       "title": "Your contract",
@@ -7679,7 +7681,8 @@
       },
       "viewPdf": "View PDF",
       "noPdf": "The PDF is not available right now. Please try again.",
-      "loadFailed": "Could not load your contract. Please try again."
+      "loadFailed": "Could not load your contract. Please try again.",
+      "openPdf": "Open the PDF"
     }
   }
 }

@@ -31,6 +31,20 @@ beforeEach(() => {
   jest.spyOn(window, 'open').mockReturnValue(fakeTab as unknown as Window)
 })
 
+it('a blocked pop-up never navigates the page: she gets a link to tap (review L6)', async () => {
+  ;(window.open as jest.Mock).mockReturnValue(null)
+  const assign = jest.fn()
+  mockApi.getBursaryContract.mockResolvedValue(SIGNED('https://signed/pdf'))
+  render(<BursaryContract contract={SIGNED(null)} token="tok" />)
+  fireEvent.click(screen.getByText('bursaryTabs.contract.viewPdf'))
+  const link = await screen.findByTestId('contract-pdf-link')
+  expect(link.getAttribute('href')).toBe('https://signed/pdf')
+  expect(link.getAttribute('target')).toBe('_blank')
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  expect(assign).not.toHaveBeenCalled()
+  expect(window.location.href).not.toContain('signed/pdf')
+})
+
 it('says No contract on file when there is none', () => {
   render(<BursaryContract contract={{ exists: false }} token="tok" />)
   expect(screen.getByTestId('contract-none').textContent).toBe('bursaryTabs.contract.none')

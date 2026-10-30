@@ -128,9 +128,11 @@ export async function getBursarySummary(options?: ApiOptions): Promise<BursarySu
  *  sponsor sees: no merchant, no transaction, no transaction date. Every amount a STRING.
  *  `spending` is null (not zeroes) until a spending report has reached us. */
 export interface BursaryFunds {
+  /** Her file has closed: `remaining` is null — the page says the bursary has ended, never a promise. */
+  closed: boolean
   award_amount: string | null
   received: string
-  remaining: string
+  remaining: string | null
   releases: { amount: string; released_on: string | null }[]
   spending: {
     promised: string
