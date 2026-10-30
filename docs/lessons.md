@@ -1711,3 +1711,8 @@ is prefetched — weight moved off a route's first load can still travel in the 
   all for what it took. Nine of the ten remaining reports gave both; this one looked complete and was not.
   **Rule:** when transcribing a published figure, read for the specific number you need; "it mentions hours"
   is not "it states the actual", and the honest move is to ask the one person who knows. (Billing, 2026-10-30)
+- **A request's scope is its description PLUS its comment thread up to acceptance.** Request #50's requester
+  added "ready-to-assign unassigned before not-ready" in a comment four seconds before accepting the quote;
+  the build read only the description and the analysis, and the gap surfaced only when the hours call echoed
+  the thread back. **Rule:** before building a request, read every shared comment (the admin request detail
+  API returns them); a query against the wrong comments column failing is not "no comments". (Request, 2026-10-30)

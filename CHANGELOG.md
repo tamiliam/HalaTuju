@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #50 follow-up — ready-to-assign first among the unassigned - 2026-10-30
+
+- Sorting the applications list by Assigned now puts unassigned applications that are ready to assign (questions
+  answered, or the answer window passed) before the ones that are not, in both directions. This was asked on the
+  request before it was accepted and was missed in the first delivery; no extra charge. Same readiness rule as the
+  assign dropdown. No migration.
+
 ## Bumi coverage Sprint F2 — MARA UP_TVET programmes (no migration) - 2026-10-30
 
 The public (Awam) MARA programmes of the October UP_TVET catalogue (GIATMARA, IKM, KKTM, MJII), through

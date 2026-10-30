@@ -133,6 +133,26 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(names('?sort=assigned&dir=asc'), ['BINA', 'PRIYA', 'UMAR'])
         self.assertEqual(names('?sort=assigned&dir=desc'), ['PRIYA', 'BINA', 'UMAR'])
 
+    def test_list_sort_by_assigned_ready_unassigned_before_not_ready(self):
+        # The requester's follow-up on #50: among the unassigned, ready-to-assign comes first —
+        # even when the not-ready one is newer (the tie-break would otherwise put it first).
+        import datetime
+        ScholarshipApplication.objects.filter(id=self.app.id).delete()
+        made = {}
+        for uid, nric, name in (('studR', '040606-14-6666', 'Rani'), ('studN', '040707-14-7777', 'Nila')):
+            made[name] = make_application('shortlisted', cohort=self.cohort, student=make_student(
+                supabase_user_id=uid, nric=nric, name=name, grades={'a': 'A'}, household_income=3000))
+        now = timezone.now()
+        ScholarshipApplication.objects.filter(id=made['Rani'].id).update(   # ready: answered, no tasks
+            submitted_at=now - datetime.timedelta(days=2), profile_completed_at=now - datetime.timedelta(days=1))
+        ScholarshipApplication.objects.filter(id=made['Nila'].id).update(   # not ready: questions open
+            submitted_at=now, profile_completed_at=None)
+        self._auth(ADMIN)
+        for direction in ('asc', 'desc'):
+            r = self.client.get(f'/api/v1/admin/scholarship/applications/?sort=assigned&dir={direction}')
+            self.assertEqual([a['name'] for a in r.json()['applications']], ['RANI', 'NILA'])
+            self.assertEqual([a['ready_for_assignment'] for a in r.json()['applications']], [True, False])
+
     def test_contact_submission_email(self):
         from django.core import mail
         from apps.scholarship.emails import send_contact_submission_admin_email

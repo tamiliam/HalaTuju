@@ -23,6 +23,7 @@ from ..services import (
     admin_reject,
     application_completeness,
     cancel_pending_decline,
+    is_ready_for_assignment,
     org_admin_reject,
     set_reporting_date_by_officer,
 )
@@ -155,7 +156,18 @@ class AdminApplicationListView(_AdminBase):
             key = Lower('assigned_to__name')
             qs = qs.order_by(key.desc(nulls_last=True) if desc else key.asc(nulls_last=True),
                              '-submitted_at', '-id')
-            page = paginator.paginate_queryset(qs, request, view=self)
+            # The requester's follow-up on #50: among the unassigned, the ones READY to assign
+            # come first — the same gate the assign dropdown uses (`is_ready_for_assignment`, read
+            # off the list's EXISTS annotation, so no query per row). Readiness is computed, not a
+            # column, so the set is materialised like the merit sort.
+            rows = list(qs)
+            now = timezone.now()
+            unassigned = [a for a in rows if a.assigned_to_id is None]
+            ready = {a.pk for a in unassigned if is_ready_for_assignment(a, now)}
+            rows = ([a for a in rows if a.assigned_to_id is not None]
+                    + [a for a in unassigned if a.pk in ready]
+                    + [a for a in unassigned if a.pk not in ready])
+            page = paginator.paginate_queryset(rows, request, view=self)
         elif sort_f == 'merit':
             # One 0-100 merit for every route (`exam_questions.merit_100`, third results route S1),
             # so SPM and STPM holders interleave. An absent merit is NOT a low score (#106): it
