@@ -53,8 +53,11 @@ const PAYLOAD = (over: Partial<api.StudentEmailsPayload> = {}): api.StudentEmail
 beforeEach(() => {
   jest.clearAllMocks()
   mockApi.getStudentEmails.mockResolvedValue(PAYLOAD())
-  mockApi.saveStudentEmail.mockResolvedValue(PAYLOAD())
-  mockApi.setStudentEmailSwitch.mockResolvedValue(PAYLOAD())
+  mockApi.saveStudentEmail.mockImplementation(async () => {
+    const { organisation, enabled, templates } = PAYLOAD()
+    return { organisation, enabled, templates }
+  })
+  mockApi.setStudentEmailSwitch.mockImplementation(async (key: string, enabled: boolean) => ({ key, enabled }))
 })
 
 it('puts every email under its heading, one row each, and skips an empty heading', async () => {
@@ -79,17 +82,26 @@ it('a switchable email has the switch; a locked one has none and says why', asyn
     .getAttribute('aria-checked')).toBe('false')
 })
 
-it('switching posts the key and the new state, and a refusal puts the switch back', async () => {
+it('switching posts the key and the new state, and a refusal puts back THAT row only', async () => {
   render(<StudentCommsTab />)
-  const safe = await screen.findByTestId('student-email-application_received')
-  fireEvent.click(within(safe).getByRole('switch'))
+  const sw = (key: string) => within(screen.getByTestId(`student-email-${key}`)).getByRole('switch')
+  await screen.findByTestId('student-email-application_received')
+  fireEvent.click(sw('application_received'))
   await waitFor(() => expect(mockApi.setStudentEmailSwitch).toHaveBeenCalledWith(
     'application_received', false, undefined, { token: 'tok' }))
+  await waitFor(() => expect(sw('application_received').getAttribute('aria-checked')).toBe('false'))
+  // Review L5: a later failure on ANOTHER row must not undo the switch that succeeded.
   mockApi.setStudentEmailSwitch.mockRejectedValueOnce(new Error('400'))
-  fireEvent.click(within(screen.getByTestId('student-email-interview_reminders')).getByRole('switch'))
+  fireEvent.click(sw('interview_reminders'))
   expect(await screen.findByText(`${P}.switchFailed`)).toBeTruthy()
-  expect(within(screen.getByTestId('student-email-interview_reminders')).getByRole('switch')
-    .getAttribute('aria-checked')).toBe('false')
+  expect(sw('interview_reminders').getAttribute('aria-checked')).toBe('false')
+  expect(sw('application_received').getAttribute('aria-checked')).toBe('false')
+  expect(mockApi.getStudentEmails).toHaveBeenCalledTimes(1)                   // no reload of the page
+})
+
+it('says that switching back on reaches everyone now due', async () => {
+  render(<StudentCommsTab />)
+  expect((await screen.findByTestId('student-comms-switch-back')).textContent).toBe(`${P}.switchBackNote`)
 })
 
 it('says when the platform holds an email back, and when it was last sent', async () => {
@@ -113,6 +125,8 @@ it('the worded email: one chip per language, then a tab per language that saves 
   fireEvent.click(within(li).getByText('admin.sources.save'))
   await waitFor(() => expect(mockApi.saveStudentEmail).toHaveBeenCalledWith(
     expect.objectContaining({ kind: 'results_due', language: 'ta', subject: 'A reminder' }), undefined, { token: 'tok' }))
+  // Review L4: a save answers with the wording only; the rest of the page (last sent) stays put.
+  expect(within(screen.getByTestId('student-email-application_received')).getByText(/lastSent/)).toBeTruthy()
   fireEvent.click(within(li).getByText(`${P}.edit`))
   fireEvent.click(within(li).getByTestId('student-email-tab-results_due.ms'))
   fireEvent.click(within(li).getByText(`${P}.reset`))

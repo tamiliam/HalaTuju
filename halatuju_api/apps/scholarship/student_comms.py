@@ -206,9 +206,14 @@ def send_student_email(application, kind, **values):
         ok = _send_html(to, out_subject, text, _html_email_shell(html),
                         from_email=b.email_from, reply_to=[b.email_reply_to])
     if application.owning_organisation_id:
-        from .models import StudentEmailLog
-        StudentEmailLog.objects.create(organisation_id=application.owning_organisation_id,
-                                       application=application, key=kind, recipient=to[:254], ok=bool(ok))
+        try:   # review L2: the email has gone; a failed log row must not turn that into an error
+            from .models import StudentEmailLog
+            StudentEmailLog.objects.create(organisation_id=application.owning_organisation_id,
+                                           application=application, key=kind, recipient=to[:254], ok=bool(ok))
+        except Exception:   # best-effort, as the docstring says
+            import logging
+            logging.getLogger('apps.scholarship.student_comms').exception(
+                'StudentEmailLog write failed (app %s, %s)', application.id, kind)
     return ok
 
 

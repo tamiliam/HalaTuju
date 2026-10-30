@@ -16,6 +16,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
 
+from apps.scholarship import student_email_catalogue
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import (
     QUERY_SLA_ACTIVE_STATUSES, query_sla, query_sla_days, send_query_reminders,
@@ -50,6 +51,10 @@ class Command(BaseCommand):
                     continue
                 lead = query_reminder_lead_days(app)
                 if _elapsed_days_local(now, app.profile_completed_at) < max(query_sla_days(app) - lead, 0):
+                    continue
+                # S6a review L6: the dry run asks the organisation's switch, as the live run does.
+                if not student_email_catalogue.may_send(app, 'question_reminder'):
+                    self.stdout.write(f"  [dry-run] would skip app #{app.pk}: switched off by its organisation")
                     continue
                 self.stdout.write(
                     f"  [dry-run] would remind app #{app.pk} "

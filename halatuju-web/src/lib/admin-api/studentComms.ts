@@ -65,17 +65,20 @@ export async function getStudentEmails(org?: string, options?: ApiOptions): Prom
   return adminFetch(`${BASE}${q(org)}`, options)
 }
 
+/** What a save answers: the wording only — "last sent" is read on the page load, never per write. */
+export type StudentEmailsSaved = Pick<StudentEmailsPayload, 'organisation' | 'enabled' | 'templates'>
+
 export async function saveStudentEmail(
   patch: { kind: string; language: string; subject?: string; body?: string; reset?: boolean },
   org?: string, options?: ApiOptions,
-): Promise<StudentEmailsPayload> {
+): Promise<StudentEmailsSaved> {
   return adminMutate(`${BASE}${q(org)}`, 'PUT', patch, options)
 }
 
-/** Switch one of the SAFE emails on or off for this organisation. A locked one is refused by the
- *  server (400 `not_switchable`); the page never decides that itself. */
+/** Switch one of the SAFE emails on or off for this organisation; answers that one row's state. A
+ *  locked one is refused by the server (400 `not_switchable`); the page never decides that itself. */
 export async function setStudentEmailSwitch(
   key: string, enabled: boolean, org?: string, options?: ApiOptions,
-): Promise<StudentEmailsPayload> {
+): Promise<{ key: string; enabled: boolean }> {
   return adminMutate(`${BASE}switch/${q(org)}`, 'POST', { key, enabled }, options)
 }

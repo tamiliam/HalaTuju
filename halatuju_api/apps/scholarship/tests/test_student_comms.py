@@ -123,12 +123,31 @@ class TestTheOrganisationSwitch(TestCase):
         StudentEmailSwitch.objects.create(organisation=app.owning_organisation, key=kind, enabled=False)
 
     def test_results_due_off(self):
+        """Off writes NOTHING (review L3): the switch is asked before the claim, so there is no claim
+        and no give-back on `results_expectations`."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
         app, exp = _student()
         self._off(app, 'results_due')
         _due_in(exp, 5)
-        self.assertEqual(rx.send_due_reminders(), 0)
+        with CaptureQueriesContext(connection) as q:
+            self.assertEqual(rx.send_due_reminders(), 0)
+        self.assertFalse([x for x in q.captured_queries
+                          if x['sql'].lstrip().upper().startswith('UPDATE') and 'results_expectations' in x['sql']])
         exp.refresh_from_db()
         self.assertEqual((exp.reminded_at, len(mail.outbox), StudentEmailLog.objects.count()), (None, 0, 0))
+
+    def test_a_failed_log_write_does_not_undo_the_send(self):
+        """Review L2: the email has gone; a broken log row is logged, never raised."""
+        from unittest.mock import patch
+        from django.db import DatabaseError
+        app, exp = _student()
+        _due_in(exp, 5)
+        with patch.object(StudentEmailLog.objects, 'create', side_effect=DatabaseError('down')), \
+                self.assertLogs('apps.scholarship.student_comms', level='ERROR'):
+            self.assertEqual(rx.send_due_reminders(), 1)
+        exp.refresh_from_db()
+        self.assertIsNotNone(exp.reminded_at)
 
     def test_results_overdue_off_still_flags_the_file(self):
         app, exp = _student()

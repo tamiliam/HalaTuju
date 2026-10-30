@@ -6,6 +6,7 @@ per-application stamp (interview_reminded_1d_at / interview_reminded_1h_at), whi
 is reset whenever the student reschedules. Best-effort emails to the student AND the
 assigned reviewer. Inert unless INTERVIEW_SCHEDULING_ENABLED.
 """
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -105,73 +106,81 @@ class Command(BaseCommand):
               .select_related('profile', 'assigned_to'))
         sent_1d, sent_1h = [], []
         for app in qs:
-            # Bill this iteration's email + WhatsApp to the application's OWNING ORGANISATION.
-            # A cron carries no request context, so without this the meter records org-NULL.
-            with usage.usage_context(application=app):
-                start = app.interview_start
-                student_email, student_name = _student_identity(app)
-                reviewer = app.assigned_to
-                reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
-                reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
-                # S6a: the organisation may switch off the STUDENT's reminder email. The reviewer's
-                # reminder and the WhatsApp opt-in are other channels and still go, so the stamps
-                # below still follow them — the reminder window is not held open for a later email.
-                student_on = student_email_catalogue.may_send(app, 'interview_reminders')
-                # Heads-up: the verdict is a different clock from the interview (TD-131). Surface
-                # the due date in the reviewer reminder iff a verdict isn't recorded yet.
-                verdict_due = ''
-                if app.assigned_at and app.verdict_decided_at is None:
-                    # Per-organisation SLA (Org Config Sprint C) — the SAME clock the nudge
-                    # sweep and the assignment email compute, so the three can never disagree.
-                    # ⚠ THE ARITHMETIC IS SHARED, NOT JUST THE NUMBER (2026-09-15): all three
-                    # sites now call `review_sla.review_due`, so "the three can never disagree"
-                    # is enforced by there being one line rather than by three matching ones.
-                    from apps.scholarship import review_sla
-                    verdict_due = review_sla.review_due(
-                        app.assigned_at, app.owning_organisation).date().strftime('%d %b %Y')
-
-                # 1-day reminder: inside 24h of the start, once — but only if the booking gave ≥24h
-                # notice (a same-day booking skips this; the 1-hour reminder still covers it).
-                if (app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24)
-                        and _booked_with_notice(app, 24)):
-                    _eo = emails.english_only_email(app)
-                    if student_on:
-                        emails.send_interview_reminder_email(
-                            student_email, student_name=student_name, start=start,
-                            meeting_url=app.interview_meeting_url, when='1day',
-                            english_only=_eo)
-                    # Best-effort WhatsApp alongside the email (gated on opt-in; approved
-                    # template in prod, free text in the sandbox; no-op unless WHATSAPP_ENABLED).
-                    _send_wa_reminder(app, student_name, start, '1day')
-                    if reviewer_email:
-                        emails.send_reviewer_interview_reminder_email(
-                            reviewer_email, reviewer_name=reviewer_name,
-                            applicant_name=student_name,
-                            start=start, meeting_url=app.interview_meeting_url, when='1day',
-                            ref=pool_ref(app.id), verdict_due=verdict_due)
-                    app.interview_reminded_1d_at = now
-                    app.save(update_fields=['interview_reminded_1d_at'])
-                    sent_1d.append(app.id)
-
-                # 1-hour reminder: inside 1h of the start, once — but only if the booking gave ≥1h
-                # notice (a sub-1h booking skips it; the confirmation already went at booking).
-                if (app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1)
-                        and _booked_with_notice(app, 1)):
-                    _eo = emails.english_only_email(app)
-                    if student_on:
-                        emails.send_interview_reminder_email(
-                            student_email, student_name=student_name, start=start,
-                            meeting_url=app.interview_meeting_url, when='1hour',
-                            english_only=_eo)
-                    _send_wa_reminder(app, student_name, start, '1hour')
-                    if reviewer_email:
-                        emails.send_reviewer_interview_reminder_email(
-                            reviewer_email, reviewer_name=reviewer_name,
-                            applicant_name=student_name,
-                            start=start, meeting_url=app.interview_meeting_url, when='1hour',
-                            ref=pool_ref(app.id), verdict_due=verdict_due)
-                    app.interview_reminded_1h_at = now
-                    app.save(update_fields=['interview_reminded_1h_at'])
-                    sent_1h.append(app.id)
+            try:
+                self._remind(app, now, sent_1d, sent_1h)
+            except Exception:   # one application's failure must not stop the run
+                logging.getLogger('apps.scholarship.interview_reminders').exception(
+                    'interview reminder failed for application %s', app.id)
 
         self.stdout.write(f'Interview reminders sent. 1day={sent_1d} 1hour={sent_1h}')
+
+    def _remind(self, app, now, sent_1d, sent_1h):
+        """One application's due reminders. Its own method so `handle` can fence each application
+        (S6a review L2): one failure is logged and the run goes on to the next."""
+        # Bill this iteration's email + WhatsApp to the application's OWNING ORGANISATION.
+        # A cron carries no request context, so without this the meter records org-NULL.
+        with usage.usage_context(application=app):
+            start = app.interview_start
+            student_email, student_name = _student_identity(app)
+            reviewer = app.assigned_to
+            reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
+            reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
+            # Heads-up: the verdict is a different clock from the interview (TD-131). Surface
+            # the due date in the reviewer reminder iff a verdict isn't recorded yet.
+            verdict_due = ''
+            if app.assigned_at and app.verdict_decided_at is None:
+                # Per-organisation SLA (Org Config Sprint C) — the SAME clock the nudge
+                # sweep and the assignment email compute, so the three can never disagree.
+                # ⚠ THE ARITHMETIC IS SHARED, NOT JUST THE NUMBER (2026-09-15): all three
+                # sites now call `review_sla.review_due`, so "the three can never disagree"
+                # is enforced by there being one line rather than by three matching ones.
+                from apps.scholarship import review_sla
+                verdict_due = review_sla.review_due(
+                    app.assigned_at, app.owning_organisation).date().strftime('%d %b %Y')
+
+            # 1-day reminder: inside 24h of the start, once — but only if the booking gave ≥24h
+            # notice (a same-day booking skips this; the 1-hour reminder still covers it).
+            if (app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24)
+                    and _booked_with_notice(app, 24)):
+                _eo = emails.english_only_email(app)
+                # S6a: the organisation may switch off the STUDENT's reminder email, asked only
+                # when one is due (review L4). The reviewer's reminder and the WhatsApp opt-in are
+                # other channels and still go, so the stamp below still follows them.
+                if student_email_catalogue.may_send(app, 'interview_reminders'):
+                    emails.send_interview_reminder_email(
+                        student_email, student_name=student_name, start=start,
+                        meeting_url=app.interview_meeting_url, when='1day',
+                        english_only=_eo)
+                # Best-effort WhatsApp alongside the email (gated on opt-in; approved
+                # template in prod, free text in the sandbox; no-op unless WHATSAPP_ENABLED).
+                _send_wa_reminder(app, student_name, start, '1day')
+                if reviewer_email:
+                    emails.send_reviewer_interview_reminder_email(
+                        reviewer_email, reviewer_name=reviewer_name,
+                        applicant_name=student_name,
+                        start=start, meeting_url=app.interview_meeting_url, when='1day',
+                        ref=pool_ref(app.id), verdict_due=verdict_due)
+                app.interview_reminded_1d_at = now
+                app.save(update_fields=['interview_reminded_1d_at'])
+                sent_1d.append(app.id)
+
+            # 1-hour reminder: inside 1h of the start, once — but only if the booking gave ≥1h
+            # notice (a sub-1h booking skips it; the confirmation already went at booking).
+            if (app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1)
+                    and _booked_with_notice(app, 1)):
+                _eo = emails.english_only_email(app)
+                if student_email_catalogue.may_send(app, 'interview_reminders'):   # as above
+                    emails.send_interview_reminder_email(
+                        student_email, student_name=student_name, start=start,
+                        meeting_url=app.interview_meeting_url, when='1hour',
+                        english_only=_eo)
+                _send_wa_reminder(app, student_name, start, '1hour')
+                if reviewer_email:
+                    emails.send_reviewer_interview_reminder_email(
+                        reviewer_email, reviewer_name=reviewer_name,
+                        applicant_name=student_name,
+                        start=start, meeting_url=app.interview_meeting_url, when='1hour',
+                        ref=pool_ref(app.id), verdict_due=verdict_due)
+                app.interview_reminded_1h_at = now
+                app.save(update_fields=['interview_reminded_1h_at'])
+                sent_1h.append(app.id)

@@ -14,8 +14,8 @@ Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the des
   the others show their wording read-only, straight from the code that sends it. The partner-access notice links to
   Sources, where its wording and switch already live.
 - **The organisation may switch off the safe emails only** (owner ruling): application received, question reminder,
-  submission received / what happens next, your interviewer, interview reminders, award confirmed, and the three
-  results emails. Everything else is locked by the server (400 `not_switchable`). Off really stops the email at every
+  submission received / what happens next, your interviewer, interview reminders, and the three results emails
+  (nine; award confirmed was locked after the review — it carries her onboarding link). Everything else is locked by the server (400 `not_switchable`). Off really stops the email at every
   place it is sent and stamps nothing; a platform flag still outranks the switch and the row says so. Writers: super
   and org_admin (`AUDIT student_email_switch_set`).
 - **New:** `student_email_catalogue.py` (the list + the one gate `may_send`), `StudentEmailSwitch` (no row = on),
@@ -32,8 +32,24 @@ Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the des
 - Bite-checked (7 faults, each turned its tests red on the expected assertion; bytes restored and verified by digest):
   the gate always on; the switch accepting a locked key; a sender dropped from the catalogue; the interview-reminder
   gate removed; the results gate removed; the query-email meter removed; a locked row given a switch.
-- Gates: api 10,572 passed / 3 skipped (baseline 10,534); web 5,085 / 328 suites (baseline 5,081); tsc, lint, i18n
-  (6,257 keys per locale), `next build` + first-load budget ok (median 147.495 kB of 148). Size: `sponsorship.py` 1007
+- **Review fixes (adversarial review, 2026-10-30 — no HIGH; on top of `758d5c7c`):**
+  - **M1 (owner ruling):** "award confirmed" is LOCKED (`next_step`) and always sent — it carries her onboarding link.
+    Nine emails remain switchable. The `next_step` reason now reads true for both rows (en/ms/ta).
+  - **L2:** the gate is best-effort (a failed switch read logs and sends); the log write after a send is fenced; the
+    interview job fences each application. Tests inject a database error into each.
+  - **L3:** `results_due` asks the switch before its claim, so off writes nothing; the page says switching back on
+    reaches every student now due or late.
+  - **L4:** index `usage_org_svc_src_created_idx` on `usage_events` (in 0189); a switch answers `{key, enabled}`, a save
+    answers the wording only; the interview job reads the switch only when a reminder is due, by organisation id.
+  - **L5:** a failed toggle restores that row only. **L6:** the query-reminder dry run asks the switch.
+    **L7:** the profile-complete email no longer promises a reminder before the call (en, ms); the email golden
+    (`email_branding_golden.json`) was regenerated for exactly that line in `profile_complete_student.bi` / `.eo`.
+  - `test_review_sla`'s interview-reminder case now asserts the job ASKS the one clock (the per-application fence
+    means a raised error no longer escapes the run).
+- Gates (rebased on `c33aab21`: Bumi F2, request #50 and its follow-up, the closing-report gate): api 10,660 passed /
+  3 skipped; web 5,270 / 329 suites; tsc, lint, i18n (6,259 keys per locale), `next build` + first-load budget ok
+  (median 147.493 kB of 148);
+  `test_code_standards` 56 passed. Size: `sponsorship.py` 1007
   -> 1007 and `bursary.py` 903 -> 903 (both oversize, held level); no budget raised; `courses -> scholarship` imports
   unchanged.
 

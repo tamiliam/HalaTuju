@@ -256,7 +256,7 @@ export type {
 export { getStudentEmails, saveStudentEmail, setStudentEmailSwitch } from './admin-api/studentComms'
 export type {
   StudentEmailGroup, StudentEmailKind, StudentEmailLanguage, StudentEmailRow, StudentEmailTemplate,
-  StudentEmailsPayload,
+  StudentEmailsPayload, StudentEmailsSaved,
 } from './admin-api/studentComms'
 
 // The organisation's colours: draft, contrast check, publish, revert.

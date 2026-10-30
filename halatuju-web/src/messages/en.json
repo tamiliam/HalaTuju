@@ -7335,7 +7335,7 @@
         "lock": {
           "credential": "Always sent: it carries a one-time link or code she needs to sign in or prove who she is.",
           "outside_platform": "Sent by our sign-in service; it cannot be switched off here.",
-          "next_step": "Always sent: it is her invitation to the next step, and her reminders count from it.",
+          "next_step": "Always sent: it is her invitation to the next step, with the link she needs to take it.",
           "decision": "Always sent: the decision is shown to her only after this email has gone.",
           "close_warning": "Always sent: the last reminder tells her when the application will close, and the close waits for it.",
           "closure_notice": "Always sent: it tells her the application has ended and that she may apply again.",
@@ -7367,7 +7367,8 @@
         "languages": {
           "en_ms": "English, or English with a Malay copy, in one email",
           "en": "English only"
-        }
+        },
+        "switchBackNote": "Switching one back on sends it to every student it is now due for: for the results emails, every student whose result is due or late today."
       }
     },
     "programmeScope": {

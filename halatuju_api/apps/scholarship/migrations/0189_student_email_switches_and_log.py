@@ -11,7 +11,11 @@ row below together.
 - NEW TABLE `student_email_log` (`StudentEmailLog`) — every attempt to send an organisation-worded
   student email (`student_comms`), ok or not: the page's "last sent" for that family. Organisation
   PROTECT (audit trail); application SET NULL in Django.
-Both tables: RLS ON with ONE service_role policy each, in the same step (house rule for a new table;
+- NEW INDEX `usage_org_svc_src_created_idx` on the EXISTING `usage_events` (organisation_id, service, source,
+  created_at) — the page's "last sent" reads max(created_at) per sender through it (review L4). Schema only:
+  no row of `usage_events` is written. The table is small (about 9,000 rows a month), so a plain CREATE INDEX
+  holds its write lock for well under a second; nothing writes usage rows in bulk at deploy time.
+Both NEW tables: RLS ON with ONE service_role policy each, in the same step (house rule for a new table;
 `halatuju_api/docs/incident-001-rls-disabled.md`). NOTHING BACKFILLED — and the S6a usage_context fixes
 that bill more student sends to their organisation are FORWARD-ONLY: existing `usage_events` rows are
 never given an organisation (an invoiced month's reconciliation basis is frozen).
@@ -30,6 +34,7 @@ postgresql schema editor from this migration — with RLS and the ledger row in 
     CREATE INDEX "student_email_log_org_key_idx" ON "student_email_log" ("organisation_id", "key", "sent_at" DESC);
     ALTER TABLE "student_email_switches" ADD CONSTRAINT "student_email_switch_organisation_id_30e52aee_fk_partner_o" FOREIGN KEY ("organisation_id") REFERENCES "partner_organisations" ("id") DEFERRABLE INITIALLY DEFERRED;
     CREATE INDEX "student_email_switches_organisation_id_30e52aee" ON "student_email_switches" ("organisation_id");
+    CREATE INDEX "usage_org_svc_src_created_idx" ON "usage_events" ("organisation_id", "service", "source", "created_at");
     ALTER TABLE public.student_email_log ENABLE ROW LEVEL SECURITY;
     CREATE POLICY student_email_log_service_role ON public.student_email_log FOR ALL TO service_role USING (true) WITH CHECK (true);
     ALTER TABLE public.student_email_switches ENABLE ROW LEVEL SECURITY;
@@ -90,5 +95,9 @@ class Migration(migrations.Migration):
                 'ordering': ['organisation_id', 'key'],
                 'constraints': [models.UniqueConstraint(fields=('organisation', 'key'), name='student_email_switch_org_key_uniq')],
             },
+        ),
+        migrations.AddIndex(
+            model_name='usageevent',
+            index=models.Index(fields=['organisation', 'service', 'source', 'created_at'], name='usage_org_svc_src_created_idx'),
         ),
     ]

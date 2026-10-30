@@ -12,18 +12,23 @@ import importlib
 import pkgutil
 from datetime import timedelta
 
+from unittest.mock import patch
+
 from django.conf import settings
+from django.db import DatabaseError, connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.scholarship import emails, student_email_catalogue as cat, usage
 from apps.scholarship.models import StudentEmailLog, StudentEmailSwitch, UsageEvent
 from apps.scholarship.tests.factories import make_application, make_cohort
 
-#: The owner's ruling, 2026-10-30: rows 4, 12, 13/14, 15, 19, 23 and 26-28 of the S6 pre-flight.
+#: The owner's ruling, 2026-10-30: rows 4, 12, 13/14, 15, 19 and 26-28 of the S6 pre-flight. Row 23,
+#: award confirmed, was LOCKED by the owner after the S6a review (it carries her onboarding link).
 OWNER_SWITCHABLE = {
     'application_received', 'question_reminder', 'submission_received', 'profile_complete',
-    'interviewer_assigned', 'interview_reminders', 'award_confirmed',
+    'interviewer_assigned', 'interview_reminders',
     'results_due', 'results_overdue', 'result_queried',
 }
 
@@ -71,6 +76,12 @@ class TestTheCatalogueCoversEveryStudentEmail(TestCase):
 
     def test_the_switchable_set_is_exactly_the_owners_ruling(self):
         self.assertEqual(set(cat.SWITCHABLE), OWNER_SWITCHABLE)
+        self.assertEqual(cat.BY_KEY['award_confirmed'].lock, 'next_step')     # review M1, owner ruling
+
+    def test_usage_events_carries_the_last_sent_index(self):
+        """Review L4: "last sent" reads max(created_at) per (organisation, service, source)."""
+        self.assertIn(('organisation', 'service', 'source', 'created_at'),
+                      [tuple(i.fields) for i in UsageEvent._meta.indexes])
 
     def test_the_wording_shown_is_the_senders_own_dict_in_every_language_it_sends(self):
         from apps.scholarship.emails import student_decisions
@@ -113,6 +124,20 @@ class TestTheGate(TestCase):
         self.assertTrue(cat.may_send(self.app, 'declined'))
         with self.assertRaises(KeyError):
             cat.may_send(self.app, 'no_such_email')                   # a typo is a bug, not a send
+
+    def test_a_broken_read_sends_and_logs_never_raises(self):
+        """Review L2: a database error reading the switch must not silence her or break a submit."""
+        cat.set_switch(self.org, 'application_received', False)
+        with patch.object(StudentEmailSwitch.objects, 'filter', side_effect=DatabaseError('down')), \
+                self.assertLogs('apps.scholarship.student_email_catalogue', level='ERROR'):
+            self.assertTrue(cat.may_send(self.app, 'application_received'))
+
+    def test_the_gate_reads_the_organisation_id_without_loading_the_organisation(self):
+        app = type(self.app).objects.get(pk=self.app.pk)
+        with CaptureQueriesContext(connection) as q:
+            cat.may_send(app, 'application_received')
+        self.assertEqual(len(q.captured_queries), 1)
+        self.assertIn('student_email_switches', q.captured_queries[0]['sql'])
 
 
 class TestLastSent(TestCase):

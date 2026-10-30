@@ -18,8 +18,8 @@ S6a (2026-10-30, owner rulings): the page lists EVERY email a student receives
 (`student_email_catalogue.payload` — headings, languages, the lock or the switch, the platform flag,
 last sent and, where the copy is a plain dict, the wording). POST `.../student-emails/switch/`
 `{key, enabled}` (`AdminStudentEmailSwitchView`, its own class so no verb is shared between the two
-urls) turns one of the owner's SAFE emails on or off for this organisation; any other key is 400
-`not_switchable`. Same fence, same writers (`super`, `org_admin`); `AUDIT student_email_switch_set`.
+urls) turns one of the owner's SAFE emails on or off for this organisation and answers `{key, enabled}`;
+any other key is 400 `not_switchable`. A PUT answers with the wording only — "last sent" is read on GET. Same fence, same writers (`super`, `org_admin`); `AUDIT student_email_switch_set`.
 """
 import logging
 
@@ -34,12 +34,16 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 
 class AdminStudentEmailsView(AdminOrganisationConfigurationView):
 
-    def _payload(self, org):
-        return {'organisation': {'code': org.code, 'name': org.name},
-                'enabled': student_comms.enabled(),
-                'groups': list(student_email_catalogue.GROUPS),
-                'catalogue': student_email_catalogue.payload(org),
-                'templates': student_comms.templates_payload(org)}
+    def _payload(self, org, *, full=True):
+        """GET sends the whole page. A save answers with the wording only (`full=False`) — the
+        catalogue's "last sent" aggregate is read once per page load, never per write (review L4)."""
+        out = {'organisation': {'code': org.code, 'name': org.name},
+               'enabled': student_comms.enabled(),
+               'templates': student_comms.templates_payload(org)}
+        if full:
+            out.update(groups=list(student_email_catalogue.GROUPS),
+                       catalogue=student_email_catalogue.payload(org))
+        return out
 
     def get(self, request):
         admin, err = self._gate(request)
@@ -74,7 +78,7 @@ class AdminStudentEmailsView(AdminOrganisationConfigurationView):
             return Response({'error': e.code, 'code': e.code, **extra}, status=status.HTTP_400_BAD_REQUEST)
         logger.warning('AUDIT student_email_template_set org=%s kind=%s lang=%s by=%s reset=%s',
                        org.code, kind, lang, admin.email, data.get('reset') is True)
-        return Response(self._payload(org))
+        return Response(self._payload(org, full=False))
 
 
 class AdminStudentEmailSwitchView(AdminStudentEmailsView):
@@ -102,4 +106,5 @@ class AdminStudentEmailSwitchView(AdminStudentEmailsView):
                             status=status.HTTP_400_BAD_REQUEST)
         logger.warning('AUDIT student_email_switch_set org=%s key=%s enabled=%s by=%s',
                        org.code, key, enabled, admin.email)
-        return Response(self._payload(org))
+        # Only the row that changed (review L4/L5): the page updates that row and nothing else.
+        return Response({'key': key, 'enabled': enabled})

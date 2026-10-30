@@ -143,5 +143,8 @@ class EveryCallerReadsTheOneClockTests(TestCase):
     def test_the_interview_reminder_reads_it(self):
         self._app(interview_status='booked',
                   interview_start=timezone.now() + datetime.timedelta(hours=2))
-        with self._boom(), self.assertRaises(RuntimeError):
+        # S6a review L2: the job now fences each application, so the error no longer escapes the run.
+        # What this test pins is unchanged: the reminder ASKS the one clock.
+        with self._boom() as boom:
             call_command('send_interview_reminders')
+        self.assertTrue(boom.called)

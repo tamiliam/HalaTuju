@@ -1200,7 +1200,8 @@ templates in the `StudentEmailTemplate` family.** Design of record: https://clau
   letters are documents only (staff use Hold and Close; the file then prompts "close the file?"); letter PDFs in
   English or Malay, the notice email and screen in her language; only the safe emails switch off.
 - Student comms (S6a): `student_email_catalogue.py` lists all 29 (drift test over every `send_*` in `emails/`);
-  `may_send(application, key)` is THE gate at every send site of the 10 switchable emails — no row means on, a locked
+  `may_send(application, key)` is THE gate at every send site of the 9 switchable emails (award confirmed is LOCKED,
+  owner 2026-10-30) — best-effort (a failed read SENDS); no row means on, a locked
   key always sends, the env flags outrank the row. `StudentEmailSwitch` (no seed) + `StudentEmailLog` (the worded
   family's last sent; code-owned last sent reads `usage_events`). ⚠ **MIGRATE FIRST** — the submit's acknowledgement
   reads `student_email_switches`. The usage_context fixes are FORWARD-ONLY: never backfill `usage_events`.

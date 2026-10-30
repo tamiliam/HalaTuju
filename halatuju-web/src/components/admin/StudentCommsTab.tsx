@@ -5,7 +5,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import {
   getStudentEmails, saveStudentEmail, setStudentEmailSwitch,
-  type StudentEmailRow as Row, type StudentEmailTemplate, type StudentEmailsPayload,
+  type StudentEmailRow as Row, type StudentEmailTemplate, type StudentEmailsPayload, type StudentEmailsSaved,
 } from '@/lib/admin-api'
 import StudentEmailRow from './StudentEmailRow'
 import type { EditorRow } from './StudentEmailLanguages'
@@ -51,24 +51,32 @@ export default function StudentCommsTab() {
   }, [token, org])
   useEffect(() => { load() }, [load])
 
+  /** Set ONE row's switch, leaving every other row as it now stands (review L5: a failure used to
+   *  restore the whole page from a stale copy, undoing a neighbour's switch that had succeeded). */
+  const setRow = (key: string, enabled: boolean) =>
+    setData((cur) => cur && { ...cur, catalogue: cur.catalogue.map((r) => (r.key === key ? { ...r, enabled } : r)) })
+
   const toggle = async (row: Row) => {
-    if (!data) return
     setBusy(row.key)
     setSwitchError(false)
-    // Optimistic, then reconciled from the server's answer (the reviewer card's pattern).
-    setData({ ...data, catalogue: data.catalogue.map((r) => (r.key === row.key ? { ...r, enabled: !row.enabled } : r)) })
+    setRow(row.key, !row.enabled)                       // optimistic
     try {
-      setData(await setStudentEmailSwitch(row.key, !row.enabled, org, { token: token! }))
+      const done = await setStudentEmailSwitch(row.key, !row.enabled, org, { token: token! })
+      setRow(done.key, done.enabled)                    // the server's answer for this row
     } catch {
-      setData(data)
+      setRow(row.key, row.enabled)                      // back to what it was — this row only
       setSwitchError(true)
     } finally { setBusy(null) }
   }
 
+  /** A save answers with the wording only; the rest of the page (last sent, switches) stays. */
+  const keepWording = (saved: StudentEmailsSaved) =>
+    setData((cur) => cur && { ...cur, enabled: saved.enabled, templates: saved.templates })
+
   const save = async (key: string, patch: { subject: string; body: string }) => {
     const [kind, language] = key.split('.')
     const next = await saveStudentEmail({ kind, language, ...patch }, org, { token: token! })
-    setData(next)
+    keepWording(next)
     const tpl = next.templates.find((x) => x.key === key) as StudentEmailTemplate
     const editorRow: EditorRow = { ...tpl, kind: tpl.key }
     return editorRow
@@ -77,7 +85,7 @@ export default function StudentCommsTab() {
   const reset = async (tpl: StudentEmailTemplate) => {
     setBusy(tpl.key)
     try {
-      setData(await saveStudentEmail({ kind: tpl.kind, language: tpl.language, reset: true }, org, { token: token! }))
+      keepWording(await saveStudentEmail({ kind: tpl.kind, language: tpl.language, reset: true }, org, { token: token! }))
     } catch {
       setLoadError(true)
     } finally { setBusy(null) }
@@ -87,6 +95,10 @@ export default function StudentCommsTab() {
     <div className="mt-6">
       <p className="text-sm text-ground-600 max-w-3xl">{t(`${PREFIX}.subtitle`)}</p>
       <p className="mt-2 text-sm text-caution-700 max-w-3xl">{t(`${PREFIX}.switchNote`)}</p>
+      {/* Review L3: switching back on is not a fresh start — it reaches everyone now due. */}
+      <p className="mt-1 text-sm text-ground-600 max-w-3xl" data-testid="student-comms-switch-back">
+        {t(`${PREFIX}.switchBackNote`)}
+      </p>
       {loadError && <p className="mt-3 text-sm text-critical-600">{t(`${PREFIX}.loadError`)}</p>}
       {switchError && <p className="mt-3 text-sm text-critical-600">{t(`${PREFIX}.switchFailed`)}</p>}
       {orgChoices && (

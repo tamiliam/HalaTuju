@@ -9,7 +9,6 @@ every call site that sends it —
   question_reminder      services/query_emails.send_query_reminders (the daily sweep)
   interviewer_assigned   services/assignment.assign_reviewer
   interview_reminders    send_interview_reminders (1 day AND 1 hour — the student's copy only)
-  award_confirmed        sponsorship._finalise_award (immediate path and the release cron alike)
   results_due / _overdue / result_queried   student_comms.send_student_email (test_student_comms)
 Each door: OFF sends nothing (and stamps nothing it would not have stamped without a send); ON still
 sends, billed to her organisation. The endpoint: super / org_admin only, a locked email 400
@@ -19,8 +18,12 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.core import mail
+from io import StringIO
+
 from django.core.management import call_command
+from django.db import DatabaseError, connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.scholarship import sponsorship, student_email_catalogue as cat, usage
@@ -123,6 +126,18 @@ class TestQuestionReminder(TestCase):
         self.app.refresh_from_db()
         self.assertIsNone(self.app.query_reminder_at)
 
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+    def test_the_dry_run_asks_the_switch_too(self):
+        """Review L6: the dry run lists what the live run would do; a switched-off one is skipped."""
+        out = StringIO()
+        _off(self.app, 'question_reminder')
+        cmd = 'apps.scholarship.management.commands.send_query_reminders'
+        with patch(f'{cmd}.query_sla', return_value=self.SLA), \
+                patch(f'{cmd}._elapsed_days_local', return_value=100):
+            call_command('send_query_reminders', '--dry-run', stdout=out)
+        self.assertIn(f'would skip app #{self.app.pk}', out.getvalue())
+        self.assertIn('0 would be sent', out.getvalue())
+
     @LOCMEM
     @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
     def test_on_sends_metered_and_billed_to_her_organisation(self):
@@ -180,20 +195,49 @@ class TestInterviewReminders(TestCase):
         call_command('send_interview_reminders')
         self.assertIn(['priya@example.com'], [m.to for m in mail.outbox])
 
+    def test_one_applications_error_does_not_stop_the_run(self):
+        """Review L2: a database error on one application is logged; the next is still reminded."""
+        from apps.scholarship.management.commands import send_interview_reminders as job
+        broken, fine = self._booked(20), self._booked(20)
+        real = job._student_identity
+
+        def identity(app):
+            if app.pk == broken.pk:
+                raise DatabaseError('down')
+            return real(app)
+        with patch.object(job, '_student_identity', side_effect=identity), \
+                self.assertLogs('apps.scholarship.interview_reminders', level='ERROR'):
+            call_command('send_interview_reminders')
+        fine.refresh_from_db()
+        broken.refresh_from_db()
+        self.assertIsNotNone(fine.interview_reminded_1d_at)
+        self.assertIsNone(broken.interview_reminded_1d_at)
+
+    def test_the_switch_is_read_only_when_a_reminder_is_due(self):
+        """Review L4: an interview three days away asks nothing of the switch table."""
+        self._booked(72)
+        with CaptureQueriesContext(connection) as q:
+            call_command('send_interview_reminders')
+        self.assertFalse([x for x in q.captured_queries if 'student_email_switches' in x['sql']])
+
 
 @LOCMEM
 class TestAwardConfirmed(TestCase):
-    def test_on_sends_billed_to_her_organisation(self):
+    """LOCKED (owner, 2026-10-30, S6a review M1): it carries her onboarding link, so it always goes."""
+
+    def test_sent_billed_to_her_organisation(self):
         app = make_application('awarded', notify_email='a@example.test')
         sponsorship._finalise_award(app)
         self.assertEqual([m.to for m in mail.outbox], [['a@example.test']])
         self.assertTrue(_billed_to(app, 'send_award_confirmed_email'))
 
-    def test_off_sends_nothing_and_the_award_still_takes_effect(self):
+    def test_it_cannot_be_switched_off_and_a_row_behind_the_api_does_not_stop_it(self):
         app = make_application('awarded', notify_email='a@example.test')
+        with self.assertRaises(cat.NotSwitchable):
+            cat.set_switch(app.owning_organisation, 'award_confirmed', False)
         _off(app, 'award_confirmed')
         sponsorship._finalise_award(app)
-        self.assertEqual(mail.outbox, [])
+        self.assertEqual([m.to for m in mail.outbox], [['a@example.test']])
         self.assertEqual(ScholarshipApplication.objects.get(pk=app.pk).status, 'active')
 
 
@@ -233,6 +277,19 @@ class TestTheSendsNowBilledToTheirOrganisation(TestCase):
         self.assertIsNone(old.organisation_id)
 
 
+@LOCMEM
+class TestNoPromiseOfAReminder(TestCase):
+    """Review L7: the interview reminders can be switched off, so no email promises one."""
+
+    def test_the_profile_complete_email_never_promises_a_reminder(self):
+        from apps.scholarship.emails import send_profile_complete_student_email
+        self.assertTrue(send_profile_complete_student_email('p@example.test', student_name='Priya'))
+        msg = mail.outbox[0]
+        for body in [msg.body] + [alt[0] for alt in getattr(msg, 'alternatives', [])]:
+            self.assertNotIn('reminder before the call', body)
+            self.assertNotIn('peringatan sebelum panggilan', body)
+
+
 API = '/api/v1/admin/scholarship/organisation/student-emails/'
 SWITCH = API + 'switch/'
 
@@ -252,10 +309,13 @@ class TestTheSwitchEndpoint(TestCase):
         self.assertEqual(len(body['templates']), 9)                     # the S4b editor still has its rows
 
     def test_an_org_admin_switches_a_safe_email_for_her_own_organisation_only(self):
-        r = authed_client(self.admin).post(SWITCH, {'key': 'application_received', 'enabled': False},
-                                           format='json')
+        with patch.object(cat, 'last_sent', side_effect=AssertionError('last sent read on a write')):
+            r = authed_client(self.admin).post(SWITCH, {'key': 'application_received', 'enabled': False},
+                                               format='json')
         self.assertEqual(r.status_code, 200)
-        row = next(x for x in r.json()['catalogue'] if x['key'] == 'application_received')
+        self.assertEqual(r.json(), {'key': 'application_received', 'enabled': False})   # review L4/L5
+        row = next(x for x in authed_client(self.admin).get(API).json()['catalogue']
+                   if x['key'] == 'application_received')
         self.assertFalse(row['enabled'])
         self.assertEqual(list(StudentEmailSwitch.objects.values_list('organisation_id', 'key', 'enabled')),
                          [(self.mine.id, 'application_received', False)])
@@ -264,9 +324,18 @@ class TestTheSwitchEndpoint(TestCase):
         self.assertEqual(r.status_code, 404)
         self.assertFalse(StudentEmailSwitch.objects.filter(organisation=self.theirs).exists())
 
+    def test_a_wording_save_answers_without_the_catalogue(self):
+        with patch.object(cat, 'last_sent', side_effect=AssertionError('last sent read on a write')):
+            r = authed_client(self.admin).put(API, {'kind': 'results_due', 'language': 'en', 'subject': 'S',
+                                                    'body': 'Hi {name} {link}'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn('catalogue', r.json())
+        self.assertEqual(len(r.json()['templates']), 9)
+
     def test_a_locked_or_unknown_email_or_a_non_bool_is_refused(self):
         client = authed_client(self.admin)
         for payload in ({'key': 'declined', 'enabled': False}, {'key': 'verify_email', 'enabled': False},
+                        {'key': 'award_confirmed', 'enabled': False},
                         {'key': 'partner_access', 'enabled': False}, {'key': 'nope', 'enabled': False},
                         {'key': 'results_due', 'enabled': 'false'}, {}):
             with self.subTest(payload=str(payload)):

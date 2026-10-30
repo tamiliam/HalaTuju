@@ -213,7 +213,7 @@ def send_due_reminders(today=None, now=None):
     is CLAIMED first (compare-and-set on `reminded_at`) and given back if the send fails. Returns
     how many were sent."""
     from apps.courses import org_config
-    from . import student_comms
+    from . import student_comms, student_email_catalogue
     if not student_comms.enabled():
         return 0
     now = now or timezone.now()
@@ -233,6 +233,10 @@ def send_due_reminders(today=None, now=None):
             if exp.reminded_at and timezone.localdate(exp.reminded_at) > today - timedelta(days=every):
                 continue
             if pending_since(app, exp.term_starts_on):
+                continue
+            # S6a review L3: the organisation's switch is asked BEFORE the claim, so "off" writes
+            # nothing at all (no claim, no give-back). Switching it back on reaches everyone due.
+            if not student_email_catalogue.may_send(app, 'results_due'):
                 continue
             if ResultsExpectation.objects.filter(pk=exp.pk, reminded_at=exp.reminded_at).update(
                     reminded_at=now) != 1:

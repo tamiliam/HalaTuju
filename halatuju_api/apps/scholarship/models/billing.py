@@ -58,6 +58,10 @@ class UsageEvent(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['organisation', 'created_at'], name='usage_org_created_idx'),
+            # S6a (review L4): the Student communications page's "last sent" — max(created_at) per
+            # (organisation, service, source) — reads this index instead of every org row.
+            models.Index(fields=['organisation', 'service', 'source', 'created_at'],
+                         name='usage_org_svc_src_created_idx'),
         ]
 
     def __str__(self):

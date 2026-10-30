@@ -10,10 +10,11 @@
    termination letter the file prompts "close the file?". A letter never changes a status or stops money itself.
 3. **Letter PDFs are in English or Malay** (the PDF stack cannot shape Tamil); the notice email and the screen are in
    her language.
-4. **Only the safe emails can be switched off** — rows 4, 12, 13/14, 15, 19, 23 and 26-28 of the S6 pre-flight
+4. **Only the safe emails can be switched off** — rows 4, 12, 13/14, 15, 19 and 26-28 of the S6 pre-flight
    (`application_received`, `question_reminder`, `submission_received`, `profile_complete`, `interviewer_assigned`,
-   `interview_reminders`, `award_confirmed`, `results_due`, `results_overdue`, `result_queried`). Every other email
-   shows a lock with its reason, given by the server.
+   `interview_reminders`, `results_due`, `results_overdue`, `result_queried` — NINE). Every other email shows a lock
+   with its reason, given by the server. **Amended the same day after the S6a review (M1): `award_confirmed` (row 23)
+   is LOCKED, reason `next_step`** — on the live path it carries her onboarding link.
 
 **Decision (S6a):** (1) **`student_email_catalogue.py` is the one list of every student email** (29 entries under six
 headings: account, applying, interview, award, results, closure) — its senders, languages, the switch or the lock
@@ -24,8 +25,8 @@ student email cannot ship undocumented or switchable by accident. (2) **The swit
 (organisation, key, enabled) — NO ROW MEANS ON**, nothing seeded; the S4b "revisit if" placed it on a small settings
 row, not on each language's row. **ONE gate, `may_send(application_or_org, key)`, asked at EVERY send site of a
 switchable email** (submit, confirm, the question-reminder sweep, assignment, both interview reminders — the
-student's copy only, the reviewer's still goes — `_finalise_award`, and `send_student_email` for the three results
-emails). A locked key always answers True, even if a row is written behind the API; an unknown key raises. Off sends
+student's copy only, the reviewer's still goes — and `send_student_email` for the three results emails;
+`_finalise_award` was a door until the review locked award confirmed). A locked key always answers True, even if a row is written behind the API; an unknown key raises. Off sends
 nothing and stamps nothing it would not have stamped without a send. **The platform env flags outrank the row** —
 they are read at the send site first (`MAINTENANCE_REMINDERS_ENABLED`, `PROFILE_COMPLETE_EMAIL_ENABLED`,
 `STUDENT_ASSIGNMENT_EMAIL_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `CHECK2_STUDENT_QUERIES_ENABLED`,
@@ -53,6 +54,17 @@ prod) shrinks and becomes more honest, and the split will be correct the day a s
 reconciliation basis. No data step, no backfill command (a test pins that an old org-less row is left alone).
 Not fixed: the email-verification mail is a bare `send_mail` in `courses/views.py` (unmetered); moving it would add a
 `courses → scholarship` import at its budget (17).
+
+**Review fixes (S6a adversarial review, 2026-10-30 — no HIGH):** (M1) award confirmed locked, above. (L2) the gate is
+BEST-EFFORT — a failed switch read logs and SENDS, never raises; the `StudentEmailLog` write after a send is fenced; the
+interview job fences each application, so one error cannot stop the run. (L3) `results_due` asks the switch BEFORE its
+claim, so "off" writes nothing; switching an email back ON sends to everyone it is now due for (every student due or
+late today, for the results emails) — said plainly on the page rather than capped. (L4) a composite index
+`usage_org_svc_src_created_idx` (organisation, service, source, created_at) on `usage_events` in 0189, for "last
+sent"; a switch answers `{key, enabled}` and a wording save answers the wording only — "last sent" is read on the page
+load, never per write; the interview job asks the switch only when a reminder is due, by `owning_organisation_id`.
+(L5) a failed toggle puts back THAT row only. (L6) the query-reminder `--dry-run` asks the switch too. (L7) the
+profile-complete email no longer promises "a reminder before the call" (en and ms), since that reminder can be off.
 
 **Alternatives considered:** a per-language `enabled` on `StudentEmailTemplate` (switching English off but not Tamil
 is meaningless, and code-owned emails have no rows); switches decided in the page (a second copy of the rule); a

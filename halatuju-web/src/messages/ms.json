@@ -7335,7 +7335,7 @@
         "lock": {
           "credential": "Sentiasa dihantar: ia membawa pautan atau kod sekali guna yang diperlukannya untuk log masuk atau membuktikan identitinya.",
           "outside_platform": "Dihantar oleh perkhidmatan log masuk kami; ia tidak boleh dimatikan di sini.",
-          "next_step": "Sentiasa dihantar: ia jemputan ke langkah seterusnya, dan peringatannya dikira dari situ.",
+          "next_step": "Sentiasa dihantar: ia jemputan ke langkah seterusnya, dengan pautan yang diperlukannya untuk meneruskan.",
           "decision": "Sentiasa dihantar: keputusan hanya ditunjukkan kepadanya selepas e-mel ini dihantar.",
           "close_warning": "Sentiasa dihantar: peringatan terakhir memberitahunya bila permohonan akan ditutup, dan penutupan menunggunya.",
           "closure_notice": "Sentiasa dihantar: ia memberitahunya bahawa permohonan telah tamat dan dia boleh memohon semula.",
@@ -7367,7 +7367,8 @@
         "languages": {
           "en_ms": "Bahasa Inggeris, atau Inggeris dengan salinan Melayu, dalam satu e-mel",
           "en": "Bahasa Inggeris sahaja"
-        }
+        },
+        "switchBackNote": "Menghidupkan semula satu akan menghantarnya kepada setiap pelajar yang kini layak menerimanya: bagi e-mel Keputusan, setiap pelajar yang keputusannya perlu dihantar atau sudah lewat hari ini."
       }
     },
     "programmeScope": {

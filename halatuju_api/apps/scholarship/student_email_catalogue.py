@@ -16,7 +16,8 @@ Each entry says:
                      (the closed notice: ``expired`` = the reminder sweep, ``closed`` = an officer);
   * ``languages``  — ``en_ms_ta`` (one email in her language), ``en_ms`` (English, or English with a
                      Malay mirror, in ONE email — the interview family), ``en`` (English only);
-  * ``switchable`` — the owner's list (rows 4, 12, 13/14, 15, 19, 23, 26-28 of the S6 pre-flight).
+  * ``switchable`` — the owner's list (rows 4, 12, 13/14, 15, 19, 26-28 of the S6 pre-flight; 23,
+                     award confirmed, was locked by the owner on 2026-10-30 — it carries her onboarding link).
                      Everything else has a ``lock`` — a reason code the page words — because it
                      carries a credential, a decision, an offer, or a clock or stamp a workflow waits on;
   * ``flag``       — ``(setting, sends_when)``: the platform env switch that OUTRANKS the
@@ -32,9 +33,12 @@ Each entry says:
 function in `apps.scholarship.emails` into this list or ``NOT_STUDENT_SENDERS``; an unlisted one
 fails the suite, so no student mail ships undocumented — and none ships switchable by accident.
 """
+import logging
 from dataclasses import dataclass
 
 from django.conf import settings
+
+logger = logging.getLogger('apps.scholarship.student_email_catalogue')
 
 GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'closure')
 
@@ -111,7 +115,8 @@ CATALOGUE = (
        wording=('award_offer', 'AWARD_OFFER_SUBJECTS', 'AWARD_OFFER_BODIES')),
     _E('sign_invitation', 'award', ('send_sign_invitation_email',), lock='offer_clock',
        flag=_FLAG_CONTRACT, wording=('signing', 'SIGN_INVITE_SUBJECTS', 'SIGN_INVITE_BODIES')),
-    _E('award_confirmed', 'award', ('send_award_confirmed_email',), switchable=True,
+    # LOCKED (owner, 2026-10-30, S6a review): on the live path it carries her onboarding link.
+    _E('award_confirmed', 'award', ('send_award_confirmed_email',), lock='next_step',
        flag=('BURSARY_AGREEMENT_ENABLED', False),
        wording=('student_decisions', 'AWARD_CONFIRMED_SUBJECTS', 'AWARD_CONFIRMED_BODIES')),
     _E('agreement_executed', 'award', ('send_agreement_executed_email',), lock='contract_copy',
@@ -168,24 +173,37 @@ def flag_on(entry):
     return bool(getattr(settings, name, False)) is sends_when
 
 
-def _org_of(application_or_org):
-    return getattr(application_or_org, 'owning_organisation', application_or_org)
+def _org_id(application_or_org):
+    """The organisation's id without loading it: an application's `owning_organisation_id`, else the
+    organisation's own pk (review L4: the interview job calls this once per due reminder)."""
+    if hasattr(application_or_org, 'owning_organisation_id'):
+        return application_or_org.owning_organisation_id
+    return getattr(application_or_org, 'pk', None)
 
 
 def may_send(application_or_org, key):
     """THE ONE GATE every switchable email's send site asks. True unless the email is on the owner's
     list AND its organisation has switched it off. An email that is not switchable always answers
     True — its lock is the statement that it goes. An unknown key raises (a typo is a bug, not a
-    silent send)."""
+    silent send).
+
+    ⚠ BEST-EFFORT (review L2): a failure reading the switch LOGS and answers True. These are notices
+    the student would otherwise receive, so a broken read must never silence her — and must never
+    raise into a submit, a confirm or a sweep."""
     entry = BY_KEY[key]
     if not entry.switchable:
         return True
-    org = _org_of(application_or_org)
-    if org is None:
+    try:
+        org_id = _org_id(application_or_org)
+        if org_id is None:
+            return True
+        from .models import StudentEmailSwitch
+        row = (StudentEmailSwitch.objects.filter(organisation_id=org_id, key=key)
+               .values_list('enabled', flat=True).first())
+        return True if row is None else bool(row)
+    except Exception:   # see the docstring: a broken read sends, never raises
+        logger.exception('student_email_catalogue.may_send failed (key=%s); sending', key)
         return True
-    from .models import StudentEmailSwitch
-    row = StudentEmailSwitch.objects.filter(organisation=org, key=key).only('enabled').first()
-    return True if row is None else row.enabled
 
 
 def set_switch(organisation, key, enabled, *, by_email=''):
