@@ -13,8 +13,11 @@ import { useT } from '@/lib/i18n'
 import { MALAYSIAN_STATES } from '@/lib/scholarship'
 import { formatMyMobile } from '@/lib/sponsorAuth'
 import InstitutionPicker from '@/components/InstitutionPicker'
+import { lazySource } from '@/components/source/LazySource'
 import SelectWithOther from '@/components/SelectWithOther'
 import { COMMON_UNIVERSITIES } from '@/data/publicUniversities'
+
+const SourceProfile = lazySource(() => import('@/components/source/SourceProfile').then((m) => m.default))
 
 const QUAL_OPTS = [
   ['SPM', 'spm'], ['STPM', 'stpm'], ['Matriculation', 'matriculation'], ['Diploma', 'diploma'],
@@ -33,7 +36,15 @@ const UNI_OPTIONS = COMMON_UNIVERSITIES.map((u) => ({
 
 const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
 export default function AdminProfilePage() {
+  const { role } = useAdminAuth()
+  return role?.role === 'source_partner' ? <SourceProfile /> : <StaffProfilePage />
+}
+
+function StaffProfilePage() {
   const { token, role, refreshRole } = useAdminAuth()
   const router = useRouter()
   const { t } = useT()

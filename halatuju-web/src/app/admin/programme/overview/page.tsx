@@ -36,6 +36,10 @@
  * fence allows, which is a true answer, just a less specific one. That is the line the Applications
  * and Payments pages already draw (`NavItem.needsProgramme`), and it is why this row carries no
  * `needsProgramme` of its own.
+ *
+ * ⚠ THE ONE ROLE BRANCH IS A DIFFERENT ENDPOINT, NOT A SUBSET (source sign-in, 2026-10-30). A source
+ * user is refused `programme_overview` outright; its Overview is `SourceOverview`, which reads
+ * `admin/source/overview/` — so the no-role-check doctrine above still holds for every staff shape.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -43,6 +47,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import CustomiseLayout from '@/components/admin/overview/CustomiseLayout'
 import IntakePicker from '@/components/admin/overview/IntakePicker'
 import { SECTION_RENDERERS } from '@/components/admin/overview/OverviewSections'
+import { lazySource } from '@/components/source/LazySource'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getProgrammeOverview, type ProgrammeOverview } from '@/lib/admin-api'
 import { formatDate } from '@/lib/formatDate'
@@ -52,9 +57,19 @@ import { has } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 
+const SourceOverview = lazySource(() => import('@/components/source/SourceOverview').then((m) => m.default))
+
 const K = 'admin.programmeOverview'
 
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
 export default function ProgrammeOverviewPage() {
+  const { role } = useAdminAuth()
+  return role?.role === 'source_partner' ? <SourceOverview /> : <StaffOverview />
+}
+
+function StaffOverview() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/programme/overview', effectiveRole(role))

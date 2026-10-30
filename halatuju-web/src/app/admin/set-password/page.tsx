@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'
 import { getAdminSupabase } from '@/lib/admin-supabase'
 import { adminSetPassword } from '@/lib/admin-api'
+import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 
 const MIN_LEN = 8
@@ -59,13 +60,14 @@ export default function AdminSetPasswordPage() {
       // blocked by the project's re-auth-on-password-change policy ("Current password required…"),
       // and this page has no current password; the backend also clears must_change_password.
       await adminSetPassword(password, { token })
-      // Password set → route the user in by role (reviewers → their workspace).
+      // Password set → in through THE landing rule (`adminLanding`, roadmap C9), never a copy of
+      // it: a hand-rolled redirect here once sent every non-reviewer to `/admin`, the super-only
+      // platform dashboard, and would have sent a newly invited SOURCE user there too.
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/role/`,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       )
-      const role = await res.json()
-      router.replace(role.role === 'reviewer' || role.role === 'viewer' ? '/admin/scholarship' : '/admin')
+      router.replace(adminLanding(await res.json()))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setLoading(false)

@@ -3,7 +3,10 @@
  * Asserts each function hits the right URL / method / body and surfaces the
  * server error `code` — the endpoints are super/org_admin-fenced on the backend.
  */
-import { getSources, createSource, updateSource, assignWitness } from '@/lib/admin-api'
+import {
+  getSources, updateSource, assignWitness, inviteSource, resendSourceUser, revokeSourceUser,
+  getSourceApplications, getSourceAgreement, witnessAsSource, getSourceOverview, updateSourceProfile,
+} from '@/lib/admin-api'
 
 type Init = { method?: string; headers?: Record<string, string>; body?: string }
 const call = (n = 0): [string, Init] => {
@@ -29,19 +32,33 @@ describe('Sources admin-api', () => {
     expect(init.headers?.Authorization).toBe('Bearer t')
   })
 
-  test('createSource POSTs code + name', async () => {
-    mockFetch(201, { id: 2, code: 'new', name: 'New' })
-    await createSource({ code: 'new', name: 'New', phone: '012' }, { token: 't' })
+  // Source sign-in S2: a source is ADDED by inviting its person (the Sources POST is 410).
+  test('inviteSource POSTs a source_partner invitation for an existing source', async () => {
+    mockFetch(201, { id: 9, admin_id: 4, emailed: true, message: 'ok' })
+    await inviteSource({ name: 'Kavi', email: 'k@example.org', source_id: 3 }, { token: 't' })
     const [url, init] = call()
-    expect(url).toContain('/api/v1/admin/scholarship/sources/')
+    expect(url).toContain('/api/v1/admin/invitations/')
     expect(init.method).toBe('POST')
-    expect(JSON.parse(init.body!)).toMatchObject({ code: 'new', name: 'New', phone: '012' })
+    expect(JSON.parse(init.body!)).toEqual(
+      { audience: 'source_partner', name: 'Kavi', email: 'k@example.org', source_id: 3 })
   })
 
-  test('createSource surfaces the code_taken error code on 400', async () => {
+  test('inviteSource carries a NEW source as source_name + source_code, and its refusal code', async () => {
     mockFetch(400, { error: 'code_taken', code: 'code_taken' })
-    await expect(createSource({ code: 'smc', name: 'X' }, { token: 't' }))
-      .rejects.toMatchObject({ code: 'code_taken' })
+    await expect(inviteSource({ name: 'Kavi', email: 'k@example.org', source_name: 'HSS',
+                                source_code: 'hss' }, { token: 't' }))
+      .rejects.toMatchObject({ code: 'code_taken', status: 400 })
+    expect(JSON.parse(call()[1].body!)).toMatchObject({ source_name: 'HSS', source_code: 'hss' })
+  })
+
+  test('resend and revoke a source user POST their own endpoints', async () => {
+    mockFetch(200, { message: 'ok', emailed: true })
+    await resendSourceUser(4, { token: 't' })
+    expect(call()[0]).toContain('/api/v1/admin/source-users/4/resend/')
+    mockFetch(200, { id: 4, is_active: false, message: 'ok' })
+    await revokeSourceUser(4, { token: 't' })
+    expect(call()[0]).toContain('/api/v1/admin/source-users/4/revoke/')
+    expect(call()[1].method).toBe('POST')
   })
 
   test('updateSource PATCHes the id-scoped endpoint', async () => {
@@ -65,5 +82,48 @@ describe('Sources admin-api', () => {
     await assignWitness(7, null, { token: 't' })
     ;[url, init] = call()
     expect(JSON.parse(init.body!).witness_org).toBeNull()
+  })
+})
+
+/**
+ * The source console client (source sign-in S3 + S4): every call is under `admin/source/`, the
+ * gift travels as `p`, and the PDF link is asked for only with `?link=1`.
+ */
+describe('Source console admin-api', () => {
+  const orig = global.fetch
+  afterEach(() => { global.fetch = orig })
+
+  test('lists send p / q / stage / page and drop the blanks', async () => {
+    mockFetch(200, { applications: [] })
+    await getSourceApplications({ p: 'flag', q: 'Priya', stage: '', page: 2 }, { token: 't' })
+    const url = call()[0]
+    expect(url).toContain('/api/v1/admin/source/applications/?')
+    expect(url).toContain('p=flag')
+    expect(url).toContain('q=Priya')
+    expect(url).toContain('page=2')
+    expect(url).not.toContain('stage=')
+    mockFetch(200, {})
+    await getSourceOverview(undefined, { token: 't' })
+    expect(call()[0]).toMatch(/\/api\/v1\/admin\/source\/overview\/$/)
+  })
+
+  test('the agreement mints a PDF link only when asked', async () => {
+    mockFetch(200, {})
+    await getSourceAgreement(5, { token: 't' })
+    expect(call()[0]).toMatch(/\/admin\/source\/applications\/5\/agreement\/$/)
+    await getSourceAgreement(5, { token: 't', link: true })
+    expect((global.fetch as jest.Mock).mock.calls[1][0]).toContain('/agreement/?link=1')
+  })
+
+  test('the witness POST and the profile PATCH carry their bodies and refusal codes', async () => {
+    mockFetch(409, { error: 'already_witnessed', code: 'already_witnessed' })
+    await expect(witnessAsSource(5, { witness_name: 'Audrey', confirm: true }, { token: 't' }))
+      .rejects.toMatchObject({ code: 'already_witnessed', status: 409 })
+    expect(call()[0]).toContain('/api/v1/admin/source/applications/5/witness/')
+    expect(JSON.parse(call()[1].body!)).toEqual({ witness_name: 'Audrey', confirm: true })
+    mockFetch(200, {})
+    await updateSourceProfile({ user: { name: 'Audrey' } }, { token: 't' })
+    expect(call()[0]).toContain('/api/v1/admin/source/profile/')
+    expect(call()[1].method).toBe('PATCH')
   })
 })

@@ -4,7 +4,8 @@
  * Organisation → Invitations, rendered. Owner's four-kind shape, 2026-08-03.
  *
  * The claims that matter here are mostly about ABSENCE, which a source-shape guard cannot see:
- * org_admin is listed but not offered; a sponsor row has no Revoke; Source offers no invite form.
+ * org_admin is listed but not offered; a sponsor row has no Revoke; Source invites only for the
+ * roles that may (source sign-in S2 — its form and roster are pinned in `SourceInvite.test.tsx`).
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import OrganisationInvitationsPage from './page'
@@ -169,25 +170,33 @@ describe('what each kind can do', () => {
     expect(screen.queryByText('admin.revoke')).toBeNull()
   })
 
-  it('says Source is coming soon, offers no way to invite one, and points to Sources', async () => {
-    // Org request #33: an admin who picked Source was told "coming soon" and nothing else. A
-    // source is ADDED on the Sources page, so the note now links there.
+  // ⚠ CHANGED ON PURPOSE (source sign-in S2, 2026-10-30): Source is no longer "coming soon". An
+  // org_admin (or a super) invites a source's person here — which is also how a source is added.
+  it('Source offers the invite form to an org_admin, and the "coming soon" note is gone', async () => {
     await loaded()
     await pick('source')
-    await waitFor(() =>
-      expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
-    expect(screen.queryByText('admin.sendInvite')).toBeNull()
-    const link = screen.getByRole('link', { name: /admin\.sources\.nav/ })
-    expect(link.getAttribute('href')).toBe('/admin/sources')
+    await waitFor(() => expect(screen.getByTestId('source-invite-form')).toBeTruthy())
+    expect(screen.getByTestId('source-roster')).toBeTruthy()
+    expect(screen.queryByText('admin.invitations.sourceComingSoon')).toBeNull()
   })
 
-  it('⚠ does not link Finance to the Sources page it cannot open', async () => {
+  it('⚠ shows Finance the Source roster read-only — no form, no actions', async () => {
     viewerRole = { role: 'finance' }
     await loaded()
     await pick('source')
-    await waitFor(() =>
-      expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
-    expect(screen.queryByRole('link', { name: /admin\.sources\.nav/ })).toBeNull()
+    await waitFor(() => expect(screen.getByTestId('source-roster')).toBeTruthy())
+    expect(screen.queryByTestId('source-invite-form')).toBeNull()
+    expect(screen.queryByText('admin.resend')).toBeNull()
+    expect(screen.getByText('admin.administration.viewOnlyNote')).toBeTruthy()
+  })
+
+  it('opens on the Source tab when the address asks for it (?kind=source, from Sources)', async () => {
+    window.history.pushState({}, '', '/admin/organisation/staff?kind=source')
+    try {
+      render(<OrganisationInvitationsPage />)
+      await waitFor(() => expect(screen.getByTestId('source-invite-form')).toBeTruthy())
+      expect(mockApi.getInvitations).toHaveBeenLastCalledWith('source', { token: 'tok' })
+    } finally { window.history.pushState({}, '', '/') }
   })
 })
 

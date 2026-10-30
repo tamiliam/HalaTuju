@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in web (S2–S4 UI) — 2026-10-30
+
+Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, the web half of S2, S3 and S4. Design of record: the
+eight owner-approved mock-ups ("Looks good. Proceed", 2026-10-30), built from the console's own components. No
+backend change. NOT deployed.
+
+- **Invitations → Source** (`components/sources/SourceInvite.tsx`): the "coming soon" note is gone. Super and
+  org_admin pick a source already on the list (with its sign-in state) or switch to "add a new source" (name + short
+  code + optional contact person / phone, plain — the phone helpers' module would pull the scholarship message
+  slice onto this route), name the person and send — `POST admin/invitations/`
+  `{audience: 'source_partner', …}`. Every refusal code reads in plain words (`already_staff`, `code_taken`,
+  `code_reserved`, `source_inactive`, …). Below: "Waiting to reply" (Resend → `admin/source-users/<id>/resend/`,
+  Cancel → the existing cancel) and "Signed in" (Remove → `…/revoke/` after a confirm), each only where the server's
+  `manageable` says so. `?kind=source` opens the tab; a reply for a tab already left is dropped.
+- **Sources page:** "+ Add source" and its form are gone (the POST is 410); "Invite a source →" links to the Source
+  tab for super / org_admin only (Admin sees none). New Sign-in column and card badge (Not invited / Invited, waiting /
+  Joined); Edit only until the source has joined, then "Managed by the source"; a 409 `managed_by_source` says why
+  and re-reads. Phone column kept (the mock-up dropped it; nothing else shows it). `createSource` removed.
+- **`set-password`** lands through `adminLanding` (roadmap C9) instead of its hand-rolled reviewer/`/admin` split.
+- **Role `source_partner` in the registry:** Programme → Overview / Applications / Scholars (the reviewer hrefs) and
+  Profile; lands on `/admin/programme/overview`; the Programme group never folds for it. Guide and FAQ stay hidden
+  (both are written for staff). The header reads "MUETMyWay · Source" (`source_name`); the shell's two staff probes
+  are not fired for the role.
+- **The source console** (`components/source/`, calling `lib/admin-api/sourceConsole.ts` = `admin/source/…` only):
+  each page branches on the role BEFORE any staff hook — Overview (stage tiles that add up to the total, scholars, the
+  witness banner, the chase list, "a result shows only after the student is told"), Applications (name search, stage
+  filter on the server's keys, paging), one student (`listed`: Profile + Application + contract; `witness_only`: name,
+  gift, contract), Scholars / one scholar (no money or results; "Your witness needed" from the Overview's
+  `witness_waiting`), Profile ("You" + "Organisation", `GET/PATCH admin/source/profile/`). Each screen (and the
+  Invitations Source tab) is its own chunk behind `components/source/LazySource.tsx`, so a staff visitor downloads
+  none of it: imported statically they put the first-load median over its line (148.6 kB against 148).
+- **The witness step** — inside the student's page, `/admin/scholarship/<id>?step=witness` (no new route: a light
+  extra route moves the median too). The email's `/admin/scholarship/<id>` lands on the student page, whose contract
+  card opens the step in place ("Review and witness"); the Overview's and Scholars' links open it on arrival; Back
+  re-reads the application. The PDF link is minted on a click (`?link=1`, shown in the existing `DocViewer`); typed
+  full name (prefilled) + the declaration tick, the button dead until both; every refusal code worded; the signed
+  state afterwards.
+- **Stage words** (`lib/sourceConsole.ts`): Sent · Missing items · Waiting for review · Under review · Awarded ·
+  Not selected · Closed.
+- Copy: `witnessForbidden` (the super fallback's 403) and the `invite_source` email card now say what is true;
+  `sourceComingSoon` and the Add-form keys deleted; the gift Configuration's "Add a source…" link now reads "Switch a
+  source on or off in Sources". en / ms / ta.
+- Tests: `SourceInvite.test.tsx`, `SourceLists.test.tsx`, `SourceStudent.test.tsx` (student + witness),
+  `SourceProfile.test.tsx`, `noStaffCalls.test.tsx` (all seven pages as a source user: no staff API call, no raw
+  fetch), `sourceConsoleDrift.test.ts` (stages = `STAGE_LINES`, parts = `PARTS`, words in three locales),
+  `set-password/page.test.tsx`; updated on purpose: `navigation.test.ts`, `adminLanding.test.ts`, the Invitations and
+  Sources page tests, `sources-api.test.ts`, `AppShell.test.tsx`.
+
 ## Source sign-in S4 (backend) — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S4, backend half: a signed-in source witnesses the

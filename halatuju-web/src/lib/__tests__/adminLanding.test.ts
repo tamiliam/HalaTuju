@@ -36,6 +36,15 @@ describe('adminLanding', () => {
   it('never traps on an OLD payload that omits the flag (undefined ≠ false)', () => {
     expect(adminLanding({ role: 'reviewer' })).toBe('/admin/programme/overview')
   })
+  // Source sign-in (2026-10-30): a source user lands on its own Overview — never on a reviewer's
+  // landing by fallback, and never held on Profile (the reviewer onboarding gate is not theirs).
+  it('sends a source user to its Overview, whatever the reviewer flag says', () => {
+    expect(adminLanding({ role: 'source_partner' })).toBe('/admin/programme/overview')
+    expect(adminLanding({ role: 'source_partner', reviewer_profile_complete: false }))
+      .toBe('/admin/programme/overview')
+    expect(mustCompleteProfile({ role: 'source_partner', reviewer_profile_complete: false },
+      '/admin/scholarship')).toBe(false)
+  })
 
   // ⚠ THE DOCSTRING CLAIMED THIS FOR MONTHS AND IT WAS NOT TRUE — `adminLanding` held its own
   // hand-copied copy of the three lines, and they agreed only because nobody had edited either.

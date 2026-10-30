@@ -20,10 +20,14 @@ import {
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
+import { lazySource } from '@/components/source/LazySource'
 // import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
 import { referralAcronym } from '@/lib/scholarship'
 import { FIXED_REFERRAL_CODES, referralLabel } from '@/lib/referralSources'
 import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
+
+const SourceApplications = lazySource(
+  () => import('@/components/source/SourceApplications').then((m) => m.default))
 
 const bucketBadge = (b: string) =>
   b === 'A' ? 'bg-positive-100 text-positive-700'
@@ -49,7 +53,15 @@ function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Rev
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
 export default function AdminScholarshipList() {
+  const { role } = useAdminAuth()
+  return role?.role === 'source_partner' ? <SourceApplications /> : <StaffScholarshipList />
+}
+
+function StaffScholarshipList() {
   const { token, role } = useAdminAuth()
   const effRole = effectiveRole(role)
   const isSuper = effRole === 'super'

@@ -16,6 +16,7 @@ import type { AdminRoleName } from '@/lib/navigation'
 import { usePinProgramme } from '@/lib/programmeScopeCore'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import { switchCrumbTo, switchCrumbToAll } from '@/test/giftUrl'
+import * as adminApi from '@/lib/admin-api'
 
 let mockRole: Record<string, unknown> = {}
 // Default null: with no token the shell runs no probes, so the dark-shipped features stay dark.
@@ -100,6 +101,26 @@ describe('AppShell renders the scope sidebar per role', () => {
     const nav = sidebar()
     expect(within(nav).getByText('admin.nav.group.organisation')).toBeTruthy()
     expect(within(nav).queryByText('admin.scholarship.nav')).toBeNull()
+  })
+
+  // Source sign-in (2026-10-30): the Programme rows only, never folded; the header names the source
+  // ("MUETMyWay · Source"); and the shell's two staff probes are not fired for the role.
+  it('gives a source user the Programme rows, names its source, and probes nothing', async () => {
+    mockToken = 'tok'
+    jest.mocked(adminApi.getOrgRequestCount).mockClear()
+    jest.mocked(adminApi.getBillingUsage).mockClear()
+    try {
+      asRole('source_partner', { source_name: 'MUETMyWay', org_name: 'BrightPath' })
+      render(<AppShell>content</AppShell>)
+      const nav = sidebar()
+      expect(within(nav).getByText('admin.nav.group.programme')).toBeTruthy()
+      expect(within(nav).getByText('admin.scholars.nav')).toBeTruthy()
+      expect(within(nav).queryByText('admin.nav.group.organisation')).toBeNull()
+      expect(screen.getAllByText('admin.sourceConsole.roleLine').length).toBeGreaterThan(0)
+      await waitFor(() => expect(adminApi.getAdminScopes).toHaveBeenCalled())
+      expect(adminApi.getOrgRequestCount).not.toHaveBeenCalled()
+      expect(adminApi.getBillingUsage).not.toHaveBeenCalled()
+    } finally { mockToken = null }
   })
 
   it('never renders the utility scope in the sidebar — it lives in the account menu', () => {

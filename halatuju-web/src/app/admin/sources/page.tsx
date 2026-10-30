@@ -1,21 +1,27 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import {
-  getSources, createSource, updateSource, type SourceItem,
-} from '@/lib/admin-api'
+import { getSources, updateSource, type SourceItem } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
 import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
-import { Toggle } from '@/components/sources/shared'
+import { SignInBadge, Toggle } from '@/components/sources/shared'
 
 // Sources (referral organisations) registry — a card in Administration → ORGANISATION
-// (super/org_admin only). List + inline edit + add. Reuses PartnerOrganisation.phone /
+// (super/org_admin/admin). List + inline edit.
+//
+// ⚠ NO ADD HERE SINCE SOURCE SIGN-IN S2 (2026-10-30): a source is created by INVITING ITS PERSON
+// (Invitations → Source; the old POST answers 410 `use_source_invitation`), so the button is a link
+// there — for super and org_admin only, who are the roles that may invite (owner: Admin does not).
+// ⚠ EDIT LOCKS ONCE THE SOURCE HAS SIGNED IN (owner ruling 2026-10-30): its name and contact
+// details are then its own (its console's Profile) and a change is refused 409 `managed_by_source`.
+// The Active toggle stays the organisation's. Reuses PartnerOrganisation.phone /
 // contact_person / contact_email (NOT a separate contact_phone column). The active-in-apply
 // toggle decides which sources a gift's Configuration may OFFER; each gift then switches its own
 // on (2026-10-08), and this page shows "On N of M gifts". Referral attribution is unaffected.
@@ -31,7 +37,6 @@ import { Toggle } from '@/components/sources/shared'
 
 const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 const inputBad = 'w-full px-3 py-2 border border-critical-400 rounded-lg focus:ring-2 focus:ring-critical-500 focus:border-critical-500'
-const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
 // Phone is optional; when present it must be a valid Malaysian number. Display + input both
 // run through the platform's shared formatPhone/isValidPhone (same helpers the apply form uses).
 const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
@@ -55,18 +60,18 @@ export default function SourcesPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
 
-  const isSuper = effectiveRole(role) === 'super'
+  const r = effectiveRole(role)
   // Sources management: super + admin + org_admin (owner 2026-07-19). Matches the backend gate.
-  const canManage = canAccess('/admin/sources', effectiveRole(role))
+  const canManage = canAccess('/admin/sources', r)
+  // Inviting (and so adding) a source: super + org_admin only (source sign-in S2).
+  const canInvite = r === 'super' || r === 'org_admin'
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [busy, setBusy] = useState<number | 'new' | null>(null)
+  const [busy, setBusy] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: '', contact_person: '', contact_email: '', phone: '' })
-  const [adding, setAdding] = useState(false)
   const [panel, setPanel] = useState<Panel>('orgs')
-  const [addForm, setAddForm] = useState({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
 
   const load = () => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -77,10 +82,8 @@ export default function SourcesPage() {
 
   const errText = (err: unknown) => {
     const code = (err as { code?: string })?.code
-    // A reserved code (`other`, `social`, `halatuju`, the house org) reads as taken — it is, by
-    // the form's fixed choices — so no new string rides on every route (review, 2026-10-08).
-    if (code === 'code_taken' || code === 'code_reserved') return t('admin.sources.codeTaken')
-    if (code === 'code_and_name_required') return t('admin.sources.codeAndNameRequired')
+    // The source signed in between this page loading and the Save: its details are its own now.
+    if (code === 'managed_by_source') return t('admin.sources.managedRefused')
     return err instanceof Error ? err.message : t('admin.actionFailed')
   }
 
@@ -125,25 +128,16 @@ export default function SourcesPage() {
       setSources((rows) => rows.map((r) => (r.id === id ? { ...r, ...updated } : r)))
       setEditingId(null)
       setMessage({ type: 'success', text: t('admin.sources.updated') })
-    } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
+    } catch (err) {
+      setMessage({ type: 'error', text: errText(err) })
+      // Refused because it has joined: re-read, so the row shows its lock instead of the form.
+      if ((err as { code?: string })?.code === 'managed_by_source') { setEditingId(null); load() }
+    }
     setBusy(null)
   }
 
-  const submitAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (phoneInvalid(addForm.phone)) { setMessage({ type: 'error', text: t('profile.invalidPhone') }); return }
-    setBusy('new'); setMessage(null)
-    try {
-      await createSource(addForm, { token: token! })
-      setAdding(false)
-      setAddForm({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
-      // Created ACTIVE, it still joins no gift — say so, as a switch-on does.
-      setMessage({ type: 'success', text: addForm.show_in_apply
-        ? `${t('admin.sources.created')} ${t('admin.sources.nowPerGift')}` : t('admin.sources.created') })
-      load()
-    } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
-    setBusy(null)
-  }
+  /** Edit is offered until somebody has signed in for the source; then the source keeps it. */
+  const managed = (s: SourceItem) => s.sign_in === 'joined'
 
   return (
     <div className="font-plex">
@@ -152,12 +146,13 @@ export default function SourcesPage() {
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.sources.title')}</h1>
           <p className="text-sm text-ground-500 mt-1">{t('admin.sources.subtitle')}</p>
         </div>
-        {/* Adding belongs to the registry — on the emails panel the button would do nothing visible. */}
-        {panel === 'orgs' && (
-          <button type="button" onClick={() => setAdding((v) => !v)}
+        {/* A source is added by inviting its person (source sign-in S2) — a link to the Source tab
+            of Invitations, for the two roles that may invite. Only on the registry panel. */}
+        {panel === 'orgs' && canInvite && (
+          <Link href="/admin/organisation/staff?kind=source"
             className="shrink-0 px-4 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover">
-            + {t('admin.sources.add')}
-          </button>
+            {t('admin.sources.invite')} →
+          </Link>
         )}
       </div>
 
@@ -170,48 +165,6 @@ export default function SourcesPage() {
         <div className={`rounded-lg p-4 mb-6 ${
           message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700'
           : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>{message.text}</div>
-      )}
-
-      {panel === 'orgs' && adding && (
-        <form onSubmit={submitAdd} className="bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4 mb-6">
-          <h2 className="font-semibold text-ground-900">{t('admin.sources.addTitle')}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.code')}</span>
-              <input className={inputCls} value={addForm.code}
-                onChange={(e) => setAddForm({ ...addForm, code: slugify(e.target.value) })} required />
-              <span className="block text-xs text-ground-400 mt-1">{t('admin.sources.codeHelp')}</span>
-            </label>
-            <label className="block">
-              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.name')}</span>
-              <input className={inputCls} value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} required />
-            </label>
-            <label className="block">
-              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.contactPerson')}</span>
-              <input className={inputCls} value={addForm.contact_person} onChange={(e) => setAddForm({ ...addForm, contact_person: e.target.value })} />
-            </label>
-            <label className="block">
-              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.email')}</span>
-              <input className={inputCls} type="email" value={addForm.contact_email} onChange={(e) => setAddForm({ ...addForm, contact_email: e.target.value })} />
-            </label>
-            <label className="block">
-              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
-              <input className={phoneInvalid(addForm.phone) ? inputBad : inputCls} inputMode="tel"
-                value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: formatPhone(e.target.value) })} />
-              {phoneInvalid(addForm.phone) && <span className="block text-xs text-critical-600 mt-1">{t('profile.invalidPhone')}</span>}
-            </label>
-            <div className="flex items-center gap-3 pt-6">
-              <Toggle on={addForm.show_in_apply} onClick={() => setAddForm({ ...addForm, show_in_apply: !addForm.show_in_apply })} label={t('admin.sources.activeInApply')} />
-              <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button type="submit" disabled={busy === 'new'} className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
-              {busy === 'new' ? t('admin.sources.saving') : t('admin.sources.create')}
-            </button>
-            <button type="button" onClick={() => setAdding(false)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>
-          </div>
-        </form>
       )}
 
       {/* The emails card is mounted only while its badge is selected, so each reveal re-reads the
@@ -258,16 +211,21 @@ export default function SourcesPage() {
               </div>
 
               <div className="mt-2 flex items-center justify-between gap-3 border-t border-ground-100 pt-2">
-                <span className="inline-block min-w-[1.75rem] rounded-full bg-ground-100 px-2 py-0.5 text-center text-[11px] text-ground-600">
-                  {s.student_count ?? 0}
+                <span className="flex items-center gap-2">
+                  <span className="inline-block min-w-[1.75rem] rounded-full bg-ground-100 px-2 py-0.5 text-center text-[11px] text-ground-600">
+                    {s.student_count ?? 0}
+                  </span>
+                  <SignInBadge state={s.sign_in} t={t} />
                 </span>
-                <span className="text-[11px] text-ground-500">{t('admin.sources.editOnDesktop')}</span>
+                <span className="text-[11px] text-ground-500">
+                  {t(managed(s) ? 'admin.sources.managed' : 'admin.sources.editOnDesktop')}
+                </span>
               </div>
             </div>
           ))}
         </div>
 
-        <TableFrame className="hidden md:block" minWidth={820} label={t('admin.sources.title')}>
+        <TableFrame className="hidden md:block" minWidth={940} label={t('admin.sources.title')}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr>
@@ -275,6 +233,7 @@ export default function SourcesPage() {
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colContactPerson')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colEmail')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colPhone')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colSignIn')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colActive')}</th>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colStudents')}</th>
               <th className="px-4 py-3" />
@@ -286,7 +245,7 @@ export default function SourcesPage() {
               // columns) rather than cramming inputs into narrow cells — no truncated text,
               // no row-height misalignment. Mirrors the Add-a-source form layout.
               <tr key={s.id} className="bg-info-50/40">
-                <td colSpan={7} className="px-4 py-5">
+                <td colSpan={8} className="px-4 py-5">
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="block">
                       <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.name')}</span>
@@ -341,21 +300,29 @@ export default function SourcesPage() {
                 <td className="px-4 py-3 text-ground-600">{s.contact_person || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500">{s.contact_email || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</td>
+                <td className="px-4 py-3" data-testid={`sign-in-${s.code}`}><SignInBadge state={s.sign_in} t={t} /></td>
                 <td className="px-4 py-3"><Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} /></td>
                 <td className="px-4 py-3">
                   <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-ground-100 text-ground-600">{s.student_count ?? 0}</span>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => startEdit(s)} className="text-xs font-medium text-primary-600 hover:text-primary-800">{t('admin.sources.edit')}</button>
+                <td className="px-4 py-3">
+                  <div className="text-right">
+                    {managed(s) ? (
+                      <span className="text-xs text-ground-500">{t('admin.sources.managed')}</span>
+                    ) : (
+                      <button onClick={() => startEdit(s)} className="text-xs font-medium text-primary-600 hover:text-primary-800">{t('admin.sources.edit')}</button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {sources.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-ground-400">{t('admin.sources.noSources')}</td></tr>
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-ground-400">{t('admin.sources.noSources')}</td></tr>
             )}
           </tbody>
         </table>
         </TableFrame>
+        <p className="mt-3 text-sm text-ground-500">{t('admin.sources.managedNote')}</p>
       </div>
     </div>
   )

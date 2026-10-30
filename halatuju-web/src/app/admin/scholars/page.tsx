@@ -27,7 +27,11 @@ import { useGiftGate } from '@/lib/useGiftGate'
 import { formatDate } from '@/lib/formatDate'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, nextSort, type SortDir } from '@/lib/tableView'
 import { getScholars, type ScholarList, type ScholarRow } from '@/lib/admin-api'
+import { lazySource } from '@/components/source/LazySource'
+
 import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
+
+const SourceScholars = lazySource(() => import('@/components/source/SourceScholars').then((m) => m.default))
 
 type Filter = 'all' | 'on_track' | 'probation' | 'on_hold' | 'ready_to_close' | 'closed'
   | 'underperforming' | 'overdue' | 'wantsMentor'
@@ -35,7 +39,15 @@ type SortKey = 'name' | 'cgpa' | 'due' | 'activity'
 
 const FIRST_DIR: Record<SortKey, SortDir> = { name: 'asc', cgpa: 'desc', due: 'asc', activity: 'desc' }
 
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
 export default function ScholarsPage() {
+  const { role } = useAdminAuth()
+  return role?.role === 'source_partner' ? <SourceScholars /> : <StaffScholarsPage />
+}
+
+function StaffScholarsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)

@@ -3499,9 +3499,6 @@
       "tabOrganisations": "Organisasi",
       "tabEmails": "E-mel",
       "tabsAria": "Panel sumber",
-      "add": "Tambah sumber",
-      "addTitle": "Tambah sumber",
-      "create": "Cipta",
       "cancel": "Batal",
       "save": "Simpan",
       "saving": "Menyimpan…",
@@ -3512,7 +3509,6 @@
       "colPhone": "Telefon",
       "colActive": "Aktif",
       "colStudents": "Pelajar",
-      "code": "Kod",
       "codeHelp": "huruf kecil, cth. smc",
       "name": "Nama",
       "contactPerson": "Orang hubungan",
@@ -3526,10 +3522,7 @@
       "empty": "—",
       "noSources": "Tiada sumber lagi.",
       "loadError": "Tidak dapat memuatkan sumber.",
-      "created": "Sumber ditambah.",
       "updated": "Sumber dikemas kini.",
-      "codeAndNameRequired": "Kod dan nama diperlukan.",
-      "codeTaken": "Kod itu telah digunakan.",
       "superRequired": "Hanya peranan Admin, Pentadbir organisasi, atau Pentadbir utama boleh menguruskan sumber.",
       "emails": {
         "title": "E-mel rakan kongsi",
@@ -3614,7 +3607,17 @@
         "assigned": "Organisasi saksi dikemas kini.",
         "label": "Saksi"
       },
-      "tabTerms": "Terma"
+      "tabTerms": "Terma",
+      "invite": "Jemput sumber",
+      "colSignIn": "Log masuk",
+      "signIn": {
+        "none": "Belum dijemput",
+        "invited": "Dijemput, menunggu",
+        "joined": "Telah menyertai"
+      },
+      "managed": "Diurus oleh sumber",
+      "managedNote": "Sunting tersedia sehingga sumber log masuk. Selepas itu, hanya sumber yang mengubah butirannya sendiri. Anda masih boleh menghidupkan atau mematikan sumber untuk borang permohonan.",
+      "managedRefused": "Sumber ini telah log masuk dan kini mengurus butirannya sendiri. Anda masih boleh menghidupkan atau mematikannya."
     },
     "sponsors": {
       "nav": "Penaja",
@@ -5038,7 +5041,7 @@
         "witnessAction": "Saksikan",
         "download": "Muat turun (PDF)",
         "actionError": "Tindakan itu tidak dapat diselesaikan. Sila cuba lagi.",
-        "witnessForbidden": "Hanya organisasi rakan kongsi yang merujuk (atau super admin) boleh menyaksikan perjanjian ini.",
+        "witnessForbidden": "Hanya super admin boleh merekodkan saksi di sini. Sumber yang mempunyai log masuk menjadi saksi dari konsolnya sendiri.",
         "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini.",
         "awaitingSignature": "Menunggu pelajar dan penjamin mereka menandatangani — belum ada apa-apa untuk dikaunter-tandatangani atau disaksikan."
       },
@@ -6639,7 +6642,7 @@
         "sourcesCount": "{n} daripada {m} pada borang ini",
         "sourcesNone": "Belum ada yang dihidupkan, jadi borang ini hanya menyenaraikan pilihan tetap di bawah.",
         "sourcesAlways": "Sentiasa ada pada setiap borang:",
-        "sourcesLink": "Tambah sumber atau matikan satu dalam Sumber",
+        "sourcesLink": "Hidupkan atau matikan sumber di Sumber",
         "sourcesFixedTitle": "Pilihan tetap",
         "sourcesFixedHint": "Dipaparkan selepas sumber pemberian ini sendiri. Matikan satu dan borang ini tidak lagi menawarkannya; {other} kekal pada setiap borang.",
         "sourcesAlwaysOn": "Sentiasa ada",
@@ -6728,7 +6731,6 @@
         "sponsors": "Penaja"
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
-      "sourceComingSoon": "Untuk menambah organisasi sumber, gunakan Tambah sumber di halaman Sumber. Log masuk untuk rakan sumber akan datang.",
       "giftLabel": "Jemputan ini untuk pemberian yang mana?",
       "giftChoose": "Pilih pemberian…",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
@@ -6747,7 +6749,7 @@
         "when": {
           "invite_admin": "Dihantar apabila anda menambah seseorang sebagai pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
           "invite_reviewer": "Dihantar apabila anda menambah seseorang sebagai penilai atau QC — dan setiap kali anda menekan Hantar Semula.",
-          "invite_source": "Belum dihantar. Ini ialah teks yang akan diterima oleh organisasi sumber apabila mereka boleh log masuk dan mengikuti pelajar mereka sendiri.",
+          "invite_source": "Dihantar apabila anda menjemput seseorang bagi sesuatu sumber — dan sekali lagi setiap kali anda menekan Hantar semula. Mereka log masuk untuk mengikuti pelajar mereka sendiri dan menjadi saksi kontrak.",
           "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
         }
       },
@@ -6760,7 +6762,51 @@
       "waitingHeading": "Menunggu jawapan",
       "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
       "seePeople": "Lihat siapa yang ada",
-      "seeSponsors": "Lihat penderma"
+      "seeSponsors": "Lihat penderma",
+      "source": {
+        "which": "Sumber yang mana?",
+        "choose": "Pilih sumber…",
+        "option": "{name} ({code}) — {state}",
+        "help": "Sumber yang sudah ada dalam senarai anda. Atau",
+        "addNew": "tambah sumber baharu (nama dan kod ringkas)",
+        "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
+        "newName": "Nama sumber",
+        "newCode": "Kod ringkas",
+        "contactPerson": "Orang hubungan (pilihan)",
+        "contactPhone": "Telefon (pilihan)",
+        "personName": "Nama orang itu",
+        "note": "Mereka hanya melihat pelajar mereka sendiri, baca sahaja, dan boleh menjadi saksi kontrak.",
+        "chooseFirst": "Pilih sumber, atau tambah yang baharu.",
+        "sent": "Jemputan dihantar.",
+        "signedIn": "Telah log masuk",
+        "col": {
+          "source": "Sumber",
+          "person": "Orang",
+          "email": "E-mel",
+          "sent": "Dihantar",
+          "lastSeen": "Kali terakhir dilihat"
+        },
+        "noneWaiting": "Tiada sesiapa yang menunggu untuk menjawab.",
+        "noneSignedIn": "Belum ada sesiapa yang log masuk bagi sumber.",
+        "remove": "Buang",
+        "removeConfirm": "Buang log masuk {name} bagi {source}? Mereka tidak lagi boleh log masuk. Anda boleh menjemput mereka semula kemudian.",
+        "removed": "Log masuk dibuang.",
+        "removeFailed": "Tidak dapat dibuang. Muat semula halaman dan cuba lagi.",
+        "error": {
+          "already_staff": "Alamat e-mel ini sudah mempunyai log masuk kakitangan atau sumber HalaTuju, jadi tidak boleh dijemput bagi sumber. Hubungi sokongan HalaTuju.",
+          "code_taken": "Kod ringkas itu sudah digunakan.",
+          "code_reserved": "Kod ringkas itu dikhaskan. Pilih yang lain.",
+          "code_and_name_required": "Sumber baharu memerlukan nama dan kod ringkas.",
+          "source_inactive": "Sumber ini dimatikan. Hidupkannya di Sumber dahulu.",
+          "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
+          "name_required": "Taip nama orang itu.",
+          "not_found": "Sumber itu tidak dapat ditemui.",
+          "organisation_required": "Pilih organisasi dahulu.",
+          "not_configured": "Log masuk belum disediakan pada pelayan ini. Hubungi sokongan HalaTuju.",
+          "create_failed": "Log masuk mereka tidak dapat dibuat sekarang. Tiada apa-apa disimpan; cuba lagi.",
+          "generic": "Jemputan tidak dapat dihantar. Cuba lagi."
+        }
+      }
     },
     "soon": "Akan datang",
     "programmes": {
@@ -7690,6 +7736,170 @@
         "address": "Alamat",
         "emails": "Hantar invois kepada"
       }
+    },
+    "sourceConsole": {
+      "roleLine": "{source} · {role}",
+      "stage": {
+        "not_shortlisted": "Dihantar",
+        "shortlisted": "Ada butiran tertinggal",
+        "awaiting_review": "Menunggu semakan",
+        "under_review": "Dalam semakan",
+        "awarded": "Dianugerahkan",
+        "rejected": "Tidak terpilih",
+        "closed": "Ditutup"
+      },
+      "level": {
+        "spm": "SPM",
+        "stpm": "STPM",
+        "matric": "Matrikulasi",
+        "asasi": "Asasi",
+        "diploma": "Diploma",
+        "none": "—"
+      },
+      "part": {
+        "quiz": "Kuiz",
+        "story": "Kisah pelajar",
+        "funding": "Pelan pembiayaan",
+        "documents": "Dokumen",
+        "consent": "Persetujuan",
+        "address": "Alamat",
+        "guardian_documents": "Dokumen ibu bapa atau penjaga",
+        "family": "Butiran keluarga"
+      },
+      "overview": {
+        "title": "Gambaran keseluruhan",
+        "subtitle": "Pelajar yang menamakan {source} semasa memohon.",
+        "subtitleFor": "Pelajar yang menamakan {source} semasa memohon {gift}.",
+        "witnessOne": "1 kontrak menunggu anda sebagai saksi",
+        "witnessMany": "{n} kontrak menunggu anda sebagai saksi",
+        "witnessNote": "pelajar dan penjamin telah menandatangani.",
+        "witnessNow": "Jadi saksi sekarang",
+        "scholars": "Penerima biasiswa",
+        "total": "{n} permohonan kesemuanya",
+        "missingTitle": "Butiran tertinggal yang boleh anda bantu",
+        "missingRow": "Memohon {applied} · aktif terakhir {active}",
+        "missingNone": "Tiada pelajar senarai pendek yang tertinggal apa-apa.",
+        "open": "Buka",
+        "toldFootnote": "Keputusan hanya dipaparkan di sini selepas pelajar dimaklumkan.",
+        "error": "Gambaran keseluruhan tidak dapat dimuatkan."
+      },
+      "applications": {
+        "subtitle": "Hanya pelajar yang menamakan {source}. Baca sahaja.",
+        "search": "Cari mengikut nama",
+        "stageFilter": "Peringkat",
+        "allStages": "Semua peringkat",
+        "col": {
+          "student": "Pelajar",
+          "school": "Sekolah",
+          "level": "Tahap",
+          "sent": "Dihantar",
+          "stage": "Peringkat"
+        },
+        "empty": "Belum ada permohonan.",
+        "emptySearch": "Tiada permohonan yang sepadan.",
+        "footnote": "Markah, pendapatan, dokumen, catatan penilai dan keputusan yang belum muktamad tidak dipaparkan.",
+        "error": "Permohonan tidak dapat dimuatkan."
+      },
+      "student": {
+        "profile": "Profil",
+        "school": "Sekolah",
+        "state": "Negeri",
+        "level": "Tahap",
+        "phone": "Telefon",
+        "email": "E-mel",
+        "application": "Permohonan",
+        "programme": "Program",
+        "sent": "Dihantar",
+        "stage": "Peringkat",
+        "toldOn": "{stage} (pelajar dimaklumkan {date})",
+        "missing": "Butiran tertinggal",
+        "none": "Tiada",
+        "footnote": "Tidak ditunjukkan kepada sumber: nombor IC, alamat, keluarga, pendapatan, esei, dokumen, markah, catatan penilai, wang.",
+        "witnessOnly": "Sumber lain merujuk pelajar ini. Anda saksi bagi kontraknya, jadi hanya kontrak yang dipaparkan."
+      },
+      "contract": {
+        "title": "Kontrak",
+        "none": "Belum ada kontrak.",
+        "waiting": "Kontrak: menunggu anda sebagai saksi",
+        "review": "Semak dan jadi saksi",
+        "party": {
+          "student": "Pelajar",
+          "guarantor": "Penjamin",
+          "witness": "Saksi",
+          "foundation": "Yayasan"
+        },
+        "signedOn": "ditandatangani {date}",
+        "waitingYou": "menunggu anda",
+        "afterWitness": "selepas saksi",
+        "notYet": "belum",
+        "youWitnessed": "Anda menjadi saksi kontrak ini pada {date}.",
+        "view": "Lihat kontrak"
+      },
+      "witness": {
+        "back": "Kembali kepada pelajar",
+        "agreementFor": "Perjanjian bursari — {name}",
+        "openPdf": "Buka PDF",
+        "opening": "Membuka…",
+        "pdfNote": "Buka PDF dan baca seluruh perjanjian sebelum anda menandatangani.",
+        "noPdf": "PDF tidak dapat dibuka sekarang. Cuba lagi sebentar lagi.",
+        "heading": "Jadi saksi kontrak ini",
+        "intro": "Anda menandatangani sebagai saksi bagi {source}. Anda mengesahkan bahawa anda mengenali pelajar ini dan bahawa pelajar serta penjamin yang dinamakan di sini telah menandatanganinya.",
+        "nameLabel": "Nama penuh anda",
+        "confirm": "Saya mengesahkan saya menjadi saksi perjanjian ini bagi {source}.",
+        "sign": "Tandatangan sebagai saksi",
+        "signing": "Menandatangani…",
+        "after": "Yayasan dimaklumkan serta-merta. Anda akan menerima salinan akhir yang ditandatangani melalui e-mel.",
+        "done": "Selesai. Anda menjadi saksi perjanjian ini pada {date}.",
+        "closed": "Kontrak ini tidak dibuka untuk saksi.",
+        "error": {
+          "not_ready": "Pelajar dan penjamin belum kedua-duanya menandatangani.",
+          "already_witnessed": "Kontrak ini sudah mempunyai saksi.",
+          "contract_not_live": "Kontrak ini tidak lagi berkuat kuasa, jadi tidak boleh disaksikan.",
+          "confirm_required": "Tandakan kotak untuk mengesahkan.",
+          "name_required": "Taip nama penuh anda.",
+          "name_too_long": "Nama itu terlalu panjang. Gunakan 200 aksara atau kurang.",
+          "not_found": "Kontrak itu tidak dapat ditemui.",
+          "source_unavailable": "Log masuk anda untuk sumber ini telah dimatikan. Tanya organisasi.",
+          "generic": "Saksi anda tidak dapat direkodkan. Cuba lagi."
+        }
+      },
+      "scholars": {
+        "subtitle": "Pelajar anda yang menerima bursari. Baca sahaja.",
+        "col": {
+          "scholar": "Penerima",
+          "institution": "Institusi",
+          "course": "Kursus",
+          "status": "Status",
+          "contract": "Kontrak"
+        },
+        "witnessNeeded": "Saksi anda diperlukan",
+        "empty": "Belum ada penerima biasiswa.",
+        "footnote": "Jumlah wang, bayaran dan keputusan semester tidak dipaparkan.",
+        "error": "Senarai penerima tidak dapat dimuatkan.",
+        "details": "Butiran"
+      },
+      "profile": {
+        "you": "Anda",
+        "name": "Nama",
+        "email": "E-mel log masuk",
+        "organisation": "Organisasi",
+        "orgName": "Nama organisasi",
+        "contactPerson": "Orang hubungan",
+        "contactEmail": "E-mel untuk makluman",
+        "phone": "Telefon",
+        "note": "Pelajar melihat nama organisasi pada borang permohonan. E-mel kemajuan dihantar ke “E-mel untuk makluman”.",
+        "saved": "Disimpan.",
+        "loadError": "Profil anda tidak dapat dimuatkan.",
+        "error": {
+          "name_required": "Taip nama anda.",
+          "source_name_required": "Taip nama organisasi.",
+          "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
+          "not_editable": "Butiran itu tidak boleh diubah di sini.",
+          "source_unavailable": "Log masuk anda untuk sumber ini telah dimatikan. Tanya organisasi.",
+          "generic": "Tidak dapat disimpan. Cuba lagi."
+        }
+      },
+      "loadFailed": "Halaman ini tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi."
     }
   },
   "documentsTab": {

@@ -128,9 +128,10 @@ describe('visibleNav per role', () => {
     qc: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     reviewer: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
-    // Source sign-in S1 (2026-10-30): a source user's ONLY row is its own Profile. The server
-    // denies the role every existing view (deny by default); S3 adds its Programme rows.
-    source_partner: ['profile'],
+    // Source sign-in (2026-10-30): the three Programme rows reviewers use — their pages render the
+    // source console (`components/source/*`, `admin/source/` only) — and Profile. NO Guide / FAQ:
+    // both are written for staff, and there is no source section in either yet.
+    source_partner: ['programmeOverview', 'applications', 'scholars', 'profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -197,10 +198,24 @@ describe('visibleNav per role', () => {
     expect(scopes).toEqual(['programme', 'utility'])
   })
 
-  it('a source user is its own role, never folded into reviewer, and lands on Profile', () => {
+  it('a source user is its own role, never folded into reviewer, and lands on its Overview', () => {
     expect(effectiveRole({ role: 'source_partner' })).toBe('source_partner')
-    expect(canAccess('/admin/scholarship', 'source_partner')).toBe(false)
-    expect(defaultRoute({ role: 'source_partner', permissions: [] })).toBe('/admin/profile')
+    expect(defaultRoute({ role: 'source_partner', permissions: [] })).toBe('/admin/programme/overview')
+    expect(defaultRoute({ role: 'source_partner' })).toBe('/admin/programme/overview')
+    // The same three Programme pages a reviewer opens, and nothing of the organisation's.
+    for (const href of ['/admin/programme/overview', '/admin/scholarship', '/admin/scholarship/7',
+      '/admin/scholars', '/admin/scholars/7', '/admin/profile']) {
+      expect(canAccess(href, 'source_partner', [])).toBe(true)
+    }
+    for (const href of ['/admin', '/admin/organisation', '/admin/organisation/staff', '/admin/sources',
+      '/admin/payments', '/admin/programme', '/admin/guide', '/admin/faq']) {
+      expect(canAccess(href, 'source_partner', [])).toBe(false)
+    }
+  })
+
+  it('the Programme group of a source user never folds away — it has no door into a gift', () => {
+    const groups = visibleNav({ ...ctx('source_partner'), pathname: '/admin/profile', programmeChosen: false })
+    expect(groups.map((g) => g.scope)).toEqual(['programme', 'utility'])
   })
 })
 

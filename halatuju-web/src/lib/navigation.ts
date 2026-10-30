@@ -38,9 +38,9 @@ export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 
 
 /** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same eight,
  *  same order, asserted on every run.
- *  ⚠ `source_partner` (source sign-in S1, 2026-10-30) is named here so `effectiveRole` never folds
- *  a source user into 'reviewer': with only the Profile row it lands on Profile and sees nothing
- *  else until S3 gives it rows. The server denies it every existing view regardless.
+ *  ⚠ `source_partner` (source sign-in, 2026-10-30) is named here so `effectiveRole` never folds
+ *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
+ *  `components/source/*`, which call `admin/source/` only) and Profile; it lands on Overview.
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
@@ -336,10 +336,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Organisations, and 'G' can never be a chord because it is the prefix that arms one.
       { id: 'programmeOverview', href: '/admin/programme/overview',
         labelKey: 'admin.nav.programmeOverview', chord: 'I', scope: 'programme',
-        roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer'],
+        roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'source_partner'],
         gate: { mode: 'always' } },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
         perms: ['see_all', 'review'], gate: { mode: 'always' } },
       // ⚠ SCHOLARS (student maintenance S2, 2026-10-29): every funded student from award acceptance
       // to closure. SAME roles and keys as Applications, on purpose — a scholar file is a view of an
@@ -348,7 +348,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // scholars, finance never). `needsProgramme`: a list of one gift's scholars. 'M' for
       // maintenance — 'S' is Students. No badge yet (the shell's badge needs its own count endpoint).
       { id: 'scholars', href: '/admin/scholars', labelKey: 'admin.scholars.nav', chord: 'M',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
         perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },

@@ -17,3 +17,21 @@ export function Toggle({ on, onClick, disabled, label }: {
     </button>
   )
 }
+
+/**
+ * Has anybody signed in for this source (source sign-in S2)? One badge for the Sources list and the
+ * Invitations → Source form, so the three states read the same in both: "Not invited", "Invited,
+ * waiting", "Joined". Absent (a payload from before S2) reads as not invited.
+ */
+export function SignInBadge({ state, t }: {
+  state?: 'none' | 'invited' | 'joined'; t: (k: string) => string
+}) {
+  const s = state ?? 'none'
+  const tone = s === 'joined' ? 'bg-positive-100 text-positive-800 font-semibold'
+    : s === 'invited' ? 'bg-caution-100 text-caution-700' : 'text-ground-500'
+  return (
+    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${tone}`}>
+      {t(`admin.sources.signIn.${s}`)}
+    </span>
+  )
+}

@@ -37,8 +37,12 @@ export {
 export type { AdminItem } from './admin-api/admins'
 
 // Every invitation this organisation has sent, of every kind.
-export { cancelInvitation, getInvitations, inviteSponsor } from './admin-api/invitations'
-export type { InvitationKind, InvitationRow, InvitationsPayload } from './admin-api/invitations'
+export {
+  cancelInvitation, getInvitations, inviteSponsor, inviteSource, resendSourceUser, revokeSourceUser,
+} from './admin-api/invitations'
+export type {
+  InvitationKind, InvitationRow, InvitationsPayload, SourceSignIn, SourceUserRow, InvitableSource,
+} from './admin-api/invitations'
 
 // An admin's own profile, and a reviewer's own credentials.
 export {
@@ -47,7 +51,7 @@ export {
 export type { AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
 
 // The referral organisations a student arrives through, and witness assignment.
-export { getOrgs, getSources, getSourceNames, createSource, updateSource, assignWitness } from './admin-api/sources'
+export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'
 export type { OrgItem, SourceItem } from './admin-api/sources'
 
 // The partner, reviewer, invitation and sponsor e-mail templates an officer authors.
@@ -275,3 +279,15 @@ export {
 export type {
   ProgrammeRequirements, AdminApplyCopyBlock, AdminApplyCopy, AdminProgramme, AdminIntakeYear,
 } from './admin-api/programmes'
+
+// The source console (source sign-in S3 + S4): a signed-in SOURCE user's own pages, under
+// `admin/source/` only — a source screen imports from here and never from the staff modules.
+export {
+  getSourceProfile, updateSourceProfile, getSourceOverview, getSourceApplications,
+  getSourceApplication, getSourceAgreement, witnessAsSource, getSourceScholars, getSourceScholar,
+} from './admin-api/sourceConsole'
+export type {
+  SourceStage, SourceGift, SourceContract, SourceProfile, SourceOverview, SourceApplicationRow,
+  SourceApplicationList, SourceApplication, SourceAgreement, SourceScholarRow, SourceScholarList,
+  SourceScholar,
+} from './admin-api/sourceConsole'

@@ -16,8 +16,9 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
     vars ? `${k}|${Object.values(vars).join(',')}` : k }),
 }))
+let mockRole: { role: string; is_super_admin: boolean } = { role: 'org_admin', is_super_admin: false }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin', is_super_admin: false } }),
+  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
 }))
 jest.mock('@/lib/admin-api')
 
@@ -46,6 +47,7 @@ const EMAILS = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockRole = { role: 'org_admin', is_super_admin: false }
   mockApi.getSources.mockResolvedValue({ sources: SOURCES } as Awaited<ReturnType<typeof api.getSources>>)
   mockApi.getPartnerEmails.mockResolvedValue(EMAILS)
 })
@@ -84,26 +86,24 @@ describe('Sources page panels', () => {
     expect(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }).getAttribute('aria-selected')).toBe('true')
   })
 
-  it('hides Add source on the emails panel — there is nothing there to add', async () => {
+  it('hides "Invite a source" on the emails panel — there is nothing there to invite', async () => {
     render(<SourcesPage />)
     // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
     // you SEE is a CSS breakpoint, and jsdom applies none.
     await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
-    expect(screen.queryByText(/admin\.sources\.add/)).toBeTruthy()
+    expect(screen.queryByText(/admin\.sources\.invite/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
     await waitFor(() => expect(screen.getByText('admin.sources.emails.title')).toBeTruthy())
-    expect(screen.queryByText(/admin\.sources\.add/)).toBeNull()
+    expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
   })
 
-  it('keeps a half-finished add form across a trip to the emails panel and back', async () => {
+  it('keeps a half-finished edit across a trip to the emails panel and back', async () => {
     render(<SourcesPage />)
-    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
-    // you SEE is a CSS breakpoint, and jsdom applies none.
     await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
 
-    fireEvent.click(screen.getByText(/admin\.sources\.add/))
-    fireEvent.change(screen.getByLabelText(/admin\.sources\.code/), { target: { value: 'halfway' } })
+    fireEvent.click(screen.getByText('admin.sources.edit'))
+    fireEvent.change(screen.getByDisplayValue('Aina'), { target: { value: 'halfway' } })
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
     await waitFor(() => expect(screen.getByText('admin.sources.emails.title')).toBeTruthy())
@@ -203,18 +203,69 @@ describe('how many gift forms list each source', () => {
   })
 })
 
-describe('a reserved code on the add form (review, 2026-10-08)', () => {
-  it('shows the refusal on the form — `other` is the form\'s own fixed choice', async () => {
-    mockApi.createSource.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'code_reserved' }))
+/**
+ * Source sign-in S2 (2026-10-30). A source is ADDED by inviting its person on Invitations → Source
+ * (the old POST answers 410), so the page has no Add form — only a link there, for the two roles
+ * that may invite (owner: Admin does not). Once somebody has signed in for a source, its details
+ * are its own: Edit gives way to "Managed by the source", and a Save that races the sign-in is
+ * refused 409 `managed_by_source` with words that say why. The Active toggle stays.
+ */
+describe('inviting a source, and the edit lock once it has joined', () => {
+  const three = [
+    { ...SOURCES[0], sign_in: 'none', user_count: 0 },
+    { ...SOURCES[0], id: 2, code: 'learnifi', name: 'LearnifAI', sign_in: 'invited', user_count: 1 },
+    { ...SOURCES[0], id: 3, code: 'muet', name: 'MUETMyWay', contact_person: 'Audrey',
+      sign_in: 'joined', user_count: 1 },
+  ] as unknown as api.SourceItem[]
+
+  beforeEach(() => { mockApi.getSources.mockResolvedValue({ sources: three }) })
+
+  it('offers no Add form — "Invite a source" links to the Source tab of Invitations', async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
-    fireEvent.click(screen.getByText(/admin\.sources\.add/))
-    fireEvent.change(screen.getByLabelText(/admin\.sources\.code/), { target: { value: 'other' } })
-    fireEvent.change(screen.getByLabelText(/^admin\.sources\.name$/), { target: { value: 'Other Org' } })
-    fireEvent.click(screen.getByText('admin.sources.create'))
-    await waitFor(() => expect(screen.getByText('admin.sources.codeTaken')).toBeTruthy())
-    expect(mockApi.createSource).toHaveBeenCalledWith(
-      expect.objectContaining({ code: 'other' }), { token: 'tok' })
+    await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
+    const link = screen.getByText(/admin\.sources\.invite/).closest('a') as HTMLAnchorElement
+    expect(link.getAttribute('href')).toBe('/admin/organisation/staff?kind=source')
+    expect(screen.queryByText(/admin\.sources\.add/)).toBeNull()
+    expect(screen.queryByLabelText(/admin\.sources\.code/)).toBeNull()
+  })
+
+  it('shows Admin no invite link at all — Admin does not invite sources', async () => {
+    mockRole = { role: 'admin', is_super_admin: false }
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
+    expect(screen.queryByText(/admin\.sources\.invite/)).toBeNull()
+    // …but keeps the list, Edit and the switches.
+    expect(screen.getAllByText('admin.sources.edit').length).toBe(2)
+  })
+
+  it('reads each source\'s sign-in state, and locks Edit only for the one that joined', async () => {
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('sign-in-muet')).toBeTruthy())
+    expect(screen.getByTestId('sign-in-smc').textContent).toBe('admin.sources.signIn.none')
+    expect(screen.getByTestId('sign-in-learnifi').textContent).toBe('admin.sources.signIn.invited')
+    expect(screen.getByTestId('sign-in-muet').textContent).toBe('admin.sources.signIn.joined')
+
+    const muet = screen.getByTestId('sign-in-muet').closest('tr') as HTMLElement
+    expect(muet.textContent).toContain('admin.sources.managed')
+    expect(muet.textContent).not.toContain('admin.sources.edit')
+    // The organisation still switches it on or off for the apply form.
+    expect(muet.querySelector('[role="switch"]')).not.toBeNull()
+    expect(screen.getAllByText('admin.sources.edit')).toHaveLength(2)
+    expect(screen.getByText('admin.sources.managedNote')).toBeTruthy()
+  })
+
+  it('says why when a Save meets a source that signed in meanwhile (409 managed_by_source)', async () => {
+    mockApi.updateSource.mockRejectedValueOnce(
+      Object.assign(new Error('x'), { status: 409, code: 'managed_by_source' }))
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByTestId('sign-in-learnifi')).toBeTruthy())
+    const row = screen.getByTestId('sign-in-learnifi').closest('tr') as HTMLElement
+    fireEvent.click(row.querySelector('button:not([role="switch"])') as HTMLElement)
+    fireEvent.change(screen.getByDisplayValue('LearnifAI'), { target: { value: 'LearnifAI Sdn Bhd' } })
+    fireEvent.click(screen.getByText('admin.sources.save'))
+    await waitFor(() => expect(screen.getByText('admin.sources.managedRefused')).toBeTruthy())
+    // It reads the list again, so the row shows its lock instead of a form.
+    await waitFor(() => expect(mockApi.getSources).toHaveBeenCalledTimes(2))
   })
 })
 

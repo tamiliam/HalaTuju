@@ -30,6 +30,9 @@ import { rm } from '@/lib/programmeOverview'
 import { statusLabelKey, statusTone } from '@/lib/applicationStatus'
 import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
+import { lazySource } from '@/components/source/LazySource'
+
+const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
 
 type Tab = 'overview' | 'results' | 'money' | 'contract' | 'letters' | 'mentoring' | 'surveys' | 'activity'
 const TABS: readonly PanelTab<Tab>[] = [
@@ -59,7 +62,17 @@ function Later({ text }: { text: string }) {
   return <p className="text-sm text-ground-500">{text}</p>
 }
 
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
 export default function ScholarFilePage() {
+  const { role } = useAdminAuth()
+  const params = useParams()
+  if (role?.role === 'source_partner') return <SourceScholar id={String(params?.id ?? '')} />
+  return <StaffScholarFile />
+}
+
+function StaffScholarFile() {
   const params = useParams()
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()

@@ -16,8 +16,21 @@ import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words 
  * ⚠ `tsc --noEmit`, `jest` and `next lint` were ALL green while this was still broken. The build
  * is the only gate that reads Next's page contract.
  */
+import { useParams } from 'next/navigation'
+import { useAdminAuth } from '@/lib/admin-auth-context'
+import { lazySource } from '@/components/source/LazySource'
+
 import { AdminScholarshipDetailView } from './view'
 
+const SourceStudent = lazySource(() => import('@/components/source/SourceStudent').then((m) => m.default))
+
+// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
+// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
+// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
+// It is where the witness email's link lands (`/admin/scholarship/<id>`).
 export default function AdminScholarshipDetailPage() {
+  const { role } = useAdminAuth()
+  const params = useParams()
+  if (role?.role === 'source_partner') return <SourceStudent id={String(params?.id ?? '')} />
   return <AdminScholarshipDetailView />
 }

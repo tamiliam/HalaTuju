@@ -6,6 +6,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { SourceSignIn } from './invitations'
 
 // ── Invite / Orgs ───────────────────────────────────────────────────
 
@@ -45,6 +46,11 @@ export interface SourceItem {
   gift_total: number
   is_active: boolean
   student_count: number | null
+  /** Source sign-in S2: has anybody signed in for this source? Once `joined`, its details are its
+   *  own — a PATCH that changes them is refused 409 `managed_by_source`. A source is no longer
+   *  ADDED here (POST is 410): it is created by inviting its person on Invitations → Source. */
+  sign_in?: SourceSignIn
+  user_count?: number
 }
 
 export async function getSources(options?: ApiOptions) {
@@ -63,16 +69,6 @@ export async function getSourceNames(filters: { programme?: string } = {}, optio
   const q = filters.programme ? `?programme=${encodeURIComponent(filters.programme)}` : ''
   return adminFetch<{ sources: { code: string; name: string }[] }>(
     `/api/v1/admin/scholarship/source-names/${q}`, options)
-}
-
-export async function createSource(
-  data: {
-    code: string; name: string; contact_person?: string; contact_email?: string
-    phone?: string; show_in_apply?: boolean
-  },
-  options?: ApiOptions,
-) {
-  return adminMutate<SourceItem>('/api/v1/admin/scholarship/sources/', 'POST', data, options)
 }
 
 export async function updateSource(

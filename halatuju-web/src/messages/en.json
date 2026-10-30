@@ -3499,9 +3499,6 @@
       "tabOrganisations": "Organisations",
       "tabEmails": "Emails",
       "tabsAria": "Sources panels",
-      "add": "Add source",
-      "addTitle": "Add a source",
-      "create": "Create",
       "cancel": "Cancel",
       "save": "Save",
       "saving": "Saving…",
@@ -3512,7 +3509,6 @@
       "colPhone": "Phone",
       "colActive": "Active",
       "colStudents": "Students",
-      "code": "Code",
       "codeHelp": "lowercase, e.g. smc",
       "name": "Name",
       "contactPerson": "Contact person",
@@ -3526,10 +3522,7 @@
       "empty": "—",
       "noSources": "No sources yet.",
       "loadError": "Could not load sources.",
-      "created": "Source added.",
       "updated": "Source updated.",
-      "codeAndNameRequired": "Code and name are required.",
-      "codeTaken": "That code is already in use.",
       "superRequired": "Only the Admin, Organisation admin, or Super admin roles can manage sources.",
       "emails": {
         "title": "Partner emails",
@@ -3614,7 +3607,17 @@
         "assigned": "Witness organisation updated.",
         "label": "Witness"
       },
-      "tabTerms": "Terms"
+      "tabTerms": "Terms",
+      "invite": "Invite a source",
+      "colSignIn": "Sign-in",
+      "signIn": {
+        "none": "Not invited",
+        "invited": "Invited, waiting",
+        "joined": "Joined"
+      },
+      "managed": "Managed by the source",
+      "managedNote": "Edit stays until the source signs in. After that, only the source changes its own details. You still switch a source on or off for the apply form.",
+      "managedRefused": "This source has signed in and now keeps its own details. You can still switch it on or off."
     },
     "sponsors": {
       "nav": "Sponsors",
@@ -5038,7 +5041,7 @@
         "witnessAction": "Witness",
         "download": "Download (PDF)",
         "actionError": "That action could not be completed. Please try again.",
-        "witnessForbidden": "Only the referring partner organisation (or a super admin) can witness this agreement.",
+        "witnessForbidden": "Only a super admin can record the witness here. A source with a sign-in witnesses from its own console.",
         "note": "The witness is a record only and never blocks the award. The donor is never named on this agreement.",
         "awaitingSignature": "Waiting for the student and their guarantor to sign — nothing to counter-sign or witness yet."
       },
@@ -6639,7 +6642,7 @@
         "sourcesCount": "{n} of {m} on this form",
         "sourcesNone": "None is on yet, so this form lists only the fixed choices below.",
         "sourcesAlways": "Always on every form:",
-        "sourcesLink": "Add a source or switch one off in Sources",
+        "sourcesLink": "Switch a source on or off in Sources",
         "sourcesFixedTitle": "Fixed choices",
         "sourcesFixedHint": "Shown after this gift's own sources. Switch one off and this form stops offering it; {other} stays on every form.",
         "sourcesAlwaysOn": "Always on",
@@ -6728,7 +6731,6 @@
         "sponsors": "Sponsor"
       },
       "noneInKind": "Nobody has been invited in this group yet.",
-      "sourceComingSoon": "To add a source organisation, use Add source on the Sources page. Sign-in for source partners is coming soon.",
       "giftLabel": "Which gift is this invitation for?",
       "giftChoose": "Choose a gift…",
       "notePlaceholder": "A short note to include (optional)",
@@ -6747,7 +6749,7 @@
         "when": {
           "invite_admin": "Sent when you add somebody as an admin or finance — and again whenever you press Resend.",
           "invite_reviewer": "Sent when you add somebody as a reviewer or QC — and again whenever you press Resend.",
-          "invite_source": "Not sent yet. This is the wording a source organisation will receive once they can sign in and follow their own students.",
+          "invite_source": "Sent when you invite somebody for a source — and again whenever you press Resend. They sign in to follow their own students and witness contracts.",
           "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
         }
       },
@@ -6760,7 +6762,51 @@
       "waitingHeading": "Waiting to reply",
       "allAccepted": "Nobody is waiting — everyone invited has accepted.",
       "seePeople": "See who is in",
-      "seeSponsors": "See the benefactors"
+      "seeSponsors": "See the benefactors",
+      "source": {
+        "which": "Which source?",
+        "choose": "Choose a source…",
+        "option": "{name} ({code}) — {state}",
+        "help": "Sources already on your list. Or",
+        "addNew": "add a new source (name and short code)",
+        "pickExisting": "Choose a source already on your list instead",
+        "newName": "Source name",
+        "newCode": "Short code",
+        "contactPerson": "Contact person (optional)",
+        "contactPhone": "Phone (optional)",
+        "personName": "Person’s name",
+        "note": "They will see only their own students, read only, and can witness contracts.",
+        "chooseFirst": "Choose a source, or add a new one.",
+        "sent": "Invitation sent.",
+        "signedIn": "Signed in",
+        "col": {
+          "source": "Source",
+          "person": "Person",
+          "email": "Email",
+          "sent": "Sent",
+          "lastSeen": "Last seen"
+        },
+        "noneWaiting": "Nobody is waiting to reply.",
+        "noneSignedIn": "Nobody has signed in for a source yet.",
+        "remove": "Remove",
+        "removeConfirm": "Remove {name}'s sign-in for {source}? They will no longer be able to sign in. You can invite them again later.",
+        "removed": "Sign-in removed.",
+        "removeFailed": "We could not remove it. Reload the page and try again.",
+        "error": {
+          "already_staff": "This email address already has a HalaTuju staff or source sign-in, so it cannot be invited for a source. Ask HalaTuju support.",
+          "code_taken": "That short code is already in use.",
+          "code_reserved": "That short code is reserved. Choose another.",
+          "code_and_name_required": "A new source needs a name and a short code.",
+          "source_inactive": "This source is switched off. Switch it on in Sources first.",
+          "bad_email": "That email address does not look right.",
+          "name_required": "Type the person's name.",
+          "not_found": "We could not find that source.",
+          "organisation_required": "Choose an organisation first.",
+          "not_configured": "Sign-in is not set up on this server. Ask HalaTuju support.",
+          "create_failed": "We could not create their sign-in just now. Nothing was saved; try again.",
+          "generic": "We could not send the invitation. Try again."
+        }
+      }
     },
     "soon": "Soon",
     "programmes": {
@@ -7690,6 +7736,170 @@
         "address": "Address",
         "emails": "Send invoices to"
       }
+    },
+    "sourceConsole": {
+      "roleLine": "{source} · {role}",
+      "stage": {
+        "not_shortlisted": "Sent",
+        "shortlisted": "Missing items",
+        "awaiting_review": "Waiting for review",
+        "under_review": "Under review",
+        "awarded": "Awarded",
+        "rejected": "Not selected",
+        "closed": "Closed"
+      },
+      "level": {
+        "spm": "SPM",
+        "stpm": "STPM",
+        "matric": "Matriculation",
+        "asasi": "Foundation (Asasi)",
+        "diploma": "Diploma",
+        "none": "—"
+      },
+      "part": {
+        "quiz": "Quiz",
+        "story": "Their story",
+        "funding": "Funding plan",
+        "documents": "Documents",
+        "consent": "Consent",
+        "address": "Address",
+        "guardian_documents": "Parent or guardian documents",
+        "family": "Family details"
+      },
+      "overview": {
+        "title": "Overview",
+        "subtitle": "Students who named {source} when they applied.",
+        "subtitleFor": "Students who named {source} when they applied to {gift}.",
+        "witnessOne": "1 contract is waiting for your witness",
+        "witnessMany": "{n} contracts are waiting for your witness",
+        "witnessNote": "the student and guarantor have signed.",
+        "witnessNow": "Witness now",
+        "scholars": "Scholars",
+        "total": "{n} applications in all",
+        "missingTitle": "Missing items you can help with",
+        "missingRow": "Applied {applied} · last active {active}",
+        "missingNone": "No shortlisted student is missing anything.",
+        "open": "Open",
+        "toldFootnote": "A result shows here only after the student has been told.",
+        "error": "We could not load the overview."
+      },
+      "applications": {
+        "subtitle": "Only students who named {source}. Read only.",
+        "search": "Search by name",
+        "stageFilter": "Stage",
+        "allStages": "All stages",
+        "col": {
+          "student": "Student",
+          "school": "School",
+          "level": "Level",
+          "sent": "Sent",
+          "stage": "Stage"
+        },
+        "empty": "No applications yet.",
+        "emptySearch": "No application matches.",
+        "footnote": "No scores, income, documents, reviewer notes or decisions in progress are shown.",
+        "error": "We could not load the applications."
+      },
+      "student": {
+        "profile": "Profile",
+        "school": "School",
+        "state": "State",
+        "level": "Level",
+        "phone": "Phone",
+        "email": "Email",
+        "application": "Application",
+        "programme": "Programme",
+        "sent": "Sent",
+        "stage": "Stage",
+        "toldOn": "{stage} (student told {date})",
+        "missing": "Missing items",
+        "none": "None",
+        "footnote": "Not shown to sources: IC number, address, family, income, essays, documents, scores, reviewer notes, money.",
+        "witnessOnly": "Another source referred this student. You are the witness for the contract, so only the contract is shown."
+      },
+      "contract": {
+        "title": "Contract",
+        "none": "No contract yet.",
+        "waiting": "Contract: waiting for your witness",
+        "review": "Review and witness",
+        "party": {
+          "student": "Student",
+          "guarantor": "Guarantor",
+          "witness": "Witness",
+          "foundation": "Foundation"
+        },
+        "signedOn": "signed {date}",
+        "waitingYou": "waiting for you",
+        "afterWitness": "after the witness",
+        "notYet": "not yet",
+        "youWitnessed": "You witnessed this contract on {date}.",
+        "view": "View the contract"
+      },
+      "witness": {
+        "back": "Back to the student",
+        "agreementFor": "Bursary agreement — {name}",
+        "openPdf": "Open the PDF",
+        "opening": "Opening…",
+        "pdfNote": "Open the PDF and read the whole agreement before you sign.",
+        "noPdf": "The PDF could not be opened just now. Try again in a moment.",
+        "heading": "Witness this contract",
+        "intro": "You sign as the witness for {source}. You confirm that you know this student and that the student and guarantor named here signed it.",
+        "nameLabel": "Your full name",
+        "confirm": "I confirm I am witnessing this agreement for {source}.",
+        "sign": "Sign as witness",
+        "signing": "Signing…",
+        "after": "The Foundation is told at once. You will get the final signed copy by email.",
+        "done": "Signed. You witnessed this agreement on {date}.",
+        "closed": "This contract is not open for a witness.",
+        "error": {
+          "not_ready": "The student and guarantor have not both signed yet.",
+          "already_witnessed": "This contract has already been witnessed.",
+          "contract_not_live": "This contract is no longer live, so it cannot be witnessed.",
+          "confirm_required": "Tick the box to confirm.",
+          "name_required": "Type your full name.",
+          "name_too_long": "That name is too long. Use 200 characters or fewer.",
+          "not_found": "We could not find that contract.",
+          "source_unavailable": "Your sign-in for this source is switched off. Ask the organisation.",
+          "generic": "We could not record your witness. Try again."
+        }
+      },
+      "scholars": {
+        "subtitle": "Your students who received the bursary. Read only.",
+        "col": {
+          "scholar": "Scholar",
+          "institution": "Institution",
+          "course": "Course",
+          "status": "Status",
+          "contract": "Contract"
+        },
+        "witnessNeeded": "Your witness needed",
+        "empty": "No scholars yet.",
+        "footnote": "No money amounts, payments or semester results are shown.",
+        "error": "We could not load the scholars.",
+        "details": "Details"
+      },
+      "profile": {
+        "you": "You",
+        "name": "Name",
+        "email": "Sign-in email",
+        "organisation": "Organisation",
+        "orgName": "Organisation name",
+        "contactPerson": "Contact person",
+        "contactEmail": "Email for updates",
+        "phone": "Phone",
+        "note": "Students see the organisation name on the apply form. Progress emails go to “Email for updates”.",
+        "saved": "Saved.",
+        "loadError": "We could not load your profile.",
+        "error": {
+          "name_required": "Type your name.",
+          "source_name_required": "Type the organisation's name.",
+          "bad_email": "That email address does not look right.",
+          "not_editable": "That detail cannot be changed here.",
+          "source_unavailable": "Your sign-in for this source is switched off. Ask the organisation.",
+          "generic": "We could not save. Try again."
+        }
+      },
+      "loadFailed": "This page could not load. Reload the page to try again."
     }
   },
   "documentsTab": {

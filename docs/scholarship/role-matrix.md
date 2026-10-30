@@ -439,3 +439,14 @@ phone, address, income), so it is a platform decision. No screen yet (TD-387).
 is the override, else the APPLICATION's own source, never the referral partner. Choosing the override
 stays super / admin / org_admin. The cockpit serves the application's source as `source` (the old
 `referred_by_org` key left in Sprint D).
+
+## Source users (`source_partner`, source sign-in 2026-10-30) — access
+
+A person signed in FOR a source (`PartnerAdmin.source`). Not staff: every existing view denies the role
+(S1), and it reaches only `api/v1/admin/source/…` (its own students, read only; its Profile; its witness,
+S4). **Menu** (`lib/navigation.ts`): Programme → Overview, Applications, Scholars (the reviewer hrefs; each
+page renders `components/source/*` for the role) and Profile; no Guide / FAQ yet; lands on the Overview.
+**Inviting a source** (Invitations → Source, `POST admin/invitations/` `audience='source_partner'`), Resend
+and Remove: `super` and `org_admin` only — Admin and finance see the tab read-only. Sources page: Edit
+locks once the source has joined (409 `managed_by_source`); the Active toggle stays the organisation's.
+The super's witness button stays as the fallback for a source with no sign-in.

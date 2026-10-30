@@ -155,8 +155,10 @@ function Chrome(
     })
   }
 
-  const { probes, requestsWaiting } = useNavProbes(token)
   const r = effectiveRole(role)
+  // A source user probes nothing: both probes are staff endpoints, which refuse the role, and no
+  // row it can see is probe-gated (source sign-in, 2026-10-30).
+  const { probes, requestsWaiting } = useNavProbes(r === 'source_partner' ? null : token)
   /*
    * ⚠ THE MENU NOW DEPENDS ON WHETHER A GIFT IS KNOWN (owner, 2026-09-08: *"the programme
    * shouldn't show up until they are selected"*). `chosen` is `''` only when there are SEVERAL
@@ -302,9 +304,12 @@ function Chrome(
 
   // Only a genuine super sees "Super admin"; an org member shows their organisation; everyone
   // else shows their own role label. A reviewer with no org must not read "Super admin".
+  // A source user reads "MUETMyWay · Source": the source it signs in for, then the role.
   const roleLabel = role?.is_super_admin
     ? t('admin.role.super')
-    : role?.org_name || t(`admin.role.${r}`)
+    : r === 'source_partner' && role?.source_name
+      ? t('admin.sourceConsole.roleLine', { source: role.source_name, role: t('admin.role.source_partner') })
+      : role?.org_name || t(`admin.role.${r}`)
 
   const utility = groups.find((g) => g.scope === 'utility')
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href

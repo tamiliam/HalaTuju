@@ -7,7 +7,7 @@ import type { ApiOptions } from './client'
 
 // ── Invitations (Organisation → Invitations) ─────────────────────────────────
 
-/** The four kinds the page is organised by. `source` is reserved and empty today. */
+/** The four kinds the page is organised by. `source` invites a source's person (source sign-in S2). */
 export type InvitationKind = 'admins' | 'reviewers' | 'source' | 'sponsors'
 
 export interface InvitationRow {
@@ -31,6 +31,40 @@ export interface InvitationRow {
    *  blank as a gift name. */
   programme: string
   programme_name: string
+  /** Which SOURCE a source invitation signs somebody in for (source sign-in S2); null otherwise,
+   *  and absent on a payload from before S2. */
+  source_id?: number | null
+  source_name?: string | null
+  source_code?: string | null
+}
+
+/** A source's sign-in state on the Sources list and the invite form (`source_invite.sign_in_states`):
+ *  `joined` — an active user has signed in; `invited` — active users, none signed in yet. */
+export type SourceSignIn = 'none' | 'invited' | 'joined'
+
+/** One source user on the Source tab's roster (`source_users.source_kind_extras`). */
+export interface SourceUserRow {
+  id: number
+  name: string
+  email: string
+  source_id: number
+  source_name: string
+  source_code: string
+  organisation: string | null
+  is_active: boolean
+  /** Null = not signed in yet (never "not recorded" for a source user). */
+  first_seen_at: string | null
+  last_seen_at: string | null
+  /** May THIS caller Resend / Remove — the server's own rule, so no button is offered it refuses. */
+  manageable: boolean
+  invitation: { status: string; sent_at: string | null; send_count: number
+                last_send_ok: boolean | null; last_send_error: string } | null
+}
+
+/** An ACTIVE source the invite form may pick. */
+export interface InvitableSource {
+  id: number; code: string; name: string; organisation: string
+  sign_in: SourceSignIn; user_count: number
 }
 
 export interface InvitationsPayload {
@@ -51,6 +85,9 @@ export interface InvitationsPayload {
    *  an invitation is a prompt to register TODAY, so a gift that is not open yet would be an
    *  invitation through a door that does not open. */
   programmes: Array<{ id: number; code: string; name: string }>
+  /** `?kind=source` only (source sign-in S2): every source user, and the sources to pick from. */
+  source_users?: SourceUserRow[]
+  sources?: InvitableSource[]
 }
 
 export async function getInvitations(kind: InvitationKind, options?: ApiOptions) {
@@ -76,4 +113,35 @@ export async function inviteSponsor(
 export async function cancelInvitation(id: number, options?: ApiOptions) {
   return adminMutate<{ id: number; status: 'revoked' }>(
     `/api/v1/admin/invitations/${id}/cancel/`, 'POST', {}, options)
+}
+
+/**
+ * Invite a SOURCE's person (source sign-in S2). Either an existing source (`source_id`) or a NEW
+ * one (`source_name` + `source_code`, optional contact details). Super or org_admin only.
+ * Refusals arrive as `code`: `already_staff`, `code_taken`, `code_reserved`,
+ * `code_and_name_required`, `source_inactive`, `bad_email`, `name_required`, `not_found`,
+ * `organisation_required`, `not_configured`, `create_failed`.
+ */
+export async function inviteSource(
+  data: {
+    name: string; email: string; source_id?: number
+    source_name?: string; source_code?: string
+    contact_person?: string; contact_email?: string; phone?: string
+  },
+  options?: ApiOptions,
+) {
+  return adminMutate<{ id: number; admin_id: number; emailed: boolean; message: string }>(
+    '/api/v1/admin/invitations/', 'POST', { audience: 'source_partner', ...data }, options)
+}
+
+/** Re-send a waiting source user's invitation (a fresh temporary password where we issued one). */
+export async function resendSourceUser(id: number, options?: ApiOptions) {
+  return adminMutate<{ message: string; emailed: boolean }>(
+    `/api/v1/admin/source-users/${id}/resend/`, 'POST', {}, options)
+}
+
+/** Switch a source user off. The way back is to invite the same address for the same source. */
+export async function revokeSourceUser(id: number, options?: ApiOptions) {
+  return adminMutate<{ id: number; is_active: false; message: string }>(
+    `/api/v1/admin/source-users/${id}/revoke/`, 'POST', {}, options)
 }

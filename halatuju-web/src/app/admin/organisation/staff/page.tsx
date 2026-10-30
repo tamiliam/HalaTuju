@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -16,6 +16,13 @@ import {
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import PanelTabs from '@/components/admin/PanelTabs'
 import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
+import { lazySource } from '@/components/source/LazySource'
+
+// The Source tab's form and roster: their own chunk, fetched when the tab is first opened.
+const SourceInviteForm = lazySource(
+  () => import('@/components/sources/SourceInvite').then((m) => m.SourceInviteForm))
+const SourceRoster = lazySource(
+  () => import('@/components/sources/SourceInvite').then((m) => m.SourceRoster))
 
 const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'sponsors']
 
@@ -56,6 +63,11 @@ const asStaffRow = (row: InvitationRow) =>
  * deliberately NOT shown here; it lives on the sponsor's own account page.
  *
  * ⚠ Sponsors never see any of this. They sign in through their own stack and see `/sponsor/*`.
+ *
+ * ⚠ **SOURCE (source sign-in S2, 2026-10-30)** is its own form and roster
+ * (`components/sources/SourceInvite`): pick a source or add a new one, name its person; then who
+ * has not replied and who has signed in (Resend / Cancel / Remove). Super and org_admin invite;
+ * the Sources page's "Invite a source" lands here with `?kind=source`.
  */
 export default function OrganisationInvitationsPage() {
   const { token, role } = useAdminAuth()
@@ -82,10 +94,15 @@ export default function OrganisationInvitationsPage() {
   // straight into the flagship, silently.
   const [sProgramme, setSProgramme] = useState('')
 
+  // The kind on screen NOW: a reply for a kind you have already left (the mount's Admins read, when
+  // `?kind=source` switches the tab a moment later) must not land under the new tab.
+  const kindNow = useRef(kind)
+  kindNow.current = kind
   const load = useCallback(async () => {
     if (!token) return
     try {
       const payload = await getInvitations(kind, { token })
+      if (kindNow.current !== kind) return
       setData(payload)
       setSubRole((cur) => (payload.invitable_roles.includes(cur)
         ? cur : (payload.invitable_roles[0] || '')))
@@ -93,6 +110,18 @@ export default function OrganisationInvitationsPage() {
   }, [token, kind])
 
   useEffect(() => { void load() }, [load])
+
+  // `?kind=source` (the Sources page's "Invite a source") opens that tab. Read once, on mount, from
+  // `window.location` — `useSearchParams` would need a Suspense boundary in a page file.
+  useEffect(() => {
+    const asked = new URLSearchParams(window.location.search).get('kind')
+    if (asked && (KINDS as string[]).includes(asked)) setKind(asked as InvitationKind)
+  }, [])
+
+  // The Source tab draws only a Source payload — never the previous tab's rows while its own load.
+  const sourceData = data?.kind === 'source' ? data : null
+  /** A Source-tab action finished: say so, and read the tab again. */
+  const sourceDone = (banner: Parameters<typeof setMessage>[0]) => { setMessage(banner); void load() }
 
   if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
@@ -242,15 +271,8 @@ export default function OrganisationInvitationsPage() {
           </div>
 
           {kind === 'source' ? (
-            // Org request #33: a source is ADDED on the Sources page, not invited here, so the note
-            // says where to go. The link shows only to roles that may open that page (not finance).
-            <p className="mt-4 text-sm text-ground-500">
-              {t('admin.invitations.sourceComingSoon')}
-              {canAccess('/admin/sources', r) && (
-                <>{' '}<Link href="/admin/sources" className="font-medium text-primary-700 hover:underline">
-                  {t('admin.sources.nav')} →</Link></>
-              )}
-            </p>
+            // Source sign-in S2: inviting a source's person IS how a source is added now.
+            canManage && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {invitable.length > 1 && (
@@ -315,15 +337,14 @@ export default function OrganisationInvitationsPage() {
             is already said by the pressed button above; what the table holds is no longer "the
             reviewers" but "the reviewers who have not answered", and a heading reading "Reviewers
             (0)" over a settled organisation says the opposite of the truth. */}
+        {kind === 'source' ? (
+          <SourceRoster data={sourceData} token={token} t={t} canManage={canManage}
+            onCancel={(row) => { void cancel(row) }} onDone={sourceDone} />
+        ) : (<>
         <h2 className="mb-2 text-sm font-semibold text-ground-900">
           {t('admin.invitations.waitingHeading')}{' '}
           <span className="font-normal text-ground-400">({rows.length})</span>
         </h2>
-        {kind === 'source' ? (
-          <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500">
-            {t('admin.invitations.sourceComingSoon')}
-          </div>
-        ) : (
           <InvitationsTable
             rows={rows} canAct={canManage} busyId={busyId ?? resendingId}
             /* ⚠ ONLY THE STAFF KINDS CARRY A ROLE. Admins holds Admin · Finance · Org admin and
@@ -354,7 +375,7 @@ export default function OrganisationInvitationsPage() {
               r === 'super' || !row.role || invitable.includes(row.role)}
             empty={emptyWords}
           />
-        )}
+        </>)}
         {!canManage && (
           <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
         )}
