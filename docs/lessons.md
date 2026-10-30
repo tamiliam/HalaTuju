@@ -1574,6 +1574,12 @@ is prefetched — weight moved off a route's first load can still travel in the 
   order on SQLite too, where the default would have passed silently. (Student maintenance S2, 2026-10-29)
 
 - **A reading of a rule that every applicant meets automatically is the wrong reading.** (Bumi Sprint D1, 2026-10-29.) The parser read "N more subjects belum diambil kira / selain di atas" independently of Syarat Am, so BM and Sejarah — which every applicant must have — always filled the "N more" slots, and ten UiTM rules asked for nothing extra. No university writes a clause that is empty by construction. **Rule:** when a parsed requirement can be met by the subjects every applicant already holds, stop and ask for the stricter reading; test each parsed clause with a student who has ONLY the general-requirement subjects. Also: a normaliser that folds two printed names into one key ("Sains Pertanian" / "Pertanian") can create a duplicate inside a list that never had one — dedupe after folding, and count distinct student subjects in every group, on every engine (SPM and STPM).
+- **A figure that is true for the OFFICE can be a false promise to the person it is about — audience-facing copy must
+  read the record's STATUS, not only the number.** (Student maintenance S5b, 2026-10-30.) Her Funds tab showed "RM X
+  still to come" from `payments._remaining` — the right figure for Payments (what the award still allows) — and so
+  promised money to a student whose file was terminated or withdrawn. **Rule:** when an office figure is shown to the
+  person it concerns, walk it through every status the record can be in and ask what the SENTENCE promises; change
+  the student-facing payload (here `closed` + `remaining: null`), never the shared office function.
 - **A "signed / executed" reader must use the platform's OWN activation rule — never a model property whose name
   matches but whose meaning is stricter.** (Student maintenance S5a, 2026-10-30.) The Contract tab read
   `BursaryAgreement.is_executed`, which requires the witness; the platform activates a student on student + guarantor

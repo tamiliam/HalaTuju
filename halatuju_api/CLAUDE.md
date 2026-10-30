@@ -1145,15 +1145,17 @@ git-pruned, no junctions, three harmless files).
 
 ---
 
-**Student maintenance Sprints 1–5a are LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
-S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188`, S5a `cebc9850` (api
-01201-dhs, no migration); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`,
-`retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`; roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`).
-NEXT = Sprint 5b: the STUDENT's Funds and Contract tabs on My Bursary — her own file only (404 otherwise), the
-same Payments-rule money as S3, her spending as **totals plus categories, the same card her sponsor sees, no
-merchants and no dates (owner ruling (a), 2026-10-30)** via `SpendingCard` with student copy (no `sponsorPortal`
-slice on her page), and the platform-signed contract (`scholar_money.platform_signed`, link minted on click only).**
-Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+**Student maintenance Sprints 1–5 are ALL LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188`, S5a `cebc9850`, S5b
+`2b62a6f8` (api 01202-bvg, no migration); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` …
+`-s4a.md`, `retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`, `-s5b.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT (roadmap) = Sprint 6: letters (PDF, email,
+acknowledge, typed confirm for discipline/termination; each logs activity) plus the remaining student email
+templates in the `StudentEmailTemplate` family.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- ⚠ **OWNER-PARKED (2026-10-30), "park this for the near future": ONE Student communications page covering ALL
+  student emails** — grouped under headings, on/off toggles only where it is safe to silence a mail, and a compact
+  three-language layout (today's tab lists every kind × en/ms/ta as rows). **Brainstorm options with the owner
+  BEFORE designing**; do not fold it into S6 unasked.
 - ⚠ **OWNER PENDING (S4b):** create the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and
   `results-due-reminders` (08:30 MYT) — the System health light expects both; `MAINTENANCE_REMINDERS_ENABLED`
   stays OFF until the owner has read the en/ms/ta wording on Organisation → Settings → Student communications.
@@ -1177,6 +1179,10 @@ Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
   (five readers held equal by one test); spending only with `has_perm('spending')`, by category CODE, unfolded;
   contract = `platform_signed` (binds + organisation countersigned + PDF; the witness is optional), PDF link 300 s,
   minted on request, only for this application's own `<org>/<app>/…` path.
+- Her Funds + Contract (S5b): `views_bursary` (`_own_file`, 404 `no_file`), `scholar_money.student_funds` /
+  `student_contract` — totals plus categories only (owner ruling (a)); a CLOSED file sends `closed` + `remaining:
+  null` (never a promise); her words live in their own message slice (`bursaryTabs`, `lib/messagesBursary.ts`,
+  imported by the bursary PAGE only); `SpendingCard` takes its words from the caller (`copy`, required).
 
 ---
 
