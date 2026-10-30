@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.scholarship import emails, usage, whatsapp
+from apps.scholarship import emails, student_email_catalogue, usage, whatsapp
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
@@ -113,6 +113,10 @@ class Command(BaseCommand):
                 reviewer = app.assigned_to
                 reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
                 reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
+                # S6a: the organisation may switch off the STUDENT's reminder email. The reviewer's
+                # reminder and the WhatsApp opt-in are other channels and still go, so the stamps
+                # below still follow them — the reminder window is not held open for a later email.
+                student_on = student_email_catalogue.may_send(app, 'interview_reminders')
                 # Heads-up: the verdict is a different clock from the interview (TD-131). Surface
                 # the due date in the reviewer reminder iff a verdict isn't recorded yet.
                 verdict_due = ''
@@ -131,10 +135,11 @@ class Command(BaseCommand):
                 if (app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24)
                         and _booked_with_notice(app, 24)):
                     _eo = emails.english_only_email(app)
-                    emails.send_interview_reminder_email(
-                        student_email, student_name=student_name, start=start,
-                        meeting_url=app.interview_meeting_url, when='1day',
-                        english_only=_eo)
+                    if student_on:
+                        emails.send_interview_reminder_email(
+                            student_email, student_name=student_name, start=start,
+                            meeting_url=app.interview_meeting_url, when='1day',
+                            english_only=_eo)
                     # Best-effort WhatsApp alongside the email (gated on opt-in; approved
                     # template in prod, free text in the sandbox; no-op unless WHATSAPP_ENABLED).
                     _send_wa_reminder(app, student_name, start, '1day')
@@ -153,10 +158,11 @@ class Command(BaseCommand):
                 if (app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1)
                         and _booked_with_notice(app, 1)):
                     _eo = emails.english_only_email(app)
-                    emails.send_interview_reminder_email(
-                        student_email, student_name=student_name, start=start,
-                        meeting_url=app.interview_meeting_url, when='1hour',
-                        english_only=_eo)
+                    if student_on:
+                        emails.send_interview_reminder_email(
+                            student_email, student_name=student_name, start=start,
+                            meeting_url=app.interview_meeting_url, when='1hour',
+                            english_only=_eo)
                     _send_wa_reminder(app, student_name, start, '1hour')
                     if reviewer_email:
                         emails.send_reviewer_interview_reminder_email(

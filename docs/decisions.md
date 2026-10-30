@@ -1,5 +1,65 @@
 # Architectural Decisions — HalaTuju
 
+## One Student communications page; the organisation may switch off only the safe emails — 2026-10-30 (student maintenance S6a, owner rulings)
+
+**Owner rulings, 2026-10-30 (all four recorded here; the last three bind Sprint 6b):**
+1. **Layout A** — one grouped list, ONE row per email (not one per language), language chips, and an editor with a tab
+   per language; it extends the reviewer panel's pattern ("What reviewers are told": switch, title, one line, last sent,
+   Edit wording).
+2. **Termination and suspension letters are DOCUMENTS ONLY.** Staff use the existing Hold and Close controls; after a
+   termination letter the file prompts "close the file?". A letter never changes a status or stops money itself.
+3. **Letter PDFs are in English or Malay** (the PDF stack cannot shape Tamil); the notice email and the screen are in
+   her language.
+4. **Only the safe emails can be switched off** — rows 4, 12, 13/14, 15, 19, 23 and 26-28 of the S6 pre-flight
+   (`application_received`, `question_reminder`, `submission_received`, `profile_complete`, `interviewer_assigned`,
+   `interview_reminders`, `award_confirmed`, `results_due`, `results_overdue`, `result_queried`). Every other email
+   shows a lock with its reason, given by the server.
+
+**Decision (S6a):** (1) **`student_email_catalogue.py` is the one list of every student email** (29 entries under six
+headings: account, applying, interview, award, results, closure) — its senders, languages, the switch or the lock
+reason, the platform flag that outranks it, how "last sent" is read, and, where the copy is a plain per-language
+dict, the wording, read from the SENDING module's own dict (no second copy; the `reviewer_system_emails` rule). A drift
+test partitions every `send_*` in `apps.scholarship.emails` into the catalogue or `NOT_STUDENT_SENDERS`, so a new
+student email cannot ship undocumented or switchable by accident. (2) **The switch: `StudentEmailSwitch`
+(organisation, key, enabled) — NO ROW MEANS ON**, nothing seeded; the S4b "revisit if" placed it on a small settings
+row, not on each language's row. **ONE gate, `may_send(application_or_org, key)`, asked at EVERY send site of a
+switchable email** (submit, confirm, the question-reminder sweep, assignment, both interview reminders — the
+student's copy only, the reviewer's still goes — `_finalise_award`, and `send_student_email` for the three results
+emails). A locked key always answers True, even if a row is written behind the API; an unknown key raises. Off sends
+nothing and stamps nothing it would not have stamped without a send. **The platform env flags outrank the row** —
+they are read at the send site first (`MAINTENANCE_REMINDERS_ENABLED`, `PROFILE_COMPLETE_EMAIL_ENABLED`,
+`STUDENT_ASSIGNMENT_EMAIL_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `CHECK2_STUDENT_QUERIES_ENABLED`,
+`BURSARY_AGREEMENT_ENABLED`), and the page says on the row when one holds an email back. (3) **The endpoint:**
+`POST admin/scholarship/organisation/student-emails/switch/ {key, enabled}`, its own class, POST only; the
+Configuration tab's fence (own organisation; a super chooses with `?org=`); writers `super` and `org_admin`; any key
+off the list, or a non-bool, is 400 `not_switchable`; `AUDIT student_email_switch_set`. The page reads `switchable` and
+`lock` from the payload and never decides them. (4) **Last sent:** the code-owned emails from `usage_events` (the
+meter names each row after its `send_*` sender; the closed notice is split by the application's status — `expired` is
+the reminder sweep, `closed` an officer); the organisation-worded family from the new `StudentEmailLog` (every attempt,
+ok or not; read back on `ok=True` only), because all three leave the meter under one source. The meter counts an
+ATTEMPT, so a failed code-owned send can read as sent. Verify-email, the claim code and Supabase sign-in cannot be
+read per organisation ("Not recorded per organisation"). (5) **The partner-access notice is LINKED to Sources, not
+copied** (its wording and switch stay on `PartnerEmailTemplate.student_assigned`).
+
+**The usage_context fixes — billing (Billing session's analysis, 2026-10-30):** S6a puts the student sends that used to
+meter to NO organisation inside `usage_context(application=…)` — the acknowledgement, the officer's request for
+information, the questions-raised and question-reminder notices, the sign invitation, award confirmed, the Vircle
+setup email and the executed-agreement notice — and **meters the three query emails, which left no usage row at all**
+(`_send_with_unsub` was a bare send; tenancy rule 6). (a) **No money moves today:** `metered_usage.tenant_shares`
+splits the month's metered platform cost by each tenant's share of org-bearing `UsageEvent` rows; there is one tenant,
+so BrightPath's share stays 100%. (b) **What it improves:** `reconcile()`'s `org_null` (316 of 9,243 October rows in
+prod) shrinks and becomes more honest, and the split will be correct the day a second tenant arrives. (c)
+**FORWARD-ONLY:** existing `usage_events` rows are never given an organisation — an invoiced month has a frozen
+reconciliation basis. No data step, no backfill command (a test pins that an old org-less row is left alone).
+Not fixed: the email-verification mail is a bare `send_mail` in `courses/views.py` (unmetered); moving it would add a
+`courses → scholarship` import at its budget (17).
+
+**Alternatives considered:** a per-language `enabled` on `StudentEmailTemplate` (switching English off but not Tamil
+is meaningless, and code-owned emails have no rows); switches decided in the page (a second copy of the rule); a
+switch on every email with a warning (owner: only the safe ones). **Revisit if:** the nudge or R1-R3 completion
+reminders should become switchable (each needs "off" to stop setting the stamp or the ladder it unlocks first), or an
+organisation wants its own wording for a code-owned email (it would join the `student_comms` family).
+
 ## Her Funds and Contract tabs: her own file, the Payments rules, the sponsor's card in her words — 2026-10-30 (student maintenance S5b)
 
 **Decision:** (1) `GET scholarship/bursary/funds/` and `.../contract/` (`views_bursary`) read HER OWN file only —

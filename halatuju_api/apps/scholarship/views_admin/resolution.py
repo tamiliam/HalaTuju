@@ -29,8 +29,10 @@ class AdminRequestInfoView(_AdminBase):
         app.info_requested_at = timezone.now()
         app.save(update_fields=['info_request_note', 'info_requested_at'])
         name = getattr(app.profile, 'name', '') if app.profile else ''
-        send_request_info_email(to_email=app.notify_email, applicant_name=name,
-                                programme_name=app.cohort.name, note=note, lang=app.locale)
+        from .. import usage as _usage
+        with _usage.usage_context(application=app):   # S6a: billed to her organisation
+            send_request_info_email(to_email=app.notify_email, applicant_name=name,
+                                    programme_name=app.cohort.name, note=note, lang=app.locale)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

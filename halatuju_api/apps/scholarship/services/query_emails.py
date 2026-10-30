@@ -6,6 +6,7 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.utils import timezone
 
+from .. import student_email_catalogue, usage as _usage
 from ..models import ScholarshipApplication
 from .queries_sla import QUERY_SLA_ACTIVE_STATUSES, query_reminder_lead_days, query_sla
 
@@ -107,9 +108,10 @@ def send_due_query_emails(now=None):
         if n_open == 0:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
-        send_query_raised_email(
-            to_email=app.notify_email, applicant_name=name,
-            programme_name=app.cohort.name, n_queries=n_open, lang=app.locale)
+        with _usage.usage_context(application=app):   # S6a: billed to her organisation
+            send_query_raised_email(
+                to_email=app.notify_email, applicant_name=name,
+                programme_name=app.cohort.name, n_queries=n_open, lang=app.locale)
         app.query_raised_notified_at = now
         app.save(update_fields=['query_raised_notified_at'])
         sent += 1
@@ -142,11 +144,16 @@ def send_query_reminders(now=None):
         # submit-anchored window (the "notified but reminder-less" bug).
         if sla['days_left'] is None or sla['days_left'] > query_reminder_lead_days(app):
             continue
+        # S6a: the organisation may switch this reminder off. Off = no send AND no stamp, so
+        # switching it back on still reaches a student whose questions are still open.
+        if not student_email_catalogue.may_send(app, 'question_reminder'):
+            continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
-        send_query_reminder_email(
-            to_email=app.notify_email, applicant_name=name,
-            programme_name=app.cohort.name, n_queries=sla['open_count'],
-            days_left=max(sla['days_left'], 0), lang=app.locale)
+        with _usage.usage_context(application=app):   # S6a: billed to her organisation
+            send_query_reminder_email(
+                to_email=app.notify_email, applicant_name=name,
+                programme_name=app.cohort.name, n_queries=sla['open_count'],
+                days_left=max(sla['days_left'], 0), lang=app.locale)
         app.query_reminder_at = now
         app.save(update_fields=['query_reminder_at'])
         sent += 1

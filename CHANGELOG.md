@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 6a — one Student communications page, and switches for the safe emails - 2026-10-30
+
+Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the design). Migration `scholarship/0189`
+(PROVISIONAL number — to be confirmed with the other sessions before deploy; MIGRATE FIRST). Not pushed.
+
+- **Organisation → Settings → Student communications now lists EVERY email a student receives** — 29, from applying
+  to closure, under six headings (her account, applying, interview, award and contract, results, closure). One row per
+  email: the switch or a padlock with the reason it always goes, when it is sent, last sent, and a chip per language
+  (owner ruling: layout A). The results emails keep their own wording, now edited in one panel with a tab per language;
+  the others show their wording read-only, straight from the code that sends it. The partner-access notice links to
+  Sources, where its wording and switch already live.
+- **The organisation may switch off the safe emails only** (owner ruling): application received, question reminder,
+  submission received / what happens next, your interviewer, interview reminders, award confirmed, and the three
+  results emails. Everything else is locked by the server (400 `not_switchable`). Off really stops the email at every
+  place it is sent and stamps nothing; a platform flag still outranks the switch and the row says so. Writers: super
+  and org_admin (`AUDIT student_email_switch_set`).
+- **New:** `student_email_catalogue.py` (the list + the one gate `may_send`), `StudentEmailSwitch` (no row = on),
+  `StudentEmailLog` (the worded family's sends), `POST …/student-emails/switch/`.
+- **Billing — forward-only:** nine student sends that metered to no organisation are now billed to hers, and the three
+  query emails, which were never metered, now are. No money moves with one tenant; no existing usage row is touched.
+- Docs: decisions.md (the four owner rulings and the S6a decision), the Guide's Scholars section, the roadmap's Sprint 6
+  split, `halatuju_api/CLAUDE.md` (and: `MAINTENANCE_REMINDERS_ENABLED` is ON in production since 2026-10-30).
+- Tests: new `test_student_email_catalogue.py` (drift partition, the owner's switchable set, wording from the senders'
+  own dicts, the gate, last sent by organisation and status) and `test_student_email_switches.py` (every door off and
+  on, the billing of the moved sends, forward-only, the endpoint's roles / refusals / verbs); `test_student_comms.py`
+  (the three results doors, the log, the flag outranking a row); `test_org_fence.py` (the new view classified). Web:
+  `StudentCommsTab.test.tsx` rewritten for the new page.
+- Bite-checked (7 faults, each turned its tests red on the expected assertion; bytes restored and verified by digest):
+  the gate always on; the switch accepting a locked key; a sender dropped from the catalogue; the interview-reminder
+  gate removed; the results gate removed; the query-email meter removed; a locked row given a switch.
+- Gates: api 10,572 passed / 3 skipped (baseline 10,534); web 5,085 / 328 suites (baseline 5,081); tsc, lint, i18n
+  (6,257 keys per locale), `next build` + first-load budget ok (median 147.495 kB of 148). Size: `sponsorship.py` 1007
+  -> 1007 and `bursary.py` 903 -> 903 (both oversize, held level); no budget raised; `courses -> scholarship` imports
+  unchanged.
+
 ## Request #50 follow-up — ready-to-assign first among the unassigned - 2026-10-30
 
 - Sorting the applications list by Assigned now puts unassigned applications that are ready to assign (questions

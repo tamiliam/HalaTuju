@@ -74,7 +74,8 @@ from .invoices import (
 )
 from .comms_templates import (
     PartnerEmailLog, PartnerEmailTemplate, SponsorEmailLog, SponsorEmailTemplate,
-    SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion, StudentEmailTemplate,
+    SponsorTermsAcceptance, SponsorTermsSection, SponsorTermsVersion, StudentEmailLog,
+    StudentEmailSwitch, StudentEmailTemplate,
 )
 from .items import (
     ITEM_STATE_CHOICES, ApplicationItem, Invitation, ProgrammeApplicationItem,

@@ -5,13 +5,18 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from django.core.mail import EmailMessage
 from .sending import _interview_unsub_headers
-from .shared import _DEFAULT_NAME, _P, logger
+from .shared import _DEFAULT_NAME, _P, _meter_email, logger
 from .student_decisions import normalise_lang
 
 
 def _send_with_unsub(*, subject, message, from_email, recipient_list):
     """`send_mail`'s plain message, keyword for keyword, plus the harmless mailto
-    List-Unsubscribe the interview mail carries (TD-130) — `send_mail` cannot take headers."""
+    List-Unsubscribe the interview mail carries (TD-130) — `send_mail` cannot take headers.
+
+    S6a (2026-10-30): METERED, like every other student send (tenancy rule 6). These three were the
+    only student emails that left no usage row at all, so they were neither billed nor visible as
+    "last sent". The meter names the row after the `send_*` caller (frame 2 = that caller)."""
+    _meter_email()
     EmailMessage(subject=subject, body=message, from_email=from_email, to=recipient_list,
                  headers=_interview_unsub_headers()).send()
 

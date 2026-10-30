@@ -452,3 +452,64 @@ class StudentEmailTemplate(models.Model):
 
     def __str__(self):
         return f'{self.kind}/{self.language} org={self.organisation_id}'
+
+
+class StudentEmailSwitch(models.Model):
+    """An organisation's on/off for ONE student email it is allowed to switch off (student
+    maintenance S6a, 2026-10-30; owner ruling: only the safe ones).
+
+    ⚠ NO ROW MEANS ON. A row exists only where the organisation has pressed the switch, so a new
+    organisation sends everything and nothing is seeded. Only a key in
+    `student_email_catalogue.SWITCHABLE` ever gets a row: the writer refuses every other key
+    (`not_switchable`), because those emails carry a credential, a decision, an offer or a clock a
+    workflow waits on. A platform env flag (e.g. `MAINTENANCE_REMINDERS_ENABLED`) OUTRANKS this row:
+    the flag is read at the send site first, so "on" here never sends what the platform holds back.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.CASCADE, related_name='student_email_switches')
+    key = models.CharField(max_length=40)
+    enabled = models.BooleanField()
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'student_email_switches'
+        ordering = ['organisation_id', 'key']
+        constraints = [
+            models.UniqueConstraint(fields=['organisation', 'key'], name='student_email_switch_org_key_uniq'),
+        ]
+
+    def __str__(self):
+        return f'{self.key} ({"on" if self.enabled else "off"}) org={self.organisation_id}'
+
+
+class StudentEmailLog(models.Model):
+    """Every attempt to send one of the ORGANISATION-WORDED student emails (`student_comms`, S6a) —
+    the "last sent" the Student communications page shows for them.
+
+    The code-owned student emails are read from `usage_events` instead (every one of them goes
+    through the meter, which names the sender); the worded family all leave the meter under ONE
+    source, `send_student_email`, so the kind needs its own record. A row is written for a FAILED
+    send too (`ok=False`) — silence must be visible — and never when nothing was attempted (a switch
+    off, no address). PROTECT on the organisation: this is an audit trail.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='student_email_log')
+    application = models.ForeignKey(
+        'ScholarshipApplication', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='student_email_log')
+    key = models.CharField(max_length=40)
+    recipient = models.CharField(max_length=254, blank=True, default='')
+    ok = models.BooleanField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'student_email_log'
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['organisation', 'key', '-sent_at'], name='student_email_log_org_key_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.key} -> app={self.application_id} ok={self.ok} @ {self.sent_at:%Y-%m-%d %H:%M}'

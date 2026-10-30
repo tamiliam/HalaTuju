@@ -188,12 +188,18 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
         record_change(profile, old_contact, application=application, by_email=to_email,
                       by_role='student')
 
-    sent = send_acknowledgement_email(
-        to_email=to_email,
-        applicant_name=getattr(profile, 'name', '') if profile else '',
-        programme_name=cohort.name,
-        lang=lang,
-    )
+    # S6a: the organisation may switch this courtesy notice off (`student_email_catalogue`), and the
+    # send is billed to the application's organisation (it used to meter org-NULL).
+    from .. import student_email_catalogue, usage as _usage
+    sent = False
+    if student_email_catalogue.may_send(application, 'application_received'):
+        with _usage.usage_context(application=application):
+            sent = send_acknowledgement_email(
+                to_email=to_email,
+                applicant_name=getattr(profile, 'name', '') if profile else '',
+                programme_name=cohort.name,
+                lang=lang,
+            )
     if sent:
         application.acknowledged_at = timezone.now()
         application.save(update_fields=['acknowledged_at'])

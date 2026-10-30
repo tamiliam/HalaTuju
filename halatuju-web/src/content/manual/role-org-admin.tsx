@@ -44,9 +44,16 @@ export const roleOrgAdmin: ManualChapter = {
         <p className="mt-2">Each student&rsquo;s results are <strong>due</strong> on a schedule counted from the day she
         was funded (two terms a year by default, due 45 days after a term ends &mdash; all set under Configuration).
         A result past its due date and the grace shows as <strong>Not submitted</strong>, and the list&rsquo;s
-        <strong> Results overdue</strong> filter finds those students. The emails students receive about their
-        results &mdash; due soon, overdue, and your query &mdash; are worded on <strong>Organisation &rarr; Settings
-        &rarr; Student communications</strong>, in English, Malay and Tamil.</p>
+        <strong> Results overdue</strong> filter finds those students.</p>
+        <p className="mt-2"><strong>Organisation &rarr; Settings &rarr; Student communications</strong> lists every
+        email a student receives from us, from applying to the end of her bursary, under headings: her account,
+        applying, interview, award and contract, results, and closure. Each row says when it is sent and when it
+        was last sent, and shows a chip for each language it goes out in. Some you may <strong>switch off</strong>
+        &mdash; the courtesy notices and reminders &mdash; and switching one off really stops it. The rest carry a
+        padlock and say why they always go: a sign-in code, a decision, an offer, an interview link, or a step her
+        application waits on. The three results emails (due soon, overdue, and your query) are your own wording:
+        <strong> Edit wording</strong> opens a tab for each of English, Malay and Tamil, and &ldquo;Use the
+        default&rdquo; brings back ours. For the others, <strong>Show wording</strong> shows what she receives.</p>
         <p className="mt-2">The file&rsquo;s <strong>Money</strong> tab shows her award, what has been paid and what
         remains &mdash; the same figures as the Payments page &mdash; with her last three payments and, for anyone
         who may open Spending, what she has spent this term by category. The <strong>Contract</strong> tab shows a

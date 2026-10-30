@@ -20,7 +20,8 @@ from django.utils import timezone
 
 from apps.scholarship import email_templates, results_expectations as rx, results_review, student_comms
 from apps.scholarship.models import (
-    ResultsExpectation, StudentActivity, StudentEmailTemplate, UsageEvent,
+    ResultsExpectation, StudentActivity, StudentEmailLog, StudentEmailSwitch, StudentEmailTemplate,
+    UsageEvent,
 )
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, record_result,
@@ -111,6 +112,53 @@ class TestTheKillSwitch(TestCase):
         exp.refresh_from_db()
         self.assertEqual((exp.reminded_at, exp.overdue_emailed_at, len(mail.outbox)), (None, None, 0))
         self.assertIsNotNone(exp.overdue_flagged_at)
+
+
+@ON
+class TestTheOrganisationSwitch(TestCase):
+    """S6a: each of the three doors, switched off by HER organisation, sends nothing, stamps nothing
+    and logs nothing; the platform flag still outranks a row that says on."""
+
+    def _off(self, app, kind):
+        StudentEmailSwitch.objects.create(organisation=app.owning_organisation, key=kind, enabled=False)
+
+    def test_results_due_off(self):
+        app, exp = _student()
+        self._off(app, 'results_due')
+        _due_in(exp, 5)
+        self.assertEqual(rx.send_due_reminders(), 0)
+        exp.refresh_from_db()
+        self.assertEqual((exp.reminded_at, len(mail.outbox), StudentEmailLog.objects.count()), (None, 0, 0))
+
+    def test_results_overdue_off_still_flags_the_file(self):
+        app, exp = _student()
+        self._off(app, 'results_overdue')
+        ResultsExpectation.objects.filter(pk=exp.pk).update(due_on=timezone.localdate() - timedelta(days=30))
+        self.assertEqual(rx.flag_overdue(), 1)
+        exp.refresh_from_db()
+        self.assertEqual((exp.overdue_emailed_at, len(mail.outbox)), (None, 0))
+        self.assertIsNotNone(exp.overdue_flagged_at)
+
+    def test_result_queried_off(self):
+        app, _exp = _student()
+        self._off(app, 'result_queried')
+        with self.captureOnCommitCallbacks(execute=True):
+            results_review.review(record_result(app, semester='S1', cgpa='3.0'), decision='queried', note='x')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_on_each_send_is_logged_for_last_sent(self):
+        app, exp = _student()
+        _due_in(exp, 5)
+        rx.send_due_reminders()
+        self.assertEqual(list(StudentEmailLog.objects.values_list('application_id', 'key', 'ok', 'recipient')),
+                         [(app.id, 'results_due', True, 'aisyah@example.test')])
+
+    @override_settings(MAINTENANCE_REMINDERS_ENABLED=False)
+    def test_the_platform_flag_outranks_a_row_that_says_on(self):
+        app, exp = _student()
+        StudentEmailSwitch.objects.create(organisation=app.owning_organisation, key='results_due', enabled=True)
+        _due_in(exp, 5)
+        self.assertEqual((rx.send_due_reminders(), len(mail.outbox)), (0, 0))
 
 
 @ON

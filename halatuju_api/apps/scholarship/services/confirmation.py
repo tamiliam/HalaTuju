@@ -67,13 +67,17 @@ def confirm_profile(application):
     # basic submission-ack when PROFILE_COMPLETE_EMAIL_ENABLED is on (avoids a double-email).
     from django.conf import settings as _settings
     from .. import usage as _usage
+    # S6a: either notice may be switched off by the organisation (`student_email_catalogue`); the
+    # platform flag still decides WHICH of the two is the one that would go.
+    from .. import student_email_catalogue as _catalogue
     with _usage.usage_context(application=application):
         if getattr(_settings, 'PROFILE_COMPLETE_EMAIL_ENABLED', False):
             from ..emails import english_only_email, send_profile_complete_student_email
-            send_profile_complete_student_email(
-                application.notify_email, student_name=name,
-                english_only=english_only_email(application))
-        else:
+            if _catalogue.may_send(application, 'profile_complete'):
+                send_profile_complete_student_email(
+                    application.notify_email, student_name=name,
+                    english_only=english_only_email(application))
+        elif _catalogue.may_send(application, 'submission_received'):
             send_submission_received_email(
                 to_email=application.notify_email, applicant_name=name,
                 programme_name=application.cohort.name, lang=application.locale)

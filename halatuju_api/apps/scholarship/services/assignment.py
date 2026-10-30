@@ -298,7 +298,9 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     # opted out (ReviewerProfile.share_phone_with_students). Best-effort; never blocks assignment.
     if reviewer is not None:
         from django.conf import settings as _settings
-        if getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False):
+        from .. import student_email_catalogue as _catalogue   # S6a: the organisation's own switch
+        if (getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False)
+                and _catalogue.may_send(application, 'interviewer_assigned')):
             from ..emails import english_only_email, send_student_assigned_reviewer_email
             profile = application.profile
             student_email = (application.notify_email

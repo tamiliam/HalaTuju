@@ -61,8 +61,10 @@ class Command(BaseCommand):
             if held_for_parent_call(app, held, what='Sign invitation'):
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
-            ok = send_sign_invitation_email(
-                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
+            from apps.scholarship import usage as _usage
+            with _usage.usage_context(application=app):   # S6a: billed to her organisation
+                ok = send_sign_invitation_email(
+                    to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
             if ok:
                 # Offer-lapse rework: sending the invitation ARMS the student's accept clock
                 # (now + SIGN_ACCEPT_DEADLINE_DAYS). Only on a successful send — an unsent

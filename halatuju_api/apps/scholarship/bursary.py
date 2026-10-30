@@ -729,14 +729,14 @@ def send_vircle_setup_at_execution(application):
     if (getattr(application, 'vircle_id', '') or '').strip():
         return   # already paying through Vircle (grandfather, confirmed) — nothing to set up
     try:
-        from . import emails
-        name = _applicant_name(application)
-        lang = getattr(application, 'locale', 'en') or 'en'
+        from . import branding as _branding, emails, usage
+        name, lang = _applicant_name(application), getattr(application, 'locale', 'en') or 'en'
         to = (getattr(application, 'notify_email', '') or ''
               or getattr(getattr(application, 'profile', None), 'contact_email', '') or '')
-        from . import branding as _branding
-        if emails.send_vircle_install_email(to, name, lang=lang,
-                                            branding=_branding.for_application(application)):
+        with usage.usage_context(application=application):   # S6a: billed to her organisation
+            sent = emails.send_vircle_install_email(to, name, lang=lang,
+                                                    branding=_branding.for_application(application))
+        if sent:
             vircle.raise_setup_task(application)
     except Exception:
         logger.exception('bursary: execution-time Vircle setup failed (app %s)',
@@ -768,17 +768,17 @@ def distribute_executed_agreement(agreement):
     if agreement.executed_pdf_emailed_at is None:
         student_ok = False
         try:
-            from . import emails
+            from . import emails, usage
             profile = getattr(application, 'profile', None)
-            name = _applicant_name(application)
+            name, lang = _applicant_name(application), getattr(application, 'locale', 'en') or 'en'
             cp = getattr(application, 'chosen_programme', None) or {}
             programme = cp.get('course_name', '') if isinstance(cp, dict) else ''
-            lang = getattr(application, 'locale', 'en') or 'en'
             student_to = (getattr(application, 'notify_email', '') or ''
                           or getattr(profile, 'contact_email', '') or '')
-            student_ok = emails.send_agreement_executed_email(
-                student_to, name, programme, lang=lang,
-                link=_student_app_link(application), pdf=pdf_bytes)
+            with usage.usage_context(application=application):   # S6a: billed to her organisation
+                student_ok = emails.send_agreement_executed_email(
+                    student_to, name, programme, lang=lang,
+                    link=_student_app_link(application), pdf=pdf_bytes)
             # Witnessing partner contact: the recorded witness org (who actually attested), else
             # the resolved witness (override -> the application's source -> none) for the copy.
             org = agreement.witness_org or _resolve_witness_org(application)

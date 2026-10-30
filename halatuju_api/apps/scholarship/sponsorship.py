@@ -16,7 +16,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from . import branding as _branding
-from . import money
+from . import money, student_email_catalogue as _catalogue
 from . import pool
 from .results_review import accepted_count
 from . import usage as _usage
@@ -870,10 +870,10 @@ def _finalise_award(application, locale='en'):
         fields.append('active_at')
     application.save(update_fields=fields)
     name = getattr(application.profile, 'name', '') if application.profile else ''
-    send_award_confirmed_email(
-        to_email=application.notify_email, applicant_name=name,
-        programme_name=application.cohort.name, lang=locale,
-    )
+    if _catalogue.may_send(application, 'award_confirmed'):   # S6a: switchable; billed to her org
+        with _usage.usage_context(application=application):
+            send_award_confirmed_email(to_email=application.notify_email, applicant_name=name,
+                                       programme_name=application.cohort.name, lang=locale)
 
 
 def hold_pending_award(application):

@@ -1193,13 +1193,20 @@ S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarshi
 `docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT (roadmap) = Sprint 6: letters (PDF, email,
 acknowledge, typed confirm for discipline/termination; each logs activity) plus the remaining student email
 templates in the `StudentEmailTemplate` family.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
-- ⚠ **OWNER-PARKED (2026-10-30), "park this for the near future": ONE Student communications page covering ALL
-  student emails** — grouped under headings, on/off toggles only where it is safe to silence a mail, and a compact
-  three-language layout (today's tab lists every kind × en/ms/ta as rows). **Brainstorm options with the owner
-  BEFORE designing**; do not fold it into S6 unasked.
-- ⚠ **OWNER PENDING (S4b):** create the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and
-  `results-due-reminders` (08:30 MYT) — the System health light expects both; `MAINTENANCE_REMINDERS_ENABLED`
-  stays OFF until the owner has read the en/ms/ta wording on Organisation → Settings → Student communications.
+- **Sprint 6 is SPLIT (owner, 2026-10-30): 6a = ONE Student communications page for every student email + the
+  organisation's switches (BUILT on branch `maint-s6`, committed, NOT pushed; migration `scholarship/0189`, number
+  PROVISIONAL until the lead confirms it with the other sessions); 6b = letters, NOT started — the lead takes the
+  letters design to the owner first.** Owner rulings in decisions.md 2026-10-30: layout A; termination/suspension
+  letters are documents only (staff use Hold and Close; the file then prompts "close the file?"); letter PDFs in
+  English or Malay, the notice email and screen in her language; only the safe emails switch off.
+- Student comms (S6a): `student_email_catalogue.py` lists all 29 (drift test over every `send_*` in `emails/`);
+  `may_send(application, key)` is THE gate at every send site of the 10 switchable emails — no row means on, a locked
+  key always sends, the env flags outrank the row. `StudentEmailSwitch` (no seed) + `StudentEmailLog` (the worded
+  family's last sent; code-owned last sent reads `usage_events`). ⚠ **MIGRATE FIRST** — the submit's acknowledgement
+  reads `student_email_switches`. The usage_context fixes are FORWARD-ONLY: never backfill `usage_events`.
+- `MAINTENANCE_REMINDERS_ENABLED` is **ON in production** (api env, since 2026-10-30): the results emails are live.
+  ⚠ **OWNER PENDING (S4b):** the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and `results-due-reminders`
+  (08:30 MYT) — the System health light expects both.
 - ONE predicate, `maintenance_scope.py`; the MONEY hold is separate (`maintenance.is_on_hold`), needs
   `payments.may_prepare` to place or lift (403 `hold_needs_payments`).
 - Admin: `/admin/scholars` (+ `/<id>`) by the Applications rule; the sub-state + post-award Close live in the file

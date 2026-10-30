@@ -12,8 +12,10 @@ that edits a letter (Organisation → Settings → Student communications) gets 
 applies again. Nothing is seeded: a schema-only migration, and a new organisation needs no data step
 to start with sound wording (decisions.md, S4b).
 
-⚠ THE KILL SWITCH. ``settings.MAINTENANCE_REMINDERS_ENABLED`` (env, default OFF) takes ALL THREE dark
-— the reminders, the overdue notice AND the queried notice — until the owner has read the wording.
+⚠ THE KILL SWITCH. ``settings.MAINTENANCE_REMINDERS_ENABLED`` (env, default OFF; ON in production since
+2026-10-30) takes ALL THREE dark — the reminders, the overdue notice AND the queried notice. Under it,
+an organisation may switch any of the three off for its own students (S6a,
+``student_email_catalogue.may_send``); the platform flag always wins.
 The student still sees an officer's query on her My Bursary page either way.
 
 Rendering is the shared engine (``email_templates.render``), sent through ``emails.sending._send_html``
@@ -175,11 +177,15 @@ def reset(organisation, kind, lang):
 
 def send_student_email(application, kind, **values):
     """Render `kind` for this student in her language and send it. Returns True when sent; False
-    when the switch is off, she has no address, or the send failed (logged by the sender).
+    when a switch is off (the platform's `MAINTENANCE_REMINDERS_ENABLED` first, then the
+    organisation's own — S6a), she has no address, or the send failed (logged by the sender).
+    Every ATTEMPT leaves a `StudentEmailLog` row (the page's "last sent"); a switched-off or
+    address-less one leaves none, because nothing was attempted.
 
     ⚠ The name starts `send_` on purpose: the meter (`emails.shared._meter_email`) names the row
     after the nearest `send_*` caller."""
-    if not enabled():
+    from . import student_email_catalogue
+    if not enabled() or not student_email_catalogue.may_send(application, kind):
         return False
     to = (application.notify_email or '').strip()
     if not to:
@@ -197,8 +203,13 @@ def send_student_email(application, kind, **values):
                **{k: _value(v, lang) for k, v in values.items()}}
     out_subject, text, html = email_templates.render(subject, body, scalars, {})
     with usage.usage_context(application=application):
-        return _send_html(to, out_subject, text, _html_email_shell(html),
-                          from_email=b.email_from, reply_to=[b.email_reply_to])
+        ok = _send_html(to, out_subject, text, _html_email_shell(html),
+                        from_email=b.email_from, reply_to=[b.email_reply_to])
+    if application.owning_organisation_id:
+        from .models import StudentEmailLog
+        StudentEmailLog.objects.create(organisation_id=application.owning_organisation_id,
+                                       application=application, key=kind, recipient=to[:254], ok=bool(ok))
+    return ok
 
 
 def _value(value, lang):

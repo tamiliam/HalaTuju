@@ -122,6 +122,13 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
 6. **Student email templates + letters** (~38 files, migration). Template family + Student
    communications tab; S4 reminders + closed email moved in; letters with PDF, email, acknowledge,
    typed confirm for discipline/termination; each letter logs activity. **Adversarial review.**
+   **Split (owner, 2026-10-30):** **6a** — ONE Student communications page for EVERY student email (the owner's
+   2026-10-30 ask; layout A: headings, one row per email, language chips, an editor with a tab per language),
+   `student_email_catalogue.py` + drift test, the organisation's switch for the 10 safe emails only
+   (`StudentEmailSwitch`, `may_send` at every send site), `StudentEmailLog`, last sent, and the usage_context fixes
+   (forward-only) — migration 0189 (provisional number). **6b** — letters (`LetterTemplate` / `Letter`), after the owner
+   approves the design; rulings already made: letters are documents only, PDFs in English or Malay. The post-award
+   `file_closed` email moves to 6b with the close-out letter (a funded student's close sends nothing today).
 7. **Mentors (records)** (~30 files, migration). Registry `/admin/organisation/mentors`; assign + log
    sessions on the file; student Mentoring tab (read-only); filter by "wants a mentor".
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
