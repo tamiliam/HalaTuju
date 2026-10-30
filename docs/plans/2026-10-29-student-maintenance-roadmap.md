@@ -127,7 +127,9 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    `student_email_catalogue.py` + drift test, the organisation's switch for the 9 safe emails only (award confirmed locked after review)
    (`StudentEmailSwitch`, `may_send` at every send site), `StudentEmailLog`, last sent, and the usage_context fixes
    (forward-only) — migration 0189 (provisional number). **6b** — letters (`LetterTemplate` / `Letter`), after the owner
-   approves the design; rulings already made: letters are documents only, PDFs in English or Malay. The post-award
+   approves the design; rulings already made: letters are documents only, PDFs in English or Malay.
+   **6a LIVE 2026-10-30** (`a1c9f85b` + `002c6ad7`, api-01209-74s; retro `retrospective-2026-10-30-maintenance-s6a.md`).
+   **NEXT = 6b**, once the owner approves the three letters screens. The post-award
    `file_closed` email moves to 6b with the close-out letter (a funded student's close sends nothing today).
 7. **Mentors (records)** (~30 files, migration). Registry `/admin/organisation/mentors`; assign + log
    sessions on the file; student Mentoring tab (read-only); filter by "wants a mentor".

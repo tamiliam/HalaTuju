@@ -6936,3 +6936,25 @@ have the API serve the id — `_serialize` already builds the analyses list and 
 `closing_report` — and delete the web rule entirely. The drift test then becomes unnecessary rather than
 load-bearing. Cheap; not done this sprint because the panel move was a live-defect fix and the payload
 change wants its own gate. *(B · S)*
+
+### [TD-427] The first-load median has 0.5 kB of headroom and no route left with slack - medium
+
+**Raised 2026-10-30 by the maintenance S6a close.** `npm run bundle-budget` reads the median first-load JS at
+147.493 kB against the 148 kB budget, and says 0 routes may cross before the median does — "the next one takes the
+median with it". S6a added nothing to a student route (its words are in the admin slice), so this is the state the
+tree reached, not this sprint's cost; but the NEXT feature on any route near the median (6b's student Letters tab
+among them) fails the gate on its first build, and the tempting fix — raising the line — is the one the budget
+exists to refuse. **Fix:** before 6b, find the weight to give back (the TD-416 method: estimate gz(A) + gz(B) −
+gz(A ∪ B) before any split; move words a route never shows into the slice of the route that does), and give 6b's
+student strings their own place in the `bursary` slice, which only `/scholarship/bursary` loads. *(B · S)*
+
+### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low
+
+**Raised 2026-10-30 by the maintenance S6a inventory.** `courses/views.py` `SendVerificationView` sends with
+Django's `send_mail`, so it never passes `emails.shared._meter_email` — no `usage_events` row, nothing billed to
+anyone, and the Student communications page can only say "Not recorded per organisation" for it. Tenancy rule 6
+says every email goes through the metered seam. S6a did not move it because routing it through
+`apps.scholarship.emails` adds a `courses -> scholarship` import and that budget is full (17). **Fix:** send it the
+way `profile_claim.send_claim_code_email` does (the existing lazy `_scholarship('emails')` door, which already counts
+in the budget), named `send_*` so the meter tags it; forward-only like every S6a billing fix, no backfill.
+*(B · S)*

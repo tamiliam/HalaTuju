@@ -1716,3 +1716,12 @@ is prefetched — weight moved off a route's first load can still travel in the 
   the build read only the description and the analysis, and the gap surfaced only when the hours call echoed
   the thread back. **Rule:** before building a request, read every shared comment (the admin request detail
   API returns them); a query against the wrong comments column failing is not "no comments". (Request, 2026-10-30)
+- **Whether an email may be switched off is decided by what its TEXT asks the student to do — and by what any OTHER
+  email promises about it — not only by what its code stamps.** (Student maintenance S6a, 2026-10-30.) The pre-flight
+  sorted the student emails by their code: anything whose send set a stamp, armed a clock or created a task was
+  locked; the rest were "courtesy". "Award confirmed" stamps nothing, so it was made switchable — and on the live path
+  it carries the onboarding link she follows next; the owner locked it after review. The same review found the
+  "profile complete" email promising "a reminder before the call" while the interview reminder had just become
+  switchable. **Rule:** before an email becomes switchable, read its body in every language and ask (a) does it hand
+  her a link, a code, a date or an instruction she needs, and (b) does any other email or screen promise that this
+  one will arrive? Either answer "yes" locks it, or the promise is reworded in the same change.

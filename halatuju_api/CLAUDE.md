@@ -1186,19 +1186,18 @@ git-pruned, no junctions, three harmless files).
 
 ---
 
-**Student maintenance Sprints 1–5 are ALL LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+**Student maintenance Sprints 1–6a are ALL LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
 S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188`, S5a `cebc9850`, S5b
-`2b62a6f8` (api 01202-bvg, no migration); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` …
-`-s4a.md`, `retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`, `-s5b.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT (roadmap) = Sprint 6: letters (PDF, email,
-acknowledge, typed confirm for discipline/termination; each logs activity) plus the remaining student email
-templates in the `StudentEmailTemplate` family.** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
-- **Sprint 6 is SPLIT (owner, 2026-10-30): 6a = ONE Student communications page for every student email + the
-  organisation's switches (BUILT on branch `maint-s6`, committed, NOT pushed; migration `scholarship/0189`, number
-  PROVISIONAL until the lead confirms it with the other sessions); 6b = letters, NOT started — the lead takes the
-  letters design to the owner first.** Owner rulings in decisions.md 2026-10-30: layout A; termination/suspension
-  letters are documents only (staff use Hold and Close; the file then prompts "close the file?"); letter PDFs in
-  English or Malay, the notice email and screen in her language; only the safe emails switch off.
+`2b62a6f8`, S6a `a1c9f85b` + review `002c6ad7` + `scholarship/0189` (api-01209-74s, 2026-10-30 ~08:20 UTC; 0189
+applied by hand first, recorded — never re-apply that DDL); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` …
+`-s4a.md`, `retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`, `-s5b.md`, `-s6a.md`; roadmap
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). NEXT (roadmap) = Sprint 6b: LETTERS — NOT started; it needs
+an owner-approved DESIGN first (the Letters tab on the scholar file, the student's Letters tab, the Letters heading
+on Student communications).** Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+- **6b rulings already made (owner, 2026-10-30, decisions.md):** termination/suspension letters are DOCUMENTS ONLY
+  (staff use Hold and Close; after a termination letter the file prompts "close the file?"); letter PDFs in English
+  or Malay (the PDF stack cannot shape Tamil), the notice email and screen in her language. A funded student's close
+  sends NO email today; the `file_closed` notice belongs with 6b's close-out letter.
 - Student comms (S6a): `student_email_catalogue.py` lists all 29 (drift test over every `send_*` in `emails/`);
   `may_send(application, key)` is THE gate at every send site of the 9 switchable emails (award confirmed is LOCKED,
   owner 2026-10-30) — best-effort (a failed read SENDS); no row means on, a locked

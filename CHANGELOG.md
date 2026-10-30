@@ -4,8 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Student maintenance Sprint 6a — one Student communications page, and switches for the safe emails - 2026-10-30
 
-Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the design). Migration `scholarship/0189`
-(PROVISIONAL number — to be confirmed with the other sessions before deploy; MIGRATE FIRST). Not pushed.
+Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the design). Migration `scholarship/0189`,
+applied by hand first. **LIVE 2026-10-30 ~08:20 UTC: main `002c6ad7`, api-01209-74s.** Retro
+`docs/retrospectives/retrospective-2026-10-30-maintenance-s6a.md`; TD-427 (bundle headroom) and TD-428 (unmetered
+email verification) raised at the close; one lesson.
 
 - **Organisation → Settings → Student communications now lists EVERY email a student receives** — 29, from applying
   to closure, under six headings (her account, applying, interview, award and contract, results, closure). One row per
