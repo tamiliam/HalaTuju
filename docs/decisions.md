@@ -14,9 +14,11 @@ never a gate -> `no_disability` false. **Owner, 2026-10-30: a page with no disab
 false** (26 IKBN courses), as F1 read the same pages for its new rows. A blanket "Tidak menerima sebarang OKU"
 would keep it (no held page has one). (4) **Remarks (review M2):** the held rows had empty remarks, so an OKU
 student would see the course with no note. An empty held remark takes the text F1 builds for a new row (age,
-health, the qualified OKU line, reading/writing: owner ruled these TEXT); campuses that word it differently get
-only the parts common to all of them (6 courses: "Umur 17-35 tahun. Sihat tubuh badan.", their variants listed
-in `remark_variants`); a non-empty held remark is never touched. The engine never reads `remarks`.
+health, the qualified OKU line, reading/writing: owner ruled these TEXT); campuses that word only that OKU line differently
+keep it in the wording MOST of their campuses use (a tie: the wording most read pages of all held courses use)
+so every OKU student sees the note (lead, 2026-10-30; 6 courses: IJTM-CET-004 / -015 / -017 / -019,
+IJTM-DIP-017 / -032; the other wordings are listed in `remark_variants`); any other difference would keep only
+the parts common to all campuses; a non-empty held remark is never touched. The engine never reads `remarks`.
 **The conflict rule** (req_malaysian, no_disability). A course's campuses are prod's (course, institution)
 PAIRS plus F1's new links (never a hyperlink's June id_kursus). Every linked campus page agrees -> that value;
 they disagree -> NO change and the course is listed in `conflicts` for the owner (none today). A page
@@ -30,7 +32,7 @@ applied by `fix_held_tvet_flags` with compare-and-set on the file's `old` over a
 read-only check first; 0 rows on 2026-10-30 before the colour and remark amendment); `--reverse --apply` is
 the rollback. The repo fixture mirrors prod after the fix; the golden master was re-baselined on purpose
 (5,319 -> 5,293 over the original catalogue; the 305 non-held rows identical).
-**Revisit if:** the owner rules on a `not_applied` field or wants the full OKU wording on the 6 courses, or a
+**Revisit if:** the owner rules on a `not_applied` field or prefers another OKU wording on the 6 courses, or a
 later UP_TVET re-scrape changes a held course's page (rebuild the file against the new source; the command's
 `old` check catches drift).
 

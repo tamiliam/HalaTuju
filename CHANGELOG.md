@@ -17,7 +17,8 @@ and review M2, decisions.md). Nothing else changes.
   disagreements IJTM-CET-004 / -015, IKBN-CET-003 / -005 are true); `no_disability` 63 true -> false (37 carry
   only the qualified "menyukarkan kerja amali" line, 26 IKBN courses carry no disability wording; owner);
   `remarks` 63 empty -> F1's text (57 the same on every page; 6 whose campuses word the OKU line differently
-  get the common part "Umur 17-35 tahun. Sihat tubuh badan.", listed in `remark_variants`). 208 field writes,
+  keep the line in the wording most of their campuses use, ties to the wording most used across all held
+  pages; the other wordings are listed in `remark_variants`). 208 field writes,
   0 conflicts. 20 held courses have no October page and are unchanged; 92 other differences
   (`three_m_only` 50, `complex_requirements` 12, `min_pass` 8 ...) are listed in `not_applied` only.
 - **`fix_held_tvet_flags`**: dry run by default; `--apply` = ONE transaction, only the four columns, only the

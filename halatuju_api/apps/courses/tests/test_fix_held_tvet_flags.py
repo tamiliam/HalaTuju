@@ -91,11 +91,22 @@ class TestFixFile:
             if len(texts) == 1:
                 assert course['new']['remarks'] == texts.pop() and course['course_id'] not in variants
             else:
+                # The campuses differ only in how they word the qualified OKU line: the course keeps the
+                # line (every OKU student sees the note), in the wording most of its campuses use.
                 used = variants[course['course_id']]['used']
-                assert course['new']['remarks'] == used
-                assert all(part in text for text in texts for part in used.rstrip('.').split('. ') if part)
-        assert fix['counts']['remarks'] == {'set_same_on_every_page': 57, 'set_common_parts': 6, 'left_empty': 0,
-                                            'held_not_empty': 0}
+                assert course['new']['remarks'] == used and used in texts and 'menyukarkan' in used
+                counts = [sum(p['remarks'] == t for p in course['campuses']) for t in texts]
+                assert sum(p['remarks'] == used for p in course['campuses']) == max(counts)
+        assert sorted(variants) == ['IJTM-CET-004', 'IJTM-CET-015', 'IJTM-CET-017', 'IJTM-CET-019',
+                                    'IJTM-DIP-017', 'IJTM-DIP-032']
+        assert fix['counts']['remarks'] == {'set_same_on_every_page': 57, 'set_most_common_oku_wording': 6,
+                                            'set_common_parts': 0, 'left_empty': 0, 'held_not_empty': 0}
+
+    def test_a_tie_takes_the_wording_most_used_across_all_held_pages(self):
+        by_id = {v['course_id']: v for v in _fix()['remark_variants']}
+        for cid in ('IJTM-DIP-017', 'IJTM-DIP-032'):     # one page each way
+            assert 'mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali' in by_id[cid]['used']
+            assert '21 read pages of all held courses' in by_id[cid]['why']
 
     def test_the_counts(self):
         per_flag = _fix()['counts']['per_flag']
@@ -135,7 +146,7 @@ class TestCommand:
         out = _run('--file', str(FIX))
         assert 'DRY RUN' in out and '208 field change(s) on 63 course(s)' in out
         assert 'IJTM-CET-004 req_malaysian: False -> True' in out
-        assert "IJTM-CET-004 remarks: '' -> 'Umur 17-35 tahun. Sihat tubuh badan.'" in out
+        assert "IJTM-CET-004 remarks: '' -> 'Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan" in out
         assert _snapshot() == before
 
     def test_apply_changes_exactly_the_listed_flags(self, prod_before):

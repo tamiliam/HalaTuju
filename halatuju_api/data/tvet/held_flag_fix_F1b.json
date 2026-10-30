@@ -44,7 +44,8 @@
   },
   "remarks": {
    "set_same_on_every_page": 57,
-   "set_common_parts": 6,
+   "set_most_common_oku_wording": 6,
+   "set_common_parts": 0,
    "left_empty": 0,
    "held_not_empty": 0
   }
@@ -116,12 +117,12 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (8) sets req_malaysian (wording: each campus's evidence)",
     "no_disability": "every linked page (8) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 8 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 6 of 8 linked pages (76 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -1268,13 +1269,13 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (14) sets req_malaysian (wording: each campus's evidence)",
     "no_colorblind": "12 of 14 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
     "no_disability": "every linked page (14) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 14 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 12 of 14 linked pages (76 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -1817,13 +1818,13 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (4) sets req_malaysian (wording: each campus's evidence)",
     "no_colorblind": "4 of 4 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
     "no_disability": "every linked page (4) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 4 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 3 of 4 linked pages (76 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -2017,13 +2018,13 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (7) sets req_malaysian (wording: each campus's evidence)",
     "no_colorblind": "7 of 7 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
     "no_disability": "every linked page (7) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 7 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 6 of 7 linked pages (76 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -3714,12 +3715,12 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
     "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 2 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 1 of 2 linked pages (21 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -3894,12 +3895,12 @@
     "req_malaysian": true,
     "no_colorblind": true,
     "no_disability": false,
-    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
     "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
-    "remarks": "common to all 2 linked pages (their texts differ)"
+    "remarks": "most common wording of the qualified OKU line: 1 of 2 linked pages (21 read pages of all held courses); the others are listed in remark_variants"
    },
    "campuses": [
     {
@@ -5766,8 +5767,8 @@
  "remark_variants": [
   {
    "course_id": "IJTM-CET-004",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 8 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 6 of 8 linked pages (76 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "7165",
@@ -5805,8 +5806,8 @@
   },
   {
    "course_id": "IJTM-CET-015",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 14 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 12 of 14 linked pages (76 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "36779",
@@ -5868,8 +5869,8 @@
   },
   {
    "course_id": "IJTM-CET-017",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 4 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 3 of 4 linked pages (76 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "45646",
@@ -5891,8 +5892,8 @@
   },
   {
    "course_id": "IJTM-CET-019",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 7 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 6 of 7 linked pages (76 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "34004",
@@ -5926,8 +5927,8 @@
   },
   {
    "course_id": "IJTM-DIP-017",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 2 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 1 of 2 linked pages (21 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "35147",
@@ -5941,8 +5942,8 @@
   },
   {
    "course_id": "IJTM-DIP-032",
-   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
-   "why": "common to all 2 linked pages (their texts differ)",
+   "used": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
+   "why": "most common wording of the qualified OKU line: 1 of 2 linked pages (21 read pages of all held courses); the others are listed in remark_variants",
    "pages": [
     {
      "id_kursus": "47351",

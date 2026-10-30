@@ -13,8 +13,9 @@ rulings (2026-10-29/30, decisions.md "Bumi F1b"), for these four fields ONLY:
                   (owner, 2026-10-30); a blanket "Tidak menerima sebarang OKU" would keep it
   remarks         an EMPTY held remark takes the text F1 builds for a new row (`tvet_syarat`: age, health,
                   the qualified OKU line ...), so an OKU student sees the note (review M2). Text only: the
-                  engine never reads it. Campuses that give different text -> the parts common to all of
-                  them (or nothing), listed in `remark_variants`. A non-empty held remark is never touched.
+                  engine never reads it. Campuses that word only the qualified OKU line differently -> the
+                  wording most of them use (tie: the most used across all held pages); other differences
+                  -> the parts common to all (or nothing); both listed in `remark_variants`. A non-empty held remark is never touched.
 
 `build_flag_fix(...)` is PURE (a test rebuilds the committed `data/tvet/held_flag_fix_F1b.json` from the
 committed `uptvet_F1_source.json`, the frozen read of the page cache). Each page is re-parsed with the F1
@@ -120,8 +121,14 @@ def _basis(flag, value, campuses):
         else f'no linked page ({n}) sets {flag}'
 
 
-def _remark(held, campuses, unreadable, counts):
-    """(remark to write, why). Only an EMPTY held remark is filled; the text is F1's own for a new row."""
+_OKU_LINE = re.compile(r'tidak mempunyai (ketidakupayaan|kurang upaya).*(menyukarkan|amali)', re.I)
+
+
+def _remark(held, campuses, unreadable, counts, oku_wordings):
+    """(remark to write, why). Only an EMPTY held remark is filled; the text is F1's own for a new row.
+    Campuses that differ ONLY in how they word the qualified OKU line get the page text with the wording
+    most of THIS course's campuses use (a tie: the wording most read pages of all held courses use;
+    then the text, for a fixed order), so every OKU student sees the note (lead, 2026-10-30)."""
     if held:
         counts['held_not_empty'] += 1
         return held, 'held remark not empty: never touched'
@@ -134,6 +141,17 @@ def _remark(held, campuses, unreadable, counts):
         counts['set_same_on_every_page' if text else 'left_empty'] += 1
         return text, f'every linked page ({len(campuses)}) gives this text'
     parts = [part for part in campuses[0]['_remark_parts'] if all(part in p['_remark_parts'] for p in campuses)]
+    lines = [[part for part in p['_remark_parts'] if part not in parts] for p in campuses]
+    if all(len(x) == 1 and _OKU_LINE.search(x[0]) for x in lines):
+        here = {}
+        for x in lines:
+            here[x[0]] = here.get(x[0], 0) + 1
+        chosen = max(here, key=lambda w: (here[w], oku_wordings.get(w, 0), w))
+        text = next(p['remarks'] for p, x in zip(campuses, lines) if x[0] == chosen)
+        counts['set_most_common_oku_wording'] += 1
+        return text, (f'most common wording of the qualified OKU line: {here[chosen]} of {len(campuses)} linked '
+                      f'pages ({oku_wordings.get(chosen, 0)} read pages of all held courses); the others are '
+                      'listed in remark_variants')
     if not parts:
         counts['left_empty'] += 1
         return '', 'left empty: the linked pages share no remark text'
@@ -176,7 +194,14 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
         })
     courses, conflicts, not_applied, no_page, remark_variants = [], [], [], [], []
     counts = {flag: {'false_to_true': 0, 'true_to_false': 0, 'unchanged': 0, 'conflict': 0} for flag in FLAGS}
-    remark_counts = {'set_same_on_every_page': 0, 'set_common_parts': 0, 'left_empty': 0, 'held_not_empty': 0}
+    remark_counts = {'set_same_on_every_page': 0, 'set_most_common_oku_wording': 0, 'set_common_parts': 0,
+                     'left_empty': 0, 'held_not_empty': 0}
+    oku_wordings = {}
+    for cid_pages in pages.values():
+        for p in cid_pages:
+            for part in p['_remark_parts']:
+                if _OKU_LINE.search(part):
+                    oku_wordings[part] = oku_wordings.get(part, 0) + 1
     linked_courses = sorted({cid for cid, _ in pairs})
     for cid in linked_courses:
         held = held_courses.get(cid, {})
@@ -209,8 +234,8 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
             new[flag] = values.pop()
             key = 'unchanged' if new[flag] == old[flag] else 'false_to_true' if new[flag] else 'true_to_false'
             counts[flag][key] += 1
-        new['remarks'], remark_basis = _remark(old['remarks'], campuses, unreadable, remark_counts)
-        if remark_basis.startswith(('common', 'left empty')):
+        new['remarks'], remark_basis = _remark(old['remarks'], campuses, unreadable, remark_counts, oku_wordings)
+        if remark_basis.startswith(('most common', 'common', 'left empty')):
             remark_variants.append({'course_id': cid, 'used': new['remarks'], 'why': remark_basis,
                                     'pages': [{'id_kursus': p['id_kursus'], 'remarks': p['remarks']}
                                               for p in campuses]})
