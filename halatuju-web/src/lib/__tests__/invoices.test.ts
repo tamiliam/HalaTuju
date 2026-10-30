@@ -1,6 +1,6 @@
 import {
   canDeclarePayment, canRecordPayment, canSend, canVoid, dayFirstFromIso, defaultIssueDate,
-  formatDay, isoFromDayFirst, issuableMonths, issueDateProblem, issueMode,
+  formatDay, isoFromDayFirst, issuableMonths, monthOptions, issueDateProblem, issueMode,
   lastRejectedDeclaration, lineRequest, openDeclaration,
   orderedInvoices, settingsHref, shiftMonth, splitSignedMoney,
   orderedProblems, splitEmails, statusChip, todayIso,
@@ -407,5 +407,45 @@ describe('splitSignedMoney', () => {
     expect(splitSignedMoney('')).toEqual({ negative: false, magnitude: '' })
     expect(splitSignedMoney(null)).toEqual({ negative: false, magnitude: '' })
     expect(splitSignedMoney('abc')).toEqual({ negative: false, magnitude: 'abc' })
+  })
+})
+
+describe('the month picker offers only months that could be billed', () => {
+  /** The owner, 2026-10-30, reading the live screen: *"I see month that is selected moves up the
+   *  list. Perhaps it shouldn't?"* and *"We didn't plan to issue invoice for the months prior to
+   *  July 26. There is no reason for them to remain in the drop down list?"* Both were right. */
+
+  it('stops at the first month the LEDGER holds, not twelve months back', () => {
+    // Before: a generated range that reached December 2025, every month of which would have
+    // refused with `no_costs`. The floor is served, so it cannot drift from the ledger.
+    expect(issuableMonths('2026-10-30', 12, '2026-07')).toEqual(
+      ['2026-09', '2026-08', '2026-07'])
+  })
+
+  it('keeps the old window when the ledger is empty, rather than offering nothing', () => {
+    // ⚠ An empty ledger must not read as "no months at all" — there is nothing to bill either
+    // way, and a picker with no options looks broken rather than idle.
+    expect(issuableMonths('2026-10-30', 3, null)).toEqual(['2026-09', '2026-08', '2026-07'])
+    expect(issuableMonths('2026-10-30', 3, undefined)).toEqual(['2026-09', '2026-08', '2026-07'])
+  })
+
+  it('does NOT hoist the chosen month to the top', () => {
+    // The bug: `[month, ...issuableMonths()]` put July above September, so the list reordered
+    // itself the moment you picked something.
+    expect(monthOptions('2026-10-30', '2026-07', '2026-07')).toEqual(
+      ['2026-09', '2026-08', '2026-07'])
+  })
+
+  it('still INCLUDES a chosen month that predates the window', () => {
+    // It has to be present or the select shows a different month from the cards below it —
+    // which is why it was prepended in the first place. Present, and in date order.
+    expect(monthOptions('2026-10-30', '2026-05', '2026-07')).toEqual(
+      ['2026-09', '2026-08', '2026-07', '2026-05'])
+  })
+
+  it('never lists the same month twice', () => {
+    const out = monthOptions('2026-10-30', '2026-08', '2026-07')
+    expect(out).toEqual([...new Set(out)])
+    expect(out).toEqual(['2026-09', '2026-08', '2026-07'])
   })
 })

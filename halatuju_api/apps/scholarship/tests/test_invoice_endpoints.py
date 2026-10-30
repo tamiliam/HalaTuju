@@ -214,6 +214,30 @@ class TestWhatASuperDoes(_Doors):
                          [{'organisation_id': self.org.id, 'organisation': self.org.name,
                            'organisation_code': self.org.code, 'problems': []}])
 
+    def test_the_list_serves_the_oldest_month_there_is_anything_to_bill_for(self):
+        """⚠ SERVED, never a constant. The owner, 2026-10-30: *"We didn't plan to issue invoice
+        for the months prior to July 26. There is no reason for them to remain in the drop down
+        list?"* The web list was a GENERATED range reaching back to December 2025, and every one
+        of those months would have refused with `no_costs`. A hard-coded first month would be a
+        second place to be wrong the day the platform bills a month before it.
+        """
+        body = self.client_for('super-uid').get(f'{BASE}/invoices/').json()
+        # InvoiceWorld seeds July and August costs, so July is the floor.
+        self.assertEqual(body['first_billable_month'], '2026-07')
+
+    def test_an_empty_cost_ledger_serves_no_floor_rather_than_a_guess(self):
+        """None means "the ledger is empty", and the screen keeps its own window. There is
+        nothing to bill either way, and a picker with no options looks broken rather than idle."""
+        PlatformCost.objects.all().delete()
+        body = self.client_for('super-uid').get(f'{BASE}/invoices/').json()
+        self.assertIsNone(body['first_billable_month'])
+
+    def test_the_floor_is_not_offered_to_a_tenant(self):
+        """It is a platform-wide fact about OUR ledger; the org payload carries no super keys."""
+        invoicing.send_invoice(self.issued())
+        body = self.client_for('oa-a').get(f'{BASE}/invoices/').json()
+        self.assertNotIn('first_billable_month', body)
+
     def test_issue_then_send_then_record_payment_then_download_the_receipt(self):
         su = self.client_for('super-uid')
         r = su.post(f'{BASE}/invoices/', {'organisation_id': self.org.id,

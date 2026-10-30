@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing: the month picker offers only months that could be billed - 2026-10-30
+
+Three readings of the live "To issue" tab by the owner, all correct.
+
+- **The issue-date hint is trimmed to "The 15th of the month after the one being billed."** The catch-up
+  sentence ("issue the OLDEST first") described a situation that has passed — July, August and September are
+  all issued. ⚠ **The RULE is untouched:** `invoice_dates._refuse_out_of_order` still refuses a printed date
+  earlier than the last one numbered that year, which is what stops a void-and-reissue walking a numbered tax
+  series backwards against its dates. The standing advice went; the guard did not.
+- **The chosen month no longer hops to the top of the picker.** It was built as
+  `[month, ...issuableMonths(today)]`, so selecting July put July above September and the list reordered itself
+  under the reader. `monthOptions()` now merges and sorts by date, newest first. It is still always PRESENT
+  even when it predates the window — that is what the prepending was for — it simply keeps its place.
+- **The list is floored at the oldest month the cost LEDGER holds** (`first_billable_month`, served on the
+  invoices payload). It was a generated range reaching back to December 2025, and every one of those months
+  would have refused with `no_costs` — a picker offering doors that cannot open. Read from the ledger on the
+  same terms, and in the same words, as the costs screen's own month list; a hard-coded '2026-07' would be a
+  second place to be wrong. An empty ledger serves null and the old window stands, because a picker with no
+  options reads as broken rather than idle, and the floor is never sent to a tenant.
+
 ## Bumi coverage Sprint F1 — public UP_TVET programmes (non-MARA), two new pathways (no migration) - 2026-10-29
 
 **Live 2026-10-30** in `a60662cc` (web-01023-hb6; api-01194-hhv, ingest re-revision api-01195-7wf):

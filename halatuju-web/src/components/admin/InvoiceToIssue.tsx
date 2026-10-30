@@ -19,7 +19,7 @@ import { useState } from 'react'
 import type { InvoiceProblem, InvoiceReadiness, InvoicesPayload } from '@/lib/admin-api'
 import { formatMonth } from '@/lib/billingUsage'
 import {
-  defaultIssueDate, issuableMonths, issueDateProblem, issueMode, orderedProblems, settingsHref,
+  defaultIssueDate, monthOptions, issueDateProblem, issueMode, orderedProblems, settingsHref,
   todayIso,
 } from '@/lib/invoices'
 
@@ -152,8 +152,10 @@ export default function InvoiceToIssue({ data, busy, t, onMonth, onIssue }: {
             aria-label={t('admin.billing.invoice.monthLabel')}
             onChange={(e) => onMonth(e.target.value)}>
             {/* The server's chosen month is always an option, even when it predates the window —
-                otherwise a select would silently show a different month from the cards below it. */}
-            {Array.from(new Set([month, ...issuableMonths(today)])).filter(Boolean).map((m) => (
+                otherwise a select would silently show a different month from the cards below it —
+                but it keeps its place in DATE order rather than being hoisted to the top, and the
+                list is floored at the ledger's first month. See `monthOptions`. */}
+            {monthOptions(today, month, data.first_billable_month).map((m) => (
               <option key={m} value={m}>{formatMonth(m)}</option>
             ))}
           </select>

@@ -197,12 +197,29 @@ class AdminInvoicesView(_InvoiceBase):
         payload = {'invoices': invoices}
         if is_super:
             from apps.courses.models import PartnerOrganisation
+            from ..models import PlatformCost
             month = (request.query_params.get('month') or '').strip() or invoicing.previous_month()
             if not invoicing.MONTH_RE.match(month):
                 return Response({'error': 'bad_month', 'code': 'bad_month'},
                                 status=status.HTTP_400_BAD_REQUEST)
             payload['month'] = month
             payload['issue_day'] = invoicing.ISSUE_DAY
+            # ⚠ THE OLDEST MONTH THERE IS ANYTHING TO BILL FOR, so the picker stops offering
+            # doors that cannot open. The owner, 2026-10-30: *"We didn't plan to issue invoice
+            # for the months prior to July 26. There is no reason for them to remain in the drop
+            # down list?"* — and they were right twice over: the web list was GENERATED backwards
+            # twelve months from today (stopping only at the calendar-year edge, which is why
+            # December 2025 appeared), and every one of those months would have refused with
+            # `no_costs` anyway.
+            #
+            # Read from the LEDGER, never a constant: the same rule, and the same words, as the
+            # costs screen's own month list in `billing.py`. A hard-coded '2026-07' would be a
+            # second place to be wrong the day the platform bills a month before it.
+            # None means the ledger is empty, and the screen then falls back to its own window —
+            # there is nothing to bill either way, so this must not become a silent "no months".
+            payload['first_billable_month'] = (
+                PlatformCost.objects.order_by('period_month')
+                .values_list('period_month', flat=True).first())
             payload['readiness'] = [{
                 'organisation_id': org.id,
                 'organisation': org.name,

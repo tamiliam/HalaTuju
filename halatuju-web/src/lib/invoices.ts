@@ -284,17 +284,42 @@ export function shiftMonth(month: string, delta: number): string {
  *     reopening a closed, filed run of numbers. The server refuses that date now; offering the
  *     month anyway would just hand the reader a prefilled error. So the list stops at December of
  *     last year, which is the oldest month that can still be dated inside the open year. */
-export function issuableMonths(today: string, count = 12): string[] {
+export function issuableMonths(today: string, count = 12, firstBillable?: string | null): string[] {
   const thisMonth = (today || '').slice(0, 7)
   const year = (today || '').slice(0, 4)
+  const floor = (firstBillable || '').slice(0, 7)
   const out: string[] = []
   for (let i = 1; i <= Math.max(count, 1); i += 1) {
     const m = shiftMonth(thisMonth, -i)
     if (!m) continue
     if (shiftMonth(m, 1).slice(0, 4) < year) break
+    // ⚠ NOTHING OLDER THAN THE LEDGER'S FIRST MONTH. The owner, 2026-10-30: *"We didn't plan to
+    // issue invoice for the months prior to July 26. There is no reason for them to remain in the
+    // drop down list?"* This list was a GENERATED range — twelve months back, stopping only at the
+    // calendar-year edge — so December 2025 was on offer. Every such month refuses with `no_costs`
+    // at the server, so the picker was offering doors that cannot open.
+    // The floor is SERVED (`first_billable_month`, read off the cost ledger), never a constant: a
+    // hard-coded '2026-07' would be a second place to be wrong. Absent, the old window stands.
+    if (floor && m < floor) break
     out.push(m)
   }
   return out
+}
+
+/** The picker's options: the window, plus whatever month the server actually chose, in DATE order.
+ *
+ * ⚠ **THE CHOSEN MONTH KEEPS ITS PLACE.** It used to be prepended — `[month, ...issuableMonths()]`
+ * — which hoisted it to the top of the list, so picking July put July above September and the list
+ * reordered itself under the reader's cursor (owner, 2026-10-30). It still has to be PRESENT even
+ * when it predates the window, or the select would silently show a different month from the cards
+ * below it; it simply sorts with the rest. Newest first, which is how the list already read.
+ */
+export function monthOptions(
+  today: string, chosen: string, firstBillable?: string | null, count = 12,
+): string[] {
+  const all = new Set(issuableMonths(today, count, firstBillable))
+  if (chosen) all.add(chosen)
+  return [...all].filter(Boolean).sort().reverse()
 }
 
 /** The date an invoice for `month` SHOULD carry: the 15th of the month after it — the owner's

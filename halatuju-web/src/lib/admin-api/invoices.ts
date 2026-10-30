@@ -145,6 +145,10 @@ export interface InvoicesPayload {
   // ── SUPER ONLY ──
   month?: string
   issue_day?: number
+  /** The oldest month the cost LEDGER holds anything for, or null when it is empty — the floor
+   *  on the month picker, so it stops offering months that would refuse with `no_costs`. Served,
+   *  never a constant: a hard-coded first month is a second place to be wrong. */
+  first_billable_month?: string | null
   readiness?: InvoiceReadiness[]
 }
 

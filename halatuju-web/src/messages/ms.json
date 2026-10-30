@@ -5478,7 +5478,7 @@
         "superLead": "Invois bagi {month} dikeluarkan secara automatik pada {day} haribulan. Mengeluarkan invois tidak menghantar apa-apa: organisasi hanya melihat invois selepas anda menekan Hantar.",
         "monthLabel": "Bulan untuk dibilkan",
         "issueDate": "Tarikh dikeluarkan (TTTT-BB-HH)",
-        "issueDateHelp": "{day} haribulan bulan selepas bulan yang dibilkan. Jika mengejar beberapa bulan, keluarkan yang PALING LAMA dahulu — nombor invois tidak boleh berundur berbanding tarikhnya.",
+        "issueDateHelp": "{day} haribulan bulan selepas bulan yang dibilkan.",
         "badIssueDate": "Masukkan tarikh dikeluarkan sebagai YYYY-MM-DD.",
         "issueDateFuture": "Invois tidak boleh bertarikh pada masa hadapan.",
         "issueDateBeforeMonthEnd": "Tarikh itu mesti selepas bulan yang dibilkan berakhir.",
