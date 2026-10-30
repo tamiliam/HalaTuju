@@ -721,10 +721,30 @@ def schedule(req, admin, *, scheduled_for=None):
 
 
 def done(req, admin):
-    """scheduled → done (super). Terminal."""
+    """scheduled → done (super). Terminal.
+
+    ⚠⚠ **IT CANNOT CLOSE WITHOUT ITS CLOSING REPORT** (owner, 2026-10-30: *"agent that complete a
+    request MUST ... They shouldn't need reminder from me"*). This is the ONE door into the
+    terminal state, so it is the only place that rule can be made true rather than hoped for. A
+    forgotten figure used to surface a month later: five of the first sixteen billed requests were
+    billed on their PLAN. `invoicing.actual_hours_missing` refuses that month ABSOLUTELY — correct,
+    and four weeks too late. The full story is in `TestClosingAReport`.
+
+    ⚠ ONE check suffices because `record_hours` requires `actual_hours`, so a row carrying
+    `charged_hours` carries the actual too — and `closing_report` reads what the organisation was
+    SENT, the only honest source for a bill.
+    ⚠ **A BUG IS NOT EXEMPT**: its charge is `0.0`, which is what `bug_reports_fixed` counts as
+    free work given away — an answer, where a blank is not.
+
+    ⚠ ORDER: `_check_transition` runs FIRST, so a never-closable status stays `bad_transition`.
+    `request_hours` is imported inside the function — at module scope the pair would cycle.
+    """
     if not _is_super(admin):
         raise OrgRequestError('wrong_role')
     _check_transition(req, 'done')
+    from . import request_hours
+    if request_hours.closing_report(req) is None:
+        raise OrgRequestError('closing_report_required')
     req.status = 'done'
     req.save(update_fields=['status', 'updated_at'])
     return req

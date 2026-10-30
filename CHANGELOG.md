@@ -50,6 +50,31 @@ F1's parser, builder and command, as Bumi-only courses where the page says so, o
   tsc 0; jest 5,246 / 327 suites;
   bundle median 146.608 / 148 kB. Bites: dropping `req_bumiputera` on one F2 row turns the golden master
   red (non-Bumi gain 199 -> 248); disabling the existing-id refusal turns the F2 refusal test red.
+## Billing — a request cannot close without its figures - 2026-10-30
+
+Owner's ruling: *"agent that complete a request MUST: 1) write post-completion report with planned,
+actual and charged details, and 2) fill in the relevant fields for billing. They shouldn't need
+reminder from me. This should be automatic."* Two changes, both api; no migration.
+
+- **`org_requests.done` now refuses `closing_report_required`** unless an approved, un-superseded
+  analysis carries a charged figure. `done` is the one door into the terminal state, so it is the
+  only place the rule can be made true rather than hoped for. A bug is NOT exempt — its charge is
+  `0.0`, which is what `bug_reports_fixed` counts as free work given away, and a blank is not an
+  answer. The transition and role checks still run first, so a never-closable status stays
+  `bad_transition`. The refusal carries its own message on the Requests detail screen in English,
+  Malay and Tamil; a generic "something went wrong" would waste the one screen that can act on it.
+  ⚠ Request #50 is the live case: it has no closing report, so it cannot be closed until one is
+  recorded. That is the rule working.
+- **The invoice's "bug reports fixed" line reads the ACTUAL, not the plan.**
+  `request_hours._hours_bearing_analysis` built its candidate set from `estimated_hours is not
+  None`, so a completion report — which carries `actual_hours` and no estimate — was never a
+  candidate and the plan one row below won. Its own docstring had promised the actual since the day
+  it was written. Request #49 (planned 30.0, spent 15.0, charged 0.0) would have told BrightPath we
+  absorbed thirty hours. Verified against production first: no request already `done` carries an
+  actual, so nothing was ever printed wrong and every earlier bug reads unchanged. Not a money
+  line — the charged path is `billable_hours` → `closing_report.charged_hours` and was correct.
+- ⚠ `apps/scholarship/org_requests.py` now sits at 845 lines, exactly its growth allowance. The
+  next change to it runs the split first.
 
 ## Request #50 — sort the applications list by Assigned - 2026-10-30
 

@@ -5859,6 +5859,7 @@
         "triage_ai_unconfigured": "The AI reviewer is not configured yet.",
         "triage_ai_unavailable": "The AI reviewer is unavailable right now.",
         "ai_limit_reached": "The AI reviewer has already run the maximum number of times.",
+        "closing_report_required": "Record the hours first. Approve a closing report stating the hours spent and the hours charged, then mark this done. A bug is charged 0.",
         "generic": "Something went wrong. Please try again.",
         "analysis_required": "You cannot send a quote until an analysis naming the files it read has been approved.",
         "files_required": "An analysis must name at least one file it read.",

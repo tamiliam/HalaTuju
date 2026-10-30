@@ -63,6 +63,18 @@ class _Base(TestCase):
                                 cited_files=['apps/scholarship/org_requests.py'])
         return svc.approve_analysis(a, self.super)
 
+    def _reported(self, req, *, actual_hours='4.0', **kw):
+        """The closing report `done` now requires (owner, 2026-10-30).
+
+        A request cannot reach `done` until somebody has written down what the work actually took
+        and what is being charged for it — see `svc.done`. These tests are about the TRANSITION
+        mechanics, so they satisfy that rule and move on; the gate itself is proven in
+        `TestClosingAReport` below and in test_request_actual_hours.py.
+        """
+        from apps.scholarship import request_hours
+        return request_hours.record_hours(self._analysed(req), self.super,
+                                          actual_hours=actual_hours, **kw)
+
 
 class TestCreate(_Base):
     def test_create_ok(self):
@@ -212,9 +224,72 @@ class TestOwnerFlow(_Base):
         svc.approve(r, self.org_admin, by_role='org_admin')
         self.assertEqual(r.status, 'approved')
         svc.schedule(r, self.super)
+        self._reported(r)          # the work is not finished until its figures are written down
         svc.done(r, self.super)
         r.refresh_from_db()
         self.assertEqual(r.status, 'done')
+
+
+class TestClosingAReport(_Base):
+    """`done` refuses without a closing report (owner, 2026-10-30).
+
+    *"agent that complete a request MUST write post-completion report with planned, actual and
+    charged details, and fill in the relevant fields for billing. They shouldn't need reminder
+    from me. This should be automatic."*
+
+    The rule was previously only a habit, and the omission showed up a month later at invoice
+    time — five of the first sixteen billed requests were billed on their PLAN because nobody had
+    recorded an actual. The cost now lands on whoever closes the request.
+    """
+
+    def _scheduled(self, **kw):
+        return self._req(kind='feature', status='scheduled', triaged_kind='feature',
+                         lane='sprint', **kw)
+
+    def test_closing_without_any_figures_is_refused(self):
+        r = self._scheduled()
+        self._analysed(r)                      # prose and a plan, but nothing recorded
+        with self.assertRaises(svc.OrgRequestError) as e:
+            svc.done(r, self.super)
+        self.assertEqual(e.exception.code, 'closing_report_required')
+        r.refresh_from_db()
+        self.assertEqual(r.status, 'scheduled')   # ⚠ and it did NOT half-close
+
+    def test_closing_with_the_figures_recorded_succeeds(self):
+        r = self._scheduled()
+        self._reported(r, actual_hours='6.5')
+        svc.done(r, self.super)
+        r.refresh_from_db()
+        self.assertEqual(r.status, 'done')
+
+    def test_a_free_BUG_still_has_to_say_what_it_cost_us(self):
+        """⚠ `0.0` charged is an ANSWER — it is what `bug_reports_fixed` counts as given away.
+        A blank is not, so a bug is not exempt from the rule."""
+        r = self._req(kind='bug', status='scheduled', triaged_kind='bug', lane='small_change')
+        self._analysed(r)
+        with self.assertRaises(svc.OrgRequestError) as e:
+            svc.done(r, self.super)
+        self.assertEqual(e.exception.code, 'closing_report_required')
+        self._reported(r, actual_hours='15.0', charged_hours='0',
+                       charge_note='Triaged as a bug: absorbed.')
+        svc.done(r, self.super)
+        r.refresh_from_db()
+        self.assertEqual(r.status, 'done')
+
+    def test_an_unclosable_status_is_STILL_bad_transition_not_this(self):
+        """⚠ The transition check runs first. A request that was never schedulable must not start
+        reporting a missing closing report instead — `TestTransitionMatrix` derives that from the
+        TRANSITIONS table and this pins the ordering that keeps it true."""
+        r = self._req(kind='feature', status='submitted')
+        with self.assertRaises(svc.OrgRequestError) as e:
+            svc.done(r, self.super)
+        self.assertEqual(e.exception.code, 'bad_transition')
+
+    def test_the_role_gate_still_fires_before_either(self):
+        r = self._scheduled()
+        with self.assertRaises(svc.OrgRequestError) as e:
+            svc.done(r, self.org_admin)
+        self.assertEqual(e.exception.code, 'wrong_role')
 
 
 class TestRequesteeResponses(_Base):

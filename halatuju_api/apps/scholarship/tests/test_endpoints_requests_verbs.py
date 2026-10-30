@@ -76,6 +76,24 @@ class _RequestsCase(TestCase):
         self._quoted()
         self._ok(self.requester.post(f'{BASE}{self.req.id}/defer/', {}, format='json'))
 
+    def _closing_report(self, actual_hours='4.0', **figures):
+        """The closing report `done` now requires (owner, 2026-10-30).
+
+        A request cannot be marked done until somebody has written down what the work actually
+        took and what is being charged for it (`org_requests.done`). Staged THROUGH the endpoints
+        like everything else in this file — analysis, approve, then the hours form — so the state
+        `done` receives is one the product actually produces.
+        """
+        self._ok(self.owner.post(f'{BASE}{self.req.id}/analysis/',
+                                 {'body': 'Finished and live.',
+                                  'cited_files': ['apps/scholarship/org_requests.py']},
+                                 format='json'))
+        aid = self.req.analyses.order_by('-id').first().id
+        self._ok(self.owner.post(f'{BASE}{self.req.id}/analysis/{aid}/approve/', {},
+                                 format='json'))
+        self._ok(self.owner.post(f'{BASE}{self.req.id}/analysis/{aid}/hours/',
+                                 {'actual_hours': actual_hours, **figures}, format='json'))
+
     def _reload(self):
         self.req.refresh_from_db()
         return self.req
@@ -161,6 +179,7 @@ class TestDecline(_RequestsCase):
     def test_a_finished_request_cannot_be_declined(self):
         self._triage('bug')
         self._ok(self.owner.post(f'{BASE}{self.req.id}/schedule/', {}, format='json'))
+        self._closing_report(actual_hours='3.0', charged_hours='0', charge_note='Absorbed.')
         self._ok(self.owner.post(f'{BASE}{self.req.id}/done/', {}, format='json'))
         r = self._decline(self.owner, 'too late')
         self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_transition'))
@@ -208,6 +227,9 @@ class TestScheduleAndDone(_RequestsCase):
         self._ok(self._schedule(self.owner, '2026-10-15'))
         req = self._reload()
         self.assertEqual((req.status, req.scheduled_for), ('scheduled', datetime.date(2026, 10, 15)))
+        # ⚠ A free bug still has to say what it cost us before it can close.
+        self._closing_report(actual_hours='3.0', charged_hours='0',
+                             charge_note='A bug: absorbed, no charge.')
         self._ok(self._done(self.owner))
         self.assertEqual(self._reload().status, 'done')
 

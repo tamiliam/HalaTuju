@@ -1024,6 +1024,22 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
   ⚠ **The point is continuous improvement, not billing.** A bug is free either way. What the
   comparison buys is an honest hourly rate: RM20/hour is only right if we know how long things
   take, and today we know how long we *thought* they would.
+- ⛔ **FINISHING A REQUEST INCLUDES ITS FIGURES. THE OWNER IS NOT YOUR REMINDER** (owner,
+  2026-10-30): *"agent that complete a request MUST: 1) write post-completion report with planned,
+  actual and charged details, and 2) fill in the relevant fields for billing. They shouldn't need
+  reminder from me. This should be automatic."* Before you mark a request done, both steps, in this
+  order, every time — including for a bug:
+  1. **Post the completion report** — an analysis stating PLANNED, ACTUAL and CHARGED in the prose
+     the organisation reads, and one line on why actual differs from planned.
+  2. **Record the figures on that analysis** — `POST …/requests/<rid>/analysis/<aid>/hours/` with
+     `actual_hours`, `charged_hours`, and `charge_note` whenever the two differ
+     (`request_hours.record_hours` is the service behind it).
+  ⚠ **`org_requests.done` NOW REFUSES WITHOUT ONE** (`closing_report_required`). The rule used to
+  be a habit, and a forgotten figure surfaced a month later at invoice time — five of the first
+  sixteen billed requests were billed on their PLAN. The refusal is the rule, not a nag: being
+  asked to record the hours is the failure.
+  ⚠ **A BUG IS NOT EXEMPT.** Its charge is `0.0`, which is a real answer and is exactly what
+  `bug_reports_fixed` counts as free work given away. A blank is not an answer.
 - **Never raise a budget, a floor or a ledger** — split the file first, in its own commit, moves only.
   ⚠ The tight ones: `pathway_engine.py` (0 lines of room) and `models/applications.py` (1); `serializers.py`
   and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.

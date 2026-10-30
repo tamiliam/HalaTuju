@@ -37,7 +37,11 @@ import { RequestHoursForm } from '@/components/admin/RequestHoursForm'
 const KNOWN_ERR = ['bug_is_free', 'bad_hours', 'reason_required', 'triage_ai_unconfigured',
   'triage_ai_unavailable', 'ai_limit_reached',
   'analysis_required', 'files_required', 'analysis_superseded', 'bad_cited_files',
-  'analysis_approved', 'body_too_long']
+  'analysis_approved', 'body_too_long',
+  // ⚠ `done` refuses without a closing report (owner, 2026-10-30). This one MUST carry its own
+  // message: the refusal exists to tell the closer what is missing, and "Something went wrong"
+  // would turn a precise instruction into a dead end on the one screen that can act on it.
+  'closing_report_required']
 const errText = (t: (k: string) => string, code?: string) =>
   code && KNOWN_ERR.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 

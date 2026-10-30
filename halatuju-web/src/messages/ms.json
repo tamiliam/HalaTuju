@@ -5859,6 +5859,7 @@
         "triage_ai_unconfigured": "Penyemak AI belum dikonfigurasikan.",
         "triage_ai_unavailable": "Penyemak AI tidak tersedia buat masa ini.",
         "ai_limit_reached": "Penyemak AI telah dijalankan bilangan maksimum kali.",
+        "closing_report_required": "Rekodkan jam terlebih dahulu. Luluskan laporan penutup yang menyatakan jam yang digunakan dan jam yang dicaj, kemudian tandakan ini selesai. Pepijat dicaj 0.",
         "generic": "Sesuatu tidak kena. Sila cuba lagi.",
         "analysis_required": "Sebut harga tidak boleh dihantar sehingga analisis yang menamakan fail yang dibacanya diluluskan.",
         "files_required": "Analisis mesti menamakan sekurang-kurangnya satu fail yang dibacanya.",
