@@ -24,6 +24,53 @@ holds the route list): in the `scholarship` slice they pushed
 words neither route shows. The budget was not raised; the weight moved to the one route that reads it. **Readers added:** `student_funds`, `student_contract` (via the two views);
 nothing writes.
 
+## Public MARA UP_TVET programmes: Bumi-only where the page says so, on the `mara` pathway; MARA's own wording read — 2026-10-30 (Bumi coverage Sprint F2, owner rulings F / F1b applied)
+
+**Scope.** The 665 public (Awam) MARA rows of the October UP_TVET catalogue (GIATMARA 521, IKM 101, KKTM 41,
+MJII 2), through the F1 parser, builder and `ingest_tvet_courses` (`--families mara`). Data:
+`data/tvet/uptvet_F2_source.json` (frozen) -> `data/tvet/tvet_new_courses_F2.json` (rebuilt byte for byte by a
+test). No held course: prod holds no MARA campus, and no UP_TVET MARA programme is one of D2's UPU MARA rows
+(OM Asasi / OP Kolej Profesional MARA diplomas under MARA-BPT).
+**MARA's wording, read (new LINE_RULES classes).** (1) The bare option heading "Warganegara",
+"Warganegara (Wajib)", "Warganegara Malaysia (Wajib)" -> `req_malaysian`. (2) "Bumiputera", "Calon
+Bumiputera", "Bumiputera (Wajib)", "Bumiputera / Bumiputera Sabah atau Sarawak" -> `req_bumiputera` (+
+`req_malaysian`: a Bumiputera is a citizen; a foreigner is never Bumi). (3) "Tidak Buta / Rabun Warna" ->
+`no_colorblind`. (4) MARA's BLANKET "Tidak menerima sebarang (jenis) (orang) kurang upaya / OKU" (and its
+"sebaran" typo) -> `no_disability` (owner: a blanket exclusion is the gate; the qualified "... menyukarkan
+kerja amali" line stays text). (5) "Syarat", "Syarat minima", "Tahap / Taraf Kesihatan" are labels. (6) A
+line stating TWO things ("Sihat tubuh badan (Tidak menerima sebarang OKU) dan TIDAK RABUN WARNA") gives
+every gate and fixed remark it states, not only its first match; gender / religion still win and are
+unparsed. (7) A condition card's SUMMARY line (the subtitle) is read for gates: 14 MARA cards print the OKU
+exclusion only there; gender / religion there, or gate wording no rule knows, is unparsed. F1's subtitles
+add nothing (its "Calon tidak mempunyai kurang upaya" is the qualified line).
+**Academic cards.** (8) "Syarat minima: Tidak Tamat Sekolah" (not having finished school) = no academic rule,
+like "no formal education" (7 GIATMARA pages). (9) The stock "Tiada Pendidikan Formal ..." line printed under
+a "2 / 3 tahun pengalaman" or "Tamat Tingkatan 3 / PT3 / PBD" heading is THAT route (experience, a Form 3
+result), never "open": an SPM leaver is judged by the SPM route, and a card with none is flagged (the
+reading every applicant meets is the wrong one). (10) An option whose heading names the SPM and whose body is
+only SPM subject items (no certificate, CGPA or skills code) is the SPM route, even when the heading also
+names the vocational subject groups (MPV / MPAV) or prints "SPM / SKM" (136 KKTM / IKM pages). (11) An SPM
+heading asking MORE credits than its table ("tiga (3) kepujian ... Matematik" over Matematik at D, beside the
+page's own remedial-Maths note; 29 pages): the TABLE wins (F1's title-vs-table rule), and the heading goes
+into the remarks so the student reads it. (12) MPAK papers (Matematik / BI / PI / PM (MPAK)) and "Lukisan
+Geometri & Mesin" are real SPM papers off the grade form (dropped from "any of" lists with a warning).
+**Grouping.** One course per programme (family + name + identical rule), every campus linked, id
+`TVET-<lowest id_kursus>`. **Colour never splits a programme**: the course hides from a colour-blind student
+when ANY campus page excludes colour blindness (owner, F1b), and `colour_excluded_by` lists those campuses (3
+courses). Any other rule difference splits (9 programmes, listed in the file's `summary.split_programmes`).
+**Pages silent on Bumiputera are open.** 4 GIATMARA campuses (Ayer Hitam, Tanjung, Gombak, Kuala Kedah) print
+no Bumiputera card (3 no citizenship card either), so their rows are open to everyone those pages admit,
+each split from its Bumi-only programme. Owner question raised; until ruled, the page decides.
+**Institutions.** One `MARA-NNN` per distinct campus with a clean row (233; GIATMARA 209, IKM 13, KKTM 10,
+MJII 1), type ILKA, category MARA (-> pathway `mara`), subcategory = acronym = the kind; the name is the
+bracketed official name ("Institut Kemahiran MARA Sik") or the GIATMARA campus; states in prod's spelling
+("W.PERSEKUTUAN (KL)" -> "WP Kuala Lumpur"); misprinted GIATMARA web addresses -> the one site.
+**Result.** 607 of 665 rows read; 182 courses (607 campus offerings); 178 Bumi-only, 4 open; 58 flagged (54 no
+SPM route — SKM / certificate / experience / PW licence only; 2 unreadable wide tables; 1 empty education
+card; 1 GIG-worker programme). F1's file and F1b's fix rebuild byte for byte under the new parser.
+**Revisit if:** the owner rules on the 4 silent GIATMARA pages or on "Bumiputera Sabah atau Sarawak" meaning
+only those states (then a narrower gate is needed), or prefers the heading's credit count over the table.
+
 ## The scholar file's Money and Contract tabs read the Payments rules and the executed agreement only — 2026-10-30 (student maintenance S5a)
 
 **Decision:** (1) `GET admin/scholarship/scholars/<id>/money/` and `.../contract/` behind the scholar-file fence

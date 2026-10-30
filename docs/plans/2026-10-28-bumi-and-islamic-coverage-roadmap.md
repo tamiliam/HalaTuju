@@ -27,6 +27,13 @@ Owner rulings (2026-10-28):
 - **Sprint C BUILT 2026-10-29** (branch `bumi-sprint-c`, on TD-416): 13 Islamic subjects selectable as electives under their slip names; doc recognition 1.18.0; `BAHASA_ARAB_MUASIRAH_SPM` also met by `lughah_arabiah`. Golden masters unchanged. `SPM_PREREQ_OPTIONAL` turned out to be dead (the STPM SPM block reads `SPM_ALL_ELECTIVE_SUBJECTS`); `BA` left alone (no fixture uses it); `pathways.py` left alone (no source).
 - **B, TD-416 and C LIVE 2026-10-29 (1a4aedc8). D1 LIVE 2026-10-29 (f5282643; 84 UiTM rows ingested). D2 LIVE 2026-10-29 (914d4a5b; 66 rows + MARA-BPT). NEXT = Sprint F (UP_TVET / MARA).**
 - **F1 LIVE 2026-10-30 (a60662cc; 35 courses + 33 links + 4 institutions ingested; retro `docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`). F1b LIVE 2026-10-30 (579e27ca; 63 held courses' flags from their pages). NEXT = F2 (MARA).**
+- **Sprint F2 BUILT 2026-10-30** (branch `bumi-sprint-f2`, no migration): public MARA UP_TVET. The parser now reads
+  607 of 665 MARA pages (21 before; MARA's bare Warganegara / Bumiputera headings, blanket OKU wording, summary
+  lines, two gates on one line, "Tidak Tamat Sekolah", vocational-group SPM headings). 182 courses (607 campus
+  offerings), 178 Bumi-only + 4 open (GIATMARA pages silent on Bumi), 233 `MARA-NNN` institutions, 58 flagged
+  (`data/tvet/tvet_new_courses_F2.json`); no D2 duplicate. Golden: original 5,293 identical; non-Bumi gains
+  exactly the 4 open F2 rows (199) beside F1's 1,494 (6,986); bumi=True 12,631 (F2 +5,079, digest-pinned);
+  STPM 2,025. Runbook: halatuju_api/CLAUDE.md ("Bumi F2 order"). NEXT = review, read-only SQL (`--sql`), deploy, `--apply`.
 - **Sprint F1 BUILT 2026-10-29** (branch `bumi-sprint-f`, no migration): public UP_TVET, non-MARA. 35 new courses (39 campus offerings), 33 new campus links to 20 held courses, 90 flagged, 4 proposed institutions (`data/tvet/tvet_new_courses_F1.json`); pathways `mara` + `tvet_other`; golden: original 5,319 identical, non-Bumi gains exactly the F1 set (1,494), bumi=True 7,578, STPM 2,025. Runbook: halatuju_api/CLAUDE.md ("Bumi F1 order"). NEXT = review, then F2 (MARA: data + condition wording; 665 pages already saved).
 - **Sprint D1 BUILT 2026-10-29** (branch `bumi-sprint-d`; migration courses/0088 migrate-first): 84 of the 87 UiTM rows parse (3 flagged: UE0520001, UE0545001 two grades over one list; UE4811004 ATAU), `count_once` construct, `ingest_spm_courses` (dry run first), all 7 doors. Golden masters 5,319 (original + full at bumi=False) / 5,865 (bumi=True, after review round 1) / STPM 2,025. NEXT = adversarial review, then the read-only SQL checks, migrate, deploy, `--apply`.
 

@@ -182,6 +182,28 @@ Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math
    `DELETE FROM institutions WHERE institution_id IN ('IKBN-022','ILKA-001','ILKA-002','ILKA-003')` (only
    after their links are gone), then a re-revision. The F1 code may stay deployed. F2 (MARA) = the same
    command on a file built with `--families mara` (`MARA-NNN` institutions, category MARA).
+   **Bumi F2 order (no migration; UP_TVET public MARA):** read-only SQL first → push (api + web) → CONFIRM
+   the new api AND web revisions both serve 100% (the F2 parser and fixtures ship with the api; the rows
+   themselves only need F1's `mara` pathway, already live) → `ingest_tvet_courses --file
+   data/tvet/tvet_new_courses_F2.json --create-institutions` (dry run: expect 233 `CREATE INSTITUTION
+   MARA-001..233` lines, 182 `CREATE TVET-…`, 0 UPDATE, 0 `LINK`, the line "182 new courses (607 campus
+   offerings); 0 new campus links to held courses (0 already held); 58 flagged rows NOT ingested.", and
+   no "Refusing") → the same with `--apply` ("Applied 182 courses, 0 held-course links; created 233
+   institutions.") → a re-revision so the eligibility frame reloads. A reviewed RE-run of the same file needs
+   `--allow-update`. Read-only SQL before `--apply`: `python manage.py ingest_tvet_courses --file
+   data/tvet/tvet_new_courses_F2.json --sql` prints two SELECTs (the 182 course ids in `courses`; the 233
+   `MARA-NNN` ids in `institutions`), each must return 0 rows; any row → stop (the file's picture is not
+   prod's). Smoke after the re-revision: a Bumi citizen's search on `source_type=mara` returns 182 rows, a
+   non-Bumi one 4 (the GIATMARA pages silent on Bumiputera), a foreigner who says Bumi the same 4 at most.
+   ROLLBACK: `python manage.py ingest_tvet_courses --file data/tvet/tvet_new_courses_F2.json --rollback-sql`
+   prints, first, the read-only checks to run BEFORE any rollback (who chose an F2 course:
+   `scholarship_applications` chosen_programme / top_choices and `api_student_profiles` chosen_programme;
+   `admission_outcomes` / `stpm_courses` rows naming a MARA-NNN institution; non-zero → the owner decides
+   first), then the rollback in ONE transaction: `DELETE FROM saved_courses / admission_outcomes /
+   course_tags / courses_career_occupations / course_requirements / course_institutions WHERE course_id IN
+   (F2)`, then `DELETE FROM courses WHERE course_id IN (F2)`, then `DELETE FROM institutions WHERE
+   institution_id IN (MARA-001..MARA-233)` (only after their links are gone; MARA-BPT is never touched),
+   `COMMIT`, then a re-revision. F2 = the 182 `courses[].course_id` of the file. The F2 code may stay deployed.
    **Bumi F1b order (no migration; held TVET flags + remarks):** read-only SQL first → push (api) → CONFIRM
    the new api revision serves 100% → `fix_held_tvet_flags --file data/tvet/held_flag_fix_F1b.json` (dry run,
    through the `release-decisions` job, item 12's form: `--args=manage.py,fix_held_tvet_flags,--file,data/tvet/held_flag_fix_F1b.json`
