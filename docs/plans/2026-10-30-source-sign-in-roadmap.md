@@ -64,7 +64,7 @@ and each one has a fix in a sprint.
 - Web: nav registry rows for `source_partner` (Programme: Overview, Applications, Scholars; Utility: Profile); landing = `/admin/programme/overview`; the three pages switch to `Source*` components for this role; profile page Organisation card becomes editable for a source.
 
 ### S4 — Witness from the console
-- `scholarship/0190`: `BursaryAgreement.witness_ip` (parity with student / guarantor).
+- `scholarship/0191` (0190 went to S2's `Invitation.referral_source`): `BursaryAgreement.witness_ip` (parity with student / guarantor) + `witness_admin` (which source user).
 - `admin/source/applications/<id>/agreement/` (GET the **full contract** PDF — owner ruling 2026-10-30 — only to the named witness source, only on the witness step and after) and `.../witness/` (POST typed name + tick "I confirm…"). Allowed only when the caller's source = `_resolve_witness_org`, the guarantor has signed and no witness yet. Calls existing `bursary.record_witness` (`bursary.py:556`) with `by_name` = user, `witness_name` = typed name. Chain after that is unchanged.
 - Super cockpit button stays (fallback).
 - Witness-pending email (`emails/signing.py:172`): restore the button when the source has a signed-in user; else keep "reply to this email". Executed-copy link now lands on the source view.
@@ -75,7 +75,7 @@ and each one has a fix in a sprint.
 ### Close (end of S4)
 - Guide/FAQ text for sources; `docs/decisions.md`, `.claude/ARCHITECTURE_MAP.md`, CHANGELOG, technical-debt.
 - **Adversarial review before push** (identity / PII rule).
-- Deploy: migrate-first (courses 0089, scholarship 0189, 0190), then API, then web. **Owner says go before deploy.**
+- Deploy: migrate-first (courses 0089, scholarship 0190, 0191), then API, then web. **Owner says go before deploy.**
 
 ## Verification
 - `pytest` full suite + `jest` full suite each sprint; `next build` before push.

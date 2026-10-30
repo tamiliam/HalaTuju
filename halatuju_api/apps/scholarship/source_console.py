@@ -12,12 +12,16 @@ walks every response and fails on any key from the never-list (NRIC, address, in
 essays, documents, scores, verdicts, reviewers, notes, money, results …).
 
 ⚠ THE CEILING IS WHAT A SOURCE ALREADY RECEIVES BY EMAIL (`partner_comms`): the folded stage lines
-and the chase list. Two things go a step past it, each by ruling:
+and the chase list. Three things go a step past it, each by ruling:
   * the student's phone and email (owner ruling 2026-10-30);
   * on ONE shortlisted application's page, the NAMES of the checklist parts still open (lead decision
     2026-10-30, for the owner to review): the coarse part keys of
     `services.completeness.application_completeness` (`PARTS`), never a document type or an income
-    route.
+    route;
+  * to the WITNESS source only, on the witness step and after, the full signed contract as a PDF
+    link (`agreement_dict`, S4; owner ruling 2026-10-30) — the document it attests, which it also
+    receives by email once executed (`distribute_executed_agreement`). It is the ONE payload here
+    that carries a `pdf` key, and its test names that exception.
 
 ⚠ A SOURCE NEVER LEARNS AN OUTCOME BEFORE THE STUDENT (C12). The stage is the STUDENT'S OWN masked
 status (`student_status.student_facing_status`: an embargoed decline reads as the stage it was
@@ -129,6 +133,39 @@ def witness_is(app, source):
     return org is not None and org.pk == source.pk
 
 
+# ── The witness step (source sign-in S4) ─────────────────────────────────────────────────────────
+#: The application states in which the contract is LIVE, so its witness may still be recorded: being
+#: signed (`awarded`), or already executed by the organisation's countersignature (`active`, then
+#: `maintenance`) — the witness is non-blocking and `bursary.record_witness` handles one that comes
+#: last. A declined, withdrawn, closed or expired application's contract is never witnessed.
+WITNESS_STATUSES = ('awarded', 'active', 'maintenance')
+
+
+def agreements_on():
+    """`BURSARY_AGREEMENT_ENABLED` — with it off there is no witness step to reach (the student's own
+    `BursaryAgreementView` is a 404 then too)."""
+    from django.conf import settings
+    return bool(getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False))
+
+
+def witness_step_reached(app, source):
+    """The witness source may OPEN the contract (owner ruling 2026-10-30: the full contract, on the
+    witness step and after): agreements are on, the agreement exists, the guarantor has signed, and
+    ``source`` IS the resolved witness. Stays true once it has witnessed."""
+    agreement = agreement_of(app)
+    return bool(agreements_on() and agreement is not None and agreement.guarantor_signed_at
+                and witness_is(app, source))
+
+
+def can_witness(app, source):
+    """THE one predicate for "this contract waits for this source's witness": the Overview's
+    `witness_waiting`, the contract block's and the agreement's `can_witness`, and the witness POST
+    all read it, so they cannot disagree."""
+    agreement = agreement_of(app)
+    return bool(witness_step_reached(app, source) and agreement.witness_signed_at is None
+                and app.status in WITNESS_STATUSES)
+
+
 def contract_dict(app, source):
     """The signing chain — dates only, never a name, an NRIC, an amount or the document."""
     agreement = agreement_of(app)
@@ -141,19 +178,31 @@ def contract_dict(app, source):
         'witness_signed_at': agreement.witness_signed_at,
         'foundation_signed_at': agreement.foundation_signed_at,
         'witness_is_you': witness_is(app, source),
+        'can_witness': can_witness(app, source),
     }
 
 
-def is_waiting_for(app, source):
-    """The contract waits for THIS source's witness: guarantor signed, no witness yet."""
+def agreement_dict(app, source, *, with_link=False):
+    """The witness source's view of the contract (S4) — the caller has checked
+    `witness_step_reached`. The signing dates, and the signed PDF itself as a short-lived link,
+    minted only `with_link` (a click — the Scholars contract tab's rule, `scholar_money.pdf_url`,
+    300 seconds, and only for this application's own file). The rendered HTML is never served
+    (`rendered: false`): the PDF is the document."""
+    from .scholar_money import PDF_URL_SECONDS, pdf_url
     agreement = agreement_of(app)
-    return bool(agreement is not None and agreement.guarantor_signed_at
-                and agreement.witness_signed_at is None and witness_is(app, source))
+    return {
+        **contract_dict(app, source),
+        'application_id': app.id,
+        'student_name': _name(app),
+        'pdf_url': pdf_url(agreement, app) if with_link else None,
+        'pdf_expires_in': PDF_URL_SECONDS,
+        'rendered': False,
+    }
 
 
 def witness_waiting(apps, source):
     return [{'application_id': app.id, 'student_name': _name(app)}
-            for app in apps if is_waiting_for(app, source)]
+            for app in apps if can_witness(app, source)]
 
 
 def application_row(app):

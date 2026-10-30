@@ -15471,7 +15471,10 @@ accepted, not re-opened):**
 2. **The witness comes from the source only, never the referral partner**: the admin override, else
    the application's source (`bursary._resolve_witness_org`). `referral_links.referring_org`,
    `is_same_organisation` and the CUMIG twin pairing for the witness are gone (TD-386 a, b).
-3. **Only a super records a witness** (`AdminBursaryWitnessView`) until sources have logins. The
+3. **Only a super records a witness** (`AdminBursaryWitnessView`) until sources have logins.
+   **⚠ Revised 2026-10-30 (source sign-in S4):** the witness source records it from its console; a super
+   may still record it for a source with no signed-in user (fallback) — see "A source witnesses from its
+   console" below. The
    grandfathered "the referring partner's login may witness" door — the one place a referral field was
    used for authorisation — is closed. The witness ASSIGNMENT (choosing the override) is unchanged:
    super, admin, org_admin.
@@ -16568,3 +16571,50 @@ rejected: one more role inside a page built for staff is one more place a staff 
 (B) show the open document types — rejected: a document name can say which income route a household is on.
 **Revisit if:** the owner would rather the console keep strictly to the email ceiling (drop `missing_items` from the
 application page), or wants the weekly email's counts masked the same way.
+
+## 2026-10-30 — A source witnesses from its console (source sign-in S4, backend; lead decisions for the owner to review)
+**Decision:** the witness SOURCE records its witness itself, from its console: `GET admin/source/applications/<id>/agreement/`
+shows it the full contract (owner ruling 2026-10-30: on the witness step and after) and `POST …/witness/`
+`{witness_name, confirm: true}` records it through the unchanged `bursary.record_witness`, with `by_name` = the
+signed-in user and `witness_name` = the name typed. The agreement now also keeps `witness_ip` and `witness_admin` (which
+source user), scholarship 0191; both NULL when a super records it. This revises Sprint C's "only a super records a
+witness" (2026-10-19, item 3): **the witness source records it from its console; a super may still record it for a
+source with no signed-in user (fallback).**
+**Lead decisions (for the owner):**
+- **A super may still record even when the source HAS an active signed-in user** — the owner keeps the override (a
+  source that is slow, or witnesses on paper). What changed for the super: once ANY witness is recorded, a second is
+  refused (409 `already_witnessed`), from either door, under one row lock (`source_witness.record_once`). Before, a
+  super's second click re-recorded over the first and re-sent the Foundation's nudge.
+- **Flag off = no witness step.** With `BURSARY_AGREEMENT_ENABLED` off both source endpoints answer 404, like the
+  student's own `BursaryAgreementView`; the Overview's `witness_waiting` was already empty. The super's door is NOT
+  gated (unchanged; the cockpit hides it with the flag off).
+- **When may a source witness:** the guarantor has signed, no witness yet, and the application is `awarded`,
+  `active` or `maintenance` (`source_console.WITNESS_STATUSES`) — the contract is live; `record_witness` already
+  handles a witness that comes after the Foundation's countersignature (it then distributes). A closed, declined,
+  withdrawn or expired application is 409 `contract_not_live`. The super's door keeps no status check (unchanged).
+- **One predicate** (`source_console.can_witness`) feeds the Overview's `witness_waiting`, the application page's new
+  `contract.can_witness`, the agreement's `can_witness` and the POST, so they cannot disagree.
+- **The PDF link is minted only on a click** (`?link=1`, 300 seconds, own path only — `scholar_money.pdf_url`, the
+  Scholars contract tab's rule), not on every page load. The rendered HTML is never served.
+- **The PDF names the witness, never the officer.** The witness block reads `witness_name`, else the witness
+  organisation — never `witness_signed_by` (the officer who recorded it), the Contract tab's rule (2026-10-30, the
+  scholar file). This changes a super-recorded witness with no typed name from the officer's name to the
+  organisation's; there are 0 agreements in production.
+- **The witness emails get their button back** (the 2026-08-03 note asked for it "in the same change that gives them
+  somewhere to land" — this is that change; the C8 revision of "no email may link to a partner console", 2026-10-30
+  "Sources sign in", covers it). Rule (`source_witness.has_console`): the source is switched on AND an ACTIVE user
+  of it has signed in (`source_invite.has_joined`). Then the witness-pending email — first ask and reminder alike —
+  says "Sign in to HalaTuju…" with an "Open the agreement" button to `/admin/scholarship/<id>` (the web routes a
+  source user to its own view), and the executed copy to the witness keeps its link. Otherwise the witness-pending
+  email still asks them to reply (byte for byte as before) and the executed copy goes WITHOUT a link (it used to link
+  a page they could not open). Org admins' copies are unchanged.
+- **The IP is read as the student's and guarantor's signing reads it** (`request.META['REMOTE_ADDR']`), for parity.
+  ⚠ Behind Cloud Run that may be the proxy's address for all three; `halatuju.throttling.client_ip` reads the
+  forwarded header. Raised, not changed (it would change the student's record too).
+**Alternatives considered:** (A) refuse the super once the source has a signed-in user — rejected for now: the owner
+loses the override while sources learn the console. (B) mint the PDF link on every GET — rejected: a fresh storage
+link per page view, and the Scholars tab already settled "on a click". (C) keep the officer's name on the PDF for a
+super's record — rejected: the Contract tab already ruled the officer is not the witness.
+**Trade-offs:** a source that never signs in is witnessed only by a super, as today. A `witness_admin` whose row is
+later switched off still names them (the FK is SET_NULL only on a delete, which does not happen).
+**Revisit if:** the owner wants the super's door closed once a source has joined, or the witness becomes required.

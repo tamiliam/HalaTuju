@@ -147,7 +147,11 @@ def send_agreement_executed_email(to_email, applicant_name, programme_name='', l
 def send_executed_copy_email(to_email, *, applicant_name='', programme_name='', pdf=None, link=''):
     """A copy of a fully-executed bursary agreement, for the witnessing partner contact and
     the org admins (Sprint 5 distribution). Internal (English); the signed PDF attached when
-    available. From info@, reply-to help@. Best-effort → bool. Donor never named."""
+    available. From info@, reply-to help@. Best-effort → bool. Donor never named.
+
+    The witnessing SOURCE's copy carries ``link`` only when somebody there can sign in
+    (`source_witness.console_link`, source sign-in S4): the web routes a source user's
+    `/admin/scholarship/<id>` to its own view. Without a link the copy simply has no button."""
     if not to_email:
         return False
     who = applicant_name or 'a student'
@@ -171,31 +175,41 @@ def send_executed_copy_email(to_email, *, applicant_name='', programme_name='', 
 
 def send_witness_pending_email(to_email, *, contact_person='', applicant_name='',
                                org_name='', link=''):
-    """Internal (English) nudge to the referring partner organisation: a bursary agreement
-    for a student they referred is awaiting their WITNESS signature. Best-effort. The donor
-    is never named; the partner already knows the student (they referred them).
+    """Internal (English) nudge to the witnessing SOURCE: a bursary agreement for a student is
+    awaiting their WITNESS signature. Best-effort. The donor is never named; the source already
+    knows the student (the application named it, or it was assigned as the witness).
 
-    ⚠ **IT USED TO SAY "log in to the partner console", AND THERE IS NO SUCH CONSOLE.** The button
-    pointed at `bursary._cockpit_link` → `/admin/scholarship/<id>`, a page no referral-org login can
-    load: `_b40_scope` returns `'none'` for the `partner` role, so they would have been told to do
-    something impossible and then bounced. Corrected 2026-08-03 to ask them to reply, which is a
-    thing they can actually do.
+    ⚠ **IT USED TO SAY "log in to the partner console", AND THERE WAS NO SUCH CONSOLE.** The button
+    pointed at `bursary._cockpit_link` → `/admin/scholarship/<id>`, a page no referral-org login could
+    load, so they would have been told to do something impossible and then bounced. Corrected
+    2026-08-03 to ask them to reply, which is a thing they can actually do.
 
-    ``link`` is still accepted — every caller passes it and the argument is the natural home for the
-    address once a source-organisation console exists — but it is deliberately NOT rendered. Restore
-    the button in the same change that gives them somewhere to land, not before.
+    ⚠ THE BUTTON IS BACK, in the change that gave them somewhere to land (source sign-in S4,
+    2026-10-30): a source user witnesses from its own console, and the web routes a source user's
+    `/admin/scholarship/<id>` to its own view of that application. The CALLER decides: ``link`` is
+    given only when somebody at the source can sign in today (`source_witness.console_link` — the
+    source is switched on and an active user of it has signed in), and then the email sends them to
+    sign in and witness there. With no ``link`` it asks them to reply, byte for byte as before.
+    docs/decisions.md, 2026-10-30 "A source witnesses from its console".
     """
     if not to_email:
         return False
     greeting = f'Dear {contact_person},' if contact_person else 'Hello,'
     who = f'<strong>{applicant_name}</strong>' if applicant_name else 'a student you referred'
+    if link:
+        ask_text = ('Sign in to HalaTuju to read the agreement and add your witness signature '
+                    f'there:\n{link}')
+        ask_html = ('Sign in to HalaTuju to read the agreement and add your witness signature '
+                    f'there.</p><p style="margin:0 0 18px;">{_email_button(link, "Open the agreement")}')
+    else:
+        ask_text = ask_html = ('Just reply to this email and we will send you everything you need '
+                               'to add your signature.')
     text = (
         f"{greeting}\n\n"
         f"A {_PROG_EN} agreement for {applicant_name or 'a student you referred'} is "
         f"ready for your organisation's witness signature. The student and their parent/guardian "
         f"have signed; you are recorded as the witnessing partner.\n\n"
-        f"Just reply to this email and we will send you everything you need to add your "
-        f"signature.\n\n"
+        f"{ask_text}\n\n"
         f"Thank you,\n{_TEAM_EN}"
     )
     html = _html_email_shell(
@@ -204,8 +218,7 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
         f'your organisation’s <strong>witness signature</strong>. The student and their '
         f'parent or guardian have signed; you are recorded as the witnessing partner'
         f'{(" for " + org_name) if org_name else ""}.</p>'
-        f'<p style="margin:0 0 18px;">Just reply to this email and we will send you everything '
-        f'you need to add your signature.</p>'
+        f'<p style="margin:0 0 18px;">{ask_html}</p>'
         f'<p style="margin:18px 0 0;">Thank you,<br><strong>{_TEAM_EN}</strong></p>'
     )
     return _send_html(

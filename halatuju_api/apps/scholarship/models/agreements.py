@@ -82,6 +82,14 @@ class BursaryAgreement(models.Model):
     witness_signed_by = models.CharField(max_length=200, blank=True, default='')
     witness_name = models.CharField(max_length=200, blank=True, default='')
     witness_signed_at = models.DateTimeField(null=True, blank=True)
+    # Source sign-in S4 (2026-10-30): a witness the SOURCE records from its own console. Its IP, as
+    # the student's and the guarantor's are kept, and WHICH source user recorded it. Both stay NULL
+    # when a super records the witness (the fallback, `AdminBursaryWitnessView`).
+    witness_ip = models.GenericIPAddressField(null=True, blank=True)
+    witness_admin = models.ForeignKey(
+        'courses.PartnerAdmin', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
 
     # ── Signing-chain reminder stamps (S6) — when the last nudge for a still-pending
     # signature went out, so the cron doesn't re-send daily (it waits the interval).

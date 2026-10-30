@@ -117,18 +117,22 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
 
 
 class AdminBursaryWitnessView(_BursaryAdminBase):
-    """POST — record the source's (non-blocking) witness attestation. SUPER-ONLY (sources Sprint
-    C, owner's ruling 2026-10-09: "only a super records a witness" until sources have logins). The
+    """POST — record the source's (non-blocking) witness attestation, as the FALLBACK. Since source
+    sign-in S4 (2026-10-30) the witness source records it itself, from its console
+    (`AdminSourceWitnessView`); a super may still record it here — for a source with nobody signed
+    in, and (lead decision, the owner keeps the override) for one that has. SUPER-ONLY. The
     witness is the APPLICATION's witness organisation — the override, else the source that
-    application named (`bursary._resolve_witness_org`) — never the referral partner. This NEVER
-    blocks the award lifecycle — it is a record only."""
+    application named (`bursary._resolve_witness_org`) — never the referral partner. Once a
+    witness is recorded — by the source or by a super — a second is refused (409
+    `already_witnessed`, under the same row lock, `source_witness.record_once`). This NEVER blocks
+    the award lifecycle — it is a record only."""
 
     def post(self, request, pk):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
         # The grandfathered "referring partner may witness" door is CLOSED: a `partner` login is a
-        # REFERRAL PARTNER's, which is never the witness, and a source has no login yet.
+        # REFERRAL PARTNER's, which is never the witness. A source user witnesses from its console.
         if not (admin.is_super_admin or self.has_role(admin, 'super')):
             return self._deny_role()
         agreement = self._agreement(pk)
@@ -141,8 +145,13 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             # No source and no override: nobody to witness (review fix) — assign one first.
             return Response({'error': 'no_witness_organisation', 'code': 'no_witness_organisation'},
                             status=status.HTTP_400_BAD_REQUEST)
-        bursary.record_witness(
-            agreement, org=org,
-            by_name=getattr(admin, 'name', '') or '',
-            witness_name=request.data.get('witness_name', '') or '')
+        from .. import source_witness
+        try:
+            agreement = source_witness.record_once(
+                agreement, org=org,
+                by_name=getattr(admin, 'name', '') or '',
+                witness_name=request.data.get('witness_name', '') or '')
+        except source_witness.AlreadyWitnessed:
+            return Response({'error': 'already_witnessed', 'code': 'already_witnessed'},
+                            status=status.HTTP_409_CONFLICT)
         return Response(BursaryAgreementSerializer(agreement).data)

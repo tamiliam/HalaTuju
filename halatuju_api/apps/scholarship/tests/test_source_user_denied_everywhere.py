@@ -47,6 +47,9 @@ ALLOWED = {
     ('api/v1/admin/source/applications/', 'get'),
     ('api/v1/admin/source/applications/<int:pk>/', 'get'),
     ('api/v1/admin/source/scholars/', 'get'),
+    # Source sign-in S4: `applications/<int:pk>/agreement/` is deliberately absent too — the swept
+    # id has no agreement, so it is a 404 here (in REFUSED); its 200 and its refusals are proven in
+    # `test_source_witness.py`.
 }
 
 #: (route, method) pairs a source user's call REACHES since S2, which serve no data: the view runs
@@ -55,6 +58,11 @@ ALLOWED = {
 #: temporary one is still owed — a temp-password source invitee needs it; source sign-in S2).
 REACHED = {
     ('api/v1/admin/set-password/', 'post'): 400,
+    # Source sign-in S4: the witness POST on the source's OWN student with no agreement yet is 400
+    # `not_ready` — the view ran its gate (source user, scope, witness) and refused the state. It
+    # writes only with an agreement, the guarantor's signature and `confirm: true`
+    # (`test_source_witness.py`).
+    ('api/v1/admin/source/applications/<int:pk>/witness/', 'post'): 400,
 }
 
 #: What a refused call may answer: not an admin (403), not found / dark (404), or a method the view

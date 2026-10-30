@@ -842,6 +842,12 @@ class TestWitnessEmailSendsThemSomewhereReal(TestCase):
     Found while mapping who has a login and who does not (2026-08-03). Restore the button in the
     same change that gives them somewhere to land, and this test should be updated then -- not
     before.
+
+    ⚠ UPDATED ON PURPOSE at source sign-in S4 (2026-10-30), the change that gave them somewhere to
+    land: a source user witnesses from its own console. The CALLER now passes ``link`` only when
+    somebody at the source can sign in (`source_witness.console_link`), so "no link" is the case
+    this test always guarded — a source nobody can sign in for — and it still says reply. The
+    console case is `test_source_witness.TestTheWitnessEmails`. docs/decisions.md, 2026-10-30.
     """
 
     def test_it_does_not_send_them_to_a_console_that_does_not_exist(self):
@@ -851,8 +857,7 @@ class TestWitnessEmailSendsThemSomewhereReal(TestCase):
         mail.outbox = []
         emails.send_witness_pending_email(
             'partner@example.org', contact_person='Mr Raja', applicant_name='Kavitha',
-            org_name='Sri Murugan Centre',
-            link='https://halatuju.xyz/admin/scholarship/129')
+            org_name='Sri Murugan Centre', link='')
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         whole = (msg.subject + msg.body + ''.join(b for b, _ in msg.alternatives)).lower()

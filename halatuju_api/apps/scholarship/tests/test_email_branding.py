@@ -138,9 +138,15 @@ def _specs():
         link='http://localhost:3000/admin/scholarship/1')
     add('executed_copy.nolink', emails.send_executed_copy_email,
         to_email='p@x.test', applicant_name='Aisyah')
+    # Source sign-in S4: the link is passed ONLY when somebody at the source can sign in, and only
+    # then is it rendered — so the plain spec has none (its golden is unchanged) and `.console`
+    # pins the restored button.
     add('witness_pending', emails.send_witness_pending_email,
         to_email='p@x.test', contact_person='Ravi', applicant_name='Aisyah',
-        org_name='CUMIG', link='http://localhost:3000/admin')
+        org_name='CUMIG')
+    add('witness_pending.console', emails.send_witness_pending_email,
+        to_email='p@x.test', contact_person='Ravi', applicant_name='Aisyah',
+        org_name='CUMIG', link='http://localhost:3000/admin/scholarship/1')
     add('countersign_pending', emails.send_countersign_pending_email,
         to_email='p@x.test', applicant_name='Aisyah', link='http://localhost:3000/admin')
     add('reviewer_assigned', emails.send_reviewer_assigned_email,

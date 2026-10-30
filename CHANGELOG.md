@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in S4 (backend) — 2026-10-30
+
+Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S4, backend half: a signed-in source witnesses the
+bursary contract from its console. Migration `scholarship/0191` (migrate-first; DDL + ledger row in its docstring).
+NOT deployed. `BURSARY_AGREEMENT_ENABLED` is off in production with 0 agreements, so this ships ready but quiet.
+
+- **`BursaryAgreement.witness_ip`** (inet, parity with `student_ip` / `guarantor_ip`) and **`witness_admin`** (FK →
+  `PartnerAdmin`, SET_NULL: which source user recorded it) — both NULL for a super's record.
+- **`GET admin/source/applications/<id>/agreement/?link=1`** — the full contract, to the resolved WITNESS source only,
+  on the witness step and after (owner ruling): signing dates, `witness_is_you`, `can_witness`, and the PDF as a
+  300-second signed link minted only on `?link=1` (`scholar_money.pdf_url`); `rendered: false`. Anyone else — the
+  applicant's own source when another witnesses, before the guarantor signs, agreements off — 404.
+- **`POST admin/source/applications/<id>/witness/`** `{witness_name, confirm: true}` → `source_witness.record_once`
+  (row lock) → the unchanged `bursary.record_witness` (`by_name` = the user, `witness_name` = typed), then
+  `witness_ip` + `witness_admin`. Refusals: 403, 404, 400 `not_ready`, 409 `already_witnessed`, 409
+  `contract_not_live`, 400 `confirm_required` / `name_required` / `name_too_long`.
+- **The super's fallback** (`AdminBursaryWitnessView`) stays, now through the same lock: a second witness from either
+  door is 409 `already_witnessed`. A super may still record when the source has a signed-in user (lead decision).
+- **One predicate** `source_console.can_witness` for the Overview's `witness_waiting`, the application page's new
+  `contract.can_witness`, the agreement and the POST.
+- **Witness emails:** with an active signed-in user at an active source (`source_witness.has_console`), the
+  witness-pending email (first ask and reminder) carries "Open the agreement" → `/admin/scholarship/<id>`, and the
+  executed copy to the witness keeps its link; otherwise "reply to this email" (unchanged) and the copy goes without
+  a link.
+- **PDF witness block** names `witness_name`, else the organisation — never the recording officer.
+- `urls.py` (at its 600-line standard) shrank: the eight source routes live in `urls_source.py`, added to its
+  `urlpatterns` (flat, so the route walks see them).
+- Docs: decisions.md "A source witnesses from its console" (+ Sprint C's item 3 revised), ARCHITECTURE_MAP.
+- Tests: `test_source_witness.py` (36) — every door into "witnessed" (source POST, super POST, double POST, a stale
+  copy under the lock, an override moved after the page opened, revoked user, switched-off source, guarantor not
+  signed, no agreement, dead contract, flag off), the predicate agreement, the email rule (first ask, reminder,
+  executed copy), the PDF name. Updated on purpose: `test_bursary_agreement` (the no-console witness email), the
+  email golden (a new `witness_pending.console` spec; the plain one unchanged), the S3 contract keys, the
+  deny-everywhere sweep (`witness/` POST reached → 400), the org-fence map (two views).
+
 ## Source sign-in S3 (backend) — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S3, backend half: the source console's read-only

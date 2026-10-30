@@ -1,4 +1,5 @@
-"""The source console's API — read-only, a source user's own (source sign-in S3, 2026-10-30).
+"""The source console's API — a source user's own (source sign-in S3, 2026-10-30; read-only but for
+S4's witness).
 
 Roadmap: `docs/plans/2026-10-30-source-sign-in-roadmap.md` (S3; conflicts C11, C12, C14). Every route
 is under `api/v1/admin/source/` and serves a SOURCE USER only:
@@ -8,7 +9,9 @@ is under `api/v1/admin/source/` and serves a SOURCE USER only:
 - `GET overview/?p=` — the folded stage counts, the scholar count, the contracts waiting for this
   source's witness and the chase list;
 - `GET applications/?p=&q=&stage=` and `GET applications/<id>/`;
-- `GET scholars/?p=` and `GET scholars/<id>/`.
+- `GET scholars/?p=` and `GET scholars/<id>/`;
+- S4, the ONE write: `GET applications/<id>/agreement/` (the full contract, to the witness source
+  only) and `POST applications/<id>/witness/` (it records its witness).
 
 ⚠ WHO: a source user, and NOBODY ELSE — not a super, not an organisation admin, not a reviewer (403).
 A super may not look through a source's eyes: there is no impersonation, and this console is not a
@@ -272,3 +275,99 @@ class AdminSourceScholarDetailView(_SourceConsoleBase):
         if app is None:
             return self._not_found()
         return Response(source_console.scholar_detail(app, source))
+
+
+# ── The witness step (source sign-in S4) ─────────────────────────────────────────────────────────
+#: The witness's typed name is stored in `BursaryAgreement.witness_name`; a longer one is refused,
+#: never cut — it is a signature.
+WITNESS_NAME_MAX = 200
+
+
+def _witness_case(admin, source, pk):
+    """The application, when it is in this source's scope (`applications_for`) AND this source is
+    its resolved witness; else None (a 404). Re-resolved on every call, so an override moved to
+    another source after the page was opened takes the case away at once."""
+    app = _with_rows(source_access.applications_for(admin)).filter(pk=pk).first()
+    if (app is None or not source_console.agreements_on()
+            or not source_console.witness_is(app, source)):
+        return None
+    return app
+
+
+class AdminSourceAgreementView(_SourceConsoleBase):
+    """GET `admin/source/applications/<id>/agreement/?link=1` — the full contract, for the WITNESS
+    source only, on the witness step and after (owner ruling 2026-10-30):
+
+    `{status, student_signed_at, guarantor_signed_at, witness_signed_at, foundation_signed_at,
+    witness_is_you, can_witness, application_id, student_name, pdf_url, pdf_expires_in,
+    rendered: false}`.
+
+    `pdf_url` is null unless `?link=1` (a click), then a signed link to the PDF for
+    `pdf_expires_in` (300) seconds — the Scholars contract tab's rule (`scholar_money.pdf_url`).
+    404 unless `source_console.witness_step_reached`: the applicant's own source that is NOT the
+    witness, an agreement the guarantor has not signed, or agreements switched off. No side
+    effects.
+    """
+
+    def get(self, request, pk):
+        admin, source, err = self._source_caller(request)
+        if err:
+            return err
+        app = _witness_case(admin, source, pk)
+        if app is None or not source_console.witness_step_reached(app, source):
+            return self._not_found()
+        with_link = request.query_params.get('link') == '1'
+        return Response(source_console.agreement_dict(app, source, with_link=with_link))
+
+
+class AdminSourceWitnessView(_SourceConsoleBase):
+    """POST `admin/source/applications/<id>/witness/` `{witness_name, confirm: true}` — the witness
+    source records its witness (roadmap C13). Answers the agreement payload (no link).
+
+    Refusals, in this order: 403 not a source user (or `source_unavailable`); 404 out of scope, not
+    the resolved witness, or agreements switched off; 400 `not_ready` (no agreement, or the
+    guarantor has not signed); 409 `already_witnessed`; 409 `contract_not_live` (the application is
+    no longer `awarded` / `active` / `maintenance` — `source_console.WITNESS_STATUSES`); 400
+    `confirm_required` (`confirm` is not literally true); 400 `name_required` (blank once trimmed);
+    400 `name_too_long` (over `WITNESS_NAME_MAX`).
+
+    The record is `source_witness.record_once` → `bursary.record_witness` with `by_name` = the
+    caller's name and `witness_name` = the typed one, under a row lock; then `witness_ip` (the
+    caller's address, read as the student's and guarantor's signing reads it) and `witness_admin`
+    (the caller). Everything after — the re-render, the Foundation's nudge or the executed
+    distribution — is `record_witness`'s, unchanged.
+    """
+    source_partner_methods = ('post',)
+
+    def post(self, request, pk):
+        admin, source, err = self._source_caller(request)
+        if err:
+            return err
+        app = _witness_case(admin, source, pk)
+        if app is None:
+            return self._not_found()
+        agreement = source_console.agreement_of(app)
+        if agreement is None or agreement.guarantor_signed_at is None:
+            return _error('not_ready', status.HTTP_400_BAD_REQUEST)
+        if agreement.witness_signed_at is not None:
+            return _error('already_witnessed', status.HTTP_409_CONFLICT)
+        if app.status not in source_console.WITNESS_STATUSES:
+            return _error('contract_not_live', status.HTTP_409_CONFLICT)
+        data = request.data if isinstance(request.data, dict) else {}
+        if data.get('confirm') is not True:
+            return _error('confirm_required', status.HTTP_400_BAD_REQUEST)
+        raw = data.get('witness_name')
+        name = raw.strip() if isinstance(raw, str) else ''
+        if not name:
+            return _error('name_required', status.HTTP_400_BAD_REQUEST)
+        if len(name) > WITNESS_NAME_MAX:
+            return _error('name_too_long', status.HTTP_400_BAD_REQUEST, max_length=WITNESS_NAME_MAX)
+        from .. import source_witness
+        try:
+            source_witness.record_once(
+                agreement, org=source, by_name=(admin.name or admin.email or ''),
+                witness_name=name, admin=admin, ip=request.META.get('REMOTE_ADDR'))
+        except source_witness.AlreadyWitnessed:
+            return _error('already_witnessed', status.HTTP_409_CONFLICT)
+        app = _with_rows(source_access.applications_for(admin)).get(pk=app.pk)
+        return Response(source_console.agreement_dict(app, source))

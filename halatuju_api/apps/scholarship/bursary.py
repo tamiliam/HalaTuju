@@ -264,9 +264,11 @@ def render_agreement_html(application, particulars, *, student, guarantor,
         'For the Foundation / Bagi pihak Yayasan',
         name=foundation.get('name', ''), nric=foundation.get('nric', ''),
         extra=foundation.get('title', ''), signed_at=foundation.get('signed_at')))
+    # The witness's own name (typed when recorded), else its organisation — NEVER `by`, the officer
+    # who recorded it (the Contract tab's rule, `scholar_money.contract_payload`; source sign-in S4).
     parts.append(_signature_block(
         'Witness — Partner Organisation / Saksi',
-        name=witness.get('by', ''),
+        name=witness.get('name') or witness.get('org', ''),
         extra=(f"Organisation: {witness.get('org', '')}" if witness.get('org') else ''),
         signed_at=witness.get('signed_at')))
     parts.append('</tr></table>')
@@ -600,7 +602,7 @@ def _regenerate_artefact(agreement, fields):
                   'title': agreement.foundation_signatory_title,
                   'nric': agreement.foundation_signatory_nric,
                   'signed_at': agreement.foundation_signed_at}
-    witness = {'by': agreement.witness_signed_by,
+    witness = {'name': agreement.witness_name, 'by': agreement.witness_signed_by,
                'org': agreement.witness_org.name if agreement.witness_org else '',
                'signed_at': agreement.witness_signed_at}
     html = render_agreement_html(
@@ -676,14 +678,15 @@ def notify_after_guarantor_signed(application):
     otherwise email the Foundation directly to countersign (graceful — no org / no contact
     must never stall the student). Best-effort: any failure is logged, never raised."""
     try:
-        from . import emails
+        from . import emails, source_witness
         org = _resolve_witness_org(application)
         name = _applicant_name(application)
         link = _cockpit_link(application)
         if org and getattr(org, 'contact_email', ''):
-            emails.send_witness_pending_email(
+            emails.send_witness_pending_email(   # a button only if it can sign in (S4)
                 org.contact_email, contact_person=getattr(org, 'contact_person', ''),
-                applicant_name=name, org_name=getattr(org, 'name', ''), link=link)
+                applicant_name=name, org_name=getattr(org, 'name', ''),
+                link=source_witness.console_link(org, application))
         else:
             for to in foundation_notify_emails(application):
                 emails.send_countersign_pending_email(to, applicant_name=name, link=link)
@@ -768,7 +771,7 @@ def distribute_executed_agreement(agreement):
     if agreement.executed_pdf_emailed_at is None:
         student_ok = False
         try:
-            from . import emails, usage
+            from . import emails, source_witness, usage
             profile = getattr(application, 'profile', None)
             name, lang = _applicant_name(application), getattr(application, 'locale', 'en') or 'en'
             cp = getattr(application, 'chosen_programme', None) or {}
@@ -784,10 +787,10 @@ def distribute_executed_agreement(agreement):
             org = agreement.witness_org or _resolve_witness_org(application)
             witness_email = getattr(org, 'contact_email', '') if org else ''
             cockpit = _cockpit_link(application)
-            if witness_email:
+            if witness_email:   # its link only if somebody there can sign in (source sign-in S4)
                 emails.send_executed_copy_email(
                     witness_email, applicant_name=name, programme_name=programme,
-                    pdf=pdf_bytes, link=cockpit)
+                    pdf=pdf_bytes, link=source_witness.console_link(org, application))
             # Org admins (template counterparty_notify_emails → supers → ADMIN_NOTIFY_EMAIL).
             for to in foundation_notify_emails(application):
                 emails.send_executed_copy_email(
@@ -828,7 +831,7 @@ def send_signing_reminders(now=None):
     if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
         return summary
     from datetime import timedelta
-    from . import emails
+    from . import emails, source_witness
     from .models import BursaryAgreement
     now = now or timezone.now()
     # ⚠ THE INTERVAL IS PER APPLICATION, so it is resolved INSIDE the loop (Org Config Sprint F).
@@ -864,9 +867,10 @@ def send_signing_reminders(now=None):
             since = max(ag.guarantor_signed_at, ag.witness_reminded_at or ag.guarantor_signed_at)
             if now - since < interval:
                 continue
-            if emails.send_witness_pending_email(
+            if emails.send_witness_pending_email(   # the same button rule as the first ask
                     org.contact_email, contact_person=getattr(org, 'contact_person', ''),
-                    applicant_name=name, org_name=getattr(org, 'name', ''), link=link):
+                    applicant_name=name, org_name=getattr(org, 'name', ''),
+                    link=source_witness.console_link(org, app)):
                 ag.witness_reminded_at = now
                 ag.save(update_fields=['witness_reminded_at', 'updated_at'])
                 summary['witness'] += 1

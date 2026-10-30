@@ -147,9 +147,9 @@ from .sources import (
 from .source_users import AdminSourceUserResendView, AdminSourceUserRevokeView
 # Source sign-in S3 (2026-10-30) — the source console, a source user's own read-only API.
 from .source_console import (
-    _SourceConsoleBase, AdminSourceApplicationDetailView, AdminSourceApplicationListView,
-    AdminSourceOverviewView, AdminSourceProfileView, AdminSourceScholarDetailView,
-    AdminSourceScholarListView,
+    _SourceConsoleBase, AdminSourceAgreementView, AdminSourceApplicationDetailView,
+    AdminSourceApplicationListView, AdminSourceOverviewView, AdminSourceProfileView,
+    AdminSourceScholarDetailView, AdminSourceScholarListView, AdminSourceWitnessView,
 )
 from .spending import (
     _SpendingBase, _spending_gaps, AdminSpendingCategoryView, AdminSpendingView,

@@ -459,6 +459,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminSourceApplicationDetailView': 'source-fenced (source_access)',
         'AdminSourceScholarListView': 'source-fenced (source_access)',
         'AdminSourceScholarDetailView': 'source-fenced (source_access)',
+        # S4: the witness source's contract and its witness — `applications_for`, then
+        # `source_console.witness_is` (the resolved witness must be the caller's source).
+        'AdminSourceAgreementView': 'source-fenced (source_access + witness_is)',
+        'AdminSourceWitnessView': 'source-fenced (source_access + witness_is)',
         # People → Change role (staff lifecycle, 2026-10-09). Fenced through
         # `_staff_target_manageable`, the courses staff fence Revoke / Resend / Delete use: an
         # org_admin reaches only their OWN organisation's non-org_admin staff; anything else 404s.

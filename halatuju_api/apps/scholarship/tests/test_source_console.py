@@ -311,7 +311,7 @@ class TestOneApplication(_Fixture):
         _r, body = self.get(f'{APPLICATIONS}{self.scholar.pk}/')
         self.assertEqual(set(body['contract']), {
             'status', 'student_signed_at', 'guarantor_signed_at', 'witness_signed_at',
-            'foundation_signed_at', 'witness_is_you'})
+            'foundation_signed_at', 'witness_is_you', 'can_witness'})   # can_witness: S4
         self.assertEqual((body['contract']['status'], body['contract']['witness_is_you']),
                          ('binds', True))
 

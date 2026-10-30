@@ -423,6 +423,29 @@ amounts, payments, results, semesters, sub-state. `programme_overview.SECTIONS_B
 entry (the generic overview stays 403). Never calls `AdminApplicationDetailView` (side effects, C11). Tests:
 `tests/test_source_console.py` (shapes, scope, the recursive never-list walk, a query bound per list).
 
+⚠ **A SOURCE WITNESSES THE CONTRACT FROM ITS CONSOLE** (source sign-in S4 backend, 2026-10-30; decisions.md
+2026-10-30 "A source witnesses from its console"). The source routes now live in `apps/scholarship/urls_source.py`,
+ADDED to `urls.py`'s `urlpatterns` (not an `include()`, so the route walks see them flat; `urls.py` is at its
+600-line standard). `GET admin/source/applications/<id>/agreement/?link=1` (`AdminSourceAgreementView`): ONLY the
+resolved witness source (`source_console.witness_step_reached`: agreements on, agreement exists, guarantor signed,
+`witness_is`) — `{status, *_signed_at, witness_is_you, can_witness, application_id, student_name, pdf_url,
+pdf_expires_in, rendered:false}`; `pdf_url` only on `?link=1`, via `scholar_money.pdf_url` (300 s, own path only);
+the applicant's own source that is NOT the witness 404s. `POST …/witness/` `{witness_name, confirm:true}`
+(`AdminSourceWitnessView`): 404 out of scope / not the witness / agreements off, 400 `not_ready`, 409
+`already_witnessed`, 409 `contract_not_live` (status not in `source_console.WITNESS_STATUSES` = awarded / active /
+maintenance), 400 `confirm_required` / `name_required` / `name_too_long` (200, the column). It goes through
+`source_witness.record_once` (row lock; a second witness from ANY door is `AlreadyWitnessed`) →
+`bursary.record_witness` (chain unchanged), then stamps `BursaryAgreement.witness_ip` (REMOTE_ADDR, as the student's
+signing) and `witness_admin` (FK → `PartnerAdmin`, SET_NULL; scholarship 0191) — both NULL for a super's record.
+`source_console.can_witness` is THE predicate for the Overview's `witness_waiting`, the contract block's and the
+agreement's `can_witness`, and the POST. The super's `AdminBursaryWitnessView` stays as the fallback (also through
+`record_once`, so 409 after any witness). **Email button rule** `source_witness.console_link` / `has_console`: the
+source is active AND an active user of it has signed in (`source_invite.has_joined`) → the witness-pending email
+(first ask and reminder) carries a button to `<frontend>/admin/scholarship/<id>` (the web routes a source user to its
+own view) and the executed copy to the witness keeps its link; otherwise "reply to this email" and no link. The PDF's
+witness block names `witness_name`, else the organisation — never `witness_signed_by`. Tests:
+`tests/test_source_witness.py`.
+
 ⚠ **EACH APPLICATION KEEPS ITS OWN "WHO REFERRED YOU?"** (sources Sprint C, 2026-10-19; owner's rulings
 2026-10-09). `ScholarshipApplication.referral_code` (the answer as given, fixed choices included, `''`
 for none — `db_default ''`) and `ScholarshipApplication.source` (that code's source IN THE
@@ -432,8 +455,8 @@ APPLICATION'S OWN ORGANISATION, `gift_sources.submitted_source`; PROTECT) are wr
 (`partner_comms.partner_applications` / `source_tally`, `partner_notify` milestones), the Sources
 counts, the Applications Source filter / column / sort (`referral_code`), the cockpit's `source` key
 (and the old `referred_by_org` key, same value, one release). The witness is the override, else the
-application's source (`bursary._resolve_witness_org`) — never the referral partner — and only a super
-records it (`AdminBursaryWitnessView`; with neither a source nor an override, 400
+application's source (`bursary._resolve_witness_org`) — never the referral partner — and the witness SOURCE records
+it from its console since source sign-in S4 (a super may still, `AdminBursaryWitnessView`; with neither a source nor an override, 400
 `no_witness_organisation`). The application's answer is the submit REQUEST's `referral_source`
 (absent → `''`), never the profile chip; scholarship 0174 also stamps the milestone backlog the old
 chip rule never reached, so no source is emailed about a past event. Source NAMES for every list role (reviewer and QC included):
