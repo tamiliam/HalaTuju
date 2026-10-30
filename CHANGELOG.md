@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in S3 (backend) — 2026-10-30
+
+Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S3, backend half: the source console's read-only
+API (the UI waits for the owner's approval of the mock-ups). No migration. NOT deployed.
+
+- **Six routes under `api/v1/admin/source/`** (`views_admin/source_console.py`; payloads
+  `apps/scholarship/source_console.py`, allowlists by construction): `GET/PATCH profile/`, `GET overview/?p=`,
+  `GET applications/?p=&q=&stage=`, `GET applications/<id>/`, `GET scholars/?p=`, `GET scholars/<id>/`. A SOURCE
+  USER only — every staff role, a super included, gets 403 (no impersonation); a revoked user or a switched-off
+  source 403 (`source_unavailable`); rows only through `source_access`, so another source's or another
+  organisation's student is a 404. `?p=` is one of the source's own gifts (else 404); absent, it does not narrow.
+- **Stage = what the student sees** (`student_facing_status`) folded on the partner emails' `STAGE_LINES`: an
+  embargoed decline and a `recommended` case both read "under review"; an outcome carries `told_at`.
+- **Profile PATCH** — own name; the source's name, contact person, contact email, phone (the Sources page's
+  columns and widths). Code / organisation / `show_in_apply` / `is_active` / email: 400 `not_editable`.
+- **Overview** — stage counts, scholars, `witness_waiting` (this source is the resolved witness, guarantor signed,
+  no witness yet; empty while `BURSARY_AGREEMENT_ENABLED` is off) and `missing_items` = the partner email's chase
+  list (`partner_comms.chase_entries`, extracted from `chase_rows`, which now calls it; its output is unchanged).
+- **One application** — a listed one: profile basics, phone and email (owner ruling), stage, `told_at`, open
+  checklist PART names on a shortlisted one (lead decision past the email ceiling, for the owner to review —
+  `docs/decisions.md` 2026-10-30 "What the source console shows"), contract dates; a witness-only case: name, gift,
+  contract only. Never `AdminApplicationDetailView` or its serializer; no side effects.
+- **Scholars** — the listed applications with a maintenance file: institution, course, status as the student sees
+  it, contract stage. No money, payments, results, semesters or sub-state.
+- `programme_overview.SECTIONS_BY_ROLE` unchanged (the console has its own overview).
+- Tests: `test_source_console.py` (38) — shapes, scope (own / other source / other organisation / witness-only /
+  revoked / switched off / four staff roles), a recursive never-list key walk over every response, no N+1 (each list
+  costs the same at two sizes, bounded); the deny-everywhere sweep's `ALLOWED` gains six pairs (five GETs and
+  the profile PATCH; `scholars/<id>/` stays a 404 there, the swept id not being a scholar); the org-fence map
+  classifies the seven classes (the views are scanned with the rest of `views_admin/`; the payload module holds
+  no watched-model query).
+- ⚠ Found, not changed: the weekly partner email's `stage_counts` reads the raw status, so it counts a decline still
+  inside its cool-off as "Rejected" before the student is told. Raised for the owner.
+
 ## Source sign-in S2 (backend) — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S2, backend half (the UI half waits for the owner's

@@ -448,6 +448,17 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SourceUserBase': 'base — super/org_admin gate + source_invite.manageable',
         'AdminSourceUserResendView': 'source-user-fenced (source_invite.manageable)',
         'AdminSourceUserRevokeView': 'source-user-fenced (source_invite.manageable)',
+        # Source sign-in S3 (2026-10-30): the source console. A SOURCE USER only (staff, a super
+        # included, 403); rows only through `source_access` (`listed_applications_for` /
+        # `applications_for`), which cut to the source's own organisation before the source narrows
+        # them; another source or organisation is 404 (`test_source_console.py`).
+        '_SourceConsoleBase': 'base — source-user gate + source_access scope',
+        'AdminSourceProfileView': 'source-user-own (the caller and its own source)',
+        'AdminSourceOverviewView': 'source-fenced (source_access)',
+        'AdminSourceApplicationListView': 'source-fenced (source_access)',
+        'AdminSourceApplicationDetailView': 'source-fenced (source_access)',
+        'AdminSourceScholarListView': 'source-fenced (source_access)',
+        'AdminSourceScholarDetailView': 'source-fenced (source_access)',
         # People → Change role (staff lifecycle, 2026-10-09). Fenced through
         # `_staff_target_manageable`, the courses staff fence Revoke / Resend / Delete use: an
         # org_admin reaches only their OWN organisation's non-org_admin staff; anything else 404s.

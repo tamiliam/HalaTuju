@@ -175,6 +175,7 @@ from .views_admin import (
     AdminReviewerSystemEmailsView,
     AdminInvitationCancelView, AdminInvitationsView,
     AdminSourceUserResendView, AdminSourceUserRevokeView,
+    AdminSourceApplicationDetailView, AdminSourceApplicationListView, AdminSourceOverviewView, AdminSourceProfileView, AdminSourceScholarDetailView, AdminSourceScholarListView,
     AdminStaffRoleView,
     AdminStaffPermissionsView,
     AdminOrgRequestApproveView,
@@ -420,6 +421,12 @@ urlpatterns = [
     # Source sign-in S2: a source user's Resend and Revoke (its invite is POST admin/invitations/).
     path('admin/source-users/<int:pk>/resend/', AdminSourceUserResendView.as_view()),
     path('admin/source-users/<int:pk>/revoke/', AdminSourceUserRevokeView.as_view()),
+    path('admin/source/profile/', AdminSourceProfileView.as_view()),  # source sign-in S3: the source console
+    path('admin/source/overview/', AdminSourceOverviewView.as_view()),
+    path('admin/source/applications/', AdminSourceApplicationListView.as_view()),
+    path('admin/source/applications/<int:pk>/', AdminSourceApplicationDetailView.as_view()),
+    path('admin/source/scholars/', AdminSourceScholarListView.as_view()),
+    path('admin/source/scholars/<int:pk>/', AdminSourceScholarDetailView.as_view()),
     # People → Change role (staff lifecycle, 2026-10-09). Beside the courses app's own
     # `admin/admins/<id>/revoke|resend/`; no pattern there can match `role/`.
     path('admin/admins/<int:admin_id>/role/', AdminStaffRoleView.as_view()),

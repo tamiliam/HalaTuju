@@ -16543,3 +16543,28 @@ is a second place for the staff rules to drift.
 **Trade-offs:** the invitation letter now goes out before S3's console exists; nothing is deployed until S4 closes,
 so no source receives it before there is something to sign in to.
 **Revisit if:** a source ever needs to be added with nobody to invite (then a super-only "add without a person").
+
+## 2026-10-30 — What the source console shows (source sign-in S3, backend; lead decisions for the owner to review)
+**Decision:** the source console (`api/v1/admin/source/…`) shows a source no more than its partner emails already
+carry, plus the two things the owner ruled in (its students' phone and email) and ONE step past the ceiling, taken by
+the lead and flagged here for the owner: on a SHORTLISTED application's own page, the NAMES of the checklist parts
+the student has not finished (`quiz`, `story`, `funding`, `documents`, `consent`, `address`, `guardian_documents`,
+`family` — the coarse keys of `services.completeness.application_completeness`), never a document type and never an
+income route. The partner emails carry no item names at all — the chase list is name, applied date and last
+activity — so the Overview's `missing_items` is exactly that chase list (`partner_comms.chase_entries`, now shared
+by the email and the console) and the Applications list carries no missing-items count (the stage "Shortlisted —
+application incomplete" already says it).
+**The stage is the student's own.** The console folds `student_status.student_facing_status` (an embargoed decline
+reads as the stage it was declined from, `recommended` as `interviewed`) through `partner_comms.STAGE_LINES`, so a
+source never learns an outcome before the student is told (roadmap C12). ⚠ The weekly email's `stage_counts` reads
+the RAW status and so counts a decline still inside its cool-off as "Rejected" — the console does not; the email is
+unchanged in S3 and is raised for the owner.
+**Who and what:** a source user only (staff, a super included, 403 — no impersonation); rows only through
+`source_access`; a witness-only case (C14) shows the student's name, the gift and the contract dates, nothing else;
+scholars are the LISTED applications with a maintenance file. `programme_overview.SECTIONS_BY_ROLE` is left alone:
+the console has its own overview endpoint, so the generic Programme Overview stays 403 to the role by deny-by-default.
+**Alternatives considered:** (A) give the source the generic Programme Overview with a `source` section —
+rejected: one more role inside a page built for staff is one more place a staff section could reach a source.
+(B) show the open document types — rejected: a document name can say which income route a household is on.
+**Revisit if:** the owner would rather the console keep strictly to the email ceiling (drop `missing_items` from the
+application page), or wants the weekly email's counts masked the same way.

@@ -351,8 +351,16 @@ def chase_rows(org):
       they have uploaded nothing since. **Never `updated_at`** (see the module docstring): a
       system-side save must not make a dormant student look active.
     """
+    return [tuple(row) for _app, *row in chase_entries(partner_applications(org))]
+
+
+def chase_entries(applications):
+    """`chase_rows`, over any applications queryset, with each row's application in front:
+    `(application, name, applied, last_activity)`. Source sign-in S3 (2026-10-30): the source
+    console's "missing items" is THIS list for one gift, so the console and the weekly email
+    cannot disagree about who is being chased. Two queries, whatever the length."""
     apps = list(
-        partner_applications(org)
+        applications
         .filter(status='shortlisted')
         .select_related('profile')
         .order_by('submitted_at')
@@ -372,6 +380,7 @@ def chase_rows(org):
         upload = newest.get(app.id)
         activity = upload if (upload and applied and upload > applied) else applied
         rows.append((
+            app,
             (getattr(app.profile, 'name', '') or '').strip() or f'Applicant #{app.id}',
             applied.date() if applied else None,
             activity.date() if activity else None,

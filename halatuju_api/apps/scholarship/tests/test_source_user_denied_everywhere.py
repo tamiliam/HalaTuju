@@ -35,6 +35,18 @@ ALLOWED = {
     ('api/v1/admin/role/', 'get'),
     ('api/v1/admin/scholarship/scopes/', 'get'),
     ('api/v1/admin/profile/', 'get'),
+    # Source sign-in S3 (2026-10-30) — the source console, built for this role and no other. Each
+    # serves an allowlist payload scoped by `source_access`; `test_source_console.py` proves what
+    # each returns, to whom, and that no never-list key appears in any of them. The profile PATCH
+    # with the sweep's empty body changes nothing and answers the profile. `scholars/<int:pk>/` is
+    # deliberately absent: the swept id is a submitted application, not a scholar, so it is a 404
+    # here (in REFUSED) and its 200 is proven there.
+    ('api/v1/admin/source/profile/', 'get'),
+    ('api/v1/admin/source/profile/', 'patch'),
+    ('api/v1/admin/source/overview/', 'get'),
+    ('api/v1/admin/source/applications/', 'get'),
+    ('api/v1/admin/source/applications/<int:pk>/', 'get'),
+    ('api/v1/admin/source/scholars/', 'get'),
 }
 
 #: (route, method) pairs a source user's call REACHES since S2, which serve no data: the view runs
