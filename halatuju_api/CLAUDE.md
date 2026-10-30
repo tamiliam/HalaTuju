@@ -1097,22 +1097,19 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### ⚠ STATE AT 2026-10-30 — SOURCE SIGN-IN BUILT, NOT DEPLOYED (branch `source-signin`)
+### ⚠ STATE AT 2026-10-30 — SOURCE SIGN-IN LIVE (main `14537b10`; api-01211-psc, web-01034-n7j)
 
 **What it is.** A referral source can now be invited and sign in (new role `source_partner`, `PartnerAdmin.source`).
 Invitations → Source replaces "Add source"; the Sources page's Edit locks once the source has joined. A source user
 is denied every existing view by default (`PartnerAdminMixin.get_admin`) and reaches only `api/v1/admin/source/…`:
 a read-only console of its own students (stage = what the student sees), its Profile, and the bursary witness step
 on the student's page (`?step=witness`). Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, retro
-`docs/retrospectives/retrospective-2026-10-30-source-sign-in.md`. **Waiting for the owner's go.**
+`docs/retrospectives/retrospective-2026-10-30-source-sign-in.md`.
 
-**DEPLOY ORDER (migrate-first; this deploy does not run `migrate`):**
-1. `courses/0089` → `scholarship/0190` → `scholarship/0191`, in that order. The DDL is in each migration's
-   docstring; write each `django_migrations` ledger row IN THE SAME TRANSACTION as its DDL. Check the ledger
-   afterwards (sprint-close step 3a).
-2. Then ONE push that deploys api AND web together. The witness emails link to `/admin/scholarship/<id>`, which
-   only the new web routes a source user through. `BURSARY_AGREEMENT_ENABLED` stays OFF, so no witness email is
-   sent anyway — do not switch it on as part of this deploy.
+**DEPLOYED 2026-10-30.** `courses/0089`, `scholarship/0190`, `scholarship/0191` were applied MIGRATE-FIRST by hand
+with their ledger rows (checked afterwards: 3 rows, 4 columns, 1 check constraint) — **never re-apply that DDL.**
+Both builds green, api health 200, no 5xx after the deploy. No source has been invited yet.
+`BURSARY_AGREEMENT_ENABLED` stays OFF, so no witness email is sent — the web route the emails link to is live.
 
 ⚠ **Bundle budget: the first-load median reads 147.751 kB against 148 (0.25 kB of room), and
 `/scholarship/application` is 0.13 kB under its line.** The next web change that grows a route may tip the gate

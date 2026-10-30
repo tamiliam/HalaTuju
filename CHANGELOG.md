@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — ⚠ NOT DEPLOYED, awaiting the owner's go
+## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — LIVE 2026-10-30 (main 14537b10; api-01211-psc, web-01034-n7j). Migrations courses 0089, scholarship 0190, 0191 applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL
 
 The six entries below are one arc on branch `source-signin`: S1, S2, S3, S4 (backend), the backend review fixes, and
 the web half with its review round. Retrospective `docs/retrospectives/retrospective-2026-10-30-source-sign-in.md`.
