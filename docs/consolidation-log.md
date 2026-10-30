@@ -8,6 +8,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries and the four sprint lines wrongly logged here are listed in that review, and line by line in git at `6e1d66db`)_
 
 - 2026-10-29 a75d80ff fix: STPM results page streams follow the MPM grouping - Sains Sukan under Arts only, Matematik (M) and ICT under both (halatuju-web/src/lib/stpmResultsSubjects.ts, halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts)
+- 2026-10-30 1a6f8cd1 feat: request 50 - sort the applications list by Assigned, unassigned last (halatuju_api/apps/scholarship/views_admin/applications.py, halatuju-web/src/app/admin/scholarship/page.tsx, test_admin_scholarship.py)
 
 ## Sprints since the last review
 
@@ -35,6 +36,8 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-29 Matric/Diploma Exact-read M1 (an ACADEMIC TRANSCRIPT is told by its issuer) — 98cc71e3 f856d20c _(logged by the billing session at its close, as above)_
 - 2026-10-29 Matric/Diploma Exact-read M2 (the Matriculation transcript is read Exact) — b0cdcd9d 6ce290ed _(logged by the billing session at its close, as above)_
 - 2026-10-29 Matric/Diploma Exact-read M3 (a polytechnic Diploma transcript is read Exact) — 814ffa0f 128a8fab _(logged by the billing session at its close, as above)_
+- 2026-10-29 Matric/Diploma Exact-read M4 (Matriculation and polytechnic genuineness, genuine or nothing) — 314a38ca 860792b8
+- 2026-10-30 Matric/Diploma Exact-read M4b (owner rulings: only the final result counts; slip/portal = final transcript owed) — 76748c33 59dd96c2 b9e71d82 1586a572 9ad721a2
 - 2026-10-29 Default payment schedule mirrors contract 10 (sprint: money; no migration) — e6a03fb3
 - 2026-10-30 Billing reads the published hours + corrections of an earlier month (sprint: money; migration scholarship/0187) — cbfa2a59 375edb62
 
