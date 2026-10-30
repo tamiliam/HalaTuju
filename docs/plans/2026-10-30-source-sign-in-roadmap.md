@@ -1,5 +1,10 @@
 # Source sign-in ("Source Partner console") — HalaTuju roadmap
 
+> **Status at 2026-10-30 close:** S1–S4 BUILT (backend and web), adversarially REVIEWED (backend round, web round 1),
+> every finding fixed or logged — NOT DEPLOYED, waiting for the owner's go. Branch `source-signin`. Deploy order and
+> open owner items: `halatuju_api/CLAUDE.md` "Next Sprint". Retrospective
+> `docs/retrospectives/retrospective-2026-10-30-source-sign-in.md`.
+
 ## Context
 
 Sources (bursary referral organisations, `referral_sources` table) have never had a login. The
@@ -40,6 +45,7 @@ and each one has a fix in a sprint.
 ## Roadmap — 4 sprints
 
 ### S1 — Role and access foundation (backend + role list; nothing visible)
+**Status: built `89714e00`, reviewed, not deployed.**
 - `courses/0089`: role choice `source_partner`; FK `PartnerAdmin.source` → `scholarship.ReferralSource` (nullable, PROTECT). Precedent: `PartnerAdmin.programme` (courses 0073).
 - `apps/scholarship/source_access.py`: `applications_for(admin)` (org fence via `_org_scoped`, plus `source_id` or `witness_org_id` = `admin.source_id`), `programmes_for(admin)` (via `ProgrammeReferralSource` + applications).
 - `staff_permissions.resolve()` stays empty for the role — explicit test that every existing B40 view returns 403/404 to a source user.
@@ -50,6 +56,7 @@ and each one has a fix in a sprint.
 - Acceptance: full pytest + jest green; a planted source user sees nothing anywhere.
 
 ### S2 — Inviting a source (Invitations + Sources pages)
+**Status: built (backend `e88810ac`, web `bd22bfd7`), reviewed, not deployed.** The migration is `scholarship/0190`, not 0189 — 0189 was taken by another session (maintenance S6a) before S2 was built.
 - Backend: `KIND_ROLES['source'] = ('source_partner',)`; `accept_for_admin` / `purge_expired` fixes; `scholarship/0189` adds `Invitation.referral_source`.
 - Invite path (reuse `AdminInviteView`, `courses/views_staff.py:188` — Google / temp password / existing branches): role `source_partner` + either `source_id` (existing source not yet joined) or new source `name` + `code` (creates the `ReferralSource` in the tenant, same rules as today's Add source). Super and org_admin only. Wire `send_source_invitation_email` from `emails/invitation_mail.py`.
 - Sources API: POST create removed (moved to invite); PATCH refuses detail fields once joined; list gains `joined` + user count.
@@ -57,6 +64,7 @@ and each one has a fix in a sprint.
 - Decisions entry (C8). Tests updated.
 
 ### S3 — The source console (read-only)
+**Status: built (backend `17b51f6a`, web `bd22bfd7`; mock-ups approved by the owner), reviewed, not deployed.** As built, `SECTIONS_BY_ROLE` was left unchanged — the console has its own overview endpoint (decisions.md 2026-10-30 "What the source console shows").
 - **Stitch screens first** (mandatory): Overview, Applications list, application view, Scholars, profile. Owner approves before UI code.
 - Backend endpoints under `admin/source/`: `profile/` (GET/PATCH: own name; source name, contact person, contact email, phone), `overview/?p=`, `applications/?p=`, `applications/<id>/`, `scholars/?p=`, `scholars/<id>/`. Allowlist serializers, modelled on the sponsor serializers (`serializers.py:99,253,314`). Out of scope = 404. Each view classified in `test_org_fence.py`.
 - **What a source sees:** student name, **phone and email (owner ruling 2026-10-30)**, gift, school, state, qualification level, submitted date, folded stage, missing items (names only — already in their emails); for scholars: institution, course, scholar status, contract stage. **Never:** NRIC, address, income, family, essays, documents, scores, merit, verdicts, reviewer names, notes, money.
@@ -64,6 +72,7 @@ and each one has a fix in a sprint.
 - Web: nav registry rows for `source_partner` (Programme: Overview, Applications, Scholars; Utility: Profile); landing = `/admin/programme/overview`; the three pages switch to `Source*` components for this role; profile page Organisation card becomes editable for a source.
 
 ### S4 — Witness from the console
+**Status: built (backend `bc9c050b`, web `bd22bfd7` — the step lives inside the student's page, `?step=witness`), reviewed, not deployed.**
 - `scholarship/0191` (0190 went to S2's `Invitation.referral_source`): `BursaryAgreement.witness_ip` (parity with student / guarantor) + `witness_admin` (which source user).
 - `admin/source/applications/<id>/agreement/` (GET the **full contract** PDF — owner ruling 2026-10-30 — only to the named witness source, only on the witness step and after) and `.../witness/` (POST typed name + tick "I confirm…"). Allowed only when the caller's source = `_resolve_witness_org`, the guarantor has signed and no witness yet. Calls existing `bursary.record_witness` (`bursary.py:556`) with `by_name` = user, `witness_name` = typed name. Chain after that is unchanged.
 - Super cockpit button stays (fallback).
@@ -73,6 +82,7 @@ and each one has a fix in a sprint.
 - Note: `BURSARY_AGREEMENT_ENABLED` is OFF in production and 0 agreements exist; this ships ready but quiet. Tested with `bursary_e2e`.
 
 ### Close (end of S4)
+**Status: adversarial review done (backend fixes `e9bc334d`, web round 1 `f45bc558`); docs closed 2026-10-30. Guide / FAQ text for sources NOT written — the role sees no Guide or FAQ yet (TD-432). Deploy waits for the owner.**
 - Guide/FAQ text for sources; `docs/decisions.md`, `.claude/ARCHITECTURE_MAP.md`, CHANGELOG, technical-debt.
 - **Adversarial review before push** (identity / PII rule).
 - Deploy: migrate-first (courses 0089, scholarship 0190, 0191), then API, then web. **Owner says go before deploy.**

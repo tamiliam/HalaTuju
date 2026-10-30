@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — ⚠ NOT DEPLOYED, awaiting the owner's go
+
+The six entries below are one arc on branch `source-signin`: S1, S2, S3, S4 (backend), the backend review fixes, and
+the web half with its review round. Retrospective `docs/retrospectives/retrospective-2026-10-30-source-sign-in.md`.
+Deploy is migrate-first (courses 0089 → scholarship 0190 → scholarship 0191), then ONE push for api and web together
+(`halatuju_api/CLAUDE.md` "Next Sprint").
+
+- **Gates at the close:** api 10,837 passed / 3 skipped (`pytest -n auto`, the rebased branch, before the web review
+  round, which changed no backend file) · web 5,418 jest / 337 suites · `next build` OK · bundle median 147.751 kB
+  against 148 (0.249 kB of room); `/scholarship/application` 0.132 kB under its line (TD-427 status, TD-433).
+- Tech debt raised: TD-429, TD-430 (backend review), TD-431 to TD-433 (close).
+
 ## Source sign-in web (S2–S4 UI) — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, the web half of S2, S3 and S4. Design of record: the

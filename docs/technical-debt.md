@@ -6948,6 +6948,11 @@ exists to refuse. **Fix:** before 6b, find the weight to give back (the TD-416 m
 gz(A ∪ B) before any split; move words a route never shows into the slice of the route that does), and give 6b's
 student strings their own place in the `bursary` slice, which only `/scholarship/bursary` loads. *(B · S)*
 
+**Status 2026-10-30 (source sign-in close):** still open and tighter — the median reads 147.751 kB against 148,
+0.249 kB of room (was 0.507). The arc's own screens went behind `components/source/LazySource.tsx` because imported
+statically they put the median at 148.6. The rule stands: measure before the push, give weight back, never raise
+the line.
+
 ### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low
 
 **Raised 2026-10-30 by the maintenance S6a inventory.** `courses/views.py` `SendVerificationView` sends with
@@ -6982,3 +6987,33 @@ decline would have been counted and then vanish. The source console (`source_con
 folds what the student sees (`student_status.student_facing_status`). **Fix:** count on the student-facing status
 (fold `rejected` + pending marker to its `pre_decline_status`, the console's rule), keep the `total` reconciliation,
 and add the cool-off case to the digest tests. *(B · S)*
+
+### [TD-431] An org admin can get round the Sources Edit lock by revoking the source user, editing, then re-inviting - low
+
+**Raised 2026-10-30 by the source sign-in adversarial review (L6a), accepted by the lead.** The Sources page's Edit
+locks once a source has joined (409 `managed_by_source`): the source owns its own name, contact and phone. The lock
+reads "an active signed-in user exists", so a super or org_admin who revokes every user of the source can edit the
+details and then re-invite. Accepted: each step is a deliberate, visible action by someone who already controls the
+source's access, the revoke and re-invite are on the Invitations page for anyone to see, and the source can change
+the details back from its Profile. **Fix if it matters:** keep the lock once a source has EVER joined (a stamp on
+`ReferralSource`, not a live count), or log a details change made while the source was briefly unjoined. *(B · S)*
+
+### [TD-432] Source users have no Guide or FAQ - low
+
+**Raised 2026-10-30 by the source sign-in close.** The roadmap's Close asked for Guide / FAQ text for sources; the
+web hides both entries for `source_partner` (`lib/navigation.ts`), because every page of the manual is written for
+staff and would describe screens a source cannot open. So a source user has no written help for its console or the
+witness step, and the org admin's guide does not yet mention the Invitations → Source tab either. **Fix:** a short
+source section (what the stages mean, why a result appears only after the student is told, how to witness), shown
+only to the role, plus one paragraph in the org admin's Invitations section; mind the bundle (TD-427) — the manual
+lives on its own routes, so measure. *(B · S)*
+
+### [TD-433] `/scholarship/application` is 0.13 kB under its first-load line - medium
+
+**Raised 2026-10-30 by the source sign-in close.** The arc's final `next build` reads `/scholarship/application`
+0.132 kB under its `first_load_js` line (212 kB, `code-standards.json`), inside the bundle script's 0.25 kB
+near-line warning — and the gate's build reads tens of bytes heavier than a local one (lessons.md 2026-10-05). The
+arc built nothing for the student pages; the route moves whenever the core every route downloads moves. Next to
+TD-427, it means the next student-facing change can fail the gate on either reading.
+**Fix:** before the next change to a student route, find weight to give back on this route (the TD-416 method), so
+both it and the median have at least 1 kB of room. *(B · S)*

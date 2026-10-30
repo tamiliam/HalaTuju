@@ -46,6 +46,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-29 Default payment schedule mirrors contract 10 (sprint: money; no migration) — e6a03fb3
 - 2026-10-30 Billing reads the published hours + corrections of an earlier month (sprint: money; migration scholarship/0187) — cbfa2a59 375edb62 fd6e2dd5 01214600
 - 2026-10-30 Billing — finishing a request includes its figures (sprint: money; no migration) — 0545ac0e eee279c8
+- 2026-10-30 source sign-in S1–S4 (+2 review rounds; migrations courses 0089, scholarship 0190, 0191) — 89714e00 e88810ac 17b51f6a bc9c050b e9bc334d bd22bfd7 f45bc558
 
 ## Reviews
 

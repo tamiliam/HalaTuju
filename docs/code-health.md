@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-30 | f45bc55 | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 75 | 93 | 0 | 3 | 12 | 151 | 0 | 0 | ok | ok |
 | 2026-10-30 | 2127fda | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | 579e27c | 90 | 52 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | b9028b4 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
@@ -111,24 +112,24 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-30, 2127fda, window 2026-08-01 onward)
+## Latest run (2026-10-30, f45bc55, window 2026-08-01 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
 | `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 17 | 1356 | 23.1 |
 | `halatuju_api/apps/scholarship/views.py` | 9 | 2435 | 21.9 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 16 | 1356 | 21.7 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1022 | 11.2 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
-| `halatuju_api/apps/courses/views_admin.py` | 9 | 802 | 7.2 |
-| `halatuju_api/apps/courses/views.py` | 3 | 2190 | 6.6 |
+| `halatuju_api/apps/courses/views_admin.py` | 9 | 815 | 7.3 |
+| `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1007 | 7 |
 
 ### Fix ratio
-- 232 fix / 220 feat commits since 2026-08-01
+- 235 fix / 226 feat commits since 2026-08-01
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -160,10 +161,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:168 autofill_pathway_from_offer`
 - `186  halatuju_api/apps/scholarship/resolution.py:275 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
-- `167  halatuju_api/apps/courses/views_staff.py:193 post`
 - `165  halatuju_api/apps/courses/views.py:1017 get`
 - `162  halatuju_api/apps/scholarship/help_engine.py:342 verdict_for_document`
-- `151  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
+- `153  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
+- `151  halatuju_api/apps/courses/views_staff.py:192 post`
 
 ### Function names with 3+ homes in one app
 - _gemini_generate x3 (scholarship): apply_copy_draft.py, contracts.py, sponsor_terms.py
@@ -175,7 +176,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 46 edges (223 import statements)
+- scholarship -> courses: 48 edges (230 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -194,10 +195,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 38 of 305 web test files read source text (signals: readFileSync, apiSource); drift 24 (*Drift.test.ts, counted apart)
+- 38 of 312 web test files read source text (signals: readFileSync, apiSource); drift 25 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 423 entries have a defining line; 144 carry no resolution marker on it
+- 430 entries have a defining line; 151 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -223,7 +224,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 579e27c
+- budgets no looser than at 2127fda
 
 ### tsc
 - 0 errors in 0 files
@@ -231,11 +232,32 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6166
+- Total keys per locale: 6443
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-30 (f45bc55, source sign-in S1–S4 close) — 0 FAIL; two readings moved, both accepted
+
+**0 FAIL, 5 standing WARNs** (`--full`, on the branch, not deployed). Against 2127fda (Bumi F2 close): `fix%` 51,
+`hot#1` officerCockpit.ts 28.2, `big` 16, `long` 15, `dup` 4, `supp` 93, `skip` 0, `mirror` 3, `guard%` 12,
+`unused` 0, `tsc` 0 — unchanged. Two readings moved:
+
+- **`xapp` 73 -> 75.** The arithmetic: two new imported names, scholarship -> courses —
+  `apps.courses.staff_reinvite` (the source invite and its Resend REUSE the staff invite's account branches and
+  password rotation, extracted in S2 into one helper both doors call) and `views_admin._invitation_dict` (the
+  Invitations list's row shape, so a source row reads like a staff row). Nothing removed. The alternative was a copy
+  of the account provisioning in `scholarship` — a second rule for who gets a sign-in. **Accepted:** the edge is the
+  honest cost of one rule in one place. The private name `_invitation_dict` crossing apps is noted, not promoted.
+- **`td_open` 144 -> 151.** +7 = TD-427 and TD-428 (raised on main by maintenance S6a since the last reading) and
+  TD-429 to TD-433 (this arc: two from the backend review, three at the close — the Sources-lock bypass, no Guide
+  for sources, `/scholarship/application`'s 0.13 kB). Each is a known gap written down rather than left unfindable.
+  **Accepted**, the same reasoning as b9028b4.
+
+**Not claimed:** `long` stayed 15 though S2 shortened `AdminInviteView.post` 167 -> 151 lines; `bursary.py`
+`render_agreement_html` grew 151 -> 153 (the witness name). `view.tsx`'s hotspot score rose 21.7 -> 23.1 (one more
+fix commit, the web review round); it is not `hot#1`.
 
 ### 2026-10-30 (2127fda, Bumi Sprint F2 close) — 0 FAIL; nothing to promote
 

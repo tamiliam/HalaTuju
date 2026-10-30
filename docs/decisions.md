@@ -16652,3 +16652,22 @@ is fixed with a test that failed before it (`tests/test_source_signin_review.py`
 **Left as notes:** L5 (the weekly partner email counts raw statuses — an existing bug, TD-430); L6a (revoke → edit →
 re-invite), for the lead.
 **Revisit if:** staff screens should also fold a held decline (they deliberately show the truth today).
+
+## 2026-10-30 — Source sign-in web: the witness step lives in the student's page, the source screens load lazily, a layout guard sends a source off staff pages (lead decisions)
+**Decision:** three choices in the web half of source sign-in.
+- **The witness step is `/admin/scholarship/<id>?step=witness`, inside the student's page — no new route.** The
+  witness email's link (`/admin/scholarship/<id>`) already lands there; its contract card opens the step in place, and
+  the Overview's and Scholars' links open it on arrival. Back drops `?step=witness` and re-reads the application.
+- **Every source screen (and the Invitations Source tab) is its own chunk behind `components/source/LazySource.tsx`.**
+  A staff visitor downloads none of it. Imported statically, the screens put the first-load median at 148.6 kB
+  against its 148 line.
+- **The admin layout sends a source user away from any page `canAccess` refuses (`adminLanding.sourceMustLeave`)
+  BEFORE the page or the shell mounts** (web review M3). Each source page also branches on the role before any staff
+  hook, and `noStaffCalls.test.tsx` renders all seven as a source user.
+**Alternatives considered:** (A) a separate `/admin/source/...` route tree — rejected: even a light extra route moves
+the median, and the email link would need a second address. (B) rely on the menu and the server's 403s for typed
+URLs — rejected: a staff page would still mount and fire its calls. (C) import the source screens normally —
+rejected: the bundle gate refuses it.
+**Trade-offs:** the student page carries one more mode; a lazy screen shows a short loading state on first open.
+**Revisit if:** the source console grows past a handful of screens (then its own route group, measured), or the
+bundle budget gains room.

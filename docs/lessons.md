@@ -1725,3 +1725,17 @@ is prefetched — weight moved off a route's first load can still travel in the 
   switchable. **Rule:** before an email becomes switchable, read its body in every language and ask (a) does it hand
   her a link, a code, a date or an instruction she needs, and (b) does any other email or screen promise that this
   one will arrive? Either answer "yes" locks it, or the promise is reworded in the same change.
+- **A new role must be denied by default at the identity seam, not view by view — and proved by a sweep driven from
+  the URL resolver.** (Source sign-in S1, 2026-10-30.) The roadmap audited every `PartnerAdmin.objects` list it could
+  name for the new `source_partner` role; the assignment picker's staff list was not on it, and its gate ("an admin
+  inside the organisation's fence") let a source user read the staff roster. Every view was right for the roles that
+  existed when it was written. **Rule:** when a role is added that should see little, make the shared identity
+  check (`get_admin`) refuse it unless a view opts a method in, and add a test that walks every route and method off
+  the resolver as that role — so tomorrow's view is denied without anyone remembering the role.
+- **A rule about who may see an OUTCOME must read the student-facing status in its QUERIES too, not only in its
+  display.** (Source sign-in review, 2026-10-30.) The console's stage called `student_facing_status`, yet the Scholars
+  set and the witness check borrowed staff query helpers (`has_file_q`, a status tuple) that filter on the stored
+  status — so a decline still in its cool-off would have moved a student off a source's list before she was told.
+  The weekly partner email has the same leak (TD-430). The 2026-10-05 lesson at the top covers gates; this is its
+  query-side twin. **Rule:** for any audience behind the mask, list every filter and count, not just every label,
+  and check each reads the masked status; a held-decline test belongs on each.
