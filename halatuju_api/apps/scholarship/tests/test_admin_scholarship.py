@@ -111,6 +111,28 @@ class TestAdminScholarship(TestCase):
         self.assertIn('PRIYA', names('?sort=submitted&dir=asc')[0])   # oldest first
         self.assertIn('ZED', names('?sort=submitted&dir=desc')[0])    # newest first
 
+    def test_list_sort_by_assigned_reviewer_unassigned_last(self):
+        # Request #50: A→Z by the reviewer's name, ignoring case; unassigned at the bottom in
+        # BOTH directions (it is not a name that sorts before "A" or after "Z").
+        zara = PartnerAdmin.objects.create(
+            supabase_user_id='rev-z', is_active=True, role='reviewer', name='Zara', email='z@example.com')
+        bala = PartnerAdmin.objects.create(
+            supabase_user_id='rev-b', is_active=True, role='reviewer', name='bala', email='b@example.com')
+        ScholarshipApplication.objects.filter(id=self.app.id).update(assigned_to=zara)   # PRIYA
+        for uid, nric, name, reviewer in (('studB', '040404-14-4444', 'Bina', bala),
+                                          ('studU', '040505-14-5555', 'Umar', None)):
+            make_application('shortlisted', cohort=self.cohort, assigned_to=reviewer, student=make_student(
+                supabase_user_id=uid, nric=nric, name=name, grades={'a': 'A'}, household_income=3000))
+        self._auth(ADMIN)
+
+        def names(params):
+            r = self.client.get('/api/v1/admin/scholarship/applications/' + params)
+            self.assertEqual(r.status_code, 200)
+            return [a['name'] for a in r.json()['applications']]
+
+        self.assertEqual(names('?sort=assigned&dir=asc'), ['BINA', 'PRIYA', 'UMAR'])
+        self.assertEqual(names('?sort=assigned&dir=desc'), ['PRIYA', 'BINA', 'UMAR'])
+
     def test_contact_submission_email(self):
         from django.core import mail
         from apps.scholarship.emails import send_contact_submission_admin_email

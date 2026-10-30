@@ -8,6 +8,7 @@ import logging
 
 from django.db import transaction
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -125,7 +126,7 @@ class AdminApplicationListView(_AdminBase):
         # TD-162: every row's first-assignment readiness, as one EXISTS column, not one query a row.
         from ..services.queries_sla import with_open_student_tasks
         qs = with_open_student_tasks(qs)
-        # Sorting (?sort=name|merit, ?dir=asc|desc). Default (no sort) = newest
+        # Sorting (?sort=name|source|status|submitted|assigned|merit, ?dir=asc|desc). Default (no sort) = newest
         # submitted first, as before. Name sorts in the DB; merit is COMPUTED (no
         # column), so we materialise the filtered set, sort in Python, then paginate
         # the list (DRF paginates lists fine) — fine at this scale (≈100s of rows).
@@ -146,6 +147,14 @@ class AdminApplicationListView(_AdminBase):
             # Submitted-date column. Default (no sort) is already newest-first; this lets
             # the reviewer flip to oldest-first and back.
             qs = qs.order_by('-submitted_at' if desc else 'submitted_at')
+            page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'assigned':
+            # Request #50: the Assigned column, by the reviewer's name, ignoring case. Unassigned
+            # sorts LAST in both directions, like an absent merit. Within one reviewer, newest
+            # submitted first, so the order is stable across pages.
+            key = Lower('assigned_to__name')
+            qs = qs.order_by(key.desc(nulls_last=True) if desc else key.asc(nulls_last=True),
+                             '-submitted_at', '-id')
             page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
             # One 0-100 merit for every route (`exam_questions.merit_100`, third results route S1),

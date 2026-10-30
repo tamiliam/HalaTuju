@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #50 — sort the applications list by Assigned - 2026-10-30
+
+- The Assigned column header on the applications list now sorts like Name and Merit: A→Z by the reviewer's name
+  (ignoring case), click again for Z→A. Unassigned applications stay at the bottom both ways. Filters apply as before.
+  Small-change lane, no migration.
+
 ## Student maintenance Sprint 5b — her Funds and Contract tabs on My Bursary - 2026-10-30
 
 Roadmap Sprint 5, student half. No migration.

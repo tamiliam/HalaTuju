@@ -112,12 +112,12 @@ export default function AdminScholarshipList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
   // Column sorting (server-side). '' = default (newest submitted first).
-  const [sort, setSort] = useState<'' | 'name' | 'merit' | 'source' | 'status' | 'submitted'>('')
+  type SortKey = 'name' | 'merit' | 'source' | 'status' | 'submitted' | 'assigned'
+  const [sort, setSort] = useState<'' | SortKey>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   // Click a sortable header: same column flips direction; a new column starts at a
-  // sensible default (merit high→low; name/source/status A→Z). Resets to page 1.
-  type SortKey = 'name' | 'merit' | 'source' | 'status' | 'submitted'
+  // sensible default (merit high→low; name/source/status/assigned A→Z). Resets to page 1.
   const toggleSort = (key: SortKey) => {
     if (sort === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -468,7 +468,15 @@ export default function AdminScholarshipList() {
                     {t('admin.scholarship.submitted')}{sortArrow('submitted')}
                   </button>
                 </th>
-                {canAssign && <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
+                {canAssign && (
+                  <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
+                    {/* Request #50: by reviewer name; unassigned stays at the bottom both ways (server). */}
+                    <button type="button" onClick={() => toggleSort('assigned')}
+                      className="uppercase tracking-wider hover:text-ground-900">
+                      {t('admin.scholarship.assigned')}{sortArrow('assigned')}
+                    </button>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-ground-100">
