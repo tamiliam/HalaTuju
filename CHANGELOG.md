@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Matric/Diploma Exact-read M5 — the live re-read; sprint arc closed - 2026-10-30
+
+- Ran `reextract_documents --doc-type higher_results --pass-marker reextract_2026_10_30_m5 --fresh-higher-authenticity
+  --limit 100` once through the `release-decisions` job (execution `release-decisions-fcfw9`, image `cebc9850`, which holds
+  M4b) with `DOC_GENUINENESS_CHECK_ENABLED=1,BILLING_USAGE_ENABLED=true` as per-execution overrides (nothing left set).
+  61 documents processed (live and superseded, STPM included), 0 errors, 0 remaining.
+- Live Matriculation / Diploma higher-results documents after the pass (ids only): 4058, 4166, 4199, 4245 genuine
+  (Matriculation transcript); 3926 genuine (provisional polytechnic transcript, now read Exact, which also corrects the
+  grade Gemini had misread); 4163 not checked + `matric_result_slip` (the final transcript is owed); 4313 not checked;
+  the four UiTM diplomas not checked, unchanged. 4058 and 3926 now read Exact. No document stored suspect or fake.
+- Live STPM higher-results documents after the pass: 41 genuine, 2 `not_stpm_result`, 1 unscored — the STPM rules did
+  not change in M1–M4b.
+- Docs: the roadmap marks M5 done; retrospective `docs/retrospectives/retrospective-matric-diploma-exact-read.md`.
+
 ## Student maintenance Sprint 5a — the scholar file's Money and Contract tabs - 2026-10-30
 
 Roadmap Sprint 5, admin half (5b = her Funds and Contract tabs). No migration.

@@ -1,6 +1,6 @@
 # Matriculation + polytechnic Diploma results read "Exact" — roadmap (2026-10-29)
 
-**Status:** APPROVED by the owner 2026-10-29 (option 1: polytechnic Diplomas only). Trigger: BrightPath
+**Status:** COMPLETE 2026-10-30 (M1–M5 live). APPROVED by the owner 2026-10-29 (option 1: polytechnic Diplomas only). Trigger: BrightPath
 request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Template:
 `docs/plans/2026-10-27-stpm-exact-read-roadmap.md` (same shape, same ground rules).
 
@@ -140,6 +140,7 @@ request #49, triaged a BUG by the owner; we absorb the charge. Planned ~30 h. Te
   Re-review: a bundled final transcript (with a slip / the portal) is scored, never non-final.
 
 ### M5 — Live re-read + close · low · ~3 h · paid: Gemini fallback on misses only
+- **DONE 2026-10-30:** one pass, `release-decisions-fcfw9`, 61 docs, 0 errors (see CHANGELOG). Arc closed.
 - Targeted live `reextract_documents` for matric/diploma `higher_results` with the job flags.
 - **The forced overwrite (M4b review SF7):** TD-407 (`bands.keep_stored_authenticity`) carries a
   stored score forward when a re-read gives no signal — so a page scored under an OLD rule would keep
