@@ -1,4 +1,4 @@
-"""Bring the held UP_TVET courses' three gate flags in line with their pages (Bumi F1b; no migration).
+"""Bring the held UP_TVET courses' three gate flags and remarks in line with their pages (Bumi F1b).
 
     # build the reviewed file (pure; a test rebuilds it from the committed source). The fixture now
     # carries the file's `new`, so a rebuild names the file it was built against:
@@ -10,10 +10,11 @@
     python manage.py fix_held_tvet_flags --file data/tvet/held_flag_fix_F1b.json
     #    ... then the same with --apply.  ROLLBACK: --reverse --apply (new -> old, same checks).
 
-`--apply` writes ONE transaction and only `req_malaysian` / `no_colorblind` / `no_disability`, and
-only a flag whose `old` differs from its `new`. COMPARE-AND-SET: the whole run is refused, with every
-mismatch printed, if a listed course does not exist or any of its three flags in the database differs
-from the file's `old` (`new` under `--reverse`). A course or column the file does not list is never
+No migration. `--apply` writes ONE transaction and only `req_malaysian` / `no_colorblind` /
+`no_disability` / `remarks`, and only a field whose `old` differs from its `new`. COMPARE-AND-SET: the
+whole run is refused, with every mismatch printed, if a listed course does not exist, is not a held TVET
+id (IJTM- / IKBN-), is listed twice, or any of its four fields in the database differs from the file's
+`old` (`new` under `--reverse`). A course or column the file does not list is never
 read for writing, let alone written. The running instances hold the eligibility frame in memory, so a
 re-revision follows the write. Rules and the build: `apps/courses/tvet_held_flags.py`; runbook:
 halatuju_api/CLAUDE.md ("Bumi F1b order").
@@ -28,13 +29,13 @@ from apps.courses.management.commands.ingest_tvet_courses import (
     held_courses_from_fixtures, load_held_links, write_json,
 )
 from apps.courses.models import CourseRequirement
-from apps.courses.tvet_held_flags import FLAGS, before_fix, build_flag_fix, changes, check_sql
+from apps.courses.tvet_held_flags import FIELDS, before_fix, build_flag_fix, changes, check_sql
 
 TVET = os.path.join('data', 'tvet')
 
 
 class Command(BaseCommand):
-    help = "Set the held UP_TVET courses' three gate flags from a reviewed file (dry run unless --apply)"
+    help = "Set the held UP_TVET courses' gate flags and remarks from a reviewed file (dry run unless --apply)"
 
     def add_arguments(self, parser):
         parser.add_argument('--file', help='The reviewed fix file')
@@ -80,6 +81,7 @@ class Command(BaseCommand):
         for flag, n in fix['counts']['per_flag'].items():
             self.stdout.write(f"{flag}: {n['false_to_true']} false->true, {n['true_to_false']} true->false, "
                               f"{n['unchanged']} unchanged, {n['conflict']} conflict")
+        self.stdout.write('remarks: ' + ', '.join(f'{k} {v}' for k, v in fix['counts']['remarks'].items()))
         self.stdout.write(f"{fix['counts']['courses']} courses ({fix['counts']['campus_pages']} campus pages); "
                           f"{fix['counts']['no_page_courses']} held courses with no page (unchanged); "
                           f"{fix['counts']['not_applied']} out-of-scope differences listed -> {options['out']}")
@@ -90,23 +92,25 @@ class Command(BaseCommand):
         todo = changes(fix, reverse=reverse)
         with transaction.atomic():
             rows = {r['course_id']: r for r in CourseRequirement.objects.select_for_update()
-                    .filter(course_id__in=list(expected)).values('course_id', *FLAGS)}
+                    .filter(course_id__in=list(expected)).values('course_id', *FIELDS)}
             problems = [f'{cid}: no such course requirement' for cid in sorted(set(expected) - set(rows))]
             if len(expected) != len(courses):
                 problems.append('the file lists a course more than once')
+            problems += [f'{cid}: not a held TVET course id (IJTM- / IKBN-)' for cid in sorted(expected)
+                         if not cid.startswith(('IJTM-', 'IKBN-'))]
             for cid in sorted(set(expected) & set(rows)):
-                for flag in FLAGS:
+                for flag in FIELDS:
                     if rows[cid][flag] != expected[cid][flag]:
-                        problems.append(f'{cid}.{flag}: database has {rows[cid][flag]}, the file expects '
-                                        f'{expected[cid][flag]}')
+                        problems.append(f'{cid}.{flag}: database has {rows[cid][flag]!r}, the file expects '
+                                        f'{expected[cid][flag]!r}')
             if problems:
                 for problem in problems:
                     self.stderr.write(problem)
                 raise CommandError(f'Refusing: {len(problems)} mismatch(es) between the file and the database; '
                                    'nothing written.')
             for cid, flag, before, after in todo:
-                self.stdout.write(f'{cid} {flag}: {before} -> {after}')
-            self.stdout.write(f"{len(todo)} flag change(s) on {len({c for c, *_ in todo})} course(s); "
+                self.stdout.write(f'{cid} {flag}: {before!r} -> {after!r}')
+            self.stdout.write(f"{len(todo)} field change(s) on {len({c for c, *_ in todo})} course(s); "
                               f"{len(courses)} courses checked{' (REVERSE)' if reverse else ''}.")
             if not apply:
                 self.stdout.write(self.style.NOTICE('DRY RUN: nothing written. Re-run with --apply.'))
@@ -116,8 +120,9 @@ class Command(BaseCommand):
                 by_course.setdefault(cid, {})[flag] = after
             for cid, values in by_course.items():
                 # Compare-and-set again in the UPDATE itself: the row must still hold every expected value.
-                held = {flag: expected[cid][flag] for flag in FLAGS}
+                held = {flag: expected[cid][flag] for flag in FIELDS}
                 written = CourseRequirement.objects.filter(course_id=cid, **held).update(**values)
                 if written != 1:
                     raise CommandError(f'{cid}: changed under us; rolled back, nothing written.')
-        self.stdout.write(self.style.SUCCESS(f'Applied {len(todo)} flag change(s) on {len(by_course)} course(s).'))
+        self.stdout.write(self.style.SUCCESS(f'Applied {len(todo)} field change(s) on {len(by_course)} course(s). '
+                                             'Now re-revision halatuju-api so the eligibility frame reloads.'))

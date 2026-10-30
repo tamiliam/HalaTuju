@@ -32,11 +32,12 @@ ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
 # Bumi F1b (2026-10-30) re-baselined the original catalogue ON PURPOSE: 63 held UP_TVET courses (84 held
 # IJTM-* / IKBN-* rows are part of the original 389) took their pages' req_malaysian / no_colorblind /
-# no_disability (`data/tvet/held_flag_fix_F1b.json`). The 305 other original rows did not move (pinned
-# below by digest), and reversing the file gives back the frozen pre-F1b picture exactly.
+# no_disability and an empty remark took F1's text (`data/tvet/held_flag_fix_F1b.json`). The 305 other
+# original rows did not move (pinned below by digest), the remarks move nothing, and reversing the file
+# gives back the frozen pre-F1b picture exactly.
 #: Every golden student's eligible set over the ORIGINAL catalogue, as one digest.
-ORIGINAL_SETS_SHA256 = 'ebfd00df4c8c6c37d7316b1cbdbcc81b36ce0b8be4357a81a7b7e0de1e2c45b4'
-GOLDEN_BASELINE = 5299                 # the original catalogue, for every student (5,319 before F1b)
+ORIGINAL_SETS_SHA256 = 'a9b509e036a02b0d178da8b47768cd1ad2ed5271399a401f4fdf0884e7f94364'
+GOLDEN_BASELINE = 5293                 # the original catalogue, for every student (5,319 before F1b)
 #: The same over the original catalogue WITHOUT the 84 held TVET rows: identical before and after F1b.
 ORIGINAL_NON_HELD_SETS_SHA256 = '23a7420c87261811ef71b7f7afbeb4ec2e21d22f1571781dd9de98a2be903a88'
 ORIGINAL_NON_HELD_BASELINE = 2712
@@ -47,11 +48,11 @@ PRE_F1B_BASELINE = 5319
 # gains EXACTLY those F1 rows she meets, and nothing else: pinned as a count and a digest.
 GOLDEN_F1_NON_BUMI_GAIN = 1494        # 30-33 per citizen, 20 if colour-blind, 0 for the non-citizen
 F1_NON_BUMI_GAIN_SHA256 = '07d39bf4539eecbf8a31d5652a6fea97e566cef3c6fbd393e15b0b6021c9eb85'
-GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,793 (6,813 before F1b)
-# Full catalogue, the same 50 students as Bumiputera: 5,299 + 546 (D1 UiTM, strict reading) + 121 (D2,
+GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,787 (6,813 before F1b)
+# Full catalogue, the same 50 students as Bumiputera: 5,293 + 546 (D1 UiTM, strict reading) + 121 (D2,
 # after review round 1's strict reading of MARA's "any N subjects": 141 -> 121) + 1,592 (F1: the
 # 1,494 above + the two Bumi-only KEMAS rows, 49 each). 7,578 before F1b.
-GOLDEN_BASELINE_BUMI = 7558
+GOLDEN_BASELINE_BUMI = 7552
 #: What the 50 Bumiputera twins gain over the ORIGINAL catalogue (D1 + D2 + F1 rows they meet), as one
 #: digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
 BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
@@ -425,21 +426,43 @@ class TestGoldenMaster:
         """The fix file's `old` values ARE the pre-F1b fixture: `--reverse --apply` restores the
         5,319 / digest every earlier sprint pinned, and the forward run returns to today's figures.
         Who moved (the 50 golden students, bumi False and True alike): the non-citizen (#5) loses 50
-        held rows (req_malaysian), the two colour-blind students (#4, #41) lose 16 each
-        (no_colorblind), and the OKU student #20 gains 62 (no_disability); nobody else moves."""
+        held rows (req_malaysian), the two colour-blind students (#4, #41) lose 19 each
+        (no_colorblind, any page that excludes colour blindness hides the course), and the OKU student
+        #20 gains 62 (no_disability); nobody else moves. The frame is reloaded however the test ends."""
         from django.core.management import call_command
         from io import StringIO
         original = self._original_ids()
         after = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
         call_command('fix_held_tvet_flags', '--file', str(_F1B_FILE), '--reverse', '--apply', stdout=StringIO())
-        load_requirements_df()
-        before = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
-        assert sum(len(s) for s in before) == PRE_F1B_BASELINE
-        assert _digest([f'{i}:{cid}' for i, s in enumerate(before, 1) for cid in sorted(s)]) == PRE_F1B_SETS_SHA256
-        moved = {i: (len(b - a), len(a - b)) for i, (b, a) in enumerate(zip(before, after), 1) if a != b}
-        assert moved == {4: (16, 0), 5: (50, 0), 20: (0, 62), 41: (16, 0)}
-        listed = {c['course_id'] for c in json.loads(_F1B_FILE.read_text(encoding='utf-8'))['courses']}
-        assert all(cid in listed for b, a in zip(before, after) for cid in b ^ a)
-        call_command('fix_held_tvet_flags', '--file', str(_F1B_FILE), '--apply', stdout=StringIO())
-        load_requirements_df()
+        try:
+            load_requirements_df()
+            before = [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
+            assert sum(len(s) for s in before) == PRE_F1B_BASELINE
+            assert _digest([f'{i}:{cid}' for i, s in enumerate(before, 1) for cid in sorted(s)]) == PRE_F1B_SETS_SHA256
+            moved = {i: (len(b - a), len(a - b)) for i, (b, a) in enumerate(zip(before, after), 1) if a != b}
+            assert moved == {4: (19, 0), 5: (50, 0), 20: (0, 62), 41: (19, 0)}
+            listed = {c['course_id'] for c in json.loads(_F1B_FILE.read_text(encoding='utf-8'))['courses']}
+            assert all(cid in listed for b, a in zip(before, after) for cid in b ^ a)
+        finally:
+            call_command('fix_held_tvet_flags', '--file', str(_F1B_FILE), '--apply', stdout=StringIO())
+            load_requirements_df()
         assert [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)] == after
+
+    def test_the_f1b_remarks_change_no_eligibility(self):
+        """The remark is text (owner): blanking every remark F1b wrote moves no golden student, Bumi or not."""
+        from apps.courses.models import CourseRequirement
+        fix = json.loads(_F1B_FILE.read_text(encoding='utf-8'))
+        listed = [c['course_id'] for c in fix['courses']]
+        assert CourseRequirement.objects.filter(course_id__in=listed).exclude(remarks='').count() == 63
+        twins = [copy.copy(s) for s in GOLDEN_STUDENTS]
+        for twin in twins:
+            twin.bumiputera = True
+        with_remarks = self._eligible_sets(GOLDEN_STUDENTS + twins)
+        CourseRequirement.objects.filter(course_id__in=listed).update(remarks='')
+        try:
+            load_requirements_df()
+            assert self._eligible_sets(GOLDEN_STUDENTS + twins) == with_remarks
+        finally:
+            for course in fix['courses']:
+                CourseRequirement.objects.filter(course_id=course['course_id']).update(remarks=course['new']['remarks'])
+            load_requirements_df()

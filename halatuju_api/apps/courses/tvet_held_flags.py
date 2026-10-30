@@ -1,13 +1,20 @@
-"""Held UP_TVET courses: three gate flags brought in line with their campus pages (Bumi F1b).
+"""Held UP_TVET courses: three gate flags and the remarks brought in line with their pages (Bumi F1b).
 
 The held TVET courses (prod's IJTM-* / IKBN-*: one `course_requirements` row each, linked to many
 campuses) were never written by Sprint F1, and their pages disagree with their stored flags. Owner
-rulings (2026-10-29/30, decisions.md "Bumi F1b"), for these three flags ONLY:
+rulings (2026-10-29/30, decisions.md "Bumi F1b"), for these four fields ONLY:
 
   req_malaysian   "Warganegara Malaysia Sahaja"                         -> true
-  no_colorblind   "Tiada Masalah Penglihatan Atau Rabun Warna"           -> true
+  no_colorblind   "Tiada Masalah Penglihatan Atau Rabun Warna" on ANY read campus page -> true (a
+                  colour-blind student is hidden from the course); false only when every read page is
+                  silent (owner, 2026-10-30)
   no_disability   the QUALIFIED line "tidak mempunyai ketidakupayaan ... yang menyukarkan kerja amali"
-                  is text, never a gate -> false; a blanket "Tidak menerima sebarang OKU" keeps it
+                  is text, never a gate -> false; a page with no disability wording at all -> false
+                  (owner, 2026-10-30); a blanket "Tidak menerima sebarang OKU" would keep it
+  remarks         an EMPTY held remark takes the text F1 builds for a new row (`tvet_syarat`: age, health,
+                  the qualified OKU line ...), so an OKU student sees the note (review M2). Text only: the
+                  engine never reads it. Campuses that give different text -> the parts common to all of
+                  them (or nothing), listed in `remark_variants`. A non-empty held remark is never touched.
 
 `build_flag_fix(...)` is PURE (a test rebuilds the committed `data/tvet/held_flag_fix_F1b.json` from the
 committed `uptvet_F1_source.json`, the frozen read of the page cache). Each page is re-parsed with the F1
@@ -24,11 +31,12 @@ to that campus (`name+pair`, the four duplicate-name pairs prod holds). The row'
 `tvet_institutions.held_institution`. A row whose (course, campus) pair is not linked is listed in
 `unlinked_rows` and ignored; a linked pair with no October row is listed per course (`no_page`).
 
-THE RULE, per course and flag: every linked campus page agrees -> `new` is that value; they disagree ->
-no change, and the course is in `conflicts` with each page's value and wording (the owner decides). A
-page the parser could not read for its CONDITIONS (an unparsed reason about a condition, a gate or a
-joiner) puts the course's three flags in `conflicts`; a page unparsed only for its academic rule (e.g.
-"no SPM route") still reads its condition cards and counts. Every other difference between a page and
+THE RULE for req_malaysian and no_disability: every linked campus page agrees -> `new` is that value;
+they disagree -> no change, and the course is in `conflicts` with each page's value and wording (the owner
+decides; none today). no_colorblind has no disagreement path: any page that excludes colour blindness
+wins. A page the parser could not read for its CONDITIONS (an unparsed reason about a condition, a gate
+or a joiner) puts the course's three flags in `conflicts` and leaves its remark empty; a page unparsed only
+for its academic rule (e.g. "no SPM route") still reads its condition cards and counts. Every other difference between a page and
 the held rule (three_m_only, subject rules, min_pass ...) is OUT OF SCOPE: listed in `not_applied` for
 a later owner decision, never applied.
 
@@ -42,6 +50,8 @@ from .tvet_catalogue_rows import _held_by_name, _read_rows, _rule_differences, n
 from .tvet_institutions import held_institution
 
 FLAGS = ('req_malaysian', 'no_colorblind', 'no_disability')
+#: Every column the fix writes (and compares before writing): the three flags and the remark text.
+FIELDS = FLAGS + ('remarks',)
 HELD_FAMILIES = ('iljtm', 'ilkbs')
 
 #: Wording shown beside each page's value (for the reviewer; the value itself is the parser's).
@@ -103,8 +113,32 @@ def _basis(flag, value, campuses):
         if qualified == 0:
             return f'no linked page ({n}) carries any disability wording'
         return f'{qualified} of {n} linked pages carry the qualified line; the rest carry no disability wording'
+    if flag == 'no_colorblind' and value:
+        k = sum(1 for p in campuses if p['page'][flag])
+        return f'{k} of {n} linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)'
     return f'every linked page ({n}) sets {flag} (wording: each campus\'s evidence)' if value \
         else f'no linked page ({n}) sets {flag}'
+
+
+def _remark(held, campuses, unreadable, counts):
+    """(remark to write, why). Only an EMPTY held remark is filled; the text is F1's own for a new row."""
+    if held:
+        counts['held_not_empty'] += 1
+        return held, 'held remark not empty: never touched'
+    if unreadable:
+        counts['left_empty'] += 1
+        return '', 'left empty: a linked page could not be read for its conditions'
+    texts = {p['remarks'] for p in campuses}
+    if len(texts) == 1:
+        text = texts.pop()
+        counts['set_same_on_every_page' if text else 'left_empty'] += 1
+        return text, f'every linked page ({len(campuses)}) gives this text'
+    parts = [part for part in campuses[0]['_remark_parts'] if all(part in p['_remark_parts'] for p in campuses)]
+    if not parts:
+        counts['left_empty'] += 1
+        return '', 'left empty: the linked pages share no remark text'
+    counts['set_common_parts'] += 1
+    return '. '.join(parts) + '.', f'common to all {len(campuses)} linked pages (their texts differ)'
 
 
 def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
@@ -133,13 +167,16 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
         pages.setdefault(cid, []).append({
             'institution_id': inst, 'id_kursus': kid, 'campus': item['campus'], 'matched_by': matched_by,
             'page': {flag: _flag(parsed['fields'][flag]) for flag in FLAGS},
+            'remarks': parsed['fields']['remarks'],
+            '_remark_parts': parsed['remarks'],
             'unparsed': parsed['unparsed'],
             'conditions_read': not any(_CONDITION_UNSAFE.search(r) for r in parsed['unparsed']),
             'evidence': _evidence(item['page']),
             '_fields': parsed['fields'],
         })
-    courses, conflicts, not_applied, no_page = [], [], [], []
+    courses, conflicts, not_applied, no_page, remark_variants = [], [], [], [], []
     counts = {flag: {'false_to_true': 0, 'true_to_false': 0, 'unchanged': 0, 'conflict': 0} for flag in FLAGS}
+    remark_counts = {'set_same_on_every_page': 0, 'set_common_parts': 0, 'left_empty': 0, 'held_not_empty': 0}
     linked_courses = sorted({cid for cid, _ in pairs})
     for cid in linked_courses:
         held = held_courses.get(cid, {})
@@ -152,10 +189,13 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
             continue
         campuses = sorted(pages[cid], key=lambda p: (p['institution_id'], int(p['id_kursus'])))
         old = {flag: _flag(requirement.get(flag)) for flag in FLAGS}
+        old['remarks'] = requirement.get('remarks') or ''
         new = dict(old)
         unreadable = [p for p in campuses if not p['conditions_read']]
         for flag in FLAGS:
             values = {p['page'][flag] for p in campuses}
+            if flag == 'no_colorblind' and not unreadable:
+                values = {any(values)}      # any read page that excludes colour blindness hides the course
             if unreadable or len(values) > 1:
                 counts[flag]['conflict'] += 1
                 conflicts.append({
@@ -169,9 +209,16 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
             new[flag] = values.pop()
             key = 'unchanged' if new[flag] == old[flag] else 'false_to_true' if new[flag] else 'true_to_false'
             counts[flag][key] += 1
+        new['remarks'], remark_basis = _remark(old['remarks'], campuses, unreadable, remark_counts)
+        if remark_basis.startswith(('common', 'left empty')):
+            remark_variants.append({'course_id': cid, 'used': new['remarks'], 'why': remark_basis,
+                                    'pages': [{'id_kursus': p['id_kursus'], 'remarks': p['remarks']}
+                                              for p in campuses]})
+        basis = {flag: _basis(flag, new[flag], campuses) for flag in FLAGS if new[flag] != old[flag]}
+        if new['remarks'] != old['remarks']:
+            basis['remarks'] = remark_basis
         courses.append({
-            'course_id': cid, 'course': held.get('course', ''), 'old': old, 'new': new,
-            'basis': {flag: _basis(flag, new[flag], campuses) for flag in FLAGS if new[flag] != old[flag]},
+            'course_id': cid, 'course': held.get('course', ''), 'old': old, 'new': new, 'basis': basis,
             'campuses': [{k: v for k, v in p.items() if not k.startswith('_')} for p in campuses],
             'linked_campuses_without_page': missing,
         })
@@ -188,11 +235,12 @@ def build_flag_fix(source, held_links, prod_links, f1_new_links, held_courses):
         'pairs_from': ['data/tvet/held_tvet_links.json (prod pairs)',
                        'data/tvet/tvet_new_courses_F1.json (held_links with already_linked false)'],
         'parser': 'apps/courses/tvet_syarat.py',
-        'flags': list(FLAGS),
+        'flags': list(FLAGS), 'fields': list(FIELDS),
         'counts': {'courses': len(courses), 'campus_pages': sum(len(c['campuses']) for c in courses),
                    'no_page_courses': len(no_page), 'conflicts': len(conflicts),
-                   'not_applied': len(not_applied), 'per_flag': counts},
-        'courses': courses, 'conflicts': conflicts, 'not_applied': not_applied, 'no_page': no_page,
+                   'not_applied': len(not_applied), 'per_flag': counts, 'remarks': remark_counts},
+        'courses': courses, 'conflicts': conflicts, 'remark_variants': remark_variants,
+        'not_applied': not_applied, 'no_page': no_page,
         'unlinked_rows': unlinked, 'ambiguous_rows': ambiguous,
     }
 
@@ -207,10 +255,10 @@ def before_fix(held_courses, fix):
 
 
 def changes(fix, reverse=False):
-    """[(course_id, flag, expected current value, value to write)] for every flag whose `old` != `new`."""
+    """[(course_id, field, expected current value, value to write)] for every field whose `old` != `new`."""
     out = []
     for course in fix['courses']:
-        for flag in FLAGS:
+        for flag in FIELDS:
             old, new = course['old'][flag], course['new'][flag]
             if old != new:
                 out.append((course['course_id'], flag, new, old) if reverse else (course['course_id'], flag, old, new))
@@ -218,19 +266,23 @@ def changes(fix, reverse=False):
 
 
 def check_sql(fix, reverse=False):
-    """ONE read-only statement: every listed course whose three flags in `course_requirements` differ from
-    the file's `old` (`new` with reverse), or that is missing. Empty result = the file's picture is prod's."""
+    """ONE read-only statement: every listed course whose three flags or remarks in `course_requirements`
+    differ from the file's `old` (`new` with reverse), or that is missing. Empty result = the file's
+    picture is prod's."""
     side = 'new' if reverse else 'old'
-    rows = [f"('{c['course_id']}', " + ', '.join('true' if c[side][f] else 'false' for f in FLAGS) + ')'
+
+    def literal(value):
+        return ('true' if value else 'false') if isinstance(value, bool) else "'" + value.replace("'", "''") + "'"
+    rows = [f"('{c['course_id']}', " + ', '.join(literal(c[side][f]) for f in FIELDS) + ')'
             for c in fix['courses']]
-    lines = [f"WITH f (course_id, {', '.join(FLAGS)}) AS (VALUES",
+    lines = [f"WITH f (course_id, {', '.join(FIELDS)}) AS (VALUES",
              '  ' + ',\n  '.join(rows),
              ')',
              'SELECT f.course_id, r.course_id IS NULL AS missing,',
-             ',\n'.join(f'  f.{x} AS file_{x}, r.{x} AS db_{x}' for x in FLAGS),
+             ',\n'.join(f'  f.{x} AS file_{x}, r.{x} AS db_{x}' for x in FIELDS),
              'FROM f LEFT JOIN course_requirements r ON r.course_id = f.course_id',
              'WHERE r.course_id IS NULL',
-             f"   OR (r.{', r.'.join(FLAGS)}) IS DISTINCT FROM (f.{', f.'.join(FLAGS)})",
+             f"   OR (r.{', r.'.join(FIELDS)}) IS DISTINCT FROM (f.{', f.'.join(FIELDS)})",
              'ORDER BY f.course_id;']
     return '\n'.join(lines)
 

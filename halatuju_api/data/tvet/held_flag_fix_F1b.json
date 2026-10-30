@@ -10,11 +10,17 @@
   "no_colorblind",
   "no_disability"
  ],
+ "fields": [
+  "req_malaysian",
+  "no_colorblind",
+  "no_disability",
+  "remarks"
+ ],
  "counts": {
   "courses": 63,
   "campus_pages": 151,
   "no_page_courses": 20,
-  "conflicts": 4,
+  "conflicts": 0,
   "not_applied": 92,
   "per_flag": {
    "req_malaysian": {
@@ -24,10 +30,10 @@
     "conflict": 0
    },
    "no_colorblind": {
-    "false_to_true": 16,
+    "false_to_true": 19,
     "true_to_false": 0,
-    "unchanged": 43,
-    "conflict": 4
+    "unchanged": 44,
+    "conflict": 0
    },
    "no_disability": {
     "false_to_true": 0,
@@ -35,6 +41,12 @@
     "unchanged": 0,
     "conflict": 0
    }
+  },
+  "remarks": {
+   "set_same_on_every_page": 57,
+   "set_common_parts": 6,
+   "left_empty": 0,
+   "held_not_empty": 0
   }
  },
  "courses": [
@@ -44,16 +56,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -66,6 +81,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -93,16 +109,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (8) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (8) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (8) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 8 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -115,6 +134,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -143,6 +163,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -167,6 +188,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -195,6 +217,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -223,6 +246,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -247,6 +271,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -275,6 +300,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -303,6 +329,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -347,16 +374,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -369,6 +399,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -405,16 +436,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -427,6 +461,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -454,16 +489,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -476,6 +514,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -504,6 +543,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -536,16 +576,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -558,6 +601,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -586,6 +630,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -622,16 +667,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (13) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (13) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (13) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (13) gives this text"
    },
    "campuses": [
     {
@@ -644,6 +692,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -672,6 +721,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -700,6 +750,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -728,6 +779,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -756,6 +808,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -784,6 +837,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -812,6 +866,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -840,6 +895,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -868,6 +924,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -896,6 +953,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -924,6 +982,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -952,6 +1011,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -980,6 +1040,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1007,16 +1068,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (3) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (3) gives this text"
    },
    "campuses": [
     {
@@ -1029,6 +1093,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1057,6 +1122,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1085,6 +1151,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1112,16 +1179,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -1134,6 +1204,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1162,6 +1233,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1189,16 +1261,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
-    "no_colorblind": false,
-    "no_disability": false
+    "no_colorblind": true,
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (14) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (14) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "12 of 14 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (14) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 14 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -1211,6 +1287,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1239,6 +1316,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1267,6 +1345,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1295,6 +1374,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1323,6 +1403,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1351,6 +1432,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1379,6 +1461,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1407,6 +1490,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1435,6 +1519,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1463,6 +1548,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1487,6 +1573,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1515,6 +1602,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1539,6 +1627,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1567,6 +1656,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1603,17 +1693,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (3) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (3) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "3 of 3 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (3) gives this text"
    },
    "campuses": [
     {
@@ -1626,6 +1719,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1654,6 +1748,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1682,6 +1777,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1714,17 +1810,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (4) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (4) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (4) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "4 of 4 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (4) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 4 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -1737,6 +1836,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1765,6 +1865,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1793,6 +1894,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1821,6 +1923,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1853,17 +1956,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -1876,6 +1982,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1903,17 +2010,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (7) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (7) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (7) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "7 of 7 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (7) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 7 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -1926,6 +2036,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1954,6 +2065,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -1982,6 +2094,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2010,6 +2123,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2038,6 +2152,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2066,6 +2181,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2094,6 +2210,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2126,17 +2243,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2149,6 +2269,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2181,17 +2302,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (2) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "2 of 2 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -2204,6 +2328,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2232,6 +2357,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2259,17 +2385,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2282,6 +2411,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2309,17 +2439,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2332,6 +2465,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2364,16 +2498,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2386,6 +2523,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2422,16 +2560,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (3) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (3) gives this text"
    },
    "campuses": [
     {
@@ -2444,6 +2585,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2472,6 +2614,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2500,6 +2643,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2532,16 +2676,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2554,6 +2701,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2581,16 +2729,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2603,6 +2754,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2630,17 +2782,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (2) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "2 of 2 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -2653,6 +2808,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2681,6 +2837,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2713,17 +2870,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (7) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (7) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (7) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "7 of 7 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (7) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (7) gives this text"
    },
    "campuses": [
     {
@@ -2736,6 +2896,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2764,6 +2925,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2792,6 +2954,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2820,6 +2983,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2848,6 +3012,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2876,6 +3041,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2904,6 +3070,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2944,17 +3111,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -2967,6 +3137,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -2994,17 +3165,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (8) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (8) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (8) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "8 of 8 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (8) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (8) gives this text"
    },
    "campuses": [
     {
@@ -3017,6 +3191,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3045,6 +3220,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3073,6 +3249,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3101,6 +3278,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3129,6 +3307,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3157,6 +3336,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3185,6 +3365,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3213,6 +3394,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3249,17 +3431,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3272,6 +3457,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3299,17 +3485,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3322,6 +3511,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3354,17 +3544,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (3) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (3) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_colorblind": "3 of 3 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "every linked page (3) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (3) gives this text"
    },
    "campuses": [
     {
@@ -3377,6 +3570,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3405,6 +3599,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3433,6 +3628,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3460,16 +3656,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3482,6 +3681,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3507,16 +3707,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 2 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -3529,6 +3732,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3555,6 +3759,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3580,16 +3785,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3602,6 +3810,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3627,16 +3836,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Lulus dalam peperiksaan khas dan temuduga yang dijalankan. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3649,6 +3861,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Lulus dalam peperiksaan khas dan temuduga yang dijalankan. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3674,16 +3887,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (2) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "common to all 2 linked pages (their texts differ)"
    },
    "campuses": [
     {
@@ -3696,6 +3912,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3722,6 +3939,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3747,16 +3965,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3769,6 +3990,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3794,16 +4016,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3816,6 +4041,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3841,16 +4067,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)"
+    "no_disability": "every linked page (1) carries only the qualified \"... menyukarkan kerja amali\" line (text)",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -3863,6 +4092,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3888,16 +4118,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -3910,6 +4143,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3930,6 +4164,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3954,16 +4189,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
-    "no_colorblind": false,
-    "no_disability": false
+    "no_colorblind": true,
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (4) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (4) carries any disability wording"
+    "no_colorblind": "1 of 4 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "no linked page (4) carries any disability wording",
+    "remarks": "every linked page (4) gives this text"
    },
    "campuses": [
     {
@@ -3976,6 +4215,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -3999,6 +4239,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4019,6 +4260,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4039,6 +4281,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4058,16 +4301,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4080,6 +4326,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4099,16 +4346,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
-    "no_colorblind": false,
-    "no_disability": false
+    "no_colorblind": true,
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (4) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (4) carries any disability wording"
+    "no_colorblind": "1 of 4 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "no linked page (4) carries any disability wording",
+    "remarks": "every linked page (4) gives this text"
    },
    "campuses": [
     {
@@ -4121,6 +4372,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4141,6 +4393,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4164,6 +4417,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4184,6 +4438,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4208,16 +4463,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4230,6 +4488,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4250,6 +4509,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4269,16 +4529,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4291,6 +4554,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4314,6 +4578,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4341,17 +4606,20 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_colorblind": "every linked page (1) sets no_colorblind (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_colorblind": "1 of 1 linked pages exclude colour blindness (any one hides the course, owner 2026-10-30)",
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4364,6 +4632,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4386,16 +4655,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4408,6 +4680,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4432,16 +4705,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (3) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (3) carries any disability wording"
+    "no_disability": "no linked page (3) carries any disability wording",
+    "remarks": "every linked page (3) gives this text"
    },
    "campuses": [
     {
@@ -4454,6 +4730,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4474,6 +4751,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4494,6 +4772,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4513,16 +4792,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4535,6 +4817,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4554,16 +4837,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4576,6 +4862,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4595,16 +4882,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4617,6 +4907,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4641,16 +4932,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4663,6 +4957,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4683,6 +4978,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4707,16 +5003,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4729,6 +5028,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4749,6 +5049,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4768,16 +5069,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4790,6 +5094,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4809,16 +5114,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4831,6 +5139,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4851,6 +5160,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4875,16 +5185,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -4897,6 +5210,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4916,16 +5230,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4938,6 +5255,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4958,6 +5276,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -4977,16 +5296,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (2) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (2) carries any disability wording"
+    "no_disability": "no linked page (2) carries any disability wording",
+    "remarks": "every linked page (2) gives this text"
    },
    "campuses": [
     {
@@ -4999,6 +5321,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5019,6 +5342,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5043,16 +5367,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5065,6 +5392,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5084,16 +5412,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5106,6 +5437,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5125,16 +5457,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5147,6 +5482,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5166,16 +5502,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5188,6 +5527,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5215,16 +5555,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": true,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": true,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (4) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (4) carries any disability wording"
+    "no_disability": "no linked page (4) carries any disability wording",
+    "remarks": "every linked page (4) gives this text"
    },
    "campuses": [
     {
@@ -5237,6 +5580,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5260,6 +5604,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5283,6 +5628,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5306,6 +5652,7 @@
       "no_colorblind": true,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5328,16 +5675,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5350,6 +5700,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [
       "card 01 'Kelayakan Akademik': no SPM route (only other qualifications)"
      ],
@@ -5371,16 +5722,19 @@
    "old": {
     "req_malaysian": false,
     "no_colorblind": false,
-    "no_disability": true
+    "no_disability": true,
+    "remarks": ""
    },
    "new": {
     "req_malaysian": true,
     "no_colorblind": false,
-    "no_disability": false
+    "no_disability": false,
+    "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira."
    },
    "basis": {
     "req_malaysian": "every linked page (1) sets req_malaysian (wording: each campus's evidence)",
-    "no_disability": "no linked page (1) carries any disability wording"
+    "no_disability": "no linked page (1) carries any disability wording",
+    "remarks": "every linked page (1) gives this text"
    },
    "campuses": [
     {
@@ -5393,6 +5747,7 @@
       "no_colorblind": false,
       "no_disability": false
      },
+     "remarks": "Umur 17-30 tahun. Sihat tubuh badan. Boleh membaca, menulis dan mengira.",
      "unparsed": [],
      "conditions_read": true,
      "evidence": {
@@ -5407,304 +5762,195 @@
    "linked_campuses_without_page": []
   }
  ],
- "conflicts": [
+ "conflicts": [],
+ "remark_variants": [
   {
    "course_id": "IJTM-CET-004",
-   "flag": "no_colorblind",
-   "old": true,
-   "why": "the linked campus pages disagree",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 8 linked pages (their texts differ)",
    "pages": [
     {
-     "institution_id": "IJTM-011",
      "id_kursus": "7165",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-012",
      "id_kursus": "7969",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-014",
      "id_kursus": "9878",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-015",
      "id_kursus": "36888",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-016",
      "id_kursus": "45048",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-021",
      "id_kursus": "7111",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-028",
      "id_kursus": "7231",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-034",
      "id_kursus": "7306",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     }
    ]
   },
   {
    "course_id": "IJTM-CET-015",
-   "flag": "no_colorblind",
-   "old": false,
-   "why": "the linked campus pages disagree",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 14 linked pages (their texts differ)",
    "pages": [
     {
-     "institution_id": "IJTM-003",
      "id_kursus": "36779",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-008",
      "id_kursus": "36815",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-011",
      "id_kursus": "35984",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-014",
      "id_kursus": "44014",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-017",
      "id_kursus": "36803",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-018",
      "id_kursus": "36737",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-019",
      "id_kursus": "36752",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-020",
      "id_kursus": "36698",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-021",
      "id_kursus": "36683",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-023",
      "id_kursus": "39724",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-024",
      "id_kursus": "39071",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-028",
      "id_kursus": "36716",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-032",
      "id_kursus": "36761",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IJTM-034",
      "id_kursus": "36731",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali.",
-      "2. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     }
    ]
   },
   {
-   "course_id": "IKBN-CET-003",
-   "flag": "no_colorblind",
-   "old": false,
-   "why": "the linked campus pages disagree",
+   "course_id": "IJTM-CET-017",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 4 linked pages (their texts differ)",
    "pages": [
     {
-     "institution_id": "IKBN-007",
-     "id_kursus": "48635",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "3. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "id_kursus": "45646",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-013",
-     "id_kursus": "49541",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "45682",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-014",
-     "id_kursus": "49559",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "45673",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-021",
-     "id_kursus": "48500",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "45667",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     }
    ]
   },
   {
-   "course_id": "IKBN-CET-005",
-   "flag": "no_colorblind",
-   "old": false,
-   "why": "the linked campus pages disagree",
+   "course_id": "IJTM-CET-019",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 7 linked pages (their texts differ)",
    "pages": [
     {
-     "institution_id": "IKBN-003",
-     "id_kursus": "43845",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "34004",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-007",
-     "id_kursus": "45292",
-     "value": true,
-     "conditions_read": true,
-     "wording": [
-      "3. Tiada Masalah Penglihatan Atau Rabun Warna (Wajib)"
-     ]
+     "id_kursus": "33992",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-008",
-     "id_kursus": "45289",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "34040",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
     },
     {
-     "institution_id": "IKBN-014",
-     "id_kursus": "48707",
-     "value": false,
-     "conditions_read": true,
-     "wording": []
+     "id_kursus": "33968",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    },
+    {
+     "id_kursus": "33920",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    },
+    {
+     "id_kursus": "33938",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    },
+    {
+     "id_kursus": "33869",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental,pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    }
+   ]
+  },
+  {
+   "course_id": "IJTM-DIP-017",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 2 linked pages (their texts differ)",
+   "pages": [
+    {
+     "id_kursus": "35147",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    },
+    {
+     "id_kursus": "33902",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
+    }
+   ]
+  },
+  {
+   "course_id": "IJTM-DIP-032",
+   "used": "Umur 17-35 tahun. Sihat tubuh badan.",
+   "why": "common to all 2 linked pages (their texts differ)",
+   "pages": [
+    {
+     "id_kursus": "47351",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, mental, pembelajaran atau fizikal yang menyukarkan kerja-kerja amali. Sihat tubuh badan."
+    },
+    {
+     "id_kursus": "47390",
+     "remarks": "Umur 17-35 tahun. Calon tidak mempunyai kurang upaya Pendengaran / Penglihatan / Buta Warna / Pertuturan / Fizikal / Pembelajaran / Mental / Pelbagai yang menyukarkan kerja amali. Sihat tubuh badan."
     }
    ]
   }
