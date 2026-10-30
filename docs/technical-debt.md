@@ -6953,6 +6953,11 @@ student strings their own place in the `bursary` slice, which only `/scholarship
 statically they put the median at 148.6. The rule stands: measure before the push, give weight back, never raise
 the line.
 
+**Status 2026-10-30 (My Plans redesign close):** still open, a little looser — the median reads 147.698 kB
+against 148 (0.302 kB of room). The apply page's Plans step went behind the lazy `PathwayPicker`, and a top-level
+`new Map()` in the new `lib/api/offerings.ts` first put ~3 kB on EVERY route (a side effect the bundler cannot
+drop from the `@/lib/api` barrel) until it was made on first use — the rule stands.
+
 ### [TD-428] The email-verification mail is a bare `send_mail`: never metered, never billed - low
 
 **Raised 2026-10-30 by the maintenance S6a inventory.** `courses/views.py` `SendVerificationView` sends with
@@ -7017,3 +7022,16 @@ arc built nothing for the student pages; the route moves whenever the core every
 TD-427, it means the next student-facing change can fail the gate on either reading.
 **Fix:** before the next change to a student route, find weight to give back on this route (the TD-416 method), so
 both it and the median have at least 1 kB of room. *(B · S)*
+
+### [TD-434] The TVET pathway map gives a course the FIRST institution category it meets, and a course with none falls to an unpickable `tvet` - low
+
+**Raised 2026-10-30 by the My Plans redesign's adversarial review (P6), latent.** `CoursesConfig` builds
+`course_pathway_map` for a TVET course from the category of the first `CourseInstitution` row it meets
+(`apps.py`, `cid not in course_pathway_map`), and a course whose institutions carry none of ILJTM / ILKBS / MARA /
+TVET falls to `'tvet'`. Since the redesign that map decides which scholarship picker lists a course
+(`/api/v1/courses/offerings/`): a course taught under TWO categories would appear under one pathway only, WITH
+the other category's campuses; a `'tvet'` course would appear under none, so a student holding that offer could
+not name it. **Live 2026-10-30: 0 of 299 TVET courses span two categories, 0 fall back to `'tvet'`** — nothing is
+hidden today. **Fix when an ingest makes it real:** a drift test that every TVET course maps to exactly one of
+`TVET_PATHWAYS` (fail the ingest's checks, not the picker), or group offerings by the institution's own category
+rather than the course's. *(B · S)*

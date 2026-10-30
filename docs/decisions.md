@@ -71,6 +71,15 @@ rules her saved grades no longer meet (UE4545004, a UiTM Diploma Sains student, 
 eligible-only" (2026-06-19); and the third-route ruling's "both degree pickers list every degree unfiltered via
 `lib/degreeChoices.ts`" (2026-10-26), now every student's default, via the offerings endpoint.
 
+**Owner answers at deploy, 2026-10-30 ("OK" to all three):** (a) a wrong-campus pick may now read as a CLASH against
+her offer — the pathway check says `mismatch`, a red chip on the verdict ladder and a `pathway_confirm` query until
+she confirms the letter, where the letter used to fill the campus in quietly; accepted, it is the matching asked for.
+(b) PISMP has no campus step: teacher-training campuses are assigned, not chosen. (c) In the waiting branch, an STPM
+holder's top-3 degree slots each search all 1,112 degrees unfiltered (first 100 matches, "type to narrow"), not a
+University step per slot. **Review round:** every WRITER of `chosen_programme.institution` (offer confirm, its
+pre-U / PISMP / alignment steps, the offer-sync fill and normalisation, three repair commands) goes through
+`card_display.with_institution`, so `institution_id` never names a different place than `institution`.
+
 **Revisit if:** students name the wrong campus often enough that the offer comparison raises avoidable clashes (a
 shorter campus list per course, or "I don't know the campus yet", would be the next step); or a funder wants the
 scholarship side to refuse a course the student does not qualify for (that would be a server rule, not a picker).

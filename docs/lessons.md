@@ -1739,3 +1739,18 @@ is prefetched — weight moved off a route's first load can still travel in the 
   The weekly partner email has the same leak (TD-430). The 2026-10-05 lesson at the top covers gates; this is its
   query-side twin. **Rule:** for any audience behind the mask, list every filter and count, not just every label,
   and check each reads the masked status; a held-decline test belongs on each.
+
+- **When a stored shape gains a key, walk its WRITERS as well as its readers — every path that rewrites a sibling
+  key must keep the new one true.** The My Plans redesign added `institution_id` beside `chosen_programme.institution`
+  and checked every server reader; nobody walked the writers. The offer confirm then merged a different campus's
+  name over the student's pick and left her old id beside it, so /profile (which re-opens by id) would have shown
+  the wrong campus. **Rule:** list every writer of the old key (`grep` the key's name as an assignment AND inside
+  `update({...})` / dict literals, plus the management commands), and route them through ONE helper that owns the
+  pair (`card_display.with_institution`). The 2026-06-21 slot-key lesson is the same discipline for a uniqueness
+  key. (My Plans redesign, 2026-10-30)
+- **A module-level constructor in anything a barrel re-exports is a side effect the bundler cannot drop.** One
+  top-level `new Map()` in the new `lib/api/offerings.ts` put ~3 kB on EVERY route, because `@/lib/api` re-exports
+  it and the bundler had to keep the module, which changed the barrel's chunk split for every importer. **Rule:**
+  in a module behind a barrel, create caches and maps on first use (a function-scoped `let`), never at module
+  level; run `npm run bundle-budget` on the first build of any new `lib/api/*` module. (My Plans redesign,
+  2026-10-30)

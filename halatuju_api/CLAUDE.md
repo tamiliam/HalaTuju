@@ -1097,6 +1097,25 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### ⚠ STATE AT 2026-10-30 — SCHOLARSHIP "MY PLANS" REDESIGN LIVE (main `53706f21`; api-01212-lr2, web-01035-m7b)
+
+**What it is.** The apply form's and /profile's Plans step asks "Have you received an offer…?" (labels only:
+`pathway_certainty` stays `sure` / `uncertain`), names the institution FIRST then the course, and is NOT filtered by
+results unless the student switches "Eligible only" on. Its catalogue is `GET /api/v1/courses/offerings/?pathway=`
+(`apps/courses/views_offerings.py`: public, unfiltered, Bumi-only and inactive included). `chosen_programme` gains
+`institution` (catalogue spelling) + `institution_id`; **every writer of `institution` goes through
+`card_display.with_institution`** — never write that key directly. No migration. Decision: decisions.md 2026-10-30;
+retro `docs/retrospectives/retrospective-2026-10-30-my-plans-redesign.md`.
+
+**Follow-ups / what to know:**
+- The student's OWN pick now shows on the sponsor card and contract until her offer settles it; a wrong-campus pick
+  reads as a clash (red ladder chip + `pathway_confirm`) until she confirms the letter — owner accepted.
+- **Never add a qualification filter to a scholarship-side picker** (memory: scholarship pickers unfiltered); the
+  course guide stays filtered. `lib/planPicker.scope.test.ts` guards which files may call the eligibility endpoints.
+- TD-434 (latent): the TVET pathway map's first-category-wins rule decides which picker lists a TVET course; 0 live
+  cases today — re-check after any TVET ingest.
+- Not driven live: the signed-in apply form (no test account). Bundle median 147.698 kB against 148 (TD-427).
+
 ### ⚠ STATE AT 2026-10-30 — SOURCE SIGN-IN LIVE (main `14537b10`; api-01211-psc, web-01034-n7j)
 
 **What it is.** A referral source can now be invited and sign in (new role `source_partner`, `PartnerAdmin.source`).

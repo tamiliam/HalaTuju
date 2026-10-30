@@ -2,9 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## Scholarship My Plans redesign — offer question, institution first, unfiltered (no migration) - 2026-10-30
+## Scholarship My Plans redesign — offer question, institution first, unfiltered (no migration) - 2026-10-30 — LIVE 2026-10-30 (main 53706f21; api-01212-lr2, web-01035-m7b)
 
-Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers-unfiltered`; NOT pushed.
+Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers-unfiltered`; pushed 2026-10-30 ~17:30
+UTC, both builds SUCCESS, no 5xx on the new api revision. Retro
+`docs/retrospectives/retrospective-2026-10-30-my-plans-redesign.md`.
 
 - **"My Plans" asks about an offer.** "Have you received an offer for your next step of study?" — "Yes, I have an
   offer" / "Not yet, I'm waiting". Same stored values (`pathway_certainty` sure / uncertain), branches and
@@ -38,6 +40,13 @@ Owner rulings 2026-10-30 (decisions.md, same date). Built on branch `sch-pickers
   boot load (`ensure_data`) and never sends a public cache header on an empty answer. The picker clears a failed
   catalogue fetch on every pathway change and offers "Retry". The catalogue-fill test now feeds the other
   campus's letter, so it can fail. Each fix bitten.
+- **Gates (final rebased branch):** api 10,861 passed / 3 skipped (`pytest -n auto`) · web 5,432 jest / 340 suites ·
+  tsc, lint, i18n ok · `makemigrations --check` clean · bundle median 147.698 kB against 148 (0.302 kB of room).
+- **Live smoke:** `/api/v1/courses/offerings/` serves all ten pathways (asasi 57 courses / 24 institutions,
+  university 180/12, poly 85/35, kkom 54/101, pismp 49/27, iljtm 59/30, ilkbs 51/22, mara 181/233, tvet_other 8/3,
+  degree 1,112/20), no duplicate ids, no blank states, `public, max-age=3600`; an unknown pathway 400. The signed-in
+  apply form was not driven live (no test account); jest covers it.
+- Tech debt raised: TD-434 (the TVET pathway map's first-category-wins rule, latent).
 
 ## Source sign-in arc (S1–S4 + two adversarial review rounds) — closed 2026-10-30 — LIVE 2026-10-30 (main 14537b10; api-01211-psc, web-01034-n7j). Migrations courses 0089, scholarship 0190, 0191 applied MIGRATE-FIRST by hand and recorded — never re-apply that DDL
 

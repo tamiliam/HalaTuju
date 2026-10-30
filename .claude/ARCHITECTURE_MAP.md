@@ -145,6 +145,7 @@ apps/courses/
 | `/api/v1/courses/` | GET | CourseListView | List all courses (paginated) |
 | `/api/v1/courses/<id>/` | GET | CourseDetailView | Single course with tags, occupations, offerings |
 | `/api/v1/courses/search/` | GET | CourseSearchView | Search with filters (text, level, field, source_type, state, qualification) |
+| `/api/v1/courses/offerings/?pathway=` | GET | PathwayOfferingsView | One pathway's institutions (id, name, state) and the courses each offers — UNFILTERED, Bumi-only and inactive included; the scholarship Plans pickers only (2026-10-30) |
 | `/api/v1/institutions/` | GET | InstitutionListView | List all institutions |
 | `/api/v1/institutions/<id>/` | GET | InstitutionDetailView | Single institution detail |
 | `/api/v1/quiz/questions/` | GET | QuizQuestionsView | 6 quiz questions (BM/EN/TA) |
@@ -828,6 +829,15 @@ gate and `/auth/callback`); `src/lib/applicationScreen.ts` (`applicationScreen`:
 several / none — what `/scholarship/application` shows). Components in `components/scholarship/`:
 `ApplyingTo` (the gift line), `GiftChooser` behind `LazyGiftChooser`, and the lazy boundaries
 `LazyAliranPicker` and `LazyMatricCollegePicker`.
+
+**My Plans redesign (2026-10-30) — offer question, institution first, unfiltered.** One Plans picker for
+`/scholarship/apply` and `/profile`: `components/PathwayPicker.tsx` (behind `components/scholarship/LazyPathwayPicker.tsx`
+on the apply page) with `components/scholarship/InstitutionCoursePicker.tsx` (State → Campus → Course, or University →
+Course). Rules in the pure leaf `src/lib/planPicker.ts`; the opt-in "Eligible only" switch in `src/lib/planEligibility.ts`
+(the ONLY door to the eligibility endpoints on the scholarship side, loaded by `import()`; guarded by
+`src/lib/planPicker.scope.test.ts`); catalogue client `src/lib/api/offerings.ts`. Server: `apps/courses/views_offerings.py`
+(`/api/v1/courses/offerings/`). `chosen_programme.institution` / `institution_id` are written only through
+`apps/scholarship/card_display.with_institution`.
 
 **One application in play (2026-10-05, TD-337; one ANYWHERE until M2) — the server decides.**
 `apps/scholarship/services/apply_gate.py` (the rule: `apply_verdict` for the submit,

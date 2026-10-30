@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-31 | 53706f2 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 75 | 91 | 0 | 3 | 12 | 151 | 0 | 0 | ok | ok |
 | 2026-10-30 | f45bc55 | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 75 | 93 | 0 | 3 | 12 | 151 | 0 | 0 | ok | ok |
 | 2026-10-30 | 2127fda | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | 579e27c | 90 | 52 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
@@ -112,7 +113,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-30, f45bc55, window 2026-08-01 onward)
+## Latest run (2026-10-31, 53706f2, window 2026-08-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -129,7 +130,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1007 | 7 |
 
 ### Fix ratio
-- 235 fix / 226 feat commits since 2026-08-01
+- 236 fix / 228 feat commits since 2026-08-02
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -138,15 +139,14 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1279  halatuju-web/src/app/profile/page.tsx`
+- `1271  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1143  halatuju_api/apps/scholarship/contracts.py`
-- `1092  halatuju-web/src/lib/scholarship.ts`
-- `1074  halatuju-web/src/app/scholarship/apply/page.tsx`
 - `1054  halatuju_api/apps/courses/models.py`
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
 - `1022  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1007  halatuju_api/apps/scholarship/sponsorship.py`
+- `1005  halatuju-web/src/lib/scholarship.ts`
 - `1004  halatuju_api/apps/scholarship/verdict_engine.py`
 
 ### Python functions of 150+ lines
@@ -176,13 +176,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 48 edges (230 import statements)
+- scholarship -> courses: 48 edges (232 import statements)
 
 ### Suppressions
 - # noqa: 38
 - # type: ignore: 11
 - : any: 2
-- eslint-disable: 42
+- eslint-disable: 40
 - reasoned `# noqa: CODE — reason` (informational, not budgeted): 42
 
 ### Skipped tests
@@ -195,7 +195,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 38 of 312 web test files read source text (signals: readFileSync, apiSource); drift 25 (*Drift.test.ts, counted apart)
+- 38 of 315 web test files read source text (signals: readFileSync, apiSource); drift 25 (*Drift.test.ts, counted apart)
 
 ### Debt register
 - 430 entries have a defining line; 151 carry no resolution marker on it
@@ -224,7 +224,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 2127fda
+- budgets no looser than at f45bc55
 
 ### tsc
 - 0 errors in 0 files
@@ -232,11 +232,33 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6443
+- Total keys per locale: 6440
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-31 (53706f2, Scholarship My Plans redesign close) — 0 FAIL; three readings improved, one will move
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). Against f45bc55 (source sign-in close): `fix%` 51,
+`hot#1` officerCockpit.ts 28.2, `long` 15, `dup` 4, `xapp` 75, `skip` 0, `mirror` 3, `guard%` 12, `unused` 0,
+`tsc` 0 — unchanged. Moved:
+
+- **`big` 16 -> 15.** `scholarship/apply/page.tsx` fell 1,074 -> 732 lines (its Plans step went to the shared
+  `PathwayPicker`); `lib/scholarship.ts` 1,092 -> 1,005 (the eligible-only helpers left) — still listed, 5 over;
+  `profile/page.tsx` 1,279 -> 1,271. Real shrinkage, and both ledger lines were lowered. **Accepted.**
+- **`supp` 93 -> 91.** Two reasonless `react-hooks/exhaustive-deps` disables (the PISMP effects on the page and the
+  picker) went with the effects they excused. **Accepted.**
+- **`td_open` stays 151 at this reading and becomes 152** with TD-434 (raised in this close: the TVET pathway map's
+  first-category-wins rule now decides which scholarship picker lists a course; 0 live cases). A latent gap written
+  down rather than left unfindable. **Accepted**, the same reasoning as b9028b4.
+
+**Not claimed:** the scholarship -> courses import statements rose 230 -> 232 (`card_display.with_institution`
+reads `Institution` and `StpmCourse` lazily); same 48 edges, so `xapp` did not move. Web test files 312 -> 315,
+source readers still 38: the new `planPicker.scope.test.ts` DOES read source, but through `@/test/sourceGuard`'s
+`readWeb` / `walkFloor`, which the tool's signals (`readFileSync`, `apiSource`) do not match — the same blind spot
+for `bumiputera.scope.test.ts`. So `guard%` understates the shared-helper guards; noted, not promoted (a source-reading
+guard is the cure for an unguarded mirror, not the disease — sprint-close step 10).
 
 ### 2026-10-30 (f45bc55, source sign-in S1–S4 close) — 0 FAIL; two readings moved, both accepted
 
