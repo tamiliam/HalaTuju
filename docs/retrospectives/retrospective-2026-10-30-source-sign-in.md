@@ -103,8 +103,8 @@ sign-in web" (the witness step inside the student page, lazy source screens, the
   the lead is to say plainly what that includes).
 - The lead's call that a source's student page shows the coarse missing checklist parts — one step past the
   partner-email ceiling.
-- The Admin role no longer adds sources: inviting is super / org_admin only. The lead's default; the owner has not
-  been asked explicitly (Admin could Add a source since 2026-07-19).
+- ~~The Admin role no longer adds sources: inviting is super / org_admin only.~~ Owner confirmed 2026-10-30
+  (Admin could Add a source since 2026-07-19; it no longer can).
 - The wording of the witness declaration.
 
 ## Numbers

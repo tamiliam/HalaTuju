@@ -16525,6 +16525,8 @@ page's POST answers 410 `use_source_invitation`. Owner rulings, 2026-10-30:
   away. Before anyone has signed in, the organisation edits as before.
 - **A source sees its students' phone and email** (S3's allowlist).
 - **The witness source sees the full contract** on the witness step (S4).
+- **Only super and org_admin may invite a source** (owner confirmed after the deploy, 2026-10-30). The Admin role,
+  which could Add a source since 2026-07-19, no longer creates one.
 
 **Revision of "no email may link to a partner console"** (2026-07-26 / 2026-08-04): the rule stood because no
 partner had a console. It is revised for exactly two letters — the source invitation (`invite_source`, wired now to
