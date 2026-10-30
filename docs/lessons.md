@@ -1574,6 +1574,15 @@ is prefetched — weight moved off a route's first load can still travel in the 
   order on SQLite too, where the default would have passed silently. (Student maintenance S2, 2026-10-29)
 
 - **A reading of a rule that every applicant meets automatically is the wrong reading.** (Bumi Sprint D1, 2026-10-29.) The parser read "N more subjects belum diambil kira / selain di atas" independently of Syarat Am, so BM and Sejarah — which every applicant must have — always filled the "N more" slots, and ten UiTM rules asked for nothing extra. No university writes a clause that is empty by construction. **Rule:** when a parsed requirement can be met by the subjects every applicant already holds, stop and ask for the stricter reading; test each parsed clause with a student who has ONLY the general-requirement subjects. Also: a normaliser that folds two printed names into one key ("Sains Pertanian" / "Pertanian") can create a duplicate inside a list that never had one — dedupe after folding, and count distinct student subjects in every group, on every engine (SPM and STPM).
+- **A "signed / executed" reader must use the platform's OWN activation rule — never a model property whose name
+  matches but whose meaning is stricter.** (Student maintenance S5a, 2026-10-30.) The Contract tab read
+  `BursaryAgreement.is_executed`, which requires the witness; the platform activates a student on student + guarantor
+  + organisation (`bursary._maybe_activate`), the witness being non-blocking — so every real contract would have read
+  "No contract on file". Two siblings in the same review: `resolve_org_for_path` silently returns None for the real
+  3-segment agreement key (the tenant check never fired; the test used an invented 4-segment path), and
+  `witness_signed_by` is the officer who RECORDED the witness, not the witness. **Rule:** when a reader asks "has X
+  happened?", find the code that ACTS on X and call (or mirror) its condition; and test every guard with the real
+  data shape the writer produces (`build_doc_key`, not a path typed into the test).
 - **A schedule derived from SETTINGS must chain from its stored rows — never be recomputed from the origin.**
   (Student maintenance S4b, 2026-10-30.) Result terms were recomputed from the funding date with the CURRENT
   terms-a-year on every run, so a 2→4 or 4→1 change overlapped, gapped or back-dated terms a student had already

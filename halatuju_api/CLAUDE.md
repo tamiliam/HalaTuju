@@ -1145,13 +1145,15 @@ git-pruned, no junctions, three harmless files).
 
 ---
 
-**Student maintenance Sprints 1–4b are LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
-S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188` (applied by hand 2026-10-29
-21:40 UTC, api 01193-58g); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`,
-`retrospective-2026-10-30-maintenance-s4b.md`; roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`).
-NEXT = Sprint 5: money summary (admin Money tab: paid, remaining, last releases, spending by category) + the
-Contract tab (admin + student; signed PDF by signed URL, else "No contract on file").** Design of record:
-https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
+**Student maintenance Sprints 1–5a are LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188`, S5a `cebc9850` (api
+01201-dhs, no migration); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` … `-s4a.md`,
+`retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`; roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`).
+NEXT = Sprint 5b: the STUDENT's Funds and Contract tabs on My Bursary — her own file only (404 otherwise), the
+same Payments-rule money as S3, her spending as **totals plus categories, the same card her sponsor sees, no
+merchants and no dates (owner ruling (a), 2026-10-30)** via `SpendingCard` with student copy (no `sponsorPortal`
+slice on her page), and the platform-signed contract (`scholar_money.platform_signed`, link minted on click only).**
+Design of record: https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
 - ⚠ **OWNER PENDING (S4b):** create the Cloud Scheduler jobs `results-overdue-flag` (08:00 MYT) and
   `results-due-reminders` (08:30 MYT) — the System health light expects both; `MAINTENANCE_REMINDERS_ENABLED`
   stays OFF until the owner has read the en/ms/ta wording on Organisation → Settings → Student communications.
@@ -1171,6 +1173,10 @@ https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
   no back-dated debt); ONE late rule (`late`) for standing, list, file, hub and both jobs; student emails
   (`student_comms.py`, defaults in code, org rows only when edited) are all dark behind `MAINTENANCE_REMINDERS_ENABLED`
   and never go to a student on hold.
+- Money and Contract (S5a): `scholar_money.py` — money ONLY through `payments.paid_to_date` / `_remaining`
+  (five readers held equal by one test); spending only with `has_perm('spending')`, by category CODE, unfolded;
+  contract = `platform_signed` (binds + organisation countersigned + PDF; the witness is optional), PDF link 300 s,
+  minted on request, only for this application's own `<org>/<app>/…` path.
 
 ---
 
