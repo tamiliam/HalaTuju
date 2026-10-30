@@ -75,6 +75,11 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
     'TD-416 (2026-10-29). English SPONSOR words only (the four `sponsor*` namespaces), imported for '
     + 'its side effect by the sponsor portal layout and the pages of the 10 sponsor routes that show '
     + 'them — so ~6 kB of words leave the first-load JS of every student, public and admin route.',
+  'src/lib/messagesBursary.ts':
+    'Student maintenance S5b (2026-10-30). English BURSARY-TABS words only (`bursaryTabs.*`, her My '
+    + 'Bursary Funds and Contract tabs), imported for its side effect by `/scholarship/bursary` and the '
+    + 'two tab components — so they ride on that ONE route; in the scholarship slice they pushed '
+    + '/scholarship/apply and /scholarship/application over their first-load budgets.',
   // ⚠ `src/lib/preUPlan.ts` WAS HERE, and it is gone — TD-280, closed by code health H18. The
   // officer cockpit's Malay pre-U track label is now RESOLVED BY THE API and served on the
   // payload (`pre_u_track_label`), so the browser downloads no Malay catalogue for it and there
@@ -96,6 +101,7 @@ const STATIC_IMPORT_SHAPE: Record<string, string[]> = {
   'src/lib/messagesDocuments.ts': ['en?slice=documents'],
   'src/lib/messagesScholarship.ts': ['en?slice=scholarship'],
   'src/lib/messagesSponsor.ts': ['en?slice=sponsor'],
+  'src/lib/messagesBursary.ts': ['en?slice=bursary'],
   'src/lib/applyCopyPlatform.ts': ['en', 'ms', 'ta'],
 }
 

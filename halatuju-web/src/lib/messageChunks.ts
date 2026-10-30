@@ -13,7 +13,7 @@
  */
 import type { Locale } from '@/lib/branding'
 
-export type SliceName = 'core' | 'admin' | 'documents' | 'scholarship' | 'sponsor'
+export type SliceName = 'core' | 'admin' | 'documents' | 'scholarship' | 'sponsor' | 'bursary'
 
 /** Fetch one slice of Malay or Tamil. Resolves to the module (the catalogue is its default). */
 export function fetchSlice(locale: Exclude<Locale, 'en'>, slice: SliceName): Promise<unknown> {
@@ -21,6 +21,7 @@ export function fetchSlice(locale: Exclude<Locale, 'en'>, slice: SliceName): Pro
     if (slice === 'documents') return import('@/messages/ms.json?slice=documents')
     if (slice === 'scholarship') return import('@/messages/ms.json?slice=scholarship')
     if (slice === 'sponsor') return import('@/messages/ms.json?slice=sponsor')
+    if (slice === 'bursary') return import('@/messages/ms.json?slice=bursary')
     return slice === 'core'
       ? import('@/messages/ms.json?slice=core')
       : import('@/messages/ms.json?slice=admin')
@@ -28,6 +29,7 @@ export function fetchSlice(locale: Exclude<Locale, 'en'>, slice: SliceName): Pro
   if (slice === 'documents') return import('@/messages/ta.json?slice=documents')
   if (slice === 'scholarship') return import('@/messages/ta.json?slice=scholarship')
   if (slice === 'sponsor') return import('@/messages/ta.json?slice=sponsor')
+  if (slice === 'bursary') return import('@/messages/ta.json?slice=bursary')
   return slice === 'core'
     ? import('@/messages/ta.json?slice=core')
     : import('@/messages/ta.json?slice=admin')

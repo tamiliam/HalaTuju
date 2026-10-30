@@ -143,7 +143,7 @@ export default function MyStudentDetailPage() {
               placeholder that stood here said "coming soon", which stops being true the day
               this ships; it now says what is actually the case. */}
           {detail.spending ? (
-            <SpendingCard spending={detail.spending} />
+            <SpendingCard spending={detail.spending} copy="sponsorPortal.myStudents.detail.spend" />
           ) : (
             <div className="mt-6 rounded-xl border border-dashed p-4">
               <p className="text-[11px] uppercase tracking-wide text-ground-400 font-semibold">

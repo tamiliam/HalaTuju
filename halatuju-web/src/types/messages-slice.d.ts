@@ -31,3 +31,8 @@ declare module '*.json?slice=sponsor' {
   const catalogue: Record<string, unknown>
   export default catalogue
 }
+
+declare module '*.json?slice=bursary' {
+  const catalogue: Record<string, unknown>
+  export default catalogue
+}

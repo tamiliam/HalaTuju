@@ -167,3 +167,55 @@ def contract_payload(application, *, with_link=False):
         'pdf_url': pdf_url(agreement, application) if with_link else None,
         'pdf_expires_in': PDF_URL_SECONDS,
     }
+
+
+# ── The STUDENT's own Funds tab (S5b, 2026-10-30) ──────────────────────────────────────────────────
+
+def student_funds(application):
+    """Her OWN money and spending — owner ruling (a), 2026-10-30: totals plus categories, the same
+    card her sponsor sees, with NO merchant, NO transaction, NO transaction date. Money by the
+    Payments rules (S3's figures), as strings. `spending` is None — not four zeroes — when no
+    spending report has reached us for her (the sponsor card's own rule: an empty card would claim
+    she has spent nothing). Categories are EVERY category, by code (the screen translates), all time
+    — the sponsor card's period; `left` floors at zero (a parent may top her wallet up)."""
+    from .models import Disbursement, SPEND_CATEGORY_CHOICES, BursarySpendTxn
+    from .payments import _remaining, paid_to_date
+    from .spend_sponsor import category_rows
+    from .spending_import import TX_SPEND
+    released = paid_to_date(application)
+    releases = (Disbursement.objects.filter(application=application, status__in=Disbursement.PAID)
+                .order_by('-released_at', '-id')[:LAST_RELEASES])
+    # org-fence: her own application, resolved from her own login by the view.
+    rows = list(BursarySpendTxn.objects.filter(application=application, tx_type=TX_SPEND)
+                .values_list('category', 'amount'))
+    newest = (BursarySpendTxn.objects.filter(application=application)
+              .order_by('-imported_at').values_list('imported_at', flat=True).first())
+    spending = None
+    if rows and newest is not None:
+        spent = sum((amount or Decimal('0') for _c, amount in rows), Decimal('0'))
+        left = released - spent
+        spending = {
+            'promised': _money(application.award_amount),
+            'released': _money(released),
+            'spent': _money(spent),
+            'left': _money(left if left > 0 else Decimal('0')),
+            'as_at': _day(newest),
+            'categories': [{'code': r['code'], 'total': str(r['total'])}
+                           for r in category_rows(rows, dict(SPEND_CATEGORY_CHOICES), fold=False)],
+        }
+    return {
+        'award_amount': _money(application.award_amount) if application.award_amount is not None else None,
+        'received': _money(released),
+        'remaining': _money(_remaining(application)),
+        # Her own payments: the amount and the day it reached her (never a purchase).
+        'releases': [{'amount': _money(d.amount), 'released_on': _day(d.released_at)} for d in releases],
+        'spending': spending,
+    }
+
+
+def student_contract(application, *, with_link=False):
+    """Her platform-signed contract — `contract_payload` without the version or the recording trail.
+    The witness appears only once signed (never the recording officer); no IC number, ever."""
+    out = contract_payload(application, with_link=with_link)
+    out.pop('version', None)
+    return out

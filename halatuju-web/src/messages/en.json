@@ -2780,7 +2780,9 @@
       },
       "tab": {
         "overview": "Overview",
-        "results": "Results"
+        "results": "Results",
+        "funds": "Funds",
+        "contract": "Contract"
       },
       "funds": {
         "title": "Your funds",
@@ -7627,6 +7629,57 @@
     "help": {
       "higher_results": "A photo or PDF of your official results slip or transcript, showing your CGPA.",
       "results_slip_optional": "A photo or PDF of your official SPM results slip. Optional for STPM, Matriculation, Asasi and Diploma applicants."
+    }
+  },
+  "bursaryTabs": {
+    "spend": {
+      "title": "How you are spending",
+      "asAt": "as at {date}",
+      "promised": "Your award",
+      "released": "Received",
+      "spent": "Spent",
+      "left": "Left",
+      "barLabel": "How much of your award you have received so far",
+      "chartLabel": "Your spending by category",
+      "other": "Other",
+      "noteTitle": "How we work this out.",
+      "note": "We are told the shop’s name and the amount, never what you bought. Where the shop’s name says what it sells, we use that; where it does not and you visit often for small amounts, we count it as food. Anything we cannot place shows as Not yet sorted. Your sponsor sees these same totals and nothing more.",
+      "cat": {
+        "food": "Food & drink",
+        "groceries": "Groceries",
+        "transport": "Transport",
+        "study": "Books & study supplies",
+        "phone": "Phone & internet",
+        "hostel": "Hostel & bills",
+        "health": "Health & pharmacy",
+        "clothing": "Clothing & shoes",
+        "micro_stall": "Micro stall – no online info",
+        "transfer": "Sent to a person",
+        "unsorted": "Not yet sorted"
+      }
+    },
+    "funds": {
+      "payments": "Your last payments",
+      "noPayments": "No payment received yet.",
+      "remaining": "{amount} still to come",
+      "seeAll": "See all spending",
+      "noSpending": "We have not received any spending information for you yet.",
+      "loadFailed": "Could not load your funds. Please try again."
+    },
+    "contract": {
+      "title": "Your contract",
+      "none": "No contract on file",
+      "signed": "Signed {date}",
+      "countersigned": "Signed by you and countersigned {date}",
+      "role": {
+        "student": "You",
+        "guarantor": "Your guarantor",
+        "foundation": "For the organisation",
+        "witness": "Witness"
+      },
+      "viewPdf": "View PDF",
+      "noPdf": "The PDF is not available right now. Please try again.",
+      "loadFailed": "Could not load your contract. Please try again."
     }
   }
 }

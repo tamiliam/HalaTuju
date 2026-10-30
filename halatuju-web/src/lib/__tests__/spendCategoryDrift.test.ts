@@ -41,6 +41,7 @@ describe('every category has words, in every locale, on both screens', () => {
       `admin.programmeOverview.category.${c}`,
       `sponsorPortal.myStudents.detail.spend.cat.${c}`,
       `admin.scholars.moneyTab.category.${c}`,          // the scholar file's Money tab (S5a)
+      `bursaryTabs.spend.cat.${c}`,             // her own Funds tab (S5b)
     ]).filter((k) => typeof resolve(cat, k) !== 'string' || !String(resolve(cat, k)).trim())
     expect(missing).toEqual([])
   })

@@ -68,14 +68,52 @@ def summary_payload(app):
     }
 
 
+def _own_file(request):
+    """Her newest application WITH a file, or None — the one door all three hub reads use."""
+    return (ScholarshipApplication.objects.select_related('profile', 'programme')
+            .filter(has_file_q(), profile_id=request.user_id).order_by('-id').first())
+
+
+def _no_file():
+    return Response({'error': 'Not found', 'code': 'no_file'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class BursaryFundsView(APIView):
+    """GET scholarship/bursary/funds/ — her Funds tab (S5b): award, received, remaining, her last 3
+    payments and her spending as totals plus categories (`scholar_money.student_funds`; owner ruling
+    (a), 2026-10-30 — no merchant, no transaction, no transaction date). Her OWN file only; a closed
+    file reads the same."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .scholar_money import student_funds
+        return Response(student_funds(app))
+
+
+class BursaryContractView(APIView):
+    """GET scholarship/bursary/contract/ — her Contract tab (S5b): the platform-signed agreement
+    (countersigned; the witness is optional), the parties (no IC number), or `{exists: false}`.
+    `?link=1` mints a 300-second PDF link — only when she opens it. Not gated on the signing flag.
+    Her OWN file only."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .scholar_money import student_contract
+        return Response(student_contract(app, with_link=request.query_params.get('link') == '1'))
+
+
 class BursarySummaryView(APIView):
     """GET — the signed-in student's own hub. Never another student's data."""
     permission_classes = [SupabaseIsAuthenticated]
 
     def get(self, request):
-        app = (ScholarshipApplication.objects.select_related('profile', 'programme')
-               .filter(has_file_q(), profile_id=request.user_id).order_by('-id').first())
+        app = _own_file(request)
         if app is None:
-            return Response({'error': 'Not found', 'code': 'no_file'},
-                            status=status.HTTP_404_NOT_FOUND)
+            return _no_file()
         return Response(summary_payload(app))

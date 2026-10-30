@@ -66,9 +66,11 @@ export type {
 export {
   getSemesterResults, addSemesterResult, getPromotionalConsent, setPromotionalConsent,
   getGraduationMessages, submitGraduationMessage, getSponsorGraduationMessages, getBursarySummary,
+  getBursaryFunds, getBursaryContract,
 } from './api/inProgramme'
 export type {
   SemesterResult, PromotionalConsentState, GraduationMessage, GraduationRelayMessage, BursarySummary,
+  BursaryFunds, BursaryContract, BursaryContractParty,
 } from './api/inProgramme'
 
 // The STPM/Form-6 arm: eligibility, ranking, its own quiz and its own search.

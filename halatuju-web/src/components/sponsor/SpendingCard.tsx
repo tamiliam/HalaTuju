@@ -18,7 +18,22 @@
 // thirty lines — and the project carries no charting dependency for it.
 
 import { useT } from '@/lib/i18n'
-import type { SponsorSpending } from '@/lib/api'
+
+/** What the card draws — the SPONSOR's payload and the STUDENT's (S5b) both fit it. Categories by
+ *  CODE; the label is always this card's own translation, never a server string. */
+export interface SpendingFigures {
+  promised: string
+  released: string
+  spent: string
+  left: string
+  as_at: string
+  categories: Array<{ code: string; total: string }>
+}
+
+/* ⚠ THE WORDS ARE THE CALLER'S, AND THERE IS NO DEFAULT (S5b). The sponsor page passes its own
+ * `sponsorPortal…spend` prefix, the student's page `scholarship.bursary.spend`. A default here would
+ * put a sponsor-slice key inside this file, and the slice guard (`sliceReach.test.ts`) would rightly
+ * flag every student route that renders the card — her page must never need the sponsor slice. */
 
 /** Slice colours, in rank order.
  *
@@ -51,7 +66,11 @@ function rm(v: string) {
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${cents}`
 }
 
-export default function SpendingCard({ spending }: { spending: SponsorSpending }) {
+export default function SpendingCard({ spending, copy }: {
+  spending: SpendingFigures
+  /** The message prefix for every word on the card (`title`, `asAt`, `promised`… `cat.<code>`). */
+  copy: string
+}) {
   const { t } = useT()
 
   // ⚠ Parsed ONLY for the bar's geometry. Every figure on screen is rendered from the STRING the
@@ -84,26 +103,26 @@ export default function SpendingCard({ spending }: { spending: SponsorSpending }
   })
 
   const label = (code: string) =>
-    code === 'other' ? t('sponsorPortal.myStudents.detail.spend.other')
-      : t(`sponsorPortal.myStudents.detail.spend.cat.${code}`)
+    code === 'other' ? t(`${copy}.other`)
+      : t(`${copy}.cat.${code}`)
 
   return (
     <section className="mt-6 rounded-xl border border-ground-200 bg-ground-0 p-5"
       data-testid="spending-card">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold text-ground-900">
-          {t('sponsorPortal.myStudents.detail.spend.title')}
+          {t(`${copy}.title`)}
         </h2>
         {/* ⚠ The date we last UPDATED, never the day the student last bought something. */}
         <span className="text-xs text-ground-400">
-          {t('sponsorPortal.myStudents.detail.spend.asAt', { date: spending.as_at })}
+          {t(`${copy}.asAt`, { date: spending.as_at })}
         </span>
       </div>
 
       {/* ── the money bar: released against promised ── */}
       <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-ground-100"
         role="img"
-        aria-label={t('sponsorPortal.myStudents.detail.spend.barLabel')}>
+        aria-label={t(`${copy}.barLabel`)}>
         <div className="h-full rounded-full bg-primary-500"
           style={{ width: `${pct(released)}%` }} data-testid="released-bar" />
       </div>
@@ -112,7 +131,7 @@ export default function SpendingCard({ spending }: { spending: SponsorSpending }
            ['spent', spending.spent], ['left', spending.left]] as const).map(([key, value]) => (
           <div key={key}>
             <dt className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">
-              {t(`sponsorPortal.myStudents.detail.spend.${key}`)}
+              {t(`${copy}.${key}`)}
             </dt>
             <dd className="mt-0.5 text-base font-medium tabular-nums text-ground-900">
               RM{rm(value)}
@@ -124,7 +143,7 @@ export default function SpendingCard({ spending }: { spending: SponsorSpending }
       {/* ── the donut and the list, equal weight ── */}
       <div className="mt-6 flex flex-col gap-6 border-t border-ground-100 pt-6 sm:flex-row sm:items-center">
         <svg viewBox="0 0 140 140" className="h-40 w-40 shrink-0 -rotate-90"
-          role="img" aria-label={t('sponsorPortal.myStudents.detail.spend.chartLabel')}
+          role="img" aria-label={t(`${copy}.chartLabel`)}
           data-testid="spending-donut">
           <circle cx="70" cy="70" r={R} fill="none" className="stroke-ground-100" strokeWidth="18" />
           {arcs.map((a) => (
@@ -150,9 +169,9 @@ export default function SpendingCard({ spending }: { spending: SponsorSpending }
           not apologise: it is a statement of method, not a disclaimer. ── */}
       <p className="mt-6 rounded-lg bg-ground-50 p-3 text-xs leading-relaxed text-ground-600">
         <span className="font-semibold text-ground-700">
-          {t('sponsorPortal.myStudents.detail.spend.noteTitle')}
+          {t(`${copy}.noteTitle`)}
         </span>{' '}
-        {t('sponsorPortal.myStudents.detail.spend.note')}
+        {t(`${copy}.note`)}
       </p>
     </section>
   )

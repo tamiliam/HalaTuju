@@ -231,6 +231,8 @@ const SPECS: NamespaceSpec[] = [
   { ns: 'admin', minLeaves: 1800 },
   // Third results route S3: the student Documents tab's own words (its own message slice).
   { ns: 'documentsTab', minLeaves: 20 },
+  // Student maintenance S5b: her My Bursary Funds and Contract tabs (their own message slice).
+  { ns: 'bursaryTabs', minLeaves: 30 },
 ]
 
 describe('the scan found the tree and the catalogue (the floor)', () => {

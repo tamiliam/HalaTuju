@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## Her Funds and Contract tabs: her own file, the Payments rules, the sponsor's card in her words — 2026-10-30 (student maintenance S5b)
+
+**Decision:** (1) `GET scholarship/bursary/funds/` and `.../contract/` (`views_bursary`) read HER OWN file only —
+`has_file_q` + her login, the S3 hub's one door (`_own_file`); anything else is 404 `no_file`; a closed file reads.
+(2) **Funds** (`scholar_money.student_funds`): award, received, remaining by the Payments rules (S3's figures), her
+last 3 payments (amount and the day it reached her), and her spending as **totals plus categories — owner ruling
+(a), 2026-10-30: the same card her sponsor sees, no merchant, no transaction, no transaction date** — every
+category by code, unfolded, all time, `left` floored at zero, `null` until a report arrives. One test holds her tab,
+her S3 summary, the officer's Money tab and the sponsor card to the same numbers. (3) **Contract**
+(`scholar_money.student_contract`): `contract_payload` (platform-signed = countersigned, witness optional; parties
+without IC numbers; no recording officer) minus the version; the PDF link (300 s, own-path check) is minted only
+on her click (`?link=1`) and opens in a new tab opened on the click itself — not the staff `DocViewer`, whose words
+live in the admin slice. (4) `SpendingCard` takes its words from the caller (`copy`, REQUIRED — no default): the
+sponsor page passes `sponsorPortal…spend`, hers `bursaryTabs.spend`, so her page never needs the sponsor slice
+(`sliceReach.test.ts` holds it). (5) Her new words live in their OWN message slice (`bursary` = the `bursaryTabs`
+namespace, `lib/messagesBursary.ts`), loaded only by `/scholarship/bursary`: in the `scholarship` slice they pushed
+`/scholarship/apply` (+0.043 kB) and `/scholarship/application` (+0.255 kB) over their first-load budgets — for
+words neither route shows. The budget was not raised; the weight moved to the one route that reads it. **Readers added:** `student_funds`, `student_contract` (via the two views);
+nothing writes.
+
 ## The scholar file's Money and Contract tabs read the Payments rules and the executed agreement only — 2026-10-30 (student maintenance S5a)
 
 **Decision:** (1) `GET admin/scholarship/scholars/<id>/money/` and `.../contract/` behind the scholar-file fence

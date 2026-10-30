@@ -53,7 +53,17 @@ beforeEach(() => {
   mockApi.getSemesterResults.mockResolvedValue({ results: [] } as never)
   mockApi.getPromotionalConsent.mockResolvedValue({ granted: false, is_minor: false } as never)
   mockApi.getGraduationMessages.mockResolvedValue({ messages: [] } as never)
+  mockApi.getBursaryFunds.mockResolvedValue(FUNDS as never)
+  mockApi.getBursaryContract.mockResolvedValue({ exists: false } as never)
 })
+
+const FUNDS: api.BursaryFunds = {
+  award_amount: '2000.00', received: '1200.00', remaining: '800.00',
+  releases: [{ amount: '200.00', released_on: '2026-10-01' }],
+  spending: { promised: '2000.00', released: '1200.00', spent: '300.00', left: '900.00', as_at: '2026-10-28',
+    categories: [{ code: 'food', total: '120.00' }, { code: 'study', total: '90.00' }, { code: 'transport', total: '50.00' },
+      { code: 'phone', total: '25.00' }, { code: 'health', total: '15.00' }] },
+}
 
 it('greets her and shows her funds and latest result on the Overview', async () => {
   serve()
@@ -63,9 +73,24 @@ it('greets her and shows her funds and latest result on the Overview', async () 
   expect(screen.getByTestId('bursary-funds').textContent).toContain('RM1,200.00')
   expect(screen.getByText('scholarship.bursary.latest.none')).toBeTruthy()
   expect(screen.getAllByRole('tab').map((b) => b.textContent))
-    .toEqual(['scholarship.bursary.tab.overview', 'scholarship.bursary.tab.results'])
+    .toEqual(['scholarship.bursary.tab.overview', 'scholarship.bursary.tab.results',
+      'scholarship.bursary.tab.funds', 'scholarship.bursary.tab.contract'])
   expect(localStorage.getItem(KEY_HAS_BURSARY_FILE)).toBe('1')
   await waitFor(() => expect(mockApi.getGraduationMessages).toHaveBeenCalledWith(7, { token: 'tok' }))
+})
+
+it('S5b: the Overview names her top categories, See all spending opens Funds, and the contract card shows', async () => {
+  serve()
+  render(<BursaryPage />)
+  const cats = await screen.findByTestId('bursary-funds-categories')
+  expect(cats.querySelectorAll('li')).toHaveLength(4)                    // four, then "See all spending"
+  expect(cats.textContent).toContain('bursaryTabs.spend.cat.food')
+  expect(screen.getByTestId('bursary-contract-card').textContent).toContain('bursaryTabs.contract.none')
+  fireEvent.click(screen.getByText('bursaryTabs.funds.seeAll'))
+  expect(await screen.findByTestId('bursary-funds-tab')).toBeTruthy()
+  fireEvent.click(screen.getByRole('tab', { name: 'scholarship.bursary.tab.contract' }))
+  expect(await screen.findByTestId('bursary-contract-tab')).toBeTruthy()
+  expect(mockApi.getBursaryContract).toHaveBeenCalledWith({ token: 'tok' })   // no link on the first read
 })
 
 it('the results form follows can_record_results, on the Results tab', async () => {

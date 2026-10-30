@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 5b — her Funds and Contract tabs on My Bursary - 2026-10-30
+
+Roadmap Sprint 5, student half. No migration.
+
+- **Funds tab:** what she has received of her award and what is still to come, her last three payments, and her
+  spending card — totals and every category, exactly what her sponsor sees, with no shops, no purchases and no
+  dates (owner ruling, 2026-10-30). The Overview's funds card now names her top four categories and links to it.
+- **Contract tab** (and an Overview card): her contract signed on the platform — the date, who signed, and View PDF
+  through a five-minute link fetched only when she taps it; otherwise "No contract on file".
+- The spending card now takes its words from the page that shows it, so her page never loads the sponsor portal's
+  words; her new words ride their own message slice, loaded only by My Bursary (no other route got heavier).
+  Guide (org admin) updated.
+
 ## Matric/Diploma Exact-read M5 — the live re-read; sprint arc closed - 2026-10-30
 
 - Ran `reextract_documents --doc-type higher_results --pass-marker reextract_2026_10_30_m5 --fresh-higher-authenticity

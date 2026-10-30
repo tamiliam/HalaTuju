@@ -21,6 +21,8 @@ jest.mock('@/lib/i18n', () => ({
   }),
 }))
 
+const SPONSOR = 'sponsorPortal.myStudents.detail.spend'
+
 const CARD: SponsorSpending = {
   promised: '2000.00',
   released: '1400.00',
@@ -41,9 +43,22 @@ const CARD: SponsorSpending = {
 const withCategories = (categories: SponsorSpending['categories']) =>
   ({ ...CARD, categories })
 
+describe('the words belong to whoever is reading (S5b)', () => {
+  it('speaks in the sponsor\u2019s words on the sponsor page and the student\u2019s on hers', () => {
+    const { unmount } = render(<SpendingCard spending={CARD} copy={SPONSOR} />)
+    expect(screen.getByTestId('spending-card').textContent).toContain('sponsorPortal.myStudents.detail.spend.title')
+    unmount()
+    render(<SpendingCard spending={CARD} copy="bursaryTabs.spend" />)
+    const card = screen.getByTestId('spending-card').textContent ?? ''
+    expect(card).toContain('bursaryTabs.spend.title')
+    expect(card).toContain('bursaryTabs.spend.cat.food')
+    expect(card).not.toContain('sponsorPortal')
+  })
+})
+
 describe('the four numbers', () => {
   it('shows all four, formatted from the STRING the server sent', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     const figures = screen.getByTestId('spending-figures')
     expect(figures.textContent).toContain('RM2,000.00')
     expect(figures.textContent).toContain('RM1,400.00')
@@ -52,28 +67,28 @@ describe('the four numbers', () => {
   })
 
   it('draws the bar as released against promised', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(screen.getByTestId('released-bar').style.width).toBe('70%')
   })
 
   it('never lets the bar overflow when spending exceeds what we released', () => {
     // ⚠ NOT A BUG: the wallet is the student's own and a parent may top it up. The bar must not
     // spill out of its track, and nothing here may imply the student overspent our money.
-    render(<SpendingCard spending={{
+    render(<SpendingCard copy={SPONSOR} spending={{
       ...CARD, promised: '500.00', released: '900.00', spent: '900.00', left: '0.00',
     }} />)
     expect(screen.getByTestId('released-bar').style.width).toBe('100%')
   })
 
   it('survives a student with nothing promised without dividing by zero', () => {
-    render(<SpendingCard spending={{ ...CARD, promised: '0.00', released: '0.00' }} />)
+    render(<SpendingCard copy={SPONSOR} spending={{ ...CARD, promised: '0.00', released: '0.00' }} />)
     expect(screen.getByTestId('released-bar').style.width).toBe('0%')
   })
 })
 
 describe('the ranked list', () => {
   it('draws one row per category, with the money', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     const list = screen.getByTestId('spending-list')
     expect(list.querySelectorAll('li')).toHaveLength(7)
     expect(list.textContent).toContain('RM540.00')
@@ -82,7 +97,7 @@ describe('the ranked list', () => {
 
   it('shows "Sent to a person" as its own row, never folded away', () => {
     // ⚠ OWNER RULING. It is the one line a careful sponsor most needs to see.
-    render(<SpendingCard spending={withCategories([
+    render(<SpendingCard copy={SPONSOR} spending={withCategories([
       ...CARD.categories.slice(0, 6),
       { code: 'transfer', label: 'Sent to a person', total: '0.50' },
     ])} />)
@@ -92,7 +107,7 @@ describe('the ranked list', () => {
 
   it('shows "Not yet sorted" as its own row, never folded away', () => {
     // ⚠ It is what stops the other nine reading as complete when they are not.
-    render(<SpendingCard spending={withCategories([
+    render(<SpendingCard copy={SPONSOR} spending={withCategories([
       ...CARD.categories.slice(0, 6),
       { code: 'unsorted', label: 'Not yet sorted', total: '0.25' },
     ])} />)
@@ -103,12 +118,12 @@ describe('the ranked list', () => {
   it('labels every row from i18n, never from the server label', () => {
     // ⚠ The server sends an English label for the officer's convenience; a sponsor reading Tamil
     // must not be shown it. The card resolves its own key per code.
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(screen.getByTestId('spending-list').textContent).not.toContain('Food & drink')
   })
 
   it('renders a list even when only one category has money', () => {
-    render(<SpendingCard spending={withCategories(
+    render(<SpendingCard copy={SPONSOR} spending={withCategories(
       [{ code: 'food', label: 'Food & drink', total: '12.00' }])} />)
     expect(screen.getByTestId('spending-list').querySelectorAll('li')).toHaveLength(1)
   })
@@ -116,19 +131,19 @@ describe('the ranked list', () => {
 
 describe('the donut', () => {
   it('draws one arc per category, plus the track', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     // 1 track + 7 slices
     expect(screen.getByTestId('spending-donut').querySelectorAll('circle')).toHaveLength(8)
   })
 
   it('is described for a screen reader rather than left as decoration', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(screen.getByTestId('spending-donut').getAttribute('aria-label'))
       .toBe('sponsorPortal.myStudents.detail.spend.chartLabel')
   })
 
   it('does not fall over when every total is zero', () => {
-    render(<SpendingCard spending={withCategories(
+    render(<SpendingCard copy={SPONSOR} spending={withCategories(
       [{ code: 'food', label: 'Food & drink', total: '0.00' }])} />)
     expect(screen.getByTestId('spending-donut')).not.toBeNull()
   })
@@ -136,13 +151,13 @@ describe('the donut', () => {
 
 describe('the stamp and the note', () => {
   it('stamps the date the server gave it', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(document.body.textContent)
       .toContain('sponsorPortal.myStudents.detail.spend.asAt:2026-09-10')
   })
 
   it('carries the assumptions note', () => {
-    render(<SpendingCard spending={CARD} />)
+    render(<SpendingCard spending={CARD} copy={SPONSOR} />)
     expect(screen.getByText('sponsorPortal.myStudents.detail.spend.note')).not.toBeNull()
   })
 })

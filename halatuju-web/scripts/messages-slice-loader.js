@@ -18,6 +18,9 @@
  *     banner). Those children stay in core; the slice holds every other child.
  *   - `sponsor` = the four `sponsor*` namespaces (`sponsorPortal`, `sponsorAuth`, `sponsorPool`,
  *     `sponsorLanding`) — the sponsor routes' words (TD-416).
+ *   - `bursary` = the `bursaryTabs` namespace — her My Bursary Funds and Contract tabs (maintenance
+ *     S5b). In the scholarship slice they pushed /scholarship/apply and /scholarship/application over
+ *     their first-load budgets, for words neither route ever shows.
  *   - `core`  = EVERY OTHER namespace, plus the `CORE_KEEPS` children. It is the complement on
  *     purpose: a namespace added tomorrow lands in core by default, so it can never be missing from
  *     a route that needs it. (A new `scholarship.*` CHILD lands in the slice, not core — safe
@@ -47,6 +50,9 @@ const SLICES = {
   // TD-416: the sponsor portal's and the sponsor sign-in screens' words (~6 kB gz), loaded by
   // `lib/messagesSponsor.ts` on the sponsor routes only.
   sponsor: ['sponsorPortal', 'sponsorAuth', 'sponsorPool', 'sponsorLanding'],
+  // Student maintenance S5b (2026-10-30): her Funds and Contract tabs' words — only /scholarship/bursary
+  // reads them, so they ride their own chunk instead of the scholarship slice six routes load.
+  bursary: ['bursaryTabs'],
 }
 
 /**

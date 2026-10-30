@@ -123,3 +123,49 @@ export interface BursarySummary {
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {
   return apiRequest('/api/v1/scholarship/bursary/summary/', options)
 }
+
+/** S5b: her Funds tab. Owner ruling (a), 2026-10-30 — totals plus categories, the same card her
+ *  sponsor sees: no merchant, no transaction, no transaction date. Every amount a STRING.
+ *  `spending` is null (not zeroes) until a spending report has reached us. */
+export interface BursaryFunds {
+  award_amount: string | null
+  received: string
+  remaining: string
+  releases: { amount: string; released_on: string | null }[]
+  spending: {
+    promised: string
+    released: string
+    spent: string
+    /** Floored at zero: a parent may top up her wallet. */
+    left: string
+    as_at: string
+    /** EVERY category (unfolded), by CODE — translated on screen. */
+    categories: { code: string; total: string }[]
+  } | null
+}
+
+export interface BursaryContractParty {
+  role: 'student' | 'guarantor' | 'foundation' | 'witness'
+  name: string
+  relationship?: string
+  title?: string
+  organisation?: string
+  signed_on: string | null
+}
+
+/** S5b: her Contract tab — the platform-signed agreement, or `{exists: false}`. `pdf_url` is null
+ *  unless the read asked for a link (`link: true`); it lives `pdf_expires_in` seconds. */
+export type BursaryContract =
+  | { exists: false }
+  | { exists: true; executed_on: string | null; witnessed: boolean; parties: BursaryContractParty[];
+      pdf_url: string | null; pdf_expires_in: number }
+
+export async function getBursaryFunds(options?: ApiOptions): Promise<BursaryFunds> {
+  return apiRequest('/api/v1/scholarship/bursary/funds/', options)
+}
+
+/** `link: true` mints a five-minute PDF link — only when she opens the PDF. */
+export async function getBursaryContract(options?: ApiOptions & { link?: boolean }): Promise<BursaryContract> {
+  const { link, ...rest } = options ?? {}
+  return apiRequest(`/api/v1/scholarship/bursary/contract/${link ? '?link=1' : ''}`, rest)
+}

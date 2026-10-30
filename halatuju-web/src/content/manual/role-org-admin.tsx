@@ -30,7 +30,9 @@ export const roleOrgAdmin: ManualChapter = {
         close) and <strong>close the file</strong> with a reason; the review screen keeps a summary and a link
         here. Placing or lifting a <strong>hold</strong> stops or restarts payments, so it needs payment-run
         rights. A student whose award still holds the sponsor&rsquo;s offer cannot be closed here &mdash; the file
-        says so; ask the platform owner. Funded students see their own <strong>My Bursary</strong> page.
+        says so; ask the platform owner. Funded students see their own <strong>My Bursary</strong> page: what they
+        have received of their award, their spending as totals and categories (exactly what their sponsor sees &mdash;
+        no shops, no purchases, no dates), and their signed contract.
         <p className="mt-2">The file&rsquo;s <strong>Results</strong> tab lists every result she sends, with her
         slip. <strong>Accept</strong> it, or <strong>Query</strong> it with a note she will see. Only an accepted
         result counts &mdash; for her standing (performing, underperforming or failing, against the minimum and

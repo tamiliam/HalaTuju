@@ -1,6 +1,7 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
+import '@/lib/messagesBursary'       // S5b: the Funds and Contract tabs' words (their own slice)
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -11,6 +12,8 @@ import AppFooter from '@/components/AppFooter'
 import Toggle from '@/components/Toggle'
 import {
   getBursarySummary,
+  getBursaryFunds,
+  getBursaryContract,
   getSemesterResults,
   signUploadDocument,
   uploadFileToSignedUrl,
@@ -20,10 +23,14 @@ import {
   getGraduationMessages,
   submitGraduationMessage,
   type BursarySummary,
+  type BursaryFunds as FundsPayload,
+  type BursaryContract as ContractPayload,
   type SemesterResult,
   type GraduationMessage,
 } from '@/lib/api'
 import { rememberBursaryFile } from '@/lib/storage'
+import BursaryFunds from '@/components/bursary/BursaryFunds'
+import BursaryContract from '@/components/bursary/BursaryContract'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import { formatDate } from '@/lib/formatDate'
 
@@ -43,8 +50,10 @@ const REVIEW_TONE: Record<string, string> = {
 }
 const GRADUATED_TONE = 'bg-positive-fill text-positive-fill-ink'
 
-type Tab = 'overview' | 'results'
-const TABS: readonly Tab[] = ['overview', 'results']
+type Tab = 'overview' | 'results' | 'funds' | 'contract'
+const TABS: readonly Tab[] = ['overview', 'results', 'funds', 'contract']
+/** How many of her categories the Overview's funds card names before "See all spending". */
+const OVERVIEW_CATEGORIES = 4
 
 /** "My Bursary" (student maintenance S3; was `/scholarship/in-programme`, which redirects here) — a
  *  funded student's home from award acceptance to closure. Design of record: the owner-approved phone
@@ -52,10 +61,10 @@ const TABS: readonly Tab[] = ['overview', 'results']
  *
  *  ⚠ WHO REACHES IT IS THE SERVER'S ANSWER: `scholarship/bursary/summary/` serves her OWN file or 404s
  *  (`maintenance_scope.has_file` — in maintenance, or closed after it). Nothing is re-derived here.
- *  ⚠ TWO TABS NOW, AND THE REST ARE HIDDEN, NOT "COMING SOON": the roadmap's rule is that a later
- *  tab appears only when its module is switched on, and a student shown six empty tabs reads a
- *  programme that is not working. Funds, Contract, Letters, News and Mentoring arrive with their
- *  sprints. The Overview's money card is what Funds will grow from.
+ *  ⚠ FOUR TABS NOW (S5b added Funds and Contract), AND THE REST ARE HIDDEN, NOT "COMING SOON": a later
+ *  tab appears only when its module is switched on — Letters, News and Mentoring arrive with their
+ *  sprints. Funds is totals plus categories ONLY (owner ruling (a), 2026-10-30); Contract is the
+ *  platform-signed agreement, its PDF link minted on the click.
  *  ⚠ NOTHING STAFF-SIDE: `support_paused` is the only maintenance signal she gets (never probation),
  *  and no result is judged against a minimum (Sprint 4). The results form shows only when the server
  *  says `can_record_results` (active / maintenance until Sprint 4). */
@@ -88,6 +97,11 @@ export default function BursaryPage() {
   const [promoSaving, setPromoSaving] = useState(false)
   const [promoError, setPromoError] = useState<string | null>(null)
 
+  // S5b: her funds and contract — read once with the hub, for the Overview cards and their tabs.
+  const [funds, setFunds] = useState<FundsPayload | null>(null)
+  const [contract, setContract] = useState<ContractPayload | null>(null)
+  const [fundsFailed, setFundsFailed] = useState(false)
+
   // Graduation thank-you
   const [messages, setMessages] = useState<GraduationMessage[]>([])
   const [compose, setCompose] = useState('')
@@ -95,11 +109,15 @@ export default function BursaryPage() {
   const [blocked, setBlocked] = useState<string[] | null>(null)
 
   const loadAll = useCallback(async (appId: number, tok: string) => {
-    const [r, p, m] = await Promise.all([
+    const [r, p, m, f, c] = await Promise.all([
       getSemesterResults(appId, { token: tok }).catch(() => ({ results: [] })),
       getPromotionalConsent(appId, { token: tok }).catch(() => ({ granted: false, is_minor: false })),
       getGraduationMessages(appId, { token: tok }).catch(() => ({ messages: [] })),
+      getBursaryFunds({ token: tok }).catch(() => null),
+      getBursaryContract({ token: tok }).catch(() => null),
     ])
+    setFunds(f); setFundsFailed(f === null)
+    setContract(c)
     setResults(r.results)
     setPromoGranted(p.granted)
     setIsMinor(p.is_minor)
@@ -314,6 +332,16 @@ export default function BursaryPage() {
                   amount: `RM${rm(app.funds.last_payment.amount)}`, date: formatDate(app.funds.last_payment.at) })
                 : t('scholarship.bursary.funds.none')}
             </p>
+            {funds?.spending && funds.spending.categories.length > 0 && (
+              <ul className="mt-3 flex flex-col gap-1 text-sm text-ground-700" data-testid="bursary-funds-categories">
+                {funds.spending.categories.slice(0, OVERVIEW_CATEGORIES).map((c) => (
+                  <li key={c.code}>{t(`bursaryTabs.spend.cat.${c.code}`)} · RM{rm(c.total)}</li>
+                ))}
+              </ul>
+            )}
+            <button type="button" onClick={() => setTab('funds')} className="mt-2 text-sm font-medium text-primary-600">
+              {t('bursaryTabs.funds.seeAll')}
+            </button>
           </section>
           <section className="rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="bursary-latest">
             <h2 className="text-lg font-bold text-ground-900">{t('scholarship.bursary.latest.title')}</h2>
@@ -336,6 +364,14 @@ export default function BursaryPage() {
             </button>
           </section>
         </>)}
+
+        {tab === 'overview' && contract && <BursaryContract contract={contract} token={token} compact />}
+
+        {/* ── Funds and Contract (S5b) ───────────────────────────────────────── */}
+        {tab === 'funds' && (funds ? <BursaryFunds funds={funds} />
+          : fundsFailed && <p className="text-sm text-critical-600">{t('bursaryTabs.funds.loadFailed')}</p>)}
+        {tab === 'contract' && (contract ? <BursaryContract contract={contract} token={token} />
+          : <p className="text-sm text-critical-600">{t('bursaryTabs.contract.loadFailed')}</p>)}
 
         {/* ── Semester results (the Results tab) ───────────────────────────── */}
         {tab === 'results' && <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">

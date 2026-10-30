@@ -2780,7 +2780,9 @@
       },
       "tab": {
         "overview": "Gambaran",
-        "results": "Keputusan"
+        "results": "Keputusan",
+        "funds": "Dana",
+        "contract": "Kontrak"
       },
       "funds": {
         "title": "Dana anda",
@@ -7627,6 +7629,57 @@
     "help": {
       "higher_results": "Gambar atau PDF slip keputusan atau transkrip rasmi anda, yang menunjukkan PNGK anda.",
       "results_slip_optional": "Gambar atau PDF slip keputusan SPM rasmi anda. Pilihan bagi pemohon STPM, Matrikulasi, Asasi dan Diploma."
+    }
+  },
+  "bursaryTabs": {
+    "spend": {
+      "title": "Bagaimana anda berbelanja",
+      "asAt": "setakat {date}",
+      "promised": "Anugerah anda",
+      "released": "Diterima",
+      "spent": "Dibelanjakan",
+      "left": "Baki",
+      "barLabel": "Berapa banyak anugerah anda yang telah diterima setakat ini",
+      "chartLabel": "Perbelanjaan anda mengikut kategori",
+      "other": "Lain-lain",
+      "noteTitle": "Cara kami mengiranya.",
+      "note": "Kami dimaklumkan nama kedai dan jumlahnya, tidak pernah apa yang anda beli. Jika nama kedai menunjukkan apa yang dijualnya, kami gunakan itu; jika tidak dan anda kerap berkunjung untuk jumlah kecil, kami mengiranya sebagai makanan. Apa-apa yang tidak dapat kami letakkan ditunjukkan sebagai Belum diisih. Penaja anda melihat jumlah yang sama ini dan tiada yang lain.",
+      "cat": {
+        "food": "Makanan & minuman",
+        "groceries": "Barangan runcit",
+        "transport": "Pengangkutan",
+        "study": "Buku & alat tulis",
+        "phone": "Telefon & internet",
+        "hostel": "Asrama & bil",
+        "health": "Kesihatan & farmasi",
+        "clothing": "Pakaian & kasut",
+        "micro_stall": "Gerai mikro – tiada maklumat dalam talian",
+        "transfer": "Dihantar kepada seseorang",
+        "unsorted": "Belum diasingkan"
+      }
+    },
+    "funds": {
+      "payments": "Bayaran terakhir anda",
+      "noPayments": "Belum ada bayaran diterima.",
+      "remaining": "{amount} lagi akan diterima",
+      "seeAll": "Lihat semua perbelanjaan",
+      "noSpending": "Kami belum menerima maklumat perbelanjaan anda.",
+      "loadFailed": "Tidak dapat memuatkan dana anda. Sila cuba lagi."
+    },
+    "contract": {
+      "title": "Kontrak anda",
+      "none": "Tiada kontrak dalam fail",
+      "signed": "Ditandatangani {date}",
+      "countersigned": "Ditandatangani oleh anda dan ditandatangani balas {date}",
+      "role": {
+        "student": "Anda",
+        "guarantor": "Penjamin anda",
+        "foundation": "Bagi pihak organisasi",
+        "witness": "Saksi"
+      },
+      "viewPdf": "Lihat PDF",
+      "noPdf": "PDF tidak tersedia buat masa ini. Sila cuba lagi.",
+      "loadFailed": "Tidak dapat memuatkan kontrak anda. Sila cuba lagi."
     }
   }
 }
