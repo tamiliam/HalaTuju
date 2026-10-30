@@ -43,7 +43,11 @@ from .tvet_subjects import ANY_OTHER, split_names, tvet_subject_keys
 NUMBER_WORDS = {'satu': 1, 'dua': 2, 'tiga': 3, 'empat': 4, 'lima': 5, 'enam': 6}
 GRADES = {'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'}
 
+#: "No formal education" (owner ruling F); MARA's GIATMARA cards print the same floor as "Syarat minima:
+#: Tidak Tamat Sekolah" (the minimum is not having finished school) -> no academic rule.
 _OPEN_RE = re.compile(r'Tiada Pendidikan Formal', re.I)
+_NO_SCHOOLING_RE = re.compile(r'^Tidak Tamat Sekolah$', re.I)
+_NAMED_ROUTE_RE = re.compile(r'pengalaman|\bPMR\b|\bPT3\b|Tingkatan 3|\bPBD\b', re.I)
 _OTHER_RE = re.compile(r'\bSVM\b|Vokasional|\bSKM\b|Sijil Kemahiran|Tahfiz|Pondok|Politeknik|Kekompetenan|'
                        r'pengalaman kerja|Jenis Sijil|CGPA|\bDKM\b|\bDLKM\b|Sijil Tahap|\bSTM\b', re.I)
 _SPM_RE = re.compile(r'\bSPM\b|Sijil Pelajaran Malaysia|Tingkatan 5|Bil\. Subjek', re.I)
@@ -60,9 +64,16 @@ LINE_RULES = (
     (r'\bLelaki\b|\bPerempuan\b|\bWanita\b|\bjantina\b', 'gender'),
     (r'beragama|\bIslam\b|Muslim', 'religion'),
     (r'Warganegara Malaysia Sahaja|^WARGANEGARA SAHAJA$|^Warganegara Malaysia$', 'req_malaysian'),
+    # MARA (Sprint F2): the option heading is the bare word, often with "(Wajib)".
+    (r'^Warganegara( Malaysia)?\s*\(wajib\)$|^Warganegara$', 'req_malaysian'),
     (r'Bumiputera Sahaja|Berbangsa Melayu, Orang Asli', 'req_bumiputera'),
+    (r'^(Calon )?Bumiputera\s*(\(wajib\))?$|^Bumiputera\s*/\s*Bumiputera Sabah atau Sarawak$', 'req_bumiputera'),
     (r'Tiada Masalah Penglihatan Atau Rabun Warna', 'no_colorblind'),
+    (r'\bTidak (Buta|Rabun) Warna\b', 'no_colorblind'),
     (r'Tidak menerima sebarang OKU', 'no_disability'),
+    # MARA's blanket wording (and its typo "sebaran", with or without "jenis" / "orang"): a BLANKET
+    # exclusion, never the qualified "tidak mempunyai ketidakupayaan ... menyukarkan kerja amali".
+    (r'Tidak menerima sebarang?\s+(jenis\s+)?(orang\s+)?(kurang upaya|OKU)\b', 'no_disability'),
     (r'tidak mempunyai (ketidakupayaan|kurang upaya)', 'remark_disability'),
     (r'Sihat Tubuh Badan', 'remark_health'),
     (r'(membaca|menulis|mengira)', 'remark_literacy'),
@@ -75,6 +86,8 @@ LINE_RULES = (
      r'Had Umur Minimum dan Maksimun|Bumiputera sahaja|Calon mestilah :|Minimum)\W*$', 'ignore'),
     (r'^(Calon diwajibkan memenuhi|Pemohon Hendaklah Memenuhi) syarat(-syarat)? tambahan '
      r'(berikut|seperti berikut)\W*$', 'ignore'),
+    # MARA (Sprint F2): option headings that only name the card ("Syarat", "Tahap Kesihatan").
+    (r'^(Syarat|Syarat minima|Tahap Kesihatan|Taraf Kesihatan)$', 'ignore'),
 )
 _RULES = [(re.compile(p, re.I), a) for p, a in LINE_RULES]
 FIXED_REMARKS = {'remark_health': 'Sihat tubuh badan',
@@ -90,12 +103,32 @@ def _tables(option):
     return [v for k, v in option['body'] if k == 'table']
 
 
+_SPM_HEADING_RE = re.compile(r'\bSPM\b|Sijil Pelajaran Malaysia', re.I)
+
+
+def _is_spm_body(option, text, tables):
+    """An option whose HEADING names the SPM and whose body is only SPM subject items ("Bil. Subjek : N"
+    over a Kod | Subjek table), with no certificate, CGPA or skills-code line. Its heading may also name
+    the vocational subject GROUPS ("kumpulan Vokasional / MPV", most MARA diploma pages) or print "SPM /
+    SKM" over a body that is all SPM (Sprint F2): the body decides, so it is an SPM route."""
+    return bool(_SPM_HEADING_RE.search(option['heading'])) and bool(tables) \
+        and all(len(t['headers']) == 2 for t in tables) \
+        and any(_COUNT_RE.match(v) for k, v in option['body'] if k == 'text') \
+        and not re.search(r'Jenis Sijil|CGPA|PNGK|\[[A-Z]{1,4}\d*-\d', text)
+
+
 def classify_option(option):
     """'open' | 'other' (a non-SPM qualification) | 'spm' | None (not an academic option)."""
-    text = ' '.join(_option_lines(option))
+    lines = _option_lines(option)
+    text = ' '.join(lines)
     tables = _tables(option)
-    if _OPEN_RE.search(text):
-        return 'open'
+    if _OPEN_RE.search(text) or any(_NO_SCHOOLING_RE.match(line) for line in lines):
+        # MARA (Sprint F2): the stock "Tiada Pendidikan Formal" line is printed under every route's
+        # heading; under "2 tahun pengalaman" or "Tamat Tingkatan 3 / PT3" it is THAT route (experience,
+        # a Form 3 result), which an SPM leaver is not judged by, never "open to anyone".
+        return 'other' if _NAMED_ROUTE_RE.search(option['heading']) else 'open'
+    if _is_spm_body(option, text, tables):
+        return 'spm'
     if _OTHER_RE.search(option['heading']) or any(len(t['headers']) == 4 for t in tables) \
             or re.search(r'Jenis Sijil|CGPA|\[[A-Z]{1,3}\d?-\d', text):
         return 'other'
@@ -281,7 +314,28 @@ def spm_option_rule(option, problems, warnings, remarks):
     block = None
     if groups or remaining:
         block = {'counted': [k for k, _ in flags], 'groups': groups, 'remaining': remaining}
+    said = _heading_credits(option['heading'])
+    if said and said > _credit_units(flags, groups, remaining):
+        # Sprint F2: MARA's heading says "tiga (3) kepujian ... Matematik" over a table that asks
+        # Matematik at D (its own note: a remedial Maths programme for those without the credit). The
+        # TABLE wins, as for an item's title; the heading goes into the remarks for the student.
+        remarks.append(f"UP_TVET: \"{option['heading']}\"")
+        mismatches += 1
     return {'flags': flags, 'block': block, 'mismatches': mismatches}
+
+
+def _heading_credits(heading):
+    """The number of credits ("kepujian" / "kredit") an SPM option's heading states, else None."""
+    m = re.search(r'\((\d)\)\s*(kepujian|kredit)', heading or '', re.I)
+    return int(m.group(1)) if m else None
+
+
+def _credit_units(flags, groups, remaining):
+    """How many subjects at a credit (C or better) the parsed option asks for."""
+    credit = ('A+', 'A', 'A-', 'B+', 'B', 'C+', 'C')
+    return sum(1 for _, grade in flags if grade in credit) \
+        + sum(g.get('count', 1) for g in groups if g.get('grade') in credit) \
+        + sum(r['count'] for r in remaining if r['grade'] in credit)
 
 
 def _as_alternative(rule, problems):
@@ -295,17 +349,29 @@ def _as_alternative(rule, problems):
 
 # --- cards -----------------------------------------------------------------------------------
 
+#: Actions a line can carry BESIDE its first match (Sprint F2: MARA prints "Sihat tubuh badan (Tidak
+#: menerima sebarang OKU) dan TIDAK RABUN WARNA" on one line): every gate and fixed remark it states.
+_ALSO = ('req_malaysian', 'req_bumiputera', 'no_colorblind', 'no_disability', 'remark_text') + tuple(FIXED_REMARKS)
+
+
 def _line_actions(lines, problems):
-    """Non-academic lines -> the set of actions, with the matched texts."""
+    """Non-academic lines -> the set of actions, with the matched texts. A line's first match decides
+    it (gender / religion / an unknown line stay unparsed); any OTHER gate or fixed remark the same
+    line states is added too, so a second gate on one line is never dropped."""
     actions = []
     for line in lines:
-        for pattern, action in _RULES:
-            m = pattern.search(line)
-            if m:
-                actions.append((action, line, m))
-                break
-        else:
+        first = next(((action, pattern.search(line)) for pattern, action in _RULES if pattern.search(line)),
+                     None)
+        if first is None:
             problems.append(f'condition not recognised: {line!r}')
+            continue
+        actions.append((first[0], line, first[1]))
+        if first[0] in ('gender', 'religion'):
+            continue
+        for pattern, action in _RULES:
+            if action in _ALSO and action != first[0] and pattern.search(line) \
+                    and action not in (a for a, ln, _ in actions if ln is line):
+                actions.append((action, line, pattern.search(line)))
     return actions
 
 
@@ -335,11 +401,42 @@ def _apply_condition_card(card, out, problems):
         if 'req_bumiputera' in flags:
             flags.add('req_malaysian')   # a Bumiputera is always a citizen
         per_option.append(flags)
+    common = set()
     if per_option:
         common = set.intersection(*per_option)
         if len(per_option) > 1 and common != set.union(*per_option):
             out['warnings'].append(f"card {card['number']} alternatives: only {sorted(common)} kept")
         out['flags'] |= common
+    _apply_card_summary(card, common, out, problems)
+
+
+_GATE_FLAGS = ('req_malaysian', 'req_bumiputera', 'no_colorblind', 'no_disability')
+
+
+def _apply_card_summary(card, card_flags, out, problems):
+    """A condition card's SUMMARY line (the subtitle under its title) is part of the page (Sprint F2).
+    MARA prints "Sihat tubuh badan (Tidak menerima sebarang OKU)" there over a body that only says
+    "Sihat Tubuh Badan": a blanket exclusion stated anywhere is a gate (owner: blanket OKU wording ->
+    `no_disability`; colour hides on any statement). Gender / religion there is UNPARSED; gate wording
+    no rule recognises, for a gate the card's body does not set, is UNPARSED (never guessed)."""
+    text = card['subtitle']
+    if not text:
+        return
+    recognised = _line_actions([text], [])
+    for action, line, _ in recognised:
+        if action in ('gender', 'religion'):
+            if not any(p.startswith(f'{action} condition') for p in problems):   # the body said it already
+                problems.append(f"{action} condition in card {card['number']}'s summary: {line!r}")
+        elif action in _GATE_FLAGS and action not in out['flags']:
+            out['flags'].add(action)
+            out['warnings'].append(f"card {card['number']}: {action} read from its summary {line!r}")
+    if 'req_bumiputera' in out['flags']:
+        out['flags'].add('req_malaysian')
+    if recognised or _QUALIFIED_DISABILITY.search(text):
+        return
+    for gate, pattern in ACADEMIC_GATES:
+        if pattern.search(text) and gate not in card_flags:
+            problems.append(f"{gate} wording in card {card['number']}'s summary not recognised: {text!r}")
 
 
 #: Conditions a student can be refused on. In an ACADEMIC card they are read on EVERY line of every

@@ -244,3 +244,107 @@ class TestAcademicCardGates:
 class TestAgeText:
     def test_a_numbered_age_line_loses_its_number(self):
         assert parsed('51431')['fields']['remarks'].startswith('Umur 17 hingga 30 tahun.')
+
+
+class TestMaraWording:
+    """Bumi Sprint F2: MARA's own wording (GIATMARA, IKM, KKTM), on its saved pages. The F1 file and the F1b
+    fix still rebuild byte for byte from the same parser (`test_ingest_tvet_courses`, `test_fix_held_tvet_flags`)."""
+
+    def test_bare_headings_are_citizenship_and_bumiputera(self):
+        # "[Syarat Wajib] Warganegara" / "[Syarat Wajib] Calon Bumiputera" (and "Bumiputera") over the full line
+        for kid in ('1142', '48269', '12575'):
+            f = parsed(kid)['fields']
+            assert f['req_bumiputera'] and f['req_malaysian'], kid
+
+    def test_bumiputera_of_sabah_or_sarawak_is_bumiputera(self):
+        r = parsed('13703')   # "Bumiputera / Bumiputera Sabah atau Sarawak" then "Calon Bumiputera Sahaja"
+        assert not r['unparsed'] and r['fields']['req_bumiputera']
+
+    def test_a_page_silent_on_bumiputera_and_citizenship_sets_neither(self):
+        f = parsed('30784')['fields']   # GIATMARA Ayer Hitam: no Warganegara, no Bumiputera card
+        assert not f['req_bumiputera'] and not f['req_malaysian']
+
+    def test_the_blanket_oku_wording_is_no_disability(self):
+        f = parsed('48269')['fields']   # "Tidak menerima sebarang jenis Orang Kurang Upaya"
+        assert f['no_disability']
+
+    def test_a_blanket_exclusion_in_a_card_summary_is_a_gate(self):
+        r = parsed('51470')   # summary "Sihat tubuh badan (Tidak menerima sebarang OKU)", body only health
+        assert r['fields']['no_disability'] and any('read from its summary' in w for w in r['warnings'])
+
+    def test_two_gates_on_one_line_are_both_read(self):
+        f = parsed('1124')['fields']   # "Sihat tubuh badan (Tidak menerima sebarang OKU) dan TIDAK RABUN WARNA"
+        assert f['no_disability'] and f['no_colorblind'] and 'Sihat tubuh badan' in f['remarks']
+
+    def test_gender_in_a_card_summary_is_flagged(self):
+        p = copy.deepcopy(page('30784'))
+        p['cards'][0]['subtitle'] = 'Lelaki sahaja'
+        assert any(u.startswith('gender condition in card') for u in parse_requirements(p)['unparsed'])
+
+    def test_unrecognised_gate_wording_in_a_summary_is_flagged(self):
+        p = copy.deepcopy(page('30784'))
+        p['cards'][0]['subtitle'] = 'OKU pendengaran tidak diterima'
+        assert any('wording in card' in u for u in parse_requirements(p)['unparsed'])
+
+    def test_not_having_finished_school_is_open(self):
+        r = parsed('12575')   # PENDIDIKAN: "Syarat minima: Tidak Tamat Sekolah"
+        assert r['open'] and not r['unparsed'] and r['fields']['complex_requirements'] is None
+
+    def test_no_formal_education_under_an_experience_heading_is_not_open(self):
+        r = parsed('923')   # "2 tahun pengalaman dalam bidang berkaitan / Tiada Pendidikan Formal ..."
+        assert any('no SPM route' in u for u in r['unparsed'])
+
+    def test_a_form_three_route_is_not_open_and_the_spm_route_decides(self):
+        r = parsed('51470')   # SKM ATAU SPM (BM, Sejarah) ATAU "Tamat Tingkatan 3 / PT3 ... Tiada Pendidikan Formal"
+        assert not r['open'] and r['fields']['pass_bm'] and r['fields']['pass_history']
+
+    def test_an_spm_option_naming_vocational_groups_is_still_spm(self):
+        r = parsed('1142')   # heading names "kumpulan Vokasional ... (MPV)"; the body is SPM items
+        assert not r['unparsed']
+        [block] = blocks('1142')
+        assert block['groups'][0] == {'count': 1, 'grade': 'D', 'subjects': ['math']}
+        assert 'phy' in block['groups'][1]['subjects'] and block['groups'][1]['grade'] == 'C'
+
+    def test_an_spm_slash_skm_heading_over_an_spm_body_is_spm(self):
+        [block] = blocks('13703')   # "Sijil Pelajaran Malaysia (SPM) / Sijil Kemahiran Malaysia (SKM)"
+        assert block['counted'] == ['bm', 'hist'] and block['remaining'][0]['count'] == 2
+
+    def test_the_mpak_papers_are_real_subjects_off_the_grade_form(self):
+        assert tvet_subject_keys('MATEMATIK (MPAK)') == [] and tvet_subject_keys('LUKISAN GEOMETRI & MESIN') == []
+        assert any('MATEMATIK (MPAK)' in w for w in parsed('13703')['warnings'])
+
+    def test_a_heading_asking_more_credits_than_the_table_goes_to_the_remarks(self):
+        r = parsed('1142')   # "tiga (3) kepujian ... Matematik" over Matematik at D (a remedial Maths note)
+        assert r['header_mismatches'] == 1 and 'Program Remedial Matematik' in r['fields']['remarks']
+
+    def test_gig_worker_wording_is_flagged(self):
+        assert any('Pekerja Industri GIG' in u for u in parsed('53518')['unparsed'])
+
+
+class TestMaraOnTheEngine:
+    """A reading every applicant meets is the wrong reading (lesson): the general subjects alone never
+    meet a MARA academic row, and the strict count-once reading holds."""
+
+    def _eligible(self, kid, grades, disability=False):
+        student = StudentProfile(grades=grades, gender='Lelaki', nationality='Warganegara', colorblind=False,
+                                 disability=disability)
+        student.bumiputera = True
+        return check_eligibility(student, dict(parsed(kid)['fields'], course_id=kid))[0]
+
+    def test_the_general_subjects_alone_are_not_enough(self):
+        assert not self._eligible('1142', {'bm': 'A', 'hist': 'A'})
+        assert not self._eligible('13703', {'bm': 'A', 'hist': 'A'})
+
+    def test_bm_and_sejarah_cannot_also_be_the_other_credit(self):
+        # 1142: BM, Sejarah, English pass; Maths D; a science C; and ONE OTHER subject at C
+        base = {'bm': 'A', 'hist': 'A', 'eng': 'E', 'math': 'D', 'phy': 'C'}
+        assert not self._eligible('1142', base)
+        assert self._eligible('1142', dict(base, geo='C'))
+
+    def test_two_more_credits_excluding_the_listed_papers(self):
+        assert not self._eligible('13703', {'bm': 'E', 'hist': 'E', 'math': 'C'})
+        assert self._eligible('13703', {'bm': 'E', 'hist': 'E', 'math': 'C', 'eng': 'C'})
+
+    def test_a_disabled_student_is_refused_a_blanket_oku_row(self):
+        assert not self._eligible('51470', {'bm': 'E', 'hist': 'E'}, disability=True)
+        assert self._eligible('51470', {'bm': 'E', 'hist': 'E'})
