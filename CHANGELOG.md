@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Bumi F1b — held TVET flag fix (no migration) - 2026-10-30
 
+**Live 2026-10-30** in `579e27ca` (api-01199-vz4; fix re-revision api-01200-s7p): dry run and apply
+208 field changes on 63 courses; smoke citizen 83 / non-citizen 20 / colour-blind 34 / OKU 63 held courses.
+Retro `docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1b.md`.
+
 The held UP_TVET courses (IJTM-* / IKBN-*, untouched by F1) take their pages' `req_malaysian`,
 `no_colorblind` and `no_disability`, and an empty remark takes F1's own text (owner rulings 2026-10-29/30
 and review M2, decisions.md). Nothing else changes.

@@ -1174,15 +1174,15 @@ https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC.
 
 ---
 
-**Bumi + Islamic coverage: Sprints A to F1 are LIVE (F1 2026-10-30, `a60662cc`; retro
-`docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`). F1 added 35 public non-MARA UP_TVET courses
+**Bumi + Islamic coverage: Sprints A to F1b are LIVE (F1 2026-10-30, `a60662cc`; retro
+`docs/retrospectives/retrospective-2026-10-30-bumi-sprint-f1.md`; F1b held flag fix `579e27ca`, retro
+`retrospective-2026-10-30-bumi-sprint-f1b.md`). F1 added 35 public non-MARA UP_TVET courses
 (`TVET-<id_kursus>`; 2 Bumi-only KEMAS), 33 campus links to held courses, institutions IKBN-022 / ILKA-001..003,
-and pathways `mara` + `tvet_other`. NEXT in that arc:** (1) the held-row flag fix, owner-approved as a small
-change — the held IJTM-* / IKBN-* rows lack `req_malaysian` (pages say citizens only), 59 lack `no_colorblind`,
-and they carry `no_disability` on the qualified line the owner ruled text-only (`held_rule_differences` in
-`data/tvet/tvet_new_courses_F1.json`); (2) Sprint F2 = MARA: 665 pages saved in the gitignored page cache,
+and pathways `mara` + `tvet_other`. F1b set the 63 held courses' flags from their pages (rollback: `fix_held_tvet_flags --reverse --apply`). NEXT
+in that arc:** Sprint F2 = MARA: 665 pages saved in the gitignored page cache,
 the parser reads 21 cleanly, so add condition wording first, then build with `--families mara`
-(`MARA-NNN`, category MARA). Follow-ups: the 90 flagged rows; fixture drift — UL0481001, FB0500001 (prod
+(`MARA-NNN`, category MARA). Follow-ups: the 20 held TVET courses with no October page (still no `req_malaysian`); the 92 out-of-scope held
+differences in `held_flag_fix_F1b.json` (`three_m_only`, subject rules); the 90 flagged rows; fixture drift — UL0481001, FB0500001 (prod
 only) and IKBN-DIP-002 (fixture only); college lists for the 2 Bumi matric tracks. The Bumi answer stays
 course-guide only. Adversarial review before push; the lead's read-only prod SQL checks the review file's
 own ids and pairs before the push.

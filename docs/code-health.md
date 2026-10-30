@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-30 | 579e27c | 90 | 52 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | b9028b4 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 144 | 0 | 0 | ok | ok |
 | 2026-10-30 | 5ce4ee6 | 90 | 51 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
 | 2026-10-29 | e6a03fb | 90 | 52 | vision.py 28.1 | 16 | 15 | 4 | 73 | 93 | 0 | 3 | 12 | 142 | 0 | 0 | ok | ok |
@@ -109,24 +110,24 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-30, b9028b4, window 2026-08-01 onward)
+## Latest run (2026-10-30, 579e27c, window 2026-08-01 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
+| `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
 | `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
-| `halatuju-web/src/lib/officerCockpit.ts` | 16 | 1657 | 26.5 |
 | `halatuju_api/apps/scholarship/views.py` | 9 | 2435 | 21.9 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 15 | 1356 | 20.3 |
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 17 | 1004 | 17.1 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 16 | 1356 | 21.7 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1022 | 11.2 |
-| `halatuju_api/apps/scholarship/serializers.py` | 8 | 1215 | 9.7 |
+| `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
+| `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
 | `halatuju_api/apps/courses/views_admin.py` | 9 | 802 | 7.2 |
-| `halatuju_api/apps/scholarship/services/blockers.py` | 13 | 557 | 7.2 |
 | `halatuju_api/apps/courses/views.py` | 3 | 2190 | 6.6 |
 
 ### Fix ratio
-- 222 fix / 215 feat commits since 2026-08-01
+- 229 fix / 215 feat commits since 2026-08-01
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -173,7 +174,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 46 edges (222 import statements)
+- scholarship -> courses: 46 edges (223 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -192,7 +193,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 35 of 298 web test files read source text (signals: readFileSync, apiSource); drift 24 (*Drift.test.ts, counted apart)
+- 37 of 300 web test files read source text (signals: readFileSync, apiSource); drift 24 (*Drift.test.ts, counted apart)
 
 ### Debt register
 - 423 entries have a defining line; 144 carry no resolution marker on it
@@ -221,7 +222,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at e6a03fb
+- budgets no looser than at b9028b4
 
 ### tsc
 - 0 errors in 0 files
@@ -229,11 +230,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6067
+- Total keys per locale: 6093
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-30 (579e27c, Bumi Sprint F1b close) — 0 FAIL; nothing to promote
+
+**0 FAIL, 5 standing WARNs** (`--full`). Against 5ce4ee6 (F1 close): `fix%` 51 -> 52 and `hot#1` now
+officerCockpit.ts 28.2 (other sessions' fixes, not F1b); `td_open` 142 -> 144 from other sessions' raises. F1b added
+`tvet_held_flags.py` (313 lines) and `fix_held_tvet_flags.py`, both under budget; `big`, `long`, `dup`, `xapp` unchanged.
+**Accepted, no action.**
 
 ### 2026-10-30 (b9028b4, published-hours + corrections close) — 0 FAIL; one reading moved, accepted
 
