@@ -84,6 +84,7 @@ export default function OrganisationInvitationsPage() {
   const [panel, setPanel] = useState<'invitations' | 'emails'>('invitations')
   const [kind, setKind] = useState<InvitationKind>('admins')
   const [data, setData] = useState<InvitationsPayload | null>(null)
+  const [failedKind, setFailedKind] = useState<InvitationKind | null>(null)
   const [subRole, setSubRole] = useState('')
   const [sName, setSName] = useState('')
   const [sEmail, setSEmail] = useState('')
@@ -104,9 +105,16 @@ export default function OrganisationInvitationsPage() {
       const payload = await getInvitations(kind, { token })
       if (kindNow.current !== kind) return
       setData(payload)
+      setFailedKind(null)
       setSubRole((cur) => (payload.invitable_roles.includes(cur)
         ? cur : (payload.invitable_roles[0] || '')))
-    } catch { setData(null) }
+    } catch {
+      // The tab on screen could not be read (review L5): say so, never an empty list that reads as
+      // "nobody is waiting".
+      if (kindNow.current !== kind) return
+      setData(null)
+      setFailedKind(kind)
+    }
   }, [token, kind])
 
   useEffect(() => { void load() }, [load])
@@ -337,7 +345,12 @@ export default function OrganisationInvitationsPage() {
             is already said by the pressed button above; what the table holds is no longer "the
             reviewers" but "the reviewers who have not answered", and a heading reading "Reviewers
             (0)" over a settled organisation says the opposite of the truth. */}
-        {kind === 'source' ? (
+        {failedKind === kind ? (
+          <p role="alert" data-testid="invitations-load-failed"
+            className="rounded-lg border border-critical-200 bg-critical-50 p-4 text-sm text-critical-600">
+            {t('admin.invitations.loadFailed')}
+          </p>
+        ) : kind === 'source' ? (
           <SourceRoster data={sourceData} token={token} t={t} canManage={canManage}
             onCancel={(row) => { void cancel(row) }} onDone={sourceDone} />
         ) : (<>

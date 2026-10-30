@@ -52,6 +52,12 @@ describe('SourceOverview', () => {
     expect(screen.getByText('admin.sourceConsole.overview.toldFootnote')).toBeTruthy()
   })
 
+  it('L8: one application reads in the singular', async () => {
+    mockApi.getSourceOverview.mockResolvedValue({ ...OVERVIEW, counts: { ...OVERVIEW.counts, total: 1 } })
+    render(<SourceOverview />)
+    expect((await screen.findByTestId('overview-total')).textContent).toBe('admin.sourceConsole.overview.totalOne')
+  })
+
   it('asks the contract waiting for this source to be witnessed, linking to the witness step', async () => {
     render(<SourceOverview />)
     const banner = await screen.findByTestId('witness-banner')
@@ -108,14 +114,64 @@ describe('SourceApplications', () => {
   })
 })
 
+/** M1: a new gift in the crumb is page 1 of THAT gift, and none of the last gift's rows. */
+describe('a gift change resets the list', () => {
+  const PAGED = { ...APPLICATIONS, count: 80, total_pages: 4 }
+  const SCHOLARS_PAGED = { ...SCHOLARS, count: 80, total_pages: 4 }
+
+  it.each([
+    ['Applications', SourceApplications, 'getSourceApplications', 'Priya Devi'],
+    ['Scholars', SourceScholars, 'getSourceScholars', 'Janani Muthu'],
+  ] as const)('%s: back to page 1, and the old gift\'s rows go at once', async (_n, List, call, row) => {
+    mockApi.getSourceApplications.mockResolvedValue(PAGED)
+    mockApi.getSourceScholars.mockResolvedValue(SCHOLARS_PAGED)
+    const { rerender } = render(<List />)
+    await screen.findByText(row)
+    fireEvent.click(screen.getByText('admin.last'))
+    await waitFor(() => expect(mockApi[call]).toHaveBeenLastCalledWith(
+      expect.objectContaining({ p: 'flag', page: 4 }), { token: 'tok' }))
+    const stalled = mockApi[call] as jest.Mock
+    stalled.mockReturnValue(new Promise(() => {}))   // the new gift's reply has not come
+    mockGift = 'other'
+    rerender(<List />)
+    expect(screen.queryByText(row)).toBeNull()
+    await waitFor(() => expect(mockApi[call]).toHaveBeenLastCalledWith(
+      expect.objectContaining({ p: 'other', page: 1 }), { token: 'tok' }))
+    expect(mockApi[call]).not.toHaveBeenCalledWith(expect.objectContaining({ p: 'other', page: 4 }), expect.anything())
+  })
+})
+
 describe('SourceScholars', () => {
+  it('L8: "maintenance" reads as the student\'s own word, Active', async () => {
+    mockApi.getSourceScholars.mockResolvedValue({ ...SCHOLARS,
+      scholars: [{ ...SCHOLARS.scholars[1], status: 'maintenance' }] })
+    render(<SourceScholars />)
+    await screen.findByText('Janani Muthu')
+    expect(screen.getByText('admin.sourceConsole.scholarStatus.active')).toBeTruthy()
+    expect(screen.queryByText(/statuses\.maintenance|scholarStatus\.maintenance/)).toBeNull()
+  })
+
+  it('L7: a slow witness list for the gift you left does not mark this gift\'s rows', async () => {
+    let releaseOld: (v: typeof OVERVIEW) => void = () => {}
+    mockApi.getSourceOverview.mockReturnValueOnce(new Promise((r) => { releaseOld = r }))
+      .mockResolvedValueOnce({ ...OVERVIEW, witness_waiting: [] })
+    const { rerender } = render(<SourceScholars />)
+    mockGift = 'other'
+    rerender(<SourceScholars />)
+    await screen.findByText('Harish A/L Kumar')
+    await waitFor(() => expect(mockApi.getSourceOverview).toHaveBeenCalledTimes(2))
+    releaseOld(OVERVIEW)   // the OLD gift's list — Harish waits there, not here
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText('admin.sourceConsole.scholars.witnessNeeded')).toBeNull()
+  })
+
   it('lists scholar, institution, course, status and contract — "Your witness needed" from the Overview', async () => {
     render(<SourceScholars />)
     await screen.findByText('Janani Muthu')
     const needed = screen.getByText('admin.sourceConsole.scholars.witnessNeeded').closest('a') as HTMLAnchorElement
     expect(needed.getAttribute('href')).toBe('/admin/scholarship/104?step=witness')
     expect(screen.getByText('admin.scholars.contract.executed')).toBeTruthy()
-    expect(screen.getByText('admin.scholarship.statuses.active')).toBeTruthy()
+    expect(screen.getByText('admin.sourceConsole.scholarStatus.active')).toBeTruthy()
     expect(mockApi.getSourceScholars).toHaveBeenCalledWith({ p: 'flag', page: 1, page_size: 25 }, { token: 'tok' })
     expect(screen.getByText('admin.sourceConsole.scholars.footnote')).toBeTruthy()
   })

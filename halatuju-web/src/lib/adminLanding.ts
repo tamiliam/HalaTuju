@@ -9,7 +9,7 @@
  * reviewer is ever gated. We check `=== false` (not falsy) so an OLD payload that omits the field
  * never traps anyone.
  */
-import { defaultRoute } from '@/lib/navigation'
+import { canAccess, defaultRoute } from '@/lib/navigation'
 
 export interface AdminRoleLike {
   role?: string
@@ -44,4 +44,15 @@ export function mustCompleteProfile(
   if (pathname === '/admin/login' || pathname.startsWith('/admin/auth/')) return false
   if (pathname === '/admin/set-password') return false  // must be able to set their password first
   return true
+}
+
+/**
+ * A SOURCE user on a page it may not open (review M3, source sign-in 2026-10-30) — the layout sends
+ * it to its landing BEFORE the page mounts. Every staff page would otherwise mount and fire staff
+ * fetches the server refuses (deny by default, S1): a typed URL, an old bookmark or a staff link in
+ * an email must land somewhere real, not on a page of 403s. The registry answers (`canAccess`): an
+ * unregistered route is NOT blocked, the module rule. Only `source_partner` is held here.
+ */
+export function sourceMustLeave(role: AdminRoleLike | null | undefined, pathname: string): boolean {
+  return role?.role === 'source_partner' && !canAccess(pathname, 'source_partner', role.permissions)
 }

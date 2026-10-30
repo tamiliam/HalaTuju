@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { statusLabelKey } from '@/lib/applicationStatus'
 import { useT } from '@/lib/i18n'
 import RecordState from '@/components/admin/RecordState'
+import { scholarStatusKey } from '@/lib/sourceConsole'
 import { getSourceScholar, type SourceScholar as Payload } from '@/lib/admin-api'
 import { FactsCard, Footnote, K, PageTitle, SourceContractCard } from './shared'
 
@@ -37,7 +37,7 @@ export default function SourceScholar({ id }: { id: string }) {
         [t(`${K}.student.programme`), data.programme?.name ?? ''],
         [t(`${K}.scholars.col.institution`), data.institution],
         [t(`${K}.scholars.col.course`), data.course],
-        [t(`${K}.scholars.col.status`), t(statusLabelKey(data.status))],
+        [t(`${K}.scholars.col.status`), t(scholarStatusKey(data.status))],
         [t(`${K}.student.phone`), data.phone],
         [t(`${K}.student.email`), data.email],
       ]} />

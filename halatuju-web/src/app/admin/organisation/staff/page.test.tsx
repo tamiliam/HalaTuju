@@ -190,6 +190,15 @@ describe('what each kind can do', () => {
     expect(screen.getByText('admin.administration.viewOnlyNote')).toBeTruthy()
   })
 
+  it('L5: a tab that could not be read says so — never an empty roster that reads as "nobody waiting"', async () => {
+    await loaded()
+    mockApi.getInvitations.mockRejectedValueOnce(new Error('down'))
+    await pick('source')
+    await waitFor(() => expect(screen.getByTestId('invitations-load-failed')).toBeTruthy())
+    expect(screen.queryByTestId('source-roster')).toBeNull()
+    expect(screen.queryByText('admin.invitations.source.noneWaiting')).toBeNull()
+  })
+
   it('opens on the Source tab when the address asks for it (?kind=source, from Sources)', async () => {
     window.history.pushState({}, '', '/admin/organisation/staff?kind=source')
     try {

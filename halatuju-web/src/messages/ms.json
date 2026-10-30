@@ -5043,7 +5043,12 @@
         "actionError": "Tindakan itu tidak dapat diselesaikan. Sila cuba lagi.",
         "witnessForbidden": "Hanya super admin boleh merekodkan saksi di sini. Sumber yang mempunyai log masuk menjadi saksi dari konsolnya sendiri.",
         "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini.",
-        "awaitingSignature": "Menunggu pelajar dan penjamin mereka menandatangani — belum ada apa-apa untuk dikaunter-tandatangani atau disaksikan."
+        "awaitingSignature": "Menunggu pelajar dan penjamin mereka menandatangani — belum ada apa-apa untuk dikaunter-tandatangani atau disaksikan.",
+        "witnessRefused": {
+          "witness_changed": "Organisasi saksi berubah semasa halaman ini dibuka. Muat semula dan cuba lagi.",
+          "no_witness_organisation": "Permohonan ini tiada organisasi saksi. Tetapkan satu pada kad saksi dahulu.",
+          "already_witnessed": "Perjanjian ini sudah mempunyai saksi."
+        }
       },
       "qcOverride": {
         "title": "Diterima walaupun ada bendera merah oleh"
@@ -6767,7 +6772,7 @@
         "which": "Sumber yang mana?",
         "choose": "Pilih sumber…",
         "option": "{name} ({code}) — {state}",
-        "help": "Sumber yang sudah ada dalam senarai anda. Atau",
+        "help": "Setiap sumber aktif dalam senarai anda — satu sumber boleh mempunyai lebih daripada seorang. Atau",
         "addNew": "tambah sumber baharu (nama dan kod ringkas)",
         "pickExisting": "Pilih sumber yang sudah ada dalam senarai",
         "newName": "Nama sumber",
@@ -6805,8 +6810,15 @@
           "not_configured": "Log masuk belum disediakan pada pelayan ini. Hubungi sokongan HalaTuju.",
           "create_failed": "Log masuk mereka tidak dapat dibuat sekarang. Tiada apa-apa disimpan; cuba lagi.",
           "generic": "Jemputan tidak dapat dihantar. Cuba lagi."
+        },
+        "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi.",
+        "optionJoined": "{name} ({code}) — seseorang telah menyertai",
+        "refused": {
+          "already_joined": "{name} telah pun log masuk.",
+          "not_active": "{name} telah dimatikan. Untuk mengembalikannya, jemput semula."
         }
-      }
+      },
+      "loadFailed": "Jemputan tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi."
     },
     "soon": "Akan datang",
     "programmes": {
@@ -7781,7 +7793,8 @@
         "missingNone": "Tiada pelajar senarai pendek yang tertinggal apa-apa.",
         "open": "Buka",
         "toldFootnote": "Keputusan hanya dipaparkan di sini selepas pelajar dimaklumkan.",
-        "error": "Gambaran keseluruhan tidak dapat dimuatkan."
+        "error": "Gambaran keseluruhan tidak dapat dimuatkan.",
+        "totalOne": "1 permohonan kesemuanya"
       },
       "applications": {
         "subtitle": "Hanya pelajar yang menamakan {source}. Baca sahaja.",
@@ -7861,7 +7874,8 @@
           "not_found": "Kontrak itu tidak dapat ditemui.",
           "source_unavailable": "Log masuk anda untuk sumber ini telah dimatikan. Tanya organisasi.",
           "generic": "Saksi anda tidak dapat direkodkan. Cuba lagi."
-        }
+        },
+        "introWitnessOnly": "Anda menandatangani sebagai saksi perjanjian ini bagi {source}."
       },
       "scholars": {
         "subtitle": "Pelajar anda yang menerima bursari. Baca sahaja.",
@@ -7899,7 +7913,12 @@
           "generic": "Tidak dapat disimpan. Cuba lagi."
         }
       },
-      "loadFailed": "Halaman ini tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi."
+      "loadFailed": "Halaman ini tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
+      "scholarStatus": {
+        "awarded": "Dianugerahkan",
+        "active": "Aktif",
+        "closed": "Ditutup"
+      }
     }
   },
   "documentsTab": {

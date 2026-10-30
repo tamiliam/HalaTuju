@@ -109,6 +109,8 @@ describe('AppShell renders the scope sidebar per role', () => {
     mockToken = 'tok'
     jest.mocked(adminApi.getOrgRequestCount).mockClear()
     jest.mocked(adminApi.getBillingUsage).mockClear()
+    jest.mocked(adminApi.getPendingSponsorCount).mockClear()
+    jest.mocked(adminApi.getPaymentRuns).mockClear()
     try {
       asRole('source_partner', { source_name: 'MUETMyWay', org_name: 'BrightPath' })
       render(<AppShell>content</AppShell>)
@@ -120,6 +122,9 @@ describe('AppShell renders the scope sidebar per role', () => {
       await waitFor(() => expect(adminApi.getAdminScopes).toHaveBeenCalled())
       expect(adminApi.getOrgRequestCount).not.toHaveBeenCalled()
       expect(adminApi.getBillingUsage).not.toHaveBeenCalled()
+      // Nor the two badge counts — neither row is on a source user's menu (review L9).
+      expect(adminApi.getPendingSponsorCount).not.toHaveBeenCalled()
+      expect(adminApi.getPaymentRuns).not.toHaveBeenCalled()
     } finally { mockToken = null }
   })
 

@@ -51,7 +51,12 @@ export default function SourceStudent({ id }: { id: string }) {
     if (!on) setReads((n) => n + 1)
   }
 
-  if (witnessing) return <SourceWitness id={id} onBack={() => step(false)} />
+  // The step waits for the application, so a witness-only case is worded as one from the start.
+  if (witnessing) {
+    if (!app && !missing) return <RecordState loading />
+    return <SourceWitness id={id} witnessOnly={app?.kind === 'witness_only'}
+      onBack={() => step(false)} onChanged={() => setReads((n) => n + 1)} />
+  }
   if (!app) return <RecordState loading={!missing} />
 
   const back = (

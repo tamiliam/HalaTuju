@@ -7,7 +7,7 @@ import '@/lib/messagesAdmin'
 import { AdminAuthProvider, useAdminAuth } from '@/lib/admin-auth-context'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
-import { mustCompleteProfile } from '@/lib/adminLanding'
+import { adminLanding, mustCompleteProfile, sourceMustLeave } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 import { CHROMELESS } from '@/lib/navigation'
 import { AppShell } from '@/components/admin/AppShell'
@@ -27,6 +27,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   // Login / OAuth callback / set-password render without chrome and without this guard.
   const chromeless = CHROMELESS.some((c) => pathname === c || pathname.startsWith(c))
+  // A source user on a staff page leaves before that page mounts (review M3) — see `sourceMustLeave`.
+  const misplaced = !chromeless && !isLoading && isAdminAuthenticated && sourceMustLeave(role, pathname)
 
   useEffect(() => {
     if (chromeless) return
@@ -40,7 +42,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     if (!isLoading && isAdminAuthenticated && mustCompleteProfile(role, pathname)) {
       router.replace('/admin/profile')
     }
-  }, [isAdminAuthenticated, isLoading, router, pathname, role, chromeless])
+    if (misplaced && role) router.replace(adminLanding(role))
+  }, [isAdminAuthenticated, isLoading, router, pathname, role, chromeless, misplaced])
 
   if (chromeless) return <>{children}</>
 
@@ -51,6 +54,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAdminAuthenticated) return null
+  // Not the page, and not the shell either: nothing that could fetch mounts on the way out.
+  if (misplaced) {
+    return <div className="flex min-h-screen items-center justify-center">{t('common.loading')}</div>
+  }
 
   return <AppShell>{children}</AppShell>
 }

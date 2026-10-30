@@ -58,7 +58,7 @@ export function SourceInviteForm({ data, token, t, onDone }: {
     if (!adding && !sourceId) { setError(t(`${K}.chooseFirst`)); return }
     setBusy(true); setError('')
     try {
-      await inviteSource({
+      const sent = await inviteSource({
         name: person.name.trim(), email: person.email.trim(),
         ...(adding
           ? { source_name: newSource.name.trim(), source_code: newSource.code,
@@ -67,7 +67,11 @@ export function SourceInviteForm({ data, token, t, onDone }: {
       }, { token })
       setPerson({ name: '', email: '' }); setSourceId('')
       setNewSource({ name: '', code: '', contact_person: '', phone: '' }); setMode('existing')
-      onDone({ type: 'success', text: t(`${K}.sent`) })
+      // The account exists either way; only the letter may have failed (review M4) — then say so,
+      // with the way out, rather than "Invitation sent".
+      onDone(sent.emailed === false
+        ? { type: 'warning', text: t(`${K}.notEmailed`, { name: person.name.trim() }) }
+        : { type: 'success', text: t(`${K}.sent`) })
     } catch (err) {
       setError(refusal(t, err))
     } finally { setBusy(false) }
@@ -118,8 +122,12 @@ export function SourceInviteForm({ data, token, t, onDone }: {
                 <option value="">{t(`${K}.choose`)}</option>
                 {sources.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {t(`${K}.option`, { name: s.name, code: s.code,
-                                        state: t(`admin.sources.signIn.${s.sign_in}`) })}
+                    {/* Every active source stays on offer — a source may sign in more than one
+                        person — but one that has joined says so (review L3). */}
+                    {s.sign_in === 'joined'
+                      ? t(`${K}.optionJoined`, { name: s.name, code: s.code })
+                      : t(`${K}.option`, { name: s.name, code: s.code,
+                                           state: t(`admin.sources.signIn.${s.sign_in}`) })}
                   </option>
                 ))}
               </select>
@@ -173,24 +181,31 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
   const mayAct = (adminId: number | null | undefined) =>
     canManage && adminId != null && (byId.get(adminId)?.manageable ?? false)
 
-  const act = async (id: number, run: () => Promise<unknown>, ok: string, failed: string) => {
+  /** `known`: the refusal codes with words of their own (review L6) — the server's `already_joined`
+   *  and `not_active` say what to do next; anything else is the generic failure. */
+  const act = async (id: number, run: () => Promise<unknown>, ok: string, failed: string,
+                     who: SourceUserRow | undefined, known: string[]) => {
     setBusyId(id)
     try {
       await run()
       onDone({ type: 'success', text: t(ok) })
-    } catch {
-      onDone({ type: 'warning', text: t(failed) })
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? ''
+      onDone({ type: 'warning', text: known.includes(code)
+        ? t(`${K}.refused.${code}`, { name: who?.name ?? '' }) : t(failed) })
     } finally { setBusyId(null) }
   }
   const resend = (row: InvitationRow) => {
     const adminId = row.admin_id
     if (!token || adminId == null) return
     void act(row.id, () => resendSourceUser(adminId, { token }),
-      'admin.invitations.resent', 'admin.invitations.resendFailed')
+      'admin.invitations.resent', 'admin.invitations.resendFailed', byId.get(adminId),
+      ['already_joined', 'not_active'])
   }
   const remove = (u: SourceUserRow) => {
     if (!token || !window.confirm(t(`${K}.removeConfirm`, { name: u.name, source: u.source_name }))) return
-    void act(u.id, () => revokeSourceUser(u.id, { token }), `${K}.removed`, `${K}.removeFailed`)
+    void act(u.id, () => revokeSourceUser(u.id, { token }), `${K}.removed`, `${K}.removeFailed`, u,
+      ['not_active'])
   }
 
   const link = 'text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50'

@@ -23,7 +23,7 @@ const PAYLOAD = {
   totals: { admins: 0, reviewers: 0, source: 2, sponsors: 0 }, invitable_roles: [], programmes: [],
   invitations: [{
     id: 31, name: 'Shah Izzati Afzan', email: 'shah@example.org', role: 'source_partner',
-    status: 'invited', sent_at: '2026-10-28T00:00:00Z', send_count: 1, last_send_ok: true,
+    status: 'invited', sent_at: '2026-10-28', send_count: 1, last_send_ok: true,
     last_send_error: '', accepted_at: null, admin_id: 41, is_active: true, paused: false,
     programme: '', programme_name: '', source_id: 2, source_name: 'LearnifAI', source_code: 'learnifi',
   }],
@@ -33,11 +33,11 @@ const PAYLOAD = {
       first_seen_at: null, last_seen_at: null, manageable: true, invitation: null },
     { id: 42, name: 'Audrey Koh Sui Ean', email: 'muet@example.org', source_id: 3,
       source_name: 'MUETMyWay', source_code: 'muet', organisation: 'harapan', is_active: true,
-      first_seen_at: '2026-10-20T00:00:00Z', last_seen_at: '2026-10-30T00:00:00Z', manageable: true,
+      first_seen_at: '2026-10-20', last_seen_at: '2026-10-30', manageable: true,
       invitation: null },
     { id: 43, name: 'Gone', email: 'gone@example.org', source_id: 3, source_name: 'MUETMyWay',
       source_code: 'muet', organisation: 'harapan', is_active: false,
-      first_seen_at: '2026-09-01T00:00:00Z', last_seen_at: null, manageable: true, invitation: null },
+      first_seen_at: '2026-09-01', last_seen_at: null, manageable: true, invitation: null },
   ],
   sources: [
     { id: 1, code: 'hss', name: 'Hindu Sevai Sangam', organisation: 'harapan', sign_in: 'none', user_count: 0 },
@@ -58,7 +58,8 @@ describe('the Source invite form', () => {
   it('invites a person for a source already on the list, showing each source\'s sign-in state', async () => {
     render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
     expect(screen.getByText('admin.invitations.source.option|Hindu Sevai Sangam,hss,admin.sources.signIn.none')).toBeTruthy()
-    expect(screen.getByText('admin.invitations.source.option|MUETMyWay,muet,admin.sources.signIn.joined')).toBeTruthy()
+    // L3: a joined source stays on offer (a source may have several people) and says it has joined.
+    expect(screen.getByText('admin.invitations.source.optionJoined|MUETMyWay,muet')).toBeTruthy()
     fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
     type('admin.invitations.source.personName', ' Kavi Amutha ')
     type('admin.emailLabel', 'kavi@example.org')
@@ -66,6 +67,17 @@ describe('the Source invite form', () => {
     await waitFor(() => expect(mockApi.inviteSource).toHaveBeenCalledWith(
       { name: 'Kavi Amutha', email: 'kavi@example.org', source_id: 1 }, { token: 'tok' }))
     expect(onDone).toHaveBeenCalledWith({ type: 'success', text: 'admin.invitations.source.sent' })
+  })
+
+  it('M4: an account made but a letter that failed says so, with the way out — never "sent"', async () => {
+    mockApi.inviteSource.mockResolvedValue({ id: 1, admin_id: 2, emailed: false, message: 'x' })
+    render(<SourceInviteForm data={PAYLOAD} token="tok" t={t} onDone={onDone} />)
+    fireEvent.change(screen.getByLabelText('admin.invitations.source.which'), { target: { value: '1' } })
+    type('admin.invitations.source.personName', 'Kavi')
+    type('admin.emailLabel', 'kavi@example.org')
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith(
+      { type: 'warning', text: 'admin.invitations.source.notEmailed|Kavi' }))
   })
 
   it('asks for a source before sending, rather than sending none', async () => {
@@ -162,6 +174,21 @@ describe('the Source roster', () => {
     expect(confirm).toHaveBeenCalledWith(
       'admin.invitations.source.removeConfirm|Audrey Koh Sui Ean,MUETMyWay')
     expect(onDone).toHaveBeenCalledWith({ type: 'success', text: 'admin.invitations.source.removed' })
+    confirm.mockRestore()
+  })
+
+  it.each([
+    ['resend', 'already_joined', 'admin.resend', 'Shah Izzati Afzan'],
+    ['resend', 'not_active', 'admin.resend', 'Shah Izzati Afzan'],
+    ['remove', 'not_active', 'admin.invitations.source.remove', 'Audrey Koh Sui Ean'],
+  ])('L6: a %s refused %s reads in its own words', async (_what, code, button, name) => {
+    mockApi.resendSourceUser.mockRejectedValue(Object.assign(new Error(code), { code }))
+    mockApi.revokeSourceUser.mockRejectedValue(Object.assign(new Error(code), { code }))
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    roster()
+    fireEvent.click(screen.getByText(button))
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith(
+      { type: 'warning', text: `admin.invitations.source.refused.${code}|${name}` }))
     confirm.mockRestore()
   })
 

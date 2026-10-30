@@ -4,10 +4,9 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { statusLabelKey } from '@/lib/applicationStatus'
 import { useT } from '@/lib/i18n'
 import { useProgrammeParam } from '@/lib/programmeScope'
-import { contractStageKey } from '@/lib/sourceConsole'
+import { contractStageKey, scholarStatusKey } from '@/lib/sourceConsole'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/tableView'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
@@ -15,7 +14,7 @@ import { Pagination } from '@/components/Pagination'
 import {
   getSourceOverview, getSourceScholars, type SourceScholarList,
 } from '@/lib/admin-api'
-import { Footnote, K, PageTitle, witnessHref } from './shared'
+import { Footnote, K, PageTitle, useGiftList, witnessHref } from './shared'
 
 const COLS = ['scholar', 'institution', 'course', 'status', 'contract'] as const
 
@@ -34,9 +33,8 @@ export default function SourceScholars() {
   const { t } = useT()
   const programme = useProgrammeParam()
   const urlRead = useGiftInUrl()
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [data, setData] = useState<SourceScholarList | null>(null)
+  const { page, setPage, data, setData } = useGiftList<SourceScholarList>(programme)
   const [waiting, setWaiting] = useState<Set<number>>(new Set())
   const [error, setError] = useState(false)
 
@@ -46,15 +44,22 @@ export default function SourceScholars() {
     const ticket = ++latest.current
     setError(false)
     getSourceScholars({ p: programme, page, page_size: pageSize }, { token })
-      .then((d) => { if (ticket === latest.current) setData(d) })
+      .then((d) => { if (ticket === latest.current) setData(d, programme) })
       .catch(() => { if (ticket === latest.current) setError(true) })
-  }, [token, programme, page, pageSize, urlRead])
+  }, [token, programme, page, pageSize, urlRead, setData])
 
+  // The same ticket for the witness list (review L7): a slow reply for the gift you left must not
+  // mark this gift's rows "Your witness needed".
+  const latestWaiting = useRef(0)
   useEffect(() => {
     if (!urlRead || !token) return
+    const ticket = ++latestWaiting.current
+    setWaiting(new Set())
     getSourceOverview(programme, { token })
-      .then((o) => setWaiting(new Set(o.witness_waiting.map((w) => w.application_id))))
-      .catch(() => setWaiting(new Set()))
+      .then((o) => {
+        if (ticket === latestWaiting.current) setWaiting(new Set(o.witness_waiting.map((w) => w.application_id)))
+      })
+      .catch(() => { if (ticket === latestWaiting.current) setWaiting(new Set()) })
   }, [token, programme, urlRead])
 
   const rows = data?.scholars ?? []
@@ -77,7 +82,7 @@ export default function SourceScholars() {
                 </td>
                 <td className="px-4 py-3 text-ground-700">{s.institution || '—'}</td>
                 <td className="px-4 py-3 text-ground-700">{s.course || '—'}</td>
-                <td className="px-4 py-3 text-ground-700">{t(statusLabelKey(s.status))}</td>
+                <td className="px-4 py-3 text-ground-700">{t(scholarStatusKey(s.status))}</td>
                 <td className="px-4 py-3">
                   {waiting.has(s.id) ? (
                     <Link href={witnessHref(s.id)} className="font-semibold text-primary-600 hover:underline">

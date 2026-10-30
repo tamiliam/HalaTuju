@@ -133,7 +133,7 @@ describe('SourceWitness', () => {
   })
 
   it('signs with the typed name and the tick, then shows the signed state', async () => {
-    mockApi.witnessAsSource.mockResolvedValue({ ...AGREEMENT, witness_signed_at: '2026-10-30T03:00:00Z',
+    mockApi.witnessAsSource.mockResolvedValue({ ...AGREEMENT, witness_signed_at: '2026-10-30',
                                                 can_witness: false })
     await open()
     fireEvent.change(screen.getByDisplayValue('Audrey Koh Sui Ean'), { target: { value: ' Audrey Koh ' } })
@@ -158,7 +158,7 @@ describe('SourceWitness', () => {
   it('already witnessed elsewhere: says so and reloads to the signed state', async () => {
     mockApi.witnessAsSource.mockRejectedValue(Object.assign(new Error('x'), { code: 'already_witnessed' }))
     await open()
-    mockApi.getSourceAgreement.mockResolvedValueOnce({ ...AGREEMENT, witness_signed_at: '2026-10-30T03:00:00Z',
+    mockApi.getSourceAgreement.mockResolvedValueOnce({ ...AGREEMENT, witness_signed_at: '2026-10-30',
                                                        can_witness: false })
     fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(sign())
@@ -180,9 +180,62 @@ describe('SourceWitness', () => {
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 
-  it('not this source\'s contract (404) is the neutral not-found state', async () => {
+  it('L1: a 404 on the read closes the step, re-reads the student and offers Back', async () => {
+    mockApi.getSourceAgreement.mockRejectedValue(Object.assign(new Error('x'), { status: 404, code: 'not_found' }))
+    const onBack = jest.fn()
+    const onChanged = jest.fn()
+    render(<SourceWitness id="5" onBack={onBack} onChanged={onChanged} />)
+    expect((await screen.findByTestId('witness-gone')).textContent).toBe('admin.sourceConsole.witness.error.not_found')
+    expect(onChanged).toHaveBeenCalled()
+    fireEvent.click(screen.getByText(/admin\.sourceConsole\.witness\.back/))
+    expect(onBack).toHaveBeenCalled()
+  })
+
+  it.each([['contract_not_live', 409], ['not_found', 404]])(
+    'L2: %s on the POST closes the form and re-reads the student', async (code, status) => {
+      mockApi.witnessAsSource.mockRejectedValue(Object.assign(new Error(code), { code, status }))
+      const onChanged = jest.fn()
+      mockApi.getSourceAgreement.mockResolvedValue(AGREEMENT)
+      render(<SourceWitness id="104" onBack={() => {}} onChanged={onChanged} />)
+      fireEvent.click(await screen.findByRole('checkbox'))
+      fireEvent.click(sign())
+      expect((await screen.findByTestId('witness-gone')).textContent)
+        .toBe(`admin.sourceConsole.witness.error.${code}`)
+      expect(screen.queryByRole('checkbox')).toBeNull()
+      expect(onChanged).toHaveBeenCalled()
+    })
+
+  it('L1: Back from a closed step drops ?step=witness and re-reads the student', async () => {
+    mockApi.getSourceApplication.mockResolvedValue(LISTED)
     mockApi.getSourceAgreement.mockRejectedValue(Object.assign(new Error('x'), { status: 404 }))
-    render(<SourceWitness id="5" onBack={() => {}} />)
-    expect(await screen.findByTestId('record-not-found')).toBeTruthy()
+    window.history.replaceState(null, '', '/admin/scholarship/104?step=witness')
+    try {
+      render(<SourceStudent id="104" />)
+      await screen.findByTestId('witness-gone')
+      fireEvent.click(screen.getByText(/admin\.sourceConsole\.witness\.back/))
+      expect(await screen.findByTestId('student-profile')).toBeTruthy()
+      expect(window.location.search).toBe('')
+      expect(mockApi.getSourceApplication.mock.calls.length).toBeGreaterThanOrEqual(2)
+    } finally { window.history.replaceState(null, '', '/') }
+  })
+
+  it('L8: a witness-only case is not asked to say it knows the student', async () => {
+    mockApi.getSourceApplication.mockResolvedValue(WITNESS_ONLY)
+    mockApi.getSourceAgreement.mockResolvedValue({ ...AGREEMENT, application_id: 207 })
+    window.history.replaceState(null, '', '/admin/scholarship/207?step=witness')
+    try {
+      render(<SourceStudent id="207" />)
+      expect(await screen.findByText('admin.sourceConsole.witness.introWitnessOnly|MUETMyWay')).toBeTruthy()
+      expect(screen.queryByText('admin.sourceConsole.witness.intro|MUETMyWay')).toBeNull()
+    } finally { window.history.replaceState(null, '', '/') }
+  })
+
+  it('L10: a refusal takes the focus', async () => {
+    mockApi.witnessAsSource.mockRejectedValue(Object.assign(new Error('x'), { code: 'name_required' }))
+    await open()
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(sign())
+    const alert = await screen.findByRole('alert')
+    await waitFor(() => expect(document.activeElement).toBe(alert))
   })
 })

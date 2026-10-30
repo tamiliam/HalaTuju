@@ -63,6 +63,37 @@ it('a changed own name goes as `user.name` and refreshes the header', async () =
   await waitFor(() => expect(refreshRole).toHaveBeenCalled())
 })
 
+it('M2: a stored phone the check would refuse does not block saving the name', async () => {
+  mockApi.getSourceProfile.mockResolvedValue({ ...PROFILE, source: { ...PROFILE.source, phone: '12' } })
+  mockApi.updateSourceProfile.mockResolvedValue(PROFILE)
+  render(<SourceProfile />)
+  const own = (await screen.findAllByDisplayValue('Audrey Koh Sui Ean'))[0]
+  fireEvent.change(own, { target: { value: 'Audrey K' } })
+  expect(save().disabled).toBe(false)
+  expect(screen.queryByText('profile.invalidPhone')).toBeNull()
+  // …but an EDITED bad phone still does.
+  fireEvent.change(screen.getByDisplayValue('12'), { target: { value: '123' } })
+  expect(save().disabled).toBe(true)
+})
+
+it('L4: a changed organisation name refreshes the header too', async () => {
+  mockApi.updateSourceProfile.mockResolvedValue({ ...PROFILE, source: { ...PROFILE.source, name: 'MUET Way' } })
+  render(<SourceProfile />)
+  fireEvent.change(await screen.findByDisplayValue('MUETMyWay'), { target: { value: 'MUET Way' } })
+  fireEvent.click(save())
+  await waitFor(() => expect(refreshRole).toHaveBeenCalled())
+})
+
+it('L10: a refusal sits beside Save and takes the focus', async () => {
+  mockApi.updateSourceProfile.mockRejectedValue(Object.assign(new Error('x'), { code: 'bad_email' }))
+  render(<SourceProfile />)
+  fireEvent.change(await screen.findByDisplayValue('016-845 1270'), { target: { value: '0168451271' } })
+  fireEvent.click(save())
+  const alert = await screen.findByRole('alert')
+  expect(alert.parentElement).toBe(save().parentElement)
+  await waitFor(() => expect(document.activeElement).toBe(alert))
+})
+
 it.each(['name_required', 'source_name_required', 'bad_email', 'not_editable', 'source_unavailable', 'odd'])(
   'shows the %s refusal in its own words', async (code) => {
     mockApi.updateSourceProfile.mockRejectedValue(Object.assign(new Error(code), { code }))

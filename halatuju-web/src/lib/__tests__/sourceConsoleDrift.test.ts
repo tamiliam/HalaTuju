@@ -12,7 +12,9 @@
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
-import { SOURCE_STAGES, levelLabelKey, partLabel, refusalKey, stageLabelKey } from '@/lib/sourceConsole'
+import {
+  SOURCE_STAGES, contractStageKey, levelLabelKey, partLabel, refusalKey, stageLabelKey,
+} from '@/lib/sourceConsole'
 import { readApi } from '@/test/apiSource'
 
 const block = (src: string, name: string) => {
@@ -49,6 +51,54 @@ describe('the source console vocabulary vs the server', () => {
     for (const code of ['not_ready', 'already_witnessed', 'contract_not_live', 'confirm_required',
       'name_required', 'name_too_long', 'not_found', 'source_unavailable', 'surprise']) {
       expect(typeof resolve(cat, refusalKey('witness', code))).toBe('string')
+    }
+  })
+})
+
+/**
+ * Review L9: the refusal codes the witness POST and the profile PATCH can answer, and the contract
+ * statuses `BursaryAgreement.status` can derive, read off the api's own source. A code the server
+ * adds would otherwise reach the screen as "We could not … Try again"; a status, as a raw key.
+ */
+describe('the refusals and contract statuses vs the server', () => {
+  const views = readApi('apps/scholarship/views_admin/source_console.py')
+  const classBody = (name: string) => {
+    const start = views.indexOf(`class ${name}(`)
+    expect(start).toBeGreaterThan(-1)
+    const next = views.indexOf('\nclass ', start + 1)
+    return views.slice(start, next === -1 ? undefined : next)
+  }
+  const codes = (src: string) => [...src.matchAll(/_error\('(\w+)'/g)].map((m) => m[1])
+  // Shared by every view: a switched-off source or user, and an out-of-scope id.
+  const base = codes(classBody('_SourceConsoleBase'))
+  // `bad_request` (a body that is not a JSON object) is a client bug, never a person's: generic words.
+  const worded = (list: string[]) => [...new Set(list)].filter((c) => c !== 'bad_request')
+
+  test('the parse found the real refusals (parse sanity)', () => {
+    expect(base).toEqual(expect.arrayContaining(['source_unavailable', 'not_found']))
+    expect(codes(classBody('AdminSourceWitnessView'))).toContain('contract_not_live')
+  })
+
+  test('every witness refusal has words of its own', () => {
+    for (const code of worded([...base, ...codes(classBody('AdminSourceWitnessView'))])) {
+      expect(refusalKey('witness', code)).toBe(`admin.sourceConsole.witness.error.${code}`)
+    }
+  })
+
+  test('every profile refusal has words of its own', () => {
+    for (const code of worded([...base.filter((c) => c !== 'not_found'),
+      ...codes(classBody('AdminSourceProfileView'))])) {
+      expect(refusalKey('profile', code)).toBe(`admin.sourceConsole.profile.error.${code}`)
+    }
+  })
+
+  test('every contract status has words, in all three locales', () => {
+    const model = readApi('apps/scholarship/models/agreements.py')
+    const prop = model.slice(model.indexOf('def status(self):'))
+    const statuses = [...prop.split(/\r?\n\s*\r?\n/)[0].matchAll(/return '(\w+)'/g)].map((m) => m[1])
+    expect(statuses).toEqual(['executed', 'countersigned', 'binds', 'student_signed', 'draft'])
+    for (const cat of [en, ms, ta]) {
+      for (const s of [...statuses, null]) expect(typeof resolve(cat, contractStageKey(s as never))).toBe('string')
     }
   })
 })

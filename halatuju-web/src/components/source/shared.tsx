@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useCallback, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -24,6 +25,23 @@ export const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
 export function useSourceName(): string {
   const { role } = useAdminAuth()
   return role?.source_name ?? ''
+}
+
+/**
+ * A list's page and its last reply, REMEMBERED WITH THE GIFT they belong to (review M1). When the
+ * crumb moves to another gift, page 3 of the last gift is not a page of this one and its rows are not
+ * this gift's rows — so both are derived as "page 1, nothing yet" at once, in the same render the new
+ * gift arrives in. Clearing them in an effect would let one fetch go out with the old page (a 404
+ * past the new gift's last page) and one paint show the old gift's rows under the new crumb.
+ */
+export function useGiftList<D>(gift: string | undefined) {
+  const [paged, setPaged] = useState<{ gift?: string; page: number }>({ gift, page: 1 })
+  const [reply, setReply] = useState<{ gift?: string; data: D } | null>(null)
+  const page = paged.gift === gift ? paged.page : 1
+  const data = reply && reply.gift === gift ? reply.data : null
+  const setPage = useCallback((n: number) => setPaged({ gift, page: n }), [gift])
+  const setData = useCallback((d: D, forGift: string | undefined) => setReply({ gift: forGift, data: d }), [])
+  return { page, setPage, data, setData }
 }
 
 /** Where a contract waiting for this source's witness is signed: the student's own page, opened

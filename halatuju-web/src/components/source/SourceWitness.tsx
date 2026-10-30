@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { refusalKey } from '@/lib/sourceConsole'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
-import RecordState from '@/components/admin/RecordState'
 import { inputCls } from '@/components/admin/StaffAdmin'
 import { getSourceAgreement, witnessAsSource, type SourceAgreement } from '@/lib/admin-api'
 import { CARD, ContractParties, K, useSourceName } from './shared'
@@ -24,8 +23,19 @@ const W = `${K}.witness`
  * again (`confirm_required`, `name_required`, `name_too_long`). Every refusal has its own words.
  * ⚠ The name starts as the signed-in user's own (it is a signature: they may correct it, never
  * leave it blank). After the witness the page shows the signed state and nothing to press.
+ * ⚠ A CASE THAT LEFT THE STEP (review L1/L2) — a 404 (the override moved, agreements switched off,
+ * not this source's) or `contract_not_live`, on the read OR on the POST — closes the form, says so,
+ * asks the student page to read again (`onChanged`) and offers Back, which drops `?step=witness`.
+ * ⚠ A witness-only case (another source's student, C14) is not asked to say it knows the student:
+ * the declaration is only that it witnesses the agreement for its organisation (review L8).
  */
-export default function SourceWitness({ id, onBack }: { id: string; onBack: () => void }) {
+export default function SourceWitness({ id, onBack, onChanged, witnessOnly = false }: {
+  id: string
+  onBack: () => void
+  /** The case moved under the page: the student page re-reads behind the step. */
+  onChanged?: () => void
+  witnessOnly?: boolean
+}) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const source = useSourceName()
@@ -38,13 +48,38 @@ export default function SourceWitness({ id, onBack }: { id: string; onBack: () =
   const [viewing, setViewing] = useState<ViewerDoc | null>(null)
   const [opening, setOpening] = useState(false)
   const [noPdf, setNoPdf] = useState(false)
+  // Why the step closed under the page (a refusal key), or '' while it is open.
+  const [gone, setGone] = useState('')
+  // A refusal takes the focus (review L10), so it is heard, not just painted.
+  const errorRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => { if (error) errorRef.current?.focus() }, [error])
 
+  const changed = useRef(onChanged)
+  changed.current = onChanged
   useEffect(() => {
     if (!token || !id) return
-    getSourceAgreement(id, { token }).then(setAgreement).catch(() => setMissing(true))
+    getSourceAgreement(id, { token }).then(setAgreement).catch(() => {
+      setMissing(true)
+      changed.current?.()
+    })
   }, [token, id])
 
-  if (!agreement) return <RecordState loading={!missing} />
+  const back = (
+    <button type="button" onClick={onBack}
+      className="mb-3 inline-block text-sm text-primary-600 hover:underline">← {t(`${W}.back`)}</button>
+  )
+  if (!agreement || gone) {
+    if (!missing && !gone) return <p className="text-sm text-ground-500">{t('common.loading')}</p>
+    return (
+      <div data-testid="source-witness">
+        {back}
+        <p ref={errorRef} tabIndex={-1} role="alert" data-testid="witness-gone"
+          className={`${CARD} text-sm text-ground-700 outline-none`}>
+          {t(gone || refusalKey('witness', 'not_found'))}
+        </p>
+      </div>
+    )
+  }
 
   const openPdf = async () => {
     if (!token) return
@@ -66,6 +101,12 @@ export default function SourceWitness({ id, onBack }: { id: string; onBack: () =
       setAgreement(await witnessAsSource(id, { witness_name: name.trim(), confirm: true }, { token }))
     } catch (err) {
       const code = (err as { code?: string })?.code
+      if (code === 'not_found' || code === 'contract_not_live'
+          || (err as { status?: number })?.status === 404) {
+        setGone(refusalKey('witness', code === 'contract_not_live' ? code : 'not_found'))
+        onChanged?.()
+        return
+      }
       setError(t(refusalKey('witness', code)))
       // Somebody else got there first: show the signed state the server now holds.
       if (code === 'already_witnessed') {
@@ -77,8 +118,7 @@ export default function SourceWitness({ id, onBack }: { id: string; onBack: () =
   const signedAt = agreement.witness_signed_at
   return (
     <div data-testid="source-witness">
-      <button type="button" onClick={onBack}
-        className="mb-3 inline-block text-sm text-primary-600 hover:underline">← {t(`${W}.back`)}</button>
+      {back}
       <div className="grid items-start gap-5 lg:grid-cols-[3fr_2fr]">
         <section className={CARD} aria-label={t(`${W}.agreementFor`, { name: agreement.student_name })}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ground-100 pb-3">
@@ -103,7 +143,7 @@ export default function SourceWitness({ id, onBack }: { id: string; onBack: () =
           ) : (
             <form onSubmit={sign} className="flex flex-col gap-4">
               <h1 className="text-xl font-bold text-ground-900">{t(`${W}.heading`)}</h1>
-              <p className="text-sm text-ground-600">{t(`${W}.intro`, { source })}</p>
+              <p className="text-sm text-ground-600">{t(witnessOnly ? `${W}.introWitnessOnly` : `${W}.intro`, { source })}</p>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-ground-700">{t(`${W}.nameLabel`)}</span>
                 <input className={inputCls} value={name} maxLength={200} autoComplete="name"
@@ -114,7 +154,7 @@ export default function SourceWitness({ id, onBack }: { id: string; onBack: () =
                   className="mt-0.5 h-5 w-5 shrink-0" />
                 <span>{t(`${W}.confirm`, { source })}</span>
               </label>
-              {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
+              {error && <p ref={errorRef} tabIndex={-1} className="text-sm text-critical-600 outline-none" role="alert">{error}</p>}
               <button type="submit" disabled={busy || !confirmed || !name.trim()}
                 className="rounded-lg bg-brand-fill py-3 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t(busy ? `${W}.signing` : `${W}.sign`)}

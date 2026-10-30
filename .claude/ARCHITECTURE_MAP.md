@@ -1284,6 +1284,40 @@ Four sprints replaced a hardcoded top bar with a data-driven shell. Two files ca
 Reserved nav slots render disabled with a "soon" pill; a test enforces both directions — a slot has
 no page, and building the page forces the flag off. Six remain.
 
+## The source console — web (source sign-in S2–S4, 2026-10-30)
+
+A signed-in SOURCE user (`role='source_partner'`, not staff) uses the SAME admin shell and the SAME
+Programme hrefs as a reviewer, but every screen it sees is its own component calling `admin/source/…`
+only (the API: "SOURCE CONSOLE API" and "A SOURCE WITNESSES THE CONTRACT FROM ITS CONSOLE" above).
+
+- **Menu and landing** (`lib/navigation.ts`): Programme → Overview, Applications, Scholars + Profile;
+  no Guide / FAQ; `defaultRoute` → `/admin/programme/overview`; the Programme group never folds (no
+  gift door). Header role line "<source> · Source" (`AppShell`, `source_name` from `/admin/role/`);
+  the shell's two staff probes and the badge counts never fire for the role.
+- **The guard** (`admin/layout.tsx` + `lib/adminLanding.sourceMustLeave`): a source user on any path
+  `canAccess` refuses is `router.replace(adminLanding(role))`-ed BEFORE the page or the shell mounts,
+  so no staff fetch goes out (`app/admin/layout.source.test.tsx` walks the staff routes).
+- **Role branching** — each shared page's default export reads the role FIRST and renders either the
+  staff body (unchanged, renamed `Staff…`) or the source screen, so no staff hook runs for a source:
+  `programme/overview` → `SourceOverview`, `scholarship` → `SourceApplications`, `scholarship/[id]` →
+  `SourceStudent` (its witness step is IN the page, `?step=witness` — the witness email's
+  `/admin/scholarship/<id>` lands here; no separate route, which would move the bundle median),
+  `scholars` / `scholars/[id]` → `SourceScholars` / `SourceScholar`, `profile` → `SourceProfile`.
+  `components/source/noStaffCalls.test.tsx` renders all of them as a source user against the whole
+  mocked admin API and fails on any non-`sourceConsole` call or raw fetch.
+- **`components/source/LazySource.tsx` (`lazySource(load)`)** — each source screen is its own chunk,
+  loaded by a one-line literal `import()` in the page (and the Invitations Source tab's form and
+  roster likewise): imported statically they put the first-load median over its 148 kB line.
+- **Client and vocabulary**: `lib/admin-api/sourceConsole.ts` (the only module a source screen
+  imports from the API); `lib/sourceConsole.ts` (stage / level / part / scholar-status words,
+  refusal-code keys; `sourceConsoleDrift.test.ts` reads `STAGE_LINES`, `PARTS`, the views' refusal
+  codes and `BursaryAgreement.status` off the api). Lists keep page and reply WITH their gift
+  (`useGiftList` in `components/source/shared.tsx`), so a crumb change is page 1 with no stale rows.
+- **Organisation side**: Invitations → Source (`components/sources/SourceInvite.tsx`: invite for an
+  existing or a new source, roster with Resend / Cancel / Remove; super + org_admin act) and the
+  Sources page (no Add — "Invite a source →"; Sign-in badge; Edit locks once joined, 409
+  `managed_by_source`).
+
 ## Partner-organisation comms (2026-07-26)
 
 Weekly + milestone emails to the REFERRAL organisations that run the bursary alongside us — distinct

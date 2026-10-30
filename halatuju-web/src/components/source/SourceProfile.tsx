@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -32,6 +32,10 @@ export default function SourceProfile() {
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // A refusal takes the focus (review L10): it sits beside Save, and a keyboard or screen-reader
+  // user must land on it rather than wonder why nothing happened.
+  const messageRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => { if (message && !message.ok) messageRef.current?.focus() }, [message])
 
   useEffect(() => {
     if (!token) return
@@ -44,7 +48,9 @@ export default function SourceProfile() {
 
   const saved = formOf(data)
   const dirty = (Object.keys(form) as (keyof Form)[]).some((k) => form[k] !== saved[k])
-  const phoneBad = form.phone.trim() !== '' && !isValidPhone(form.phone)
+  // Judged only once the phone itself is edited (review M2): a number stored before this check
+  // existed must never stop somebody saving their name.
+  const phoneBad = form.phone !== saved.phone && form.phone.trim() !== '' && !isValidPhone(form.phone)
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +64,8 @@ export default function SourceProfile() {
       }, { token })
       setData(next); setForm(formOf(next))
       setMessage({ ok: true, text: t(`${P}.saved`) })
-      if (form.name !== saved.name) void refreshRole()   // the header shows the name
+      // The header shows both names — the person's and "<source> · Source" (review L4).
+      if (form.name !== saved.name || form.source_name !== saved.source_name) void refreshRole()
     } catch (err) {
       setMessage({ ok: false, text: t(refusalKey('profile', (err as { code?: string })?.code)) })
     } finally { setSaving(false) }
@@ -75,11 +82,6 @@ export default function SourceProfile() {
   return (
     <form onSubmit={save} className="max-w-3xl space-y-5" data-testid="source-profile">
       <PageTitle title={t('admin.profile')} />
-      {message && (
-        <p role={message.ok ? 'status' : 'alert'}
-          className={`rounded-lg border p-3 text-sm ${message.ok ? 'border-positive-200 bg-positive-50 text-positive-700'
-            : 'border-critical-200 bg-critical-50 text-critical-600'}`}>{message.text}</p>
-      )}
       <section className={CARD}>
         <h2 className="mb-3 text-base font-semibold text-ground-900">{t(`${P}.you`)}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -103,11 +105,17 @@ export default function SourceProfile() {
         </div>
         <p className="mt-3 text-xs text-ground-500">{t(`${P}.note`)}</p>
       </section>
-      <button type="submit" disabled={saving || !dirty || phoneBad}
-        title={dirty ? undefined : t('common.nothingToSave')}
-        className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-        {t(saving ? 'admin.sources.saving' : 'common.save')}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={saving || !dirty || phoneBad}
+          title={dirty ? undefined : t('common.nothingToSave')}
+          className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+          {t(saving ? 'admin.sources.saving' : 'common.save')}
+        </button>
+        {message && (
+          <p ref={messageRef} tabIndex={-1} role={message.ok ? 'status' : 'alert'}
+            className={`text-sm outline-none ${message.ok ? 'text-positive-700' : 'text-critical-600'}`}>{message.text}</p>
+        )}
+      </div>
     </form>
   )
 }

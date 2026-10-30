@@ -56,6 +56,12 @@ const PARTS = ['quiz', 'story', 'funding', 'documents', 'consent', 'address', 'g
 export const partLabel = (t: (k: string) => string, part: string) =>
   (PARTS.includes(part) ? t(`${K}.part.${part}`) : part)
 
+/** A scholar's status as the STUDENT has it (review L8): awarded, then "Active" while the bursary
+ *  runs — `maintenance` is a staff word (the student's own pages never print it) — then closed. */
+export const scholarStatusKey = (status: string) =>
+  `${K}.scholarStatus.${status === 'maintenance' ? 'active'
+    : ['awarded', 'active', 'closed'].includes(status) ? status : 'active'}`
+
 /** The contract's stage, in the words the Scholars file already uses (`admin.scholars.contract`). */
 export const contractStageKey = (stage: SourceContract['status'] | null | undefined) =>
   `admin.scholars.contract.${stage ?? 'none'}`

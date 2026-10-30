@@ -25,12 +25,12 @@ export const OVERVIEW: SourceOverview = {
             rejected: 7, closed: 1, total: 45 },
   scholars: 3,
   witness_waiting: [{ application_id: 104, student_name: 'Harish A/L Kumar' }],
-  missing_items: [{ application_id: 101, student_name: 'Priya Devi', applied: '2026-10-12T02:00:00Z',
-                    last_activity: '2026-10-20T02:00:00Z' }],
+  missing_items: [{ application_id: 101, student_name: 'Priya Devi', applied: '2026-10-12',
+                    last_activity: '2026-10-20' }],
 }
 
 export const WAITING_CONTRACT: SourceContract = {
-  status: 'binds', student_signed_at: '2026-10-24T02:00:00Z', guarantor_signed_at: '2026-10-25T02:00:00Z',
+  status: 'binds', student_signed_at: '2026-10-24', guarantor_signed_at: '2026-10-25',
   witness_signed_at: null, foundation_signed_at: null, witness_is_you: true, can_witness: true,
 }
 
@@ -38,20 +38,20 @@ export const APPLICATIONS: SourceApplicationList = {
   count: 2, total_pages: 1, page: 1, page_size: 25, next: null, previous: null,
   applications: [
     { id: 101, student_name: 'Priya Devi', school: 'SMK Seri Garing', state: 'Selangor', level: 'spm',
-      programme: GIFT, submitted_at: '2026-10-12T02:00:00Z', stage: 'shortlisted' },
+      programme: GIFT, submitted_at: '2026-10-12', stage: 'shortlisted' },
     { id: 104, student_name: 'Harish A/L Kumar', school: 'SMK Taman Melawati', state: 'Selangor',
-      level: 'stpm', programme: GIFT, submitted_at: '2026-09-03T02:00:00Z', stage: 'awarded' },
+      level: 'stpm', programme: GIFT, submitted_at: '2026-09-03', stage: 'awarded' },
   ],
 }
 
 export const LISTED: SourceApplication = {
   ...APPLICATIONS.applications[1], kind: 'listed', phone: '012-345 6789', email: 'harish.k@example.com',
-  told_at: '2026-10-20T02:00:00Z', missing_items: [], contract: WAITING_CONTRACT,
+  told_at: '2026-10-20', missing_items: [], contract: WAITING_CONTRACT,
 }
 
 export const LISTED_MISSING: SourceApplication = {
   ...APPLICATIONS.applications[0], kind: 'listed', phone: '', email: 'priya@example.com',
-  told_at: '2026-10-13T02:00:00Z', missing_items: ['documents', 'guardian_documents'], contract: null,
+  told_at: '2026-10-13', missing_items: ['documents', 'guardian_documents'], contract: null,
 }
 
 export const WITNESS_ONLY: SourceApplication = {
@@ -75,7 +75,7 @@ export const SCHOLARS: SourceScholarList = {
 
 export const SCHOLAR: SourceScholar = {
   ...SCHOLARS.scholars[1], phone: '011-222 3333', email: 'janani@example.com',
-  contract: { status: 'executed', student_signed_at: '2026-06-01T02:00:00Z',
-              guarantor_signed_at: '2026-06-01T02:00:00Z', witness_signed_at: '2026-06-03T02:00:00Z',
-              foundation_signed_at: '2026-06-05T02:00:00Z', witness_is_you: true, can_witness: false },
+  contract: { status: 'executed', student_signed_at: '2026-06-01',
+              guarantor_signed_at: '2026-06-01', witness_signed_at: '2026-06-03',
+              foundation_signed_at: '2026-06-05', witness_is_you: true, can_witness: false },
 }

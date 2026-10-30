@@ -91,7 +91,8 @@ export default function SourceOverview() {
           {tile(t(`${K}.overview.scholars`), data.scholars, 'tile-scholars')}
         </div>
         <p className="mt-2 text-sm text-ground-500" data-testid="overview-total">
-          {t(`${K}.overview.total`, { n: String(data.counts.total ?? 0) })}
+          {data.counts.total === 1 ? t(`${K}.overview.totalOne`)
+            : t(`${K}.overview.total`, { n: String(data.counts.total ?? 0) })}
         </p>
 
         <section className={`${CARD} mt-5`} data-testid="missing-items">

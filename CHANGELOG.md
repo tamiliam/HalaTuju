@@ -50,6 +50,41 @@ backend change. NOT deployed.
   `set-password/page.test.tsx`; updated on purpose: `navigation.test.ts`, `adminLanding.test.ts`, the Invitations and
   Sources page tests, `sources-api.test.ts`, `AppShell.test.tsx`.
 
+### Source sign-in web — review round 1 (2026-10-30)
+
+- **M1** Applications / Scholars keep page and reply WITH their gift (`useGiftList`): a crumb change is page 1 with no
+  stale rows and no out-of-range request. **M2** a stored phone the check would refuse no longer blocks saving the
+  name (only an edited phone is checked). **M3** the admin layout sends a source user on any page `canAccess` refuses
+  to its landing BEFORE the page or the shell mounts (`adminLanding.sourceMustLeave`). **M4** an invitation whose
+  letter failed says so ("…could not be sent. Use Resend"), never "Invitation sent".
+- **L1/L2** a 404 or `contract_not_live` on the witness read or POST closes the step, re-reads the student and offers
+  Back (which drops `?step=witness`). **L3** joined sources stay on the invite picker, marked "someone has already
+  joined"; helper text says a source may have several people. **L4** an organisation-name change refreshes the
+  header. **L5** a failed Invitations load shows an error, not an empty list. **L6** own words for `already_joined` /
+  `not_active` (roster) and `witness_changed` / `no_witness_organisation` / `already_witnessed` (the super's cockpit
+  witness, no line added to `view.tsx`). **L7** stale-reply guard on the Scholars witness list. **L8** singular
+  "1 application in all"; a witness-only case's declaration no longer says "you know this student"; `maintenance`
+  reads "Active" to a source (the student's pages never name it). **L9** fixture dates `YYYY-MM-DD`; the AppShell
+  source test also pins no badge counts; the drift test covers the refusal codes and contract statuses. **L10** a
+  failed witness or profile save moves focus to its message; the profile message sits beside Save.
+- `.claude/ARCHITECTURE_MAP.md` "The source console — web". Every new test was run against the previous code first
+  and failed (39 tests).
+
+## Source sign-in review fixes (backend) — 2026-10-30
+
+Adversarial review of S1–S4 backend (a reviewer that did not build it). New `tests/test_source_signin_review.py`
+(20 tests); each finding's test failed on the pre-fix commit.
+
+- **H1** a decline still in its cool-off no longer changes the source console before the student is told
+  (`source_console.scholar_q()`, `contract_live()` read the student-facing status).
+- **M1/L1** a witnessed contract stays with the source that witnessed it (`agreement.witness_org`), never the
+  live override; before the witness, the contract is readable only while live.
+- **L6b** a witness-only case is hidden until the agreement exists and the guarantor has signed.
+- **L2** `source_witness.record_once` re-checks the witness organisation under the row lock (`witness_changed`).
+- **L3** non-text body values answer 400 `bad_request` on every source write.
+- **L4** `witness_ip` is the forwarded caller (`request_ip.py`). TD-429 (student/guarantor IPs record the proxy),
+  TD-430 (weekly partner email counts a cool-off decline as Rejected) raised.
+
 ## Source sign-in S4 (backend) — 2026-10-30
 
 Roadmap `docs/plans/2026-10-30-source-sign-in-roadmap.md`, Sprint S4, backend half: a signed-in source witnesses the

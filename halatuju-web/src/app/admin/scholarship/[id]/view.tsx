@@ -269,10 +269,10 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
     try {
       setBursary(await adminWitnessBursary(id, undefined, { token }))
     } catch (e) {
-      const status = (e as Error & { status?: number }).status
-      setBursaryMsg(status === 403
-        ? t('admin.scholarship.bursary.witnessForbidden')
-        : t('admin.scholarship.bursary.actionError'))
+      const { status, code = '' } = e as Error & { status?: number; code?: string }  // review L6: say which refusal
+      setBursaryMsg(t(status === 403 ? 'admin.scholarship.bursary.witnessForbidden'
+        : ['witness_changed', 'no_witness_organisation', 'already_witnessed'].includes(code)
+          ? `admin.scholarship.bursary.witnessRefused.${code}` : 'admin.scholarship.bursary.actionError'))
     } finally { setBusy('') }
   }
 

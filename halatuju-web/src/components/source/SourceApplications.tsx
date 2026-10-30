@@ -13,7 +13,7 @@ import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { getSourceApplications, type SourceApplicationList } from '@/lib/admin-api'
-import { Footnote, K, PageTitle, StageBadge, useSourceName } from './shared'
+import { Footnote, K, PageTitle, StageBadge, useGiftList, useSourceName } from './shared'
 
 const COLS = ['student', 'school', 'level', 'sent', 'stage'] as const
 
@@ -32,16 +32,15 @@ export default function SourceApplications() {
   const [typed, setTyped] = useState('')
   const [q, setQ] = useState('')
   const [stage, setStage] = useState('')
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [data, setData] = useState<SourceApplicationList | null>(null)
+  const { page, setPage, data, setData } = useGiftList<SourceApplicationList>(programme)
   const [error, setError] = useState(false)
 
   // The search box settles before it asks (a request per keystroke would race itself).
   useEffect(() => {
     const id = setTimeout(() => { setQ(typed.trim()); setPage(1) }, 300)
     return () => clearTimeout(id)
-  }, [typed])
+  }, [typed, setPage])
 
   const latest = useRef(0)
   useEffect(() => {
@@ -49,9 +48,9 @@ export default function SourceApplications() {
     const ticket = ++latest.current
     setError(false)
     getSourceApplications({ p: programme, q, stage, page, page_size: pageSize }, { token })
-      .then((d) => { if (ticket === latest.current) setData(d) })
+      .then((d) => { if (ticket === latest.current) setData(d, programme) })
       .catch(() => { if (ticket === latest.current) setError(true) })
-  }, [token, programme, q, stage, page, pageSize, urlRead])
+  }, [token, programme, q, stage, page, pageSize, urlRead, setData])
 
   const rows = data?.applications ?? []
 
