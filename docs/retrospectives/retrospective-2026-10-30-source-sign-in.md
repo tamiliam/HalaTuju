@@ -101,8 +101,8 @@ sign-in web" (the witness step inside the student page, lazy source screens, the
 **Owner items still open:**
 - Confirm the witness source may see the FULL contract, NRICs and amounts included (the owner ruled "full contract";
   the lead is to say plainly what that includes).
-- The lead's call that a source's student page shows the coarse missing checklist parts — one step past the
-  partner-email ceiling.
+- ~~The lead's call that a source's student page shows the coarse missing checklist parts — one step past the
+  partner-email ceiling.~~ Owner confirmed 2026-10-31: keep them (names only).
 - ~~The Admin role no longer adds sources: inviting is super / org_admin only.~~ Owner confirmed 2026-10-30
   (Admin could Add a source since 2026-07-19; it no longer can).
 - The wording of the witness declaration.

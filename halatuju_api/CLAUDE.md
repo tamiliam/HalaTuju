@@ -1116,9 +1116,9 @@ Both builds green, api health 200, no 5xx after the deploy. No source has been i
 (TD-427, TD-433). Measure before pushing; never raise the line.
 
 **Owner items open:** (a) confirm the witness source may see the FULL contract, which includes NRICs and amounts
-(owner ruled "full contract"); (b) the lead's call that a source's student page shows the coarse missing checklist
-parts — one step past the partner-email ceiling; (c) the witness declaration wording. CLOSED 2026-10-30: inviting
-a source is super / org_admin only — owner confirmed; the Admin role no longer adds sources.
+(owner ruled "full contract"); (b) the witness declaration wording. CLOSED 2026-10-30: inviting a source is
+super / org_admin only — owner confirmed; the Admin role no longer adds sources. CLOSED 2026-10-31: the source's
+student page keeps the missing checklist parts (names only) — owner confirmed.
 
 ### ⚠ STATE AT 2026-10-29 — READ THIS FIRST
 
