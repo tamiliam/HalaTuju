@@ -18,12 +18,21 @@ Three steps; the last is a DRY RUN by default:
 (hyperlink, fees); and, for HELD courses (prod's IJTM-* / IKBN-*), the campus links the file lists
 that do not exist yet. A held course's own row and requirement are never touched; the file's
 `held_rule_differences` are for a person to review. Rows in `flagged` are never written. MARA rows
-(Sprint F2) use the same command with a file built for `--families mara`.
+(Sprint F2) use the same command with a file built for `--families mara`:
+
+    python manage.py ingest_tvet_courses --build-source --csv data/tvet/uptvet_2026-10-29.csv \\
+        --pages data/tvet/pages --families mara --out data/tvet/uptvet_F2_source.json
+    python manage.py ingest_tvet_courses --build-review --source data/tvet/uptvet_F2_source.json \\
+        --families mara --out data/tvet/tvet_new_courses_F2.json
+    python manage.py ingest_tvet_courses --file data/tvet/tvet_new_courses_F2.json --create-institutions
+
+A built review file also carries a `summary` (Bumi-only vs open courses, the programmes split by a rule
+difference, the flagged rows by reason) for the reviewer; the ingest never reads it.
 
 ORDER ON PRODUCTION: no migration. The new rows need the F1 deploy (the "mara" / "tvet_other"
 pathways in apps.py and the web chips), so: deploy, confirm the api AND web revisions serve 100%,
 then dry run, `--create-institutions --apply`, and a re-revision (the running instances hold the
-eligibility frame in memory). Runbook + rollback: halatuju_api/CLAUDE.md ("Bumi F1 order").
+eligibility frame in memory). Runbook + rollback: halatuju_api/CLAUDE.md ("Bumi F1 order", "Bumi F2 order").
 """
 import csv
 import json
@@ -34,7 +43,7 @@ from django.db import transaction
 
 from apps.courses.catalogue_ingest import CatalogueIngestMixin
 from apps.courses.models import Course, CourseInstitution, Institution
-from apps.courses.tvet_catalogue_rows import build_review
+from apps.courses.tvet_catalogue_rows import build_review, review_summary
 from apps.courses.tvet_families import F1_FAMILIES, family_of
 from apps.courses.tvet_pages import read_page
 
@@ -83,6 +92,53 @@ def write_json(path, payload, compact=False):
             f.write('\n')
 
 
+def _in(values):
+    return '(' + ', '.join(f"'{v}'" for v in values) + ')'
+
+
+def precheck_sql(data):
+    """The READ-ONLY SQL the lead runs on prod before `--apply` (Bumi F2): every query must return 0 rows."""
+    ids = sorted(c['course_id'] for c in data['courses'])
+    institutions = sorted(data.get('new_institutions', {}))
+    pairs = sorted((x['course_id'], x['institution_id']) for x in data.get('held_links', []) if not x['already_linked'])
+    out = [f'-- 1. none of the {len(ids)} new course ids is in the catalogue (expect 0 rows)',
+           f'SELECT course_id FROM courses WHERE course_id IN {_in(ids)};',
+           f'-- 2. none of the {len(institutions)} new institution ids exists (expect 0 rows)',
+           f'SELECT institution_id FROM institutions WHERE institution_id IN {_in(institutions)};']
+    if pairs:
+        out += [f'-- 3. none of the {len(pairs)} new campus links to held courses exists (expect 0 rows)',
+                'SELECT course_id, institution_id FROM course_institutions WHERE (course_id, institution_id) IN ('
+                + ', '.join(f"('{c}', '{i}')" for c, i in pairs) + ');']
+    return '\n'.join(out)
+
+
+def rollback_sql(data):
+    """The pre-rollback READ-ONLY checks, then the rollback in ONE transaction (Postgres has no cascade:
+    Django's CASCADE is Python-side, so every child table goes first, then the courses, then the
+    institutions once nothing points at them)."""
+    ids = _in(sorted(c['course_id'] for c in data['courses']))
+    institutions = _in(sorted(data.get('new_institutions', {})))
+    pairs = sorted((x['course_id'], x['institution_id']) for x in data.get('held_links', []) if not x['already_linked'])
+    out = ['-- BEFORE ANY ROLLBACK, read-only: who chose one of these courses (a JSON choice, not a foreign key,',
+           '-- so a delete leaves it pointing at nothing). Non-zero -> the owner decides first.',
+           f"SELECT id, status FROM scholarship_applications WHERE chosen_programme->>'course_id' IN {ids} OR EXISTS "
+           f"(SELECT 1 FROM jsonb_array_elements(top_choices) e WHERE e->>'course_id' IN {ids});",
+           f"SELECT count(*) FROM api_student_profiles WHERE chosen_programme->>'course_id' IN {ids};",
+           f'SELECT count(*) FROM admission_outcomes WHERE institution_id IN {institutions};',
+           f'SELECT count(*) FROM stpm_courses WHERE institution_id IN {institutions};',
+           '-- ROLLBACK, one transaction:', 'BEGIN;']
+    for table in ('saved_courses', 'admission_outcomes', 'course_tags', 'courses_career_occupations',
+                  'course_requirements', 'course_institutions'):
+        out.append(f'DELETE FROM {table} WHERE course_id IN {ids};')
+    if pairs:
+        out.append('DELETE FROM course_institutions WHERE (course_id, institution_id) IN ('
+                   + ', '.join(f"('{c}', '{i}')" for c, i in pairs) + ');')
+    out += [f'DELETE FROM courses WHERE course_id IN {ids};']
+    if data.get('new_institutions'):
+        out += [f'DELETE FROM institutions WHERE institution_id IN {institutions};']
+    return '\n'.join(out + ['COMMIT;', '-- then a re-revision of halatuju-api so the eligibility frame reloads.'])
+
+
 class Command(CatalogueIngestMixin, BaseCommand):
     help = 'Add public UP_TVET programmes from a reviewed JSON file (dry run unless --apply)'
 
@@ -102,6 +158,10 @@ class Command(CatalogueIngestMixin, BaseCommand):
         parser.add_argument('--source', default=os.path.join('data', 'tvet', 'uptvet_F1_source.json'))
         parser.add_argument('--held-links', default=os.path.join('data', 'tvet', 'held_tvet_links.json'))
         parser.add_argument('--out', help='Where --build-source / --build-review write')
+        parser.add_argument('--sql', action='store_true',
+                            help="Print the file's read-only prod pre-check (writes nothing, reads no DB)")
+        parser.add_argument('--rollback-sql', action='store_true',
+                            help="Print the pre-rollback checks and the one-transaction rollback (runs nothing)")
 
     def handle(self, *args, **options):
         families = tuple(f.strip() for f in options['families'].split(',') if f.strip())
@@ -113,6 +173,8 @@ class Command(CatalogueIngestMixin, BaseCommand):
             raise CommandError('Pass --file <json>, or --build-source / --build-review with --out.')
         with open(options['file'], encoding='utf-8') as f:
             data = json.load(f)
+        if options['sql'] or options['rollback_sql']:
+            return self.stdout.write(precheck_sql(data) if options['sql'] else rollback_sql(data))
         self._ingest(data, options['create_institutions'], options['apply'], options['allow_update'])
 
     # --- build -------------------------------------------------------------------------------
@@ -142,8 +204,11 @@ class Command(CatalogueIngestMixin, BaseCommand):
         review = build_review(source, load_held_links(held_links_path), held_courses_from_fixtures(), families,
                               load_not_in_prod(held_links_path))
         review['built_from'] = source_path.replace(os.sep, '/')
+        review['summary'] = review_summary(review)
         write_json(out, review)
         self.stdout.write(json.dumps(review['counts'], indent=1))
+        self.stdout.write(json.dumps({k: v for k, v in review['summary'].items() if k != 'split_programmes'},
+                                     indent=1, ensure_ascii=False))
         self.stdout.write(f'-> {out}')
 
     # --- ingest ------------------------------------------------------------------------------

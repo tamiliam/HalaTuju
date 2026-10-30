@@ -21,6 +21,11 @@ course the fixture holds but prod does not (`not_in_prod`, from `held_tvet_links
 Course fields UP_TVET does not give us are derived deterministically: `level` from the page's "Tahap
 Pengajian" (Diploma / Sijil Lanjutan / Sijil), `semesters` = the "Tempoh Pengajian" months // 6,
 `department` / `field_key` from the name (`FIELD_RULES`, first match; no match = flagged).
+
+Sprint F2 (MARA, `data/tvet/tvet_new_courses_F2.json`, built for `--families mara`): colour vision no
+longer splits a programme; the course HIDES from a colour-blind student when ANY campus page excludes
+colour blindness (owner, 2026-10-30), and `colour_excluded_by` lists those campuses when they are not all.
+F1 had no such pair, so its file is unchanged. `review_summary` is the reviewer's first page.
 """
 import json
 import re
@@ -57,6 +62,18 @@ FIELD_RULES = (
     (r'ASUHAN|KANAK-KANAK|PENDIDIKAN AWAL', 'Pendidikan', 'pendidikan'),
     (r'PERNIAGAAN|PERAKAUNAN|KEUSAHAWANAN|PENTADBIRAN|PEJABAT|RUNCIT', 'Perniagaan', 'perniagaan'),
     (r'SUKAN|KEJURULATIHAN|REKREASI', 'Sains Sukan', 'sains-sosial'),
+    # MARA (Sprint F2): appended, so no earlier match moves (the F1 file rebuilds byte for byte).
+    (r'MOTORCYCLE|\bENJIN\b|TRANSMISI|ELECTRIC VEHICLE|CUSTOM PAINTING', 'Automotif', 'automotif'),
+    (r'BARISTA|BEVERAGE|BREAD|BUTCHERY|CAKE', 'Hospitaliti & Gaya Hidup', 'kulinari'),
+    (r'ELECTRICAL|HVAC|TELEFON', 'Elektrik & Elektronik', 'elektrik'),
+    (r'PETROLEUM|PESISIR', 'Minyak & Gas', 'minyak-gas'),
+    (r'\bLOJI\b|PLASTIK|SERAMIK|KOMPOSIT|FOUNDRI|WELDING', 'Mekanikal & Pembuatan', 'mekanikal'),
+    (r'HERBA', 'Sains Hayat', 'sains-hayat'),
+    (r'REKABENTUK|FABRIK|UPHOLSTERI|PATCHWORK', 'Seni Reka', 'senireka'),
+    (r'FILEM|PENYIARAN|PENCETAKAN', 'ICT & Multimedia', 'multimedia'),
+    (r'BEKALAN AIR|PEMBETUNGAN', 'Sivil & Bangunan', 'sivil'),
+    (r'ESTETIK', 'Hospitaliti & Gaya Hidup', 'kecantikan'),
+    (r'FAMILY CARE', 'Pendidikan', 'pendidikan'),
 )
 NAME_ACRONYMS = ('DKM', 'SKM', 'DLKM', 'CNC', 'HVAC', 'CAD', 'CAM', 'CADD', 'BEV', 'EEV', 'EV', 'PW1', 'PW2',
                  'PW3', 'PW4', 'PW5', 'PW6', 'A0', 'A1', 'A4', 'B0', 'B1', 'B4', 'IT', 'ICT', 'KEMAS', 'FAMA',
@@ -107,8 +124,13 @@ def _fee(raw):
     return 'Percuma' if raw == '0' else f'RM {int(raw):,}'
 
 
+#: Fields that never split a programme: the remarks (text), and colour vision, which HIDES the course
+#: when ANY campus page excludes colour blindness (owner, 2026-10-30, F1b; applied to new courses in F2).
+_NOT_IN_RULE_KEY = ('remarks', 'no_colorblind')
+
+
 def _rule_key(fields):
-    return json.dumps({k: v for k, v in fields.items() if k != 'remarks'}, sort_keys=True)
+    return json.dumps({k: v for k, v in fields.items() if k not in _NOT_IN_RULE_KEY}, sort_keys=True)
 
 
 def _offering(row, institution_id, campus):
@@ -232,22 +254,63 @@ def build_review(source, held_links, held_courses, families=F1_FAMILIES, not_in_
             'held_links': links, 'held_rule_differences': differences, 'flagged': flagged}
 
 
+def _coarse(reason):
+    """A flagged reason without its quoted text or card number: "card N '...': no SPM route ..."."""
+    return re.sub(r'\bcard \d+', 'card N', re.sub(r"""'[^']*'(?=[:\s]|$)|"[^"]*"(?=[:\s]|$)""", "'...'", reason))
+
+
+def review_summary(review):
+    """What a reviewer reads first (Sprint F2): Bumi-only vs open courses, who else they are open to, the
+    programmes split by a rule difference (with the fields that differ), and the flagged rows by reason.
+    Kept beside `build_review` (not inside it) so the applied F1 file still rebuilds byte for byte."""
+    courses = review['courses']
+    by_name = {}
+    for course in courses:
+        by_name.setdefault((course['family'], norm_name(course['course'])), []).append(course)
+    splits = []
+    for (_, _), group in sorted(by_name.items()):
+        if len(group) < 2:
+            continue
+        reqs = [c['requirement'] for c in group]
+        differ = sorted(k for k in reqs[0] if k != 'remarks' and len({json.dumps(r.get(k), sort_keys=True)
+                                                                      for r in reqs}) > 1)
+        splits.append({'course': group[0]['course'], 'differ': differ,
+                       'courses': {c['course_id']: len(c['offerings']) for c in group}})
+    reasons = {}
+    for row in review['flagged']:
+        for reason in row['reasons']:
+            reasons[_coarse(reason)] = reasons.get(_coarse(reason), 0) + 1
+    return {
+        'bumi_only_courses': sum(1 for c in courses if c['requirement']['req_bumiputera']),
+        'open_to_non_bumi_courses': sum(1 for c in courses if not c['requirement']['req_bumiputera']),
+        'open_to_non_citizens_courses': sum(1 for c in courses if not c['requirement']['req_malaysian']),
+        'no_disability_courses': sum(1 for c in courses if c['requirement']['no_disability']),
+        'no_colorblind_courses': sum(1 for c in courses if c['requirement']['no_colorblind']),
+        'colour_from_some_campuses': sum(1 for c in courses if c.get('colour_excluded_by')),
+        'split_programmes': splits,
+        'flagged_by_reason': dict(sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0]))),
+    }
+
+
 def _course(members):
     members = sorted(members, key=lambda m: int(m['row']['id_kursus']))
     first = members[0]
     name = clean_name(first['name'])
     department, field_key = field_of(first['name'])
     remarks = {m['parsed']['fields']['remarks'] for m in members}
+    colour = [m['row']['id_kursus'] for m in members if m['parsed']['fields']['no_colorblind']]
     course = {
         'course_id': f"TVET-{first['row']['id_kursus']}", 'course': name,
         'level': level_of(first['name'], first['page'].get('tahap')), 'department': department,
         'field': department, 'field_key': field_key, 'semesters': semesters_of(first['page'].get('tempoh')),
         'description': first['page'].get('description', ''), 'family': first['family'],
-        'requirement': first['parsed']['fields'],
+        'requirement': {**first['parsed']['fields'], 'no_colorblind': bool(colour)},
         'offerings': [_offering(m['row'], m['institution_id'], m['campus']) for m in members],
         'source': _source(first['page']),
         'warnings': first['parsed']['warnings'],
     }
     if len(remarks) > 1:
         course['remark_variants'] = {m['row']['id_kursus']: m['parsed']['fields']['remarks'] for m in members}
+    if colour and len(colour) < len(members):
+        course['colour_excluded_by'] = colour   # the campus pages that hide it from a colour-blind student
     return course

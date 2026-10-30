@@ -9756,5 +9756,3099 @@
       "description_en": "",
       "field_key": "multimedia"
     }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-937",
+    "fields": {
+      "course": "Diploma Teknologi Komputer (Komputasi Awan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini mengkhususkan pengetahuan dan kepakaran dalam bidang Perkomputeran Awan (Cloud Computing) yang merupakan salah satu kemajuan teknologi yang paling pesat berkembang, membantu mengkomersialkan struktur, menganjurkan dan menyimpan sejumlah besar data tanpa banyak melabur pada alat perkakasan dan perisian. Setelah tamat belajar, pelajar memperolehi ilmu pengurusan menggunakan perkakasan teknologi terkini. Pelajar juga diterapkan kepakaran dalam bidang fiber optic dan rangkaian komputer khususnya dalam kursus CompTIA, AWS, Microsoft dan kursus yang ditawarkan oleh Cisco Academy. Selain daripada mendapat diploma yang dikeluarkan oleh institusi meraka juga layak untuk mendapat sijil kompentasi CompTIA Network+, CompTIA Server+, AWS, Microsoft Server, CCENT, CCNA dan CA apabila mereka berjaya dalam peperiksaan sijil kompentasi tersebut.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1014",
+    "fields": {
+      "course": "Diploma Teknologi Komputer (Analisa Data Besar)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini bertujuan melahirkan tenaga mahir yang mempunyai pengetahuan serta kepakaran dalam bidang analisa data besar",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1018",
+    "fields": {
+      "course": "Diploma Teknologi kejuruteraan Elektrik (Domestik dan Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan Diploma Teknologi Kejuruteraan MARA dan Perakuan Kekompetenan sebagai Pendawai bertauliah. Program ini menekankan pengetahuan teknikal dan latihan kemahiran kepada pelajar dalam bidang perkhidmatan penyelenggaraan elektrik termasuk pendawaian elektrik, sistem pencegahan kebakaran dan keselamatan bangunan, sistem perkhidmatan serta sistem automasi bangunan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1020",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan Diploma Teknologi Kejuruteraan MARA dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik(Sistem Voltan Rendah Tanpa Stesen Janakuasa). Pengetahuan dan latihan yang dipelajari meliputi lukisan kejuruteraan elektrik secara manual dan berkomputer(AutoCAD), kerja-kerja amali gegas dan pendawaian elektrik serta pepasangan elektik satu dan tiga fasa, prinsip operasi dan membaikpulih litar-litar elektrik samada litar analisis mahupun litar digital, memahami perjalanan, penghantaran dan pengagihan tenaga elektrik, konsep pengubah dan penggunaan komersial motor elektrik serta memahami dan berupaya melakukan kerja-kerja elektrik yang melibatkan papan suis utama, kabel bawah tanah dan talian atas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1026",
+    "fields": {
+      "course": "Diploma Teknologi Komputer (Sekuriti)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini bertujuan melahirkan tenaga mahir yang mempunyai pengetahuan serta kepakaran dalam bidang sekuriti data. Bidang ini",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1030",
+    "fields": {
+      "course": "Sijil Teknologi Bekalan Air dan Pembetungan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi bekalan air dan pembentungan. Pelajar akan dilatih untuk mempunyai kemahiran bekerja secara individu serta berpasukan dalam menyokong kerja-kerja penyelenggaraan paip dan sistem pembentungan. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian. Pada penghujung program, pelajar turut akan memperolehi Sijil A1 yang diiktiraf oleh Suruhanjaya Perkhidmatan Air Negara (SPAN).",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1036",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Elektronik Gunaan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini melibatkan kombinasi beberapa bidang yang memberi pelajar pengetahuan berkaitan teknologi frekuensi radio tanpa wayar, semikonduktor, elektrik, alat elektronik, sistem kawalan dan instrumentasi, automasi, mekanikal, proses pembuatan dan pengurusan projek. Ini adalah beberapa bidang yang diperlukan untuk industri elektronik.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1053",
+    "fields": {
+      "course": "Diploma Teknologi Pembuatan (IKM TSYA 18 bulan + KKTM Balik Pulau 18 bulan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini akan menyediakan pelajar dengan pengetahuan teknikal dan kemahiran praktikal dalam industri pembuatan berasaskan pemesinan. Pelajar akan mempelajari kaedah pemesinan konvensional dan bukan konvensional seperti CNC. Pelajar akan menggunakan perisian kejuruteraan dalam merekabentuk produk seterusnya merancang proses pembuatan yang diperlukan untuk pengeluaran produk. Di samping kemahiran teknikal, pelajar juga diberi penekanan dalam kemahiran insaniah serta bidang keusahawanan yang menjadi kriteria penting dalam bidang pekerjaan ataupun menjadi teknousahawanan.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1109",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Loji (Instrumentasi dan Kawalan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direkabentuk meliputi aspek aplikasi, pengujian dan pengurusan sesuatu peralatan. Selain itu para pelajar turut didedah dengan aspek penyeliaan, kawalan dan penilaian prestasi sesuatu peralatan di dalam industri minyak dan gas. Konsep dan pelaksanaan program ini adalah meliputi pelbagai industri kejuruteraan seperti minyak & gas, kimia, elektrik & elektronik, mekanikal dan persekitaran. Kekuatan program ini adalah para pelajar akan mempunyai tahap kemahiran yang tinggi di dalam kawalan proses, distributed control system (DCS), dan field bus technology yang meluas digunakan dalam industri minyak dan gas. Para pelajar turut didedahkan dengan pengetahuan berkaitan dokumen instrumentasi dan kawalan. Para pelajar yang tamat di dalam program ini bukan sahaja boleh bekerja di dalam bidang minyak dan gas tetapi berpeluang untuk bekerja di dalam bidang-bidang yang lain. Program ini mempunyai matlamat untuk menyediakan suatu program yang komprehensif dan diiktiraf oleh antarabangsa di samping melahirkan pekerja mempunyai ciri kemahiran kepimpinan , berpengetahuan dan kompetan di dalam industri instrumentasi, kejuruteraan kawalan minyak dan gas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1110",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Loji (Perpaipan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Teknologi Kejuruteraan Loji (perpaipan) merupakan program yang interaktif dan mementingkan praktikal. Para pelajar program ini akan mempelajari asas komponen perpaipan, pelbagai kod dan standard. Para pelajar juga turut mempelajari asas susun atur loji, analisis tegasan paip, equipment piping, prinsip dan prosidur untuk merekabentuk loji. Latihan amali berasaskan contoh projek sebenar digunakan di dalam program ini. Selain itu, para pelajar didedahkan dengan peranan dan tanggungjawab seorang pereka perpaipan dalam melaksanakan projek rekabentuk perpaipan. Di samping itu, para pelajar berpeluang mengaplikasi segala pengetahuan tentang prinsip dan standard rekabentuk perpaipan di dalam projek tahun akhir mereka.",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1111",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Loji (Mekanikal)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Diploma Teknologi Kejuruteraan Loji (Mekanikal) menyediakan para graduan dengan pengetahuan dan kemahiran yang diperlukan oleh pelbagai syarikat kejuruteraan, pembinaan, fabrikasi serta operasi. Program ini juga mendedahkan graduan dengan teori dan praktikal melalui kelas amali yang merangkumi rekabentuk, prinsip-prinsip kejuruteraan di samping kemahiran perisian rekabentuk terbantu komputer (CAD) seperti AutoCAD Plant 3-D dan Pattern Development (Plate and Sheet). Graduan yang berjaya menamatkan pengajian dalam program ini akan bekerja sebagai perekabentuk mekanikal dan penolong jurutera di dalam pelbagai organisasi misalnya syarikat kejuruteraan, pembinaan, minyak dan gas serta syarikat pengeluaran peralatan. Kebiasaannya, graduan dikehendaki mengaplikasikan ilmu dan kemahiran mereka dalam penggunaan perisian CAD untuk menghasilkan rekabentuk serta lukisan kejuruteraan. Selain itu, graduan perlu melaksanakan tugas-tugas penyelenggaraan peralatan mekanikal contohnya pam, pemampat, penghawa dingin dan sebagainya",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1112",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Loji (Struktur Luar Pesisir)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Teknologi Kejuruteraan Loji (Struktur Luar Pesisir) menawarkan suatu peluang pembelajaran yang komprehesif berkaitan amalan kejuruteraan struktur. Program ini meliputi analisis, pengiraan dan prinsip rekabentuk struktur dengan menggunakan perisian seperti AutoCAD, SACS, AutoCAD Plant 3D, BOCAD, GRLWEAP PDMS dan Microsoft Project. Program ini juga memberi pendedahan kepada pelajar dalam rekabentuk projek yang berkaitan fabrikasi struktrur keluli. Pelajar akan dianugerahkan diploma selepas tamat pengajian di dalam program ini dan mereka berpeluang melaksanakan pelbagai rekabentuk di dalam pelbagai bidang pekerjaan. Program Teknologi Kejuruteraan Struktur Luar Persisir menyediakan graduan untuk kerjaya di dalam bidang pengeluar minyak dan gas merangkumi asas kimia, mekanik gunaan, matematik kejuruteraan dan rekabentuk struktur luar pesisir.",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1113",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Elektrik (Operasi Loji)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelajar didedahkan dengan sistem pembelajaran berasaskan teori dan amali berkaitan kejuruteraan elektrik khususnya di dalam bidang minyak dan gas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1114",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Petroleum (Operasi Pesisir)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menyediakan pelajar dengan pengetahuan dan kemahiran berkaitan loji khususnya dalam industri hiliran seperti susunatur, PFD, P&ID, proses, peralatan, keselamatan dan pengoperasian loji. Pelajar berpeluang merasai pengalaman seperti dalam pekerjaan sebenar melalui pembelajaran mengendalikan operasi unit dan proses menggunakan loji yang mirip kepada proses sebenar dengan industri. Pelajar turut dilengkapkan dengan pengetahuan dan kemahiran untuk mengesan dan menyelesaikan masalah-masalah yang timbul semasa mengendalikan operasi loji supaya sentiasa mengikut standard operasi dan spesifikasi. Para pelajar yang berjaya tamat dari program ini boleh bekerja di loji minyak dan gas, kimia, petrokimia dan pemprosesan makanan.",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1115",
+    "fields": {
+      "course": "Diploma Kejuruteraan Pembuatan (Pembuatan Automotif)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menekankan kepada penghasilan graduan yang mampu untuk mengadaptasi teknologi terkini dan yang akan datang bagi menghasilkan produk automotif yang inovatif dan berdaya saing. Program ini telah direka secara strategik untuk menghasilkan graduan yang boleh memahami secara total pada setiap peringkat pemprosesan produk automotif, rekabentuk bahagian serta mempunyai kepakaran dalam semua disiplin automotif disamping memiliki kemahiran insaniah yang cemerlang.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1116",
+    "fields": {
+      "course": "Diploma Kejuruteraan Pembuatan (Rekabentuk Pembuatan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini memberi tumpuan kepada teknologi pembuatan rekabentuk terkini bagi industri berat dan ringan. Pelajar akan diberi pendedahan kepada pelbagai perspektif bagi rekabentuk bermula dari peringkat awal pembangunan produk sehingga kepada penghasilan produk yang telah disepadukan bersama teknologi dan sistem terkini seperti Computer Aided Design Drafting (CAD), Computer Aided Manufacturing (CAM), Computer Aided Engineering (CAE), Fast Technology, Laser Cutting, Integrated Engineering dan Rapid Prototyping.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1117",
+    "fields": {
+      "course": "Diploma Kejuruteraan Pembuatan (Teknologi dan Proses)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini memberi tumpuan kepada kejuruteraan pembuatan dan teknologi pemprosesan yang telah dibangunkan dan digunakan oleh industri. Sebagai contoh, proses pemesinan termaju, bahan termaju, pembuatan pesat, teknologi CNC, kejuruteraan jitu dan nanoteknologi. Pelajar juga akan didedahkan kepada jenis-jenis proses yang terlibat dalam penghasilan produk serta senario pemprosesan produk sedia ada di pasaran semasa. Malahan juga, pelajar diperkenalkan kepada penggunaan teknologi terkini dalam penghasilan produk yang lebih kreatif dan inovatif.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1118",
+    "fields": {
+      "course": "Diploma Kejuruteraan Pembuatan (Automasi Industri dan Robotik)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini memberi tumpuan kepada kombinasi sinergistik daripada beberapa disiplin kejuruteraan iaitu elektrik dan elektronik, mekanikal serta kawalan. Program ini bertujuan untuk melahirkan graduan yang kompeten dalam menyelenggara dan menyelesaikan masalah peralatan sistem kawalan, sistem robotik dan automasi serta produk mekatronik yang terdiri daripada sistem mekanikal dan elektronik yang dikawal oleh sistem berkomputer.",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1120",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik Bioperubatan (Terapeutik)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Teraputik Bioperubatan ialah satu pengkhususan yang melibatkan pengetahuan dan kemahiran dalam mengendali dan menyelenggara alatan, instrumen, mesin dan perkakasan yang bertujuan untuk mengelakkan dan merawat penyakit. Peralatan terapeutik terdiri daripada alat-alat yang ringkas seperti infusi dan pam picagari sehinggalah kepada alatan berteknologi tinggi seperti mesin hemodialisis, ventilator dan anestetik.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1121",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik Bioperubatan (Diagnostik)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diagnostik Bioperubatan ialah satu pengkhususan yang melibatkan pengetahuan dan kepakaran dalam mengendali dan menyelenggara alatan, instrumen, mesin dan perkakasan yang bertujuan untuk mengenalpasti dan mendiagnosis penyakit. Maklumat yang dikumpul melibatkan simptom dan gejala penyakit sebelum rawatan yang sesuai diberikan oleh doktor. Ia juga digunakan untuk menilai tahap risiko dan pengurusan penyakit.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1122",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik Bioperubatan (Radiologi dan Pengimejan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini mengkhususkan pengetahuan dan kepakaran dalam mengendali dan menyelenggara alatan, instrumen, mesin dan perkakasan bagi peralatan perubatan yang menggunakan radiasi seperti x-ray, sinar gamma, gelombang bunyi frekuensi tinggi dan medan magnet untuk radiasi tidak mengion bagi penghasilan imej organ dan bahagian dalaman lain badan pesakit sebagai bahan diagnostik.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1123",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik Bioperubatan (Makmal)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kejuruteraan Instrumentasi Bioperubatan (Makmal) ialah satu bidang yang melibatkan pengetahuan dan kemahiran pengendalian dan penyelenggaraan peralatan yang bertujuan menganalisa, memproses, memeriksa darah, bendalir badan dan spesimen biologi yang diambil dari pesakit.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1124",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik Bioperubatan (Teknologi Maklumat dan Komunikasi)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Teknologi Maklumat Telekomunikasi Bioperubatan (ICT) adalah satu bidang yang melibatkan pengetahuan dan kemahiran dalam aspek teknologi maklumat dan komunikasi dalam industri perubatan. ICT menghubungkan doktor, pentadbir, pembekal perkhidmatan dan pesakit melalui kaedah capaian menggunakan komputer peribadi, komputer riba dan telefon bimbit.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1126",
+    "fields": {
+      "course": "Diploma Herba dan Hasilan Semulajadi (Sains Herba)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sains Hayat",
+      "field": "Sains Hayat",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini ditawarkan dalam kluster Bioteknologi / Herba di institusi seperti KKTM Lenggong. empoh pengajian: 36 bulan (3 tahun) secara sepenuh masa. Program ini memberi pendedahan kepada: pengenalpastian bahan aktif herba, pemprosesan bahan semulajadi, pembangunan produk herba, kawalan mutu/analisis produk serta aspek teknikal yang berkaitan dengan industri herba dan hasil semulajadi.",
+      "description_en": "",
+      "field_key": "sains-hayat"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1127",
+    "fields": {
+      "course": "Diploma Herba dan Hasilan Semulajadi (Pembuatan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini merupakan pembelajaran komprehensif dalam bidang pemprosesan dan pembuatan produk berasaskan herba dan produk semula jadi. Program ini memberi pendedahan kepada pengetahuan dan teknik untuk menghasilkan produk yang berkualiti, selamat dan mengikut piawaian standard yang ditetapkan. Selain itu program ini menawarkan kurikulum yang bersepadu serta latihan yang praktikal dari tenaga pengajar yang berpengalaman dan efektif dengan pengaplikasian proses pembelajaran berasaskan teori dan praktikal untuk menghasilkan tenaga kerja atau usahawan yang berjaya.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1128",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan (Penyelenggaraan Loji)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini merupakan pembelajaran komprehensif dalam bidang penyelenggaraan loji dengan pendedahan kepada pengetahuan prinsip-prinsip kejuruteraan serta memberi penekanan terhadap praktikal sejajar dengan keperluan industri yang memerlukan pekerja mahir dan separa mahir dalam bidang kritikal seperti pengetahuan penyelenggaraan. Pelajar akan berpeluang menimba pengetahuan dan latihan yang praktikal, sesuai dengan kehendak dan keperluan pekerjaan semasa. Proses pembelajaran juga meliputi pemahaman terhadap elemen-elemen pemprosesan herba, keperluan Amalan Pengilangan Baik (GMP) di samping penyelenggaraan peralatan yang dapat memenuhi keperluan individu, persekitaran dan industri, selain menjamin peluang pekerjaan yang lebih cerah.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1129",
+    "fields": {
+      "course": "Diploma Teknologi Pembungkusan dan Rekabentuk",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Packaging Technology and Design adalah program 3 tahun yang ditawarkan di Kolej Kemahiran Tinggi Mara, Lenggong, Perak. Diploma yang ditawarkan di KKTM Lenggong ini melibatkan bahan-bahan pembungkusan dan rekabentuk, di mana struktur kurikulumnya memberi penekanan kepada teknologi pembungkusan dan disokong oleh elemen-elemen rekabentuk. Program ini menggabungkan sains dan teknologi, rekabentuk, pemasaran dan prinsip-prinsip perniagaan di dalam struktur kurikulumnya.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1130",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Biokimia ( Makanan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program selama 3 tahun ini memberi pengetahuan dan kemahiran teknikal dalam bidang teknologi kejuteraan makanan. Program ini menekankan pengaplikasian prinsip-prinsip sains dan kejuruteraan dalam membangunkan kaedah serta mengenalpasti proses terbaik bagi menghasilkan produk makanan yang bermutu, sihat dan selamat. Selain daripada itu, program ini juga menekankan ilmu dan kemahiran keusahawanan dalam bidang yang berkaitan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1131",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Automotif",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direkabentuk bagi melahirkan sumber manusia berpengetahuan dan cekap dalam sektor automotif yang berkebolehan dalam bidang kejuruteraan dan kemahiran teknikal bagi menyokong jurutera dan profesional lain yang terlibat dalam pembangunan, pembuatan dan ujian operasi, pemeriksaan dan penyelenggaraan sistem automotif. Pelajar didedahkan dengan pengetahuan yang berkaitan, kemahiran praktikal dan teknikal dalam mendiagnosis, membaiki dan menganalisis sistem teknologi automotif. Kualiti kepimpinan yang cekap dan profesionalisme turut ditekankan. Pelajar digalakkan mempunyai sikap untuk mengamalkan pembelajaran sepanjang hayat seiring perubahan teknologi automotif terkini. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1132",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pemprosesan Polimer Komposit",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program selama 3 tahun ini disediakan khusus untuk pengajaran dan pembelajaran dalam bidang bahan dan teknologi pemprosesan polimer komposit.Program berorientasikan kemahiran ini dijangka akan menyediakan graduan berkebolehan dan profesional yang dapat menguasai pelbagai aspek teori dan amali khususnya dalam bidang bahan dan teknologi pemprosesan komposit polimer. Antara pengetahuan dan kemahiran yang dipelajari adalah merangkumi konsep bahan dan komposit polimer, teknologi pemprosesan dan pengeluaran, rekabentuk bahan dan produk, rekabentuk dan fabrikasi acuan, fabrikasi dan pemasangan, penyelenggaraan dan baikpulih komponen, serta pengujian dan analisa bahan dan produk. Program ini dijalankan dengan usahasama Advanced Material Research Centre(AMREC), SIRIM Berhad dan German Malaysia Institute(GMI).",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1133",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pemprosesan Seramik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Pemprosesan Seramik merupakan program diploma tiga tahun yang merangkumi kurikulum secara menyeluruh dalam menyediakan graduan pakar yang berketrampilan serta memahami proses merekabentuk, fabrikasi, dan menganalisa segala permasalahan yang timbul dalam teknologi pembuatan seramik. Secara khususnya pelajar akan memahami proses-proses merekabentuk model dan acuan, kaedah penyediaan bahan seramik, fabrikasi produk, proses pengeringan dan pembakaran, kaedah penyudahan dan dekorasi serta menganalisa segala permasalahan yang timbul dalam penentuan kualiti pemprosesan dan produk seramik. Keutamaan pembelajaran adalah pada aspek proses pembuatan seramik secara hands-on dengan penekanan kepada konsep production based education. Program ini dijalankan dengan usahasama Advanced Material Research Centre(AMREC), SIRIM Berhad dan German Malaysia Institute(GMI).",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1134",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pemprosesan Plastik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Plastik merupakan program diploma tiga tahun yang merangkumi kurikulum secara menyeluruh dalam melahirkan graduan pakar yang berketrampilan serta memahami pelbagai kaedah pemprosesan bahan plastik. Keutamaan pembelajaran adalah menekankan aspek aplikasi teknologi pemprosesan plastik secara hands-on. Contoh proses yang sering digunakan dalam teknologi pembuatan & pemprosesan plastik adalah Injection moulding, Extrusion, Blow Moulding & Blow Film. Program ini dijalankan dengan usahasama Advanced Material Research Centre(AMREC), SIRIM Berhad dan German Malaysia Institute (GMI).",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1135",
+    "fields": {
+      "course": "Diploma Industri Pembuatan Komposit Aeroangkasa",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Aero & Marin",
+      "field": "Aero & Marin",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan berasaskan teori dan amali dalam bidang pembuatan komposit aeroangkasa untuk melahirkan tenaga kerja separa profesional mengikut keperluan industri komposit semasa. Pelajar-pelajar didedahkan dengan teknologi dalam pembuatan komposit terutamanya dalam pembuatan komponen kapal terbang. Mereka akan dibekalkan dengan pengetahuan dan aplikasi pembuatan komposit. Seterusnya pelajar akan dilatih menerusi projek lengkap yang mengaplikasikan teori dan teknik tersebut.",
+      "description_en": "",
+      "field_key": "aero"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1136",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan Diploma Teknologi Kejuruteraan MARA dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik(Sistem Voltan Rendah Tanpa Stesen Janakuasa). Pengetahuan dan latihan yang dipelajari meliputi lukisan kejuruteraan elektrik secara manual dan berkomputer(AutoCAD), kerja-kerja amali gegas dan pendawaian elektrik serta pepasangan elektik satu dan tiga fasa, prinsip operasi dan membaikpulih litar-litar elektrik samada litar analisis mahupun litar digital, memahami perjalanan, penghantaran dan pengagihan tenaga elektrik, konsep pengubah dan penggunaan komersial motor elektrik serta memahami dan berupaya melakukan kerja-kerja elektrik yang melibatkan papan suis utama, kabel bawah tanah dan talian atas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1139",
+    "fields": {
+      "course": "Diploma Senibina",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pengetahuan akademik dan pengalaman praktikal yang berkaitan dengan bidang senibina dalam usaha menghasilkan pekerja mahir dan terlatih bagi pembinaan industri global di samping membuka peluang melanjutkan pengajian ke peringkat profesional yang lebih tinggi. Program ini turut menggalakkan pelajar ke arah bidang keusahawanan teknikal.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1141",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Bangunan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan berasaskan teori dan amali dalam bidang Teknologi Kejuruteraan Bangunan. Pelajar berpeluang melakukan latihan amali dalam bidang binaan bangunan secara individu atau berkumpulan dengan bimbingan pengajar yang terlatih dan berpengalaman luas dalam bidang bangunan. Pembelajaran dan latihan amali meliputi kerja-kerja konkrit, bata, acuan, tetulang, kekemasan, pembinaan sistem perparitan, kerja-kerja ukur dan ujian bahan binaan disamping teori yang berkaitan. Program ini direka untuk menyediakan pelajar dengan kemahiran untuk bekerja dalam bidang rekabentuk bangunan dan pembinaan. Selain daripada itu, pelajar turut didedahkan dengan unsur-unsur keusahawanan.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1142",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik (Objek Rangkaian Internet)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direka untuk menyediakan pelajar dengan kemahiran yang diperlukan untuk bekerja dalam pelbagai industri yang mengaplikasikan teknologi IoT yang melibatkan proses diagnosis kerosakan sistem, baik pulih dan pemasangan peralatan, perkhidmatan, perancangan dan pembangunan sistem IoT dalam syarikat-syarikat terlibat. Modul yang ditawarkan termasuklah mengenai sensor technologies, Embedded System, Mobile Computing, Digital Communication & Networking Technologies, Web Development serta Database Management System. Di samping itu, pelajar akan didedahkan kepada teknologi-teknologi terkini berasaskan revolusi industri 4.0 sebagai contoh penggunaan dron, robot, rfid sensors dan sebagainya.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1143",
+    "fields": {
+      "course": "Diploma Perfileman Digital",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini akan melengkapkan pelajar dengan pelbagai kemahiran yang diperlukan untuk kerjaya dalam industri filem dan animasi. Pelajar akan mempelajari cara untuk merangsang idea, menulis cadangan, memahami amalan rangkaian animasi dan menguruskan perbelanjaan produksi. Penekanan kepada pembangunan kemahiran dalam kraf penulisan layar dan produksi seperti mengarah dan penyuntingan dalam menjadikan jalan cerita yang berstruktur dan beremosi juga akan diterapkan dalam kursus ini.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1144",
+    "fields": {
+      "course": "Diploma Rekabentuk Media Digital",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini distrukturkan bagi pembelajaran di sekitar studio dan makmal latihan. Pengajaran program ini merangkumi media digital, perniagaan, media baru dan aliran praktikal profesional dalam penyelesaian masalah samada dalam sesi pembelajaran mahupun melalui kerja sangkutan projek bersama syarikat luar. Matlamat kerja studio ini adalah untuk menggalakkan perbincangan, inovasi dan kreativiti pelajar semasa kerja sangkutan projek serta membantu dalam memperkenalkan pelajar dalam persekitaran kerja yang sebenar. Tujuan program ini juga adalah untuk membangunkan kemahiran utama dalam rekabentuk kreatif, rekabentuk proses, komunikasi secara visual, penyelesaian masalah yang kreatif, asas dan amalan rekabentuk, pengurusan projek, komunikasi dan kolaborasi, kemahiran rekabentuk teknikal, pemasaran dan keusahawanan.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1145",
+    "fields": {
+      "course": "Diploma Rekabentuk Fesyen",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini memberi pengkhususan kepada pembangunan kemahiran dan pengetahuan seiring dengan industri fesyen di Malaysia, sejajar dengan kehendak bagi melahirkan pereka fesyen yang kreatif. Pelajar mampu untuk mengekspresi dan meneroka kreativiti serta kebolehan untuk menggambarkan konsep rekabentuk sekaligus berkomunikasi dengan lebih efektif kepada rakan sekerja dan klien. Pelajar akan dilatih untuk lebih bermotivasi, bersemangat dan berpengetahuan, berinisiatif dan bekerja secara berpasukan. Pelajar juga akan didedahkan kepada senario industri fesyen terkini meliputi operasi, kehendak pasaran dan pengaruh besar dalam industri ini. Selain daripada itu, maklumat tentang hubungan antara rekabentuk fesyen dan promosi media serta sektor-sektor pasaran tertentu termasuk couture dan pasaran sedia-terpakai akan diperkenalkan kepada pelajar.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1146",
+    "fields": {
+      "course": "Diploma Rekabentuk Perabot",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Para pelajar akan didedahkan kepada teknologi terkini, bahan dan amalan rekabentuk studio yang digunapakai dalam penghasilan perabot menggunakan Computer-aided design and modelling (CAD-CAM). Kerja kursus juga menekankan elemen kreatif, inovatif, kaedah bengkel serta pemasaran dan pengajian perniagaan. Sepanjang program ini, pelajar juga digalakkan untuk membangunkan kemahiran mereka melalui kesedaran terhadap pelbagai aspek teknikal dan kreatif. Proses pembelajaran turut merangkumi pemahaman dan penekanan terhadap elemen rekabentuk, fungsi, pembuatan dan pembentangan projek bagi produk perabot domestik, komersial, korporat mahupun yang dikhususkan.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1147",
+    "fields": {
+      "course": "Diploma Rekabentuk Dalaman",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini memfokuskan kepada rekabentuk dan persekitaran dalaman bagi semua aspek struktur, ruang dan susun atur bahan. Pelajar akan mempelajari konsep rekabentuk dalaman berdasarkan konteks fizikal, budaya, alam sekitar dan sejarah rekabentuk senibina dalaman di samping membangunkan rekabentuk dalaman yang kreatif dan berdaya cipta samada bagi ruang awam atau peribadi.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1149",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembinaan (Sistem Termaju)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini bermatlamat memberi ilmu pengetahuan dan latihan teknikal dalam bidang teknologi kejuruteraan pembinaan sistem termaju. Ia merupakan satu inisiatif bagi merapatkan jurang antara keperluan industri dan kebolehpasaran graduan berkualiti tinggi dengan kemahiran yang mengagumkan yang mampu menjadi perantis",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1151",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembinaan (Forensik Bangunan dan Penyelenggaraan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menyediakan ilmu dan latihan teknikal dalam penyelenggaraan bangunan, siasatan forensik",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1153",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembinaan (Perkhidmatan Bangunan dan Penyelenggaraan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan berasaskan teori dan amali dalam bidang pembinaan untuk melahirkan tenaga kerja separa profesional mengikut keperluan industri pembinaan semasa. Pelajar-pelajar didedahkan dengan pemahaman dan kebolehan menggunakan terminologi forensik di dalam bidang Teknologi Pembinaan. Pelajar-pelajar didedahkan dengan sistem perkhidmatan dan kerja-kerja penyelenggaraan bangunan. Pelajar-pelajar juga diberi penekanan terhadap keselamatan dan kesihatan, konsep dan prinsip teknologi pelaksaan, penyelenggaraan dan baikpulih serta skil amali dalam sistem perkhidmatan bangunan. Seterusnya pelajar akan dilatih menerusi projek lengkap yang mengaplikasikan teori dan teknik tersebut sehingga boleh membuat pelan tindakan dan melaksanakan penyelenggaraan dan baikpulih.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1154",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembinaan (Pemodelan Maklumat Bangunan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini bermatlamat memberi ilmu pengetahuan dan latihan teknikal dalam bidang ‘Building Information Modelling’. Ia merupakan satu inisiatif dalam menyediakakan graduan yang berkualiti dan bersedia memenuhi keperluan industri dari aspek teknikal, sahsiah dan profesionalisme. Antara kursus yang ditawarkan dalam program ini adalah teknologi mekanikal dan elektrikal, teknologi pembinaan, teknologi hijau dan alam sekitar, serta latihan praktikal mengenai perisian BIM. Graduan daripada program ini bakal bergelar ‘BIM Modeller’ yang mampu membangunkan dan melaksanakan analisis ke atas model mengikut spesifikasi yang ditetapkan oleh industri, serta mengemaskini ‘Family’ dan model mengikut spesifikasi yang telah ditetapkan. Graduan juga mampu menyediakan persembahan model tiga dimensi (3D) kepada pelanggan semasa proses mendapatkan kelulusan rekabentuk konsep dan menjana kuantiti daripada model yang disediakan oleh setiap disiplin.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1155",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembinaan (Bangunan Hijau)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini bermatlamat memberi ilmu pengetahuan dan latihan teknikal dalam bidang ‘Green and Energy Efficient Buildings’. Ia merupakan satu inisiatif bagi merapatkan jurang antara keperluan industri dan kebolehpasaran graduan berkualiti tinggi dengan kemahiran yang mengagumkan yang mampu menjadi perantis dalam merevolusikan industri pembinaan di Malaysia. Antara kursus yang ditawarkan dalam program ini adalah teknologi mekanikal dan elektrikal, teknologi bangunaan cekap tenaga, teknologi pembinaaan industri, dan simulasi bangunan cekap tenaga. Selain itu pelajar turut didedahkan dengan situasi semasa yang berlaku dalam industri pembinaan. Graduan daripada program ini seharusnya mampu berfikir secara kreatif, inovatif, serta berdaya saing dalam mengenalpasti suatu teknologi bagi merealisasikan objektif teknologi hijau dan cekap tenaga, khususnya bagi industri pembinaan dari pelbagai perspektif seperti keberkesanan kos, kecekapan ekosistem dan juga pengurusan bahan buangan bagi memelihara alam semulajadi terpelihara untuk generasi akan datang",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1158",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik (Sistem Terbenam)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menekankan kepentingan komersial dan perkembangan pesat sistem digital terbenam untuk komunikasi dan kawalan. Ia menawarkan pelbagai pilihan yang relevan hingga ke industri, dan adalah persediaan terbaik untuk mereka yang ingin melibatkan diri dalam penyelidikan. Program berasaskan sintetis ini direka untuk penolong jurutera dalam industri elektronik, terutamanya dalam sektor-sektor seperti elektronik pengguna, komunikasi, automotif, automasi industri dan avionik. Pelajar akan mempunyai akses kepada keseluruhan set alat pembangunan, platform dan peralatan yang berprestasi tinggi sepanjang sesi praktikal dan fasa pembangunan projek untuk mengasah kepakaran mereka.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-1160",
+    "fields": {
+      "course": "Diploma Kejuruteraan Elektronik (Pengukuran Elektronik & Kawalan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini akan melengkapkan pelajar dengan pengetahuan dalam pelbagai proses industri dan sistem pengukuran termasuk pengesan dan actuator yang banyak digunakan dalam pembuatan automasi termasuk industri utiliti dan lain-lain. Pelajar akan memperolehi pengetahuan teknikal dan kemahiran dalam sistem kawalan, pengesanan(sensor), pemilihan peralatan, pemasangan, pertauliahan dan pengujian, penyelenggaraan, kaliberasi, pengaturcaraan dan pengendalian PLC, SCADA. Program ini menawarkan modul pengkhususan seperti Process Control, Industrial Automation, Data Acquisition and Control serta Industrial Process Instrumentation.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11489",
+    "fields": {
+      "course": "Teknologi Sistem Komputer",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Sistem Komputer adalah program latihan yang memberikan pelatih pengetahuan dan kemahiran dalam perkembangan teknologi terkini yang berkaitan dengan pembangunan, rekabentuk, dan pengurusan sistem dan rangkaian komputer. Kursus ini juga melibatkan penggunaan komputer dalam operasi perniagaan, telekomunikasi, pemprosesan imej, pembangunan perisian komputer, serta kemahiran penyelenggaraan dan pembaikan sistem komputer.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11498",
+    "fields": {
+      "course": "Senireka Gaya Rambut",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih bertanggungjawab untuk memotong, menggayakan, dan merawat rambut pelanggan. Pelatih boleh memberikan khidmat konsultasi kepada pelanggan mengenai gaya rambut yang sesuai. Pelatih juga berpotensi menjadi seorang usahawan dengan kemahiran kreativiti, komunikasi yang baik, kebolehan menggunting dan menggayakan rambut serta pengetahuan produk-produk penjagaan rambut.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11519",
+    "fields": {
+      "course": "Teknologi Kimpalan dan Fabrikasi Logam",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam pengimpalan logam. Mereka boleh melakukan kerja-kerja mengimpal sehingga ke tahap 6G, membuat dan merekacipta pelbagai projek fabrikasi logam dengan menggunakan kelengkapan peralatan kimpalan yang bersesuaian dalam bidang Teknologi Kimpalan & Fabrikasi Logam.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11582",
+    "fields": {
+      "course": "Masakan & Pramusaji",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang kulinari dan pramusaji. Mereka boleh melakukan kerja-kerja asas potongan sayuran,mengenal teknik masakan, mahir dalam penghasilan makanan Timur dan Barat. Pelatih juga di ajar mengenai kaedah pramusaji yang merangkumi banyak negara. Pelatih juga berpotensi menjadi usahawan dan pekerja mahir di bidang perhotelan / food service.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11618",
+    "fields": {
+      "course": "Teknologi Pencetakan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan pengendalian mesin-mesin percetakan juga melakukan kerja-kerja percetakan sebagai juruteknik lithografik dengan menggunakan peralatan serta boleh merancang, mengurus, melaksana proses cetakan yang bersesuaian mengikut teknologi masa kini",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11744",
+    "fields": {
+      "course": "Konfeksioneri dan Bakeri",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus konfeksioneri dan bakeri merupakan kursus latihan kemahiran secara profesional bagi bidang pembuatan produk roti dan berbagai produk konfeksi. Pelatih turut didedahkan dengan latihan secara teori dan amali dalam kerja-kerja penyediaan, pembuatan, pemprosesan, menghias serta pembungkusan produk makanan. Kursus ini membantu bagi mempersiapkan pelatih untuk menjadi pekerja mahir dalam bidang Confectionery and Bakery (CNB) di samping mahir menggunakan peralatan mengikut era teknologi terkini bagi memenuhi keperluan industri, kegiatan ekonomi dan keusahawanan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11810",
+    "fields": {
+      "course": "Spa dan Kesihatan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang spa dan kesihatan dengan pendekatan secara holistic. Mereka boleh melakukan pelbagai perkhidmatan spa holistik yang melibatkan urutan badan, rawatan wajah, dan terapi lain yang bertujuan untuk meningkatkan keseluruhan kesejahteraan pelanggan menggunakan teknik terkini mengikut tata susila protokol rawatan spa. Pelatih juga berpotensi menjadi seorang usahawan berjaya.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-11861",
+    "fields": {
+      "course": "Proses Kimpalan Arka Kepingan Logam",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam pengimpalan logam. Mereka boleh melakukan kerja-kerja mengimpal sehingga ke tahap 6G, membuat dan merekacipta pelbagai projek fabrikasi logam dengan menggunakan kelengkapan peralatan kimpalan yang bersesuaian dalam bidang Teknologi Kimpalan & Fabrikasi Logam.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12038",
+    "fields": {
+      "course": "Masakan dan Pramusaji",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Masakan dan Pramusaji merupakan kursus latihan kemahiran secara profesional dalam bidang masakan, penyediaan makanan, pembuatan kek atau roti yang menonjolkan tatasajian dan kemahiran bagi mengetengahkan makanan dari tahap penyediaan sehingga penghidangan. Pelatih didedahkan dengan kemahiran serta teknik masakan,mahir dalam penghasilan makanan Timur dan Barat. Pelatih juga di ajar mengenai kaedah pramusaji yang merangkumi banyak negara. Pelatih juga berpotensi menjadi usahawan dan pekerja mahir di bidang perhotelan /food service dan seni kulinari yang beretika dan berkebolehan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12059",
+    "fields": {
+      "course": "Senggaraan Kenderaan Komersial",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Senggaraan Kenderaan Komersial adalah program pembelajaran yang menfokuskan penyelenggaraan, pembaikan, dan pemahaman teknologi kendaraan perdagangan. Pelatih akan mendalami kemahiran praktikal dan teori, termasuk sistem enjin, brek, dan elektronik kenderaan komersial. Kursus ini bertujuan melahirkan tenaga kerja mahir untuk menyokong dan memastikan prestasi optimum kenderaan komersial dalam industri logistik dan pengangkutan",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12212",
+    "fields": {
+      "course": "Teknologi Animasi 3D",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan dengan pengetahuan dan kemahiran secara teori dan amali dalam bidang animasi seperti asas lukisan, asas seni reka, pengenalan kepada animasi, asas animasi 3D, pengimejan digital, asas reka bentuk 3D, reka bentuk konsep, reka bentuk Props 3D, reka bentuk karektor 3D, reka bentuk persekitaran 3D, tekstur dan pemetaan imej, teknik render dan pencahayaan, projek portfolio, dan etika dalam media digital.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12326",
+    "fields": {
+      "course": "Jahitan Langsir & Soft Furnishing",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam mengendalikan mesin jahit industri, membuat pelbagai jenis langsir dan membuat kerja-kerja hiasan dalaman Mereka boleh melakukan kerja-kerja melakar fesyen produk hiasan dalaman, mengukur, mendraf pola, memotong fabrik dan menjahit mengikut kehendak pelanggan dan gaya semasa dengan menggunakan peralatan mengikut era teknologi terkini. Pelatih juga berpotensi menjadi usahawan dalam hiasan dalaman.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12509",
+    "fields": {
+      "course": "Teknologi Komposit",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 2,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Komposit adalah program yang dirancang untuk memberikan pelajar pemahaman mendalam tentang bahan komposit dan aplikasinya dalam pelbagai industri. Dengan peningkatan penggunaan bahan komposit dalam bidang kejuruteraan, penerbangan, automotif, dan pembinaan, kursus ini sangat relevan bagi mereka yang berminat untuk meneroka potensi bahan ini. Kursus ini bertujuan untuk melatih pelajar dalam teori dan aplikasi bahan komposit, termasuk pemilihan bahan, proses pembuatan, dan teknik pengujian. Pelajar akan belajar bagaimana bahan komposit digunakan untuk meningkatkan prestasi produk dalam pelbagai aplikasi.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12704",
+    "fields": {
+      "course": "Jahitan Langsir dan Soft Furnishing",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12794",
+    "fields": {
+      "course": "Teknologi Pembuatan Acuan (Tahap 3)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Pembuatan Acuan Tahap 3 merupakan kursus peningkatan kepada Kursus Teknologi Pembuatan Acuan Tahap 2. Di akhir kursus, peserta akan menguasai pengetahuan dan kemahiran dalam merekabentuk produk (lukisan dan perisian kejuruteraan), mengendalikan mesin konvensional (larik, kisar dan canai) dan mesin berteknologi tinggi (CNC), menghasilkan serta membaikpulih acuan tiga plat. Kursus ini turut merangkumi pengetahuan dan kemahiran serta pembentukan sikap profesional dalam aspek penyeliaan.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-12800",
+    "fields": {
+      "course": "Asuhan Awal Kanak-Kanak",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pendidikan",
+      "field": "Pendidikan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Asuhan Awal Kanak - Kanak menawarkan latihan berbentuk pengetahuan dan kemahiran secara profesional dalam bidang pengasuhan dan pendidikan awal kanak-kanak. Di akhir kursus, peserta akan dilengkapi dengan pengetahuan dan kemahiran berkenaan perkembangan holistik, tingkahlaku, kesihatan dan pemakanan kanak - kanak. Peserta juga didedahkan dengan pengetahuan dan kemahiran sebagai pengasuh dan pengusaha pusat jagaan atau taska.",
+      "description_en": "",
+      "field_key": "pendidikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13265",
+    "fields": {
+      "course": "Teknologi Enjin Marin",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Aero & Marin",
+      "field": "Aero & Marin",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Engin Marin membawa pelatih melalui pembelajaran mendalam mengenai penyelenggaraan dan operasi enjin marin. Fokus pada sistem propulsi laut, elektronik maritim, dan keselamatan kapal, kursus ini bertujuan melahirkan juruteknik mahir yang mampu memahami, mendiagnosis, dan membaiki masalah enjin marin serta komponennya",
+      "description_en": "",
+      "field_key": "marin"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13424",
+    "fields": {
+      "course": "Diploma Kompetensi Kimpalan (3 Tahun)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang Diploma Kompetensi Kimpalan, dalam kursus ini pelajar akan mempelajari perkara berkaitan kawalan dan jaminan kualiti, pemeriksaan dan pengujian visual inspector (VI), penyeliaan, latihan loji dan sebagainya. Latihan juga merangkumi kemahiran merancang, menyelia merekabentuk, memeriksa dan menguji kerja‐kerja kimpalan (DT dan NDT) bagi memenuhi keperluan jaminan mutu dan peraturan keselamatan.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13454",
+    "fields": {
+      "course": "Diploma Kompetensi Kimpalan (3 Tahun)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang Diploma Kompetensi Kimpalan, dalam kursus ini pelajar akan mempelajari perkara berkaitan kawalan dan jaminan kualiti, pemeriksaan dan pengujian visual inspector (VI), penyeliaan, latihan loji dan sebagainya. Latihan juga merangkumi kemahiran merancang, menyelia merekabentuk, memeriksa dan menguji kerja‐kerja kimpalan (DT dan NDT) bagi memenuhi keperluan jaminan mutu dan peraturan keselamatan.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13742",
+    "fields": {
+      "course": "Diploma Teknologi Automotif",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direkabentuk bagi melahirkan sumber manusia berpengetahuan dan cekap dalam teknologi automotif yang berkebolehan dalam kemahiran teknikal bagi menyokong jurutera dan profesional lain yang terlibat dalam pembangunan, pembuatan dan ujian operasi, pemeriksaan dan penyelenggaraan sistem automotif. Pelajar didedahkan dengan pengetahuan yang berkaitan, kemahiran praktikal dan teknikal dalam mendiagnosis, membaiki dan menganalisis sistem teknologi automotif. Kualiti kepimpinan yang cekap dan profesionalisme turut ditekankan. Pelajar digalakkan mempunyai sikap untuk mengamalkan pembelajaran sepanjang hayat seiring perubahan teknologi automotif terkini. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13751",
+    "fields": {
+      "course": "Sijil Senibina",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Sijil Senibina di Institut Kemahiran MARA (IKM) merupakan program latihan teknikal berstruktur yang menekankan penguasaan asas seni bina serta aplikasi praktikal dalam industri pembinaan.​ Program ini merangkumi lukisan teknikal, prinsip reka bentuk bangunan, teknologi pembinaan dan penggunaan perisian terkini selaras dengan keperluan industri semasa. ​Kurikulum dirangka bagi melahirkan tenaga kerja separa profesional yang kompeten dalam bidang reka bentuk dan pembinaan bangunan. Skop pengajian meliputi penyediaan lukisan pelan bangunan, lukisan perkhidmatan, lukisan siap bina, lukisan pendawaian elektrik, sistem saluran paip, sistem pembuangan air dan lukisan perspektif. ​Pelajar turut didedahkan kepada pembinaan model bangunan menggunakan kaedah konvensional dan Computer-Aided Design (CAD).",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13775",
+    "fields": {
+      "course": "Diploma Teknologi Automotif Baikpulih dan Kemasan Badan Kenderaan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi baik pulih badan kenderaan yang merangkumi penilaian kerosakan kenderaan bagi tujuan baikpulih serta penukaran alat ganti dan bahan. Pelajar akan menguasai kemahiran untuk melakukan kimpalan gas, mematri, mengetuk, menyimen dan mengecat badan kenderaan. Pelajar juga akan didedahkan dengan kerja-kerja menanggal serta memasang semula kompenen badan kenderaan termasuk sistem pendawaiannya serta asas keusahawanan",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13853",
+    "fields": {
+      "course": "Diploma Pengeluaran Perabot",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-13886",
+    "fields": {
+      "course": "Diploma Pengeluaran Perabot",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi rekabentuk dan pembuatan perabot yang memberi tumpuan terhadap penggunaan perisian CAD yang diaplikasikan kepada rekabentuk perabot kayu dan logam. Graduan akan berkemahiran dalam mengendalikan pelbagai jenis mesin yang digunakan dalam industri pembuatan perabot yang sebenar. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-14066",
+    "fields": {
+      "course": "Mekatronik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Mekatronik menawarkan latihan berasaskan teori dan amali yang merangkumi bidang Elektronik ,Mekanikal serta komputer. Kursus ini melibatkan pembelajaran modul seperti CAD, PLC, Programming dan Pemesinan Konventional",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-14081",
+    "fields": {
+      "course": "Penyeliaan Dandanan Rambut",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih bertanggungjawab untuk pengurusan harian salon, menyusun jadual temujanji, menguruskan inventori, perkhidmatan kecantikan rambut dan menjaga kualiti perkhidmatan. Pelatih boleh memberikan khidmat konsultasi kepada pelanggan mengenai gaya rambut yang sesuai. Pelatih juga berpotensi menjadi seorang usahawan dengan kemahiran teknikal dalam perkhidmatan kecantikan rambut, kreativiti dan kebolehan berkomunikasi.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30702",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Petroleum (Instrumentasi Dan Kawalan Loji)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran yang komprehensif secara teori dan amali dalam bidang teknologi instrumentasi dan kawalan khususnya dalam loji berkaitan minyak dan gas. Pelajar akan didedahkan dengan kaedah troubleshooting, tuning, calibration dan penyelenggaraan terhadap sistem instrumentasi dan kawalan di dalam loji. Bagi memberi lebih penghayatan dan kefahaman, pelajar-pelajar turut didedahkan terhadap proses-proses utama dalam industri minyak dan gas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30705",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Petroleum (Operasi Loji)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran secara teori dan amali untuk mengendalikan operasi unit dan proses di dalam loji supaya berfungsi dengan baik dan selamat. Pelajar akan dilengkapkan dengan pengetahuan dan kemahiran untuk mengesan dan menyelesaikan masalah-masalah yang timbul semasa mengendalikan operasi loji. Pelajar turut didedahkan dengan parameter operasi, Prosedur Operasi Standard (SOP) dan startup/shutdown menggunakan proses simulasi dan loji sebenar.",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30708",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pemasangan Elektrik",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran secara teori dan amali untuk mengendalikan operasi unit dan proses di dalam loji supaya berfungsi dengan baik dan selamat. Pelajar akan dilengkapkan dengan pengetahuan dan kemahiran untuk mengesan dan menyelesaikan masalah-masalah yang timbul semasa mengendalikan operasi loji. Pelajar turut didedahkan dengan parameter operasi, Prosedur Operasi Standard (SOP) dan startup/shutdown menggunakan proses simulasi dan loji sebenar.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30711",
+    "fields": {
+      "course": "Diploma Industri Siapan Logam",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan berasaskan teori dan amali dalam bidang kemasan logam & bukan logam seperti mengilap, menyadur tembaga, nikel, krom, perak dan emas. Pelajar juga didedahkan dengan kebolehan menyedia, menganalisa, merawat bahan kimia saduran serta merawat air kumbahan industri.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30715",
+    "fields": {
+      "course": "Teknologi Elektronik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Elektronik ini memberi latihan kepada para pelatih untuk menjalankan membaikpulih kerosakan, penyelenggaraan dan menguji kefungsian peralatan elektronik, papan litar, sistem elektronik, produk elektronik dan sistem automasi.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30721",
+    "fields": {
+      "course": "Jahitan Pakaian dan Fesyen",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini manawarkan latihan kemahiran berasaskan teori dan amali dalam bidang jahitan pakaian dan fesyen yang merangkumi skop kerja mengukur, mendraf, memotong, menjahit dan menghasilkan pelbagai rekaan pakaian dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30733",
+    "fields": {
+      "course": "Terapi Kecantikan dan Solekan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang terapi kecantikan. Pelatih boleh melakukan perkhidmatan kecantikan seperti rawatan kulit, rawatan muka, kuku, urutan dan solekan dengan menggunakan peralatan mengikut era teknologi terkini. Melakukan penilaian kulit dan memberikan nasihat kepada pelanggan. Pelatih juga berpotensi menjadi seorang usahawan dengan pengetahuan tentang produk kecantikan, kemahiran teknikal dan cara berkomunikasi dengan pelanggan.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30754",
+    "fields": {
+      "course": "Teknologi Motosikal",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan teori dan amali yang komprehensif untuk membekalkan pekerja dengan kemahiran servis motosikal yang tinggi. Pelatih akan dapat melaksanakan tugas-tugas praktikal seperti penjagaan, modifikasi, pengujian, pemasangan dan pemulihan motosikal mengikut standard penilaian yang ditetapkan. Kursus ini juga membina kebolehan pelatih untuk menjadi usahawan teknokrat.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30772",
+    "fields": {
+      "course": "Teknologi Automotif (Tahap 2)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "PROGRAM AKAN MENGHASILKAN GRADUAN YANG AKAN MENJADI :",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30784",
+    "fields": {
+      "course": "Teknologi Automotif (Tahap 2)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Automotif adalah program memberikan pendedahan mendalam kepada pelajar mengenai sistem automotif moden. Fokus pada kemahiran praktikal dan teori, kursus ini melibatkan pembelajaran penyelenggaraan, diagnosis kerosakan, dan teknologi terkini dalam industri automotif. Pelatih akan dipertingkatkan dengan kebolehan untuk menangani cabaran kompleks dalam penyelenggaraan kenderaan dan meningkatkan kecekapan serta menjadikan mereka mahir dalam industri automotif",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30790",
+    "fields": {
+      "course": "Jahitan Pakaian Lelaki",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Selepas mengikuti program ini, para peserta boleh menjadi pekerja mahir dalam bidang kemahiran Jahitan Pakaian Lelaki. Peserta boleh mengukur, mencantum dan menjahit dengan pelbagai teknik jahitan yagng dipelajari serta berpotensi menjadi Usahawan Kemahiran Jahitan Pakaian Lelaki.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30799",
+    "fields": {
+      "course": "Teknologi Bangunan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menyediakan pelatih dengan pengetahuan dan kemahiran dalam bidang Pembinaan yang menjurus kepada Penyelia Binaan Bangunan. Pelatih akan mengikuti kuliah, melaksanakan tugasan, membuat kerja projek, melaksanakan kerja-kerja amali dan menjalani ujian penilaian akhir sesi Sijil Kemahiran Malaysia Tahap 2. Selain dari itu pelatih juga akan didedahkan dengan pelbagai modul asas dalam bidang Teknologi Pembinaan. Secara umumnya, setelah tamat, pelajar mahir untuk menjalankan kerja-kerja berkaitan dengan proses penyeliaan bangunan serta kerja-kerja yang berkaitan dengan penyelenggaraan serta pembinaan bangunan.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30814",
+    "fields": {
+      "course": "Baikpulih dan Mengecat Kenderaan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang membaikpulih badan dan kerja-kerja mengecat kenderaan yang merangkumi kerja-kerja menganalisa, membaikpulih kerosakan serta membuat anggaran kos kerja dengan menggunakan peralatan dan teknologi terkini, kerjasama dengan industri yang diiktiraf serta asas keusahawanan.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30850",
+    "fields": {
+      "course": "Motosikal - Penyelenggraan & Pembaikan Motosikal - Perkhidmatan Pembaikan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan teori dan amali yang komprehensif untuk membekalkan pekerja dengan kemahiran servis motosikal yang tinggi. Pelatih akan dapat melaksanakan tugas-tugas praktikal seperti penjagaan, modifikasi, pengujian, pemasangan dan pemulihan motosikal mengikut standard penilaian yang ditetapkan. Kursus ini juga membina kebolehan pelatih untuk menjadi usahawan teknokrat.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30871",
+    "fields": {
+      "course": "Pengujian, Pengesanan Kerosakan Dan Penyelenggaraan Komponen Dan Papan Elektronik Penyeliaan Dan Pengesanan Kerosakan Komponen Dan Papan Elektronik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Elektronik ini memberi latihan kepada para pelatih untuk menjalankan membaikpulih kerosakan, penyelenggaraan dan menguji kefungsian peralatan elektronik, papan litar, sistem elektronik, produk elektronik dan sistem automasi.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30934",
+    "fields": {
+      "course": "Teknologi Penyejukbekuan Dan Penyaman Udara (1 Fasa)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini mendedahkan cara pemasangan dan penyelenggaraan penyejukbekuan dan penyaman udara dan selain itu pelajar didedahkan dengan cara penyeliaan yang membolehkan pemegang sijil ini memegang jawatan penyelia dalam bidang kemahiran penyejukbekuan dan penyaman udara.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-30949",
+    "fields": {
+      "course": "Jahitan Pakaian & Fesyen",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini manawarkan latihan kemahiran berasaskan teori dan amali dalam bidang jahitan pakaian dan fesyen yang merangkumi skop kerja mengukur, mendraf, memotong, menjahit dan menghasilkan pelbagai rekaan pakaian dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31015",
+    "fields": {
+      "course": "Terapi Estetik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang terapi estetik. Mereka boleh melakukan rawatan badan secara manual atau menggunakan mesin mengikut era teknologi terkini serta mahir dalam menyelia operasi sesebuah premis kecantikan. Pelatih juga berpotensi menjadi seorang usahawan.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31036",
+    "fields": {
+      "course": "Rekabentuk Grafik dan Pengiklanan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan dalam bidang rekabentuk grafik melalui pemahaman dalam proses percetakan digital dan manual selain kursus-kursus teras pelbagai disiplin yang menjadi asas kukuh dalam bidang rekabentuk grafik seperti grafik komputer, fotografi digital, pengiklanan, teknologi percetakan dan tipografi.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31111",
+    "fields": {
+      "course": "Teknologi Automotif (Tahap 3)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Automotif Tahap 3 adalah peringkat lanjutan yang menekankan kecekapan tinggi dalam penyelenggaraan kenderaan moden. Pelatih akan diperdalamkan dalam pengetahuan teori dan kemahiran praktikal, termasuk sistem elektronik dan teknologi canggih. Kursus ini dirancang untuk melatih pelatih automotif yang berkemahiran tinggi dan dapat menangani cabaran kompleks dalam industri automotif.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31123",
+    "fields": {
+      "course": "Jahitan Pakaian dan Fesyen",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini manawarkan latihan kemahiran berasaskan teori dan amali dalam bidang jahitan pakaian dan fesyen yang merangkumi skop kerja mengukur, mendraf, memotong, menjahit dan menghasilkan pelbagai rekaan pakaian dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31183",
+    "fields": {
+      "course": "Rekaan Pakaian dan Fesyen",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang rekaan pakaian dan fesyen yang merangkumi skop kerja rekaan dan lakaran secara digital, menjahit pelbagai jenis fesyen baju pengantin tradisional dan moden serta kerja-kerja penyeliaan dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31192",
+    "fields": {
+      "course": "SPA dan Kesihatan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang spa dan kesihatan dengan pendekatan secara holistic. Mereka boleh melakukan pelbagai perkhidmatan spa holistik yang melibatkan urutan badan, rawatan wajah, dan terapi lain yang bertujuan untuk meningkatkan keseluruhan kesejahteraan pelanggan menggunakan teknik terkini mengikut tata susila protokol rawatan spa. Pelatih juga berpotensi menjadi seorang usahawan berjaya.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-31213",
+    "fields": {
+      "course": "Teknologi Pembuatan Acuan (Tahap 2)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Pembuatan Acuan Tahap 2 merupakan kursus asas yang merangkumi pengetahuan dan kemahiran serta pembentukan sikap profesional yang diperlukan oleh tenaga mahir dalam sektor pembuatan. Di akhir kursus, peserta akan menguasai pengetahuan dan kemahiran dalam merekabentuk produk (lukisan dan perisian kejuruteraan), mengendalikan mesin konvensional (larik, kisar dan canai) dan mesin berteknologi tinggi (CNC), menghasilkan dan membaikpulih acuan dua plat.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33605",
+    "fields": {
+      "course": "Motosikal - Perkhidmatan Pembaikan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan teori dan amali yang komprehensif untuk membekalkan pekerja dengan kemahiran servis motosikal yang tinggi. Pelatih akan dapat melaksanakan tugas-tugas praktikal seperti penjagaan, modifikasi, pengujian, pemasangan dan pemulihan motosikal mengikut standard penilaian yang ditetapkan. Kursus ini juga membina kebolehan pelatih untuk menjadi usahawan teknokrat.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33632",
+    "fields": {
+      "course": "Teknologi Penyejukbekuan dan Penyamanan Udara (1 Fasa)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini mendedahkan cara pemasangan dan penyelenggaraan penyejukbekuan dan penyaman udara dan selain itu pelajar didedahkan dengan cara penyeliaan yang membolehkan pemegang sijil ini memegang jawatan penyelia dalam bidang kemahiran penyejukbekuan dan penyaman udara.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33719",
+    "fields": {
+      "course": "Teknologi Baikpulih dan Mengecat Kenderaan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang membaikpulih badan dan kerja-kerja mengecat kenderaan yang merangkumi kerja-kerja menganalisa, membaikpulih kerosakan serta membuat anggaran kos kerja dengan menggunakan peralatan dan teknologi terkini, kerjasama dengan industri yang diiktiraf serta asas keusahawanan.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33794",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Pembuatan Pintar",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Kejuruteraan Pembuatan Pintar merupakan program diploma tiga (3) tahun yang melahirkan graduan pakar Industri 4.0 dalam bidang pembuatan. Program Pengajian Diploma Teknologi Kejuruteraan Pembuatan Pintar menyediakan kemahiran kepada penggunaan teknologi digital yang menekankan aspek penumpuan teknologi operasi proses pembuatan dan sistem digital. Selain itu, konsep teras Industri 4.0 yang akan dipelajari adalah seperti Additive Manufacturing, Industry IOT, Extended Reality dan robotic.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-33814",
+    "fields": {
+      "course": "Perkhidmatan Terapi Kecantikan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang terapi kecantikan. Pelatih boleh melakukan perkhidmatan kecantikan seperti rawatan kulit, rawatan muka, kuku, urutan dan solekan dengan menggunakan peralatan mengikut era teknologi terkini. Melakukan penilaian kulit dan memberikan nasihat kepada pelanggan. Pelatih juga berpotensi menjadi seorang usahawan dengan pengetahuan tentang produk kecantikan, kemahiran teknikal dan cara berkomunikasi dengan pelanggan.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34179",
+    "fields": {
+      "course": "Produksi Penyiaran",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan tentang diperingkat asas dan ia mengenai kaedah dan proses pengurusan produksi penyiaran. pelatih akan didedahkan dengan prinsip-prinsip pengurusan produksi hasilan sesuatu produk penyiaran dan multimedia di bahagian pengurusan sumber insan / krew atau kewangan dan pengurusan yang berkaitan pra hingga pasca penerbitan.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34196",
+    "fields": {
+      "course": "Building Electrical Maintenance (BEM) (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Building Electrical Maintenance (BEM) adalah satu program komprehensif yang direka untuk memberi kefahaman dan kemahiran praktikal dalam penyelenggaraan sistem elektrik bangunan. Kursus ini bertujuan untuk melatih individu dalam mengenal pasti, menganalisis, dan menyelesaikan masalah elektrik yang lazim berlaku di dalam bangunan, serta memastikan sistem elektrik beroperasi dengan selamat dan efisien.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34235",
+    "fields": {
+      "course": "Pengkhususan Prestasi Enjin",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Pengkhususan Prestasi Enjin adalah satu program pendidikan atau latihan yang direka khusus untuk menyediakan pengetahuan dan kemahiran dalam mempertingkatkan prestasi enjin kenderaan, sama ada enjin pembakaran dalaman (ICE), enjin motorsikal, atau enjin dalam sektor automotif secara umum. Kursus ini memberi penekanan kepada teknik-teknik moden dalam pengubahsuaian enjin, pembaikan, serta pengoptimuman prestasi untuk mencapai kuasa dan kecekapan yang lebih tinggi.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34274",
+    "fields": {
+      "course": "Cake Artisan (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Cake Artisan adalah program yang memberi fokus kepada seni pembuatan kek dengan teknik dan gaya yang unik, menggunakan bahan-bahan berkualiti tinggi untuk menghasilkan kek yang bukan sahaja enak tetapi juga menarik dari segi penampilan. Dalam kursus ini, peserta akan mempelajari seni dan kemahiran untuk menghasilkan kek artisanal yang menggambarkan kreativiti dan keaslian dalam reka bentuk dan rasa.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34277",
+    "fields": {
+      "course": "Teknologi Kimpalan Lanjutan Arka FCAW & SMAW (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Kimpalan Lanjutan Arka FCAW & SMAW memberi pengetahuan dan kemahiran mendalam dalam dua teknik kimpalan utama, iaitu Flux-Cored Arc Welding (FCAW) dan Shielded Metal Arc Welding (SMAW). Kedua-dua teknik ini adalah kaedah kimpalan yang sering digunakan dalam industri pembuatan, pembinaan, dan penyelenggaraan. Dengan kemahiran ini, peserta kursus akan mampu menjalankan kerja-kerja kimpalan yang lebih kompleks dan menuntut dengan hasil yang lebih berkualiti tinggi, terutamanya dalam aplikasi industri berat dan pembinaan.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34294",
+    "fields": {
+      "course": "Family Care Services",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pendidikan",
+      "field": "Pendidikan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Family Care Services menawarkan latihan berbentuk pengetahuan dan kemahiran secara profesional dalam bidang pengasuhan dan pendidikan awal kanak-kanak serta penjagaan warga emas. Di akhir kursus, peserta akan dilengkapi dengan ilmu perkembangan holistik dan asas penjagaan kanak - kanak normal/berkeperluan khas. Pembelajaran juga merangkumi pengetahuan fisiologi dan psikologi serta kemahiran penjagaan warga emas/geriatrik.",
+      "description_en": "",
+      "field_key": "pendidikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34418",
+    "fields": {
+      "course": "Sulaman Berkomputer",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus SSK0301 Sulaman Berkomputer adalah program latihan yang direka untuk memberikan peserta pengetahuan dan kemahiran dalam seni sulaman menggunakan teknologi berkomputer. Kursus ini menggabungkan asas-asas sulaman tradisional dengan kemajuan teknologi, membolehkan peserta menghasilkan rekaan sulaman yang rumit dan berkualiti tinggi menggunakan mesin sulaman berkomputer.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34439",
+    "fields": {
+      "course": "Bread Artisan (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Bread Artisan adalah program latihan yang memberi tumpuan kepada seni pembuatan roti secara tradisional dan moden, dengan penekanan pada penggunaan teknik artisanal untuk menghasilkan roti berkualiti tinggi. Dalam kursus ini, peserta akan mempelajari pelbagai aspek pembuatan roti, dari pemilihan bahan-bahan asas hingga teknik fermentasi, pembentukan, dan pembakaran roti. Kursus ini direka untuk mereka yang berminat untuk mendalami kemahiran pembuatan roti dan berhasrat untuk bekerja sebagai pembuat roti profesional atau memulakan perniagaan roti mereka sendiri.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34442",
+    "fields": {
+      "course": "Barista dan Beverages (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Barista dan Beverages adalah program latihan yang memberi tumpuan kepada seni dan sains dalam penyediaan kopi dan minuman berasaskan kopi, serta minuman lain yang berkaitan. Kursus ini direka untuk mereka yang ingin menguasai kemahiran dalam menyeduh, menghidang, dan mencipta minuman yang berkualiti tinggi, serta memahami aspek teknikal dan kreatif dalam dunia kopi dan minuman.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34452",
+    "fields": {
+      "course": "Teknologi Kimpalan Arka GTAW (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Teknologi kimpalan arka gas tungsten (GTAW), yang juga dikenali sebagai kimpalan TIG (Tungsten Inert Gas), adalah salah satu kaedah kimpalan yang paling canggih dan bersih. Ia digunakan untuk menghasilkan kimpalan yang berkualiti tinggi dengan kawalan yang ketat",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34455",
+    "fields": {
+      "course": "Building Electrical Maintenance (BEM)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Building Electrical Maintenance (BEM) merujuk kepada program latihan yang memberi fokus kepada penyelenggaraan sistem elektrik di dalam bangunan. Kursus ini biasanya dirancang untuk menyediakan peserta dengan pengetahuan dan kemahiran yang diperlukan untuk menjaga, membaiki, dan menguruskan sistem elektrik dalam pelbagai jenis bangunan seperti pejabat, kediaman, dan bangunan komersial.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34460",
+    "fields": {
+      "course": "Advance Motorcycle Engine Management System",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Advance Motorcycle Engine Management System adalah program latihan yang dirancang untuk memberikan pengetahuan dan kemahiran mendalam mengenai sistem pengurusan enjin motosikal moden",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34467",
+    "fields": {
+      "course": "Custom Painting (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Custom Painting adalah program yang dirancang untuk mengajarkan teknik seni lukisan khas pada pelbagai permukaan, termasuk motosikal, kereta, perabot, dan objek lain. Dalam kursus ini, peserta akan mempelajari asas-asas pemilihan warna, penggunaan alat seperti airbrush, serta teknik seperti gradient, efek krom, api realistik, dan banyak lagi.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34476",
+    "fields": {
+      "course": "Beverage Management (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Beverage Management adalah program latihan yang memberi pengetahuan dan kemahiran dalam menguruskan operasi dan penyediaan minuman dalam pelbagai jenis perniagaan, seperti restoran, bar, hotel, dan pusat acara. Kursus ini merangkumi pelbagai aspek dari pengurusan inventori minuman hingga perkhidmatan pelanggan, serta pemahaman tentang jenis-jenis minuman dan teknik penyediaan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34593",
+    "fields": {
+      "course": "Operasi Teknikal Pakaian Wanita",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang rekaan pakaian dan fesyen yang merangkumi skop kerja rekaan dan lakaran secara digital, menjahit pelbagai jenis fesyen baju pengantin tradisional dan moden serta kerja-kerja penyeliaan dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34668",
+    "fields": {
+      "course": "Pemasangan dan Penyelenggaraan Satu Fasa Penyamanan Udara, Pengudaraan, Pemanasan (HVAC)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini mendedahkan cara pemasangan dan penyelenggaraan penyejukbekuan dan penyaman udara dan selain itu pelajar didedahkan dengan cara penyeliaan yang membolehkan pemegang sijil ini memegang jawatan penyelia dalam bidang kemahiran penyejukbekuan dan penyaman udara.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34757",
+    "fields": {
+      "course": "Pembuatan Pakaian Wanita",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang jahitan pakaian dan fesyen yang merangkumi skop kerja mengukur, mendraf, memotong, menjahit dan menghasilkan pelbagai rekaan pakaian dengan menggunapakai peralatan dan teknologi terkini.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-34769",
+    "fields": {
+      "course": "Terapi Kecantikan dan Solekan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Pelatih boleh menjadi pekerja mahir dalam bidang terapi kecantikan. Pelatih boleh melakukan perkhidmatan kecantikan seperti rawatan kulit, rawatan muka, kuku, urutan dan solekan dengan menggunakan peralatan mengikut era teknologi terkini. Melakukan penilaian kulit dan memberikan nasihat kepada pelanggan. Pelatih juga berpotensi menjadi seorang usahawan dengan pengetahuan tentang produk kecantikan, kemahiran teknikal dan cara berkomunikasi dengan pelanggan.",
+      "description_en": "",
+      "field_key": "kecantikan"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-35423",
+    "fields": {
+      "course": "Diploma Teknologi Mekatronik (Sistem Kawalan)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Mekatronik (Sistem Kawalan) memberi tumpuan kepada beberapa disiplin kejuruteraan iaitu elektrik dan elektronik, mekanikal serta kawalan. Program ini bertujuan untuk melahirkan graduan yang kompeten dalam sistem kawalan, menyelenggara dan menyelesaikan masalah peralatan sistem kawalan, sistem robotik dan automasi serta produ",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-35439",
+    "fields": {
+      "course": "Penyelenggaraan Jentera Pertanian",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Pertanian",
+      "field": "Pertanian",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Penyelenggaraan Jentera Pertanian menyediakan pelatih dengan pengetahuan mendalam mengenai penyelenggaraan dan pembaikan alat pertanian. Peserta akan mempelajari kemahiran praktikal dalam pemeliharaan jentera seperti traktor dan peralatan pertanian lain, serta konsep teori yang berkaitan. Kursus ini bertujuan melahirkan tenaga kerja yang terlatih untuk menyokong sektor pertanian dengan kecekapan dan kebolehan dalam menangani masalah teknikal.",
+      "description_en": "",
+      "field_key": "pertanian"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-35442",
+    "fields": {
+      "course": "Diploma Teknologi Automotif Jentera Berat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direkabentuk bagi melahirkan sumber manusia berpengetahuan dan cekap dalam teknologi Automotif Jentera Berat yang berkebolehan dalam kemahiran teknikal bagi menyokong jurutera dan profesional lain yang terlibat dalam pembangunan, pembuatan dan ujian operasi, pemeriksaan dan penyelenggaraan sistem Automotif Jentera Berat. Pelajar didedahkan dengan pengetahuan yang berkaitan, kemahiran praktikal dan teknikal dalam mendiagnosis, membaiki dan menganalisis sistem Jentera Berat. Kualiti kepimpinan yang cekap dan profesionalisme turut ditekankan sepanjang tempoh pengajian. Pelajar akan diterapkan dengan pembelajaran sepanjang hayat seiring perubahan teknologi automotif terkini. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-35496",
+    "fields": {
+      "course": "Penjaga Jentera Elektrik (A4)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Penjaga Jentera Elektrik A4 ini merupakan kursus latihan kemahiran secara profesional dalam bidang Penjaga Jentera Elektrik. Peserta boleh melakukan kerja-kerja prosedur pensuisan synchronizing panel dan senggaraan generator yang terdapat di kilang atau bangunan. Peserta juga berpotensi untuk bekerja di dalam bidang industri, building maintenance, oil & gas dan menjadi Kontraktor Elektrik / Usahawan yang berjaya. Sesi pengambilan dan kemasukan untuk kursus Penjaga Jentera Elektrik A4 (1 tahun) setiap bulan Januari.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-37014",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Gas",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Penerangan Program",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-37017",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Penyamanan Udara dan Penyejukan",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menyediakan pelajar dengan kebolehan praktikal serta teori dalam bidang teknologi kejuruteraan penyaman udara dan penyejukan. Sepanjang 36 bulan, pelajar perlu menjalani latihan dalam bidang penyaman udara dan penyejukan meliputi rekabentuk sistem, pemasangan, penyelenggaraan, pemasangan elektrik dan pengurusan projek. Program Persijilan Juruteknik Servis(CSTP) yang diiktiraf oleh Jabatan Alam Sekitar(JAS) turut akan disediakan kepada pelajar sebagai persijilan professional tambahan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-37053",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Elektrik (Domestik dan Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan Diploma Teknologi Kejuruteraan MARA dan Perakuan Kekompetenan sebagai Pendawai bertauliah. Program ini menekankan pengetahuan teknikal dan latihan kemahiran kepada pelajar dalam bidang perkhidmatan penyelenggaraan elektrik termasuk pendawaian elektrik, sistem pencegahan kebakaran dan keselamatan bangunan, sistem perkhidmatan serta sistem automasi bangunan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-37779",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Mekatronik Industri",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Kejuruteraan Mekatronik Industri",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43201",
+    "fields": {
+      "course": "Elektrikal Automotif (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi latihan dan pengetahuan tentang sistem elektrik kenderaan, seperti kereta dan motosikal. Ia merangkumi pembelajaran teori, latihan praktikal, dan kemahiran menyelesaikan masalah sistem elektrik dalam automotif.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43207",
+    "fields": {
+      "course": "Electric Vehicles (EV) (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Kenderaan Elektrik memberikan pendedahan kepada pelajar mengenai teknologi kenderaan masa hadapan yang semakin berkembang pesat di peringkat global. Kenderaan elektrik (EV) merupakan alternatif yang lebih bersih dan cekap tenaga berbanding kenderaan berasaskan bahan api fosil, sejajar dengan usaha ke arah kelestarian alam sekitar.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43210",
+    "fields": {
+      "course": "Sistem Pengurusan Enjin Automotif (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Sistem Pengurusan Enjin Automotif memperkenalkan pelajar kepada teknologi moden dalam kawalan dan pengurusan enjin kenderaan, yang kini semakin bergantung kepada sistem elektronik dan komputer bagi menjamin prestasi, kecekapan bahan api, dan kawalan emisi.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43227",
+    "fields": {
+      "course": "Kursus Patchwork (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Patchwork adalah seni menyatukan potongan-potongan kain kecil menjadi satu kesatuan yang indah dan fungsional. Dengan teknik ini, Anda bisa membuat berbagai produk menarik seperti sarung bantal, selimut, tas, hingga dekorasi rumah.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-43229",
+    "fields": {
+      "course": "Kursus Pembuatan Jaket [PENGKHUSUSAN]",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Jaket bukan hanya pelindung tubuh dari cuaca, tetapi juga bagian penting dari fashion dan identitas personal. Dalam kursus ini, Anda akan mempelajari berbagai teknik dasar hingga lanjutan dalam pembuatan jaket, termasuk pemilihan bahan, pembuatan pola (pattern), teknik menjahit, serta penyelesaian akhir (finishing).",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-44658",
+    "fields": {
+      "course": "Konfeksionari dan Bakeri",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus konfeksioneri dan bakeri merupakan kursus latihan kemahiran secara profesional bagi bidang pembuatan produk roti dan berbagai produk konfeksi. Pelatih turut didedahkan dengan latihan secara teori dan amali dalam kerja-kerja penyediaan, pembuatan, pemprosesan, menghias serta pembungkusan produk makanan. Kursus ini membantu bagi mempersiapkan pelatih untuk menjadi pekerja mahir dalam bidang Confectionery and Bakery (CNB) di samping mahir menggunakan peralatan mengikut era teknologi terkini bagi memenuhi keperluan industri, kegiatan ekonomi dan keusahawanan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-44664",
+    "fields": {
+      "course": "Sistem Rangkaian Komputer",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program latihan ini adalah bertujuan melahirkan tenaga kerja yang terlatih dalam bidang sistem rangkaian yang merangkumi kerja-kerja memasang sistem komputer, membaikpulih sistem komputer, menyelenggara rangkaian komputer, Memasang, menyelenggara peralatan dan perisian Server, selain itu ianya bertujuan membentuk usahawan teknologi, yang seiring dengan Revolusi Industri 4.0 (IR4.0) Program ini juga merangkumi pengajian 20% teori dan 80% Amali.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45361",
+    "fields": {
+      "course": "Electric Vehicles (EV) Refinishing (EVRE) - (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Electric Vehicles (EV) Refinishing (EVRE) bertujuan untuk melatih individu dalam teknik pembaikan dan penyempurnaan kenderaan elektrik. Ia merangkumi aspek seperti pemulihan cat, pembaikan badan kenderaan, serta pemahaman tentang teknologi EV yang semakin berkembang",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45703",
+    "fields": {
+      "course": "Diploma Kompetensi Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan oleh MARA Diploma Kompetensi Elektrik dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik (Sistem Voltan Rendah Tanpa Stesen Jana kuasa). Pengetahuan dan latihan yang dipelajari meliputi lukisan kejuruteraan elektrik secara manual dan berkomputer(AutoCAD), kerja-kerja amali gegas dan pendawaian elektrik serta pepasangan elektrik satu dan tiga fasa, prinsip operasi dan membaik pulih litar-litar elektrik samada litar analisis mahupun litar digital, memahami perjalanan, penghantaran dan pengagihan tenaga elektrik, konsep pengubah dan penggunaan komersial motor elektrik serta memahami dan berupaya melakukan kerja-kerja elektrik yang melibatkan papan suis utama, kabel bawah tanah dan talian atas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45850",
+    "fields": {
+      "course": "Diploma Rekabentuk Pengiklanan Digital",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45856",
+    "fields": {
+      "course": "Diploma Teknologi Lukisan Rekabentuk Mekanikal",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Lukisan Rekabentuk Mekanikal adalah program khusus yang memberi tumpuan kepada menyediakan pelajar dengan pengetahuan dan kemahiran yang diperlukan untuk menggunakan perisian reka bentuk bantuan komputer dalam aplikasi kejuruteraan mekanikal. Program ini biasanya menggabungkan pengetahuan teori dengan latihan amali untuk menyediakan pelajar untuk kerjaya dalam bidang penggubalan, reka bentuk, dan kejuruteraan mekanikal. Berikut adalah garis besar tentang Diploma Teknologi Lukisan Rekabentuk Mekanikal adalah program khusus yang memberi tumpuan kepada menyediakan pelajar dengan kemahiran dan pengetahuan yang diperlukan untuk menggunakan perisian reka bentuk bantuan komputer (CAD) untuk aplikasi kejuruteraan mekanikal. Program diploma ini menggabungkan konsep teori dengan latihan praktikal, membolehkan pelajar menjadi mahir dalam pelbagai aspek reka bentuk mekanikal dalam menggunakan perisian Computer-Aided Design (CAD).",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-45883",
+    "fields": {
+      "course": "Sistem Transmisi Automatik lanjutan (Pengkhususan)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Sistem transmisi automatik lanjutan merupakan perkembangan daripada sistem transmisi automatik konvensional yang digunakan dalam kenderaan moden masa kini. Tujuan utama sistem ini ialah untuk meningkatkan kecekapan penghantaran kuasa dari enjin ke roda pemacu dengan kawalan yang lebih tepat, penjimatan bahan api yang lebih baik, serta memberikan pengalaman pemanduan yang lebih lancar dan selesa.",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46147",
+    "fields": {
+      "course": "Teknologi Fotografi",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan kepada pelatih tentang bidang fotografi dalam pendidikan bermula dari sejarah perkembangan serta kepentingannya. Aspek-aspek teori dan praktikal termasuk teknik-teknik mengambil gambar foto serta penghasilan pelbagai imej juga diberi penekanan. pelatih juga akan diberi peluang mengendalikan pelbagai peralatan fotografi digital, mengadakan pameran dan persembahan. Selain itu, pelatih juga akan dilatih tentang pengawasan, pentadbiran dan pengurusan mini studio, makmal serta kelab fotografi. Produk produk yang dihasilkan dapat membantu meningkatkan kualiti pengajaran dan pembelajaran.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46162",
+    "fields": {
+      "course": "Penyeliaan dan Pengesanan Kerosakan Komponen dan Papan Elektronik",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 2,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Elektronik ini memberi latihan kepada para pelatih untuk menjalankan membaikpulih kerosakan, penyelenggaraan dan menguji kefungsian peralatan elektronik, papan litar, sistem elektronik, produk elektronik dan sistem automasi.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46165",
+    "fields": {
+      "course": "Operasi Sistem Komputer",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Sistem Komputer adalah program latihan yang memberikan pelatih pengetahuan dan kemahiran dalam perkembangan teknologi terkini yang berkaitan dengan pembangunan, rekabentuk, dan pengurusan sistem dan rangkaian komputer. Kursus ini juga melibatkan penggunaan komputer dalam operasi perniagaan, telekomunikasi, pemprosesan imej, pembangunan perisian komputer, serta kemahiran penyelenggaraan dan pembaikan sistem komputer.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46177",
+    "fields": {
+      "course": "Penyediaan & Pembuatan Makanan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Hospitaliti & Gaya Hidup",
+      "field": "Hospitaliti & Gaya Hidup",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus masakan dan pramusaji merupakan kursus latihan kemahiran secara profesional dalam bidang masakan, penyediaan makanan, pembuatan kek atau roti yang menonjolkan tatasajian dan kemahiran bagi mengetengahkan makanan dari tahap penyediaan sehingga penghidangan. Pelatih didedahkan dengan kemahiran serta teknik masakan,mahir dalam penghasilan makanan Timur dan Barat. Pelatih juga di ajar mengenai kaedah pramusaji yang merangkumi banyak negara. Pelatih juga berpotensi menjadi usahawan dan pekerja mahir di bidang perhotelan /food service dan seni kulinari yang beretika dan berkebolehan.",
+      "description_en": "",
+      "field_key": "kulinari"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46192",
+    "fields": {
+      "course": "Baikpulih Telefon Pintar",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Baikpulih Telefon Pintar menawarkan latihan berasaskan teori dan amali yang merangkumi membaikpulih komponen telefon bimbit, membaikpulih perkakasan telefon bimbit dan membaikpulih perisian telefon bimbit.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46195",
+    "fields": {
+      "course": "Teknologi Perabot",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan tentang teknik dan pertukangan perabot rumah dan pejabat seperti kerusi, kabinet, perabot taman. Pelatih akan diajar melakukan kerja kerja mereka bentuk, membuat perobot dan membaikpulih perabot.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-46201",
+    "fields": {
+      "course": "Operasi Pembuatan Perabot",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan tentang teknik dan pertukangan perabot rumah dan pejabat seperti kerusi, kabinet, perabot taman. Pelatih akan diajar melakukan kerja kerja mereka bentuk, membuat perobot dan membaikpulih perabot.",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-47609",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Mekanikal (Lukisan Rekabentuk)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi kejuruteraan mekanikal (rekabentuk) yang merangkumi teknik asas lukisan teknik, geometri dan kejuruteraan mekanikal menggunakan kaedah konvensional serta perisian komputer. Graduan turut akan berkemahiran untuk menyediakan lukisan-lukisan teknikal standard seperti lukisan mesin dan komponen, lukisan perkhidmatan mekanikal dan elektrik serta lukisan asas perpaipan. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48155",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Penyamanan Udara dan Penyejukan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi kejuruteraan penyamanan udara dan penyejukan yang merangkumi kemahiran memasang, menyelenggara dan membaik pulih pelbagai jenis penghawa dingin dan sistem penyejukan. Program Persijilan Juruteknik Servis (CSTP) yang diiktiraf oleh Jabatan Alam Sekitar (JAS) turut akan disediakan kepada pelajar sebagai persijilan professional tambahan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48164",
+    "fields": {
+      "course": "Diploma Kompetensi Elektrik ( Domestik & Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Diploma Kompetensi Elektrik (Domestik & Industri) direka bagi melahirkan tenaga kerja separa profesional yang berkemahiran tinggi dalam bidang pemasangan, penyelenggaraan dan pengujian sistem elektrik bagi sektor domestik dan industri. Program ini menekankan gabungan pengetahuan teori, kemahiran amali serta pematuhan kepada piawaian keselamatan dan peraturan Suruhanjaya Tenaga (ST).",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48170",
+    "fields": {
+      "course": "Diploma Teknologi Marin",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Aero & Marin",
+      "field": "Aero & Marin",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali yang merangkumi kerja-kerja penyelenggaraan dan baik pulih enjin jentera marin. Antara skop latihan adalah merombak rawat enjin petrol dan diesel, membaiki sistem transmission, elektrik & elektronik serta sistem penyejuk bekuan dan penyaman udara selain kerja-kerja bengkel seperti mengikir, mencanai, memotong, mematri, membenang dan mengimpal. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian.",
+      "description_en": "",
+      "field_key": "marin"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48191",
+    "fields": {
+      "course": "Sijil Teknologi Baikpulih Badan Kenderaan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi baik pulih badan kenderaan yang merangkumi penilaian kerosakan kenderaan bagi tujuan baikpulih serta penukaran alat ganti dan bahan. Pelajar akan menguasai kemahiran untuk melakukan kimpalan gas, mematri, mengetuk, menyimen dan mengecat badan kenderaan. Pelajar juga akan didedahkan dengan kerja-kerja menanggal serta memasang semula kompenen badan kenderaan termasuk sistem pendawaiannya serta asas keusahawanan",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48197",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Pembuatan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi kejuruteraan pembuatan yang merangkumi kerja-kerja pembuatan logam dengan menggunakan mesin konvensional (mesin melarik, mengisar, mencanai dan membentuk) serta mesin berkomputer (Computer Numerical Control (CNC) dan Electric Discharge Machine (EDM)). Graduan turut akan berkemahiran untuk melakukan kerja-kerja penyelenggaraan ke atas peralatan dan mesin-mesin pembuatan logam di samping mengembangkan kreativiti dengan penggunaan perisian CAD/CAM",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48200",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Mekanik Industri",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi kejuruteraan mekanik industri yang merangkumi kerja-kerja menggegas, mengimpal, mencanai, membaik pulih serta merombak rawat mesin-mesin industri dan kompenennya menerusi kaedah konvensional dan Computer Numerical Control (CNC). Graduan juga akan berkemahiran untuk melakukan kerja-kerja asas elektrik dan elektronik, pemasangan dan penyelenggaraan sistem kawalan pneumatik & hidraulik di samping asas teknologi pengeluaran.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48203",
+    "fields": {
+      "course": "Diploma Kompetensi Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan Diploma Teknologi Kejuruteraan MARA dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik(Sistem Voltan Rendah Tanpa Stesen Janakuasa). Pengetahuan dan latihan yang dipelajari meliputi lukisan kejuruteraan elektrik secara manual dan berkomputer(AutoCAD), kerja-kerja amali gegas dan pendawaian elektrik serta pepasangan elektik satu dan tiga fasa, prinsip operasi dan membaikpulih litar-litar elektrik samada litar analisis mahupun litar digital, memahami perjalanan, penghantaran dan pengagihan tenaga elektrik, konsep pengubah dan penggunaan komersial motor elektrik serta memahami dan berupaya melakukan kerja-kerja elektrik yang melibatkan papan suis utama, kabel bawah tanah dan talian atas.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48215",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Marin",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Aero & Marin",
+      "field": "Aero & Marin",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali yang merangkumi kerja-kerja penyelenggaraan dan baik pulih enjin jentera marin. Antara skop latihan adalah merombak rawat enjin petrol dan diesel, membaiki sistem transmission, elektrik & elektronik serta sistem penyejuk bekuan dan penyaman udara selain kerja-kerja bengkel seperti mengikir, mencanai, memotong, mematri, membenang dan mengimpal. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian",
+      "description_en": "",
+      "field_key": "marin"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48227",
+    "fields": {
+      "course": "Diploma Teknologi Pembaikan Struktur Pesawat",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Aero & Marin",
+      "field": "Aero & Marin",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pengetahuan dan kemahiran dalam bidang pembaikan serta penyelenggaraan struktur pesawat mengikut piawaian industri penerbangan. Pelajar akan didedahkan kepada teknologi bahan logam, komposit, kimpalan, dan penggunaan peralatan khusus dalam kerja pembaikan struktur pesawat.",
+      "description_en": "",
+      "field_key": "aero"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48236",
+    "fields": {
+      "course": "Pengurusan Rekabentuk, Pemasangan & Penyelenggaraan HVAC",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menyediakan pelajar dengan kebolehan praktikal serta teori dalam bidang teknologi kejuruteraan penyaman udara dan penyejukan. Sepanjang 36 bulan, pelajar perlu menjalani latihan dalam bidang penyaman udara dan penyejukan meliputi rekabentuk sistem, pemasangan, penyelenggaraan, pemasangan elektrik dan pengurusan projek. Program Persijilan Juruteknik Servis(CSTP) yang diiktiraf oleh Jabatan Alam Sekitar(JAS) turut akan disediakan kepada pelajar sebagai persijilan professional tambahan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48239",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Bangunan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi kejuruteraan bangunan yang meliputi kerja-kerja menerap bata dan blok, konkrit dan ornamental, melepa (plastering), memapak (paving), memasang jubin (lantai dan dinding), membuat penganggaran, interpretasi plan serta pengurusan kontrak bangunan. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48242",
+    "fields": {
+      "course": "Diploma Kompetensi Elektrik (Domestik dan Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini telah diiktiraf oleh Suruhanjaya Tenaga. Pelajar yang tamat latihan dengan jayanya akan dianugerahkan Diploma Kompetensi Elektrik(Pendawai PW4) dan layak untuk menduduki peperiksaan Kekompetenan Pendawai Tiga Fasa (PW3) atau Pendawai Tiga Fasa dengan Pengendosan Pengujian(PW4) oleh Suruhanjaya Tenaga. Program ini menawarkan pembelajaran dan latihan berasaskan teori dan amali. Pembelajaran dan latihan meliputi membuat kerja pendawaian, menguji pepasangan, membaikpulih pendawaian dan alatan/radas elektrik dan penyeliaan.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48245",
+    "fields": {
+      "course": "Diploma Kompetensi Elektrik (Kuasa)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan pembelajaran dan latihan yang berasaskan teori dan amali dalam bidang elektrik dan dijalankan secara usahasama antara MARA dengan Suruhanjaya Tenaga Malaysia. Pelajar yang tamat dengan jayanya akan dianugerahkan oleh MARA Diploma Kompetensi Elektrik dan Perakuan Kekompetenan sebagai Penjaga Jentera Elektrik (Sistem Voltan Rendah Tanpa Stesen Jana kuasa).",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48260",
+    "fields": {
+      "course": "Diploma Teknologi Pengeluaran Perabot Kontemporari",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi rekabentuk dan pembuatan perabot untuk memberi tumpuan terhadap penggunaan gabungan bahan solid wood dan non-wood serta soft finishing (perabot berupholstery) bagi menghasilkan perabot moden dengan gaya dan trend terkini. Graduan akan berkemahiran dalam mengendalikan pelbagai jenis mesin yang digunakan dalam industri pembuatan perabot yang sebenar. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan bagi menggalakkan graduan untuk menjadi usahawan teknikal setelah tamat pengajian",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48278",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraa Bangunan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-48293",
+    "fields": {
+      "course": "Diploma Teknologi Automotif Komersial",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49148",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan (Penyelenggaraan Industri)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49187",
+    "fields": {
+      "course": "Sijil Teknologi Fabrikasi Struktur",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49190",
+    "fields": {
+      "course": "Sijil Teknologi Kejuruteraan Fabrikasi Perpaipan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Minyak & Gas",
+      "field": "Minyak & Gas",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "minyak-gas"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49220",
+    "fields": {
+      "course": "BaikpulihTelefon Pintar",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Elektrik & Elektronik",
+      "field": "Elektrik & Elektronik",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Membaikpulih Telefon Bimbit direka khas untuk memberi pendedahan serta kemahiran teknikal yang komprehensif kepada peserta dalam aspek diagnosis, penyelenggaraan, dan pembaikan telefon bimbit. Peserta akan diperkenalkan kepada struktur dalaman telefon bimbit termasuk komponen elektronik, sistem operasi, serta perisian dan perkakasan yang digunakan dalam pelbagai jenis peranti mudah alih.",
+      "description_en": "",
+      "field_key": "elektrik"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49295",
+    "fields": {
+      "course": "Sijil Teknologi Bangunan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Sivil & Bangunan",
+      "field": "Sivil & Bangunan",
+      "semesters": 4,
+      "headline": "",
+      "headline_en": "",
+      "description": "-",
+      "description_en": "",
+      "field_key": "sivil"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49304",
+    "fields": {
+      "course": "Diploma Teknologi Automotif (4Wd)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini direkabentuk bagi melahirkan sumber manusia berpengetahuan dan cekap dalam teknologi automotif pacuan empat roda (4WD) yang berkebolehan dalam kemahiran teknikal bagi menyokong jurutera dan profesional lain yang terlibat dalam pembangunan, pembuatan dan ujian operasi, pemeriksaan dan penyelenggaraan sistem automotif (4WD). Pelajar didedahkan dengan pengetahuan yang berkaitan, kemahiran praktikal dan teknikal dalam mendiagnosis, membaiki serta menaiktaraf/modifikasi kenderaan pacuan empat roda standard kepada off-Road. Kualiti kepimpinan yang cekap dan profesionalisme turut ditekankan. Pelajar digalakkan mempunyai sikap untuk mengamalkan pembelajaran sepanjang hayat seiring perubahan teknologi automotif komersial terkini. Pelajar turut akan didedahkan dengan unsur-unsur keusahawanan dan digalakkan untuk menjadi usahawan teknikal setelah tamat pengajian",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49406",
+    "fields": {
+      "course": "Diploma Teknologi Kejuruteraan Automotif Komersil (Kenderaan Elektrik)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Automotif",
+      "field": "Automotif",
+      "semesters": 6,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Kejuruteraan Automotif (Kenderaan Elektrik Komersial)",
+      "description_en": "",
+      "field_key": "automotif"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49415",
+    "fields": {
+      "course": "Perkhidmatan Rangkaian Komputer",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Sistem Rangkaian Komputer adalah program latihan yang memberikan pelatih pengetahuan dan kemahiran dalam merancang, memasang, mengurus, dan menyelenggarakan rangkaian komputer. Kursus ini bertujuan untuk melatih pelatih dalam aspek teknikal dan praktikal yang berkaitan dengan rangkaian komputer.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49424",
+    "fields": {
+      "course": "Rekabentuk Grafik (Digital)",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": 1,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini memberi pendedahan dalam bidang rekabentuk grafik melalui pemahaman dalam proses percetakan digital dan manual selain kursus-kursus teras pelbagai disiplin yang menjadi asas kukuh dalam bidang rekabentuk grafik seperti grafik komputer, fotografi digital, pengiklanan, teknologi percetakan dan tipografi.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-49670",
+    "fields": {
+      "course": "Flux Core Arc Welding (Fcaw) - Carbon Steel",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Teknologi Kimpalan Arka FCAW & SMAW memberi pengetahuan dan kemahiran mendalam dalam dua teknik kimpalan utama, iaitu Flux-Cored Arc Welding (FCAW) dan Shielded Metal Arc Welding (SMAW). Kedua-dua teknik ini sering digunakan dalam industri pembuatan, pembinaan, dan penyelenggaraan",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-50282",
+    "fields": {
+      "course": "Sijil Teknologi Foundri",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program ini menawarkan latihan kemahiran berasaskan teori dan amali dalam bidang teknologi foundri yang meliputi kerja-kerja membentuk pelbagai jenis corak berpandukan rekabentuk lukisan dan membentuk acuan daripada pasir atau sebatian-sebatian lain. Graduan juga akan berkemahiran untuk mengendalikan pelbagai jenis relau serta menguasai kaedah-kaedah peleburan logam.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-50285",
+    "fields": {
+      "course": "Jurukraf Emas",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Seni Reka",
+      "field": "Seni Reka",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus Jurukraf Emas direka untuk melahirkan tenaga mahir dalam bidang pembuatan dan reka bentuk barang kemas yang memenuhi keperluan industri perhiasan serta keusahawanan. Program ini memberi pendedahan kepada peserta mengenai teknik tradisional dan kontemporari dalam penghasilan barang kemas, bermula daripada pembangunan idea dan lakaran reka bentuk sehingga kepada penghasilan produk siap yang berkualiti.",
+      "description_en": "",
+      "field_key": "senireka"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-50288",
+    "fields": {
+      "course": "Penerbitan Filem Pendek",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "ICT & Multimedia",
+      "field": "ICT & Multimedia",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "Kursus ini direka untuk melahirkan tenaga kerja separa mahir dalam bidang penerbitan media digital dan penghasilan kandungan video. Pelatih akan mempelajari kemahiran asas dan praktikal meliputi proses penerbitan, penulisan skrip, pengarahan, pengendalian kamera, pencahayaan, rekabentuk produksi, rakaman audio serta penyuntingan video.",
+      "description_en": "",
+      "field_key": "multimedia"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-51467",
+    "fields": {
+      "course": "Sijil Teknologi Kimpalan",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 3,
+      "headline": "",
+      "headline_en": "",
+      "description": "Program Sijil Teknologi Kimpalan direka bagi melahirkan tenaga kerja mahir yang kompeten, berkemahiran tinggi dan memenuhi keperluan industri kimpalan serta fabrikasi logam masa kini. Program ini menggabungkan pembelajaran teori dan latihan amali secara intensif bagi memastikan pelajar menguasai kemahiran kimpalan mengikut standard industri.",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-51470",
+    "fields": {
+      "course": "Operasi Teknologi Kimpalan Arka",
+      "wbl": false,
+      "level": "Sijil",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": null,
+      "headline": "",
+      "headline_en": "",
+      "description": "A",
+      "description_en": "",
+      "field_key": "mekanikal"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": "TVET-52532",
+    "fields": {
+      "course": "Diploma Teknologi Mekatronik (Dgm)",
+      "wbl": false,
+      "level": "Diploma",
+      "department": "Mekanikal & Pembuatan",
+      "field": "Mekanikal & Pembuatan",
+      "semesters": 5,
+      "headline": "",
+      "headline_en": "",
+      "description": "Diploma Teknologi Mekatronik (DGM) merupakan program yang menggabungkan bidang mekanikal, elektronik, sistem kawalan, automasi dan pengaturcaraan komputer dalam satu disiplin teknologi moden. Program ini memberi pengetahuan dan kemahiran kepada pelajar dalam mereka bentuk, membangunkan, mengendalikan serta menyelenggara sistem mekatronik dan automasi industri. Pelajar turut didedahkan dengan teknologi terkini seperti Programmable Logic Controller (PLC), robotik, Internet of Things (IoT), sistem sensor serta Drone Technology. Melalui pembelajaran teori dan latihan praktikal, program ini melahirkan graduan yang kompeten, kreatif dan berdaya saing selaras dengan keperluan Revolusi Industri 4.0 (IR 4.0).",
+      "description_en": "",
+      "field_key": "mekatronik"
+    }
   }
 ]

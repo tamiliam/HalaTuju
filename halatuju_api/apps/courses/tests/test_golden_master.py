@@ -28,6 +28,8 @@ _D1_FILE = Path(__file__).resolve().parents[3] / 'data' / 'spm' / 'spm_new_cours
 _D2_FILE = _D1_FILE.with_name('spm_new_courses_D2.json')
 _F1_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F1.json'
 _F1B_FILE = _D1_FILE.parents[1] / 'tvet' / 'held_flag_fix_F1b.json'
+# Sprint F2 appended the 182 public MARA UP_TVET courses of `data/tvet/tvet_new_courses_F2.json`.
+_F2_FILE = _D1_FILE.parents[1] / 'tvet' / 'tvet_new_courses_F2.json'
 ORIGINAL_COURSE_COUNT = 389
 ORIGINAL_IDS_SHA256 = '2f0ca09dd6aa47ddc89b34134577b09672376658cb86e99a546619ccb0d2d89b'
 # Bumi F1b (2026-10-30) re-baselined the original catalogue ON PURPOSE: 63 held UP_TVET courses (84 held
@@ -48,14 +50,23 @@ PRE_F1B_BASELINE = 5319
 # gains EXACTLY those F1 rows she meets, and nothing else: pinned as a count and a digest.
 GOLDEN_F1_NON_BUMI_GAIN = 1494        # 30-33 per citizen, 20 if colour-blind, 0 for the non-citizen
 F1_NON_BUMI_GAIN_SHA256 = '07d39bf4539eecbf8a31d5652a6fea97e566cef3c6fbd393e15b0b6021c9eb85'
-GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN   # 6,787 (6,813 before F1b)
+# Sprint F2: 178 of the 182 MARA courses are Bumi-only; the other 4 are GIATMARA campuses whose pages are
+# silent on Bumiputera (3 also on citizenship). A non-Bumi student gains EXACTLY those 4 open rows she meets
+# (49-50 x 4: the non-citizen meets the 3 that do not ask citizenship), pinned by count and digest.
+GOLDEN_F2_NON_BUMI_GAIN = 199
+F2_NON_BUMI_GAIN_SHA256 = 'b94db31749f0e4c7cf262c0c6e687e9f40bb303aa99f4c1d8cd29d07d1812780'
+GOLDEN_BASELINE_FULL = GOLDEN_BASELINE + GOLDEN_F1_NON_BUMI_GAIN + GOLDEN_F2_NON_BUMI_GAIN   # 6,986 (6,787 before F2)
 # Full catalogue, the same 50 students as Bumiputera: 5,293 + 546 (D1 UiTM, strict reading) + 121 (D2,
 # after review round 1's strict reading of MARA's "any N subjects": 141 -> 121) + 1,592 (F1: the
-# 1,494 above + the two Bumi-only KEMAS rows, 49 each). 7,578 before F1b.
-GOLDEN_BASELINE_BUMI = 7552
-#: What the 50 Bumiputera twins gain over the ORIGINAL catalogue (D1 + D2 + F1 rows they meet), as one
-#: digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
+# 1,494 above + the two Bumi-only KEMAS rows, 49 each) = 7,552 (7,578 before F1b), + the F2 rows below.
+GOLDEN_BASELINE_BUMI_BEFORE_F2 = 7552
+#: What the 50 Bumiputera twins gain over the ORIGINAL catalogue from D1 + D2 + F1 (the rows they meet), as
+#: one digest, so a changed Bumi-only row cannot hide behind an unchanged total (review 2026-10-29).
 BUMI_GAIN_SHA256 = '0f70a1c805d7e73077c1bf7b91e2e1665dd3850a7d6bfd2bf17e802e31748818'
+#: Sprint F2: what the Bumiputera twins gain from the MARA rows, pinned by count and digest.
+GOLDEN_F2_BUMI_GAIN = 5079
+F2_BUMI_GAIN_SHA256 = '254c50a42800997e0a82eaf2f3e6274ac85aa246105a7803b5c7a8b1a57d9ec3'
+GOLDEN_BASELINE_BUMI = GOLDEN_BASELINE_BUMI_BEFORE_F2 + GOLDEN_F2_BUMI_GAIN   # 12,631
 
 
 def _digest(lines):
@@ -353,7 +364,8 @@ class TestGoldenMaster:
 
     def _original_ids(self):
         from apps.courses.models import Course
-        added = self._added_ids(_D1_FILE) | self._added_ids(_D2_FILE) | self._added_ids(_F1_FILE)
+        added = self._added_ids(_D1_FILE) | self._added_ids(_D2_FILE) | self._added_ids(_F1_FILE) \
+            | self._added_ids(_F2_FILE)
         return set(Course.objects.values_list('course_id', flat=True)) - added
 
     def test_the_original_catalogue_is_frozen(self):
@@ -377,37 +389,63 @@ class TestGoldenMaster:
         lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s)]
         assert _digest(lines) == ORIGINAL_SETS_SHA256, "a golden student's eligible set changed"
 
-    def test_a_non_bumi_student_gains_exactly_the_f1_open_set(self):
+    def test_a_non_bumi_student_gains_exactly_the_f1_and_f2_open_sets(self):
         """Every D1 row is Bumiputera-only and no golden student holds the Islamic subjects the 14 open
         D2 rows need, so D1 and D2 add nothing at bumi=False. Sprint F1's public UP_TVET rows are mostly
         open: a non-Bumi student gains exactly the F1 rows she meets (pinned by count and digest), never
-        a Bumi-only row, and never a D1 / D2 row."""
+        a Bumi-only row, and never a D1 / D2 row. Sprint F2's MARA rows are Bumi-only but for 4 GIATMARA
+        campus pages that say nothing about it: she gains exactly those she meets (pinned the same way)."""
         from apps.courses.models import CourseRequirement
         sets = self._eligible_sets(GOLDEN_STUDENTS)
         original = self._original_ids()
-        f1 = self._added_ids(_F1_FILE)
+        f1, f2 = self._added_ids(_F1_FILE), self._added_ids(_F2_FILE)
         gained = [s - original for s in sets]
-        assert all(g <= f1 for g in gained), 'a non-Bumi student gained a non-F1 row'
-        assert sum(len(g) for g in gained) == GOLDEN_F1_NON_BUMI_GAIN, [len(g) for g in gained]
-        lines = [f'{i}:{cid}' for i, g in enumerate(gained, 1) for cid in sorted(g)]
+        assert all(g <= f1 | f2 for g in gained), 'a non-Bumi student gained a non-F1 / F2 row'
+        f1_gain = [g & f1 for g in gained]
+        assert sum(len(g) for g in f1_gain) == GOLDEN_F1_NON_BUMI_GAIN, [len(g) for g in f1_gain]
+        lines = [f'{i}:{cid}' for i, g in enumerate(f1_gain, 1) for cid in sorted(g)]
         assert _digest(lines) == F1_NON_BUMI_GAIN_SHA256, "a golden student's F1 gain changed"
+        f2_gain = [g & f2 for g in gained]
+        assert sum(len(g) for g in f2_gain) == GOLDEN_F2_NON_BUMI_GAIN, [len(g) for g in f2_gain]
+        lines = [f'{i}:{cid}' for i, g in enumerate(f2_gain, 1) for cid in sorted(g)]
+        assert _digest(lines) == F2_NON_BUMI_GAIN_SHA256, "a golden student's F2 (MARA) gain changed"
         assert sum(len(s) for s in sets) == GOLDEN_BASELINE_FULL
         bumi_only = set(CourseRequirement.objects.filter(req_bumiputera=True).values_list('course_id', flat=True))
         assert not any(s & bumi_only for s in sets)
+        open_f2 = set(CourseRequirement.objects.filter(course_id__in=f2, req_bumiputera=False)
+                      .values_list('course_id', flat=True))
+        assert set().union(*f2_gain) == open_f2 and len(open_f2) == 4
 
-    def test_the_bumi_baseline(self):
-        bumi = []
-        for student in GOLDEN_STUDENTS:
+    def _bumi_twins(self, students=GOLDEN_STUDENTS):
+        twins = []
+        for student in students:
             twin = copy.copy(student)
             twin.bumiputera = True
-            bumi.append(twin)
-        sets = self._eligible_sets(bumi)
+            twins.append(twin)
+        return twins
+
+    def test_the_bumi_baseline(self):
+        sets = self._eligible_sets(self._bumi_twins())
         assert sum(len(s) for s in sets) == GOLDEN_BASELINE_BUMI, [len(s) for s in sets]
         original = self._original_ids()
+        f2 = self._added_ids(_F2_FILE)
         assert [s & original for s in sets] == [s & original for s in self._eligible_sets(GOLDEN_STUDENTS)]
-        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s - original)]
-        assert len(lines) == GOLDEN_BASELINE_BUMI - GOLDEN_BASELINE   # 2,259
-        assert _digest(lines) == BUMI_GAIN_SHA256, "a Bumiputera twin's gain changed"
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s - original - f2)]
+        assert len(lines) == GOLDEN_BASELINE_BUMI_BEFORE_F2 - GOLDEN_BASELINE   # 2,259
+        assert _digest(lines) == BUMI_GAIN_SHA256, "a Bumiputera twin's D1 / D2 / F1 gain changed"
+        lines = [f'{i}:{cid}' for i, s in enumerate(sets, 1) for cid in sorted(s & f2)]
+        assert len(lines) == GOLDEN_F2_BUMI_GAIN
+        assert _digest(lines) == F2_BUMI_GAIN_SHA256, "a Bumiputera twin's F2 (MARA) gain changed"
+
+    def test_a_foreign_student_who_says_bumiputera_still_meets_no_bumi_only_row(self):
+        """A foreigner is never Bumi (owner): the API never sends it (`resolve_bumiputera`), and even if it
+        did, every Bumi-only row is also citizens-only, so the engine refuses her anyway."""
+        from apps.courses.models import CourseRequirement
+        assert not CourseRequirement.objects.filter(req_bumiputera=True, req_malaysian=False).exists()
+        foreign = [s for s in self._bumi_twins() if s.nationality != 'Warganegara']
+        assert foreign
+        bumi_only = set(CourseRequirement.objects.filter(req_bumiputera=True).values_list('course_id', flat=True))
+        assert not any(s & bumi_only for s in self._eligible_sets(foreign))
 
     def _held_tvet_ids(self):
         return {cid for cid in self._original_ids() if cid.startswith(('IJTM-', 'IKBN-'))}

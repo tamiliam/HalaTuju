@@ -135,11 +135,47 @@ def display_name(campus):
     return ' '.join(fixed)
 
 
+#: The MARA pages' "W.PERSEKUTUAN (KL)" spelling -> prod's (Sprint F2).
+_WP = {'KL': 'WP Kuala Lumpur', 'KUALA LUMPUR': 'WP Kuala Lumpur', 'LABUAN': 'WP Labuan',
+       'PUTRAJAYA': 'WP Putrajaya'}
+
+
 def state_name(negeri):
     """Page 'Negeri' -> prod's spelling."""
+    m = re.match(r'^W\.?\s*PERSEKUTUAN\s*\((.+)\)$', tidy(negeri).upper())
+    if m and m.group(1).strip() in _WP:
+        return _WP[m.group(1).strip()]
     text = tidy(negeri).title()
     text = re.sub(r'^Wilayah Persekutuan\s+', 'WP ', text)
     return text
+
+
+#: MARA campus kinds (Sprint F2): (pattern over the catalogue campus, subcategory). The catalogue prints
+#: "TVETMARA SIK (INSTITUT KEMAHIRAN MARA SIK)" or "GIATMARA MUAR"; the bracket is the official name.
+MARA_KINDS = (
+    (r'KOLEJ KEMAHIRAN TINGGI MARA', 'KKTM'),
+    (r'INSTITUT KEMAHIRAN MARA', 'IKM'),
+    (r'JAPAN INDUSTRIAL INSTITUTE|\bMJII\b', 'MJII'),
+    (r'GIATMARA', 'GIATMARA'),
+)
+
+
+def mara_kind(campus):
+    """'TVETMARA SIK (INSTITUT KEMAHIRAN MARA SIK)' -> 'IKM'; an unknown MARA body -> 'MARA'."""
+    upper = tidy(campus).upper()
+    return next((kind for pattern, kind in MARA_KINDS if re.search(pattern, upper)), 'MARA')
+
+
+def _mara_spec(campus, page):
+    """(name, acronym, url) of a MARA campus: the official name in the bracket when the catalogue gives
+    one ("Institut Kemahiran MARA Sik"), else the campus ("GIATMARA Muar"); the acronym is its kind."""
+    m = re.search(r'\((.+)\)\s*$', tidy(campus))
+    name = display_name(m.group(1) if m else campus)
+    website = re.split(r'\s+,\s+', tidy(page.get('website', '')))[0]
+    if re.search(r'giatmara', website, re.I) and not re.match(r'^(https?://)?(www\.)?giatmara\.edu\.my/?$', website,
+                                                              re.I):
+        website = 'www.giatmara.edu.my'   # "www,giatmara,edu,my" and other misprints of the one site
+    return name, mara_kind(campus), _url(website)
 
 
 def propose_institutions(campuses):
@@ -157,12 +193,15 @@ def propose_institutions(campuses):
         iid = f'{prefix}-{n:03d}'
         taken.add(iid)
         ids[(family, campus)] = iid
+        name, acronym, url = display_name(campus), _acronym(campus), _url(page.get('website', ''))
+        if family == 'mara':
+            name, acronym, url = _mara_spec(campus, page)
+            subcategory = acronym
         proposals[iid] = {
-            'institution_id': iid, 'institution_name': display_name(campus),
-            'acronym': _acronym(campus),
+            'institution_id': iid, 'institution_name': name, 'acronym': acronym,
             'type': 'ILKA', 'category': category, 'subcategory': subcategory,
             'state': state_name(page.get('negeri', '')), 'address': page.get('address', ''),
-            'url': _url(page.get('website', '')),
+            'url': url,
         }
     return ids, proposals
 
