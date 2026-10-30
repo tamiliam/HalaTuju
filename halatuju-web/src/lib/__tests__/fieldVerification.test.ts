@@ -1,7 +1,9 @@
-import { fieldVerifications } from '../fieldVerification'
+import { fieldVerifications, shownInstitution } from '../fieldVerification'
 
 // Minimal document fixtures — only the fields documentFacts() reads for each type.
 const app = (documents: unknown[]) => ({ documents }) as never
+// A tertiary student who named her institution — the tick needs a shown value to vouch for.
+const tert = (documents: unknown[]) => ({ documents, chosen_programme: { institution: 'POLITEKNIK X' } }) as never
 
 describe('fieldVerifications', () => {
   it('returns nothing when there are no documents', () => {
@@ -92,26 +94,26 @@ describe('fieldVerifications', () => {
     // Measured on the four live records reading `mismatch` (2026-09-10): #33, #99 and #120 gain
     // the tick because their school really matches; #14 gains nothing, because "Temeloh" really
     // is not "TEMERLOH".
-    expect(fieldVerifications(app([
+    expect(fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'clash', pathway: 'mismatch' } },
     ])).preUInstitution).toBeUndefined()
-    expect(fieldVerifications(app([
+    expect(fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'clash', pathway: 'mismatch' } },
     ])).institution).toBeUndefined()
   })
 
   it('ticks tertiary institution when a genuine offer institution matches the chosen programme', () => {
-    const fv = fieldVerifications(app([
+    const fv = fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match' } },
     ]))
     expect(fv.institution).toEqual({ source: 'offerLetter' })
   })
 
   it('does NOT tick tertiary institution on a clash / unknown', () => {
-    expect(fieldVerifications(app([
+    expect(fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'clash' } },
     ])).institution).toBeUndefined()
-    expect(fieldVerifications(app([
+    expect(fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'unknown' } },
     ])).institution).toBeUndefined()
     // ⚠ The third case here used to be `chosen_institution_status: 'match', pathway: 'mismatch'`
@@ -121,9 +123,67 @@ describe('fieldVerifications', () => {
   })
 
   it('STILL ticks tertiary institution when the institution matches but the pathway is a mismatch', () => {
-    expect(fieldVerifications(app([
+    expect(fieldVerifications(tert([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match', pathway: 'mismatch' } },
     ])).institution).toEqual({ source: 'offerLetter' })
+  })
+
+  // Owner, 2026-10-30: a value that IS the letter's own is backed by the letter. The engine answers
+  // `unknown` for a course copied off the offer; the shown value still matches what it prints.
+  const ownOffer = (pc: Record<string, unknown>) => ({ doc_type: 'offer_letter', authenticity: { status: 'genuine' },
+    pathway_check: { name: 'match', ic: 'match', pathway: 'unknown', chosen_institution_status: 'unknown',
+      programme: 'SARJANA MUDA PERAKAUNAN (KEPUJIAN)', institution: 'UiTM CAWANGAN SABAH, KAMPUS KOTA KINABALU', ...pc } })
+  const copied = { chosen_programme: { source: 'offer_letter_auto', course_name: 'Sarjana Muda Perakaunan (Kepujian)',
+    institution: 'UITM CAWANGAN SABAH KAMPUS KOTA KINABALU' }, pre_u_institution: 'KM Labuan' }
+
+  it('ticks a course and institution copied off her own offer letter (the engine says unknown)', () => {
+    const fv = fieldVerifications({ documents: [ownOffer({})], ...copied } as never)
+    expect(fv.chosenProgramme).toEqual({ source: 'offerLetter' })
+    expect(fv.institution).toEqual({ source: 'offerLetter' })
+  })
+
+  it('does NOT tick from an offer that is not hers, is fake, or is for a different course', () => {
+    for (const doc of [
+      ownOffer({ name: 'mismatch' }),
+      ownOffer({ ic: 'mismatch' }),
+      ownOffer({ pathway: 'mismatch' }),
+      { ...ownOffer({}), authenticity: { status: 'not_offer_letter' } },
+      { ...ownOffer({}), superseded_at: '2026-07-01T00:00:00Z' },
+    ]) {
+      const fv = fieldVerifications({ documents: [doc], ...copied } as never)
+      expect(fv.chosenProgramme).toBeUndefined()
+      expect(fv.institution).toBeUndefined()
+    }
+  })
+
+  it('an IC the letter does not print (unreadable) does not stop the letter backing her', () => {
+    const fv = fieldVerifications({ documents: [ownOffer({ ic: 'unreadable' })], ...copied } as never)
+    expect(fv.chosenProgramme).toEqual({ source: 'offerLetter' })
+    expect(fv.institution).toEqual({ source: 'offerLetter' })
+  })
+
+  it('never ticks a blank institution, even on the catalogue\'s match (the old ticked "—")', () => {
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match' } },
+    ])).institution).toBeUndefined()
+  })
+
+  it('does NOT tick a shown value the letter does not print', () => {
+    const fv = fieldVerifications({ documents: [ownOffer({})],
+      chosen_programme: { course_name: 'Sarjana Muda Ekonomi', institution: 'UMS' } } as never)
+    expect(fv.chosenProgramme).toBeUndefined()
+    expect(fv.institution).toBeUndefined()
+  })
+
+  it('shows her offer letter\'s institution, ticked, when she named none (never a ticked "—")', () => {
+    const app = { documents: [ownOffer({ pathway: 'match', chosen_institution_status: 'match' })],
+      chosen_programme: { course_id: 'UH6212001', course_name: 'Ijazah' }, pre_u_institution: '' }
+    expect(shownInstitution(app as never)).toBe('UiTM CAWANGAN SABAH, KAMPUS KOTA KINABALU')
+    expect(fieldVerifications(app as never).institution).toEqual({ source: 'offerLetter' })
+    // Her own institution, when she named one, always wins over the letter's.
+    expect(shownInstitution({ ...app, pre_u_institution: 'KM Labuan' } as never)).toBe('KM Labuan')
+    // No usable letter → nothing shown, and nothing to tick.
+    expect(shownInstitution({ ...app, documents: [ownOffer({ pathway: 'mismatch' })] } as never)).toBe('')
   })
 
   it('a SUSPECT offer still ticks (only a genuine FAKE fails) — owner 2026-07-16', () => {

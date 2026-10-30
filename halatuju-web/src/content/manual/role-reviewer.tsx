@@ -62,9 +62,11 @@ export const roleReviewer: ManualChapter = {
         it is not a zero, and it always sorts last. Click a
         name to open the review screen — everything is on that one page. For an STPM student, the Academic
         card also lists the <strong>SPM prerequisite grades</strong> she entered with her STPM results, when
-        she has entered them. Her STPM grades and CGPA carry a <strong>tick</strong> when her uploaded STPM
-        results show the same, and a small <strong>&ne;</strong> marker (hover for the document&rsquo;s figure)
-        when they differ; the CGPA says <strong>not calculated</strong> when she entered fewer than Pengajian Am
+        she has entered them. A small <strong>tick</strong> beside any value means a document she uploaded
+        backs it. Her STPM grades carry <strong>one</strong> tick after the subjects when every grade matches
+        her uploaded STPM results, as SPM grades do, and her CGPA a tick when it matches; her SPM prerequisite
+        grades carry the tick when her SPM slip matches them. A small <strong>&ne;</strong> marker (hover for
+        the document&rsquo;s figure) sits beside a grade or the CGPA that differs; the CGPA says <strong>not calculated</strong> when she entered fewer than Pengajian Am
         + three grades &mdash; she is then asked to add the rest (and, where her co-curriculum score could not be
         worked out cleanly, to confirm it); both requests close by themselves when she saves her STPM results page. A student bound for a degree with STPM, Matriculation, Asasi or Diploma
         results uploads those results instead of an SPM slip; the Documents drawer names them by kind

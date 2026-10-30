@@ -58,6 +58,23 @@ it('shows her SPM grades (the block) under the SPM label', () => {
   expect(screen.getByText(/B\+/)).toBeTruthy()
 })
 
+it('her SPM chips carry the slip tick, as an SPM student\'s do (owner, 2026-10-30)', () => {
+  const app = {
+    status: 'shortlisted', grades: {}, documents: [], guardians: [], consents: [], top_choices: [],
+    chosen_pathway: '', chosen_programme: {}, pathway_certainty: 'sure', pathways_considered: [],
+    uncertainty_reasons: [], stpm_grades: {}, ...MATRIC,
+  } as unknown as AdminScholarshipDetail
+  render(
+    <ApplicantCards
+      app={app} t={t} vtip={(f) => (f === 'grades' ? 'slip' : undefined)}
+      incomeValue={null} incomeTip={undefined} incomeNote={undefined}
+      sizeValue={null} sizeTip={undefined} sizeNote={undefined} sizeNoteTone="muted"
+      perCapita={null}
+    />,
+  )
+  expect(screen.getAllByRole('img').map((i) => i.getAttribute('title'))).toEqual(['slip'])
+})
+
 it('a Diploma shows where it is from and no co-curriculum score', () => {
   renderWith({ ...MATRIC, qualification: 'diploma', overall_cgpa: 2.8, higher_cgpa: 2.8,
     higher_koko: null, higher_institution_type: 'public', merit_score: 70 })

@@ -10,6 +10,7 @@
  */
 import { isThirdRoute } from '@/lib/qualification'
 import VerifiedTick from '@/components/VerifiedTick'
+import { shownInstitution } from '@/lib/fieldVerification'
 import {
   formatPhone,
   formatAddress,
@@ -62,7 +63,15 @@ export function ApplicantCards({
           : m.status === 'match'
             ? <VerifiedTick label={t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.stpmResults') })} />
             : <DiffMarker label={t('admin.scholarship.verified.stpmDiffers', { value: String(m.doc) })} />)
-        const gradeMarks = sm ? Object.fromEntries(Object.entries(sm.grades || {}).map(([k, m]) => [k, stpmMark(m)])) : undefined
+        // ONE tick after the chips when every subject matches, like the SPM grades (owner,
+        // 2026-10-30: "to be consistent with SPM"). A subject that differs keeps its own marker
+        // naming what the document shows; a match no longer repeats the tick on every chip.
+        const smGrades = Object.entries(sm?.grades || {})
+        const stpmAllMatch = smGrades.length > 0
+          && smGrades.length === Object.values(app.stpm_grades || {}).filter(Boolean).length
+          && smGrades.every(([, m]) => m?.status === 'match')
+        const gradeMarks = sm ? Object.fromEntries(smGrades.filter(([, m]) => m?.status === 'differ')
+          .map(([k, m]) => [k, stpmMark(m)])) : undefined
         const cgpaMark = sm?.cgpa === 'match' || sm?.cgpa === 'differ'
           ? stpmMark({ status: sm.cgpa, doc: fmt2(sm.cgpa_doc) ?? '' })
           : sm?.cgpa === 'not_calculated'
@@ -201,7 +210,9 @@ export function ApplicantCards({
               {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
               <Card title={t('admin.scholarship.sec.academic')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.school')} value={app.school} verifiedLabel={vtip('school')} />
+                  {/* Always in capitals, as the documents print it (owner, 2026-10-30) — the student
+                      types it however she likes, and the case was being read as a difference. */}
+                  <Field label={t('admin.scholarship.school')} value={app.school ? app.school.toUpperCase() : app.school} verifiedLabel={vtip('school')} />
                   {/* The merit score carries the YEAR of the SPM that produced it (request #12).
                       Always shown when we can read it, never only on the odd ones: a qualifier that
                       appears solely when something is unusual reads as an alarm, and a reviewer
@@ -240,13 +251,15 @@ export function ApplicantCards({
                   <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
                   </dt>
-                  {/* The tick renders AFTER the subject chips (item 1). It verifies the SPM slip
-                      against the SPM `grades`, so it only belongs to an SPM student's grades — an
-                      STPM student's STPM grades are NOT what academic_check verifies (it would sit
-                      on a match against the separate SPM slip → misattribution, #132). */}
+                  {/* The tick renders AFTER the subject chips (item 1). The SPM slip's tick belongs to
+                      SPM chips only — never to an STPM student's STPM grades (#132), which carry the
+                      STPM results' own tick instead. The slip is checked against the SPM block
+                      `spm_grades_for` returns, so a third-route student's SPM chips earn it too. */}
                   <Grades
                     grades={isStpm ? app.stpm_grades : third ? { ...(app.spm_prereq_grades || {}), ...(app.grades || {}) } : app.grades}
-                    trailing={!isStpm && !third && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
+                    trailing={isStpm
+                      ? (stpmAllMatch ? stpmMark({ status: 'match', doc: '' }) ?? undefined : undefined)
+                      : vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
                     marks={gradeMarks}
                   />
                   {/* Third results route S3b (D13, review fix 3): what the student changed in her
@@ -267,7 +280,11 @@ export function ApplicantCards({
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
                     <div className="mt-2">
                       <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
-                      <Grades grades={app.spm_prereq_grades} />
+                      {/* The SPM slip IS checked against these for an STPM student (`spm_grades_for`),
+                          so the match earns the same single tick (owner, 2026-10-30: six of nine
+                          STPM students had a matching slip and no tick). */}
+                      <Grades grades={app.spm_prereq_grades}
+                        trailing={vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined} />
                     </div>
                   )}
                 </div>
@@ -316,7 +333,7 @@ export function ApplicantCards({
                       <div className="col-span-2">
                         <Field
                           label={t('admin.scholarship.institution')}
-                          value={expandMatricInstitution((app.chosen_programme?.institution as string) || app.pre_u_institution || '') || null}
+                          value={expandMatricInstitution(shownInstitution(app)) || null}
                           verifiedLabel={isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')}
                         />
                       </div>

@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## A tick means a document backs the value — 2026-10-30 (owner, cockpit tick consistency)
+
+**Context:** the owner compared the flagship's Academic card with the Sabah programme's and found the ticks
+inconsistent. Measured on all 97 applications at interviewing or later: 4 showed a ticked "—" institution (the
+server checked the catalogue course's institution against the letter; the card showed the student's blank one);
+6 of 9 STPM students had a matching SPM slip and no tick on their SPM prerequisites (the card never drew one);
+13 of 52 tertiary students showed a ticked reporting date beside an unticked course and institution copied off
+the same offer letter; STPM grades carried a tick per subject where SPM grades carry one.
+
+**Owner rulings:** *"Tick says the value is backed by documented evidence … It is understood that if we checked
+the offer letter, it would match."* STPM ticks *"to be consistent with SPM"*. The school is always shown in
+capitals, and *"school name verification can come from school leaving cert or SPM cert/slip. STPM normally
+doesn't have school name."*
+
+**Decision:** (1) a course or institution the card shows ticks when it equals what the student's own live offer
+prints — not a fake, her name matching, the IC not disagreeing, not for a different course (`backingOffer` in
+`lib/fieldVerification.ts`). This supersedes the 2026-08-01 rule below **for the tick only**: the engine still
+answers `unknown` for an offer-derived value, so the Pathway chip is unchanged. (2) One reader,
+`shownInstitution`, feeds both the card and the tick: when she named no institution, the card shows her offer's,
+and a blank is never ticked. (3) STPM grades: one tick after the chips when every subject matches; a `≠` marker
+stays on a subject that differs. (4) SPM prerequisite chips carry the SPM slip's tick (the slip is compared with
+that block via `spm_grades_for`), as do a third-route student's SPM chips. (5) School shown in capitals.
+**Paused by the owner the same day:** the school tick from the SPM slip. The slip does print it ("SEKOLAH : …",
+seen in 115 of the 118 slips whose OCR rows are stored), but *"the school could be STPM school or matriculation school
+or SPM school"* — which school the card's field means has to be settled first.
+
+**Measured before the change, on live data:** programme tick gained on 9 records, tertiary institution tick on 16,
+6 blank institutions now show the letter's; no tick lost.
+
 ## One Student communications page; the organisation may switch off only the safe emails — 2026-10-30 (student maintenance S6a, owner rulings)
 
 **Owner rulings, 2026-10-30 (all four recorded here; the last three bind Sprint 6b):**
@@ -4487,6 +4516,9 @@ attention to them until something breaks."*
 **Trade-offs:** changing one of the seven still needs us. The section says so and invites the ask.
 
 ## The catalogue judges the PROGRAMME too, and an offer-derived value cannot verify itself — 2026-08-01
+
+> **Superseded in part, 2026-10-30, for the cockpit TICK only** — see "A tick means a document backs the
+> value" above. The engine's verdict (`unknown` for an offer-derived value) and the Pathway chip are unchanged.
 **Decision:** `offer_pathway.programme_agreement(course_id, offer_programme, offer_institution)`
 mirrors `institution_agreement` on the programme axis: resolve the letter through the catalogue,
 `match` on the same course id, `clash` on a different one, **`unknown` when it does not resolve —

@@ -37,6 +37,37 @@ function isLive(doc: AdminApplicantDocument): boolean {
   return !doc.superseded_at
 }
 
+/** Upper-case, single-spaced, punctuation-free, so two printings of one value compare equal. */
+const norm = (s?: string | null): string => (s || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim()
+
+/** An offer whose fields may stand behind a shown value: not a fake (`not_*`), addressed to THIS
+ * student (her name matches, and the IC does not DISAGREE — many letters print no IC, and app 179's
+ * reads `unreadable`), and not for a different course (`pathway` not `mismatch`). */
+function backingOffer(d: AdminApplicantDocument): boolean {
+  const pc = d.pathway_check
+  const auth = d.authenticity?.status
+  return d.doc_type === 'offer_letter' && isLive(d) && !!pc && !(auth && auth.startsWith('not_'))
+    && pc.name === 'match' && pc.ic !== 'mismatch' && pc.pathway !== 'mismatch'
+}
+
+/**
+ * The institution the Academic card shows. The student's own (`chosen_programme.institution`,
+ * else `pre_u_institution`); when she named none, the institution on her own offer letter.
+ * ⚠ It used to render "—" in that case WITH a tick (owner, 2026-10-30, four Sabah students): the
+ * server checked the catalogue course's institution against the letter and found a match, so the
+ * tick was true about a value the screen never showed. One reader, used by the card and by the
+ * tick below, so the two cannot drift.
+ */
+export function shownInstitution(
+  app: Pick<AdminScholarshipDetail, 'documents'>
+    & Partial<Pick<AdminScholarshipDetail, 'chosen_programme' | 'pre_u_institution'>>,
+): string {
+  const own = ((app.chosen_programme?.institution as string) || app.pre_u_institution || '').trim()
+  if (own) return own
+  const offer = (app.documents || []).find((d) => backingOffer(d) && (d.pathway_check?.institution || '').trim())
+  return (offer?.pathway_check?.institution || '').trim()
+}
+
 /** True when the document's own distilled facts (drawer chips) mark `factKey` as a clean match. */
 function factVerified(doc: AdminApplicantDocument, factKey: string): boolean {
   return documentFacts(doc).some((f) => f.key === factKey && f.status === 'verified')
@@ -47,7 +78,8 @@ function factVerified(doc: AdminApplicantDocument, factKey: string): boolean {
  * ONLY when a live document of the right type reports its relevant fact as a clean match.
  */
 export function fieldVerifications(
-  app: Pick<AdminScholarshipDetail, 'documents' | 'guardian_ic_name_match'>,
+  app: Pick<AdminScholarshipDetail, 'documents' | 'guardian_ic_name_match'>
+    & Partial<Pick<AdminScholarshipDetail, 'chosen_programme' | 'pre_u_institution'>>,
 ): Partial<Record<VerifiableField, FieldVerification>> {
   const docs = (app.documents || []).filter(isLive)
   const out: Partial<Record<VerifiableField, FieldVerification>> = {}
@@ -107,7 +139,26 @@ export function fieldVerifications(
   // can't tick them). The cockpit uses this for a tertiary student; a pre-U student uses
   // `preUInstitution`. NB `chosen_institution_status` already returns 'unknown' for an institution
   // copied off the letter itself, so this cannot tick a value that was never independently stated.
-  if (docs.some((d) => usableOffer(d) && d.pathway_check?.chosen_institution_status === 'match')) {
+  // ⚠ Never on a blank: the card shows `shownInstitution`, and a tick beside "—" vouches for nothing.
+  if (shownInstitution(app).trim()
+      && docs.some((d) => usableOffer(d) && d.pathway_check?.chosen_institution_status === 'match')) {
+    out.institution = { source: 'offerLetter' }
+  }
+  // ⚠ A VALUE THAT IS THE LETTER'S OWN IS BACKED BY THE LETTER (owner, 2026-10-30: *"Tick says the
+  // value is backed by documented evidence … It is understood that if we checked the offer letter,
+  // it would match."*). Supersedes request #9's "circular" rule for the TICK: when the course or the
+  // institution was copied off the student's own offer, the engine still answers `unknown` (it
+  // cannot test a letter against itself), but the shown value IS what the letter prints, exactly as
+  // the reporting date always was. Thirteen of 52 tertiary students showed a ticked date beside an
+  // unticked course from the same letter. Kept honest by `backingOffer`: her name and IC on it, not
+  // a fake, not a different course — and by comparing the SHOWN value, so nothing else ticks.
+  const backing = docs.filter(backingOffer)
+  const course = norm(app.chosen_programme?.course_name as string)
+  if (course && backing.some((d) => norm(d.pathway_check?.programme) === course)) {
+    out.chosenProgramme = { source: 'offerLetter' }
+  }
+  const inst = norm(shownInstitution(app))
+  if (inst && backing.some((d) => norm(d.pathway_check?.institution) === inst)) {
     out.institution = { source: 'offerLetter' }
   }
   // Reporting date: the date READ off the offer (the shown value IS the offer's date).

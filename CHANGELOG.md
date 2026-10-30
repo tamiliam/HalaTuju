@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit ticks made consistent (owner, 2026-10-30)
+
+A tick means a document backs the value. Web only, no migration.
+
+- A course and institution filled in from the student's own offer letter now carry the tick, like the reporting date
+  from the same letter always did (9 courses and 16 institutions on live records).
+- A blank institution is never ticked; when she named none, the card shows the one on her offer letter (6 records,
+  4 of which showed a ticked "—").
+- STPM grades: one tick after the subjects when all match, as SPM grades have; a `≠` stays on a subject that differs.
+- An STPM student's SPM prerequisites (and a Matriculation, Asasi or Diploma student's SPM grades) carry the SPM
+  slip's tick when it matches (6 of 9 STPM students).
+- The school is always shown in capitals. Reviewer Guide and FAQ updated. `docs/decisions.md` records the ruling.
+
 ## Student maintenance Sprint 6a — one Student communications page, and switches for the safe emails - 2026-10-30
 
 Roadmap Sprint 6, first half (split by the owner: 6b, letters, waits for the design). Migration `scholarship/0189`,
