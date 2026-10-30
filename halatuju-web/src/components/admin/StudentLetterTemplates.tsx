@@ -10,7 +10,8 @@ import {
 const PREFIX = 'admin.orgSettings.studentComms'
 const L = `${PREFIX}.letters`
 const KINDS = ['general', 'discipline', 'termination', 'suspension', 'close_out'] as const
-const KNOWN_ERRORS = ['unknown_placeholders', 'banned_phrase', 'empty', 'subject_too_long', 'unknown_template']
+const KNOWN_ERRORS = ['unknown_placeholders', 'banned_phrase', 'empty', 'subject_too_long', 'unknown_template',
+  'subject_newline', 'body_too_long']   // S6b review 7
 type T = (key: string, params?: Record<string, string>) => string
 type EditorRow = Omit<LetterTemplateRow, 'kind'> & { kind: string }
 

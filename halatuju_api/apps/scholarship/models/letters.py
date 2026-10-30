@@ -77,11 +77,20 @@ class Letter(models.Model):
     withdrawn_by_email = models.CharField(max_length=254, blank=True, default='')
     withdrawn_by_name = models.CharField(max_length=200, blank=True, default='')
     withdrawn_reason = models.TextField(blank=True, default='')
+    #: The issue dialog's own id for ONE press of "Issue and email" (review 3): a repeat POST with the
+    #: same key returns this letter instead of issuing a second. Nullable — a caller without one still
+    #: issues; unique per application where present (NULLs never collide).
+    issue_key = models.CharField(max_length=64, null=True, blank=True)
+    #: The last time an officer pressed Resend (review 6): at most once every 10 minutes per letter.
+    last_resend_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'letters'
         ordering = ['-issued_at', '-id']
         indexes = [models.Index(fields=['application', '-issued_at'], name='letter_app_issued_idx')]
+        constraints = [
+            models.UniqueConstraint(fields=['application', 'issue_key'], name='letter_app_issue_key_uniq'),
+        ]
 
     def __str__(self):
         return f'letter {self.id} {self.kind} app={self.application_id}'

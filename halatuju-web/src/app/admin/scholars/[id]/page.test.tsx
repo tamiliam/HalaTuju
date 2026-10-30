@@ -133,3 +133,14 @@ it('a file the server will not show is the neutral not-found', async () => {
   render(<ScholarFilePage />)
   expect(await screen.findByTestId('record-not-found')).toBeTruthy()
 })
+
+it('S6b review 1: an API that still sends letters: [] (web deployed first) reads as no letters', async () => {
+  const before = { ...FILE, letters: [] } as unknown as api.ScholarFile
+  mockApi.getScholarFile.mockResolvedValue(before)
+  const { unmount } = render(<ScholarFilePage />)
+  expect((await screen.findByTestId('card-letters')).textContent).toContain('admin.scholars.letters.empty')
+  unmount()
+  mockApi.getScholarFile.mockResolvedValue({ ...FILE, letters: undefined } as unknown as api.ScholarFile)
+  render(<ScholarFilePage />)
+  expect((await screen.findByTestId('card-letters')).textContent).toContain('admin.scholars.letters.empty')
+})

@@ -23,7 +23,10 @@ def html_for(letter, *, html_body):
     labels = _LABELS[lang]
     app = letter.application
     org = getattr(getattr(app, 'owning_organisation', None), 'name', '') or ''
-    issued = letter.issued_at.date() if letter.issued_at else None
+    # Her calendar day (Malaysia), as the body's {date} is (`timezone.localdate()` at issue) — never
+    # the UTC date, which is the day before for anything issued 00:00-07:59 MYT (review 2).
+    from django.utils import timezone
+    issued = timezone.localtime(letter.issued_at).date() if letter.issued_at else None
     return (
         '<html><head><meta charset="utf-8"><style>'
         '@page { size: A4; margin: 2.2cm 2.2cm 2.4cm 2.2cm; }'

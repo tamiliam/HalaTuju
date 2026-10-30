@@ -42,6 +42,14 @@ CONFIRM_KINDS = frozenset({'discipline', 'termination'})
 #: What a CLOSED file may still be sent.
 CLOSED_FILE_KINDS = frozenset({'general', 'close_out'})
 CLAUSE_MAX, NOTE_MAX, REASON_MAX = 40, 2000, 500
+#: A letter's wording (review 7): a body this long is not a letter, and a subject is ONE line.
+BODY_MAX = 20000
+ISSUE_KEY_MAX = 64
+#: Resend at most once in this window per letter (review 6).
+RESEND_EVERY = datetime.timedelta(minutes=10)
+#: Kinds whose notice is not re-sent once the file is closed (review 6): only a general or close-out
+#: letter still concerns a closed file.
+NO_RESEND_WHEN_CLOSED = frozenset({'discipline', 'suspension', 'termination'})
 BANNED = email_templates.UNIVERSAL_BANNED
 
 
@@ -86,6 +94,10 @@ def save_template(organisation, kind, lang, subject, body, *, by_email=''):
         raise LetterError('empty')
     if len(subject) > 255:
         raise LetterError('subject_too_long')
+    if '\r' in subject or '\n' in subject:
+        raise LetterError('subject_newline')
+    if len(body) > BODY_MAX:
+        raise LetterError('body_too_long')
     unknown = email_templates.unknown_placeholders(letter_defaults.PLACEHOLDERS, subject, body)
     if unknown:
         raise LetterError('unknown_placeholders', list(unknown))
@@ -177,9 +189,17 @@ def names_match(typed, actual):
 
 
 # ── issuing ─────────────────────────────────────────────────────────────────────────────────────
-def issue(application, *, kind, language, clause='', note='', confirm_name='', by_admin, allowed_kinds):
+def issue(application, *, kind, language, clause='', note='', confirm_name='', by_admin, allowed_kinds,
+          issue_key=None):
     """Issue ONE letter: frozen text, the PDF in the private bucket, an activity line — then, after
-    the commit, the notice email (stamped only if it went). Raises `LetterError` with a code."""
+    the commit, the notice email (stamped only if it went). Returns `(letter, created)`.
+
+    ⚠ ONCE PER PRESS (review 3): the application row is LOCKED for the issue, and a repeat with the
+    same `issue_key` (the dialog's id for one press) returns the letter already issued — no second
+    letter, PDF or email. Raises `LetterError` with a code."""
+    key = str(issue_key).strip() if issue_key else ''
+    if len(key) > ISSUE_KEY_MAX:
+        raise LetterError('bad_issue_key')
     _check(application, kind, language, allowed_kinds)
     clause, note = _clean(clause, note)
     if kind in CONFIRM_KINDS and not names_match(confirm_name, student_name(application)):
@@ -188,11 +208,17 @@ def issue(application, *, kind, language, clause='', note='', confirm_name='', b
     due = today + datetime.timedelta(days=response_days(application.owning_organisation))
     subject, text, html = _render(application, kind, language, clause, note, today=today, due=due)
     from . import activity, letters_pdf, storage
+    from .models import ScholarshipApplication
     from .models.activity import EVENT_LETTER_ISSUED
     with transaction.atomic():
+        ScholarshipApplication.objects.select_for_update().filter(pk=application.pk).first()
+        if key:
+            existing = Letter.objects.filter(application=application, issue_key=key).first()
+            if existing is not None:
+                return existing, False
         letter = Letter.objects.create(
             application=application, kind=kind, language=language, subject=subject[:255], body=text,
-            clause=clause, note=note, response_due_on=due,
+            clause=clause, note=note, response_due_on=due, issue_key=key or None,
             issued_by_email=(getattr(by_admin, 'email', '') or '')[:254],
             issued_by_name=(getattr(by_admin, 'name', '') or '')[:200],
             issued_by_role=('super' if getattr(by_admin, 'is_super', False)
@@ -212,8 +238,19 @@ def issue(application, *, kind, language, clause='', note='', confirm_name='', b
         activity.log_event(application, EVENT_LETTER_ISSUED, actor_email=letter.issued_by_email,
                            meta={'letter_id': letter.id, 'kind': kind, 'subject': letter.subject,
                                  'response_due_on': due.isoformat()})
-        transaction.on_commit(lambda: send_notice(letter))
-    return letter
+        transaction.on_commit(lambda: _notice_after_commit(letter.pk))
+    return letter, True
+
+
+def _notice_after_commit(letter_id):
+    """The notice email once the letter is saved — and NOTHING it does may raise (review 5): the
+    letter IS issued, so a failure here must never turn the officer's request into an error that
+    invites a second press. Logged; the row keeps `emailed_at` empty and the tab offers Resend."""
+    try:
+        letter = Letter.objects.select_related('application').get(pk=letter_id)
+        send_notice(letter)
+    except Exception:
+        logger.exception('letter notice email failed after commit (letter %s)', letter_id)
 
 
 def send_notice(letter):
@@ -230,10 +267,22 @@ def send_notice(letter):
 
 
 def resend(letter, *, allowed_kinds):
+    """Send the notice again (review 6): never a withdrawn letter; not a discipline, suspension or
+    termination letter once the file is closed; at most once every 10 minutes per letter — the claim
+    is ONE conditional update, so two quick presses cannot both send."""
+    from django.db.models import Q
     if letter.withdrawn_at is not None:
         raise LetterError('withdrawn')
     if letter.kind not in allowed_kinds:
         raise LetterError('forbidden')
+    if letter.application.status == 'closed' and letter.kind in NO_RESEND_WHEN_CLOSED:
+        raise LetterError('file_closed')
+    now = timezone.now()
+    claimed = (Letter.objects.filter(pk=letter.pk)
+               .filter(Q(last_resend_at__isnull=True) | Q(last_resend_at__lte=now - RESEND_EVERY))
+               .update(last_resend_at=now))
+    if not claimed:
+        raise LetterError('resend_too_soon')
     return send_notice(letter)
 
 

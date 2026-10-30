@@ -78,7 +78,11 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
       const row = await resendLetter(id, letter.id, { token: token! })
       replace(row)
       setMessage(t(row.emailed_at ? `${P}.resent` : `${P}.resendFailed`))
-    } catch { setMessage(t(`${P}.resendFailed`)) } finally { setBusy(null) }
+    } catch (e) {
+      const code = (e as { code?: string })?.code || ''
+      setMessage(t(['resend_too_soon', 'file_closed', 'withdrawn'].includes(code)
+        ? `${P}.resendRefused.${code}` : `${P}.resendFailed`))
+    } finally { setBusy(null) }
   }
 
   async function withdraw(letter: AdminLetter) {

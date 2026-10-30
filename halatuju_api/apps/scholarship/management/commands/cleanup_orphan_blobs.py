@@ -18,8 +18,25 @@ if the bucket is unreachable it lists nothing rather than erroring.
 """
 from django.core.management.base import BaseCommand
 
-from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.models import ApplicantDocument, BursaryAgreement, Letter, OrgRequestAttachment
 from apps.scholarship import storage
+
+
+def known_paths():
+    """EVERY object path the database holds in this bucket — a blob outside this set is an orphan.
+
+    ⚠ S6b review 4: this read only `ApplicantDocument.storage_path`, so a letter PDF
+    (`<org>/<app>/letters/<id>.pdf`), a signed bursary agreement (`BursaryAgreement.pdf_storage_path`)
+    and a request's screenshot (`requests/<org>/<request>/<uuid>`) all read as orphans, and `--apply`
+    would have DELETED them. A new model that stores a path in this bucket must be added HERE
+    (`test_cleanup_orphan_blobs` pins each)."""
+    sources = (
+        ApplicantDocument.objects.exclude(storage_path='').values_list('storage_path', flat=True),
+        BursaryAgreement.objects.exclude(pdf_storage_path='').values_list('pdf_storage_path', flat=True),
+        Letter.objects.exclude(pdf_path='').values_list('pdf_path', flat=True),
+        OrgRequestAttachment.objects.exclude(storage_path='').values_list('storage_path', flat=True),
+    )
+    return {path for qs in sources for path in qs}
 
 
 def _is_folder(item):
@@ -61,12 +78,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         apply = options['apply']
 
-        known = set(
-            ApplicantDocument.objects
-            .exclude(storage_path='')
-            .values_list('storage_path', flat=True)
-        )
-        self.stdout.write(f'DB references {len(known)} document blob(s).')
+        known = known_paths()
+        self.stdout.write(f'DB references {len(known)} blob(s).')
 
         all_paths = list(_walk_bucket())
         self.stdout.write(f'Bucket holds {len(all_paths)} object(s).')

@@ -85,8 +85,10 @@ export async function previewLetter(id: number, draft: LetterDraft, options?: Ap
   return adminMutate(`${base(id)}preview/`, 'POST', draft, options)
 }
 
+/** `issue_key` is the dialog's id for ONE press: a repeat with the same key returns the letter
+ *  already issued (200), never a second (S6b review 3). */
 export async function issueLetter(
-  id: number, draft: LetterDraft & { confirm_name: string }, options?: ApiOptions,
+  id: number, draft: LetterDraft & { confirm_name: string; issue_key: string }, options?: ApiOptions,
 ): Promise<AdminLetter> {
   return adminMutate(base(id), 'POST', draft, options)
 }

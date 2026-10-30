@@ -79,3 +79,56 @@ class TestCleanupOrphanBlobs(TestCase):
             call_command('cleanup_orphan_blobs', '--apply', stdout=out)
         self.assertIn('No orphan blobs', out.getvalue())
         mock_del.assert_not_called()
+
+
+class TestEveryKnownPathIsKept(TestCase):
+    """S6b review 4: a letter PDF, a signed agreement PDF and a request's screenshot all live in this
+    bucket. The sweep once knew only `ApplicantDocument`, so `--apply` would have deleted every one."""
+
+    def test_letters_agreements_and_request_attachments_are_known(self):
+        import datetime
+        from django.utils import timezone
+        from apps.courses.models import PartnerAdmin
+        from apps.scholarship.management.commands.cleanup_orphan_blobs import known_paths
+        from apps.scholarship.models import BursaryAgreement, Letter, OrgRequest, OrgRequestAttachment
+        from apps.scholarship.tests.factories import make_application
+        app = make_application('maintenance')
+        org = app.owning_organisation
+        now = timezone.now()
+        BursaryAgreement.objects.create(application=app, version='2026-v1',
+                                        pdf_storage_path=f'{org.id}/{app.id}/agreement.pdf',
+                                        student_signed_at=now, guarantor_signed_at=now, foundation_signed_at=now)
+        Letter.objects.create(application=app, kind='general', language='en', subject='S', body='B',
+                              response_due_on=datetime.date(2026, 11, 13),
+                              pdf_path=f'{org.id}/{app.id}/letters/1.pdf')
+        admin = PartnerAdmin.objects.create(supabase_user_id='orphan-admin', owning_organisation=org,
+                                            role='org_admin', is_active=True, email='o@example.test')
+        req = OrgRequest.objects.create(organisation=org, submitted_by=admin, kind='feature', title='t',
+                                        description='d')
+        OrgRequestAttachment.objects.create(org_request=req, storage_path=f'requests/{org.id}/{req.id}/abc',
+                                            original_filename='a.png', content_type='image/png', size=1,
+                                            uploaded_by=admin)
+        known = known_paths()
+        for path in (f'{org.id}/{app.id}/agreement.pdf', f'{org.id}/{app.id}/letters/1.pdf',
+                     f'requests/{org.id}/{req.id}/abc'):
+            with self.subTest(path=path):
+                self.assertIn(path, known)
+
+    def test_apply_never_deletes_a_letter_pdf(self):
+        import datetime
+        from apps.scholarship.models import Letter
+        from apps.scholarship.tests.factories import make_application
+        app = make_application('maintenance')
+        org = app.owning_organisation
+        Letter.objects.create(application=app, kind='general', language='en', subject='S', body='B',
+                              response_due_on=datetime.date(2026, 11, 13),
+                              pdf_path=f'{org.id}/{app.id}/letters/7.pdf')
+        tree = {'': [_folder(str(org.id))], f'{org.id}/': [_folder(str(app.id))],
+                f'{org.id}/{app.id}/': [_folder('letters')],
+                f'{org.id}/{app.id}/letters/': [_file('7.pdf')]}
+        with patch('apps.scholarship.storage.list_objects', side_effect=lambda prefix='', **kw: tree.get(prefix, [])), \
+                patch('apps.scholarship.storage.delete_objects') as delete:
+            out = StringIO()
+            call_command('cleanup_orphan_blobs', '--apply', stdout=out)
+        delete.assert_not_called()
+        self.assertIn('No orphan blobs', out.getvalue())

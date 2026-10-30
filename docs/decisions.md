@@ -32,6 +32,23 @@ no status — and the close a termination prompt leads to is the existing Close,
 is a money write in `payments.complete` and belongs to TD-383's one-choke-point sprint (TD-367 first), with its own
 adversarial review; folding it into a documents sprint would ship a money change without that review.
 
+**Review fixes (S6b adversarial review, 2026-10-31 — no tenant or security hole):** (1) the file page reads an API
+that still sends `letters: []` as "no letters" (web may deploy first). (2) The PDF's header date is HER day
+(`timezone.localtime`), as the body's `{date}` is — not the UTC day. (3) ONE press, ONE letter: the dialog sends an
+`issue_key` (one per opening), stored unique per application; the issue locks the application row
+(`select_for_update`) and a repeat with the same key returns the letter already issued (200), never a second letter,
+PDF or email. (4) `cleanup_orphan_blobs` knew only `ApplicantDocument` and would have DELETED every letter PDF, every
+signed agreement PDF and every request screenshot on `--apply`; its known set now reads all four columns
+(`known_paths`). (5) The notice email after commit can never raise into the officer's request (logged; Resend stays
+offered). (6) Resend: never a withdrawn letter; not discipline, suspension or termination once the file is closed; at
+most once per 10 minutes per letter (`last_resend_at`, one conditional update; 409 `resend_too_soon`). (7) A letter
+template's subject is one line (`subject_newline`) and its body at most 20,000 characters (`body_too_long`). (8) The
+shared renderer (`email_templates.fill`) now substitutes in ONE pass, so a value containing `{note}` or `{name}` is
+never expanded again — for every family that uses it. (9) "Issue and email" waits until the draft beside it was
+rendered from exactly the fields on screen.
+**Left as they are (review, noted):** a student sees only her NEWEST file's letters (`_own_file`, the hub's one door) —
+the safe side; and a file with no organisation (test data only) has no letter wording of its own and no PDF org prefix.
+
 **Alternatives considered:** a termination that closes the file itself (owner: no — documents only); a Tamil PDF
 (no shaping in the stack); letting a reviewer issue any kind (owner: suspension and termination are senior).
 **Revisit if:** the owner wants an automatic reminder for an overdue acknowledgement (today it is a state on two

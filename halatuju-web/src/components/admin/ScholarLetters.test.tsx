@@ -134,7 +134,43 @@ it('the dialog: the server draft and her email, documents-only, and the typed fu
   fireEvent.click(issue)
   await waitFor(() => expect(mockApi.issueLetter).toHaveBeenCalledWith(104, {
     kind: 'termination', language: 'en', clause: '9', note: '', confirm_name: ' nur aisyah  binti rahman ',
+    issue_key: expect.any(String),
   }, { token: 'tok' }))
+})
+
+it('S6b review 9: Issue waits while the draft is out of date; review 3: one key per dialog, every press', async () => {
+  let resolveNext: (p: api.LetterPreview) => void = () => {}
+  mockApi.issueLetter.mockRejectedValue(Object.assign(new Error('x'), { code: 'storage_failed' }))
+  mount()
+  await screen.findByTestId('letter-1')
+  fireEvent.click(screen.getByText(`${P}.issue`))
+  const dialog = screen.getByTestId('issue-letter')
+  await within(dialog).findByTestId('letter-preview')
+  const issue = () => within(dialog).getByText(`${P}.dialog.issueAndEmail`) as HTMLButtonElement
+  await waitFor(() => expect(issue().disabled).toBe(false))
+  // A change after the preview: the old draft is still on screen, but Issue is shut until the new one.
+  mockApi.previewLetter.mockImplementationOnce(() => new Promise((res) => { resolveNext = res }))
+  fireEvent.change(within(dialog).getByLabelText(`${P}.dialog.note`), { target: { value: 'A late change.' } })
+  expect(issue().disabled).toBe(true)
+  expect(await within(dialog).findByTestId('letter-preview-stale')).toBeTruthy()
+  await waitFor(() => expect(mockApi.previewLetter).toHaveBeenLastCalledWith(
+    104, expect.objectContaining({ note: 'A late change.' }), { token: 'tok' }))
+  resolveNext({ ...PREVIEW, kind: undefined } as unknown as api.LetterPreview)
+  await waitFor(() => expect(issue().disabled).toBe(false))
+  fireEvent.click(issue())
+  await within(dialog).findByText(`${P}.error.storage_failed`)
+  fireEvent.click(issue())
+  await waitFor(() => expect(mockApi.issueLetter).toHaveBeenCalledTimes(2))
+  const keys = mockApi.issueLetter.mock.calls.map((c) => c[1].issue_key)
+  expect(keys[0]).toBeTruthy()
+  expect(keys[1]).toBe(keys[0])
+})
+
+it('S6b review 6: a refused resend says why', async () => {
+  mockApi.resendLetter.mockRejectedValue(Object.assign(new Error('x'), { code: 'resend_too_soon' }))
+  mount()
+  fireEvent.click(within(await screen.findByTestId('letter-not-emailed-2')).getByText(`${P}.resend`))
+  expect(await screen.findByText(`${P}.resendRefused.resend_too_soon`)).toBeTruthy()
 })
 
 it('a refusal from the server is said in words', async () => {

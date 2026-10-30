@@ -6377,7 +6377,8 @@
           "emailPreview": "E-mel yang diterimanya (bahasanya: {language})",
           "documentsOnly": "Surat ini tidak mengubah status atau bayarannya. Gunakan Tahan atau Tutup pada fail.",
           "typeName": "Taip nama penuh pelajar untuk mengeluarkan",
-          "issueAndEmail": "Keluarkan dan e-mel"
+          "issueAndEmail": "Keluarkan dan e-mel",
+          "previewUpdating": "Mengemas kini draf — Keluarkan menunggu sehingga ia menunjukkan apa yang anda taip."
         },
         "error": {
           "forbidden": "Anda tidak boleh mengeluarkan surat jenis ini.",
@@ -6389,6 +6390,11 @@
           "pdf_failed": "PDF tidak dapat dihasilkan. Tiada surat dikeluarkan.",
           "storage_failed": "PDF tidak dapat disimpan. Tiada surat dikeluarkan.",
           "generic": "Surat tidak dapat dikeluarkan. Sila cuba lagi."
+        },
+        "resendRefused": {
+          "resend_too_soon": "E-mel telah dihantar semula kurang daripada 10 minit yang lalu. Sila tunggu sebelum menghantarnya lagi.",
+          "file_closed": "Fail telah ditutup, jadi surat ini tidak dihantar semula.",
+          "withdrawn": "Surat ini telah ditarik balik, jadi ia tidak dihantar semula."
         }
       }
     },
@@ -7458,7 +7464,9 @@
           "empty": "Tulis subjek dan mesej.",
           "subject_too_long": "Subjek terlalu panjang.",
           "unknown_template": "E-mel ini tidak wujud.",
-          "generic": "Tidak dapat menyimpan e-mel. Anda mungkin tiada kebenaran."
+          "generic": "Tidak dapat menyimpan e-mel. Anda mungkin tiada kebenaran.",
+          "subject_newline": "Pastikan subjek dalam satu baris.",
+          "body_too_long": "Mesej terlalu panjang (paling banyak 20,000 aksara)."
         },
         "switchNote": "Mematikan satu benar-benar menghentikannya; tiada yang dihantar sebagai ganti.",
         "switchFailed": "Itu tidak dapat diubah. Sila cuba lagi.",

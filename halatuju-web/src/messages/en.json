@@ -6377,7 +6377,8 @@
           "emailPreview": "The email she gets (her language: {language})",
           "documentsOnly": "This letter does not change her status or payments. Use Hold or Close on the file.",
           "typeName": "Type the student's full name to issue",
-          "issueAndEmail": "Issue and email"
+          "issueAndEmail": "Issue and email",
+          "previewUpdating": "Updating the draft — Issue waits until it shows what you typed."
         },
         "error": {
           "forbidden": "You may not issue this kind of letter.",
@@ -6389,6 +6390,11 @@
           "pdf_failed": "The PDF could not be made. No letter was issued.",
           "storage_failed": "The PDF could not be stored. No letter was issued.",
           "generic": "The letter could not be issued. Please try again."
+        },
+        "resendRefused": {
+          "resend_too_soon": "The email was re-sent less than 10 minutes ago. Please wait before sending it again.",
+          "file_closed": "The file is closed, so this letter is not sent again.",
+          "withdrawn": "This letter was withdrawn, so it is not sent again."
         }
       }
     },
@@ -7458,7 +7464,9 @@
           "empty": "Write a subject and a message.",
           "subject_too_long": "The subject is too long.",
           "unknown_template": "This email does not exist.",
-          "generic": "Could not save the email. You may not have permission."
+          "generic": "Could not save the email. You may not have permission.",
+          "subject_newline": "Keep the subject on one line.",
+          "body_too_long": "The message is too long (at most 20,000 characters)."
         },
         "switchNote": "Switching one off really does stop it; nothing goes in its place.",
         "switchFailed": "That could not be changed. Please try again.",

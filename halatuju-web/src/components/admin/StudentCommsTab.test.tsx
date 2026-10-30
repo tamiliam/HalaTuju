@@ -194,6 +194,16 @@ describe('the Letters heading (S6b)', () => {
     expect(chips.map((c) => c.getAttribute('data-customised'))).toEqual(['true', 'false'])
   })
 
+  it('S6b review 7: a two-line subject or an overlong body is refused in words', async () => {
+    mockLetters.saveLetterTemplate.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'subject_newline' }))
+    render(<StudentCommsTab />)
+    const li = await screen.findByTestId('letter-template-general')
+    fireEvent.click(within(li).getByText(`${P}.edit`))
+    fireEvent.change(within(li).getAllByRole('textbox')[0], { target: { value: 'Two lines' } })
+    fireEvent.click(within(li).getByText('admin.sources.save'))
+    expect(await within(li).findByText(`${P}.error.subject_newline`)).toBeTruthy()
+  })
+
   it('Edit wording opens a tab per PDF language and saves kind + language', async () => {
     render(<StudentCommsTab />)
     const li = await screen.findByTestId('letter-template-termination')

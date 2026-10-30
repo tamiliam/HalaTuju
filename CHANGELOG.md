@@ -27,6 +27,20 @@ Roadmap Sprint 6, second half (owner-approved design: LettersAdmin, LettersStude
   (maintenance, default 14); activity events `letter_issued`, `letter_withdrawn`, `letter_acknowledged`; the
   `letter_issued` kind in `student_comms` (outside the results flag) and the catalogue (Letters heading, locked).
 - **Not changed:** status, sub-state, payments — letters are documents only. TD-367 left to TD-383 (decisions.md).
+- **Review fixes (adversarial review, 2026-10-31 — no tenant or security hole; on top of `2af12aa8`):**
+  - The scholar file no longer breaks if the web goes live before the API (`letters: []` reads as none).
+  - The PDF's date is her day (Malaysia), matching the letter's own date line.
+  - One press, one letter: an `issue_key` per dialog (unique per application), the application row locked during the
+    issue; a repeat returns the same letter.
+  - **`cleanup_orphan_blobs --apply` would have deleted every letter PDF, signed agreement PDF and request
+    screenshot** — it now knows all four kinds of stored file.
+  - The notice email after the save never errors the request; Resend refuses withdrawn letters, closed-file
+    discipline / suspension / termination letters, and more than once per 10 minutes.
+  - Letter wording: a one-line subject, a body of at most 20,000 characters.
+  - The shared email renderer fills each token ONCE (a note containing `{name}` stays as written).
+  - "Issue and email" waits until the preview matches the fields on screen.
+  - Migration `0192_letters` regenerated (adds `letters.issue_key`, unique with the application, and
+    `letters.last_resend_at`); its hand-applied SQL re-rendered to match.
 - **TD-427 (bundle) — weight reclaimed, the gate green again.** The tree 6b started from already exited 1 locally
   (median 147.759 kB: 0.241 kB of room, under the 0.25 kB floor). `activityDot` / `activityText` moved verbatim from
   `lib/scholars.ts` to `lib/scholarActivity.ts`: only the file's timeline uses them, and the Scholars LIST — one of

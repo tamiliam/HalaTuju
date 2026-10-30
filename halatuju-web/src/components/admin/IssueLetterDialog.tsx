@@ -14,6 +14,10 @@ const CONFIRM: readonly LetterKind[] = ['discipline', 'termination']
 const DOCS_ONLY: readonly LetterKind[] = ['suspension', 'termination']
 const KNOWN = ['forbidden', 'file_closed', 'confirm_mismatch', 'clause_required', 'clause_too_long', 'note_too_long',
   'pdf_failed', 'storage_failed']
+/** One id per opening of the dialog — sent with the issue, so a double press or a retried request
+ *  returns the letter already issued instead of making a second (S6b review 3). */
+const newIssueKey = () => (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`)
 
 /**
  * "Issue a letter" (S6b; the LettersAdmin board's six steps): kind, PDF language, the fill-ins, the
@@ -37,7 +41,10 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
   const [clause, setClause] = useState('')
   const [note, setNote] = useState('')
   const [preview, setPreview] = useState<LetterPreview | null>(null)
+  // Which draft the shown preview was rendered FROM (review 9): Issue waits until it is this one.
+  const [previewedFor, setPreviewedFor] = useState('')
   const [previewError, setPreviewError] = useState('')
+  const [issueKey] = useState(newIssueKey)
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -47,13 +54,15 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
     return t(`${P}.error.${KNOWN.includes(code) ? code : 'generic'}`)
   }
 
+  const draftKey = JSON.stringify([kind, language, clause, note])
   useEffect(() => {
     if (!token) return
     let live = true
+    const forDraft = JSON.stringify([kind, language, clause, note])
     const timer = setTimeout(() => {
       previewLetter(id, { kind, language, clause, note }, { token })
-        .then((p) => { if (live) { setPreview(p); setPreviewError('') } })
-        .catch((e) => { if (live) { setPreview(null); setPreviewError(say(e)) } })
+        .then((p) => { if (live) { setPreview(p); setPreviewedFor(forDraft); setPreviewError('') } })
+        .catch((e) => { if (live) { setPreview(null); setPreviewedFor(''); setPreviewError(say(e)) } })
     }, 350)
     return () => { live = false; clearTimeout(timer) }
   }, [id, token, kind, language, clause, note]) // eslint-disable-line react-hooks/exhaustive-deps -- `say` only maps a code to words; the draft re-renders on its own fields
@@ -62,11 +71,15 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
   const norm = (s: string) => s.trim().split(/\s+/).join(' ').toLocaleLowerCase()
   const nameOk = !needsName || (!!data.student_name && norm(typed) === norm(data.student_name))
 
+  // The officer issues exactly what the draft beside the button shows — never a field changed since.
+  const previewCurrent = !!preview && previewedFor === draftKey
+
   async function issue() {
-    if (!token || !preview || !nameOk) return
+    if (!token || !previewCurrent || !nameOk) return
     setBusy(true); setError('')
     try {
-      onIssued(await issueLetter(id, { kind, language, clause, note, confirm_name: typed }, { token }))
+      onIssued(await issueLetter(id, { kind, language, clause, note, confirm_name: typed, issue_key: issueKey },
+        { token }))
     } catch (e) { setError(say(e)) } finally { setBusy(false) }
   }
 
@@ -119,6 +132,9 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
       <p className="text-xs text-ground-500">{t(`${P}.dialog.wordingWhere`)}</p>
 
       {previewError && <p className="text-sm text-critical-600" data-testid="letter-preview-error">{previewError}</p>}
+      {preview && !previewCurrent && !previewError && (
+        <p className="text-xs text-ground-500" data-testid="letter-preview-stale">{t(`${P}.dialog.previewUpdating`)}</p>
+      )}
       {preview && (
         <div className="flex flex-wrap gap-4">
           <div className="min-w-0 flex-1 basis-80 space-y-2 rounded-lg border bg-ground-50 p-4" data-testid="letter-preview">
@@ -152,7 +168,7 @@ export default function IssueLetterDialog({ id, token, data, onCancel, onIssued 
       )}
       {error && <p className="text-sm text-critical-600" role="alert">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={issue} disabled={busy || !preview || !nameOk}
+        <button type="button" onClick={issue} disabled={busy || !previewCurrent || !nameOk}
           className="h-11 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
           {busy ? t('common.loading') : t(`${P}.dialog.issueAndEmail`)}
         </button>

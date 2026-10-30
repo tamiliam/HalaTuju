@@ -395,3 +395,85 @@ class TestEveryLetterRouteOverHttp(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(client.post(f'/api/v1/admin/scholarship/scholars/{pk}/letters/{lid}/archive/', {},
                                      format='json').status_code, 404)
+
+
+@LOCMEM
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheReviewFixes(_Base):
+    """S6b adversarial review (2026-10-31): one regression per finding."""
+
+    def test_2_the_pdf_header_date_is_her_day_not_the_utc_day(self):
+        from apps.scholarship import letters_pdf
+        issued = datetime.datetime(2026, 10, 30, 23, 30, tzinfo=datetime.timezone.utc)   # 31 Oct 07:30 MYT
+        with patch('django.utils.timezone.now', return_value=issued):
+            r = self._issue(self.org_admin, kind='general')
+        letter = Letter.objects.get(pk=r.json()['id'])
+        html = letters_pdf.html_for(letter, html_body='')
+        self.assertIn('31 October 2026', html)
+        self.assertNotIn('30 October 2026', html)
+        self.assertIn('31 October 2026', letter.body)                       # the body's {date} agrees
+
+    def test_3_one_press_issues_one_letter_whatever_the_repeats(self):
+        first = self._issue(self.org_admin, kind='general', issue_key='press-1')
+        again = self._issue(self.org_admin, kind='general', issue_key='press-1')
+        self.assertEqual((first.status_code, again.status_code), (201, 200))
+        self.assertEqual(first.json()['id'], again.json()['id'])
+        self.assertEqual((Letter.objects.count(), self.upload.call_count, len(mail.outbox)), (1, 1, 1))
+        self.assertEqual(StudentActivity.objects.filter(event='letter_issued').count(), 1)
+        self.assertEqual(self._issue(self.org_admin, kind='general', issue_key='press-2').status_code, 201)
+        self.assertEqual(Letter.objects.count(), 2)
+        r = self._issue(self.org_admin, kind='general', issue_key='x' * 65)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'bad_issue_key'))
+
+    def test_3_the_issue_locks_the_application_row(self):
+        """SQLite drops FOR UPDATE, so the lock is pinned by the call: the issue asks for the
+        application row `select_for_update` before it looks the key up or creates anything."""
+        from apps.scholarship.models import ScholarshipApplication
+        real = ScholarshipApplication.objects.select_for_update
+        with patch.object(ScholarshipApplication.objects, 'select_for_update', side_effect=real) as lock:
+            self._issue(self.org_admin, kind='general', issue_key='lock')
+        lock.assert_called()
+
+    def test_5_a_failing_notice_never_fails_the_issue(self):
+        with patch('apps.scholarship.letters.send_notice', side_effect=RuntimeError('mail down')), \
+                self.assertLogs('apps.scholarship.letters', level='ERROR'):
+            r = self._issue(self.org_admin, kind='general')
+        self.assertEqual(r.status_code, 201)
+        letter = Letter.objects.get(pk=r.json()['id'])
+        self.assertIsNone(letter.emailed_at)
+
+    def test_6_resend_refuses_closed_file_kinds_and_is_throttled(self):
+        lid = self._issue(self.org_admin, kind='discipline', clause='5', confirm_name=self.name).json()['id']
+        url = API.format(self.app.id) + f'{lid}/resend/'
+        client = authed_client(self.org_admin)
+        self.assertEqual(client.post(url, format='json').status_code, 200)
+        r = client.post(url, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'resend_too_soon'))
+        Letter.objects.filter(pk=lid).update(last_resend_at=timezone.now() - datetime.timedelta(minutes=11))
+        self.assertEqual(client.post(url, format='json').status_code, 200)
+        Letter.objects.filter(pk=lid).update(last_resend_at=None)
+        type(self.app).objects.filter(pk=self.app.pk).update(status='closed')
+        r = client.post(url, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'file_closed'))
+        general = self._issue(self.org_admin, kind='close_out').json()['id']
+        self.assertEqual(client.post(API.format(self.app.id) + f'{general}/resend/', format='json').status_code, 200)
+
+    def test_7_a_one_line_subject_and_a_bounded_body(self):
+        url = '/api/v1/admin/scholarship/organisation/letter-templates/'
+        client = authed_client(self.org_admin)
+        for subject, body, code in (('Two\nlines', 'Dear {name}', 'subject_newline'),
+                                    ('Ok', 'x' * (svc.BODY_MAX + 1), 'body_too_long')):
+            with self.subTest(code=code):
+                r = client.put(url, {'kind': 'general', 'language': 'en', 'subject': subject, 'body': body},
+                               format='json')
+                self.assertEqual((r.status_code, r.json()['code']), (400, code))
+        self.assertFalse(LetterTemplate.objects.exists())
+
+    def test_8_a_value_is_never_expanded_again(self):
+        r = self._issue(self.org_admin, kind='general', note='Ask {name} about {response_due} and {clause}.')
+        body = Letter.objects.get(pk=r.json()['id']).body
+        self.assertIn('Ask {name} about {response_due} and {clause}.', body)
+        from apps.scholarship import email_templates
+        subject, text, html = email_templates.render('Hi {name}', 'Note: {note}', {'name': '{note}', 'note': '<b>'}, {})
+        self.assertEqual((subject, text), ('Hi {note}', 'Note: <b>'))
+        self.assertIn('&lt;b&gt;', html)

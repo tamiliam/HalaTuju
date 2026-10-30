@@ -59,6 +59,16 @@ function Card({ title, children, testId }: { title: string; children: React.Reac
   )
 }
 
+/** S6b review 1: the API before 6b sends `letters: []`. If this page goes live first, an array (or
+ *  nothing) reads as "no letters" rather than throwing on `.count` / `.latest`. */
+const NO_LETTERS: ScholarFile['letters'] = { count: 0, awaiting: 0, overdue: 0, latest: [] }
+function lettersSummary(value: unknown): ScholarFile['letters'] {
+  if (!value || Array.isArray(value) || typeof value !== 'object') return NO_LETTERS
+  const v = value as Partial<ScholarFile['letters']>
+  return { count: Number(v.count) || 0, awaiting: Number(v.awaiting) || 0, overdue: Number(v.overdue) || 0,
+    latest: Array.isArray(v.latest) ? v.latest : [] }
+}
+
 function Later({ text }: { text: string }) {
   return <p className="text-sm text-ground-500">{text}</p>
 }
@@ -178,21 +188,22 @@ function StaffScholarFile() {
       </p>
     </Card>
   )
+  const letters = lettersSummary(file.letters)
   const lettersCard = (
     <Card title={t('admin.scholars.card.letters')} testId="card-letters">
-      {file.letters.count === 0 ? <Later text={t('admin.scholars.letters.empty')} /> : (
+      {letters.count === 0 ? <Later text={t('admin.scholars.letters.empty')} /> : (
         <>
           <p className="text-sm text-ground-700">
-            {t('admin.scholars.letters.cardCounts', { count: String(file.letters.count),
-              awaiting: String(file.letters.awaiting) })}
+            {t('admin.scholars.letters.cardCounts', { count: String(letters.count),
+              awaiting: String(letters.awaiting) })}
           </p>
-          {file.letters.overdue > 0 && (
+          {letters.overdue > 0 && (
             <p className="text-sm text-critical-700" data-testid="card-letters-overdue">
-              {t('admin.scholars.letters.cardOverdue', { count: String(file.letters.overdue) })}
+              {t('admin.scholars.letters.cardOverdue', { count: String(letters.overdue) })}
             </p>
           )}
           <ul className="space-y-1 text-sm text-ground-700">
-            {file.letters.latest.map((l, i) => (
+            {letters.latest.map((l, i) => (
               <li key={i}>{t(`admin.scholars.letters.kind.${l.kind}`)} · {l.subject} · {formatDate(l.issued_at)}</li>
             ))}
           </ul>

@@ -87,6 +87,9 @@ def list_blocks(items):
             '\n'.join('- ' + str(i) for i in items))
 
 
+_TOKEN = re.compile(r'\{([A-Za-z0-9_]+)\}')
+
+
 def fill(text, scalars, escape):
     """Substitute the scalar tokens.
 
@@ -94,10 +97,16 @@ def fill(text, scalars, escape):
     `escape` here decides whether the VALUES are escaped — True for the HTML part, False for the
     plain-text part.
     """
-    out = text
-    for token, value in scalars.items():
-        out = out.replace('{' + token + '}', esc(value) if escape else str(value))
-    return out
+    # ONE PASS (S6b review 8): each `{token}` in the TEMPLATE is replaced once, by its value. A value
+    # that itself contains `{note}` or `{name}` (an officer's note, a student's name) is never read
+    # again, so it can never pull another value in. A token with no value stays as written.
+    def one(match):
+        token = match.group(1)
+        if token not in scalars:
+            return match.group(0)
+        value = scalars[token]
+        return esc(value) if escape else str(value)
+    return _TOKEN.sub(one, text)
 
 
 def render(subject, body, scalars, blocks):

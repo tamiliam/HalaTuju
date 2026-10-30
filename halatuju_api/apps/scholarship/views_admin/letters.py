@@ -25,7 +25,7 @@ from .scholars import _ScholarsBase
 logger = logging.getLogger('apps.scholarship.views_admin')
 
 _STATUS = {'forbidden': status.HTTP_403_FORBIDDEN, 'file_closed': status.HTTP_409_CONFLICT,
-           'withdrawn': status.HTTP_409_CONFLICT}
+           'withdrawn': status.HTTP_409_CONFLICT, 'resend_too_soon': status.HTTP_409_CONFLICT}
 
 
 def _letter_refusal(e):
@@ -58,7 +58,8 @@ class _LettersBase(_ScholarsBase):
 
 class AdminScholarLettersView(_LettersBase):
     """GET/POST admin/scholarship/scholars/<pk>/letters/ — the tab; POST issues one letter
-    `{kind, language, clause, note, confirm_name}` (201 with the letter)."""
+    `{kind, language, clause, note, confirm_name, issue_key}` — 201 with the letter, or 200 with the
+    SAME letter when `issue_key` was already used on this file (a repeated press; review 3)."""
 
     def get(self, request, pk):
         app, admin, err = self._file_for(request, pk)
@@ -85,15 +86,17 @@ class AdminScholarLettersView(_LettersBase):
             return err
         data = _data(request)
         try:
-            letter = svc.issue(app, kind=str(data.get('kind') or ''), language=str(data.get('language') or ''),
-                               clause=data.get('clause') or '', note=data.get('note') or '',
-                               confirm_name=data.get('confirm_name') or '', by_admin=admin,
-                               allowed_kinds=self._kinds_for(admin, app))
+            letter, created = svc.issue(
+                app, kind=str(data.get('kind') or ''), language=str(data.get('language') or ''),
+                clause=data.get('clause') or '', note=data.get('note') or '',
+                confirm_name=data.get('confirm_name') or '', by_admin=admin,
+                allowed_kinds=self._kinds_for(admin, app), issue_key=data.get('issue_key'))
         except svc.LetterError as e:
             return _letter_refusal(e)
-        logger.warning('AUDIT letter_issued app=%s letter=%s kind=%s by=%s',
-                       app.id, letter.id, letter.kind, admin.email)
-        return Response(svc.admin_dict(letter), status=status.HTTP_201_CREATED)
+        if created:
+            logger.warning('AUDIT letter_issued app=%s letter=%s kind=%s by=%s',
+                           app.id, letter.id, letter.kind, admin.email)
+        return Response(svc.admin_dict(letter), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 class AdminScholarLetterPreviewView(_LettersBase):
