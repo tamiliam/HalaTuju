@@ -35,8 +35,8 @@ export const basicsConfidentiality: ManualChapter = {
         list &mdash; nobody else, an organisation admin included. Use the chips to narrow it (All, Students, Money,
         Profile and sign-in &mdash; you only see the ones that fit your work) and <strong>Show older</strong> to go
         further back. A student you can no longer open shows as &ldquo;a student&rdquo;, and one whose record was
-        deleted as &ldquo;a student (removed)&rdquo;. Entries marked <strong>rebuilt</strong> were put together
-        from older records, so a few early ones may be missing.</>
+        deleted as &ldquo;a student (removed)&rdquo;. Older entries were rebuilt from past
+        records, so a few early ones may be missing.</>
       ),
     },
     {

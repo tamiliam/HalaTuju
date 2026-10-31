@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## My activity: 10 rows first, no per-row rebuilt tag (owner, 2026-11-01) — BUILT, not deployed
+
+- **Ten rows first**: `FIRST_PAGE` 6 → 10 in `components/adminProfile/ActivityCard.tsx` (first load, chip change, Try again); Show older stays at 20.
+- **No "rebuilt" tag on a row**: everything before 1 November 2026 is rebuilt, so the tag added nothing (owner). The footer is unchanged ("Older entries were rebuilt from past records, so some may be missing."). Key `admin.myProfile.activity.rebuilt` removed from en / ms / ta; the API and the `backfilled` field are untouched.
+- Guide (`content/manual/basics-confidentiality.tsx`) and FAQ (`content/manual/faq.tsx`) no longer say "entries marked rebuilt"; decisions.md S5 entry notes the supersession.
+
 ## Mobile M1b (part 2): every overlay on the shared Sheet (2026-11-01)
 
 - 15 hand-rolled overlays moved onto `Sheet` — shell only; words, buttons, validation and test ids unchanged:
@@ -106,7 +112,7 @@ All notable changes to this project will be documented in this file.
   own sandbox-slug reader.
 - `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
 
-## My activity: 6 rows first, 20 more per Show older (owner, 2026-11-01) — BUILT, not deployed
+## My activity: 6 rows first, 20 more per Show older (owner, 2026-11-01) — LIVE 2026-11-01 (main 9ef402a4; web-01048-rdk)
 
 - **The My activity card no longer scrolls by default**: the first load (and each chip change or Try again) asks for `limit=6`; each Show older asks for `limit=20` with the cursor, so the inner scroll appears only after Show older. Named constants `FIRST_PAGE`/`OLDER_PAGE` in `components/adminProfile/ActivityCard.tsx`; `getMyActivity` (`lib/admin-api/profiles.ts`) now sends `?limit=` (API unchanged, 1-100). Race guard, token ref, scroll reset and heights unchanged.
 

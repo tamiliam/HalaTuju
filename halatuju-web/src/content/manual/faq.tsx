@@ -67,9 +67,8 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Who can see <strong>My activity</strong> on my profile? Why are some entries missing?</>,
-      a: <>Only you. The list shows what you did, newest first, and nobody else can open it. Entries marked
-        <strong> rebuilt</strong> were put together from older records when the list began, so a few early ones
-        may be missing. A student you can no longer open shows as &ldquo;a student&rdquo; rather than by name.</>,
+      a: <>Only you. The list shows what you did, newest first, and nobody else can open it. Older entries were
+        rebuilt from past records when the list began, so a few early ones may be missing. A student you can no longer open shows as &ldquo;a student&rdquo; rather than by name.</>,
     },
     {
       q: <>I can see a page my role doesn&rsquo;t usually have. Is that a mistake?</>,

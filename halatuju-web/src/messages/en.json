@@ -5166,7 +5166,6 @@
           "week": "This week",
           "earlier": "Earlier"
         },
-        "rebuilt": "rebuilt",
         "showOlder": "Show older",
         "moreError": "We could not load older entries. Try again.",
         "footer": "Only you can see this list. Older entries were rebuilt from past records, so some may be missing.",

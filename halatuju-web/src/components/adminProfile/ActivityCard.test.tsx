@@ -32,7 +32,7 @@ const page = (results: ActivityItem[], next: string | null = null): ActivityPage
 
 beforeEach(() => { jest.clearAllMocks() })
 
-it('a reviewer: All / Students / Profile and sign-in, rows by day, links, our neutral words, rebuilt', async () => {
+it('a reviewer: All / Students / Profile and sign-in, rows by day, links, our neutral words, no rebuilt tag', async () => {
   mockApi.getMyActivity.mockResolvedValue(page([
     item({ id: 3, subject: { type: 'application', state: 'visible', label: 'Aisyah binti Ali', id: 104 } }),
     item({ id: 2, verb: 'query_raised', subject: { type: 'application', state: 'hidden', label: 'SERVER WORD', id: null } }),
@@ -49,13 +49,15 @@ it('a reviewer: All / Students / Profile and sign-in, rows by day, links, our ne
   expect(within(rows[1]).queryByRole('link')).toBeNull()
   expect(rows[2].textContent).toContain('Closed the case of a student (removed)')
   expect(screen.queryByText(/SERVER WORD/)).toBeNull()
-  expect(within(rows[2]).getByTestId('activity-rebuilt')).toBeTruthy()
-  expect(within(rows[0]).queryByTestId('activity-rebuilt')).toBeNull()
+  // No per-row "rebuilt" tag, even on a back-filled row (owner, 2026-11-01); the footer still says it.
+  expect(screen.queryAllByTestId('activity-rebuilt')).toHaveLength(0)
+  expect(rows[2].textContent).not.toMatch(/rebuilt/i)
+  expect(screen.getByText(/Older entries were rebuilt from past records/)).toBeTruthy()
   expect(screen.getByRole('region', { name: 'Today' })).toBeTruthy()
   expect(screen.getByRole('region', { name: 'Earlier' })).toBeTruthy()
   expect(screen.getByText(/Only you can see this list/)).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Show older' })).toBeNull()
-  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 6, { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 10, { token: 'tok' })
 })
 
 it('Show older asks for the next page with the cursor, appends it, and goes when there is no more', async () => {
@@ -76,7 +78,7 @@ it('a chip asks the server for its kind; an empty list says so in plain words', 
   expect((await screen.findByTestId('activity-empty')).textContent).toContain('Nothing here yet.')
   expect(screen.queryByRole('button', { name: 'Students' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Money' }))
-  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('money', null, 6, { token: 'tok' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('money', null, 10, { token: 'tok' }))
   expect((await screen.findByTestId('activity-empty')).textContent).toContain('Nothing of this kind yet.')
   expect((screen.getByRole('button', { name: 'Money' })).getAttribute('aria-pressed')).toBe('true')
 })
@@ -87,11 +89,11 @@ it('a failed load says so, and Try again asks again', async () => {
   expect((await screen.findByRole('alert')).textContent).toContain('We could not load your activity.')
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
   expect(await screen.findByText('Signed in for the first time')).toBeTruthy()
-  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', null, 6, { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', null, 10, { token: 'tok' })
 })
 
-// ── Few rows first, so the box does not scroll by default (owner ruling 2026-11-01) ────────────
-it('the first load asks for 6 rows, Show older for 20 more with the cursor, a chip change for 6 again', async () => {
+// ── Ten rows first, so the box does not scroll by default (owner rulings 2026-11-01) ───────────
+it('the first load asks for 10 rows, Show older for 20 more with the cursor, a chip change for 10 again', async () => {
   mockApi.getMyActivity
     .mockResolvedValueOnce(page([item({ id: 2, verb: 'first_sign_in' })], 'CUR1'))
     .mockResolvedValueOnce(page([item({ id: 1, verb: 'profile_updated', created_at: LONG_AGO })], 'CUR2'))
@@ -102,9 +104,9 @@ it('the first load asks for 6 rows, Show older for 20 more with the cursor, a ch
   fireEvent.click(screen.getByRole('button', { name: 'Students' }))
   await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenCalledTimes(3))
   expect(mockApi.getMyActivity.mock.calls).toEqual([
-    ['all', null, 6, { token: 'tok' }],
+    ['all', null, 10, { token: 'tok' }],
     ['all', 'CUR1', 20, { token: 'tok' }],
-    ['students', null, 6, { token: 'tok' }],
+    ['students', null, 10, { token: 'tok' }],
   ])
 })
 
@@ -170,7 +172,7 @@ it('a chip change puts the rows back at the top', async () => {
   scroll.scrollTop = 240
   expect(scroll.scrollTop).toBe(240)
   fireEvent.click(screen.getByRole('button', { name: 'Students' }))
-  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('students', null, 6, { token: 'tok' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('students', null, 10, { token: 'tok' }))
   expect(scroll.scrollTop).toBe(0)
 })
 
@@ -183,5 +185,5 @@ it('TD-446: the first load waits for the token and happens the moment it arrives
   rerender(<ActivityCard state={at('tok')} />)
   expect(await screen.findByText('Signed in for the first time')).toBeTruthy()
   expect(mockApi.getMyActivity).toHaveBeenCalledTimes(1)
-  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 6, { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 10, { token: 'tok' })
 })
