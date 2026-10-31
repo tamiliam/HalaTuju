@@ -14,6 +14,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-10-30 827c8b05 fix: cockpit ticks mean a document backs the value (halatuju-web/src/lib/fieldVerification.ts, ApplicantCards.tsx, faq-reviewer.tsx, role-reviewer.tsx; owner ruling, display only)
 - 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
 - 2026-10-31 a0344a35 fix: a profile save keeps the catalogue-filled institution; backfill sees post-STPM degrees (halatuju_api/apps/scholarship/family.py, management/commands/backfill_institution.py + 3 test files; owner-approved backfill --apply on live after deploy: 47 + 45 rows)
+- 2026-11-01 f451a105 fix: My activity is a fixed-height column that scrolls (owner, option A) (halatuju-web/src/app/admin/profile/page.tsx, components/adminProfile/ActivityCard.tsx, shared.tsx + tests)
 
 ## Sprints since the last review
 
