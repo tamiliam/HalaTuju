@@ -263,7 +263,7 @@ class AdminInvoicesView(_InvoiceBase):
                             status=status.HTTP_404_NOT_FOUND)
         try:
             inv = invoicing.issue_invoice(
-                org, month, issued_by_email=admin.email or '',
+                org, month, issued_by_email=admin.email or '', actor=admin,
                 override_reason=body.get('override_reason') or '',
                 # Blank = today, the ordinary case. A value BACK-DATES the printed issue date and
                 # the due date with it; `invoicing.issue_date_for` holds the bounds.
@@ -292,9 +292,10 @@ class AdminInvoiceActionView(_InvoiceBase):
         by = admin.email or ''
         try:
             if action == 'send':
-                invoicing.send_invoice(inv, sent_by_email=by)
+                invoicing.send_invoice(inv, sent_by_email=by, actor=admin)
             elif action == 'void':
-                invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by)
+                invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by,
+                                       actor=admin)
             elif action == 'receipt':
                 receipt = invoicing.record_receipt(
                     inv,
@@ -303,7 +304,7 @@ class AdminInvoiceActionView(_InvoiceBase):
                     reference=request.data.get('reference'),
                     method=(request.data.get('method') or 'bank_transfer').strip(),
                     note=request.data.get('note') or '',
-                    recorded_by_email=by)
+                    recorded_by_email=by, actor=admin)
                 # AFTER the money is recorded, never before — see `invoicing.email_receipt`. The
                 # result is not checked here on purpose: the receipt exists either way, and
                 # whether it went is read off `emailed_at` in the payload below.

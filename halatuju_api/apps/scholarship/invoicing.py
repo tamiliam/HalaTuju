@@ -29,7 +29,7 @@ from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from . import money
+from . import money, staff_activity
 # ── Months, dates and numbering: lifted whole into `invoice_dates.py` ────────
 # Moves only, when this file passed the 600-line standard. RE-EXPORTED rather than left behind,
 # because `invoicing.month_label`, `invoicing.previous_month`, `invoicing.MONTH_RE` and
@@ -369,7 +369,7 @@ def build_lines(charge, period_month):
 
 
 def issue_invoice(organisation, period_month, *, issued_by_email='', override_reason='',
-                  issued_on=None, today=None):
+                  issued_on=None, today=None, actor=None):
     """Issue ONE invoice, or raise `InvoiceRefused` with every reason it cannot be.
 
     `override_reason` lets a super issue past the overridable problems; it is refused when blank
@@ -480,6 +480,8 @@ def issue_invoice(organisation, period_month, *, issued_by_email='', override_re
                     position += 1
                     InvoiceLine.objects.create(
                         invoice=invoice, position=position, parent=parent, **child)
+            # Common profile S4 (best-effort, never raises); the monthly cron passes no actor.
+            staff_activity.record(actor, staff_activity.INVOICE_ISSUED, invoice)
     except IntegrityError:
         # The one-live-invoice constraint: somebody issued the same month a moment ago.
         raise InvoiceRefused([_problem(
@@ -528,7 +530,7 @@ def issue_month(period_month=None, *, today=None):
 
 # ── After issue: send, void, receipts ────────────────────────────────────────
 
-def send_invoice(invoice, *, sent_by_email=''):
+def send_invoice(invoice, *, sent_by_email='', actor=None):
     """Email the invoice PDF to the bill-to inboxes FROZEN on the invoice.
 
     ⚠ `sent_at` is written only AFTER the email went (the Vircle-alert lesson): marking it sent
@@ -549,10 +551,11 @@ def send_invoice(invoice, *, sent_by_email=''):
     invoice.sent_by_email = sent_by_email or ''
     invoice.sent_to = to
     invoice.save(update_fields=['sent_at', 'sent_by_email', 'sent_to'])
+    staff_activity.record(actor, staff_activity.INVOICE_SENT, invoice)   # common profile S4
     return invoice
 
 
-def void_invoice(invoice, *, reason, voided_by_email=''):
+def void_invoice(invoice, *, reason, voided_by_email='', actor=None):
     """Void an invoice. It is never edited; a replacement can then be issued for the month."""
     reason = (reason or '').strip()
     if not reason:
@@ -569,5 +572,6 @@ def void_invoice(invoice, *, reason, voided_by_email=''):
     invoice.voided_by_email = voided_by_email or ''
     invoice.void_reason = reason
     invoice.save(update_fields=['voided_at', 'voided_by_email', 'void_reason'])
+    staff_activity.record(actor, staff_activity.INVOICE_VOIDED, invoice)   # common profile S4
     logger.info('invoicing: voided %s (%s)', invoice.number, reason)
     return invoice

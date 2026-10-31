@@ -112,7 +112,8 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         from .. import bursary
         from ..serializers import BursaryAgreementSerializer
-        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '')
+        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '',
+                                       actor=admin)
         return Response(BursaryAgreementSerializer(agreement).data)
 
 

@@ -277,6 +277,9 @@ class AdminSponsorReviewView(_AdminBase):
         # separate acceptance decision, is never flipped as a side-effect of account vetting.
         sponsorship_service.sync_account_membership(
             sponsor, sponsorship_service.signup_programme_for(sponsor), vetted_by=admin.email)
+        from .. import staff_activity     # common profile S4: the vetter's own activity list
+        staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
+                              meta={'decision': new_status, 'kind': 'account'})
         # S3: until now this endpoint flipped a field and returned — eight people on production
         # were approved and never told. `previous_status` is read BEFORE the write because an
         # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently

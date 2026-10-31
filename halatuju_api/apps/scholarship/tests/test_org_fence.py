@@ -648,6 +648,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMeView': 'self-scoped',   # common profile S1: the caller's own account
         'AdminMePasswordView': 'self-scoped',   # common profile S1: the caller's own password
         'AdminMePhotoView': 'self-scoped',   # common profile S2: the caller's own photo
+        # Common profile S4: the caller's OWN activity rows; every subject label is fenced at read
+        # time by the detail view's own helpers (`staff_activity_read`, D8).
+        'AdminMeActivityView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)
         'AdminBursaryWitnessView': 'grandfathered',
     }

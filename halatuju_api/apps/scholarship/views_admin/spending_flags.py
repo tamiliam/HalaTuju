@@ -75,7 +75,7 @@ class AdminSpendingFlagView(_SpendingBase):
         action = request.data.get('action') or ''
         log, code = merchant_flags.change_flag(
             org_id, request.data.get('merchant') or '', action, request.data.get('note'),
-            admin.email, spend_report._txns(org_id, programme))
+            admin.email, spend_report._txns(org_id, programme), actor=admin)
         if code:
             return _refuse(code)
         logger.info('AUDIT spend_flag_%s merchant=%r org=%s by=%s',

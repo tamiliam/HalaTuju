@@ -19,7 +19,7 @@ from django.db import transaction
 from django.db.models import Max
 from django.utils import timezone
 
-from . import pool
+from . import pool, staff_activity
 from .models import Disbursement
 
 
@@ -91,7 +91,7 @@ def _flip_to_maintenance(application):
 
 
 @transaction.atomic
-def release_tranche(disbursement, *, by_email='', reference='mock', note=''):
+def release_tranche(disbursement, *, by_email='', reference='mock', note='', actor=None):
     """Mark a tranche disbursed (mock — TD-075). Only a 'scheduled' or 'due' tranche can
     be released, and NOT while the student's support is on hold (S5). Records who/when +
     the (mock) payment reference, and **flips the application ``active`` → ``maintenance``
@@ -120,11 +120,12 @@ def release_tranche(disbursement, *, by_email='', reference='mock', note=''):
     activity.log_event(disbursement.application, EVENT_PAYMENT_RELEASED, actor_email=by_email,
                        meta={'amount': str(disbursement.amount), 'disbursement_id': disbursement.id,
                              'reference': disbursement.reference})
+    _record_tranche(actor, staff_activity.TRANCHE_RELEASED, disbursement)
     return disbursement
 
 
 @transaction.atomic
-def withhold_tranche(disbursement, *, by_email='', note=''):
+def withhold_tranche(disbursement, *, by_email='', note='', actor=None):
     """Hold a tranche back (probation / failed results — the S5 loop leans on this).
     Only a not-yet-paid tranche ('scheduled'/'due') can be withheld. Does NOT change the
     application status (the student stays in maintenance/active). Returns the row."""
@@ -135,11 +136,12 @@ def withhold_tranche(disbursement, *, by_email='', note=''):
     if note:
         disbursement.note = note.strip()[:500]
     disbursement.save(update_fields=['status', 'actioned_by', 'note', 'updated_at'])
+    _record_tranche(actor, staff_activity.TRANCHE_WITHHELD, disbursement)
     return disbursement
 
 
 @transaction.atomic
-def return_tranche(disbursement, *, by_email='', note=''):
+def return_tranche(disbursement, *, by_email='', note='', actor=None):
     """Mark a released tranche's money as returned (withdrawal / termination). Only a
     'released' tranche can be returned. Ledger-only — no real refund. Returns the row."""
     if disbursement.status != 'released':
@@ -149,7 +151,16 @@ def return_tranche(disbursement, *, by_email='', note=''):
     if note:
         disbursement.note = note.strip()[:500]
     disbursement.save(update_fields=['status', 'actioned_by', 'note', 'updated_at'])
+    _record_tranche(actor, staff_activity.TRANCHE_RETURNED, disbursement)
     return disbursement
+
+
+def _record_tranche(actor, verb, disbursement):
+    """Common profile S4: the person who pressed Release / Withhold / Return gets the row on their own
+    activity list, inside this transaction (best-effort; never raises). The subject is the STUDENT
+    (the application), so the reader's student rule (D8) decides what a later viewer is told. A
+    payment run's payouts are NOT written here: the run's approval is that act (`payments_chain`)."""
+    staff_activity.record(actor, verb, disbursement.application, meta={'tranche': disbursement})
 
 
 def mark_due(disbursement):

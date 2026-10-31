@@ -39,7 +39,7 @@ from apps.courses import supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
-from .. import staff_activity, staff_photo
+from .. import staff_activity, staff_activity_read, staff_photo
 from ..staff_contact import new_profile_defaults, phone_refusal, works_with_students
 from ..models import Mentor, StaffProfile
 from .base import _AdminBase
@@ -250,6 +250,30 @@ class AdminMePhotoView(_AdminBase):
         if had_photo:       # common profile S3: only a photo that was there and is now gone
             staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['photo']})
         return Response({'photo_url': None})
+
+
+class AdminMeActivityView(_AdminBase):
+    """GET /api/v1/admin/me/activity/?kind=all|students|money|profile&cursor=&limit= — the caller's
+    OWN activity list, newest first (common profile S4; the reader is `staff_activity_read`).
+
+    Every role, a super included, reads only their own rows. A subject's name is looked up NOW and
+    shown only when the caller may see that subject now (D8); a subject that is gone reads
+    "(removed)" (D7). `next` is an opaque cursor, keyed on (created_at, id); null on the last page.
+    Refusals (400): `bad_kind`, `bad_cursor`, `bad_limit` (1-100). Opted in for a source user."""
+    source_partner_methods = ('get',)
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        q = request.query_params
+        try:
+            rows, nxt = staff_activity_read.page(
+                admin, kind=(q.get('kind') or 'all'), cursor=(q.get('cursor') or None),
+                limit=staff_activity_read.parse_limit(q.get('limit')))
+        except staff_activity_read.BadQuery as e:
+            return _me_refusal(str(e))
+        return Response({'results': staff_activity_read.items(admin, rows, self), 'next': nxt})
 
 
 def _me_refusal(code, http=status.HTTP_400_BAD_REQUEST, **extra):
