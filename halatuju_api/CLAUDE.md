@@ -1135,8 +1135,7 @@ Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`; retro `retrospective-
 closed verb + meta-key lists, no free text), wired into 18 case/sign-in/profile verbs (now `WIRED`; drift test
 `tests/test_staff_activity.py`). Courses-side actions go through `apps/courses/staff_activity_hook.py` (writer
 registered in `ScholarshipConfig.ready`, no courses→scholarship import). **Migrate-first at deploy:** scholarship
-`0195_staff_activity` (SQL with RLS + ledger row in its docstring); it depends on 0193 — repoint to the
-Maintenance session's `0194_mentors` if that lands first. Doors left unwired on purpose (interview reopen, cancel
+`0195_staff_activity` (SQL with RLS + ledger row in its docstring); it depends on `0194_mentors` (live). Doors left unwired on purpose (interview reopen, cancel
 reopen/decline, witness-org override, temp-password set, invitation cancel/revoke) — see CHANGELOG S3.
 
 **S4 BUILT 2026-10-31 on branch `profiles` (NOT pushed).** Every verb wired (`staff_activity.WIRED`; money,

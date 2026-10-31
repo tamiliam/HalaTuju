@@ -157,6 +157,24 @@ class TestSourceUser(_World):
         self.assertEqual(states, ['hidden', 'visible', 'hidden'])
 
 
+class TestMentor(_World):
+
+    def test_a_mentor_reads_its_own_list_and_names_nobody_else(self):
+        """S7a + S4: a mentor is opted in to its own list, and is an outsider like a source user — a
+        colleague in the same organisation and a student both read as the neutral word."""
+        mentor = make_admin('mentor', owning_org=self.org)
+        _row(mentor, V.PROFILE_UPDATED, meta={'fields': ['about']}, ago=2)
+        _row(mentor, V.PERMISSIONS_CHANGED, self.colleague, ago=1)
+        _row(mentor, V.CONTRACT_WITNESSED, self.student)
+        _row(self.reviewer, V.PROFILE_UPDATED)
+        items = self.results(mentor)['results']
+        self.assertEqual([i['verb'] for i in items],
+                         [V.CONTRACT_WITNESSED, V.PERMISSIONS_CHANGED, V.PROFILE_UPDATED])
+        self.assertEqual([(i['subject'] or {}).get('state') for i in items], ['hidden', 'hidden', None])
+        self.assertNotIn('Kala Colleague', str(items))
+        self.assertNotIn('Priya', str(items))
+
+
 class TestPagingAndFilters(_World):
 
     def test_newest_first_in_pages_with_no_overlap_and_ties_broken_by_id(self):

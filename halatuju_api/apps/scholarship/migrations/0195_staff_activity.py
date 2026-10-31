@@ -1,9 +1,8 @@
 """Common profile S3 (2026-10-31): a staff member's own activity list — NEW TABLE `staff_activity`
-(model 71, `StaffActivity`; `apps/scholarship/models/staff_activity.py`). Written only by
+(model 72, `StaffActivity`; `apps/scholarship/models/staff_activity.py`). Written only by
 `apps/scholarship/staff_activity.record` (best-effort, D9); read from S4.
 
-⚠ NUMBERING: written as 0195 depending on 0193, because another session holds an unmerged 0194. The
-lead renumbers / re-points the dependency at merge, against `origin/main` on the day.
+NUMBERING: 0195, after the Maintenance session's `0194_mentors` (student maintenance S7a, live 2026-10-31).
 
 NEW TABLE ONLY: no column on an existing table changes. `subject_id` is a plain bigint, NOT a foreign
 key (D7: a student's purge must never cascade into anyone's history). `actor` -> `partner_admins`
@@ -44,7 +43,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('courses', '0089_partneradmin_source'),
-        ('scholarship', '0193_staff_profile_card'),
+        ('scholarship', '0194_mentors'),
     ]
 
     operations = [
