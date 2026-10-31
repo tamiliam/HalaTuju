@@ -45,8 +45,12 @@ def _receipt_amount(value):
 
 
 def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_transfer',
-                   note='', recorded_by_email='', today=None):
-    """Record money that ARRIVED against an invoice, and number its receipt."""
+                   note='', recorded_by_email='', today=None, actor=None):
+    """Record money that ARRIVED against an invoice, and number its receipt.
+
+    Common profile S4: this is the ONE place a receipt is minted — the super's direct receipt and a
+    confirmed declaration both come here — so it is where ``actor`` gets the `payment_confirmed` row
+    on their own activity list, in this transaction (best-effort; never raises)."""
     from .invoicing import InvoicingError, logger
     from .models import Invoice, InvoiceReceipt
 
@@ -92,6 +96,9 @@ def record_receipt(invoice, *, received_on, amount_myr, reference, method='bank_
             invoice=locked, received_on=received_on, amount_myr=amount, method=method,
             reference=reference[:120], note=(note or '').strip(),
             recorded_by_email=recorded_by_email or '')
+        from . import staff_activity
+        staff_activity.record(actor, staff_activity.PAYMENT_CONFIRMED, locked,
+                              meta={'receipt': receipt})
     logger.info('invoicing: receipt %s for %s RM%s', receipt.number, locked.number, amount)
     return receipt
 

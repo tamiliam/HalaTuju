@@ -238,7 +238,7 @@ class AdminPaymentRunListView(_PaymentsBase):
         from .. import payments
         try:
             run = payments.create_run(org, programme, pd, pm,
-                                      by_email=getattr(admin, 'email', '') or '')
+                                      by_email=getattr(admin, 'email', '') or '', actor=admin)
         except payments.PaymentsError as e:
             body = {'error': e.code, 'code': e.code}
             if e.code == 'too_early':

@@ -102,6 +102,10 @@ class AdminSponsorMembershipView(_AdminBase):
 
         logger.info('AUDIT sponsor_membership_set sponsor=%s programme=%s status=%s by=%s',
                     sponsor.id, programme.code, m.status, admin.email or '')
+        from .. import staff_activity     # common profile S4: the vetter's own activity list
+        staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
+                              meta={'decision': m.status, 'kind': 'programme', 'programme': programme},
+                              organisation=programme.organisation_id)
         return Response({'programme_id': programme.id, 'programme': programme.code,
                          'status': m.status})
 

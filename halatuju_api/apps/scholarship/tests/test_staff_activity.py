@@ -11,8 +11,8 @@ WHAT IS PROVED HERE
     savepoint; and an action that rolls back leaves no row;
   * every S3 verb, through the door(s) that perform it, writes EXACTLY ONE row — including the QC's
     click, which runs a reopen and a decline underneath and must still be one row;
-  * the drift test: the functions that name each verb in the source are exactly `S3_WIRED`, and every
-    verb in the closed list is either an S3 writer's or declared as an S4 verb.
+  * the drift test: the functions that name each verb in the source are exactly `WIRED`, and every
+    verb in the closed list is wired (S4) and has a filter kind.
 """
 import ast
 import json
@@ -747,21 +747,23 @@ def _writers():
 
 class TestTheVerbListHasNoDrift(TestCase):
 
-    def test_every_verb_is_either_wired_in_s3_or_declared_for_s4(self):
-        wired = set(staff_activity.S3_WIRED)
-        self.assertEqual(wired & staff_activity.S4_VERBS, set())
-        self.assertEqual(wired | staff_activity.S4_VERBS, staff_activity.VERBS)
+    def test_every_verb_in_the_closed_list_is_wired(self):
+        """S4 wired the last of them: there is no longer a "later" list."""
+        self.assertEqual(set(staff_activity.WIRED), staff_activity.VERBS)
+        self.assertFalse(hasattr(staff_activity, 'S4_VERBS'))
+
+    def test_every_verb_has_a_kind_for_the_filters(self):
+        self.assertEqual(set(staff_activity.KIND_OF_VERB), staff_activity.VERBS)
+        self.assertEqual(set(staff_activity.KIND_OF_VERB.values()),
+                         {'students', 'money', 'profile', 'other'})
 
     def test_the_writers_in_the_source_are_exactly_the_registry(self):
-        registry = {(verb, where) for verb, places in staff_activity.S3_WIRED.items()
+        registry = {(verb, where) for verb, places in staff_activity.WIRED.items()
                     for where in places}
         found = _writers()
-        self.assertEqual(found - registry, set(), 'a writer that S3_WIRED does not list '
+        self.assertEqual(found - registry, set(), 'a writer that WIRED does not list '
                                                   '(a second door writing the same verb?)')
-        self.assertEqual(registry - found, set(), 'S3_WIRED lists a writer that names no verb')
-
-    def test_no_s4_verb_is_written_yet(self):
-        self.assertEqual({verb for verb, _ in _writers()} & staff_activity.S4_VERBS, set())
+        self.assertEqual(registry - found, set(), 'WIRED lists a writer that names no verb')
 
     def test_every_meta_key_has_a_known_type(self):
         kinds = {staff_activity.ID, staff_activity.BOOL, staff_activity.NUMBER,

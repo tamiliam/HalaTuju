@@ -37,6 +37,7 @@ ALLOWED = {
     ('api/v1/admin/profile/', 'get'),
     # Common profile S1 (2026-10-31): the caller's OWN account for the shared Profile page.
     ('api/v1/admin/me/', 'get'),
+    ('api/v1/admin/me/activity/', 'get'),   # common profile S4: own rows only, labels D8-fenced
     # Common profile S2: the caller's own card (an empty PATCH writes nothing and answers the GET
     # payload) and removing its own photo (none here, so nothing to remove).
     ('api/v1/admin/me/', 'patch'),

@@ -11,6 +11,7 @@ from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.response import Response
 
+from .. import staff_activity
 from ..models import OrgRequest, OrgRequestAnalysis, OrgRequestComment
 from ..serializers_admin import OrgRequestOrgSerializer, OrgRequestOwnerSerializer
 from .base import _AdminBase
@@ -179,6 +180,7 @@ class AdminOrgRequestListView(_OrgRequestsBase):
                 steps_to_reproduce=request.data.get('steps_to_reproduce') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_RAISED, req)   # common profile S4
         # Best-effort post-commit: notify the owner + auto-run the AI reviewer (never fails create).
         try:
             from .. import emails
@@ -313,6 +315,7 @@ class AdminOrgRequestApproveView(_OrgRequestsBase):
             req = org_requests.approve(req, admin, by_role=by_role)
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_APPROVED, req, meta={'role': by_role})
         try:
             from .. import emails
             emails.send_org_request_accepted_email(req)
@@ -377,6 +380,7 @@ class AdminOrgRequestDeclineView(_OrgRequestsBase):
                                        reason=request.data.get('reason') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_DECLINED, req, meta={'role': by_role})
         return Response(self._serialize(admin, req))
 
 

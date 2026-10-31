@@ -88,7 +88,7 @@ def flag_log(org_id, merchant) -> dict:
     }
 
 
-def change_flag(org_id, merchant, action, note, email, txns):
+def change_flag(org_id, merchant, action, note, email, txns, actor=None):
     """Open, note or close THIS organisation's flag on `merchant`. Returns `(log, error_code)`.
 
     `txns` is the caller's FENCED spend queryset (`spend_report._txns(org_id, programme)`): the
@@ -142,6 +142,10 @@ def change_flag(org_id, merchant, action, note, email, txns):
                 flag.save(update_fields=['is_open', 'closed_at', 'closed_by_email'])
             # org-fence: through `flag`, read above on this organisation's id.
             MerchantFlagNote.objects.create(flag=flag, kind=action, body=note, author_email=email)
+            if action in ('open', 'close'):     # common profile S4: a note alone is not an act
+                from . import staff_activity
+                staff_activity.record(actor, staff_activity.MERCHANT_FLAG_OPENED if action == 'open'
+                                      else staff_activity.MERCHANT_FLAG_CLOSED, flag)
     except IntegrityError:
         # The other half of a race the lock cannot cover: two FIRST opens, neither row yet there.
         return None, 'already_flagged'

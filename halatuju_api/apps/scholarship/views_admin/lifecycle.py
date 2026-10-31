@@ -133,7 +133,7 @@ class AdminDisbursementActionView(_AdminBase):
             return self._deny_role()
         try:
             writer(disb, by_email=admin.email,
-                   note=request.data.get('note', ''))
+                   note=request.data.get('note', ''), actor=admin)
         except disbursement_service.DisbursementError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(disb.application).data)

@@ -28,8 +28,8 @@ from django.utils import timezone
 
 class StaffActivityVerb(models.TextChoices):
     """The CLOSED list of things a row can say. A verb outside it is refused by `record` (logged and
-    dropped). `staff_activity.S3_WIRED` / `S4_VERBS` say which sprint writes each one; the drift test
-    (`tests/test_staff_activity.py`) proves every S3 verb has a writer."""
+    dropped). `staff_activity.WIRED` names every verb's writers and the drift test
+    (`tests/test_staff_activity.py`) proves every verb has one (S4 wired the last)."""
     # ── S3: sign-in, profile, invitations, permissions ──────────────────────────────────────────
     INVITATION_SENT = 'invitation_sent', 'Sent an invitation'
     INVITATION_ACCEPTED = 'invitation_accepted', 'Accepted an invitation'
@@ -50,7 +50,7 @@ class StaffActivityVerb(models.TextChoices):
     DECISION_REOPENED = 'decision_reopened', 'Reopened a decision'
     CASE_CLOSED = 'case_closed', 'Closed a case'
     CONTRACT_WITNESSED = 'contract_witnessed', 'Witnessed a contract'
-    # ── S4: money, contracts, requests (declared now so S4 needs no choices migration) ─────────
+    # ── S4: money, contracts, requests ─────────────────────────────────────────────────────────
     PAYMENT_RUN_CREATED = 'payment_run_created', 'Prepared a payment run'
     PAYMENT_RUN_SIGNED = 'payment_run_signed', 'Signed a payment run'
     TRANCHE_RELEASED = 'tranche_released', 'Released a payment'
@@ -83,14 +83,13 @@ class StaffActivitySubject(models.TextChoices):
     APPLICATION = 'application', 'A student application'
     STAFF = 'staff', 'A staff member'
     INVITATION = 'invitation', 'An invitation'
-    # S4
+    # S4. A tranche's subject is its STUDENT (the application; the tranche id is in meta) and a
+    # declaration's or a receipt's is its INVOICE, so the reader's rules stay few.
     PAYMENT_RUN = 'payment_run', 'A payment run'
-    TRANCHE = 'tranche', 'A payment'
     CREDIT = 'credit', 'A credit'
     CONTRACT_TEMPLATE = 'contract_template', 'A contract template'
     SPONSOR = 'sponsor', 'A benefactor'
     INVOICE = 'invoice', 'An invoice'
-    PAYMENT_DECLARATION = 'payment_declaration', 'A declared payment'
     ORG_REQUEST = 'org_request', 'A request'
     MERCHANT_FLAG = 'merchant_flag', 'A shop flag'
 

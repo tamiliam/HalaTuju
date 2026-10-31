@@ -48,7 +48,7 @@ class AdminInvoiceDeclarationView(_InvoiceBase):
                     inv,
                     paid_on=(body.get('paid_on') or '').strip(),
                     reference=body.get('reference'),
-                    declared_by_email=by)
+                    declared_by_email=by, actor=admin)
             elif action in ('confirm', 'reject'):
                 if not is_super:
                     return self._deny_role()
@@ -68,10 +68,11 @@ class AdminInvoiceDeclarationView(_InvoiceBase):
                         reference=body.get('reference') or '',
                         method=(body.get('method') or 'bank_transfer').strip(),
                         note=body.get('note') or '',
-                        confirmed_by_email=by)
+                        confirmed_by_email=by, actor=admin)
                 else:
                     payment_declarations.reject_declaration(
-                        declaration, reason=body.get('reason'), rejected_by_email=by)
+                        declaration, reason=body.get('reason'), rejected_by_email=by,
+                        actor=admin)
             else:
                 return Response({'error': 'not_found', 'code': 'not_found'},
                                 status=status.HTTP_404_NOT_FOUND)

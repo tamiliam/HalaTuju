@@ -30,7 +30,7 @@ email address. Anything else is logged and DROPPED (the row is still written wit
 ⚠ ONE CLICK, ONE ROW. Each verb is recorded where the action truly happens — the service when there
 is one, the view when the view IS the action — so every door reaches it once. Where one action is
 made of others (the QC's reject runs a reopen and a decline), the outer action records and asks the
-inner services not to (their ``activity=False``). `S3_WIRED` names every writer; the drift test reads
+inner services not to (their ``activity=False``). `WIRED` names every writer; the drift test reads
 it against the source.
 """
 import logging
@@ -65,11 +65,38 @@ QC_DECISION = V.QC_DECISION
 DECISION_REOPENED = V.DECISION_REOPENED
 CASE_CLOSED = V.CASE_CLOSED
 CONTRACT_WITNESSED = V.CONTRACT_WITNESSED
+# S4: money, contracts, requests
+PAYMENT_RUN_CREATED = V.PAYMENT_RUN_CREATED
+PAYMENT_RUN_SIGNED = V.PAYMENT_RUN_SIGNED
+TRANCHE_RELEASED = V.TRANCHE_RELEASED
+TRANCHE_WITHHELD = V.TRANCHE_WITHHELD
+TRANCHE_RETURNED = V.TRANCHE_RETURNED
+CREDIT_RECORDED = V.CREDIT_RECORDED
+CREDIT_CHECKED = V.CREDIT_CHECKED
+CREDIT_CONFIRMED = V.CREDIT_CONFIRMED
+CONTRACT_TEMPLATE_CREATED = V.CONTRACT_TEMPLATE_CREATED
+CONTRACT_TEMPLATE_VETTED = V.CONTRACT_TEMPLATE_VETTED
+CONTRACT_TEMPLATE_SUBMITTED = V.CONTRACT_TEMPLATE_SUBMITTED
+CONTRACT_TEMPLATE_DEPLOYED = V.CONTRACT_TEMPLATE_DEPLOYED
+CONTRACT_COUNTERSIGNED = V.CONTRACT_COUNTERSIGNED
+BENEFACTOR_VETTED = V.BENEFACTOR_VETTED
+INVOICE_ISSUED = V.INVOICE_ISSUED
+INVOICE_SENT = V.INVOICE_SENT
+INVOICE_VOIDED = V.INVOICE_VOIDED
+PAYMENT_DECLARED = V.PAYMENT_DECLARED
+PAYMENT_CONFIRMED = V.PAYMENT_CONFIRMED
+PAYMENT_REJECTED = V.PAYMENT_REJECTED
+ORG_REQUEST_RAISED = V.ORG_REQUEST_RAISED
+ORG_REQUEST_APPROVED = V.ORG_REQUEST_APPROVED
+ORG_REQUEST_DECLINED = V.ORG_REQUEST_DECLINED
+MERCHANT_FLAG_OPENED = V.MERCHANT_FLAG_OPENED
+MERCHANT_FLAG_CLOSED = V.MERCHANT_FLAG_CLOSED
 
-#: Every S3 verb and the function(s) that write it — `path:qualname`, paths under `apps/`. The drift
+#: EVERY verb and the function(s) that write it — `path:qualname`, paths under `apps/`. The drift
 #: test (`tests/test_staff_activity.py`) reads the source: the functions that name each verb must be
-#: EXACTLY these — a writer missing here, or one listed here that no longer writes, fails it.
-S3_WIRED = {
+#: EXACTLY these — a writer missing here, or one listed here that no longer writes, fails it — and
+#: every verb in the closed list must be here (S4 wired the last of them; there is no "later" list).
+WIRED = {
     INVITATION_SENT: ('scholarship/invitations.py:record_send',),
     INVITATION_ACCEPTED: ('scholarship/invitations.py:accept_for_admin',),
     FIRST_SIGN_IN: ('courses/views_admin.py:AdminRoleView.get',),
@@ -97,19 +124,55 @@ S3_WIRED = {
     DECISION_REOPENED: ('scholarship/reopen.py:reopen_decision',),
     CASE_CLOSED: ('scholarship/closure.py:close_application',),
     CONTRACT_WITNESSED: ('scholarship/source_witness.py:record_once',),
+    # ── S4 ─────────────────────────────────────────────────────────────────────────────────────
+    PAYMENT_RUN_CREATED: ('scholarship/payments.py:create_run',),
+    PAYMENT_RUN_SIGNED: ('scholarship/payments_chain.py:sign',),          # meta role: maker /
+    TRANCHE_RELEASED: ('scholarship/disbursement.py:release_tranche',),   # checker / approver
+    TRANCHE_WITHHELD: ('scholarship/disbursement.py:withhold_tranche',),
+    TRANCHE_RETURNED: ('scholarship/disbursement.py:return_tranche',),
+    CREDIT_RECORDED: ('scholarship/sponsorship.py:sign_admin_credit',),   # the maker's signature
+    CREDIT_CHECKED: ('scholarship/sponsorship.py:sign_admin_credit',),
+    CREDIT_CONFIRMED: ('scholarship/sponsorship.py:sign_admin_credit',),
+    CONTRACT_TEMPLATE_CREATED: ('scholarship/contracts.py:create_template',),
+    CONTRACT_TEMPLATE_VETTED: ('scholarship/contracts.py:record_vetting',),
+    CONTRACT_TEMPLATE_SUBMITTED: ('scholarship/contracts.py:submit_for_deployment',),
+    CONTRACT_TEMPLATE_DEPLOYED: ('scholarship/contracts.py:deploy',),
+    CONTRACT_COUNTERSIGNED: ('scholarship/bursary.py:countersign_foundation',),
+    BENEFACTOR_VETTED: ('scholarship/views_admin/sponsors.py:AdminSponsorReviewView.post',
+                        'scholarship/views_admin/sponsorships.py:AdminSponsorMembershipView.post'),
+    INVOICE_ISSUED: ('scholarship/invoicing.py:issue_invoice',),
+    INVOICE_SENT: ('scholarship/invoicing.py:send_invoice',),
+    INVOICE_VOIDED: ('scholarship/invoicing.py:void_invoice',),
+    PAYMENT_DECLARED: ('scholarship/payment_declarations.py:declare_payment',),
+    PAYMENT_CONFIRMED: ('scholarship/invoice_receipts.py:record_receipt',),
+    PAYMENT_REJECTED: ('scholarship/payment_declarations.py:reject_declaration',),
+    ORG_REQUEST_RAISED: ('scholarship/views_admin/requests.py:AdminOrgRequestListView.post',),
+    ORG_REQUEST_APPROVED: ('scholarship/views_admin/requests.py:AdminOrgRequestApproveView.post',),
+    ORG_REQUEST_DECLINED: ('scholarship/views_admin/requests.py:AdminOrgRequestDeclineView.post',),
+    MERCHANT_FLAG_OPENED: ('scholarship/merchant_flags.py:change_flag',),
+    MERCHANT_FLAG_CLOSED: ('scholarship/merchant_flags.py:change_flag',),
 }
 
-#: Declared in the closed list now, written from S4 (money, contracts, requests) — ON PURPOSE unwired
-#: in S3. The drift test asserts `S3_WIRED` and this set are disjoint and together are every verb.
-S4_VERBS = frozenset({
-    V.PAYMENT_RUN_CREATED, V.PAYMENT_RUN_SIGNED, V.TRANCHE_RELEASED, V.TRANCHE_WITHHELD,
-    V.TRANCHE_RETURNED, V.CREDIT_RECORDED, V.CREDIT_CHECKED, V.CREDIT_CONFIRMED,
-    V.CONTRACT_TEMPLATE_CREATED, V.CONTRACT_TEMPLATE_VETTED, V.CONTRACT_TEMPLATE_SUBMITTED,
-    V.CONTRACT_TEMPLATE_DEPLOYED, V.CONTRACT_COUNTERSIGNED, V.BENEFACTOR_VETTED,
-    V.INVOICE_ISSUED, V.INVOICE_SENT, V.INVOICE_VOIDED, V.PAYMENT_DECLARED, V.PAYMENT_CONFIRMED,
-    V.PAYMENT_REJECTED, V.ORG_REQUEST_RAISED, V.ORG_REQUEST_APPROVED, V.ORG_REQUEST_DECLINED,
-    V.MERCHANT_FLAG_OPENED, V.MERCHANT_FLAG_CLOSED,
-})
+#: Which filter of the S5 card each verb belongs to (`?kind=` on `GET admin/me/activity/`). 'other'
+#: is shown under All only. The drift test requires every verb to have one.
+STUDENTS, MONEY, PROFILE, OTHER = 'students', 'money', 'profile', 'other'
+KIND_OF_VERB = {
+    INVITATION_SENT: OTHER, INVITATION_ACCEPTED: PROFILE, FIRST_SIGN_IN: PROFILE,
+    PROFILE_UPDATED: PROFILE, PERMISSIONS_CHANGED: OTHER,
+    ASSIGNED: STUDENTS, UNASSIGNED: STUDENTS, QUERY_RAISED: STUDENTS, QUERY_RESOLVED: STUDENTS,
+    INTERVIEW_SUBMITTED: STUDENTS, VERDICT_RECORDED: STUDENTS, VERIFY_ACCEPT: STUDENTS,
+    DECLINE_SENT_TO_QC: STUDENTS, DECLINED: STUDENTS, QC_DECISION: STUDENTS,
+    DECISION_REOPENED: STUDENTS, CASE_CLOSED: STUDENTS, CONTRACT_WITNESSED: STUDENTS,
+    CONTRACT_COUNTERSIGNED: STUDENTS,
+    PAYMENT_RUN_CREATED: MONEY, PAYMENT_RUN_SIGNED: MONEY, TRANCHE_RELEASED: MONEY,
+    TRANCHE_WITHHELD: MONEY, TRANCHE_RETURNED: MONEY, CREDIT_RECORDED: MONEY, CREDIT_CHECKED: MONEY,
+    CREDIT_CONFIRMED: MONEY, BENEFACTOR_VETTED: MONEY, INVOICE_ISSUED: MONEY, INVOICE_SENT: MONEY,
+    INVOICE_VOIDED: MONEY, PAYMENT_DECLARED: MONEY, PAYMENT_CONFIRMED: MONEY, PAYMENT_REJECTED: MONEY,
+    MERCHANT_FLAG_OPENED: MONEY, MERCHANT_FLAG_CLOSED: MONEY,
+    CONTRACT_TEMPLATE_CREATED: OTHER, CONTRACT_TEMPLATE_VETTED: OTHER,
+    CONTRACT_TEMPLATE_SUBMITTED: OTHER, CONTRACT_TEMPLATE_DEPLOYED: OTHER,
+    ORG_REQUEST_RAISED: OTHER, ORG_REQUEST_APPROVED: OTHER, ORG_REQUEST_DECLINED: OTHER,
+}
 
 # ── meta: the closed key list ──────────────────────────────────────────────────────────────────
 ID, BOOL, NUMBER, CODE, CODES = 'id', 'bool', 'number', 'code', 'codes'
@@ -118,6 +181,7 @@ META_KEYS = {
     # ids of other rows
     'from_admin': ID, 'to_admin': ID, 'target': ID, 'item': ID, 'session': ID,
     'agreement': ID, 'interviewer': ID, 'invitation': ID,
+    'tranche': ID, 'declaration': ID, 'receipt': ID, 'programme': ID,
     # booleans
     'emailed': BOOL, 'resend': BOOL, 'finalised': BOOL, 'override': BOOL, 'asked_again': BOOL,
     # numbers
@@ -180,12 +244,26 @@ def clean_meta(meta):
 
 
 # ── subjects ───────────────────────────────────────────────────────────────────────────────────
-#: Model label -> subject type. A subject of any other model is recorded with no subject (logged).
+#: Model label -> (subject type, the attribute path to its organisation id; None = no organisation of
+#: its own, so the actor's). A subject of any other model is refused (logged, nothing written).
 _SUBJECT_OF_MODEL = {
-    'scholarship.scholarshipapplication': StaffActivitySubject.APPLICATION,
-    'courses.partneradmin': StaffActivitySubject.STAFF,
-    'scholarship.invitation': StaffActivitySubject.INVITATION,
+    'scholarship.scholarshipapplication': (StaffActivitySubject.APPLICATION, 'owning_organisation_id'),
+    'courses.partneradmin': (StaffActivitySubject.STAFF, 'owning_organisation_id'),
+    'scholarship.invitation': (StaffActivitySubject.INVITATION, 'organisation_id'),
+    'scholarship.paymentrun': (StaffActivitySubject.PAYMENT_RUN, 'organisation_id'),
+    'scholarship.donation': (StaffActivitySubject.CREDIT, 'programme.organisation_id'),
+    'scholarship.contracttemplate': (StaffActivitySubject.CONTRACT_TEMPLATE, 'organisation_id'),
+    'scholarship.sponsor': (StaffActivitySubject.SPONSOR, None),
+    'scholarship.invoice': (StaffActivitySubject.INVOICE, 'organisation_id'),
+    'scholarship.orgrequest': (StaffActivitySubject.ORG_REQUEST, 'organisation_id'),
+    'scholarship.merchantflag': (StaffActivitySubject.MERCHANT_FLAG, 'organisation_id'),
 }
+
+
+def _org_of(subject, path):
+    for part in (path or '').split('.') if path else ():
+        subject = getattr(subject, part, None)
+    return subject if path else None
 
 
 def _subject(subject):
@@ -199,12 +277,10 @@ def _subject(subject):
             raise ValueError(f'bad subject {subject!r}')
         return kind, pk, None
     label = subject._meta.label_lower
-    kind = _SUBJECT_OF_MODEL.get(label)
+    kind, org_path = _SUBJECT_OF_MODEL.get(label, (None, None))
     if kind is None or subject.pk is None:
         raise ValueError(f'no subject type for {label}')
-    org_id = (getattr(subject, 'owning_organisation_id', None)
-              if kind != StaffActivitySubject.INVITATION else getattr(subject, 'organisation_id', None))
-    return kind, subject.pk, org_id
+    return kind, subject.pk, _org_of(subject, org_path)
 
 
 def _is_staff_row(actor):
