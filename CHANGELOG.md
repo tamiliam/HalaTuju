@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## School search understands the long forms (owner, 2026-10-31)
+
+A follow-up to the My Plans sprint. Our school lists use the Ministry's short names ("SMK (P) TEMENGGONG
+IBRAHIM", "KTE PONTIAN", "KM Perak"), so a student who typed the long form found nothing. Now she does, in the
+SPM school field, the Form 6 school picker and the matriculation college picker (and the reviewer's university
+field, which shares the picker).
+
+- **School types, spelt out:** SMK, SM, SMA, SMKA, SMU, SAM, SAMT, SMT, SABK, SBP, KV, KTE (kolej tingkatan enam,
+  tingkatan 6, form 6), KM and KMK (kolej matrikulasi, kejuruteraan); (P), (L) and (A) in brackets mean perempuan,
+  lelaki and agama. Also PJ (Petaling Jaya).
+- **One word, two spellings — either finds the other:** JLN / JALAN, SG / SGAI / SUNGAI, KG / KPG / KAMPUNG,
+  TMN / TAMAN, BDR / BANDAR, BT / BATU, BKT / BUKIT, PDG / PADANG, TG / TJG / TJ / TANJONG / TANJUNG, PT / PARIT,
+  SRI / SERI, HJ / HAJI, HJH / HAJAH, ABD / ABDUL, MOHD / MUHD / MOHAMAD / MOHAMMAD / MOHAMMED / MOHAMED / MUHAMAD /
+  MUHAMMAD, ST / SAINT, SEK / SEKOLAH, KEB / KEBANGSAAN, PENGKALAN / PANGKALAN. TG also stands for Tengku in one
+  school's name, so it finds both.
+- **Punctuation no longer gets in the way:** "dato" finds "DATO'", "maahad" finds "MA'AHAD", "mohd" finds "MOHD.".
+- **Words in any order:** every word typed must appear in the name; anything found before is still found.
+- **Same-name schools both show** in the Form 6 picker ("SMK CHUNG HUA" in Miri and in Sibu); before, the two rows
+  shared one list key and one could be dropped. What is stored and shown is unchanged.
+- New: `src/lib/schoolSearch.ts`. Tests: `lib/__tests__/schoolSearch.test.ts`, `components/InstitutionPicker.test.tsx`.
+
+## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31
+
 ## Common profile S2 — photo, job title, About, phone for everyone (migration 0193) - 2026-10-31 — BUILT, not deployed
 
 Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.

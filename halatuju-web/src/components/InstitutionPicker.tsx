@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
+import { matchesWords, normaliseSearch, schoolSearchText, searchWords } from '@/lib/schoolSearch'
 
 export interface InstitutionOption {
   name: string
@@ -49,10 +50,13 @@ export default function InstitutionPicker({
 
   const q = query.trim().toLowerCase()
   const belowMin = q.length < minChars
+  // Word-AND over the name, its spelt-out MOE short forms and the keywords (lib/schoolSearch):
+  // "kolej tingkatan enam pontian" finds "KTE PONTIAN"; anything found before is still found.
+  const words = searchWords(q)
   const filtered = belowMin
     ? []
     : q
-      ? options.filter((o) => `${o.name} ${o.keywords ?? ''}`.toLowerCase().includes(q))
+      ? options.filter((o) => matchesWords(`${schoolSearchText(o.name)} ${normaliseSearch(o.keywords ?? '')}`, words))
       : options
   const matches = filtered.slice(0, limit)
   const truncated = filtered.length > matches.length
@@ -102,7 +106,9 @@ export default function InstitutionPicker({
           {matches.length > 0 ? (
             <ul className="max-h-64 overflow-auto py-1" role="listbox">
               {matches.map((o, i) => (
-                <li key={o.name} role="option" aria-selected={i === active}>
+                // Names repeat ("SMK CHUNG HUA" is in Miri and in Sibu): the key carries the hint
+                // and the position, so two same-name rows never collide.
+                <li key={`${o.name}|${o.hint ?? ''}|${i}`} role="option" aria-selected={i === active}>
                   <button
                     type="button"
                     onClick={() => choose(o.name)}
