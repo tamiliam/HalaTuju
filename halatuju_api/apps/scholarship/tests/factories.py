@@ -311,6 +311,11 @@ def make_admin(role='reviewer', *, org=None, owning_org=None, super_admin=False,
         # a database check refuses it), so one is made — owned by `owning_org`, or by a new one.
         owning_org = owning_org if owning_org is not None else make_org()
         kw['source'] = make_source(organisation=owning_org)
+    if role == PartnerAdmin.MENTOR_ROLE and 'mentor' not in kw:
+        # ⚠ The same for a MENTOR login (S7a): its mentor record is made, owned by `owning_org`.
+        from apps.scholarship.models import Mentor
+        owning_org = owning_org if owning_org is not None else make_org()
+        kw['mentor'] = Mentor.objects.create(organisation=owning_org)
     n = _n()
     kw.setdefault('name', f'Test {role.replace("_", " ").title()} {n}')
     kw.setdefault('email', f'{role}{n}@example.test')

@@ -14,11 +14,18 @@
  * (`reviewer_onboarding.reviewer_profile_complete`, `adminLanding.mustCompleteProfile`,
  * `navigation.defaultRoute`); anyone else holding `review` sees a reminder, never a block.
  *
+ * ⚠ A MENTOR (student maintenance S7a, 2026-10-31) works with students too: `worksWithStudents` — a
+ * holder of `review` or a mentor — drives the qualification and address cards and the "show my phone
+ * to my students" switch, the web twin of `staff_contact.works_with_students`. `takingPart` (the
+ * pause) stays on `reviewsCases`: a mentor is never handed cases. The `mentoring` card is a mentor's
+ * alone. Photo is staff-only, as for everybody (the You card says so).
+ *
  * Visibility, never the fence: every card's endpoint re-checks on the server.
  */
 
 export type ProfileCardId =
-  | 'you' | 'contact' | 'access' | 'qualifications' | 'address' | 'takingPart' | 'organisation' | 'signin'
+  | 'you' | 'contact' | 'mentoring' | 'access' | 'qualifications' | 'address' | 'takingPart'
+  | 'organisation' | 'signin'
 
 export interface ProfileCardContext {
   role: string | undefined
@@ -36,15 +43,21 @@ const everyone = () => true
 /** The reviewer cards' rule: holds `review`, and is not a super (who holds every key). */
 export const reviewsCases = (ctx: ProfileCardContext): boolean =>
   !ctx.isSuper && !!ctx.permissions?.includes('review')
+/** Somebody students meet: a `review` holder or a mentor (S7a); the server decides the same way. */
+export const worksWithStudents = (ctx: ProfileCardContext): boolean =>
+  reviewsCases(ctx) || (!ctx.isSuper && ctx.role === 'mentor')
+const isMentor = (ctx: ProfileCardContext): boolean => !ctx.isSuper && ctx.role === 'mentor'
 
 export const PROFILE_CARDS: readonly ProfileCard[] = [
   { id: 'you', order: 10, show: everyone },
   // S2 (2026-10-31): everyone — the phone and "show my phone to my team"; the "share with students
   // I interview" switch inside it stays a `review` holder's (`ContactCard`).
   { id: 'contact', order: 20, show: everyone },
+  // S7a: the mentor's own area of mentoring, under Contact (the MentorProfile board's order).
+  { id: 'mentoring', order: 25, show: isMentor },
   { id: 'access', order: 30, show: everyone },
-  { id: 'qualifications', order: 40, show: reviewsCases },
-  { id: 'address', order: 50, show: reviewsCases },
+  { id: 'qualifications', order: 40, show: worksWithStudents },
+  { id: 'address', order: 50, show: worksWithStudents },
   { id: 'takingPart', order: 60, show: reviewsCases },
   { id: 'organisation', order: 70,
     show: (ctx) => !ctx.isSuper && (ctx.role === 'partner' || ctx.role === 'source_partner') },
@@ -80,6 +93,7 @@ export function accessLines(ctx: ProfileCardContext): string[] {
   if (ctx.role === 'org_admin') lines.push('admin.myProfile.can.org_admin')
   if (ctx.role === 'partner') lines.push('admin.myProfile.can.partner')
   if (ctx.role === 'source_partner') lines.push('admin.myProfile.can.source_partner')
+  if (ctx.role === 'mentor') lines.push('admin.myProfile.can.mentor')
   for (const key of NAMED_PERMS) {
     if (ctx.permissions?.includes(key)) lines.push(`admin.perm.${key}.name`)
   }

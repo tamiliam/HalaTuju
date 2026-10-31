@@ -5091,7 +5091,8 @@
         "org_admin": "Mengurus organisasi anda: pasukan, pemberian dan tetapannya.",
         "partner": "Melihat pelajar yang dirujuk oleh organisasi anda.",
         "source_partner": "Mengikuti pelajar yang menamakan anda semasa memohon, dan menjadi saksi perjanjian mereka.",
-        "profileOnly": "Mengemas kini profil anda sendiri."
+        "profileOnly": "Mengemas kini profil anda sendiri.",
+        "mentor": "Mengemas kini profil anda. Kakitangan menugaskan pelajar kepada anda dan merekodkan pertemuan anda."
       },
       "qualifications": "Kelayakan dan bahasa",
       "noOrganisation": "Tiada organisasi dipautkan pada akaun anda.",
@@ -5145,7 +5146,9 @@
         "phone_too_long": "Nombor telefon itu terlalu panjang.",
         "job_title_too_long": "Hadkan jawatan kepada 120 aksara.",
         "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
-        "not_editable": "Butiran itu tidak boleh diubah di sini."
+        "not_editable": "Butiran itu tidak boleh diubah di sini.",
+        "mentoring_area_required": "Taip bidang bimbingan anda.",
+        "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara."
       },
       "assignerSees": "Mereka yang menugaskan kes kepada anda boleh melihat nombor ini.",
       "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri."
@@ -5200,7 +5203,8 @@
       "qc": "Kawalan mutu",
       "org_admin": "Pentadbir organisasi",
       "finance": "Pentadbir kewangan",
-      "source_partner": "Sumber"
+      "source_partner": "Sumber",
+      "mentor": "Mentor"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
@@ -8123,6 +8127,82 @@
         "awarded": "Dianugerahkan",
         "active": "Aktif",
         "closed": "Ditutup"
+      }
+    },
+    "mentors": {
+      "nav": "Mentor",
+      "title": "Mentor",
+      "intro": "Jemput mentor melalui e-mel. Mentor log masuk dan mengisi profil mereka sendiri.",
+      "inviteOpen": "Jemput mentor",
+      "invite": {
+        "title": "Jemput mentor",
+        "name": "Nama",
+        "email": "E-mel",
+        "note": "Mentor akan menerima e-mel jemputan. Selepas log masuk, mereka mengisi bidang, bahasa, Tentang saya dan nombor telefon. Anda tidak boleh mengubah butiran itu; mentor sendiri yang mengemas kininya.",
+        "send": "Hantar jemputan",
+        "sending": "Menghantar…",
+        "cancel": "Batal",
+        "sent": "{name} telah dijemput. Butiran log masuk dihantar ke {email}.",
+        "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi."
+      },
+      "error": {
+        "already_staff": "Alamat e-mel ini sudah mempunyai log masuk HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
+        "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
+        "name_required": "Taip nama mentor.",
+        "organisation_required": "Pilih organisasi dahulu.",
+        "not_configured": "Log masuk belum disediakan pada pelayan ini. Hubungi sokongan HalaTuju.",
+        "create_failed": "Log masuk mereka tidak dapat dibuat sekarang. Tiada apa-apa disimpan; cuba lagi.",
+        "already_joined": "Mentor ini sudah log masuk.",
+        "not_active": "Mentor ini sudah tidak aktif.",
+        "active": "Mentor ini sudah aktif.",
+        "generic": "Tindakan itu tidak berjaya. Cuba lagi."
+      },
+      "status": {
+        "active": "Aktif",
+        "invited": "Dijemput",
+        "inactive": "Tidak aktif"
+      },
+      "col": {
+        "mentor": "Mentor",
+        "area": "Bidang",
+        "languages": "Bahasa",
+        "status": "Status",
+        "actions": "Tindakan"
+      },
+      "notFilled": "Belum diisi",
+      "activeSeen": "Aktif · log masuk terakhir {date}",
+      "invitedOn": "Dijemput {date} · belum log masuk",
+      "inactiveOn": "Tidak aktif sejak {date}",
+      "action": {
+        "deactivate": "Nyahaktifkan",
+        "reactivate": "Aktifkan semula",
+        "resend": "Hantar semula",
+        "revoke": "Tarik balik"
+      },
+      "confirm": {
+        "deactivate": "Nyahaktifkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh mengaktifkan mereka semula kemudian.",
+        "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian."
+      },
+      "done": {
+        "resend": "Jemputan dihantar semula ke {email}.",
+        "revoke": "Jemputan {name} telah ditarik balik.",
+        "deactivate": "{name} tidak lagi boleh log masuk.",
+        "reactivate": "{name} boleh log masuk semula.",
+        "reactivateInvited": "{name} boleh log masuk semula. Jemputan telah dihantar semula.",
+        "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula."
+      },
+      "note": "Anda hanya boleh menugaskan mentor selepas mereka log masuk dan mengisi profil. Mentor tidak pernah dipadam: nyahaktifkan sahaja. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
+      "empty": "Tiada mentor dalam senarai ini.",
+      "loadError": "Kami tidak dapat memuatkan senarai mentor.",
+      "profile": {
+        "title": "Bimbingan",
+        "area": "Bidang bimbingan",
+        "areaPlaceholder": "Contohnya, perakaunan dan kewangan",
+        "areaHint": "Kakitangan menggunakan ini untuk memadankan anda dengan pelajar. Pelajar anda juga melihatnya.",
+        "whoSees": "Pelajar anda melihat bahasa anda. Kelayakan anda hanya dilihat oleh kakitangan.",
+        "showToStudents": "Tunjukkan nombor telefon saya kepada pelajar saya",
+        "welcome": "Selamat datang. Sila isi profil anda. Pelajar anda melihat nama, bidang, bahasa, Tentang saya dan e-mel anda, dan nombor telefon anda hanya jika anda menghidupkannya.",
+        "phoneRequired": "Mentor perlu ada nombor telefon. Taip nombor anda."
       }
     }
   },

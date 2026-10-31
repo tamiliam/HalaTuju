@@ -29,6 +29,8 @@ const PATHS: Record<string, string> = {
   spending: 'M5 2h14v20l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
   contracts: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8',
   sources: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
+  // S7a: Mentors — two people, one guiding the other (lucide users-round).
+  mentors: 'M18 21a8 8 0 0 0-16 0M10 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3',
   billing: 'M3 3v18h18M7 16v-5M12 16V8M17 16v-3',
   requests: 'M22 12h-6l-2 3h-4l-2-3H2M5.4 5.5L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.8 1.5z',
   // Organisation → Settings. Sliders rather than the usual cog: the cog is the universal "system

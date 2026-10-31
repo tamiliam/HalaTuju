@@ -134,11 +134,18 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    `file_closed` email moves to 6b with the close-out letter (a funded student's close sends nothing today).
 7. **Mentors (records)** (~30 files, migration). Registry `/admin/organisation/mentors`; assign + log
    sessions on the file; student Mentoring tab (read-only); filter by "wants a mentor".
+   **Split (owner, 2026-10-31) — mentors LOG IN now** (Sprint 11 brought forward; decisions.md 2026-10-31):
+   **7a** — the `mentor` role on the source-partner pattern (`Mentor`, `PartnerAdmin.mentor`,
+   `Invitation.mentor`; scholarship 0194 + courses 0090), invite / resend / revoke / deactivate /
+   reactivate, the mentor's own profile (the common `/admin/profile` with a Mentoring card), and the Mentors
+   page. **7a BUILT 2026-10-31, NOT LIVE** (branch `maint-s7`). **7b** — `MentorAssignment` /
+   `MentoringSession`, the Mentoring tab on the scholar file, the student's Mentoring tab, the "Scholars now"
+   column and the "Asked for help" filter.
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
 9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).
 10. *Later* — **Development modules** (content library + progress).
-11. *Later* — **Mentor login**.
+11. ~~*Later* — **Mentor login**~~ — brought forward into Sprint 7a (owner, 2026-10-31).
 
 Order: 1 → (2 ∥ 3) → 4 → 6; 5, 7, 8 need only 2+3. First real value to the owner: Sprint 2.
 

@@ -46,13 +46,20 @@ export function mustCompleteProfile(
   return true
 }
 
+/** The roles that sign in but are NOT staff, so every staff page refuses them (deny by default). */
+const OUTSIDER_ROLES = ['source_partner', 'mentor'] as const
+type OutsiderRole = (typeof OUTSIDER_ROLES)[number]
+
 /**
- * A SOURCE user on a page it may not open (review M3, source sign-in 2026-10-30) — the layout sends
- * it to its landing BEFORE the page mounts. Every staff page would otherwise mount and fire staff
- * fetches the server refuses (deny by default, S1): a typed URL, an old bookmark or a staff link in
- * an email must land somewhere real, not on a page of 403s. The registry answers (`canAccess`): an
- * unregistered route is NOT blocked, the module rule. Only `source_partner` is held here.
+ * A SOURCE user (review M3, source sign-in 2026-10-30) — or, since student maintenance S7a
+ * (2026-10-31), a MENTOR — on a page it may not open: the layout sends it to its landing BEFORE the
+ * page mounts. Every staff page would otherwise mount and fire staff fetches the server refuses
+ * (deny by default): a typed URL, an old bookmark or a staff link must land somewhere real, not on
+ * a page of 403s. The registry answers (`canAccess`): an unregistered route is NOT blocked, the
+ * module rule. Only these two roles are held here; a mentor's landing is `/admin/profile`.
  */
-export function sourceMustLeave(role: AdminRoleLike | null | undefined, pathname: string): boolean {
-  return role?.role === 'source_partner' && !canAccess(pathname, 'source_partner', role.permissions)
+export function outsiderMustLeave(role: AdminRoleLike | null | undefined, pathname: string): boolean {
+  const r = role?.role
+  if (!r || !(OUTSIDER_ROLES as readonly string[]).includes(r)) return false
+  return !canAccess(pathname, r as OutsiderRole, role?.permissions)
 }

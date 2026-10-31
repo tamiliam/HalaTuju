@@ -260,6 +260,10 @@ def build_partner_welcome_email(to_email, name, role, temp_password=None, google
     # The organisation's own wording, if they have edited it. `{access}` is injected whole.
     # A role this page never invites (`partner`, `super`) reads no stored template at all — see
     # `_invite_kind_for_role`.
+    if role == 'mentor':
+        # ⚠ FAIL CLOSED (S7a): a mentor is sent the mentor letter (`send_mentor_invitation_email`)
+        # and nothing else — never a staff letter.
+        raise ValueError('A mentor is sent the mentor letter: send_mentor_invitation_email.')
     template_kind = _invite_kind_for_role(role)
     if template_kind == 'invite_source':
         # ⚠ FAIL CLOSED (source sign-in S2): no staff path may send a source user a staff letter.

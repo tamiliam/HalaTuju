@@ -5091,7 +5091,8 @@
         "org_admin": "Run your organisation: its team, gifts and settings.",
         "partner": "See the students your organisation referred.",
         "source_partner": "Follow the students who named you when they applied, and witness their agreements.",
-        "profileOnly": "Keep your own profile up to date."
+        "profileOnly": "Keep your own profile up to date.",
+        "mentor": "Keep your profile up to date. Staff assign students to you and record your meetings."
       },
       "qualifications": "Qualifications and languages",
       "noOrganisation": "No organisation is linked to your account.",
@@ -5145,7 +5146,9 @@
         "phone_too_long": "That phone number is too long.",
         "job_title_too_long": "Keep the job title to 120 characters.",
         "about_too_long": "Keep About to 600 characters.",
-        "not_editable": "That detail cannot be changed here."
+        "not_editable": "That detail cannot be changed here.",
+        "mentoring_area_required": "Type your area of mentoring.",
+        "mentoring_area_too_long": "Keep the area of mentoring to 120 characters."
       },
       "assignerSees": "The people who assign your cases can see this number.",
       "othersStillIn": "Your password is changed, but other devices may still be signed in. Sign out of them from those devices."
@@ -5200,7 +5203,8 @@
       "qc": "Quality control",
       "org_admin": "Organisation admin",
       "finance": "Finance admin",
-      "source_partner": "Source"
+      "source_partner": "Source",
+      "mentor": "Mentor"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",
@@ -8123,6 +8127,82 @@
         "awarded": "Awarded",
         "active": "Active",
         "closed": "Closed"
+      }
+    },
+    "mentors": {
+      "nav": "Mentors",
+      "title": "Mentors",
+      "intro": "Invite a mentor by email. The mentor signs in and fills in their own profile.",
+      "inviteOpen": "Invite a mentor",
+      "invite": {
+        "title": "Invite a mentor",
+        "name": "Name",
+        "email": "Email",
+        "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
+        "send": "Send invitation",
+        "sending": "Sending…",
+        "cancel": "Cancel",
+        "sent": "{name} invited. Sign-in details emailed to {email}.",
+        "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
+      },
+      "error": {
+        "already_staff": "This email address already has a HalaTuju sign-in, so it cannot be invited as a mentor.",
+        "bad_email": "That email address does not look right.",
+        "name_required": "Type the mentor's name.",
+        "organisation_required": "Choose an organisation first.",
+        "not_configured": "Sign-in is not set up on this server. Ask HalaTuju support.",
+        "create_failed": "Could not create their sign-in just now. Nothing was saved; try again.",
+        "already_joined": "This mentor has already signed in.",
+        "not_active": "This mentor is already inactive.",
+        "active": "This mentor is already active.",
+        "generic": "That did not work. Try again."
+      },
+      "status": {
+        "active": "Active",
+        "invited": "Invited",
+        "inactive": "Inactive"
+      },
+      "col": {
+        "mentor": "Mentor",
+        "area": "Area",
+        "languages": "Languages",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "notFilled": "Not filled in yet",
+      "activeSeen": "Active · last signed in {date}",
+      "invitedOn": "Invited {date} · not signed in",
+      "inactiveOn": "Inactive since {date}",
+      "action": {
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "resend": "Resend",
+        "revoke": "Revoke"
+      },
+      "confirm": {
+        "deactivate": "Deactivate {name}? They can no longer sign in. You can reactivate them later.",
+        "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later."
+      },
+      "done": {
+        "resend": "Invitation re-sent to {email}.",
+        "revoke": "{name}'s invitation is withdrawn.",
+        "deactivate": "{name} can no longer sign in.",
+        "reactivate": "{name} can sign in again.",
+        "reactivateInvited": "{name} can sign in again. The invitation was sent again.",
+        "notEmailed": "The email could not be sent. Try Resend."
+      },
+      "note": "You can assign a mentor only after they have signed in and filled in their profile. A mentor is never deleted: Deactivate instead. Past meetings stay on each scholar's file.",
+      "empty": "No mentors in this list.",
+      "loadError": "We could not load the mentors.",
+      "profile": {
+        "title": "Mentoring",
+        "area": "Area of mentoring",
+        "areaPlaceholder": "For example, accounting and finance",
+        "areaHint": "Staff use this to match you with students. Your students see it too.",
+        "whoSees": "Your students see your languages. Your qualifications are seen by staff only.",
+        "showToStudents": "Show my phone to my students",
+        "welcome": "Welcome. Please fill in your profile. Your students see your name, area, languages, About and email, and your phone only if you switch it on.",
+        "phoneRequired": "A mentor needs a phone number. Type yours."
       }
     }
   },

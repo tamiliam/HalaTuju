@@ -5,6 +5,10 @@ ONE home for the rules the profile endpoints share (`views_admin/me.py`, `views_
 - `reviews_cases(admin)` — the reviewer cards' rule on the server (`lib/profileCards.ts`
   `reviewsCases`): holds `review` and is not a super. Such a person MUST keep a phone (the onboarding
   rule) and is the only one who may set "share my phone with students I interview".
+- `works_with_students(admin)` — `reviews_cases`, or a MENTOR (student maintenance S7a, 2026-10-31).
+  THE rule for the phone being required, for "share my phone with students" and for the reviewer
+  cards a mentor also fills in (qualifications, languages, address — `ReviewerProfileView`). The web
+  twin is `lib/profileCards.ts` `worksWithStudents`.
 - `phone_refusal(admin, data)` — the blank-phone refusal, applied by BOTH writers of the phone while
   the old web (which still saves the phone through `admin/reviewer-profile/`) may be serving.
 - `new_profile_defaults(admin)` — what a profile row starts with when it is CREATED: "share with
@@ -21,16 +25,21 @@ def reviews_cases(admin):
     return admin is not None and not admin.is_super and admin.has_perm('review')
 
 
+def works_with_students(admin):
+    """A `review` holder (not a super) or a mentor: somebody students meet. See the module docstring."""
+    return reviews_cases(admin) or (admin is not None and admin.is_mentor)
+
+
 def phone_refusal(admin, data):
-    """A 400 `phone_required` when a `review` holder sends a blank phone, else None."""
-    if 'phone' in data and not str(data.get('phone') or '').strip() and reviews_cases(admin):
+    """A 400 `phone_required` when somebody who works with students sends a blank phone, else None."""
+    if 'phone' in data and not str(data.get('phone') or '').strip() and works_with_students(admin):
         return Response({'error': 'phone_required', 'code': 'phone_required'},
                         status=status.HTTP_400_BAD_REQUEST)
     return None
 
 
 def new_profile_defaults(admin):
-    return {'share_phone_with_students': reviews_cases(admin)}
+    return {'share_phone_with_students': works_with_students(admin)}
 
 
 def assigner_sees_phone(target, profile):

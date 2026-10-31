@@ -83,18 +83,17 @@ def is_google_email(email):
 class PartnerAdminMixin:
     """Validate partner admin access via partner_admins table.
 
-    Lookup order:
-    1. By supabase_user_id (fast path)
-    2. By email from JWT (first-login backfill)
+    Lookup order: 1. by supabase_user_id (fast path); 2. by email from JWT (first-login backfill).
     """
     permission_classes = [SupabaseIsAuthenticated]
-    #: ⚠ DENY BY DEFAULT (source sign-in S1): a source user is "not an admin" bar the methods listed.
-    source_partner_methods = ()
+    #: ⚠ DENY BY DEFAULT (S1; a MENTOR since S7a, on its OWN list): "not an admin" bar the methods listed.
+    source_partner_methods = mentor_methods = ()
 
     def get_admin(self, request):
         admin = self._find_admin(request)
-        if admin is not None and admin.is_source_user:
-            return admin if request.method.lower() in self.source_partner_methods else None
+        if admin is not None and (admin.is_source_user or admin.is_mentor):
+            allowed = self.source_partner_methods if admin.is_source_user else self.mentor_methods
+            return admin if request.method.lower() in allowed else None
         return admin
 
     def _find_admin(self, request):
@@ -286,7 +285,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
     which is the question. `PartnerAdminMixin.get_admin` runs on every admin request instead, so
     stamping there would count a replayed token against any endpoint as a visit.
     """
-    source_partner_methods = ('get',)
+    source_partner_methods = mentor_methods = ('get',)   # S7a: a mentor's sign-in closes its invite
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -613,8 +612,8 @@ def _staff_target_manageable(caller, target):
     super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
     (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
     Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
-    if caller is None or target is None or target.is_source_user:
-        return False        # a source user is not staff (source sign-in S1; S2 adds its own doors)
+    if caller is None or target is None or target.is_source_user or target.is_mentor:
+        return False        # not staff: a source user (S1; S2 has its doors), a mentor (S7a, ditto)
     if caller.is_super:
         return True
     if caller.role == 'org_admin':
@@ -643,7 +642,7 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
     ONLY, on the real JWT subject (review F3): a student or sponsor with a reset link never
     reaches the service-role write, and a TD-254 profile alias never redirects it.
     """
-    source_partner_methods = ('post',)   # source sign-in S2: a temp-password source invitee too
+    source_partner_methods = mentor_methods = ('post',)   # S2 / S7a: temp-password source and mentor
 
     def post(self, request):
         uid = auth_sub(request)

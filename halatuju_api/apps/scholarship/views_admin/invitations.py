@@ -161,6 +161,10 @@ class AdminInvitationsView(_ReviewersBase):
         if audience == 'source_partner':
             from .source_users import invite_source
             return invite_source(request, admin)
+        if audience == 'mentor':
+            # Student maintenance S7a: a mentor's sign-in (`views_admin/mentors.py`).
+            from .mentors import invite_mentor
+            return invite_mentor(request, admin)
         if audience != 'sponsor':
             return Response({'error': 'unsupported_audience', 'code': 'unsupported_audience'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -278,8 +282,13 @@ class AdminInvitationCancelView(_ReviewersBase):
                             status=status.HTTP_404_NOT_FOUND)
         # A source invitation: only a source user this caller may manage (`source_invite.manageable`
         # — a super, or the organisation admin of the source's own organisation).
-        from .. import source_invite
+        from .. import mentor_invite, source_invite
         if inv.audience == 'source_partner' and not source_invite.manageable(admin, account):
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        # A MENTOR invitation (S7a) is withdrawn on the Mentors page (Revoke), which also stamps the
+        # mentor inactive; here it is not found, so the two can never leave different marks.
+        if inv.audience == mentor_invite.AUDIENCE:
             return Response({'error': 'not_found', 'code': 'not_found'},
                             status=status.HTTP_404_NOT_FOUND)
         not_open = Response({'error': 'not_open', 'code': 'not_open'},

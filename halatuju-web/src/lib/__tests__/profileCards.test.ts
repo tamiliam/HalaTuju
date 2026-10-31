@@ -14,7 +14,8 @@ import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { adminLanding, mustCompleteProfile } from '@/lib/adminLanding'
 import {
-  PROFILE_CARDS, accessLines, cardsFor, profileContext, reviewsCases, type ProfileCardContext,
+  PROFILE_CARDS, accessLines, cardsFor, profileContext, reviewsCases, worksWithStudents,
+  type ProfileCardContext,
 } from '@/lib/profileCards'
 
 const PRESET: Record<string, string[]> = {
@@ -27,6 +28,7 @@ const PRESET: Record<string, string[]> = {
   qc: ['see_all', 'qc'],
   partner: [],
   source_partner: [],
+  mentor: [],
 }
 const ctx = (role: string, permissions = PRESET[role]): ProfileCardContext =>
   ({ role, permissions, isSuper: role === 'super' })
@@ -44,6 +46,8 @@ describe('each role sees exactly its cards, in page order', () => {
     ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin']],
     ['partner', ['you', 'contact', 'access', 'organisation', 'signin']],
     ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin']],
+    // S7a (2026-10-31, the MentorProfile board): the reviewer cards but `takingPart`, plus Mentoring.
+    ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin']],
   ])('%s', (role, cards) => {
     expect(cardsFor(ctx(role))).toEqual(cards)
   })
@@ -75,6 +79,24 @@ describe('the reviewer cards follow the `review` PERMISSION, not the Reviewer ro
   })
 })
 
+describe('a mentor works with students; nobody else gains the cards (S7a)', () => {
+  it('the mentor role, and every `review` holder, works with students', () => {
+    expect(worksWithStudents(ctx('mentor'))).toBe(true)
+    expect(reviewsCases(ctx('mentor'))).toBe(false)
+    expect(worksWithStudents(ctx('reviewer'))).toBe(true)
+    for (const role of ['super', 'org_admin', 'admin', 'finance', 'qc', 'partner', 'source_partner']) {
+      expect(worksWithStudents(ctx(role))).toBe(false)
+    }
+  })
+  it('the Mentoring card is a mentor’s alone, and the pause is never a mentor’s', () => {
+    for (const role of Object.keys(PRESET).filter((r) => r !== 'mentor')) {
+      expect(cardsFor(ctx(role))).not.toContain('mentoring')
+    }
+    expect(cardsFor(ctx('mentor'))).not.toContain('takingPart')
+    expect(cardsFor({ role: 'mentor', permissions: [], isSuper: true })).not.toContain('mentoring')
+  })
+})
+
 describe('the registry itself', () => {
   it('has one entry per card, with distinct orders', () => {
     const ids = PROFILE_CARDS.map((c) => c.id)
@@ -101,6 +123,7 @@ describe('"You can" lines', () => {
     expect(accessLines(ctx('reviewer'))).toEqual(['admin.perm.review.name'])
     expect(accessLines(ctx('partner'))).toEqual(['admin.myProfile.can.partner'])
     expect(accessLines(ctx('source_partner'))).toEqual(['admin.myProfile.can.source_partner'])
+    expect(accessLines(ctx('mentor'))).toEqual(['admin.myProfile.can.mentor'])
     expect(accessLines(ctx('reviewer', []))).toEqual(['admin.myProfile.can.profileOnly'])
   })
 

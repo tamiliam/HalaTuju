@@ -48,7 +48,9 @@ import { SystemHealthLight } from '@/components/admin/SystemHealthLight'
  * holders for one answer — the exact thing `ScopeSwitcher`'s docstring forbids.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { token } = useAdminAuth()
+  const { token: authToken, role } = useAdminAuth()
+  // A MENTOR has no gift to scope (S7a): the scope list is a staff endpoint that refuses the role.
+  const token = role?.role === 'mentor' ? null : authToken
   const { locale } = useT()
 
   /*
@@ -157,8 +159,8 @@ function Chrome(
 
   const r = effectiveRole(role)
   // A source user probes nothing: both probes are staff endpoints, which refuse the role, and no
-  // row it can see is probe-gated (source sign-in, 2026-10-30).
-  const { probes, requestsWaiting } = useNavProbes(r === 'source_partner' ? null : token)
+  // row it can see is probe-gated (source sign-in, 2026-10-30). Nor does a mentor (S7a).
+  const { probes, requestsWaiting } = useNavProbes(r === 'source_partner' || r === 'mentor' ? null : token)
   /*
    * ⚠ THE MENU NOW DEPENDS ON WHETHER A GIFT IS KNOWN (owner, 2026-09-08: *"the programme
    * shouldn't show up until they are selected"*). `chosen` is `''` only when there are SEVERAL

@@ -1107,6 +1107,18 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### ⚠ STATE AT 2026-10-31 — STUDENT MAINTENANCE SPRINT 7a BUILT, NOT LIVE (branch `maint-s7`)
+
+**What it is.** Mentors log in, on the source-partner pattern: role `mentor`, `scholarship.Mentor`
+(`PartnerAdmin.mentor`, `Invitation.mentor`), deny by default (`mentor_methods`), the Mentors page
+(`/admin/organisation/mentors`, `GET admin/mentors/`, actions `admin/mentors/<id>/<action>/`, invite through
+`POST admin/invitations/` `audience='mentor'`), and the mentor's own profile (`admin/me/` `mentoring_area`;
+`staff_contact.works_with_students`). Rules: `apps/scholarship/mentor_invite.py`. **Next free migration
+numbers: scholarship 0195, courses 0091.** Release order: apply scholarship 0194 THEN courses 0090 by hand
+(DDL + ledger rows in each docstring; the new `mentors` table gets RLS + one service_role policy in the
+same transaction; then the Security Advisor), then API, then web. Next: Sprint 7b (assignments, meetings,
+the Mentoring tabs) — 7b's mock-ups are in the maintenance design project.
+
 ### ⚠ STATE AT 2026-10-31 — COMMON PROFILE S1+S2 LIVE (main `3ad1f387`; api-01214-hhw, web-01037-j7p; migration scholarship 0193 applied by hand + recorded)
 
 **What it is.** One `/admin/profile` page for EVERY role (source users included), built from the card registry
@@ -1272,7 +1284,7 @@ applied by hand first, recorded — never re-apply that DDL); retros `docs/retro
 `docs/plans/2026-10-29-student-maintenance-roadmap.md`). S6b letters LIVE 2026-10-31: `0e506798` + review
 `98b0f964` + `scholarship/0192_letters` (applied by hand first, recorded — never re-apply that DDL; api-01213-crq,
 web-01036-mkf; retro `retrospective-2026-10-31-maintenance-s6b.md`). NEXT = Sprint 7, mentors (records) — design
-first. Next free scholarship migration: 0193.**
+first. Next free scholarship migration: 0193 (superseded: see the S7a state above — 0195).**
 - Letters (S6b): `letters.py` is the rule (who issues which kind, the typed name, closed-file kinds, withdraw,
   acknowledge, the one `state`), `views_admin/letters.py` the fence, `urls_letters.py` the routes (urls.py is at 600).
   Documents only: never a status or money write. The notice email `letter_issued` is locked and NOT behind

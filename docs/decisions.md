@@ -1,5 +1,35 @@
 # Architectural Decisions — HalaTuju
 
+## Mentors sign in, on the source-partner pattern; the mentor keeps their own profile — 2026-10-31 (owner rulings, student maintenance S7a)
+
+**Context:** the maintenance roadmap planned mentors as records only, with a mentor login "later" (Sprint 11).
+The owner brought the login forward: a mentor is invited, signs in and fills in their own profile, and
+Sprint 7 is split — 7a the role, the invite and the profile; 7b the assignments and the meetings.
+
+**Decision:** (1) Mentors sign in on the SOURCE-PARTNER pattern: a new role `mentor` on `PartnerAdmin`,
+bound by a database check to a new `scholarship.Mentor` (`PartnerAdmin.mentor`, `Invitation.mentor`;
+migrations scholarship 0194, courses 0090), deny by default on every view (`mentor_methods`), never on a
+staff list, holding no permission. (2) Staff invite with a name and an email; **only `super` and
+`org_admin` invite, resend, revoke, deactivate or reactivate**, inside their own organisation (an `admin`
+reads the Mentors page). One email, one sign-in: an address that already has any sign-in is refused
+(`already_staff`). (3) **The mentor fills in their own profile and staff cannot edit it** — the common
+`/admin/profile` with You, Contact (with "Show my phone to my students"), Mentoring (area of mentoring,
+required), Qualifications and languages, Address, Your access (Role Mentor) and Sign-in; not Taking part
+(a mentor is never handed cases to pause). Photos stay staff-only. Staff may correct the NAME or EMAIL only
+until the first sign-in (409 `managed_by_mentor` after it); a new address is a new sign-in and is sent the
+invitation. (4) **Mentors are never deleted: Deactivate** (the login off, a waiting invitation withdrawn and
+its password killed, `deactivated_at/_by_email` stamped) and Reactivate. Status is derived: inactive,
+invited (not yet signed in), active. (5) **The system never emails a mentor except the invitation and its
+resend** (Reactivate of a mentor who never signed in is that resend). (6) Mentors and meetings never reach
+sponsors or partners. (7) One rule for "works with students" (`staff_contact.works_with_students`: a
+`review` holder or a mentor) decides the required phone, "share my phone with students" and the reviewer
+cards; the web twin is `profileCards.worksWithStudents`.
+
+**Trade-offs:** a mentor invitation is not on the Invitations page (the Mentors page is its roster), so the
+generic Cancel refuses it (404) and Revoke on the Mentors page is the one door. The board's copy describes
+assignment and meetings (7b) before they exist. The phone appears on the Mentors list, as the Contact card
+tells the mentor ("the organisation that invited you can see this number").
+
 ## People: Open now is replaced by Awaiting review + Interviewing (request #51, 2026-10-31)
 
 **Context.** Open now summed `profile_complete` and `interviewing`, so a reviewer with interviews running but

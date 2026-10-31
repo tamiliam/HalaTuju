@@ -124,8 +124,8 @@ from .award_offer import (
     send_award_offer_email, send_award_offer_sign_email
 )
 from .invitation_mail import (
-    build_source_invitation_email, build_sponsor_invitation_email, send_source_invitation_email,
-    send_sponsor_invitation_email,
+    build_mentor_invitation_email, build_source_invitation_email, build_sponsor_invitation_email,
+    send_mentor_invitation_email, send_source_invitation_email, send_sponsor_invitation_email,
 )
 from .reviewer_interviews import (
     build_reviewer_alternatives_requested_email, build_reviewer_interview_booked_email,

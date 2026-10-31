@@ -36,17 +36,20 @@ export type NavScope = 'platform' | 'organisation' | 'programme' | 'utility'
 /** Scopes the sidebar renders as groups (N2). `utility` lives in the help/account menus. */
 export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 'programme']
 
-/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same eight,
+/** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same nine,
  *  same order, asserted on every run.
  *  ⚠ `source_partner` (source sign-in, 2026-10-30) is named here so `effectiveRole` never folds
  *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
  *  `components/source/*`, which call `admin/source/` only) and Profile; it lands on Overview.
+ *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its ONLY row is Profile, so it lands
+ *  there (`defaultRoute`), and the layout sends it back from any other page (`outsiderMustLeave`).
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
+  | 'mentor'
 
 export const ROLE_NAMES: readonly AdminRoleName[] =
-  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner']
+  ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner', 'mentor']
 
 /** Dark-shipped features. One key per probe the shell runs; see `NavGate`. */
 export type ProbeKey = 'requests' | 'billing'
@@ -249,6 +252,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
       // before the people who fund them, in the order the work actually flows.
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+      // ⚠ MENTORS (student maintenance S7a, 2026-10-31): invited here and signing in on the
+      // source pattern. super + org_admin invite and act; admin reads (`GET admin/mentors/`, the
+      // endpoint's own rule). Organisation scope: a mentor belongs to the organisation, not a gift.
+      { id: 'mentors', href: '/admin/organisation/mentors', labelKey: 'admin.mentors.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],

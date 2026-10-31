@@ -141,3 +141,50 @@ def send_source_invitation_email(to_email, *, name='', source_name='', temp_pass
     except Exception as e:
         logger.warning('Failed to send the source invitation to %s', to_email, exc_info=True)
         return False, str(e)[:300]
+
+
+def build_mentor_invitation_email(*, org_name='', name='', login_link='', access=''):
+    """The wording of a MENTOR's invitation to sign in (student maintenance S7a, 2026-10-31) →
+    ``(subject, body)``.
+
+    ⚠ THE ONLY EMAIL A MENTOR IS EVER SENT, with its resend (owner ruling 2026-10-31): the system
+    never emails a mentor anything else. Built-in wording only — no stored template, no switch: an
+    invitation is not a notification (`_invite_render`'s reason), and nothing else may grow out of
+    it. The sign-in paragraph is the staff letters' own (`_welcome_access_block`), so a mentor is
+    told how to get in in exactly the words a colleague is. English, like every staff letter.
+    """
+    org = org_name or 'the organisation'
+    who = name or 'there'
+    body = (
+        f'Dear {who},\n\n'
+        f'{org} would like you to join the {_PROG_EN} as a mentor: someone a funded student can '
+        f'turn to for guidance during their studies.\n\n'
+        f'Sign in here:\n{login_link}\n\n'
+        f'{access}\n\n'
+        f'Once you are in, please fill in your profile: your area of mentoring, the languages you '
+        f'speak, a few lines about yourself and your phone number. The team uses it to match you '
+        f'with students. Your students see your name, area, languages, About and email, and your '
+        f'phone only if you choose to share it.\n\n'
+        f'Any trouble at all, just reply to this email.\n\n'
+        f'Warm regards,\n{_P.team_signoff("en")}'
+    )
+    return f'An invitation to mentor with {org}', body
+
+
+def send_mentor_invitation_email(to_email, *, name='', org_name='', temp_password=None,
+                                 google=False):
+    """Invite a MENTOR to sign in (S7a). Returns ``(ok, error)``, so the invitation records both.
+    THE ONLY SENDER of `build_mentor_invitation_email`; replies go to support, as for a staff
+    invitation (somebody who cannot get in needs the people who can let them in)."""
+    if not to_email:
+        return False, 'no address'
+    subject, body = build_mentor_invitation_email(
+        org_name=org_name, name=name, login_link=f'{_P.frontend_url}/admin/login',
+        access=_welcome_access_block(to_email, temp_password, google))
+    try:
+        EmailMessage(subject=subject, body=body, from_email=_P.email_from,
+                     to=[to_email], reply_to=[_P.email_support]).send()
+        return True, ''
+    except Exception as e:
+        logger.warning('Failed to send the mentor invitation to %s', to_email, exc_info=True)
+        return False, str(e)[:300]

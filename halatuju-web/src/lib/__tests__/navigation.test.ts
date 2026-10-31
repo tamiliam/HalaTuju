@@ -76,9 +76,11 @@ describe('visibleNav per role', () => {
     // ⚠ **TD-229 (2026-10-03): `contracts` MOVED FROM ORGANISATION TO PROGRAMME**, after
     // `spending` — the owner ruled the bursary agreement is written PER GIFT. Nobody gained or
     // lost reach (super + org_admin, as before); only its position moved.
+    // ⚠ S7a (2026-10-31): `mentors` is NEW in the Organisation group, after Sources, for super,
+    // org_admin and admin (admin reads; the endpoint refuses everyone else). Nobody else gained reach.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
@@ -99,13 +101,13 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'programmeOverview', 'applications', 'scholars', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
@@ -132,6 +134,9 @@ describe('visibleNav per role', () => {
     // source console (`components/source/*`, `admin/source/` only) — and Profile. NO Guide / FAQ:
     // both are written for staff, and there is no source section in either yet.
     source_partner: ['programmeOverview', 'applications', 'scholars', 'profile'],
+    // Student maintenance S7a (2026-10-31): a mentor has their Profile and nothing else (the
+    // MentorProfile board). NO Guide / FAQ: both are written for staff.
+    mentor: ['profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -211,6 +216,18 @@ describe('visibleNav per role', () => {
       '/admin/payments', '/admin/programme', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'source_partner', [])).toBe(false)
     }
+  })
+
+  it('a mentor is its own role, never folded into reviewer, and lands on its Profile', () => {
+    expect(effectiveRole({ role: 'mentor' })).toBe('mentor')
+    expect(defaultRoute({ role: 'mentor', permissions: [] })).toBe('/admin/profile')
+    expect(defaultRoute({ role: 'mentor' }, false)).toBe('/admin/profile')
+    expect(canAccess('/admin/profile', 'mentor', [])).toBe(true)
+    for (const href of ['/admin', '/admin/organisation', '/admin/organisation/mentors',
+      '/admin/programme/overview', '/admin/scholarship', '/admin/scholars', '/admin/guide', '/admin/faq']) {
+      expect(canAccess(href, 'mentor', [])).toBe(false)
+    }
+    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['utility'])
   })
 
   it('the Programme group of a source user never folds away — it has no door into a gift', () => {
