@@ -37,6 +37,10 @@ ALLOWED = {
     ('api/v1/admin/profile/', 'get'),
     # Common profile S1 (2026-10-31): the caller's OWN account for the shared Profile page.
     ('api/v1/admin/me/', 'get'),
+    # Common profile S2: the caller's own card (an empty PATCH writes nothing and answers the GET
+    # payload) and removing its own photo (none here, so nothing to remove).
+    ('api/v1/admin/me/', 'patch'),
+    ('api/v1/admin/me/photo/', 'delete'),
     # Source sign-in S3 (2026-10-30) — the source console, built for this role and no other. Each
     # serves an allowlist payload scoped by `source_access`; `test_source_console.py` proves what
     # each returns, to whom, and that no never-list key appears in any of them. The profile PATCH
@@ -64,6 +68,9 @@ REACHED = {
     # body it is 400 `current_password_required` before Supabase is asked; it only ever changes the
     # JWT's own account, after a password grant proves the current one (`test_admin_me.py`).
     ('api/v1/admin/me/password/', 'post'): 400,
+    # Common profile S2: the photo upload is multipart only, so the sweep's JSON body is 415 before
+    # anything is read; its 200 (the caller's OWN photo) is proven in `test_staff_profile_card.py`.
+    ('api/v1/admin/me/photo/', 'post'): 415,
     # Source sign-in S4: the witness POST on the source's OWN student with no agreement yet is 400
     # `not_ready` — the view ran its gate (source user, scope, witness) and refused the state. It
     # writes only with an agreement, the guarantor's signature and `confirm: true`

@@ -183,6 +183,8 @@ def source_kind_extras(admin, org_id):
                 .order_by('partner_admin_id', '-created_at')):
         newest.setdefault(inv.partner_admin_id, inv)
     signed = source_invite.sign_in_states(sources.values('pk'))
+    from .. import staff_photo
+    phones = staff_photo.phones_of(users)
     return {
         'source_users': [{
             'id': u.id,
@@ -198,6 +200,9 @@ def source_kind_extras(admin, org_id):
             'first_seen_at': _iso(u.first_seen_at),
             'last_seen_at': _iso(u.last_seen_at),
             'manageable': source_invite.manageable(admin, u),
+            # Common profile S2: the source person's OWN phone (their Profile's Contact card), which
+            # the organisation that invited them sees — the card tells them so.
+            'phone': phones[u.id],
             'invitation': _invitation_dict(newest.get(u.id)),
         } for u in users],
         'sources': [{

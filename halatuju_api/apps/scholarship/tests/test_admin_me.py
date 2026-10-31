@@ -18,7 +18,10 @@ from apps.scholarship.tests.factories import (
 ME = '/api/v1/admin/me/'
 RP = '/api/v1/admin/reviewer-profile/'
 KEYS = {'id', 'name', 'email', 'role', 'is_super', 'organisation', 'source', 'referral_partner',
-        'programmes', 'permissions', 'first_seen_at', 'last_seen_at'}
+        'programmes', 'permissions', 'first_seen_at', 'last_seen_at',
+        # Common profile S2: the person's own card.
+        'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students',
+        'photo_url'}
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -97,9 +100,10 @@ class TestAdminMe(TestCase):
         self.assertIsNotNone(me.last_seen_at)
         self.assertTrue(data['last_seen_at'] and data['first_seen_at'])
 
-    def test_it_writes_nothing(self):
+    def test_it_takes_no_post_put_or_delete(self):
+        # PATCH writes the card since S2 (`test_staff_profile_card.py`); nothing else is served.
         me = make_admin('reviewer', owning_org=self.org)
-        for method in ('post', 'put', 'patch', 'delete'):
+        for method in ('post', 'put', 'delete'):
             self.assertEqual(getattr(authed_client(me), method)(ME, {}, format='json').status_code,
                              405, method)
 

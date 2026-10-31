@@ -108,6 +108,27 @@ class ReviewerProfile(models.Model):
     is edited only via the self-scoped /admin/reviewer-profile/ endpoint — it can
     never reach the student/sponsor allowlist serializers. NO password field
     (authentication is Supabase's; passwords are never modelled).
+
+    ⚠ SINCE COMMON PROFILE S2 (2026-10-31) THIS IS EVERY STAFF MEMBER'S PROFILE ROW, NOT ONLY A
+    REVIEWER'S — `StaffProfile` below is the name to use in new code; this class keeps its name
+    (and Django's model name `ReviewerProfile`) on purpose, because renaming a model costs a
+    `RenameModel` operation and a content-type rewrite, and the migration had to be ADD COLUMNs
+    only (migrate-first, the old image still inserting rows). One row per person, made by
+    `get_or_create` wherever it is first needed. The table name is unchanged.
+
+    The six S2 columns (`job_title`, `about`, `photo_path`, `share_phone_with_team`, `other_language`,
+    `other_language_fluency`) carry a
+    DATABASE default as well as a Python one (`db_default`): between the migration and the deploy
+    the old image still runs `get_or_create` without naming them, and NOT NULL without a database
+    default would refuse that insert (lessons.md, 2026-10-19).
+
+    ⚠ PHONE: revised 2026-10-31 (owner) — the phone is shown on the Team (People) page when its
+    owner switched `share_phone_with_team` on, and a SOURCE user's phone to the organisation that
+    invited it. The ADDRESS stays private: no serializer but the owner's own reviewer profile reads it.
+    ⚠ `photo_path` is a key in the private `b40-documents` bucket (`staff-photos/<admin id>/<uuid>.webp`,
+    `apps/scholarship/staff_photo.py`); the orphan sweep knows it (`cleanup_orphan_blobs.known_paths`)
+    and deleting the row deletes the object (`staff_photo.on_profile_deleted`). Staff only: never in a
+    student, sponsor or source-console payload.
     """
     partner_admin = models.OneToOneField(
         'courses.PartnerAdmin', on_delete=models.CASCADE,
@@ -123,6 +144,13 @@ class ReviewerProfile(models.Model):
     english_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
     bm_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
     tamil_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    # Common profile S2 (owner, 2026-10-31): ONE optional fourth language — Mandarin, Kadazandusun,
+    # Bajau… (students from Sabah) — stored by NAME, with its fluency. Both or neither (the serializer).
+    # ⚠ It does NOT count for the onboarding hold, which still needs English, BM or Tamil
+    # (`reviewer_onboarding.LANG_FIELDS`): reviewers interview in those three.
+    other_language = models.CharField(max_length=60, blank=True, default='', db_default='')
+    other_language_fluency = models.CharField(max_length=20, blank=True, default='', db_default='',
+                                              choices=LANG_FLUENCY)
     # Whether the reviewer's phone may be shared with students assigned to them (in the advance
     # "your interviewer will contact you" email). Opt-in by DEFAULT (True); a reviewer can opt out.
     share_phone_with_students = models.BooleanField(default=True)
@@ -134,6 +162,16 @@ class ReviewerProfile(models.Model):
     postcode = models.CharField(max_length=10, blank=True, default='')
     city = models.CharField(max_length=100, blank=True, default='')
     state = models.CharField(max_length=50, blank=True, default='')
+    # Common profile S2 (2026-10-31): every person's own card. See the class docstring for why
+    # each has `db_default`.
+    job_title = models.CharField(max_length=120, blank=True, default='', db_default='')
+    about = models.TextField(blank=True, default='', db_default='',
+                             help_text='Capped at 600 characters by the admin/me/ PATCH.')
+    photo_path = models.CharField(max_length=255, blank=True, default='', db_default='',
+                                  help_text='Key in the private b40-documents bucket; blank = no photo.')
+    share_phone_with_team = models.BooleanField(
+        default=False, db_default=False,
+        help_text='Show this phone on the Team (People) page. Off by default.')
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -141,6 +179,19 @@ class ReviewerProfile(models.Model):
 
     def __str__(self):
         return f'ReviewerProfile for {self.partner_admin_id}'
+
+    def spoken_other_language(self):
+        """The fourth language's NAME when they speak it conversationally or better, else ''. The one
+        reader of the rule — the People list and the assignment picker serve it beside the en/ms/ta
+        codes, never inside them."""
+        name = (self.other_language or '').strip()
+        return name if name and self.other_language_fluency in ('conversational', 'fluent') else ''
+
+
+#: The name for new code (common profile S2): the one personal-profile row every staff member and
+#: source user has. The SAME class — not a subclass, not a proxy — so there is one model, one table
+#: and one migration history; `ReviewerProfile` stays importable for every existing caller.
+StaffProfile = ReviewerProfile
 
 
 class AssignmentEvent(models.Model):

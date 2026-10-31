@@ -366,6 +366,9 @@ class AdminAssignableAdminsView(_AdminBase):
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),
+             # Common profile S2: the optional fourth language by NAME, '' when none.
+             'other_language': (a.reviewer_profile.spoken_other_language()
+                                if getattr(a, 'reviewer_profile', None) is not None else ''),
              'paused': a.paused_at is not None,
              'assignable': may_assign_to(admin, a),
              'programme_id': a.programme_id,

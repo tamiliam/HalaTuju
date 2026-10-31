@@ -639,6 +639,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'ReviewerProfileView': 'self-scoped',
         'AdminMeView': 'self-scoped',   # common profile S1: the caller's own account
         'AdminMePasswordView': 'self-scoped',   # common profile S1: the caller's own password
+        'AdminMePhotoView': 'self-scoped',   # common profile S2: the caller's own photo
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)
         'AdminBursaryWitnessView': 'grandfathered',
     }

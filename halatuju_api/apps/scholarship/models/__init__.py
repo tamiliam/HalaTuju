@@ -55,7 +55,7 @@ from .tenant_requests import (
 )
 from .review import (
     AssignmentEvent, GraduationMessage, ResolutionItem, ReviewerProfile, SemesterResult,
-    SponsorReferral,
+    SponsorReferral, StaffProfile,
 )
 from .results import ResultsExpectation
 from .content import (

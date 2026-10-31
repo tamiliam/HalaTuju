@@ -149,7 +149,12 @@ class TestTheTable(_Base):
             'programme_id', 'programme_name',
             # #39 Sprint 4: People's permission chips — whether the set is custom, and what it adds
             # to / takes from the preset. Keys only, never the raw stored column.
-            'custom', 'permissions_added', 'permissions_removed'})
+            'custom', 'permissions_added', 'permissions_removed',
+            # Common profile S2 (owner, 2026-10-31): the photo, and the phone ONLY when its owner
+            # shows it to the team (None otherwise). Never the address.
+            'photo_url', 'phone',
+            # The optional fourth language, by name ('' when none).
+            'other_language'})
 
     def test_the_gift_column_is_back_because_its_own_trigger_fired(self):
         """⚠ THIS TEST USED TO ASSERT THE OPPOSITE, and the reason it flipped is the point.

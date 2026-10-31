@@ -431,7 +431,9 @@ class AdminListView(PartnerAdminMixin, APIView):
         # The FE (`invitations.standingOf`) uses the served number; its constant is only the
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
-        staff_footprint, _ = scholarship_staff()
+        staff_footprint, staff_lifecycle = scholarship_staff()
+        # Common profile S2: each person's photo, and their phone ONLY if they show it to the team.
+        cards = staff_lifecycle.team_cards(admins)
         _dormant_cache = {}
 
         def _dormant_for(a):
@@ -489,6 +491,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # the screen renders a word rather than re-deriving the rule — the same split
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
                 'invitation': _invitation_dict(invites.get(a.id)),
+                **cards[a.id],
             })
         return Response({'admins': data})
 

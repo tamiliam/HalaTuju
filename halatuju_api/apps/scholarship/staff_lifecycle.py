@@ -49,6 +49,14 @@ class RoleChangeRefused(Exception):
         self.code, self.status, self.message, self.extra = code, status, message, extra
 
 
+def team_cards(admins):
+    """`{admin_id: {photo_url, phone}}` for the People list — `staff_photo.team_cards` (one query, one
+    batch signing call). Here so `apps.courses.views_staff` reaches it through its ONE scholarship
+    door (`views_admin.scholarship_staff()`), adding no cross-app import (common profile S2)."""
+    from . import staff_photo
+    return staff_photo.team_cards(admins)
+
+
 def open_cases(admin):
     """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
     review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which

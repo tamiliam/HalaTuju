@@ -20,15 +20,28 @@ programme list is the same one its scope switcher already serves (`AdminScopeLis
 `permissions` is the RESOLVED set (`PartnerAdmin.permission_set`), the one `admin/role/` serves.
 
 `POST admin/me/password/` — the signed-in person changes their OWN password (see `AdminMePasswordView`).
+
+Common profile S2 (2026-10-31): the GET also serves the person's card — `job_title`, `about`, `phone`,
+`share_phone_with_team`, `share_phone_with_students`, `photo_url` (signed, ~1 h, only when a photo
+exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes it
+(`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`).
 """
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from apps.courses import supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
-from halatuju.throttling import PasswordChangeRateThrottle
+from halatuju.throttling import PasswordChangeRateThrottle, UploadRateThrottle
 
+from .. import staff_photo
+from ..models import StaffProfile
 from .base import _AdminBase
+
+#: What `PATCH admin/me/` may write, and nothing else (an unknown key is 400 `not_editable`, the
+#: `admin/source/profile/` convention). `share_phone_with_students` only for a holder of `review`.
+ME_FIELDS = ('name', 'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students')
+ABOUT_MAX = 600
 
 
 def _named(p, lang):
@@ -54,19 +67,99 @@ def programmes_of(admin, lang='en'):
     return 'all'
 
 
+def reviews_cases(admin):
+    """The reviewer cards' rule, on the server (`lib/profileCards.ts` `reviewsCases`): holds `review`
+    and is not a super. Decides who must give a phone and who may set "share with students"."""
+    return not admin.is_super and admin.has_perm('review')
+
+
+def _profile_of(admin):
+    return StaffProfile.objects.filter(partner_admin=admin).first()
+
+
+def _card(profile):
+    """The person's own card fields, blank when no profile row exists yet."""
+    return {
+        'job_title': getattr(profile, 'job_title', '') or '',
+        'about': getattr(profile, 'about', '') or '',
+        'phone': getattr(profile, 'phone', '') or '',
+        'share_phone_with_team': bool(getattr(profile, 'share_phone_with_team', False)),
+        'share_phone_with_students': bool(getattr(profile, 'share_phone_with_students', True)),
+        'photo_url': staff_photo.signed_url(getattr(profile, 'photo_path', '')),
+    }
+
+
+def _card_text(value, limit, code):
+    """`(clean, None)` or `(None, refusal)`: a string, stripped, at most `limit` characters."""
+    if not isinstance(value, str):
+        return None, _me_refusal('bad_request')
+    value = value.strip()
+    if len(value) > limit:
+        return None, _me_refusal(code)
+    return value, None
+
+
 class AdminMeView(_AdminBase):
-    """GET /api/v1/admin/me/ — the caller's own account (see the module docstring)."""
-    source_partner_methods = ('get',)
+    """GET / PATCH /api/v1/admin/me/ — the caller's own account and card (see the module docstring).
+
+    PATCH `{name?, job_title?, about?, phone?, share_phone_with_team?, share_phone_with_students?}`:
+    only the keys sent are written. Refusals (400): `not_editable` + `fields` for any other key, or for
+    `share_phone_with_students` from someone without `review`; `name_required`; `name_too_long`;
+    `job_title_too_long` (120); `about_too_long` (600); `phone_too_long` (30, the column); and
+    `phone_required` — a holder of `review` must keep a phone (the onboarding rule), everybody else
+    may clear theirs. The phone is otherwise stored as typed, exactly as the reviewer profile does.
+    A source user's NAME saves here too (opted in, GET and PATCH). Answers with the GET payload."""
+    source_partner_methods = ('get', 'patch')
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        return Response(self._payload(request, admin))
+
+    def patch(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        data = request.data if isinstance(request.data, dict) else None
+        if data is None:
+            return _me_refusal('bad_request')
+        reviewer = reviews_cases(admin)
+        refused = sorted(k for k in data if k not in ME_FIELDS
+                         or (k == 'share_phone_with_students' and not reviewer))
+        if refused:
+            return _me_refusal('not_editable', fields=refused)
+        clean = {}
+        for key, limit in (('name', 200), ('job_title', 120), ('about', ABOUT_MAX), ('phone', 30)):
+            if key in data:
+                clean[key], bad = _card_text(data[key], limit, f'{key}_too_long')
+                if bad:
+                    return bad
+        for key in ('share_phone_with_team', 'share_phone_with_students'):
+            if key in data:
+                if not isinstance(data[key], bool):
+                    return _me_refusal('bad_request')
+                clean[key] = data[key]
+        if 'name' in clean and not clean['name']:
+            return _me_refusal('name_required')
+        if 'phone' in clean and not clean['phone'] and reviewer:
+            return _me_refusal('phone_required')
+        if 'name' in clean:
+            admin.name = clean.pop('name')
+            admin.save(update_fields=['name'])
+        if clean:
+            profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin)
+            for key, value in clean.items():
+                setattr(profile, key, value)
+            profile.save(update_fields=[*clean, 'updated_at'])
+        return Response(self._payload(request, admin))
+
+    def _payload(self, request, admin):
         lang = (request.query_params.get('lang') or 'en').lower()
         if lang not in ('en', 'ms', 'ta'):
             lang = 'en'
         org = admin.owning_organisation if admin.owning_organisation_id else None
-        return Response({
+        return {
             'id': admin.id,
             'name': admin.name,
             'email': admin.email,
@@ -80,11 +173,57 @@ class AdminMeView(_AdminBase):
             'permissions': list(admin.permission_set),
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
-        })
+            **_card(_profile_of(admin)),
+        }
 
 
-def _password_refusal(code, http=status.HTTP_400_BAD_REQUEST):
-    return Response({'error': code, 'code': code}, status=http)
+class AdminMePhotoView(_AdminBase):
+    """POST / DELETE /api/v1/admin/me/photo/ — the caller's OWN photo (`apps/scholarship/staff_photo.py`).
+
+    POST: multipart, ONE file (any field name). At most 2 MB; JPEG, PNG or WebP decided by the
+    CONTENT; re-encoded to a metadata-free WebP of at most 512 x 512. Replacing a photo deletes the
+    old object. Refusals (400): `no_file`, `one_file`, `too_large`, `not_an_image`,
+    `unsupported_type`; 503 `storage_unavailable` when the bucket cannot take it (nothing changes).
+    Throttled like a document upload (`UploadRateThrottle`). DELETE removes the object, then the
+    path (503 and nothing changes if the object cannot be deleted). Both answer `{photo_url}`.
+    Opted in for a source user."""
+    source_partner_methods = ('post', 'delete')
+    parser_classes = [MultiPartParser]
+    throttle_classes = [UploadRateThrottle]
+
+    def post(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        files = [f for name in request.FILES for f in request.FILES.getlist(name)]
+        if not files:
+            return _me_refusal('no_file')
+        if len(files) > 1:
+            return _me_refusal('one_file')
+        upload = files[0]
+        if upload.size > staff_photo.MAX_BYTES:
+            return _me_refusal('too_large')
+        profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin)
+        try:
+            key = staff_photo.replace(profile, upload.read())
+        except staff_photo.PhotoError as e:
+            return _me_refusal(e.code)
+        if key is None:
+            return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({'photo_url': staff_photo.signed_url(key)})
+
+    def delete(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        profile = _profile_of(admin)
+        if profile is not None and not staff_photo.remove(profile):
+            return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({'photo_url': None})
+
+
+def _me_refusal(code, http=status.HTTP_400_BAD_REQUEST, **extra):
+    return Response({'error': code, 'code': code, **extra}, status=http)
 
 
 class AdminMePasswordView(_AdminBase):
@@ -118,28 +257,28 @@ class AdminMePasswordView(_AdminBase):
         current = data.get('current_password') or ''
         new = data.get('new_password') or ''
         if not isinstance(current, str) or not isinstance(new, str):
-            return _password_refusal('bad_request')
+            return _me_refusal('bad_request')
         if not current:
-            return _password_refusal('current_password_required')
+            return _me_refusal('current_password_required')
         if len(new) < supabase_admin.MIN_PASSWORD_LENGTH:
-            return _password_refusal('password_too_short')
+            return _me_refusal('password_too_short')
         if new == current:
-            return _password_refusal('same_password')
-        unavailable = _password_refusal('supabase_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+            return _me_refusal('same_password')
+        unavailable = _me_refusal('supabase_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
         account = supabase_admin.read_auth_user(uid)
         if not isinstance(account, dict) or not account.get('email'):
             return unavailable
         providers = (account.get('app_metadata') or {}).get('providers') or []
         if 'email' not in providers:
-            return _password_refusal('no_password_sign_in')
+            return _me_refusal('no_password_sign_in')
         checked = supabase_admin.verify_password(account['email'], current)
         if checked is False:
-            return _password_refusal('wrong_current_password')
+            return _me_refusal('wrong_current_password')
         if checked is not True:
             return unavailable
         written = supabase_admin.set_password(uid, new)
         if written == supabase_admin.WEAK_PASSWORD:
-            return _password_refusal('weak_password')
+            return _me_refusal('weak_password')
         if written is not True:
             return unavailable
         return Response({'ok': True})

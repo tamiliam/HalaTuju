@@ -51,6 +51,11 @@ def _reviewer_languages(admin):
                                    ('ta', rp.tamil_fluency)) if lvl in _REVIEW_FLUENCY]
 
 
+def _other_language(admin):
+    rp = getattr(admin, 'reviewer_profile', None)
+    return rp.spoken_other_language() if rp is not None else ''
+
+
 def _median_days(values):
     """Median, not mean — with 13 reviewers and single-digit caseloads one slow case drags a mean
     somewhere no real turnaround sits. Returns None for an empty list rather than 0, because
@@ -170,6 +175,9 @@ def _reviewer_dict(admin, work):
         'email': admin.email,
         'role': 'super' if admin.is_super else admin.role,
         'languages': _reviewer_languages(admin),
+        # Common profile S2: the optional fourth language, by NAME ('' when none or not spoken well
+        # enough) — beside the en/ms/ta codes, never inside them.
+        'other_language': _other_language(admin),
         'open_now': work['open_now'],
         'completed': work['completed'],
         'turnaround_days': work['turnaround_days'],
@@ -276,8 +284,12 @@ class AdminReviewerListView(_ReviewersBase):
             return err
         rows = list(self._reviewers(org_id, include_revoked=True))
         work = _reviewer_workloads(rows, organisation_id=org_id)
+        # Common profile S2: the photo, and the phone ONLY when its owner shows it to the team —
+        # one query and one batch signing call for the page (`staff_photo.team_cards`).
+        from .. import staff_photo
+        cards = staff_photo.team_cards(rows)
         return Response({
-            'reviewers': [_reviewer_dict(r, work[r.id]) for r in rows],
+            'reviewers': [{**_reviewer_dict(r, work[r.id]), **cards[r.id]} for r in rows],
             # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
             # can offer the change wherever a reviewer is shown, without a second round trip.
             'programmes': self._gift_choices(admin),

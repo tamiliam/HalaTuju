@@ -18,7 +18,9 @@ if the bucket is unreachable it lists nothing rather than erroring.
 """
 from django.core.management.base import BaseCommand
 
-from apps.scholarship.models import ApplicantDocument, BursaryAgreement, Letter, OrgRequestAttachment
+from apps.scholarship.models import (
+    ApplicantDocument, BursaryAgreement, Letter, OrgRequestAttachment, StaffProfile,
+)
 from apps.scholarship import storage
 
 
@@ -28,13 +30,16 @@ def known_paths():
     ⚠ S6b review 4: this read only `ApplicantDocument.storage_path`, so a letter PDF
     (`<org>/<app>/letters/<id>.pdf`), a signed bursary agreement (`BursaryAgreement.pdf_storage_path`)
     and a request's screenshot (`requests/<org>/<request>/<uuid>`) all read as orphans, and `--apply`
-    would have DELETED them. A new model that stores a path in this bucket must be added HERE
+    would have DELETED them. Common profile S2 added the fifth kind: a staff photo
+    (`ReviewerProfile.photo_path`, `staff-photos/<admin>/<uuid>.webp`). A new model that stores a path in this bucket must be added HERE
     (`test_cleanup_orphan_blobs` pins each)."""
     sources = (
         ApplicantDocument.objects.exclude(storage_path='').values_list('storage_path', flat=True),
         BursaryAgreement.objects.exclude(pdf_storage_path='').values_list('pdf_storage_path', flat=True),
         Letter.objects.exclude(pdf_path='').values_list('pdf_path', flat=True),
         OrgRequestAttachment.objects.exclude(storage_path='').values_list('storage_path', flat=True),
+        # Common profile S2: a staff member's photo (`staff-photos/<admin>/<uuid>.webp`).
+        StaffProfile.objects.exclude(photo_path='').values_list('photo_path', flat=True),
     )
     return {path for qs in sources for path in qs}
 

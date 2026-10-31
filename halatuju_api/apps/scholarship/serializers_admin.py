@@ -884,9 +884,13 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
             'highest_qualification', 'university', 'graduation_year',
             'field_of_study', 'phone', 'address',
             'street_address', 'postcode', 'city', 'state',
-            'english_fluency', 'bm_fluency', 'tamil_fluency',
+            'english_fluency', 'bm_fluency', 'tamil_fluency', 'other_language', 'other_language_fluency',
             'share_phone_with_students',
         ]
+
+    def validate(self, attrs):   # S2: the optional 4th language is both or neither (`staff_languages`)
+        from .staff_languages import checked_other_language
+        return checked_other_language(super().validate(attrs), self.instance)
 
     def validate_graduation_year(self, value):
         # A plausible graduation year (or None). PositiveSmallIntegerField already

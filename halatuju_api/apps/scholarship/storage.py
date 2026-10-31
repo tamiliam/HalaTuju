@@ -109,6 +109,25 @@ def create_signed_download_url(path, expires_in=3600):
     return f'{_base_url()}/storage/v1{rel}' if rel else None
 
 
+def create_signed_download_urls(paths, expires_in=3600):
+    """Signed URLs for MANY private objects in ONE call (Supabase's batch sign,
+    `POST /object/sign/{bucket}` with `paths`): ``{path: url}`` for every path signed, missing for
+    a path Supabase refused, ``{}`` on any failure or with nothing to sign. A list page signs its
+    rows with this, never with one call per row (common profile S2: the Team page's photos)."""
+    paths = sorted({p for p in (paths or []) if p})
+    if not paths:
+        return {}
+    result = _post(f'/object/sign/{BUCKET}', {'expiresIn': expires_in, 'paths': paths})
+    if not isinstance(result, list):
+        return {}
+    out = {}
+    for item in result:
+        rel = (item or {}).get('signedURL') or (item or {}).get('signedUrl')
+        if rel and not (item or {}).get('error') and item.get('path') in paths:
+            out[item['path']] = f'{_base_url()}/storage/v1{rel}'
+    return out
+
+
 def list_objects(prefix='', limit=1000):
     """Best-effort listing of one level under ``prefix`` in the private bucket.
 
