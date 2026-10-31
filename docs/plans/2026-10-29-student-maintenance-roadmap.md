@@ -141,7 +141,9 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    page. **7a LIVE 2026-10-31** (main f0bcc0f0; api-01218-7sr, web-01041-xhh). **7b** — `MentorAssignment` /
    `MentoringSession`, the Mentoring tab on the scholar file, the student's Mentoring tab, the "Scholars now"
    column and the "Asked for help" filter. ⚠ A student's login may be a mentor (owner, 2026-10-31): 7b must
-   refuse assigning a mentor to their OWN application.
+   refuse assigning a mentor to their OWN application. **7b LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq;
+   migration scholarship 0196_mentoring applied by hand first).** **7c** (later) — mentors see their students and log meetings
+   themselves (their sign-in still reaches only their own profile after 7b).
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
 9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).

@@ -25,6 +25,8 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
 - DEACTIVATE switches the login off (`is_active=False`, the source user's revoke), withdraws a waiting
   invitation and kills its emailed password, and stamps `deactivated_at/_by_email`. REACTIVATE
   reverses it; a mentor who never signed in is sent their invitation again (its resend).
+  S7b: Deactivate (and Revoke, the same switch-off) also ENDS every open mentoring assignment of
+  theirs (`mentoring.end_for_mentor`); Reactivate restores none.
 
 STATUS IS DERIVED (`status_of`), never stored: `inactive` when deactivated; `invited` until the login's
 first sign-in (`has_signed_in`); else `active`.
@@ -211,6 +213,10 @@ def _switch_off(caller, mentor, login):
                 Invitation.objects.filter(audience=AUDIENCE, partner_admin=login)))
             Invitation.objects.filter(pk__in=[i.pk for i in waiting]).update(
                 revoked_at=now, updated_at=now)
+        # S7b: their open assignments end with them ("Mentor deactivated", a line on each file, no
+        # email), in this transaction. Reactivate restores none of them.
+        from . import mentoring
+        mentoring.end_for_mentor(mentor, by=caller.email or '')
     mentor.deactivated_at, mentor.deactivated_by_email = now, caller.email or ''
     if login is not None:
         login.is_active = False
@@ -332,6 +338,9 @@ def _move_address(caller, mentor, login, name, email):
         staff_lifecycle.retire_login(old_uid, plan, account)
     emailed = send(inv, login, mentor.organisation, new_login.temp_password, new_login.google,
                    actor=caller)
+    # S7b review fix 1: the new address may be a scholar's own — an assignment to that scholar ends.
+    from . import mentoring
+    mentoring.end_if_self(mentor, by=caller.email or '')
     return True, emailed, None
 
 

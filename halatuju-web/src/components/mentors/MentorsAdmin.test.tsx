@@ -21,7 +21,7 @@ const row = (over: Partial<api.MentorRow>): api.MentorRow => ({
   id: 1, name: 'Dr Kavitha Raman', email: 'kavitha@example.org', phone: '12-345 6789', status: 'active',
   area: 'Accounting, finance', languages: { en: 'fluent', ms: 'conversational', ta: 'fluent' },
   other_language: '', invited_at: '2026-10-01T00:00:00Z', signed_in: true,
-  last_seen_at: '2026-10-30T00:00:00Z', deactivated_at: null, manageable: true, ...over,
+  last_seen_at: '2026-10-30T00:00:00Z', deactivated_at: null, manageable: true, scholars_now: 4, ...over,
 })
 const ACTIVE = row({})
 const INVITED = row({ id: 2, name: 'Ms Priya Devi', email: 'priya@example.org', phone: '', status: 'invited',
@@ -114,4 +114,10 @@ it('names the languages spoken well enough, with the fourth language by name', (
   expect(languagesLine(ACTIVE)).toBe('EN · MS · TA')
   expect(languagesLine({ ...INVITED, other_language: 'Mandarin' })).toBe('Mandarin')
   expect(languagesLine(INVITED)).toBe('')
+})
+
+it('S7b: "Scholars now" shows how many scholars each mentor has now', async () => {
+  render(<MentorsAdmin />)
+  expect(await screen.findByText('admin.mentors.col.scholarsNow')).toBeTruthy()
+  expect(screen.getByTestId('mentor-scholars-1').textContent).toBe('4')
 })

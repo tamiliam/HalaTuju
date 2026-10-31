@@ -32,3 +32,9 @@ export const REVIEW_TONE: Record<string, string> = {
   accepted: 'bg-positive-100 text-positive-700',
   queried: 'bg-caution-100 text-caution-700',
 }
+
+/** S7b: the roles that see a scholar's mentor — the Mentoring tab, the list's Mentor column and its
+ *  two pills, the Overview's mentor card: super, org_admin, admin (the Mentors roster's readers). The
+ *  SERVER's rule is `mentoring.may_act` (it leaves the keys out for anyone else); this only decides
+ *  whether to draw a tab the server would refuse. */
+export const MENTORING_ROLES: readonly string[] = ['super', 'org_admin', 'admin']

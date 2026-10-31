@@ -233,3 +233,16 @@ it('a failure that is not "no file" says so, keeps the hint, and retries', async
   fireEvent.click(screen.getByRole('button', { name: 'scholarship.bursary.retry' }))
   expect(await screen.findByTestId('bursary-hello')).toBeTruthy()
 })
+
+it('S7b: the Mentoring tab shows only when the server says so, and opens', async () => {
+  serve({ mentoring_tab: false })
+  const { unmount } = render(<BursaryPage />)
+  await screen.findByTestId('bursary-hello')
+  expect(screen.queryByRole('tab', { name: 'bursaryTabs.mentoring.tab' })).toBeNull()
+  unmount()
+  serve({ mentoring_tab: true })
+  render(<BursaryPage />)
+  const tab = await screen.findByRole('tab', { name: 'bursaryTabs.mentoring.tab' })
+  fireEvent.click(tab)
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+})

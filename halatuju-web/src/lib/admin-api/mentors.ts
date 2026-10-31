@@ -27,6 +27,8 @@ export interface MentorRow {
   deactivated_at: string | null
   /** May THIS caller act on the row (super, or the organisation admin of its own organisation). */
   manageable: boolean
+  /** S7b: how many scholars this mentor has now (open assignments). */
+  scholars_now?: number
 }
 
 export interface MentorsPayload {

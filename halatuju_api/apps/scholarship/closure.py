@@ -217,6 +217,8 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
 
     ``actor`` (the admin who pressed Close; the view passes it) gets a `case_closed` row on their own
     activity list (common profile S3), in the same transaction. None — management code — writes none.
+    An open mentoring assignment ends with the file in the same transaction (S7b,
+    `mentoring.end_for_closure`: reason "File closed", no email).
     """
     if application is None or application.pk is None:
         raise ClosureError('not_closeable')
@@ -246,6 +248,9 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
         from .models.activity import EVENT_CLOSED
         activity.log_event(row, EVENT_CLOSED, actor_email=by_email,
                            meta={'reason': closure_reason, 'from': closed_from})
+        # S7b: an open mentoring assignment ends with the file ("File closed", no email).
+        from . import mentoring
+        mentoring.end_for_closure(row, by=by_email)
         from . import staff_activity
         staff_activity.record(actor, staff_activity.CASE_CLOSED, row,
                               meta={'reason': closure_reason, 'from_status': closed_from})

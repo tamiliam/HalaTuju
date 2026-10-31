@@ -108,6 +108,9 @@ from .activity import StudentActivity
 # Student maintenance S7a (2026-10-31) — model 71, NEW: a mentor with their own sign-in. Points at
 # `courses.PartnerOrganisation` by string; `PartnerAdmin.mentor` and `Invitation.mentor` point here.
 from .mentors import Mentor
+# Student maintenance S7b (2026-11-01) — models 73 and 74, NEW: a mentor's time with a scholar and
+# the meetings staff log. Point at ScholarshipApplication by string and at `Mentor`.
+from .mentors import MentorAssignment, MentoringSession
 # Common profile S3 (2026-10-31) — model 72, NEW: a staff member's own activity list. Points only at
 # `courses.PartnerAdmin` / `courses.PartnerOrganisation`, by string; the subject is an id, not an FK.
 from .staff_activity import StaffActivity, StaffActivitySubject, StaffActivityVerb

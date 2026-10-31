@@ -141,6 +141,9 @@ from .resolution import (
 from .me import (AdminMeActivityView, AdminMePasswordView, AdminMePhotoView, AdminMeView,
                  programmes_of)
 from .mentors import AdminMentorActionView, AdminMentorView, AdminMentorsView   # S7a
+from .mentoring import (   # S7b: the scholar file's Mentoring tab
+    AdminScholarMentoringActionView, AdminScholarMentoringSessionsView, AdminScholarMentoringView,
+)
 from .reviewers import (
     _REVIEWER_OPEN_STATUSES, _REVIEWER_PROGRESSED_STATUSES, _REVIEW_FLUENCY, _ReviewersBase,
     _median_days, _reviewer_dict, _reviewer_languages, _reviewer_workloads,

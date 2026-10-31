@@ -290,6 +290,13 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>No — the amount is fixed by pathway, and setting/overriding it stays with the platform (the
         Finance role approves payment runs; it does not set amounts either). You recommend; the platform confirms.</>,
     },
+    {
+      q: <>Who can give a student a mentor, and does the mentor see the student&rsquo;s file?</>,
+      a: <>An organisation admin or an admin assigns, changes and ends a mentor on the scholar file&rsquo;s
+        <strong> Mentoring</strong> tab, and logs the meetings there. Reviewers and QC do not see that tab. The
+        mentor sees nothing of the file: their sign-in reaches only their own profile for now. A mentor can never
+        be assigned to their own application, and a deactivated mentor&rsquo;s students lose them at once.</>,
+    },
   ],
   admin: [
     {

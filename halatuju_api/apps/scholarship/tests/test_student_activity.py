@@ -122,7 +122,8 @@ class TestWriters(TestCase):
         self.assertEqual(set(EVENTS), {
             'substate_changed', 'result_submitted', 'result_reviewed', 'letter_issued',
             'mentor_assigned', 'session_logged', 'payment_released', 'closed', 'results_overdue',
-            'letter_withdrawn', 'letter_acknowledged'})   # S6b
+            'letter_withdrawn', 'letter_acknowledged',   # S6b
+            'mentor_changed', 'mentor_ended'})           # S7b
 
     def test_add_entry_writes_a_manual_row(self):
         row = activity.add_entry(self.app, 'call', '  Rang her mother.  ',

@@ -172,7 +172,13 @@ def reset_on_leaving(application, *, by_email='system', reason=''):
     clean: a stored sub-state other than ``on_track`` is reset, stamped and logged (adversarial
     review L1), so a later re-award never inherits an old hold or probation. Plain writes on the
     in-memory row — the CALLER saves; returns the field names to fold into its ``update_fields``.
-    The activity row is written here, in the caller's transaction."""
+    The activity row is written here, in the caller's transaction.
+
+    S7b review fix 4: an open mentoring assignment ends here too (reason "Award reverted", no email,
+    `mentoring.end_for_award_revert`), whatever the sub-state — the file is gone, so no screen could
+    reach it to end it."""
+    from . import mentoring
+    mentoring.end_for_award_revert(application, by=by_email)
     old = application.maintenance_substate
     if old in ('', 'on_track'):
         return []

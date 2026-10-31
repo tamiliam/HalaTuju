@@ -6337,8 +6337,9 @@
         "all": "Semua",
         "underperforming": "Prestasi rendah",
         "overdue": "Keputusan lewat",
-        "wantsMentor": "Mahukan mentor",
-        "closed": "Ditutup"
+        "closed": "Ditutup",
+        "noMentor": "Tiada mentor",
+        "askedForHelp": "Minta bantuan"
       },
       "col": {
         "name": "Nama",
@@ -6408,7 +6409,6 @@
         "executed": "Ditandatangani dan berkuat kuasa"
       },
       "later": {
-        "mentor": "Mentor akan tersedia dalam kemas kini akan datang.",
         "letters": "Surat akan tersedia dalam kemas kini akan datang.",
         "surveys": "Tinjauan akan tersedia dalam fasa akan datang."
       },
@@ -6444,7 +6444,18 @@
         "results_overdue": "Keputusan tidak dihantar (tarikh akhir {date})",
         "letter_issued": "Surat dikeluarkan · {subject}",
         "letter_withdrawn": "Surat ditarik balik · {subject}",
-        "letter_acknowledged": "Pelajar mengakui surat · {subject}"
+        "letter_acknowledged": "Pelajar mengakui surat · {subject}",
+        "mentor_assigned": "Mentor ditetapkan: {mentor}",
+        "mentor_changed": "Mentor ditukar kepada {mentor} (sebelum ini {was})",
+        "mentor_ended": {
+          "staff": "Bimbingan oleh {mentor} ditamatkan",
+          "mentor_deactivated": "Bimbingan oleh {mentor} ditamatkan: mentor telah dinyahaktifkan",
+          "file_closed": "Bimbingan oleh {mentor} ditamatkan: fail telah ditutup",
+          "mentor_is_student": "Bimbingan oleh {mentor} ditamatkan: mentor ialah pelajar itu sendiri",
+          "award_reverted": "Bimbingan oleh {mentor} ditamatkan: anugerah telah dibatalkan"
+        },
+        "session_logged": "Pertemuan mentor direkodkan: {mode}, {minutes} min",
+        "session_logged_no_minutes": "Pertemuan mentor direkodkan: {mode}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6619,7 +6630,110 @@
           "file_closed": "Fail telah ditutup, jadi surat ini tidak dihantar semula.",
           "withdrawn": "Surat ini telah ditarik balik, jadi ia tidak dihantar semula."
         }
-      }
+      },
+      "mentoring": {
+        "loadFailed": "Butiran mentor tidak dapat dimuatkan.",
+        "readOnly": "Fail ini telah ditutup, jadi butiran mentor hanya boleh dibaca.",
+        "notFilled": "Bidang belum diisi",
+        "someone": "seorang staf",
+        "open": "Buka butiran mentor",
+        "card": "{name} · sejak {date} · {count} pertemuan",
+        "change": "Tukar mentor",
+        "cancel": "Batal",
+        "current": {
+          "label": "Mentor",
+          "speaks": "Bertutur {languages}",
+          "since": "Sejak {date}",
+          "assignedBy": "ditetapkan oleh {name}",
+          "meetings": "{count} pertemuan",
+          "last": "terakhir {date}",
+          "emailed": "E-mel \"Anda mempunyai mentor\" dihantar {date}",
+          "invited": "Telah dijemput, belum log masuk.",
+          "fromProfile": "Butiran ini daripada profil mentor sendiri.",
+          "isStudent": "Mentor ini ialah pelajar itu sendiri. Tamatkan bimbingan ini."
+        },
+        "end": {
+          "open": "Tamatkan bimbingan",
+          "title": "Tamatkan bimbingan",
+          "confirm": "Tamatkan bimbingan",
+          "note": "Tempoh {name} bersama penerima biasiswa ini tamat hari ini dan kekal dalam sejarah di bawah. Tiada e-mel dihantar."
+        },
+        "none": {
+          "title": "Belum ada mentor",
+          "assign": "Tetapkan mentor"
+        },
+        "help": {
+          "asked": "Meminta bantuan untuk {what}.",
+          "university": "permohonan universiti",
+          "scholarship": "permohonan biasiswa",
+          "and": " dan ",
+          "flagged": "Staf menandakan penerima biasiswa ini untuk bimbingan mentor.",
+          "chip": "Minta bantuan: {what}",
+          "flaggedChip": "Ditandakan untuk bimbingan mentor"
+        },
+        "form": {
+          "assignTitle": "Tetapkan mentor",
+          "changeTitle": "Tukar mentor",
+          "mentor": "Mentor",
+          "invitedOption": "{name} — dijemput, belum log masuk",
+          "scholarsNow": "{count} penerima biasiswa",
+          "noneAvailable": "Tiada mentor lain untuk dipilih. Jemput mentor di Organisasi → Mentor.",
+          "reason": "Sebab (staf sahaja)",
+          "reasonPlaceholder": "Contoh: bertukar kursus",
+          "email": "E-mel pelajar \"Anda mempunyai mentor\" berserta nama dan hubungan mentor",
+          "changeNote": "Tempoh {name} bersama penerima biasiswa ini tamat hari ini dan kekal dalam sejarah di bawah. Sistem tidak menghantar e-mel kepada mentor.",
+          "assignNote": "Sistem tidak menghantar e-mel kepada mentor.",
+          "assign": "Tetapkan"
+        },
+        "meetings": {
+          "title": "Pertemuan",
+          "log": "Rekod pertemuan",
+          "date": "Tarikh (HH-BB-TTTT)",
+          "how": "Cara",
+          "minutes": "Minit (pilihan)",
+          "notes": "Catatan (staf sahaja — pelajar tidak melihatnya)",
+          "nextStep": "Langkah seterusnya (pilihan, staf sahaja)",
+          "save": "Simpan pertemuan",
+          "none": "Belum ada pertemuan direkodkan.",
+          "minutesShort": "{count} min",
+          "withBy": "Bersama {mentor} · direkod oleh {name}",
+          "nextStepLine": "Langkah seterusnya: {step}"
+        },
+        "mode": {
+          "in_person": "Bersemuka",
+          "video": "Panggilan video",
+          "phone": "Panggilan telefon"
+        },
+        "history": {
+          "line": "Mentor terdahulu: {name}, {from} – {to}. {count} pertemuan.",
+          "reason": "Sebab: {reason}"
+        },
+        "done": {
+          "assigned": "{name} kini mentor.",
+          "assignedEmailed": "{name} kini mentor. E-mel telah dihantar kepada pelajar.",
+          "ended": "Bimbingan oleh {name} telah ditamatkan.",
+          "logged": "Pertemuan disimpan."
+        },
+        "error": {
+          "mentor_not_found": "Mentor itu tidak ditemui dalam organisasi ini.",
+          "mentor_inactive": "Mentor itu telah dinyahaktifkan.",
+          "own_application": "Mentor tidak boleh ditetapkan kepada permohonan mereka sendiri.",
+          "already_assigned": "Mentor itu sudah pun mentor penerima biasiswa ini.",
+          "file_closed": "Fail ini telah ditutup, jadi tiada apa yang boleh diubah.",
+          "conflict": "Orang lain menukar mentor pada masa yang sama. Muat semula halaman dan cuba lagi.",
+          "too_long": "Itu terlalu panjang. Pendekkan dan cuba lagi.",
+          "no_mentor": "Penerima biasiswa ini tiada mentor sekarang.",
+          "bad_date": "Taip tarikh sebagai HH-BB-TTTT.",
+          "future_date": "Pertemuan tidak boleh pada masa hadapan.",
+          "before_assignment": "Tarikh itu sebelum mentor ini ditetapkan.",
+          "bad_mode": "Pilih cara pertemuan.",
+          "bad_minutes": "Minit mestilah nombor bulat melebihi 0.",
+          "notes_required": "Tulis sedikit tentang pertemuan itu.",
+          "generic": "Itu tidak berjaya. Sila cuba lagi."
+        }
+      },
+      "askedForHelp": "Minta bantuan",
+      "askedForHelpNote": "\"Minta bantuan\" bermaksud pelajar menjawab ya atau tidak pasti untuk bantuan permohonan universiti atau biasiswa semasa memohon, atau staf menandakan mereka untuk bimbingan mentor. Mentor dan pertemuan tidak pernah dikongsi dengan penaja atau rakan kongsi."
     },
     "contracts": {
       "title": "Templat kontrak",
@@ -7631,7 +7745,8 @@
           "agreement_executed": "Perjanjian ditandatangani dan berkuat kuasa",
           "vircle_setup": "Sediakan dompet Vircle anda",
           "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
-          "letter_issued": "Surat telah dikeluarkan"
+          "letter_issued": "Surat telah dikeluarkan",
+          "mentor_assigned": "Anda mempunyai mentor"
         },
         "when": {
           "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
@@ -7663,7 +7778,8 @@
           "agreement_executed": "Apabila semua pihak telah menandatangani. Salinan perjanjian yang ditandatangani dilampirkan.",
           "vircle_setup": "Apabila perjanjiannya berkuat kuasa: cara menyediakan dompet yang menerima bayaran bursari.",
           "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
-          "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas."
+          "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
+          "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor."
         },
         "language": {
           "en": "Inggeris",
@@ -7728,7 +7844,8 @@
           "award": "Anugerah dan perjanjian",
           "results": "Keputusan",
           "closure": "Penutupan",
-          "letters": "Surat"
+          "letters": "Surat",
+          "mentoring": "Bimbingan mentor"
         },
         "chip": {
           "en": "EN",
@@ -8289,7 +8406,8 @@
         "area": "Bidang",
         "languages": "Bahasa",
         "status": "Status",
-        "actions": "Tindakan"
+        "actions": "Tindakan",
+        "scholarsNow": "Penerima biasiswa kini"
       },
       "notFilled": "Belum diisi",
       "activeSeen": "Aktif · log masuk terakhir {date}",
@@ -8313,7 +8431,7 @@
         "reactivateInvited": "{name} boleh log masuk semula. Jemputan telah dihantar semula.",
         "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula."
       },
-      "note": "Anda hanya boleh menugaskan mentor selepas mereka log masuk dan mengisi profil. Mentor tidak pernah dipadam: nyahaktifkan sahaja. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
+      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
       "empty": "Tiada mentor dalam senarai ini.",
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8455,6 +8573,31 @@
       "pdfLang": {
         "en": "Bahasa Inggeris",
         "ms": "Bahasa Melayu"
+      }
+    },
+    "mentoring": {
+      "tab": "Mentor",
+      "title": "Mentor anda",
+      "loadFailed": "Butiran mentor anda tidak dapat dimuatkan. Sila cuba lagi.",
+      "lang": {
+        "en": "Bahasa Inggeris",
+        "ms": "Bahasa Melayu",
+        "ta": "Bahasa Tamil"
+      },
+      "email": "E-mel {name}",
+      "call": "Hubungi {phone}",
+      "since": "Mentor anda sejak {date}",
+      "meetings": "Pertemuan anda",
+      "noMeetings": "Belum ada pertemuan.",
+      "mode": {
+        "in_person": "Bersemuka",
+        "video": "Panggilan video",
+        "phone": "Panggilan telefon"
+      },
+      "contact": "Mahu mentor lain, atau ada masalah? Tulis kepada {supportEmail}.",
+      "none": {
+        "title": "Anda belum mempunyai mentor",
+        "body": "Mentor ialah seseorang yang boleh membimbing anda sepanjang pengajian. Jika anda mahukan seorang mentor, tulis kepada {supportEmail}."
       }
     }
   }

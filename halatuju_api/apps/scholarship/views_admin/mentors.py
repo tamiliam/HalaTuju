@@ -102,10 +102,13 @@ def mentor_rows(caller, mentors):
     """The Mentors page's rows for ``mentors`` — ONE query each for the logins, their profiles and
     their invitations, whatever the page size. An ALLOWLIST: name, email, the mentor's own phone (the
     profile tells them the inviting organisation sees it), status, area, languages, invited / signed-in
-    times, and `manageable` (the endpoints' own rule, so the screen never offers a refused button)."""
+    times, `manageable` (the endpoints' own rule, so the screen never offers a refused button) and
+    `scholars_now` (S7b: their open mentoring assignments)."""
     from .. import mentor_invite
+    from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)}
+    now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
         partner_admin__in=list(logins.values()))}
     newest = {}
@@ -137,6 +140,7 @@ def mentor_rows(caller, mentors):
             'last_seen_at': _iso(login.last_seen_at) if login else None,
             'deactivated_at': _iso(m.deactivated_at),
             'manageable': mentor_invite.manageable(caller, m),
+            'scholars_now': now.get(m.pk, 0),   # S7b
         })
     return rows
 
@@ -187,7 +191,7 @@ class _MentorsBase(_AdminBase):
 
 class AdminMentorsView(_MentorsBase):
     """GET admin/mentors/ — `{mentors: [...], counts: {active, invited, inactive}, can_invite}`.
-    super / org_admin / admin; org-fenced (see `_in_scope`). Never a "Scholars now" column (S7b)."""
+    super / org_admin / admin; org-fenced (see `_in_scope`). Each row carries `scholars_now` (S7b)."""
 
     def get(self, request):
         from .. import mentor_invite

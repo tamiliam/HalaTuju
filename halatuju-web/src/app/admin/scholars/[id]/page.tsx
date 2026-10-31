@@ -2,10 +2,12 @@
 // One scholar's maintenance file (student maintenance Sprint 2). Design of record: the owner-approved
 // canvas, 2026-10-29 (file artboard).
 //
-// ⚠ A SHELL, HONESTLY: only what exists is shown. The header and the Overview's Results, Money and
-// Contract cards read the server's payload; Mentor (Sprint 7), Letters (Sprint 6) and Surveys (later)
-// say calmly that they are coming — never sample data. The Money and Contract TABS (S5a) read their
-// own endpoints: releases, spending (with the `spending` permission only) and the executed PDF.
+// ⚠ A SHELL, HONESTLY: only what exists is shown. The header and the Overview's cards read the
+// server's payload; Surveys (later) says calmly that it is coming — never sample data. S7b: the
+// Mentoring tab (its own chunk, `ScholarMentoring`) and the Overview's mentor card are drawn only for
+// the roles that see mentors (`MENTORING_ROLES`; the server leaves the keys out for the rest). The Money
+// and Contract TABS (S5a) read their own endpoints: releases, spending (with the `spending` permission
+// only) and the executed PDF.
 // ⚠ THE SUB-STATE AND CLOSE LIVE HERE since Sprint 3 (`ScholarControls`, moved from the cockpit's
 // PostAwardPanels): drawn from the server's `controls` offer, judged again by the cockpit doors. A
 // hold is a money act (payments rights, S1 M1). "View application" opens the full review screen.
@@ -29,11 +31,13 @@ import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
 import { statusLabelKey, statusTone } from '@/lib/applicationStatus'
-import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
+import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
 
 const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
+// S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
+const ScholarMentoring = lazySource(() => import('@/components/admin/ScholarMentoring').then((m) => m.default))
 
 type Tab = 'overview' | 'results' | 'money' | 'contract' | 'letters' | 'mentoring' | 'surveys' | 'activity'
 const TABS: readonly PanelTab<Tab>[] = [
@@ -110,6 +114,12 @@ function StaffScholarFile() {
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!file) return <RecordState loading={loading} />
+  const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
+  const tabs = seesMentors ? TABS : TABS.filter((x) => x.key !== 'mentoring')
+  const help = file.asked_for_help
+  const helpWhat = help ? [help.university && t('admin.scholars.mentoring.help.university'),
+    help.scholarship && t('admin.scholars.mentoring.help.scholarship')].filter(Boolean)
+    .join(t('admin.scholars.mentoring.help.and')) : ''
 
   const result = file.latest_result
   // The money links: shown only to a viewer who may open each page, and carrying the file's gift so
@@ -214,7 +224,20 @@ function StaffScholarFile() {
       </button>
     </Card>
   )
-  const later = (key: 'mentor' | 'surveys') => (
+  const mentorCard = (
+    <Card title={t('admin.scholars.card.mentor')} testId="card-mentor">
+      <p className="text-sm text-ground-700">
+        {file.mentor
+          ? t('admin.scholars.mentoring.card', { name: file.mentor.name, date: formatDate(file.mentor.since),
+            count: String(file.mentor.meetings) })
+          : t('admin.scholars.mentoring.none.title')}
+      </p>
+      <button type="button" onClick={() => setTab('mentoring')} className="self-start text-sm text-primary-600 hover:underline">
+        {t('admin.scholars.mentoring.open')}
+      </button>
+    </Card>
+  )
+  const later = (key: 'surveys') => (
     <Card title={t(`admin.scholars.card.${key}`)} testId={`card-${key}`}>
       <Later text={t(`admin.scholars.later.${key}`)} />
     </Card>
@@ -248,6 +271,11 @@ function StaffScholarFile() {
                 {t('admin.scholars.file.fundedSince', { date: formatDate(fundedSince) })}
               </span>
             )}
+            {(helpWhat || help?.flagged) && (
+              <span className="rounded-full bg-caution-50 px-2.5 py-0.5 text-xs font-medium text-caution-800" data-testid="file-asked-for-help">
+                {helpWhat ? t('admin.scholars.mentoring.help.chip', { what: helpWhat }) : t('admin.scholars.mentoring.help.flaggedChip')}
+              </span>
+            )}
           </div>
         </div>
         <Link href={`/admin/scholarship/${file.id}`}
@@ -260,13 +288,13 @@ function StaffScholarFile() {
         </div>
       </header>
 
-      <PanelTabs tabs={TABS} active={tab} onSelect={setTab} ariaLabelKey="admin.scholars.file.tabsLabel" />
+      <PanelTabs tabs={tabs} active={tab} onSelect={setTab} ariaLabelKey="admin.scholars.file.tabsLabel" />
 
       {tab === 'overview' && (
         <div className="flex flex-wrap items-start gap-5">
           <section aria-label={t('admin.scholars.file.summary')}
             className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-4 md:grid-cols-2">
-            {resultsCard}{moneyCard}{contractCard}{lettersCard}{later('mentor')}{later('surveys')}
+            {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{later('surveys')}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
             <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.in_maintenance} />
@@ -294,7 +322,7 @@ function StaffScholarFile() {
             onChanged={() => setReloads((n) => n + 1)} />
         </div>
       )}
-      {tab === 'mentoring' && <div className="max-w-xl">{later('mentor')}</div>}
+      {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>

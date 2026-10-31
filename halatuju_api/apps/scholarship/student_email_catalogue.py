@@ -40,7 +40,7 @@ from django.conf import settings
 
 logger = logging.getLogger('apps.scholarship.student_email_catalogue')
 
-GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'letters', 'closure')
+GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'letters', 'mentoring', 'closure')
 
 
 @dataclass(frozen=True)
@@ -133,6 +133,11 @@ CATALOGUE = (
     # wording is the organisation's (the `student_comms` family, three languages); the letters'
     # own wording is `LetterTemplate`, edited under the same heading.
     _E('letter_issued', 'letters', lock='letter_notice', tracked='log', editable=True),
+    # ── Mentoring (S7b) ─────────────────────────────────────────────────────────────────────
+    # SWITCHABLE (owner-approved board, 2026-10-31): it hands the student no link, code or date they
+    # need — the mentor is on My Bursary either way, and staff can tell them. Sent only when staff
+    # leave "Email the student" on at the assign / change; never to the mentor.
+    _E('mentor_assigned', 'mentoring', switchable=True, tracked='log', editable=True),
     # ── Closure ─────────────────────────────────────────────────────────────────────────────
     _E('closed_by_officer', 'closure', ('send_application_closed_email',), status='closed',
        lock='closure_notice', wording=('student_reminders', 'CLOSED_SUBJECTS', 'CLOSED_BY_OFFICER_BODIES')),

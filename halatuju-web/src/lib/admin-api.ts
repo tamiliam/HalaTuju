@@ -58,6 +58,12 @@ export type {
   MentorAction, MentorFluency, MentorRow, MentorStatus, MentorsPayload,
 } from './admin-api/mentors'
 
+// A scholar's Mentoring tab (student maintenance S7b).
+export { assignMentor, endMentoring, getScholarMentoring, logMentoringMeeting } from './admin-api/mentoring'
+export type {
+  AssignableMentor, CurrentMentor, MeetingMode, MentoringMeeting, PastMentor, ScholarMentoring, StaffRef,
+} from './admin-api/mentoring'
+
 // The referral organisations a student arrives through, and witness assignment.
 export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'
 export type { OrgItem, SourceItem } from './admin-api/sources'

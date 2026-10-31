@@ -47,8 +47,11 @@ export const roleAdminGeneral: ManualChapter = {
         uploaded at the portal &mdash; one sent by email is not accepted, and you cannot attach it for her: query
         her to upload it. The <strong>Money</strong> tab shows her award, paid and remaining (the Payments
         page&rsquo;s figures), her last three payments and her spending this term by category; the
-        <strong> Contract</strong> tab shows the contract signed on the platform and its signed PDF. Letters and mentors
-        are coming in later updates.</>
+        <strong> Contract</strong> tab shows the contract signed on the platform and its signed PDF. The
+        <strong> Mentoring</strong> tab is where you assign, change or end a student&rsquo;s mentor and log their
+        meetings (notes are for staff only; the student is emailed &ldquo;You have a mentor&rdquo; if you leave
+        that on, and the mentor is never emailed); the list&rsquo;s <strong>No mentor</strong> and <strong>Asked
+        for help</strong> filters find who needs one.</>
       ),
     },
     {
