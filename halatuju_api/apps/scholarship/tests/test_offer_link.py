@@ -138,7 +138,8 @@ class SkipTest(_Base):
 
     def test_a_campus_the_letter_cannot_pin(self):
         app = self._app(pick={**LABELS, 'course_name': 'Diploma Pelancongan'})
-        self._skip(app, _offer(app, ('DIPLOMA PELANCONGAN', 'KOMUNITI ARAU KANGAR', '')), 'unresolved')
+        self._skip(app, _offer(app, ('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI ARAU DAN KOLEJ KOMUNITI KANGAR', '')),
+                   'unresolved')
 
 
 class ForwardPathTest(_Base):

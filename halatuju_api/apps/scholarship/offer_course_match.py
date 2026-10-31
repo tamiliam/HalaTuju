@@ -37,7 +37,7 @@ from .catalogue_levels import (
     course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
 from .offer_pathway import (
     PREU_COURSE_SLUG, _ALIRAN_SUFFIX_RE, _campus_rows, _name_aligns, _names_another_institution,
-    _norm_inst_name, _refers_to_campus, detect_pathway_type)
+    _norm_inst_name, detect_pathway_type)
 from .pathway_engine import distinctive_tokens
 from .school_names import school_name_core
 
@@ -81,10 +81,12 @@ def letter_place(course_id: str, institution: str, issuer: str = '', rows=None) 
     rows = _campus_rows(course_id) if rows is None else rows   # a caller's own read, reused
     if not rows:
         return inst
-    if inst and (any(_refers_to_campus(n, a, inst) for n, a in rows)
+    index = catalogue_index()
+    if inst and (any(CampusReader(inst, index).names(n, a) for n, a in rows)
                  or _names_another_institution('', '', inst)):
         return inst
-    return iss if any(_refers_to_campus(n, a, iss) for n, a in rows) else inst
+    reader = CampusReader(iss, index)
+    return iss if any(reader.names(n, a) for n, a in rows) else inst
 
 
 def is_bumiputera_only(course_id: str) -> bool:
@@ -142,7 +144,8 @@ def _printed_course(programme, institution, issuer):
             return {}
         place = letter_place(code, institution, issuer)
         rows = _campus_rows(code)
-        if place and not any(_refers_to_campus(n, a, place) for n, a in rows) \
+        reader = CampusReader(place) if place else None
+        if place and not any(reader.names(n, a) for n, a in rows) \
                 and _names_another_institution('', '', place):
             return {}
         return row
@@ -160,7 +163,8 @@ def _course_row(course_id, institution, issuer):
     campuses = {n.strip() for n, _a in _campus_rows(course_id) if (n or '').strip()}
     if len(campuses) > 1:
         place = letter_place(course_id, institution, issuer)
-        named = {n.strip() for n, a in _campus_rows(course_id) if place and _refers_to_campus(n, a, place)}
+        reader = CampusReader(place) if place else None
+        named = {n.strip() for n, a in _campus_rows(course_id) if place and reader.names(n, a)}
         campuses = named if len(named) == 1 else set()
     return {'course_id': course_id, 'course_name': name,
             'institution': next(iter(campuses)) if len(campuses) == 1 else ''}
@@ -179,43 +183,82 @@ def _plain_words(s: str) -> str:
     return ' '.join(re.findall(r'[a-z0-9]+', re.sub(r'\([^)]*\)', ' ', (s or '').lower())))
 
 
-def _institutions(hint):
-    """``(named, worded)`` — the [(institution_id, name)] the hint names, by tier (review 2026-10-31):
+class CampusReader:
+    """Which catalogue institutions does ONE letter line name? THE one definition (2026-11-01), read
+    by the matcher (``_institutions``), ``letter_place``, ``institution_agreement`` and
+    ``offer_contradicts_course_institution`` (``offer_pathway._refers_to_campus`` delegates here).
 
-    1. **By name or unique acronym** — the bracket-stripped name equals the hint or sits whole inside
-       it ("KOLEJ PERINDU, UNIVERSITI TEKNOLOGI MARA, …"), or an acronym held by ONE row and not a
-       word of any other row's name is a whole word of the hint ("UiTM"; never "MARA", which is a
-       word of "Universiti Teknologi MARA", and never GIATMARA / IKM / KKTM, which many rows share).
-       When any row is named this way, ONLY those rows count: "UNIVERSITI TEKNOLOGI MALAYSIA" is UTM,
-       never UiTM by the shared word {teknologi}.
-    2. **By distinctive words** — the INSTITUTION's own words all inside the hint (never the hint's
-       words inside a longer name: a centre line "Pusat Asasi Sains" names no university whose name
-       holds "Sains"), never when those words are only PLACE words, and never for a name of ONE
-       distinctive word (Universiti Sains Malaysia, Universiti Teknologi Malaysia): one shared field
-       word is no evidence, so such a university is named only by its name or acronym (tier 1)."""
-    from apps.courses.models import Institution
-    hint = school_name_core(hint or '')
-    ht, hn, hw = distinctive_tokens(hint), _norm_inst_name(hint), f' {_plain_words(hint)} '
-    if not ht and not hn:
-        return [], []
-    rows = list(Institution.objects.values_list('institution_id', 'institution_name', 'acronym', 'state'))
-    place = _PLACE_WORDS | {w for *_x, st in rows for w in _plain_words(st).split()}
-    acr_rows, word_rows = Counter(), Counter()
-    for _iid, name, acr, _st in rows:
-        acr_rows[(acr or '').strip().lower()] += 1
-        word_rows.update(set(_plain_words(name).split()))
-    named, worded = [], []
-    for iid, name, acr, _st in rows:
-        acr, nw = (acr or '').strip().lower(), _plain_words(name)
+    1. **By name or unique acronym** (``named``) — the bracket-stripped name equals the line or sits
+       whole inside it ("KOLEJ PERINDU, UNIVERSITI TEKNOLOGI MARA, …"), or an acronym held by ONE row
+       and no word of any other row's name is a whole word of the line ("UiTM", "UMS"; never "MARA",
+       a word of "Universiti Teknologi MARA", nor GIATMARA / IKM / KKTM, which many rows share).
+    2. **By words** (``worded``) — only when the line names NO institution by tier 1, and only from
+       the institution's OWN words: two or more distinctive words, all inside the line, not only
+       place words, and at least one word NO other catalogue row carries. A town is no such word:
+       "Kota Kinabalu" is in four rows' names, so "…, UMS Kota Kinabalu" never names Politeknik Kota
+       Kinabalu (#168's false Institution tick, 2026-11-01); "Ungku Omar" is Politeknik Ungku Omar's
+       alone.
+
+    ``names(name, acronym)`` asks it of one campus: tier 1 names it; a line that names ANOTHER
+    institution by tier 1 never names it; else the word tier decides."""
+
+    def __init__(self, hint, index=None):
+        self.index = index if index is not None else catalogue_index()
+        h = school_name_core(hint or '')
+        self.ht, self.hn, self.hw = distinctive_tokens(h), _norm_inst_name(h), f' {_plain_words(h)} '
+        live = bool(self.ht or self.hn)
+        self._named = [(iid, n, a) for iid, n, a, _s in self.index.rows if live and self._tier1(n, a)]
+        self.named = [(iid, n) for iid, n, _a in self._named]
+        self.worded = [] if self.named or not live else [
+            (iid, n) for iid, n, _a, _s in self.index.rows if self._worded(n)]
+
+    def _tier1(self, name, acronym):
+        acr, nw = (acronym or '').strip().lower(), _plain_words(name)
         own = 1 if acr in nw.split() else 0
-        unique_acr = acr and acr in ht and acr_rows[acr] == 1 and word_rows[acr] - own == 0
-        if (hn and _norm_inst_name(name) == hn) or (len(nw.split()) > 1 and f' {nw} ' in hw) or unique_acr:
-            named.append((iid, name))
-            continue
-        nt = distinctive_tokens(name)
-        if len(nt) > 1 and nt <= ht and nt - place:
-            worded.append((iid, name))
-    return named, worded
+        unique_acr = bool(acr) and acr in self.ht and self.index.acr_rows[acr] == 1 \
+            and self.index.word_rows[acr] - own == 0
+        return bool((self.hn and _norm_inst_name(name) == self.hn)
+                    or (len(nw.split()) > 1 and f' {nw} ' in self.hw) or unique_acr)
+
+    def _worded(self, name):
+        nt = distinctive_tokens(school_name_core(name or ''))
+        return (len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place)
+                and any(self.index.token_rows[t] == 1 for t in nt))
+
+    def names(self, name, acronym=''):
+        """Does the line name this campus? (See the class.)"""
+        if not (self.ht or self.hn) or not (name or '').strip():
+            return False
+        if self._tier1(name, acronym):
+            return True
+        if self._named:                               # the line names an institution outright:
+            nn, acr = _norm_inst_name(name), (acronym or '').strip().lower()   # this one, or another
+            return any(_norm_inst_name(n) == nn or (acr and (a or '').strip().lower() == acr)
+                       for _i, n, a in self._named)
+        return self._worded(name)
+
+
+class _Index:
+    def __init__(self, rows):
+        self.rows = rows
+        self.place = _PLACE_WORDS | {w for *_x, st in rows for w in _plain_words(st).split()}
+        self.acr_rows, self.word_rows, self.token_rows = Counter(), Counter(), Counter()
+        for _iid, name, acr, _st in rows:
+            self.acr_rows[(acr or '').strip().lower()] += 1
+            self.word_rows.update(set(_plain_words(name).split()))
+            self.token_rows.update(distinctive_tokens(school_name_core(name or '')))
+
+
+def catalogue_index():
+    """ONE read of the ``Institution`` table for every naming test of a call (see ``CampusReader``)."""
+    from apps.courses.models import Institution
+    return _Index(list(Institution.objects.values_list('institution_id', 'institution_name', 'acronym', 'state')))
+
+
+def _institutions(hint, index=None):
+    """``(named, worded)`` — the [(institution_id, name)] the hint names, by ``CampusReader``'s tiers."""
+    reader = CampusReader(hint, index)
+    return reader.named, reader.worded
 
 
 def _named_courses(pj, ltype, institutions):

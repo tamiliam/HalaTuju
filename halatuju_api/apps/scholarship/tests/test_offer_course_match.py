@@ -307,7 +307,8 @@ class ReviewFindingsTest(TestCase):
         m = match_offer_course('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI')
         self.assertTrue(m is None or m['institution'] in ('', 'Institut Kemahiran MARA Beseri'))
         self.assertNotEqual((m or {}).get('institution'), 'Institut Kemahiran MARA Lumut')
-        two = match_offer_course('DIPLOMA PELANCONGAN', 'KOMUNITI ARAU KANGAR')       # names both campuses
+        two = match_offer_course('DIPLOMA PELANCONGAN',                              # names both campuses
+                                 'KOLEJ KOMUNITI ARAU DAN KOLEJ KOMUNITI KANGAR')
         self.assertEqual((two['course_id'], two['institution']), ('RA-KK-DPL', ''))
         one = match_offer_course('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI KANGAR')
         self.assertEqual((one['course_id'], one['institution']), ('RA-KK-DPL', 'Kolej Komuniti Kangar'))

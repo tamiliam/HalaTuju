@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## The date rule: a pick made before the picker was complete is not a real selection; one campus test (owner, 2026-11-01)
+
+**Decision (date rule).** The scholarship course picker was complete only from `PICKER_COMPLETE_AT`, 2026-10-31
+13:10:21 MYT (the deploy that carried MARA under MARA, read from Cloud Build: api build 92af6beb finished 05:10:20
+UTC). A pick made before it was made on an incomplete list, so the student's own genuine offer replaces it for ANY
+catalogue course — the Bumiputera-only rule of 2026-10-31 widened, every other guard unchanged. There is no per-pick
+timestamp: OLD means the application was submitted before the cut-off AND the profile has not been saved since. A
+profile saved since is skipped (`may_have_repicked`), because `StudentProfile.updated_at` moves on ANY full save of
+the profile, not only a pathway edit — so in doubt the pick stands.
+
+**Decision (one campus test).** "Does this letter line name this campus?" has one answer, `CampusReader`: a name or a
+unique acronym first; a line naming another institution outright never names this one; words only when the campus's
+own words (two or more, not only place words) sit in the line and one of them belongs to no other catalogue row — a
+town never does. #168's Institution was ticked "Politeknik Kota Kinabalu" against a UMS letter because the hostel
+line ended "UMS Kota Kinabalu".
+
+**Revisit if:** a pick turns out to have been made after the cut-off on a profile saved before it (the rule would then
+realign a real choice), or a campus is named on letters only by words other rows share (it then reads `unknown`).
+
 ## An offer-sourced, labels-only pick is LINKED to its catalogue course; its source is kept (owner, 2026-11-01)
 
 **Context.** #243's record held only the letter's labels ("Sarjana Muda Seni Halus (Kepujian)" at "KOLEJ SEROJA,

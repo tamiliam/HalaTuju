@@ -72,8 +72,9 @@ class TestOfferInstitution(SimpleTestCase):
                          'match')
 
 
-class TestCatalogueHint(SimpleTestCase):
-    """`offer_pathway._refers_to_campus` — a stored pre-U school used as a hint against the catalogue."""
+class TestCatalogueHint(TestCase):
+    """`offer_pathway._refers_to_campus` — a stored pre-U school used as a hint against the catalogue.
+    A TestCase since 2026-11-01: the campus test reads the catalogue (`offer_course_match.CampusReader`)."""
 
     def test_our_town_never_aligns_the_hint_with_another_school(self):
         from apps.scholarship.offer_pathway import _refers_to_campus

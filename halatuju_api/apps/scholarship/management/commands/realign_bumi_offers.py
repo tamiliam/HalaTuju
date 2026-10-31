@@ -25,7 +25,8 @@ from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services.offer_sync import (
-    institution_fill, plan_bumi_realign, realign_bumi_only_pick, sync_institution_from_catalogue,
+    institution_fill, plan_bumi_realign, realign_basis, realign_bumi_only_pick,
+    sync_institution_from_catalogue,
 )
 
 
@@ -60,12 +61,13 @@ class Command(BaseCommand):
             reason, new_cp, new_pathway = plan_bumi_realign(app, offer, chk)
             head = f"#{app.pk} [{app.status}]"
             if not reason:
-                counts['realign'] += 1
+                basis = realign_basis(app, new_cp['course_id'])
+                counts[f'realign:{basis}'] += 1
                 old = _pick(app.chosen_programme, app.chosen_pathway)
                 if apply:
                     realign_bumi_only_pick(app, offer, chk)
                 new = _pick(new_cp, new_pathway or app.chosen_pathway)
-                self.stdout.write(f"  {head} REALIGN{'' if apply else ' (would)'}: {old}  ->  {new}")
+                self.stdout.write(f"  {head} REALIGN {basis}{'' if apply else ' (would)'}: {old}  ->  {new}")
                 continue
             counts[f'skip:{reason}'] += 1
             filled = self._institution_fill(app, offer, chk, apply)
