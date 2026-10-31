@@ -82,7 +82,7 @@ export default function MerchantFlagDialog({
   const button = 'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50'
   const primary = `${button} bg-brand-fill text-brand-fill-ink`
   return (
-    <Sheet open onClose={onClose} size="lg" title={merchant} initialFocus={noteRef}
+    <Sheet open onClose={onClose} size="lg" title={merchant} initialFocus={noteRef} busy={busy}
       label={`${t('admin.spending.flag.col')} — ${merchant}`}
       footer={<>
         <button type="button" onClick={onClose}

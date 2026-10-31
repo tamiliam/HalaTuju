@@ -786,7 +786,7 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.contactPhone')}</label>
                   <div className="flex gap-2">
                     <input
-                      type="tel" autoComplete="tel"
+                      type="tel" autoComplete="tel-national"
                       value={contactPhone}
                       onChange={e => {
                         setContactPhone(formatPhone(e.target.value))

@@ -92,7 +92,7 @@ function LongFormSheet() {
           </div>
           <div>
             <label htmlFor="sg-phone" className={label}>{t('profile.contactPhone')}</label>
-            <input id="sg-phone" type="tel" autoComplete="tel" className={field} placeholder="012-345 6789" />
+            <input id="sg-phone" type="tel" autoComplete="tel-national" className={field} placeholder="012-345 6789" />
           </div>
           <div>
             <label htmlFor="sg-address" className={label}>{t('profile.address')}</label>

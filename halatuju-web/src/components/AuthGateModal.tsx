@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { claimNric, getProfile, type SyncProfileData } from '@/lib/api'
@@ -48,6 +48,10 @@ export default function AuthGateModal() {
   // SERVER says exist on it. ⚠ There is deliberately no holder name here any more — returning
   // one was a disclosure to anybody who could type an IC.
   const [claimChannels, setClaimChannels] = useState<ClaimChannel[] | null>(null)
+  // Focus opens on Google, NOT the phone box (Sheet's default, the first field): phone sign-in is
+  // off (`signInWithPhone` only says "coming soon"), and a focused field raises a phone's keyboard,
+  // which pushes the Google button — the one way in that works — out of view (M1b review).
+  const googleRef = useRef<HTMLButtonElement>(null)
 
   // Reset when modal opens; if already authenticated (has NRIC), sync and resume
   useEffect(() => {
@@ -320,7 +324,7 @@ export default function AuthGateModal() {
   // Escape does nothing — a phone number or a code half typed must not vanish. "Continue browsing"
   // in the footer is the way out, and does exactly what the backdrop tap used to (handleDismiss).
   return (
-    <Sheet open dismissible={false} onClose={handleDismiss}
+    <Sheet open dismissible={false} onClose={handleDismiss} initialFocus={googleRef}
       title={t('authGate.title')} description={t(`authGate.${reasonKey}`)}
       footer={
         <button
@@ -396,6 +400,7 @@ export default function AuthGateModal() {
               </div>
 
               <button
+                ref={googleRef}
                 onClick={handleGoogleLogin}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-ground-200 rounded-lg font-medium text-ground-700 hover:bg-ground-50 transition-colors disabled:opacity-50"

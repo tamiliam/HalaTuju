@@ -181,6 +181,27 @@ describe('rule 9 — file inputs are sr-only, never hidden', () => {
   })
 })
 
+// ── Rule 10: keyboards and autofill — phone fields take the NATIONAL number ──────────────────
+/**
+ * Every phone field here holds a LOCAL number ("012-345 6789"; the +60 is a fixed prefix or added
+ * by the server), and `formatPhone` keeps 11 digits. `autoComplete="tel"` makes the browser fill
+ * the INTERNATIONAL form ("+60 12-345 6789"): the profile page then rejected the number the browser
+ * itself filled, and an 011 number lost its last digit (M1b adversarial review). So: `tel-national`
+ * for the person's own number, `off` for somebody else's (an admin inviting a source must not get
+ * their OWN number filled in).
+ */
+describe('rule 10 — a phone field never autofills the international number', () => {
+  test('no autoComplete="tel" anywhere in the web source', () => {
+    const offenders = TSX.flatMap((f) => openTags(f.code, 'input')
+      .filter((tag) => {
+        const ac = attr(tag.attrs, 'autoComplete')
+        return !!ac && 'literal' in ac && ac.literal === 'tel'
+      })
+      .map((tag) => where(f, tag.start, '<input autoComplete="tel"')))
+    ratchet('phone fields that autofill the international number', offenders, 0)
+  })
+})
+
 // ── Rule 5: one shared Sheet, no hand-rolled overlays ─────────────────────────────────────────
 /**
  * Every hand-rolled `fixed inset-0` overlay re-decided max height, inner scroll, the close target

@@ -21,6 +21,15 @@ All notable changes to this project will be documented in this file.
   sheet, the backdrop and Escape leave it open, no sideways scroll. mobile-check: a cell's own waits now all have
   timeouts and the test timeout sits above their sum, so a hang names its step (one cell had hung on an untimed
   network-idle wait).
+- **Adversarial review fixes (sign-in, consent, money):** the sign-in gate opens with focus on Google, not the
+  phone box (phone sign-in is off, and a focused field raised a phone's keyboard that pushed Google out of view;
+  `AuthGateModal.focus.test.tsx`). Phone fields never autofill the international number: the profile phone is
+  `tel-national` (`tel` filled "+60 ...", which the page rejected, and an 011 number lost a digit), the admin's
+  source-invite phone is `off` (it filled the admin's OWN number); mobile-standard rule 10 now fails on any
+  `autoComplete="tel"`. The payment-run sheet keeps IBM Plex (`Sheet` gains `className`; a portalled sheet leaves
+  its page's wrapper behind); the merchant flag sheet passes `busy`, so nothing closes it mid-request; the upload
+  labels show a focus ring now that keyboards reach their `sr-only` inputs. Bite-checked: both new tests fail on
+  the old code.
 
 ## Mobile M1b (part 1): the shared Sheet, in the sandbox only (2026-10-31)
 

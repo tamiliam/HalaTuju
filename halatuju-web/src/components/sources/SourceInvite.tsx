@@ -103,7 +103,7 @@ export function SourceInviteForm({ data, token, t, onDone }: {
               {/* Plain on purpose: the phone helpers live in `lib/scholarship`, whose words are a slice
                   this route does not load (TD-416). The source keeps its own phone, checked, in its
                   console Profile. */}
-              <input className={inputCls} inputMode="tel" type="tel" autoComplete="tel" value={newSource.phone}
+              <input className={inputCls} inputMode="tel" type="tel" autoComplete="off" value={newSource.phone}
                 onChange={(e) => setNewSource({ ...newSource, phone: e.target.value })} />
             </label>
             {sources.length > 0 && (

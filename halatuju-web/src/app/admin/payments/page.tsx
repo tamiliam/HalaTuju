@@ -372,7 +372,7 @@ export default function PaymentsLandingPage() {
 
       {/* MONEY: not dismissible by a stray tap or Escape (Mobile M1b) — only Cancel closes it. */}
       {dialogOpen && offerNewRun && (
-        <Sheet open onClose={() => setDialogOpen(false)} busy={busy} dismissible={false}
+        <Sheet open onClose={() => setDialogOpen(false)} busy={busy} dismissible={false} className="font-plex"
           title={t('admin.payments.newRun')}
           footer={<>
             <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>

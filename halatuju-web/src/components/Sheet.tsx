@@ -93,6 +93,9 @@ export interface SheetProps {
   label?: string
   /** `alertdialog` for a confirm that interrupts to ask something with consequences. */
   role?: 'dialog' | 'alertdialog'
+  /** Extra classes on the panel. The sheet is portalled to <body>, so it does NOT inherit its
+   *  page's wrapper classes — a page set in another face (e.g. `font-plex`) passes it here. */
+  className?: string
   testId?: string
 }
 
@@ -106,7 +109,7 @@ export default function Sheet(props: SheetProps) {
 
 function SheetPanel({
   onClose, title, description, tone = 'default', children, footer, onSubmit, size = 'md',
-  dismissible = true, busy = false, initialFocus, label, role = 'dialog', testId,
+  dismissible = true, busy = false, initialFocus, label, role = 'dialog', className = '', testId,
 }: SheetProps) {
   const { t } = useT()
   const id = useId()
@@ -210,7 +213,7 @@ function SheetPanel({
         aria-label={label} aria-labelledby={label ? undefined : `${id}-title`}
         aria-describedby={description ? `${id}-desc` : undefined} tabIndex={-1}
         style={{ maxHeight: visible ? `min(90dvh, ${visible - 8}px)` : undefined }}
-        className={`relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-ground-0 shadow-xl outline-none md:rounded-2xl ${WIDTH[size]}`}>
+        className={`relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-ground-0 shadow-xl outline-none md:rounded-2xl ${WIDTH[size]} ${className}`}>
         {/* Grab bar: a phone's cue that this is a sheet. Decorative — closing is the × or the backdrop. */}
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>
           <span className="h-1.5 w-10 rounded-full bg-ground-300" />

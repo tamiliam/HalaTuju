@@ -131,7 +131,7 @@ export function BankDetailsTask({
 
           <div className="mt-4 space-y-4">
             {/* Step 1: upload the statement */}
-            <label className={`block w-full cursor-pointer rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover ${busy ? 'opacity-50' : ''}`}>
+            <label className={`block w-full cursor-pointer rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
               {busy && !uploaded ? t('scholarship.actionCentre.uploading')
                 : uploaded ? t('scholarship.actionCentre.bank.reupload')
                 : t('scholarship.actionCentre.bank.upload')}
