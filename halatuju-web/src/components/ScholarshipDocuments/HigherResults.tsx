@@ -28,6 +28,7 @@ import { useT } from '@/lib/i18n'
 import { resultsEditPath } from '@/lib/qualification'
 import { clearHigherResultsLocally } from '@/lib/resultsLocal'
 import { setOnboardingReturn } from '@/lib/scholarship'
+import Sheet from '@/components/Sheet'
 
 const RETURN_TO = '/scholarship/application'
 const linkCls = 'inline-flex items-center gap-1 text-sm font-semibold text-primary-700 underline underline-offset-2 hover:text-primary-800'
@@ -155,31 +156,28 @@ export function HigherNote({ doc, chk, token, onChanged }: {
         </button>
       )}
       {failed && <p className="mt-1 text-xs text-critical-600">{t('verifyEmail.networkError')}</p>}
+      {/* Removes the student's higher results: answered only by its own two buttons (Mobile M1b). */}
       {confirming && (
-        <div role="alertdialog" aria-modal="true" aria-labelledby="spm-only-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ground-900/40 px-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-            <h2 id="spm-only-title" className="text-base font-semibold text-ground-900">
-              {t('documentsTab.higher.confirm.title')}
-            </h2>
-            <p className="mt-1 text-sm text-ground-600">{t('documentsTab.higher.confirm.intro')}</p>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ground-700">
-              <li>{t('documentsTab.higher.confirm.removed', { kind: held })}</li>
-              <li>{t('documentsTab.higher.confirm.pathway')}</li>
-              <li>{t('documentsTab.higher.confirm.reviewer')}</li>
-            </ul>
-            <div className="mt-5 flex justify-end gap-3">
-              <button type="button" onClick={() => setConfirming(false)} disabled={busy}
-                className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50">
-                {t('documentsTab.higher.confirm.cancel')}
-              </button>
-              <button type="button" onClick={spmOnly} disabled={busy}
-                className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('documentsTab.higher.confirm.go')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <Sheet open role="alertdialog" dismissible={false} busy={busy}
+          onClose={() => setConfirming(false)}
+          title={t('documentsTab.higher.confirm.title')}
+          description={t('documentsTab.higher.confirm.intro')}
+          footer={<>
+            <button type="button" onClick={() => setConfirming(false)} disabled={busy}
+              className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50">
+              {t('documentsTab.higher.confirm.cancel')}
+            </button>
+            <button type="button" onClick={spmOnly} disabled={busy}
+              className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('documentsTab.higher.confirm.go')}
+            </button>
+          </>}>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-ground-700">
+            <li>{t('documentsTab.higher.confirm.removed', { kind: held })}</li>
+            <li>{t('documentsTab.higher.confirm.pathway')}</li>
+            <li>{t('documentsTab.higher.confirm.reviewer')}</li>
+          </ul>
+        </Sheet>
       )}
     </div>
   )

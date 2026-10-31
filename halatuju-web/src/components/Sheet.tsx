@@ -88,6 +88,11 @@ export interface SheetProps {
   busy?: boolean
   /** What to focus on open, when the first field is not the right place. */
   initialFocus?: RefObject<HTMLElement>
+  /** The dialog's accessible name when it must say more than the visible title (it then replaces
+   *  `aria-labelledby`): e.g. "Flag — <shop>" over a title that shows only the shop. */
+  label?: string
+  /** `alertdialog` for a confirm that interrupts to ask something with consequences. */
+  role?: 'dialog' | 'alertdialog'
   testId?: string
 }
 
@@ -101,7 +106,7 @@ export default function Sheet(props: SheetProps) {
 
 function SheetPanel({
   onClose, title, description, tone = 'default', children, footer, onSubmit, size = 'md',
-  dismissible = true, busy = false, initialFocus, testId,
+  dismissible = true, busy = false, initialFocus, label, role = 'dialog', testId,
 }: SheetProps) {
   const { t } = useT()
   const id = useId()
@@ -201,7 +206,8 @@ function SheetPanel({
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4"
       style={{ paddingBottom: keyboard || undefined }} data-testid={testId}>
       <div className="absolute inset-0 bg-black/40" aria-hidden onClick={close} data-sheet-backdrop="" />
-      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`}
+      <div ref={panel} role={role} aria-modal="true"
+        aria-label={label} aria-labelledby={label ? undefined : `${id}-title`}
         aria-describedby={description ? `${id}-desc` : undefined} tabIndex={-1}
         style={{ maxHeight: visible ? `min(90dvh, ${visible - 8}px)` : undefined }}
         className={`relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-ground-0 shadow-xl outline-none md:rounded-2xl ${WIDTH[size]}`}>

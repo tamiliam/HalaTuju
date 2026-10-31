@@ -17,6 +17,7 @@ import {
   type StudentAward, type BursaryPreview, type BursaryAgreement,
 } from '@/lib/api'
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
+import Sheet from '@/components/Sheet'
 
 /** Guardian relationship codes — must match Consent.GUARDIAN_RELATIONSHIPS on
  *  the backend (mirrors ScholarshipConsent's list). */
@@ -640,18 +641,31 @@ export default function ScholarshipAwardPage() {
 
       <p className="mt-6 text-xs text-ground-400">{t('scholarship.award.confirmed.heldNote')}</p>
 
-      {/* Guardian modal — minor acceptance (plain flow) */}
+      {/* Guardian sheet — minor acceptance (plain flow). AWARD ACCEPTANCE: never dismissed by a stray
+          tap or Escape (Mobile M1b) — a parent's half-typed IC must not vanish; only Cancel closes. */}
       {showGuardian && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form
-            onSubmit={handleGuardianSubmit}
-            className="w-full max-w-md space-y-4 rounded-2xl bg-ground-0 p-6 text-left shadow-xl"
-          >
-            <div>
-              <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.guardian.title')}</h2>
-              <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.guardian.intro')}</p>
-            </div>
-
+        <Sheet open dismissible={false} busy={submitting} onSubmit={handleGuardianSubmit}
+          onClose={() => { setShowGuardian(false); setError(null) }}
+          title={t('scholarship.award.guardian.title')}
+          description={t('scholarship.award.guardian.intro')}
+          footer={<>
+            <button
+              type="submit"
+              disabled={submitting || !guardianName.trim() || !relationship || !guardianNric.trim()}
+              className="btn-primary disabled:opacity-50"
+            >
+              {submitting ? t('scholarship.award.confirmed.accepting') : t('scholarship.award.guardian.submit')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowGuardian(false); setError(null) }}
+              disabled={submitting}
+              className="rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
+            >
+              {t('scholarship.award.guardian.cancel')}
+            </button>
+          </>}>
+          <div className="space-y-4 text-left">
             <div>
               <FieldLabel required>{t('scholarship.award.guardian.name')}</FieldLabel>
               <input
@@ -691,26 +705,8 @@ export default function ScholarshipAwardPage() {
             </div>
 
             {error && <p className="text-sm text-critical-600">{error}</p>}
-
-            <div className="flex flex-wrap gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={submitting || !guardianName.trim() || !relationship || !guardianNric.trim()}
-                className="btn-primary disabled:opacity-50"
-              >
-                {submitting ? t('scholarship.award.confirmed.accepting') : t('scholarship.award.guardian.submit')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowGuardian(false); setError(null) }}
-                disabled={submitting}
-                className="rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
-              >
-                {t('scholarship.award.guardian.cancel')}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+        </Sheet>
       )}
     </div>
   )

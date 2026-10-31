@@ -14,6 +14,7 @@ import type { ClaimChannel } from '@/lib/profileClaim'
 import { validateIc, formatIc } from '@/lib/ic-utils'
 import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 import { applyPagePath } from '@/lib/applyPagePath'   // a leaf: this modal is on every page
+import Sheet from '@/components/Sheet'
 
 type ModalStep = 'login' | 'otp' | 'ic'
 
@@ -315,22 +316,21 @@ export default function AuthGateModal() {
     hideAuthGate()
   }
 
+  // ⚠ SIGN-IN IS NOT DISMISSIBLE BY ACCIDENT (Mobile M1b): no ×, and a stray tap on the backdrop or
+  // Escape does nothing — a phone number or a code half typed must not vanish. "Continue browsing"
+  // in the footer is the way out, and does exactly what the backdrop tap used to (handleDismiss).
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleDismiss()
-      }}
-    >
-      <div className="bg-ground-0 rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          {/* Header */}
-          <h2 className="text-xl font-bold text-ground-900 text-center mb-2">
-            {t('authGate.title')}
-          </h2>
-          <p className="text-ground-600 text-center mb-6">
-            {t(`authGate.${reasonKey}`)}
-          </p>
+    <Sheet open dismissible={false} onClose={handleDismiss}
+      title={t('authGate.title')} description={t(`authGate.${reasonKey}`)}
+      footer={
+        <button
+          onClick={handleDismiss}
+          className="w-full text-ground-500 hover:text-ground-700 text-sm text-center"
+        >
+          {t('authGate.continueBrowsing')}
+        </button>
+      }>
+        <div>
 
           {/* Benefits (login step only) */}
           {step === 'login' && (
@@ -495,15 +495,7 @@ export default function AuthGateModal() {
             </>
           )}
 
-          {/* Dismiss */}
-          <button
-            onClick={handleDismiss}
-            className="w-full text-ground-500 hover:text-ground-700 text-sm mt-4 text-center"
-          >
-            {t('authGate.continueBrowsing')}
-          </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   )
 }

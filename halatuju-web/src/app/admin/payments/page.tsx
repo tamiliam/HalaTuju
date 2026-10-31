@@ -22,6 +22,7 @@ import {
   type PaymentRunSummary, type FundingSummary,
 } from '@/lib/admin-api'
 import { statusPill, monthLabel } from '@/lib/paymentStatus'
+import Sheet from '@/components/Sheet'
 
 // Whole ringgit with thousands grouping, matching the run-detail table ("RM 2,200").
 // Hand-formatted so server and browser render identically (no locale drift).
@@ -369,17 +370,22 @@ export default function PaymentsLandingPage() {
         </div>
       )}
 
+      {/* MONEY: not dismissible by a stray tap or Escape (Mobile M1b) — only Cancel closes it. */}
       {dialogOpen && offerNewRun && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !busy && setDialogOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.newRun')}</h2>
+        <Sheet open onClose={() => setDialogOpen(false)} busy={busy} dismissible={false}
+          title={t('admin.payments.newRun')}
+          footer={<>
+            <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
+            <button onClick={create} disabled={busy || !payDate} className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {busy ? t('common.loading') : t('admin.payments.createDraft')}
+            </button>
+          </>}>
             {/* ⚠ THE FUND IS NAMED, NEVER CHOSEN, HERE (2026-09-28). One read-only line: the gift
                 the crumb resolved. It is not a second picker — TD-241 deleted that for good
                 reason — it is the answer the person is about to spend, said once more on the one
                 screen where the answer moves money. No line when there is nothing resolved. */}
             {gift && (
-              <p className="mt-1 text-sm text-ground-600" data-testid="pays-from">
+              <p className="text-sm text-ground-600" data-testid="pays-from">
                 {t('admin.payments.paysFrom', { name: gift.name })}
               </p>
             )}
@@ -397,14 +403,7 @@ export default function PaymentsLandingPage() {
             <input id="run-month" type="month" value={payMonth || payDate.slice(0, 7)} onChange={(e) => setPayMonth(e.target.value)} className={`mt-1 ${inputCls}`} />
             <p className="mt-1 text-xs text-ground-500">{t('admin.payments.paymentMonthHint')}</p>
             {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
-              <button onClick={create} disabled={busy || !payDate} className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {busy ? t('common.loading') : t('admin.payments.createDraft')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   )
