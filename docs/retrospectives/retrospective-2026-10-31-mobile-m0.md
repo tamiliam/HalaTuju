@@ -32,3 +32,16 @@
 - M1: Tamil font Mukta Malar; 5.7 MB favicon `src/app/icon.png`; `viewportFit: 'cover'` needs safe-area padding
   on sticky bars (landscape notch).
 - Screens not yet measurable (no anonymous route, no sandbox surface) get surfaces in the sprint that fixes them.
+
+## Close review (sprint-close 4b, after the push)
+- **Bite checks:** an injected page with a 14 px field, a `hidden` file input, a `fixed inset-0` overlay and an
+  `h-[80vh]`, plus `maximumScale: 1` in `layout.tsx`, turned 6 guards red (rules 2, 5, 6, 9, zoom, route classes);
+  restored by digest. Lowering one baseline cell (`/contact @360 en` small fields 4 -> 3) turned `mobile-check` red.
+- **`/code-review` (medium) found 10 tooling issues, none user-visible; all being fixed** on `mobile-m0` and
+  shipping with M1 (saves a deploy): aliased imports and `${…}` holes unresolved in the class reader; `//` inside
+  JSX text read as a comment; phone-applying variants (`max-md:text-sm`, `!text-sm`, `text-[length:14px]`) missed;
+  `calc(100vh - …)` missed; an unknown tag body counted as icon-only; a copied slug reader; proxied API 4xx/5xx
+  measured as data; `reuseExistingServer` could measure another checkout's dev server; the manifest header
+  promised "no browser bar". Floors that rise because the reader got more honest are recorded as such.
+- **Missed at close and fixed after:** the consolidation-log sprint line (found by the Maintenance session's
+  `wat_lint`). Lesson already in the workflow — step 10 is easy to skip when the push feels like the end.
