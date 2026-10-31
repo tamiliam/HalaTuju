@@ -44,8 +44,9 @@ Three kinds of check, from cheapest to most human:
 
 ### 2. Text fields are 16 px or more on phones
 - **Why:** iPhone Safari zooms the whole page when you tap a field under 16 px, and it stays zoomed.
-- **Checked by:** static guard (unprefixed `text-sm` / `text-xs` / `text-[<16px]` on an input, select
-  or textarea) and mobile-check (the computed font size, which also catches inherited sizes).
+- **Checked by:** static guard (`text-sm` / `text-xs` / `text-[<16px]` on an input, select or textarea,
+  bare or behind any variant that still applies on a phone — `max-md:`, `focus:`, `!` — but not behind
+  `sm:`/`md:` and up) and mobile-check (the computed font size, which also catches inherited sizes).
 - **Copy this:** the `.input` class in `src/app/globals.css` (16 px). Smaller text is allowed from
   tablet up: `text-base md:text-sm`.
 

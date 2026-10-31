@@ -31,6 +31,10 @@ service worker, because an installed HalaTuju must be the live site, never a cac
 (7) **`display: 'browser'`, not standalone (lead, at review)**: an iPhone standalone web app has no back button and
 keeps storage apart from Safari, so a sign-in or email link opens in Safari and the app never sees that session.
 Standalone is an M8 step, after every screen has its own way back and sign-in is proven inside it.
+(8) **A floor may rise ONLY when the reader got more honest (M0 review)**: fixing the source reader (template
+holes, aliased imports, phone-applying variants) took the small-text-field floor 182 → 208 with no code change — the
+26 were always there. Such a rise is written beside the floor ("M0 review: reader fixed, was N"); a rise for any
+other reason is a regression, fixed in the code, never in the number.
 
 ## Mentors sign in, on the source-partner pattern; the mentor keeps their own profile — 2026-10-31 (owner rulings, student maintenance S7a)
 

@@ -8,7 +8,8 @@
  * in the gate — hold the line between runs.
  *
  * When MOBILE_BASE is local (the default), Playwright starts `next dev` on that port with the
- * design sandbox on, or reuses a server already listening there. ⚠ `next dev` writes `.next/`:
+ * design sandbox on (never another server already on that port, unless MOBILE_REUSE_SERVER=1 —
+ * see the note at `reuseExistingServer`). ⚠ `next dev` writes `.next/`:
  * do not run `next build` in this folder while it is up, and stop a second `next dev` in the same
  * folder first — two servers sharing `.next/` corrupt each other's output.
  */
@@ -34,7 +35,11 @@ export default defineConfig({
       command: `npx next dev -p ${port}`,
       cwd: WEB_ROOT,
       url: `${BASE}/sandbox`,
-      reuseExistingServer: true,
+      // ⚠ NOT reused by default. Port 3100 is fixed and other sessions run `next dev` from OTHER
+      // checkouts; reusing whatever answers there would silently measure someone else's branch. If
+      // the port is busy, Playwright stops with "port already used" — free it, or, when you know the
+      // server on it is THIS worktree's (sandbox on), opt in with MOBILE_REUSE_SERVER=1.
+      reuseExistingServer: process.env.MOBILE_REUSE_SERVER === '1',
       timeout: 240_000,
       env: { NEXT_PUBLIC_SANDBOX: '1' },
       stdout: 'ignore',

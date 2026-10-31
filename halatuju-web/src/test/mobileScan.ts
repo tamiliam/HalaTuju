@@ -37,9 +37,13 @@ export type Offender = string
 
 /**
  * Comments replaced by spaces, everything else kept, newlines kept. Strings and template literals
- * are respected, so a `//` inside a URL string is not a comment. ⚠ A regex literal holding a quote
- * can still confuse it; this repo's `.tsx` files have none that matter, and the worst case is a
- * comment left in place, never code removed.
+ * are respected, so a `//` inside a quoted URL is not a comment. Outside quotes, two shapes of `//`
+ * are NOT taken as a comment either: `://` (a URL written as JSX text, `<a>https://…</a>`), and a
+ * `//` that sits in JSX text — the stretch since the line's last `>` holds no code punctuation and
+ * a closing tag follows on the same line (`<p>a // b</p>`). That second rule is a heuristic: JSX
+ * text spread over several lines is not recognised, and a `//` there still blanks the rest of its
+ * line. ⚠ A regex literal holding a quote can also confuse the reader. In every such case the harm
+ * is bounded and one-directional: part of ONE line is hidden from the rules (an under-count).
  */
 export function blankComments(src: string): string {
   const out = src.split('')
@@ -74,7 +78,7 @@ export function blankComments(src: string): string {
       i = end
       continue
     }
-    if (c === '/' && src[i + 1] === '/') {
+    if (c === '/' && src[i + 1] === '/' && !inJsxTextOrUrl(src, i)) {
       const j = src.indexOf('\n', i)
       const end = j === -1 ? n : j
       blank(i, end)
@@ -89,6 +93,19 @@ export function blankComments(src: string): string {
     i++
   }
   return out.join('')
+}
+
+/** True when the `//` at `at` is part of a URL (`://`) or of JSX text (see `blankComments`). */
+function inJsxTextOrUrl(src: string, at: number): boolean {
+  if (src[at - 1] === ':') return true
+  const lineStart = src.lastIndexOf('\n', at - 1) + 1
+  const lineEnd = src.indexOf('\n', at)
+  const before = src.slice(lineStart, at)
+  const after = src.slice(at, lineEnd === -1 ? src.length : lineEnd)
+  const gt = before.lastIndexOf('>')
+  // `=>` is an arrow, not the end of a tag.
+  if (gt === -1 || before[gt - 1] === '=') return false
+  return !/[{}();=]/.test(before.slice(gt + 1)) && /<\//.test(after)
 }
 
 /** Every file given, read once, as `Scanned`. */
@@ -170,7 +187,29 @@ export function attr(attrs: string, name: string): { literal: string } | { expr:
   return { expr: attrs.slice(from + 1, i) }
 }
 
-const LITERAL = /'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g
+/**
+ * A string literal: single- or double-quoted on one line, or a template (which may span lines).
+ * THE one copy — the scanner, the constant reader and the test all use it, so they cannot drift.
+ */
+export const LITERAL = /'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g
+
+/** Every string literal in a file's code, with where it starts (comments are already blank). */
+export function literalsWithIndex(code: string): Array<{ text: string; index: number }> {
+  const out: Array<{ text: string; index: number }> = []
+  for (const m of Array.from(code.matchAll(LITERAL))) {
+    for (const text of literalsIn(m[0])) out.push({ text, index: m.index ?? 0 })
+  }
+  return out
+}
+
+/**
+ * An expression with its string literals removed but a template's `${…}` holes KEPT, so the
+ * identifiers inside them can still be read: `` `${inputCls} w-full` `` becomes ` inputCls `.
+ */
+export function withoutLiterals(expr: string): string {
+  return expr.replace(LITERAL, (_whole: string, _sq: string, _dq: string, tpl?: string) =>
+    (tpl === undefined ? ' ' : ` ${(tpl.match(/\$\{[^}]*\}/g) ?? []).map((h) => h.slice(2, -1)).join(' ')} `))
+}
 
 /** The text of every string literal (quotes and template text) inside an expression. */
 export function literalsIn(expr: string): string[] {
@@ -190,14 +229,21 @@ export function literalsIn(expr: string): string[] {
  */
 export function stringConsts(code: string): Record<string, string> {
   const out: Record<string, string> = {}
-  const re = /\bconst\s+([A-Za-z_$][\w$]*)\s*(?::\s*string\s*)?=\s*((?:(?:'[^'\n]*'|"[^"\n]*"|`[^`]*`)\s*\+?\s*)+)/g
+  const re = new RegExp(`\\bconst\\s+([A-Za-z_$][\\w$]*)\\s*(?::\\s*string\\s*)?=\\s*((?:(?:${LITERAL.source})\\s*\\+?\\s*)+)`, 'g')
   for (const m of Array.from(code.matchAll(re))) out[m[1]] = literalsIn(m[2]).join(' ')
   return out
 }
 
-/** The named imports of a file, as local name → the scanned file (`rel`) it comes from. */
-export function namedImports(file: Scanned, known: Set<string>): Record<string, string> {
-  const out: Record<string, string> = {}
+/** Where an imported name comes from: the scanned file, and the name it is EXPORTED under there. */
+export interface ImportSource { from: string; name: string }
+
+/**
+ * The named imports of a file, as local name → its source. `import { INPUT as fieldCls }` maps
+ * `fieldCls` → `{ from, name: 'INPUT' }`: the source module knows the constant by its own name,
+ * never by the importer's alias.
+ */
+export function namedImports(file: Scanned, known: Set<string>): Record<string, ImportSource> {
+  const out: Record<string, ImportSource> = {}
   const re = /import\s*(?:type\s+)?\{([^}]*)\}\s*from\s*'([^']+)'/g
   for (const m of Array.from(file.code.matchAll(re))) {
     const spec = m[2]
@@ -210,7 +256,7 @@ export function namedImports(file: Scanned, known: Set<string>): Record<string, 
     if (!target) continue
     for (const part of m[1].split(',')) {
       const [orig, alias] = part.replace(/\btype\s+/, '').split(/\s+as\s+/).map((s) => s.trim())
-      if (orig) out[alias || orig] = target
+      if (orig) out[alias || orig] = { from: target, name: orig }
     }
   }
   return out
@@ -224,13 +270,13 @@ export function constResolver(files: Scanned[]): ConstResolver {
   const consts: Record<string, Record<string, string>> = {}
   for (const f of files) consts[f.rel] = stringConsts(f.code)
   const known = new Set(files.map((f) => f.rel))
-  const imports: Record<string, Record<string, string>> = {}
+  const imports: Record<string, Record<string, ImportSource>> = {}
   return (file, name) => {
     const local = consts[file.rel]?.[name]
     if (local !== undefined) return local
     imports[file.rel] = imports[file.rel] ?? namedImports(file, known)
-    const from = imports[file.rel][name]
-    return from ? consts[from]?.[name] : undefined
+    const source = imports[file.rel][name]
+    return source ? consts[source.from]?.[source.name] : undefined
   }
 }
 
@@ -240,8 +286,9 @@ export function classText(file: Scanned, tag: OpenTag, resolve: ConstResolver): 
   if (!v) return ''
   if ('literal' in v) return v.literal
   const parts = literalsIn(v.expr)
-  // Identifiers OUTSIDE string literals: a shared constant like `inputCls` or `INPUT`.
-  const bare = v.expr.replace(/'[^'\n]*'|"[^"\n]*"|`[^`]*`/g, ' ')
+  // Identifiers OUTSIDE string literals — including inside a template's `${…}` holes — such as a
+  // shared constant like `inputCls` or `INPUT`.
+  const bare = withoutLiterals(v.expr)
   for (const id of bare.match(/(?<![.\w$])[A-Za-z_$][\w$]*/g) ?? []) {
     const text = resolve(file, id)
     if (text !== undefined) parts.push(text)

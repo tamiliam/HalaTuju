@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M0 review fixes (2026-10-31, ships with M1)
+
+- The source reader behind `mobileStandard.test.ts` (`src/test/mobileScan.ts`) now resolves an aliased import by its
+  exported name, reads constants inside a template's `${…}` holes, and no longer blanks the rest of a line at a
+  `://` or a `//` in JSX text. The small-text rule counts every size that applies on a phone (`max-md:`, `!text-sm`,
+  `focus:`, `text-[length:14px]`, `text-sm/6`); min-width breakpoints stay allowed. vh style values are matched
+  whole (`calc(100vh - 4rem)`); a control whose closing tag cannot be found is not counted. Floor for small-text
+  fields **182 → 208** (the reader got honest; no code changed). Other floors unchanged. Reader self-tests added.
+- `mobile-check`: an API answering with an error (any 4xx but 401/403, any 5xx) refuses the cell like a network
+  failure, so `--update` can never record an error screen; the dev server on port 3100 is no longer reused unless
+  `MOBILE_REUSE_SERVER=1` (another checkout's server would be measured silently). The ledger test reuses the check's
+  own sandbox-slug reader.
+- `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
+
 ## Mobile M0: the Mobile Standard, its guards and the phone baseline (2026-10-31)
 
 - New `docs/mobile-standard.md`: 14 rules for phone screens (360–430 px, iPhone Safari first, en/ms/ta), each with

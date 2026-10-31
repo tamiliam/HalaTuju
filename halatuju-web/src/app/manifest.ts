@@ -1,13 +1,18 @@
 import type { MetadataRoute } from 'next'
 
 /**
- * The web app manifest (Mobile M0) — what lets a student "Add to Home Screen" and open HalaTuju
- * like an app: its own icon, no browser bar, the right name under the icon. Next serves this at
- * `/manifest.webmanifest` and links it from every page; the iPhone icon is `apple-icon.png` beside
- * this file, which Next links the same way.
+ * The web app manifest (Mobile M0). TODAY it gives a home-screen SHORTCUT: a student who taps "Add
+ * to Home Screen" gets HalaTuju's own icon and name instead of a page screenshot — and tapping it
+ * opens HalaTuju in the ordinary browser, with its bar, back button and signed-in session. It is
+ * NOT an app-like window yet: `display` is 'browser' (reason beside it), and standalone waits for
+ * roadmap M8. A consequence worth knowing: Chrome only offers its own "Install app" prompt for a
+ * standalone-type display, so with 'browser' Android users add it from the menu like any page.
+ * Next serves this at `/manifest.webmanifest` and links it from every page; the iPhone icon is
+ * `apple-icon.png` beside this file, which Next links the same way.
  *
- * ⚠ NO SERVICE WORKER, NO OFFLINE MODE — deliberately. An installed HalaTuju is the live site in its
- * own window and nothing more; caching pages would show a student yesterday's offers and statuses.
+ * ⚠ NO SERVICE WORKER, NO OFFLINE MODE — deliberately, and still so in M8. HalaTuju from the home
+ * screen is the live site and nothing more; caching pages would show a student yesterday's offers
+ * and statuses.
  *
  * The icons were cut from `src/app/icon.png` (2048 px): the artwork alone, centred. The maskable one
  * sits on white with the artwork inside the 80 % safe circle, so Android can crop it to any shape

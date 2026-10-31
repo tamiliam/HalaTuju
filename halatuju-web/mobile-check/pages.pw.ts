@@ -80,7 +80,28 @@ async function readOnly(page: Page): Promise<() => string[]> {
     if (aborted.has(req.url())) return
     if (/\/api\/v1\//.test(req.url())) apiFailures.push(`${req.method()} ${req.url()} — ${req.failure()?.errorText}`)
   })
+  // An API that ANSWERS with an error is no better than one that does not answer: the page is drawn
+  // as its error or empty state, and `--update` would record that screen as the baseline. Seen for
+  // proxied and direct calls alike (a fulfilled route still emits `response`).
+  page.on('response', (res) => {
+    if (/\/api\/v1\//.test(res.url()) && apiErrorStatus(res.status())) {
+      apiFailures.push(`${res.request().method()} ${res.url()} — HTTP ${res.status()}`)
+    }
+  })
   return () => apiFailures
+}
+
+/**
+ * Which API statuses refuse the cell. The visitor is ANONYMOUS (sign-in is blocked), so:
+ *   - 401 and 403 are LEGITIMATE — a page may ask for signed-in data and quietly fall back, which
+ *     is exactly how it looks to a stranger; that IS the screen to measure;
+ *   - every other 4xx (400, 404, 409, 422, 429 …) means the data the page asked for did not come
+ *     back — each `visit` URL names real data, so the page on screen is not the real one;
+ *   - every 5xx is the API failing.
+ */
+function apiErrorStatus(status: number): boolean {
+  if (status === 401 || status === 403) return false
+  return status >= 400
 }
 
 async function measureCell(page: Page, target: Target, locale: Locale): Promise<Measurement> {
@@ -105,7 +126,10 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
   await page.waitForLoadState('networkidle')
   await page.waitForFunction(() => {
     const w = window as unknown as { __mcSig?: string; __mcAt?: number }
-    const busy = Array.from(document.querySelectorAll('.animate-spin, [aria-busy="true"]')).some((e) => {
+    // Mid-navigation (a redirect such as /stpm/search → /search) there can be no <body> for a
+    // moment; that is "not settled", never an error — a throw here ends the wait and fails the cell.
+    if (!document.body) return false
+    const busy =Array.from(document.querySelectorAll('.animate-spin, [aria-busy="true"]')).some((e) => {
       const r = e.getBoundingClientRect()
       return r.width > 0 && r.height > 0
     })
@@ -119,7 +143,8 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
 
   const failures = apiFailures()
   if (target.kind === 'public' && failures.length) {
-    throw new Error('The API did not answer, so this page was drawn without its data and measuring it '
+    throw new Error('The API did not answer, or answered with an error, so this page was drawn without '
+      + 'its data and measuring it '
       + 'would record a different screen. Is the live API reachable from this machine? (Locally its '
       + `reads are proxied there — see mobile-check/targets.ts.)\n  ${failures.slice(0, 3).join('\n  ')}`)
   }

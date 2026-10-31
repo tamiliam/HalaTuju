@@ -24,10 +24,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { readWeb, walkFloor, WEB_ROOT } from '@/test/sourceGuard'
 import {
-  attr, classText, constResolver, literalsIn, openTags, scanFiles, tokens, where,
+  attr, blankComments, classText, constResolver, literalsIn, literalsWithIndex, openTags, scanFiles,
+  tokens, where, withoutLiterals,
   type Offender, type Scanned,
 } from '@/test/mobileScan'
 import { MOBILE_CLASS, routeOfPage } from '@/lib/mobileClass'
+import { sandboxSlugs } from '../../../mobile-check/targets'
 
 // ── The corpus ────────────────────────────────────────────────────────────────────────────────
 /** 627 `.ts`/`.tsx` files under src/ on 2026-10-31; a MINIMUM, so new files stay green. */
@@ -54,15 +56,6 @@ function ratchet(name: string, offenders: Offender[], floor: number): void {
   }
 }
 
-/** Every string literal in a file's code, with where it starts (comments are already blank). */
-function literalsWithIndex(file: Scanned): Array<{ text: string; index: number }> {
-  const out: Array<{ text: string; index: number }> = []
-  for (const m of Array.from(file.code.matchAll(/'([^'\n]*)'|"([^"\n]*)"|`([^`]*)`/g))) {
-    for (const text of literalsIn(m[0])) out.push({ text, index: m.index ?? 0 })
-  }
-  return out
-}
-
 describe('the corpus this file depends on is really there', () => {
   test('hundreds of source files, most of them components', () => {
     expect(FILES.length).toBeGreaterThanOrEqual(500)
@@ -73,10 +66,14 @@ describe('the corpus this file depends on is really there', () => {
 // ── Rule 2: text fields at 16 px on phones ────────────────────────────────────────────────────
 /**
  * A text field under 16 px makes iPhone Safari ZOOM THE PAGE when it is tapped, and the page stays
- * zoomed. `md:text-sm` (tablet up) is fine; an UNPREFIXED `text-sm`, `text-xs` or `text-[<16px]`
- * on a text-entry control is the offence. Checkboxes, radios, hidden, file, range and button-like
- * inputs take no typing and are skipped; an `type={…}` expression counts as text unless every
- * literal in it is one of those.
+ * zoomed. The offence is a small size that APPLIES ON A PHONE: `text-sm`, `text-xs`, `text-[<16px]`
+ * (also `text-[length:14px]`, `text-sm/6`, `!text-sm`), bare or behind a variant that still applies
+ * at phone width — `max-md:`, `max-sm:`, `max-[…]:`, and state variants such as `focus:` or `dark:`
+ * (a field that shrinks on focus zooms on tap just the same). A MIN-width breakpoint (`sm:`, `md:`,
+ * `lg:`, `xl:`, `2xl:`, `min-[…]:`) starts above every phone in the standard, so `md:text-sm` is
+ * fine; so are `placeholder:`/`file:` sizes, which do not size the field. Checkboxes, radios,
+ * hidden, file, range and button-like inputs take no typing and are skipped; an `type={…}`
+ * expression counts as text unless every literal in it is one of those.
  *
  * ⚠ LIMITS (best effort, stable, honest). A control with NO size class inherits its parent's size
  * (Tailwind's preflight sets `font-size: 100%`), which only the browser check can see. A class
@@ -84,15 +81,25 @@ describe('the corpus this file depends on is really there', () => {
  */
 const NOT_TEXT = new Set(['checkbox', 'radio', 'hidden', 'file', 'range', 'color', 'submit', 'button',
   'reset', 'image'])
+/** Variants that switch a class OFF at phone width, or point it at something other than the field. */
+const NOT_ON_PHONE = /^(?:sm|md|lg|xl|2xl|min-\[[^\]]*\]|placeholder|file)$/
+
+/** True when this class token sets a font size under 16 px that is in force on a phone. */
+function smallOnPhone(token: string): boolean {
+  // Split variants on `:` OUTSIDE brackets — `text-[length:14px]` holds one inside its value.
+  const parts = token.split(/:(?![^[]*\])/)
+  const utility = (parts.pop() ?? '').replace(/^!/, '')
+  if (parts.some((v) => NOT_ON_PHONE.test(v.replace(/^!/, '')))) return false
+  const size = utility.replace(/\/[\w.[\]-]+$/, '')            // drop a `/leading` suffix
+  if (size === 'text-xs' || size === 'text-sm') return true
+  const m = size.match(/^text-\[(?:length:)?(\d*\.?\d+)(px|rem|em)\]$/)
+  if (!m) return false
+  const n = parseFloat(m[1])
+  return m[2] === 'px' ? n < 16 : n < 1
+}
 
 function smallTextToken(cls: string[]): string | undefined {
-  return cls.find((t) => {
-    if (t === 'text-xs' || t === 'text-sm') return true
-    const m = t.match(/^text-\[(\d*\.?\d+)(px|rem|em)\]$/)
-    if (!m) return false
-    const n = parseFloat(m[1])
-    return m[2] === 'px' ? n < 16 : n < 1
-  })
+  return cls.find(smallOnPhone)
 }
 
 function isTextEntry(tag: { name: string; attrs: string }): boolean {
@@ -119,7 +126,10 @@ describe('rule 2 — text fields are 16 px on phones (no iOS zoom)', () => {
       const small = smallTextToken(tokens(classText(f, tag, resolve)))
       return small ? [where(f, tag.start, `<${tag.name} … ${small}`)] : []
     })
-    ratchet('text fields with an unprefixed small font', offenders, 182)
+    // M0 review: reader fixed, was 182. The 26 added are shared constants used inside a template
+    // (`${inputCls} w-28`), which the first reader dropped with the template. The code did not get
+    // worse; the count got honest — the ONLY kind of rise a floor may ever take (decisions.md).
+    ratchet('text fields with a small font on phones', offenders, 208)
   })
 })
 
@@ -157,7 +167,7 @@ const OVERLAY_HOMES: string[] = []
 describe('rule 5 — overlays come from the shared Sheet', () => {
   test('hand-rolled fixed inset-0 overlays: at or under the floor', () => {
     const offenders = FILES.filter((f) => !OVERLAY_HOMES.includes(f.rel))
-      .flatMap((f) => literalsWithIndex(f)
+      .flatMap((f) => literalsWithIndex(f.code)
         .filter(({ text }) => tokens(text).includes('fixed') && tokens(text).includes('inset-0'))
         .map(({ index }) => where(f, index, 'fixed inset-0')))
     ratchet('hand-rolled `fixed inset-0` overlays', offenders, 18)
@@ -183,15 +193,20 @@ const MIN_SCREEN = /^(?:[\w-]+:)*min-h-screen$/
 
 describe('rule 6 — heights use dvh, never vh', () => {
   test('vh heights: at or under the floor', () => {
-    const offenders = FILES.flatMap((f) => literalsWithIndex(f).flatMap(({ text, index }) => {
-      const hits = tokens(text).filter((t) => VH_TOKEN.test(t) || VH_STYLE.test(t))
+    const offenders = FILES.flatMap((f) => literalsWithIndex(f.code).flatMap(({ text, index }) => {
+      // A style VALUE is matched whole (`calc(100vh - 4rem)` has spaces); class tokens one by one.
+      const style = text.trim()
+      const hits = [
+        ...tokens(text).filter((t) => VH_TOKEN.test(t)),
+        ...(VH_STYLE.test(style) ? [style] : tokens(text).filter((t) => VH_STYLE.test(t))),
+      ]
       return hits.map((t) => where(f, index, t))
     }))
     ratchet('vh-based heights', offenders, 3)
   })
 
   test('min-h-screen: at or under its own floor', () => {
-    const offenders = FILES.flatMap((f) => literalsWithIndex(f).flatMap(({ text, index }) =>
+    const offenders = FILES.flatMap((f) => literalsWithIndex(f.code).flatMap(({ text, index }) =>
       tokens(text).filter((t) => MIN_SCREEN.test(t)).map((t) => where(f, index, t))))
     ratchet('min-h-screen', offenders, 71)
   })
@@ -208,10 +223,12 @@ describe('rule 6 — heights use dvh, never vh', () => {
  * value. An expression the reader cannot judge (`{label}`) is taken to be words — so this UNDER-
  * counts rather than over-counts. `role="button"` elements and custom components are not seen.
  */
-function contentOf(code: string, tag: { name: string; end: number; selfClosing: boolean }): string {
+/** The element's content; null when the reader cannot find its closing tag — an UNKNOWN, which
+ *  is never counted as an offender (it would be a guess, and a guess must not fail a build). */
+function contentOf(code: string, tag: { name: string; end: number; selfClosing: boolean }): string | null {
   if (tag.selfClosing) return ''
   const close = code.indexOf(`</${tag.name}>`, tag.end)
-  return close === -1 ? '' : code.slice(tag.end + 1, close)
+  return close === -1 ? null : code.slice(tag.end + 1, close)
 }
 
 function isIconOnly(content: string): boolean {
@@ -237,7 +254,10 @@ describe('rule 4 — no title= as the only explanation on an icon-only control',
     const offenders = TSX.flatMap((f) => ['button', 'a', 'Link'].flatMap((name) =>
       openTags(f.code, name)
         .filter((tag) => /(?:^|\s)title=/.test(tag.attrs))
-        .filter((tag) => isIconOnly(contentOf(f.code, tag)))
+        .filter((tag) => {
+          const content = contentOf(f.code, tag)
+          return content !== null && isIconOnly(content)
+        })
         .map((tag) => where(f, tag.start, `<${name} title=… (icon only)`))))
     ratchet('icon-only controls with title=', offenders, 7)
   })
@@ -333,13 +353,60 @@ describe('every route has a phone class', () => {
   })
 
   test('a redirect names a route that exists, and a surface names a real sandbox slug', () => {
-    const surfaces = readWeb('src/sandbox/surfaces.tsx', 'the ledger maps routes to the sandbox '
-      + 'surfaces that mount them; a slug that no longer exists would claim a measurement')
-    const slugs = Array.from(surfaces.matchAll(/^ {4}slug: '([^']+)'/gm), (m) => m[1])
+    // The SAME reader the browser check uses (SURFACES block only, one `render:` per slug), so the
+    // ledger and the check cannot disagree about which surfaces exist.
+    const slugs = sandboxSlugs()
     expect(slugs.length).toBeGreaterThanOrEqual(15)
     for (const [route, e] of Object.entries(MOBILE_CLASS)) {
       if (e.redirect) expect(`${route} → ${pages.includes(e.redirect.split('?')[0])}`).toBe(`${route} → true`)
       for (const s of e.surfaces ?? []) expect(`${route} → ${s}: ${slugs.includes(s)}`).toBe(`${route} → ${s}: true`)
     }
+  })
+})
+
+// ── The reader itself (M0 review) ─────────────────────────────────────────────────────────────
+/**
+ * Each case below is a shape the first reader got WRONG, found by the M0 code review. They pin the
+ * reader, not the product: if one fails, a floor above has silently started counting something else.
+ */
+describe('the reader sees what the review said it missed', () => {
+  const scanned = (rel: string, raw: string): Scanned => ({ rel, raw, code: blankComments(raw) })
+
+  test('a URL or a `//` in JSX text is not a comment; a real comment still is', () => {
+    expect(blankComments("<a href={u}>https://halatuju.example/x className='text-sm'</a>"))
+      .toContain("className='text-sm'")
+    expect(blankComments('<p>a // b</p>')).toContain('// b')
+    expect(blankComments("const x = 1 // className='text-sm'")).not.toContain('text-sm')
+  })
+
+  test('an aliased import resolves by the name it was EXPORTED under', () => {
+    const lib = scanned('src/x/fields.ts', "export const INPUT = 'w-full text-sm'")
+    const page = scanned('src/x/page.tsx', "import { INPUT as fieldCls } from './fields'\n"
+      + '<input className={fieldCls} />')
+    const tag = openTags(page.code, 'input')[0]
+    expect(classText(page, tag, constResolver([lib, page]))).toContain('text-sm')
+  })
+
+  test('a constant inside a template hole is resolved', () => {
+    expect(withoutLiterals('`${inputCls} w-full`')).toContain('inputCls')
+    const page = scanned('src/x/p.tsx', "const inputCls = 'text-xs'\n<input className={`${inputCls} w-28`} />")
+    expect(classText(page, openTags(page.code, 'input')[0], constResolver([page]))).toContain('text-xs')
+  })
+
+  test('a small size counts when it applies on a phone, and only then', () => {
+    for (const t of ['text-sm', 'max-md:text-sm', 'max-sm:text-xs', '!text-sm', 'focus:text-sm',
+      'text-[length:14px]', 'text-[13.5px]', 'text-sm/6', 'max-[500px]:text-xs']) {
+      expect(`${t}: ${smallOnPhone(t)}`).toBe(`${t}: true`)
+    }
+    for (const t of ['md:text-sm', 'sm:text-xs', 'lg:!text-sm', 'min-[640px]:text-sm',
+      'placeholder:text-sm', 'text-base', 'text-[16px]', 'text-[1rem]', 'md:max-lg:text-sm']) {
+      expect(`${t}: ${smallOnPhone(t)}`).toBe(`${t}: false`)
+    }
+  })
+
+  test('a vh style value is matched whole, spaces and all', () => {
+    expect(VH_STYLE.test('calc(100vh - 4rem)')).toBe(true)
+    expect(VH_STYLE.test('100vh')).toBe(true)
+    expect(VH_STYLE.test('calc(100dvh - 4rem)')).toBe(false)
   })
 })

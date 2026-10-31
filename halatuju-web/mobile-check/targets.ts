@@ -18,7 +18,8 @@
  * `APP_API/api/…` is fetched from `LIVE_API` by Playwright's own request client (not bound by CORS)
  * and handed back with an `access-control-allow-origin` for the page; preflights are answered too.
  * Writes are still aborted before they leave. The page is this branch's code over production's
- * read-only data — the same data the live site shows. If a proxied call fails, the spec refuses to
+ * read-only data — the same data the live site shows. If an API call fails or answers with an error
+ * status (`apiErrorStatus` in pages.pw.ts: 401/403 are fine for an anonymous visitor), the spec refuses to
  * record the cell rather than measure a page drawn without its data.
  *   MOBILE_UPDATE=1     rewrite the baseline after the run (`npm run mobile-check -- --update`).
  *   MOBILE_ALLOW_WORSE=1  let that rewrite RAISE numbers. See run.mjs for why it exists.
