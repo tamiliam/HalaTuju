@@ -11,7 +11,7 @@ Built on branch `profiles`.
   `lib/profileCards.ts` names (`{id, order, show({role, permissions, isSuper})}`, `cardsFor`). You (name,
   sign-in email), Your access (role, organisation / source / referral partner, gifts, "You can" in plain
   words, read only) and Sign-in (Google or email and password, last signed in, Change password for a
-  password account on the admin Supabase client) for everyone; Contact details, Qualifications and
+  password account — current password required, see below) for everyone; Contact details, Qualifications and
   languages (the credentials and languages cards merged, fields unchanged), Address and Taking part for a
   holder of `review` who is not a super; Organisation for a partner or a source user.
 - **The reviewer cards follow the `review` permission, not the Reviewer role** — on the page and on
@@ -35,8 +35,21 @@ Built on branch `profiles`.
   and `admin.sourceConsole.profile.{you,name,email,saved,loadError}` removed.
 - Tests: api `test_admin_me.py` (17), the source deny sweep and the org fence classify the route; web
   `profileCards.test.ts`, `app/admin/profile/page.test.tsx`, `noStaffCalls.test.tsx` (the shared shell).
-- Debt raised: TD-435 (a Reviewer who loses `review` before onboarding is held with nothing to fill),
-  TD-436 (the client password change against the live project's re-authentication rule, unverified).
+- **New endpoint** `POST /api/v1/admin/me/password/` `{current_password, new_password}` (lead review round 1:
+  the project refuses a client `updateUser({password})`). The current password is checked by a Supabase
+  password grant for the caller's OWN account (the JWT's user id; the email Supabase holds for it — a body
+  email or user id is ignored), whose session is then signed out; the new one is set through the
+  service-role admin API with the password ONLY (`must_change_password` untouched). One minimum-length
+  rule, `supabase_admin.MIN_PASSWORD_LENGTH` (set-password reads it too; the web copy
+  `lib/adminPassword.ts` is held by `adminPasswordDrift.test.ts`). `PasswordChangeRateThrottle`: 5 per 15
+  minutes per person, 429 after. Refusals 400 `wrong_current_password` / `same_password` /
+  `password_too_short` / `weak_password` / `no_password_sign_in`; 503 `supabase_unavailable`, never a 500.
+  Opted in for a source user (POST only). The card asks for the current password, clears the fields, and
+  signs in again with the new password if the tab's session can no longer be refreshed.
+- `reviewer_onboarding.py`'s docstring now says the hold is Reviewer-role only on purpose (comment only).
+- Debt raised: TD-435 (a Reviewer who loses `review` before onboarding is held with nothing to fill).
+  TD-436 (the client password change) was raised and RESOLVED in the same sprint by the endpoint above.
+
 ## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31 — LIVE 2026-10-31 (main 98b0f964; api-01213-crq, web-01036-mkf)
 
 Roadmap Sprint 6, second half (owner-approved design: LettersAdmin, LettersStudent, CommsLetters). Migration

@@ -26,14 +26,21 @@ first/last seen), opted in for a source user; it lives in `apps/scholarship/view
 `apps/courses`, because a source's gifts are a scholarship rule and the `courses -> scholarship` import count is
 at its budget (17 of 17). (5) One Save writes each changed part to its own endpoint (name and a partner's
 organisation to `admin/profile/`, a source's name and organisation to `admin/source/profile/`, the reviewer cards
-to `admin/reviewer-profile/`); a password change is its own action on the admin Supabase client. (6) The cards
+to `admin/reviewer-profile/`); a password change is its own action, `POST admin/me/password/` — server-side,
+because the project refuses a client `updateUser({password})`: the current password is proved by a Supabase
+password grant for the JWT's own account, the new one set by the service-role admin API (password only, no
+metadata), 5 tries per 15 minutes per person. It is NOT `admin/set-password/`, which needs no current
+password and stays open only to onboarding and recovery (TD-207, TD-322). (6) The cards
 load as ONE lazy chunk (`components/adminProfile/cards.tsx`): off the route's first load, and not one chunk per
 card, because each async chunk is an entry in the webpack runtime every route downloads (eight cost the median
 ~0.12 kB).
 
 **Trade-offs:** the reviewer data stays in `reviewer_profiles` and is hidden, not deleted, when `review` goes
-(TD-435 names the one case where the role-based hold and the permission-based cards disagree). The client
-password change depends on the live project's re-authentication setting (TD-436).
+(TD-435 names the one case where the role-based hold and the permission-based cards disagree). The password
+grant mints a session as a side effect, which the endpoint signs out at once (best effort); and if the
+project's Auth captcha also guards a service-role password grant, the check would refuse every attempt —
+to be read on the live project before deploy.
+
 ## Letters on the scholar file are documents only; the student acknowledges, never agrees — 2026-10-31 (student maintenance S6b, owner rulings 2026-10-30, design approved)
 
 **Decision.** (1) **Five kinds** — general, discipline, suspension, termination, close-out (`Letter`, `letters.py`).

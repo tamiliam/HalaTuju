@@ -7064,7 +7064,15 @@ untouched on purpose. **Fix:** make `reviewer_profile_complete` answer True for 
 `review` (one line in `reviewer_onboarding.py`, with its web mirror in `adminLanding`/`navigation`), and pin it in
 `test_admin_me.py` and `profileCards.test.ts`. *(B · S)*
 
-### [TD-436] The Profile page's "Change password" goes through Supabase's own re-authentication rule, unverified on the live project - medium
+### ~~[TD-436] The Profile page's "Change password" goes through Supabase's own re-authentication rule, unverified on the live project - medium~~ — RESOLVED 2026-10-31 (common profile S1, admin/me/password/)
+
+**RESOLVED 2026-10-31, same sprint (common profile S1, lead review round 1).** The lead confirmed the client
+`updateUser({password})` IS refused in production, so the card now calls `POST admin/me/password/`
+(`apps/scholarship/views_admin/me.py` `AdminMePasswordView`): the current password is proved by a Supabase
+password grant for the JWT's own account (`supabase_admin.verify_password`, the grant's session signed out
+after), the new one set with the service role, password only (`supabase_admin.set_password`), throttled
+5 per 15 minutes per person (`halatuju.throttling.PasswordChangeRateThrottle`). Tests: `test_admin_me.py`
+`TestOwnPasswordChange`, `app/admin/profile/page.test.tsx`. The original entry, as raised:
 
 **Raised 2026-10-31 by common profile S1 (the builder).** The Sign-in card changes a password with
 `getAdminSupabase().auth.updateUser({ password })`. `app/admin/set-password` records that the project enforces
