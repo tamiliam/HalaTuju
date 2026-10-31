@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## One Profile page from one card list; the reviewer cards follow `review`; the hold stays Reviewer-only — 2026-10-31 (owner rulings, common profile S1)
+
+**Context:** every admin-platform person has a Profile page, but it was two screens (staff
+`app/admin/profile/page.tsx`, source `components/source/SourceProfile.tsx`) whose extras were switched on by
+ROLE (`isReviewer = role === 'reviewer'`, backend `has_role('reviewer')`), while real powers are switched on by
+PERMISSION since request #39. An admin given `review` could be assigned cases but had nowhere to put a phone or
+credentials; a Reviewer whose `review` was removed still saw the cards.
+
+**Owner rulings (2026-10-31):** one profile page built from ONE list of cards, each card with ONE rule saying who
+sees it; the reviewer cards follow the `review` permission, not the Reviewer role; the source profile is rebuilt
+on the same base. Lead decision accepted with the roadmap: the first-sign-in hold stays Reviewer-role only.
+
+**Decision:** (1) `lib/profileCards.ts` is the registry — `{id, order, show({role, permissions, isSuper})}` and
+`cardsFor(ctx)`; the page renders exactly that list and nothing else decides whether a card appears. S1 matrix:
+You, Your access and Sign-in for everyone; Contact, Qualifications and languages, Address and Taking part for a
+holder of `review` who is not a super (a super holds every key and is still never shown them — the 2026-06 rule);
+Organisation for `partner` and `source_partner`. (2) `admin/reviewer-profile/` GET/PATCH is gated on
+`has_perm('review')` (a new prologue on the view; `_require_reviewer` is unchanged because other writes rely on
+it). A super still passes, as under the role check; a Reviewer without `review` is refused 403 and the row is
+kept. (3) The hold (`reviewer_profile_complete`, `mustCompleteProfile`, `defaultRoute`) is untouched and pinned:
+anyone else holding `review` sees a reminder banner listing the missing fields, never a block. (4) New
+`GET admin/me/` (own account: role, organisation, source, referral partner, gifts, RESOLVED permissions,
+first/last seen), opted in for a source user; it lives in `apps/scholarship/views_admin/me.py`, not
+`apps/courses`, because a source's gifts are a scholarship rule and the `courses -> scholarship` import count is
+at its budget (17 of 17). (5) One Save writes each changed part to its own endpoint (name and a partner's
+organisation to `admin/profile/`, a source's name and organisation to `admin/source/profile/`, the reviewer cards
+to `admin/reviewer-profile/`); a password change is its own action on the admin Supabase client. (6) The cards
+load as ONE lazy chunk (`components/adminProfile/cards.tsx`): off the route's first load, and not one chunk per
+card, because each async chunk is an entry in the webpack runtime every route downloads (eight cost the median
+~0.12 kB).
+
+**Trade-offs:** the reviewer data stays in `reviewer_profiles` and is hidden, not deleted, when `review` goes
+(TD-435 names the one case where the role-based hold and the permission-based cards disagree). The client
+password change depends on the live project's re-authentication setting (TD-436).
 ## Letters on the scholar file are documents only; the student acknowledges, never agrees — 2026-10-31 (student maintenance S6b, owner rulings 2026-10-30, design approved)
 
 **Decision.** (1) **Five kinds** — general, discipline, suspension, termination, close-out (`Letter`, `letters.py`).

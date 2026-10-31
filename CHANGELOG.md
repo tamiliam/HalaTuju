@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Common profile S1 — one Profile page from one card list (no migration) - 2026-10-31 — BUILT, not deployed
+
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.
+Built on branch `profiles`.
+
+- **One page for every role.** `/admin/profile` is one shell that renders exactly the cards
+  `lib/profileCards.ts` names (`{id, order, show({role, permissions, isSuper})}`, `cardsFor`). You (name,
+  sign-in email), Your access (role, organisation / source / referral partner, gifts, "You can" in plain
+  words, read only) and Sign-in (Google or email and password, last signed in, Change password for a
+  password account on the admin Supabase client) for everyone; Contact details, Qualifications and
+  languages (the credentials and languages cards merged, fields unchanged), Address and Taking part for a
+  holder of `review` who is not a super; Organisation for a partner or a source user.
+- **The reviewer cards follow the `review` permission, not the Reviewer role** — on the page and on
+  `admin/reviewer-profile/` (now `has_perm('review')`; a super still passes; a Reviewer without `review` is
+  refused and keeps the saved row). The first-sign-in hold stays Reviewer-role only (pinned by tests);
+  anyone else holding `review` sees a reminder banner listing the missing fields, never a block.
+- **A source user gets the same shell.** `components/source/SourceProfile.tsx` and its test are retired;
+  their tests moved to `app/admin/profile/page.test.tsx`, and `noStaffCalls.test.tsx` proves the source's
+  page calls only `admin/me/` and `admin/source/profile/`.
+- **New endpoint** `GET /api/v1/admin/me/` (own account: role, organisation, source, referral partner, gifts or
+  `'all'`, the RESOLVED permissions, first and last seen), opted in for a source user, in
+  `apps/scholarship/views_admin/me.py` — not `apps/courses`, whose `courses -> scholarship` import budget is
+  full (17 of 17).
+- One Save writes each changed part to its own endpoint and sleeps when nothing changed; a name change now
+  refreshes the header for staff too (it already did for a source). The page title reads "Profile" for
+  everyone (staff saw "Admin Profile"). The share-phone and pause checkboxes are the site Toggle.
+- The cards load as ONE lazy chunk (`components/adminProfile/cards.tsx`), so the university list and its
+  picker left the route's first load: `/admin/profile` page 10.8 → 6.98 kB, first load 174 → 165 kB. The
+  median moved 147.751 → 147.771 kB (one more async chunk in the runtime every route loads).
+- i18n: new `admin.myProfile.*` in en / ms / ta; the retired screens' `admin.profileTitle`, `admin.yourInfo`
+  and `admin.sourceConsole.profile.{you,name,email,saved,loadError}` removed.
+- Tests: api `test_admin_me.py` (17), the source deny sweep and the org fence classify the route; web
+  `profileCards.test.ts`, `app/admin/profile/page.test.tsx`, `noStaffCalls.test.tsx` (the shared shell).
+- Debt raised: TD-435 (a Reviewer who loses `review` before onboarding is held with nothing to fill),
+  TD-436 (the client password change against the live project's re-authentication rule, unverified).
 ## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31 — LIVE 2026-10-31 (main 98b0f964; api-01213-crq, web-01036-mkf)
 
 Roadmap Sprint 6, second half (owner-approved design: LettersAdmin, LettersStudent, CommsLetters). Migration

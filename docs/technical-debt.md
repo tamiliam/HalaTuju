@@ -7050,3 +7050,29 @@ not name it. **Live 2026-10-30: 0 of 299 TVET courses span two categories, 0 fal
 hidden today. **Fix when an ingest makes it real:** a drift test that every TVET course maps to exactly one of
 `TVET_PATHWAYS` (fail the ingest's checks, not the picker), or group offerings by the institution's own category
 rather than the course's. *(B · S)*
+
+### [TD-435] A Reviewer whose `review` was taken away before finishing onboarding is held on a Profile page with nothing to fill - low
+
+**Raised 2026-10-31 by common profile S1 (the builder).** The reviewer cards and `admin/reviewer-profile/` now
+follow the `review` PERMISSION, while the first-sign-in hold (`reviewer_onboarding.reviewer_profile_complete`,
+`adminLanding.mustCompleteProfile`, `navigation.defaultRoute`) stays on the Reviewer ROLE, by the owner's ruling. So
+a Reviewer whose custom permission set drops `review` while their compulsory fields are still empty is sent to
+`/admin/profile`, shown no reviewer card, and refused the reviewer profile (403): the banner lists fields they
+cannot reach and the hold never releases. Unreachable in practice today (an org admin would have to edit a
+not-yet-onboarded Reviewer's permissions to remove `review`), so it was not fixed in S1, which left the hold code
+untouched on purpose. **Fix:** make `reviewer_profile_complete` answer True for a Reviewer who does not hold
+`review` (one line in `reviewer_onboarding.py`, with its web mirror in `adminLanding`/`navigation`), and pin it in
+`test_admin_me.py` and `profileCards.test.ts`. *(B · S)*
+
+### [TD-436] The Profile page's "Change password" goes through Supabase's own re-authentication rule, unverified on the live project - medium
+
+**Raised 2026-10-31 by common profile S1 (the builder).** The Sign-in card changes a password with
+`getAdminSupabase().auth.updateUser({ password })`. `app/admin/set-password` records that the project enforces
+re-authentication on a client-side password change ("Current password required…", TD-207), which is why onboarding
+and reset go through `AdminSetPasswordView` instead. Which GoTrue setting that is (secure password change needing a
+recent sign-in, or a current password) was NOT read off the live project in S1. The card maps
+`reauthentication_needed` / a "current password" message to "sign out and sign in again, then change your
+password straight away", which helps only under the recent-sign-in rule. **Fix:** read the live Auth setting
+before the S2 deploy; under the current-password rule, add a "current password" field and send it (or the
+`reauthenticate()` nonce flow); never route this through the service-role endpoint, whose gate is the point of
+TD-207 and TD-322. *(A · S)*
