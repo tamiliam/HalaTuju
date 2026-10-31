@@ -130,10 +130,11 @@ describe('rule 2 — text fields are 16 px on phones (no iOS zoom)', () => {
    *      any selector without `!important`, so a field carrying one would zoom again.
    * The browser check measures the outcome on every page: `smallInputs` is 0 in every cell.
    */
-  test('the global 16 px rule exists, below md, outside every @layer', () => {
+  test('the global 16 px rule exists, below md AND on touch screens, outside every @layer', () => {
     const css = readWeb('src/app/globals.css', 'the one rule that makes text fields 16 px on phones')
       .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
-    const at = css.indexOf('@media (max-width: 767.98px)')
+    // `pointer: coarse` too: an iPhone held sideways is 844–932 px wide and still zooms (M1 close review).
+    const at = css.indexOf('@media (max-width: 767.98px), (pointer: coarse)')
     expect(at).toBeGreaterThan(-1)
     let depth = 0
     for (const c of css.slice(0, at)) depth += c === '{' ? 1 : c === '}' ? -1 : 0

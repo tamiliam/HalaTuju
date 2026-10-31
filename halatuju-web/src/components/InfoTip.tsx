@@ -49,7 +49,11 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
       onPointerEnter={onMouse(true)} onPointerLeave={onMouse(false)}>
       <button
         type="button" aria-label={text} aria-expanded={open}
-        onClick={() => setPinned((v) => !v)} onBlur={close}
+        onClick={() => setPinned((v) => !v)}
+        // Close on blur only when focus moves to ANOTHER control outside this tip. Chrome focuses a
+        // tapped button, so a tap on the bubble's text blurred it to <body> and shut the bubble the
+        // student was reading (M1 close review); taps elsewhere are the bubble's outside-tap listener.
+        onBlur={(e) => { const to = e.relatedTarget as Node | null; if (to && !root.current?.contains(to)) close() }}
         className="group -my-[13px] -mr-[13px] ml-[-9px] inline-flex p-[13px]"
       >
         <span className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold leading-none text-primary-700 ring-1 ring-inset ring-primary-200 transition-colors group-hover:bg-primary-200 group-hover:text-primary-800">

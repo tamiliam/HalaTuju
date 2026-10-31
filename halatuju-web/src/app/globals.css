@@ -606,16 +606,20 @@
 
    ⚠ WHY IT IS OUTSIDE `@layer`, AND WHY THE SELECTOR IS LONG. Inside `@layer base` it would LOSE to
    every utility (`text-sm` is emitted later, in `utilities`), which is the whole problem. Out here it
-   comes after the utilities, and its `:not(:is(…))` parts give it specificity (0,2,1) against a
-   utility's (0,1,0) — so it beats `text-sm`, `text-xs`, `text-[13px]` and `max-md:text-sm`. It does
-   NOT beat `!text-sm` (`!important`); `mobileStandard.test.ts` holds those at zero.
+   comes after the utilities, and its `:not(:is(…))` parts give it specificity — (0,2,1) for `input`,
+   (0,1,1) for `select` / `textarea` — against a utility's (0,1,0), so it beats `text-sm`, `text-xs`,
+   `text-[13px]` and `max-md:text-sm`. A STATEFUL small size (`focus:text-sm`, 0,2,0) would beat the
+   select/textarea part; none exists. It does NOT beat `!text-sm` (`!important`); `mobileStandard.test.ts`
+   holds those at zero.
 
    ⚠ IT ONLY EVER RAISES. A field that asks for 16 px or more (`text-base` … `text-6xl`, as a whole
    class) keeps its own size: forcing 16 would SHRINK a big OTP or IC box. (A responsive
    `md:text-lg` is not a whole-class match, so it does not exempt the phone size — correct.)
-   Below `md` only: from 768 px up every control keeps exactly the size its classes give it.
+   Below `md`, OR on any touch-first screen (`pointer: coarse`): most iPhones held sideways are 844–932
+   px wide, past `md`, and still zoom (M1 close review). iPads get 16 px fields too — harmless. On a
+   mouse-driven screen from 768 px up every control keeps exactly the size its classes give it.
    Checkboxes, radios, ranges, file pickers and button-type inputs take no typing and are left alone. */
-@media (max-width: 767.98px) {
+@media (max-width: 767.98px), (pointer: coarse) {
   input:not(:is([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='hidden'],
     [type='button'], [type='submit'], [type='reset'], [type='image'], [type='color'])):not(:is(
     [class~='text-base'], [class~='text-lg'], [class~='text-xl'], [class~='text-2xl'],

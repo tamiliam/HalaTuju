@@ -35,6 +35,22 @@ const openIt = () => {
 }
 
 describe('Sheet', () => {
+  it('caps its height in PIXELS from visualViewport — no dvh a browser could drop', () => {
+    const vv = { height: 700, offsetTop: 0, addEventListener: jest.fn(), removeEventListener: jest.fn() }
+    const before = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+    try {
+      render(<Harness />)
+      openIt()
+      const style = screen.getByRole('dialog').getAttribute('style') ?? ''
+      expect(style).toContain('max-height: 630px')   // min(700 × 0.9, 700 − 8)
+      expect(style).not.toContain('dvh')
+    } finally {
+      if (before) Object.defineProperty(window, 'visualViewport', before)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+    }
+  })
+
   it('renders nothing while closed', () => {
     render(<Harness />)
     expect(screen.queryByRole('dialog')).toBeNull()

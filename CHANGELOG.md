@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M1 close-review fixes (2026-11-01)
+
+- **iPhones held sideways no longer zoom into fields:** the 16 px rule now applies below `md` OR on any touch-first
+  screen (`(pointer: coarse)`); most iPhones in landscape are 844–932 px wide, past `md`. iPads get 16 px fields too.
+- **The Sheet's height cap is in pixels** (from `visualViewport`), not `dvh`: a browser without `dvh` (Safari < 15.4,
+  Chrome < 108) dropped the whole value and the class, so a long sheet ran off the top of the screen.
+- **A tap on an InfoTip's bubble keeps it open on Android/Chrome** (Chrome focuses the tapped `i`; a tap on the
+  text blurred it to `<body>` and closed the bubble). It now closes on blur only when focus moves to another control.
+- Toast keeps its notch and home-bar clearance from `sm:` up (a phone held sideways).
+- Tests: `Sheet.test.tsx` (pixel cap, no `dvh`), `InfoTip.test.tsx` (a tap on the bubble), `mobileStandard.test.ts`
+  (the rule's media query). Bite-checked: reverting each fix turns its test red. Minor findings left: TD-450.
+
 ## Mobile M1b (part 2): every overlay on the shared Sheet (2026-11-01)
 
 - 15 hand-rolled overlays moved onto `Sheet` — shell only; words, buttons, validation and test ids unchanged:

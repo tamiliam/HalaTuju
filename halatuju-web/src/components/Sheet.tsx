@@ -212,7 +212,11 @@ function SheetPanel({
       <div ref={panel} role={role} aria-modal="true"
         aria-label={label} aria-labelledby={label ? undefined : `${id}-title`}
         aria-describedby={description ? `${id}-desc` : undefined} tabIndex={-1}
-        style={{ maxHeight: visible ? `min(90dvh, ${visible - 8}px)` : undefined }}
+        // Pixels, not `dvh`: a browser without `dvh` (Safari < 15.4, Chrome < 108) drops a whole
+        // `min(90dvh, …)` value AND the class, and the panel then has no height limit at all — a
+        // long sheet runs off the top, title and × out of reach (M1 close review). `visualViewport`
+        // (Safari 13+, Chrome 61+) is measured at mount, so this applies from the first frame.
+        style={{ maxHeight: visible ? `${Math.round(Math.min(visible * 0.9, visible - 8))}px` : undefined }}
         className={`relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-ground-0 shadow-xl outline-none md:rounded-2xl ${WIDTH[size]} ${className}`}>
         {/* Grab bar: a phone's cue that this is a sheet. Decorative — closing is the × or the backdrop. */}
         <div className="flex justify-center pt-2 md:hidden" aria-hidden>

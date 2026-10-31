@@ -75,8 +75,18 @@ describe('InfoTip', () => {
     trigger().focus()
     fireEvent.click(trigger())
     expect(await screen.findByRole('tooltip')).toBeTruthy()
-    fireEvent.blur(trigger())
+    fireEvent.blur(trigger(), { relatedTarget: screen.getByRole('button', { name: 'next' }) })
     expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('a tap on the bubble itself keeps it open (Chrome blurs the focused i to <body>)', async () => {
+    render(<InfoTip text={TEXT} />)
+    trigger().focus()
+    fireEvent.click(trigger())
+    const bubble = await screen.findByRole('tooltip')
+    // Chrome's tap on plain text: focus leaves the button for nothing (relatedTarget null).
+    fireEvent.blur(trigger(), { relatedTarget: null })
+    expect(screen.queryByRole('tooltip')).toBe(bubble)
   })
 
   it('says whether it is open, for a screen reader', () => {

@@ -7247,3 +7247,19 @@ queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_in
 today, and `test_query_budgets` passes at 38, but its fixtures carry no offer fields, so this path is unmeasured.
 **Fix:** give the budget fixture an offer letter with programme, institution and issuer, and pin the cockpit
 detail's count. *(B · S)*
+
+### [TD-450] Mobile M1 close review: overlay and guard loose ends - low
+
+**Raised 2026-11-01 by the Mobile M1 close code review** (its three should-fix items were fixed before close).
+No user sees these today; each becomes real when the code it names grows. (1) **Escape reaches every open layer:**
+`Sheet`, `InfoTipBubble`, `Menu` and the admin drawer each listen on `document` (DocViewer on `window`), so one
+Escape closes an InfoTip or Menu AND the Sheet under it, and a DocViewer opened above a Sheet would close the
+Sheet instead. No such stacking exists (the one InfoTip inside a Sheet is the non-dismissible guardian form).
+**Fix:** one shared top-most-overlay Escape stack. (2) **Admin phone drawer** (`admin/AppShell.tsx`) says
+`role="dialog" aria-modal="true"` but neither moves nor holds focus or scroll. (3) **The Sheet's title row sits
+under the notch in landscape** (it is `fixed`, so the body's side insets do not reach it). (4) **mobile-check**
+does not compare a cell's landed URL with its target, nor baseline cells with current targets (a removed or
+renamed target silently stops being checked). (5) **Guards:** rule 10 reads only the literal
+`autoComplete="tel"`; the overlay exemption is per file, not one overlay per file; the 16 px guard reads the
+rule's text, not that its selector is valid. (6) The 16 px rule's `:is()` drops on Safari < 14 / Chrome < 88.
+**Trigger:** the first stacked overlay, M6 (admin shell), or the next mobile-check change. *(B · S)*

@@ -28,7 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast container — bottom-right on a desktop; on a phone, full width less 16 px gutters and above the home bar (Mobile M1a) */}
-      <div className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col gap-2 sm:left-auto sm:right-4 sm:bottom-4">
+      <div className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col gap-2 sm:left-auto sm:right-[max(1rem,env(safe-area-inset-right))] sm:bottom-[max(1rem,env(safe-area-inset-bottom))]">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}
