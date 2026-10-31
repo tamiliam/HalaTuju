@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## TD-440 Sprint: no Resend resets a login the person brought with them (2026-10-31)
+## TD-440 Sprint: no Resend resets a login the person brought with them (2026-10-31) — LIVE 2026-10-31 (main 5122e299; api-01221-vg6)
 
 - `staff_reinvite.reissue_credential` (staff, source and mentor Resends) writes a new temporary password only when
   the row's newest invitation issued one (`staff_lifecycle.credential_was_issued`). A login `get_admin` linked from
