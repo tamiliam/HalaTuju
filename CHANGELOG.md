@@ -37,6 +37,15 @@ then web.
   super / org_admin / admin; a mentor sees Profile only, lands there, and is sent back from any other page
   (`outsiderMustLeave`, shared with source users). Profile: the Mentoring card, the welcome line, "Show my
   phone to my students", the reviewer cards without Taking part, Role Mentor. en / ms / ta.
+- **Review fixes (adversarial review, 2026-10-31)** — (1) an address that already has ANY sign-in (a
+  student's, a sponsor's: `already_registered`) is refused 409 `already_staff` at invite and at an email
+  move, never made a mentor; (2) "signed in" is `mentor_invite.has_signed_in`: `first_seen_at`, OR a UID on
+  a login we issued no password for (`get_admin` links a Google invitee by verified email on any route,
+  even a refused one, without stamping `first_seen_at`) — status, Resend, Revoke, the email move and
+  Reactivate's letter read it, and a password is reissued only when the newest mentor invitation issued
+  one; (3) courses 0090 adds the partial unique index `partner_admin_one_login_per_mentor`; (4) the email
+  move is a compare-and-set (no `first_seen_at`, the UID it was read with) — else 409 `managed_by_mentor`,
+  and the new login it made is deleted (best effort, logged `MENTOR_LOGIN_ORPHANED`).
 
 ## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
 

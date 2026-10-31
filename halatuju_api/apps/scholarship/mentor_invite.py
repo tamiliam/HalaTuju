@@ -20,13 +20,24 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
   reverses it; a mentor who never signed in is sent their invitation again (its resend).
 
 STATUS IS DERIVED (`status_of`), never stored: `inactive` when deactivated; `invited` until the login's
-first sign-in (`first_seen_at`, which closes the invitation — every mentor login was created after
-that column existed, so NULL here is "not yet", never "not recorded"); else `active`.
+first sign-in (`has_signed_in`); else `active`.
+
+⚠ REVIEW FIXES (2026-10-31, adversarial review of 7a):
+- ANY EXISTING SIGN-IN IS REFUSED (owner rule): an address the login side already knows (a student, a
+  sponsor — `provision_*` answers `already_registered`) is `already_staff`, at invite and at an email
+  move, never a mentor row that `get_admin` would later attach to that person's own login.
+- "SIGNED IN" IS NOT ONLY `first_seen_at`. `get_admin` links a row with no UID to a caller's VERIFIED
+  email on ANY admin request — a refused one too — without stamping `first_seen_at` (only
+  `admin/role/` does). A mentor login we never issued a password for (the newest invitation's
+  `credential_issued` is false: a Google address) that carries a UID was linked that way, so it has
+  signed in: Resend, Revoke, the email move and Reactivate's letter all treat it so, and a password is
+  only ever reissued when the newest invitation issued one.
 """
 import logging
 from collections import namedtuple
 
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.courses import staff_reinvite
@@ -75,11 +86,34 @@ def login_of(mentor):
     return PartnerAdmin.objects.filter(mentor=mentor).order_by('id').first()
 
 
-def status_of(mentor, login):
+def _newest_invitation(login):
+    return (Invitation.objects.filter(audience=AUDIENCE, partner_admin=login)
+            .order_by('-created_at', '-id').first())
+
+
+def has_signed_in(login, credential_issued=None):
+    """True once this mentor login has been used: `first_seen_at` (the console stamped it), OR a UID on
+    a login we never issued a password for — `get_admin` put it there on a verified-email sign-in (see
+    the module docstring). ``credential_issued``: the newest mentor invitation's, when the caller has
+    it (the list does, for every row in one query); else it is read. No invitation at all and a UID:
+    signed in (the safe reading — nothing will then reset that login)."""
+    if login is None:
+        return False
+    if login.first_seen_at is not None:
+        return True
+    if not login.supabase_user_id:
+        return False
+    if credential_issued is None:
+        inv = _newest_invitation(login)
+        credential_issued = bool(inv and inv.credential_issued)
+    return not credential_issued
+
+
+def status_of(mentor, login, credential_issued=None):
     """`inactive` / `invited` / `active` — see the module docstring."""
     if mentor.deactivated_at is not None:
         return INACTIVE
-    if login is None or login.first_seen_at is None:
+    if not has_signed_in(login, credential_issued):
         return INVITED
     return ACTIVE
 
@@ -103,6 +137,11 @@ def invite(caller, *, organisation, email, name):
             if made.error:
                 transaction.set_rollback(True)
                 return Invited('create_failed', None, None, None, False, False, False)
+            if made.already_registered:
+                # Review fix (owner rule): the address already has a sign-in — a student's, a
+                # sponsor's. Refused; nothing is kept (no login was created for it).
+                transaction.set_rollback(True)
+                return Invited('already_staff', None, None, None, False, False, False)
             inv = invitations.create_or_refresh(
                 audience=AUDIENCE, email=email, name=name, role=MENTOR_ROLE,
                 organisation=organisation, invited_by=caller, partner_admin=made.account,
@@ -128,7 +167,11 @@ def _send_again(caller, mentor, login):
     """A fresh credential (where we issued one) on a fresh invitation, and the letter: ``(emailed,
     error)``. Shared by Resend and by Reactivate of a mentor who never signed in."""
     from apps.courses.views_admin import is_google_email
-    temp_password, err = staff_reinvite.reissue_credential(login)
+    # Review fix: a password is reissued ONLY onto a login we issued one for (the newest invitation
+    # says so) — never onto a login somebody brought with them.
+    newest = _newest_invitation(login)
+    temp_password, err = (staff_reinvite.reissue_credential(login)
+                          if newest is not None and newest.credential_issued else (None, None))
     if err:
         return False, err
     inv = invitations.create_or_refresh(
@@ -210,7 +253,7 @@ def reactivate(caller, mentor, login):
         PartnerAdmin.objects.filter(pk=login.pk).update(is_active=True, paused_at=None)
     mentor.deactivated_at, mentor.deactivated_by_email = None, ''
     login.is_active = True
-    if login.first_seen_at is not None:
+    if has_signed_in(login):
         return True, False, None
     emailed, err = _send_again(caller, mentor, login)
     return True, emailed, err
@@ -227,7 +270,7 @@ def edit(caller, mentor, login, *, name=None, email=None):
     login is provisioned for the new address by the invite's own branches, and the invitation is sent
     there. `already_staff` when the new address already has a sign-in; `create_failed` / `retire_failed`
     when Supabase could not be asked (nothing changes)."""
-    if login is None or login.first_seen_at is not None:
+    if login is None or has_signed_in(login):
         return False, False, 'managed_by_mentor'
     if status_of(mentor, login) == INACTIVE:
         return False, False, 'not_active'
@@ -260,19 +303,49 @@ def _move_address(caller, mentor, login, name, email):
     new_login = staff_reinvite.provision_login(email, name)
     if new_login.error:
         return False, False, 'create_failed'
+    if new_login.already_registered:
+        return False, False, 'already_staff'   # review fix: an address with a sign-in is refused
     try:
         with transaction.atomic():
+            # Review fix: COMPARE-AND-SET. The row moves only if, in the database, nobody has signed
+            # in since it was read: no `first_seen_at`, and the UID it was read with (a verified-email
+            # sign-in would have linked one) — else 409 `managed_by_mentor`, nothing written.
+            moved = PartnerAdmin.objects.filter(
+                Q(supabase_user_id=old_uid) if old_uid else Q(supabase_user_id__isnull=True),
+                pk=login.pk, first_seen_at__isnull=True, is_active=True,
+            ).update(email=email, name=name, supabase_user_id=new_login.uid)
+            if moved != 1:
+                raise _MoveLost()
             invitations.open_only(Invitation.objects.filter(
                 audience=AUDIENCE, partner_admin=login)).update(revoked_at=now, updated_at=now)
             login.email, login.name, login.supabase_user_id = email, name, new_login.uid
-            login.save(update_fields=['email', 'name', 'supabase_user_id'])
             inv = invitations.create_or_refresh(
                 audience=AUDIENCE, email=email, name=name, role=MENTOR_ROLE,
                 organisation=mentor.organisation, invited_by=caller, partner_admin=login,
                 credential_issued=bool(new_login.temp_password), mentor=mentor)
-    except IntegrityError:
-        return False, False, 'already_staff'
+    except (IntegrityError, _MoveLost) as lost:
+        login.refresh_from_db()
+        _drop_new_login(new_login.uid)
+        return False, False, ('managed_by_mentor' if isinstance(lost, _MoveLost) else 'already_staff')
     if old_uid and old_uid != new_login.uid and plan in ('delete', 'kill'):
         staff_lifecycle.retire_login(old_uid, plan, account)
     emailed = send(inv, login, mentor.organisation, new_login.temp_password, new_login.google)
     return True, emailed, None
+
+
+class _MoveLost(Exception):
+    """The compare-and-set in `_move_address` found the row changed (signed in, linked, switched off)."""
+
+
+def _drop_new_login(uid):
+    """Best effort: remove the login `_move_address` just created when its database step failed, so no
+    unused login with a live temporary password is left behind. Logged loudly when it cannot."""
+    if not uid:
+        return None
+    from apps.courses import supabase_admin
+    done = supabase_admin.delete_auth_user(uid)
+    if done == supabase_admin.FAILED:
+        logger.error('MENTOR_LOGIN_ORPHANED uid=%s: an email move failed after its new login was '
+                     'made, and the login could not be removed - remove it by hand in Supabase Auth',
+                     uid)
+    return done

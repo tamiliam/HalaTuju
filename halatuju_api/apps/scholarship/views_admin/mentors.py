@@ -109,19 +109,22 @@ def mentor_rows(caller, mentors):
         partner_admin__in=list(logins.values()))}
     newest = {}
     for inv in (Invitation.objects.filter(audience=mentor_invite.AUDIENCE, mentor__in=mentors)
-                .order_by('mentor_id', '-created_at')):
+                .order_by('mentor_id', '-created_at', '-id')):
         newest.setdefault(inv.mentor_id, inv)
     rows = []
     for m in mentors:
         login = logins.get(m.pk)
         rp = profiles.get(login.pk) if login else None
         inv = newest.get(m.pk)
+        # Review fix: "signed in" is `mentor_invite.has_signed_in`, fed the newest invitation's
+        # `credential_issued` so the list reads it without a query per row.
+        issued = bool(inv and inv.credential_issued)
         rows.append({
             'id': m.pk,
             'name': login.name if login else '',
             'email': login.email if login else '',
             'phone': (rp.phone or '') if rp else '',
-            'status': mentor_invite.status_of(m, login),
+            'status': mentor_invite.status_of(m, login, issued),
             'area': m.area,
             'languages': {'en': getattr(rp, 'english_fluency', '') or '',
                           'ms': getattr(rp, 'bm_fluency', '') or '',
@@ -129,7 +132,7 @@ def mentor_rows(caller, mentors):
             # Only when spoken conversationally or better (`ReviewerProfile.spoken_other_language`).
             'other_language': rp.spoken_other_language() if rp else '',
             'invited_at': _iso((inv.last_sent_at or inv.created_at) if inv else m.created_at),
-            'signed_in': bool(login and login.first_seen_at),
+            'signed_in': mentor_invite.has_signed_in(login, issued),
             'last_seen_at': _iso(login.last_seen_at) if login else None,
             'deactivated_at': _iso(m.deactivated_at),
             'manageable': mentor_invite.manageable(caller, m),

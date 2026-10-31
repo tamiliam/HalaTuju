@@ -109,11 +109,16 @@ class TestInvite(_Base):
         self.assertFalse(Invitation.objects.get(pk=r.json()['id']).credential_issued)
         self.assertIn('Sign in with Google', mail.outbox[-1].body)
 
-    def test_an_address_that_already_has_a_login_keeps_it(self):
+    def test_an_address_that_already_has_a_login_is_refused(self):
+        """Review fix 1 (owner rule: ANY existing sign-in is refused). It used to be 201
+        `already_registered` with a mentor row that `get_admin` would later attach to that person's
+        own login — a student's or a sponsor's."""
         r = self.invite(new_login=(None, True, None))
-        self.assertEqual(r.status_code, 201, r.content)
-        self.assertTrue(r.json()['already_registered'])
-        self.assertIn('already have a HalaTuju account', mail.outbox[-1].body)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'))
+        self.assertFalse(Mentor.objects.exists())
+        self.assertFalse(PartnerAdmin.objects.filter(role='mentor').exists())
+        self.assertFalse(Invitation.objects.filter(audience='mentor').exists())
+        self.assertEqual(mail.outbox, [])
 
     def test_any_existing_sign_in_is_refused(self):
         for email in (self.viewer.email, self.lead.email.upper()):
@@ -410,3 +415,120 @@ class TestTheMentorsOwnProfile(TestCase):
         self.assertEqual(mentor_invite.status_of(m, self.mentor_login), 'active')
         m.deactivated_at = timezone.now()
         self.assertEqual(mentor_invite.status_of(m, self.mentor_login), 'inactive')
+
+
+# ── Review fixes (adversarial review of 7a, 2026-10-31) ─────────────────────────────────────────
+def _verified_token(sub, email):
+    """A bearer token carrying a VERIFIED email — what a Google sign-in presents. `get_admin` links a
+    row with no UID to it by that email (`PartnerAdminMixin._find_admin`)."""
+    import jwt
+    from apps.scholarship.tests.factories import TEST_JWT_SECRET as SECRET
+    return jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email,
+                       'email_verified': True}, SECRET, algorithm='HS256')
+
+
+class TestReviewFixes(_Base):
+    OLD_ACCOUNT = {'id': 'uid-new', 'email': 'priya@example.org', 'last_sign_in_at': None,
+                   'app_metadata': {'providers': ['email']}, 'identities': []}
+
+    def _google_mentor_who_signed_in_on_a_refused_route(self):
+        """A Google invitee (no UID, no password issued) whose verified-email sign-in hits a route a
+        mentor is REFUSED: `get_admin` still links the UID, and nothing stamps `first_seen_at`."""
+        self.invite(email='priya@gmail.com')
+        mentor = Mentor.objects.get()
+        from rest_framework.test import APIClient
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {_verified_token("google-uid", "priya@gmail.com")}')
+        self.assertEqual(client.get(MENTORS).status_code, 403)
+        login = self.login('priya@gmail.com')
+        self.assertEqual((login.supabase_user_id, login.first_seen_at), ('google-uid', None))
+        mail.outbox.clear()
+        return mentor, login
+
+    def test_fix2_a_linked_login_counts_as_signed_in_everywhere(self):
+        mentor, login = self._google_mentor_who_signed_in_on_a_refused_route()
+        row = authed_client(self.lead).get(MENTORS).json()['mentors'][0]
+        self.assertEqual((row['status'], row['signed_in']), ('active', True))
+        with patch(ISSUE, return_value=True) as issued:
+            for action in ('resend', 'revoke'):
+                r = authed_client(self.lead).post(f'{MENTORS}{mentor.pk}/{action}/', {}, format='json')
+                self.assertEqual((r.status_code, r.json()['code']), (400, 'already_joined'), action)
+            r = authed_client(self.lead).patch(f'{MENTORS}{mentor.pk}/', {'email': 'x@example.org'},
+                                               format='json')
+            self.assertEqual((r.status_code, r.json()['code']), (409, 'managed_by_mentor'))
+            # Deactivate and Reactivate: their own login is theirs — no password, no letter.
+            self.act(mentor.pk, 'deactivate')
+            r = authed_client(self.lead).post(f'{MENTORS}{mentor.pk}/reactivate/', {}, format='json')
+            self.assertEqual((r.status_code, r.json()['emailed']), (200, False))
+        issued.assert_not_called()
+        self.assertEqual(mail.outbox, [])
+        login.refresh_from_db()
+        self.assertEqual(login.email, 'priya@gmail.com')
+
+    def test_fix2_a_password_is_reissued_only_where_one_was_issued(self):
+        self.invite(email='priya@gmail.com')
+        mentor = Mentor.objects.get()
+        login = self.login('priya@gmail.com')
+        with patch(ISSUE, return_value=True) as issued:
+            r = authed_client(self.lead).post(f'{MENTORS}{mentor.pk}/resend/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        issued.assert_not_called()
+        self.assertIn('Sign in with Google', mail.outbox[-1].body)
+        # Defence in depth, under the signed-in rule: even with a UID on the row (somebody's own
+        # login), the letter's own step reissues nothing — the newest invitation issued no password.
+        PartnerAdmin.objects.filter(pk=login.pk).update(supabase_user_id='their-own-uid')
+        login.refresh_from_db()
+        with patch(ISSUE, return_value=True) as issued:
+            mentor_invite._send_again(self.lead, mentor, login)
+        issued.assert_not_called()
+        PartnerAdmin.objects.filter(pk=login.pk).update(supabase_user_id=None)
+        login.refresh_from_db()
+        # And a temp-password mentor's Resend still rotates its password.
+        self.invite(new_login=('uid-tp', False, None), email='tp@example.org')
+        tp = Mentor.objects.exclude(pk=mentor.pk).get()
+        with patch(ISSUE, return_value=True) as issued:
+            r = authed_client(self.lead).post(f'{MENTORS}{tp.pk}/resend/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        issued.assert_called_once()
+        self.assertIsNone(login.supabase_user_id)
+
+    def test_fix1_an_email_move_to_an_address_with_a_sign_in_is_refused(self):
+        self.invite()
+        mentor = Mentor.objects.get()
+        mail.outbox.clear()
+        with patch(READ, return_value=self.OLD_ACCOUNT), patch(DELETE, return_value='deleted') as deleted, \
+                patch(NEW_LOGIN, return_value=(None, True, None)), \
+                patch('apps.scholarship.staff_lifecycle.login_used_elsewhere', return_value=False):
+            r = authed_client(self.lead).patch(f'{MENTORS}{mentor.pk}/', {'email': 'student@example.org'},
+                                               format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'))
+        deleted.assert_not_called()
+        login = self.login()
+        self.assertEqual((login.email, login.supabase_user_id), ('priya@example.org', 'uid-new'))
+        self.assertEqual(Invitation.objects.filter(audience='mentor', revoked_at__isnull=True).count(), 1)
+        self.assertEqual(mail.outbox, [])
+
+    def test_fix3_the_database_allows_one_login_per_mentor(self):
+        from django.db import IntegrityError, transaction
+        self.invite()
+        mentor = Mentor.objects.get()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PartnerAdmin.objects.create(email='second@example.org', name='Second', role='mentor',
+                                        owning_organisation=self.org, mentor=mentor)
+
+    def test_fix4_a_move_that_loses_the_race_writes_nothing_and_drops_its_new_login(self):
+        self.invite()
+        mentor = Mentor.objects.get()
+        stale = self.login()                              # read before the mentor signs in…
+        PartnerAdmin.objects.filter(pk=stale.pk).update(first_seen_at=timezone.now())   # …who now has
+        mail.outbox.clear()
+        with patch(READ, return_value=self.OLD_ACCOUNT), patch(DELETE, return_value='deleted') as deleted, \
+                patch(NEW_LOGIN, return_value=('uid-2', False, None)), \
+                patch('apps.scholarship.staff_lifecycle.login_used_elsewhere', return_value=False):
+            done = mentor_invite.edit(self.lead, mentor, stale, email='new@example.org')
+        self.assertEqual(done, (False, False, 'managed_by_mentor'))
+        deleted.assert_called_once_with('uid-2')          # the new login, never the mentor's own
+        login = self.login()
+        self.assertEqual((login.email, login.supabase_user_id), ('priya@example.org', 'uid-new'))
+        self.assertEqual(Invitation.objects.filter(audience='mentor', revoked_at__isnull=True).count(), 1)
+        self.assertEqual(mail.outbox, [])

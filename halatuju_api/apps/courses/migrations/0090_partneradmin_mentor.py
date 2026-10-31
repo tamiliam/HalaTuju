@@ -8,7 +8,9 @@ mentor login signs in as — the source-partner pattern of courses 0089, exactly
 - one CHECK constraint, `partner_admin_mentor_iff_mentor`: role `mentor` ⇔ `mentor_id` set, and such a
   row is never `is_super_admin`. Every row alive on 2026-10-31 has `mentor_id` NULL (the column is new)
   and a role other than `mentor` (nothing could write it), so every existing row satisfies it — the
-  pre-check below proves that before it is added.
+  pre-check below proves that before it is added;
+- one PARTIAL UNIQUE index, `partner_admin_one_login_per_mentor` (S7a review fix, 2026-10-31): at most
+  ONE login per mentor (`mentor_id` unique where set). The column is new, so nothing can collide.
 
 NOTHING BACKFILLED. No new table (so no RLS step).
 
@@ -17,16 +19,20 @@ migration depends on it: the FK names `mentors`). `sqlmigrate` renders for the L
 so this is the Postgres DDL to run, verbatim — rendered offline with Django's postgresql schema editor
 from this migration — with the ledger row in the SAME transaction.
 
-Pre-check (read-only; expect 0, and `mentors` must exist — scholarship 0194 first):
+Pre-check (read-only; expect 0, then a non-NULL answer — `mentors` must exist, scholarship 0194
+first — then 0 and NULL: the column and the unique index are not there yet):
 
     SELECT count(*) FROM partner_admins WHERE role = 'mentor';
     SELECT to_regclass('public.mentors');
+    SELECT count(*) FROM information_schema.columns WHERE table_name = 'partner_admins' AND column_name = 'mentor_id';
+    SELECT to_regclass('public.partner_admin_one_login_per_mentor');
 
 Then:
 
     BEGIN;
     ALTER TABLE "partner_admins" ADD COLUMN "mentor_id" bigint NULL CONSTRAINT "partner_admins_mentor_id_28a2aee7_fk_mentors_id" REFERENCES "mentors"("id") DEFERRABLE INITIALLY DEFERRED; SET CONSTRAINTS "partner_admins_mentor_id_28a2aee7_fk_mentors_id" IMMEDIATE;
     ALTER TABLE "partner_admins" ADD CONSTRAINT "partner_admin_mentor_iff_mentor" CHECK (((NOT "is_super_admin" AND "mentor_id" IS NOT NULL AND "role" = 'mentor') OR (NOT ("role" = 'mentor') AND "mentor_id" IS NULL)));
+    CREATE UNIQUE INDEX "partner_admin_one_login_per_mentor" ON "partner_admins" ("mentor_id") WHERE "mentor_id" IS NOT NULL;
     CREATE INDEX "partner_admins_mentor_id_28a2aee7" ON "partner_admins" ("mentor_id");
     INSERT INTO django_migrations (app, name, applied) VALUES ('courses', '0090_partneradmin_mentor', now());
     COMMIT;
@@ -38,6 +44,7 @@ safe: every `PartnerAdmin` read — every admin request — would 500 on the mis
 ROLLBACK (only before any mentor login exists; run BEFORE scholarship 0194's rollback):
 
     BEGIN;
+    DROP INDEX "partner_admin_one_login_per_mentor";
     ALTER TABLE "partner_admins" DROP CONSTRAINT "partner_admin_mentor_iff_mentor";
     ALTER TABLE "partner_admins" DROP COLUMN "mentor_id";
     DELETE FROM django_migrations WHERE app = 'courses' AND name = '0090_partneradmin_mentor';
@@ -70,5 +77,9 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='partneradmin',
             constraint=models.CheckConstraint(condition=models.Q(models.Q(('is_super_admin', False), ('mentor__isnull', False), ('role', 'mentor')), models.Q(models.Q(('role', 'mentor'), _negated=True), ('mentor__isnull', True)), _connector='OR'), name='partner_admin_mentor_iff_mentor'),
+        ),
+        migrations.AddConstraint(
+            model_name='partneradmin',
+            constraint=models.UniqueConstraint(condition=models.Q(('mentor__isnull', False)), fields=('mentor',), name='partner_admin_one_login_per_mentor'),
         ),
     ]

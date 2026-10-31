@@ -227,6 +227,9 @@ class PartnerAdmin(models.Model):
                 condition=(Q(role=MENTOR_ROLE, mentor__isnull=False, is_super_admin=False)
                            | (~Q(role=MENTOR_ROLE) & Q(mentor__isnull=True))),
                 name='partner_admin_mentor_iff_mentor'),
+            # S7a review fix: ONE login per mentor, in the database too (courses 0090).
+            models.UniqueConstraint(fields=['mentor'], condition=Q(mentor__isnull=False),
+                                    name='partner_admin_one_login_per_mentor'),
         ]
 
     #: The columns a change to which can break the source or mentor binding; a
