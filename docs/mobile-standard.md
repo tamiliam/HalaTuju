@@ -75,10 +75,13 @@ Three kinds of check, from cheapest to most human:
 ### 5. One shared Sheet for every overlay
 - **Why:** each hand-rolled overlay re-decides height, scrolling and the close button, and several
   decided wrong — buttons hidden behind the iPhone keyboard.
-- **The rule (M1b): every NEW overlay uses `src/components/Sheet.tsx`** — never a hand-written
-  `fixed inset-0`. The 18 existing ones move to it in M1b part 2, once the owner has approved its look.
-- **Checked by:** static guard (`fixed inset-0` anywhere but `Sheet.tsx` is a floor that may only go
-  down) and `Sheet.test.tsx` (focus, Tab, Escape, backdrop, `dismissible`, scroll lock).
+- **The rule (enforced since M1b part 2): every overlay uses `src/components/Sheet.tsx`** — never a
+  hand-written `fixed inset-0`. The 18 that existed moved onto it, except three full-screen panels
+  that are not dialogs (the document viewer, the console's phone nav drawer, the Ctrl/⌘-K command
+  palette), each named with its reason in the guard and made phone-correct.
+- **Checked by:** static guard — a `fixed inset-0` anywhere but `Sheet.tsx` and the three named
+  exemptions FAILS the build — and `Sheet.test.tsx` (focus, Tab, Escape, backdrop, `dismissible`,
+  scroll lock). Sign-in, consent, award acceptance and money use `dismissible={false}`.
 - **Copy this:** `<Sheet open title onClose footer={…}>body</Sheet>` — a bottom sheet on a phone (grab
   bar, 90 % of the visible height, only the body scrolls, title row and footer stay put, footer
   clears the home bar, rises above the keyboard and keeps the focused field in view), a centred

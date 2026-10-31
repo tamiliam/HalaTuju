@@ -142,7 +142,7 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
   // `aria-busy` box may be showing, and the DOM must have stopped changing for 800 ms.
   await step('wait for the app to boot', () =>
     page.waitForFunction(() => 'next' in window, null, { timeout: 30_000, polling: 200 }))
-  await step('wait for the network to go quiet', () => page.waitForLoadState('networkidle'))
+  await step('wait for the network to go quiet', () => page.waitForLoadState('networkidle', { timeout: 30_000 }))
   await step('wait for the page to settle', () => page.waitForFunction(() => {
     const w = window as unknown as { __mcSig?: string; __mcAt?: number }
     // Mid-navigation (a redirect such as /stpm/search → /search) there can be no <body> for a

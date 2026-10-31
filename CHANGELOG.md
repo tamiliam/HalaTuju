@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M1b (part 2): every overlay on the shared Sheet (2026-11-01)
+
+- 15 hand-rolled overlays moved onto `Sheet` — shell only; words, buttons, validation and test ids unchanged:
+  the sign-in gate (`AuthGateModal`), the award's guardian form, the "I have no higher results" confirm
+  (`HigherResults`), the payment-run dialog, the merchant flag dialog and its load-failure fallback, the typed
+  delete confirm, the apply-copy confirm, three gift-programme dialogs and four intake-year dialogs.
+  `dismissible={false}` on sign-in, the guardian award acceptance, the higher-results confirm and the payment run;
+  `busy` wherever the old dialog disabled its buttons while saving.
+- Three stay, as named exemptions with a reason, made phone-correct: `DocViewer` (full screen on a phone, `dvh`,
+  notch padding, 44 px close), the console's phone nav drawer (Escape, `role="dialog"`), the command palette
+  (`dvh` + notch offset).
+- The overlay guard is now POSITIVE: a new `fixed inset-0` outside `Sheet.tsx` and the three exemptions fails. The
+  vh-heights floor fell 3 → 1. `GiftProgrammes.tsx` left the oversize ledger (602 → 584 lines).
+- `Sheet` gained `label` (an accessible name beyond the visible title) and `role="alertdialog"`.
+- The sign-in sheet cannot be mounted in the sandbox (AuthGateModal is suppressed on `/sandbox` by design, so a
+  design review never creates auth rows); it was checked on Home via "Log in → Student" at 390 in en and ta: a bottom
+  sheet, the backdrop and Escape leave it open, no sideways scroll. mobile-check: a cell's own waits now all have
+  timeouts and the test timeout sits above their sum, so a hang names its step (one cell had hung on an untimed
+  network-idle wait).
+
 ## Mobile M1b (part 1): the shared Sheet, in the sandbox only (2026-10-31)
 
 - New `src/components/Sheet.tsx` — THE overlay. Phone: a bottom sheet (grab bar, max 90 % of the visible height,

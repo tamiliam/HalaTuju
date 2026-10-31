@@ -183,29 +183,46 @@ describe('rule 9 — file inputs are sr-only, never hidden', () => {
 
 // ── Rule 5: one shared Sheet, no hand-rolled overlays ─────────────────────────────────────────
 /**
- * Every hand-rolled `fixed inset-0` overlay re-decides max height, inner scroll, the close target and
- * the safe area — and several decided wrong (buttons hidden behind the iPhone keyboard). Since M1b
- * the shared `Sheet` (src/components/Sheet.tsx) is the one allowed home; the 18 below move to it in
- * M1b part 2, after the owner approves its look. Counted per class string holding both tokens, in
- * `.ts` and `.tsx`.
+ * Every hand-rolled `fixed inset-0` overlay re-decided max height, inner scroll, the close target
+ * and the safe area — and several decided wrong (buttons hidden behind the iPhone keyboard). Since
+ * Mobile M1b the shared `Sheet` (src/components/Sheet.tsx) is the ONE home of an overlay. The 18
+ * that existed moved onto it in M1b part 2, except the three below, which are not dialogs and say
+ * why. This is now a POSITIVE guard, not a floor: a `fixed inset-0` anywhere else FAILS — use Sheet.
+ * Counted per class string holding both tokens, in `.ts` and `.tsx`.
  */
 const OVERLAY_HOMES: string[] = ['src/components/Sheet.tsx']
 
+/** Full-screen panels that are NOT dialogs. Each was made phone-correct in M1b and says why it stays. */
+const OVERLAY_EXEMPT: Record<string, string> = {
+  'src/components/DocViewer.tsx':
+    'a document viewer needs the whole screen (full screen on a phone, framed on a desktop), not a '
+    + 'bottom sheet capped at 90 % — dvh, notch padding and a 44 px close since M1b',
+  'src/components/admin/AppShell.tsx':
+    'the console’s phone navigation drawer, sliding from the left edge — a side panel, not a '
+    + 'dialog; safe-area padded (M1a) and closed by Escape, the backdrop or a choice',
+  'src/components/admin/CommandPalette.tsx':
+    'a type-to-search command palette reached by Ctrl/⌘-K: the box sits at the top so results grow '
+    + 'DOWN under it while typing (a bottom sheet would hide them behind the keyboard); its own '
+    + 'tested focus, arrow-key and Escape handling',
+}
+
 describe('rule 5 — overlays come from the shared Sheet', () => {
-  test('the home is real, and really is an overlay', () => {
+  test('the home and every exemption are real files that really hold an overlay', () => {
     // An exemption for a file that no longer holds the overlay would excuse nothing and hide a move.
-    for (const home of OVERLAY_HOMES) {
-      const f = FILES.find((x) => x.rel === home)
-      expect(`${home}: ${!!f && /fixed inset-0/.test(f.code)}`).toBe(`${home}: true`)
+    for (const rel of [...OVERLAY_HOMES, ...Object.keys(OVERLAY_EXEMPT)]) {
+      const f = FILES.find((x) => x.rel === rel)
+      expect(`${rel}: ${!!f && /fixed inset-0/.test(f.code)}`).toBe(`${rel}: true`)
     }
   })
 
-  test('hand-rolled fixed inset-0 overlays: at or under the floor', () => {
-    const offenders = FILES.filter((f) => !OVERLAY_HOMES.includes(f.rel))
+  test('no fixed inset-0 overlay outside Sheet.tsx and the named exemptions', () => {
+    // Mobile M1b part 2: was a floor of 18; now none may be added. A new overlay uses Sheet.
+    const offenders = FILES
+      .filter((f) => !OVERLAY_HOMES.includes(f.rel) && !(f.rel in OVERLAY_EXEMPT))
       .flatMap((f) => literalsWithIndex(f.code)
         .filter(({ text }) => tokens(text).includes('fixed') && tokens(text).includes('inset-0'))
         .map(({ index }) => where(f, index, 'fixed inset-0')))
-    ratchet('hand-rolled `fixed inset-0` overlays', offenders, 18)
+    expect(offenders).toEqual([])
   })
 })
 
@@ -237,7 +254,9 @@ describe('rule 6 — heights use dvh, never vh', () => {
       ]
       return hits.map((t) => where(f, index, t))
     }))
-    ratchet('vh-based heights', offenders, 3)
+    // Mobile M1b part 2: 3 -> 1. AuthGateModal's max-h-[90vh] went with its shell (Sheet), and
+    // DocViewer's 92vh is 92dvh; the one left is the contracts template preview (desktop-only).
+    ratchet('vh-based heights', offenders, 1)
   })
 
   test('min-h-screen: at or under its own floor', () => {

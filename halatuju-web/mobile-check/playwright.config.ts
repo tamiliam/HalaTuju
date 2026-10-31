@@ -26,8 +26,11 @@ export default defineConfig({
   // not inside a measured cell's timeouts (warmup.ts).
   globalSetup: path.join(__dirname, 'warmup.ts'),
   outputDir: path.join(OUTPUT_DIR, 'test-results'),
-  // The first visit to each route makes `next dev` compile it, which can take a while.
-  timeout: 180_000,
+  // The first visit to each route makes `next dev` compile it, which can take a while. ⚠ Kept ABOVE
+  // the sum of a cell's own step timeouts (pages.pw.ts: 90 + 60 + 30 × 4 = 270 s worst case), so a
+  // hang is reported by the STEP that gave up, never as a bare "Test timeout" (Mobile M1b part 2:
+  // one /admin/login cell hung on an untimed networkidle wait and said only that).
+  timeout: 300_000,
   fullyParallel: true,
   workers: Number(process.env.MOBILE_WORKERS || 3),
   retries: 0,
