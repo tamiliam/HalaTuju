@@ -34,7 +34,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-ground-900 mb-6">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-ground-900 mb-6">
           {t('landing.heroTitle')}
         </h1>
         <p className="text-xl text-ground-600 mb-10 max-w-2xl mx-auto">
@@ -99,7 +99,9 @@ export default function LandingPage() {
         <p className="text-lg text-ground-600 mb-8 max-w-xl mx-auto">
           {t('landing.readySubtitle')}
         </p>
-        <Link href="/onboarding/exam-type" className="btn-primary text-lg px-8 py-4">
+        {/* inline-block (TD-311): a bare inline link wrapped a long Tamil label across lines with
+            its padding and fill broken at each line end, so the words ran over the button edge. */}
+        <Link href="/onboarding/exam-type" className="btn-primary inline-block max-w-full text-lg px-8 py-4">
           {t('landing.getStartedFree')}
         </Link>
       </section>

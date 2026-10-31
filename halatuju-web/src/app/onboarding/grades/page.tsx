@@ -414,7 +414,7 @@ export default function GradesInputPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <input
-                    type="number"
+                    type="number" inputMode="decimal"
                     min="0"
                     max="10"
                     step="0.01"

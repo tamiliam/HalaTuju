@@ -84,7 +84,7 @@ export default function AppHeader() {
     : '?'
 
   return (
-    <header className="bg-ground-0 border-b sticky top-0 z-10">
+    <header className="bg-ground-0 border-b sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center shrink-0">

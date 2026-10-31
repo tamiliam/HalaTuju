@@ -14,7 +14,9 @@ import type { MetadataRoute } from 'next'
  * screen is the live site and nothing more; caching pages would show a student yesterday's offers
  * and statuses.
  *
- * The icons were cut from `src/app/icon.png` (2048 px): the artwork alone, centred. The maskable one
+ * The icons were cut from the 2048 px master that was `src/app/icon.png` until Mobile M1a (in git
+ * history; M1a replaced the favicon with a 64 px cut of the same artwork, 5.9 KB instead of 5.7 MB):
+ * the artwork alone, centred, without the generator mark in its corner. The maskable one
  * sits on white with the artwork inside the 80 % safe circle, so Android can crop it to any shape
  * without clipping the arrow. Colours are `--ground-0` (white), matching the page header and the
  * light `themeColor` in `layout.tsx`.

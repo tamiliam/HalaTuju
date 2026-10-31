@@ -368,7 +368,7 @@ export default function AuthGateModal() {
                       +60
                     </span>
                     <input
-                      type="tel"
+                      type="tel" autoComplete="tel-national"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="12-345 6789"
@@ -419,7 +419,7 @@ export default function AuthGateModal() {
                   {t('authGate.enterOTP')}
                 </label>
                 <input
-                  type="text"
+                  type="text" inputMode="numeric" autoComplete="one-time-code"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   placeholder="000000"

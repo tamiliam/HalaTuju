@@ -13,6 +13,19 @@ needs nothing from Google.
 
 Total: **128,364 bytes**.
 
+### Mukta Malar — the Tamil face (Mobile M1a, owner 2026-10-31)
+
+| Family | File | Weights | Subset | Bytes | SHA-256 |
+|---|---|---|---|---|---|
+| Mukta Malar | `mukta-malar/MuktaMalar-Tamil-400.woff2` | 400 | Tamil only | 31,380 | `0d7af641f651bcb741e2a45fb53f46a5032ae1b1f7bb4c268866f73baf9ae66c` |
+| Mukta Malar | `mukta-malar/MuktaMalar-Tamil-600.woff2` | 600 | Tamil only | 32,980 | `ffa2f0f9e2c5be8d70405238eee090352abe1ac1a16dcc2692379f3ffccf32fd` |
+| Mukta Malar | `mukta-malar/MuktaMalar-Tamil-700.woff2` | 700 | Tamil only | 34,512 | `a3007075cf034e8483430b28326d6a10266fb9fc6d420ba60f97e459a47ec475` |
+
+Copied byte for byte from SJKT Connect (`frontend/app/fonts/mukta-malar/`, where it has been live
+since 2026-10-13 — the owner chose it from a side-by-side of real text), with its `OFL.txt`. Unlike
+the three above it is declared with a Tamil-only `unicode-range` and `preload: false`, so it is
+downloaded only by a page that shows Tamil, and never paints a Latin letter or a digit.
+
 ## Where they came from
 
 Fetched once on 2026-09-29 from the Google Fonts CSS2 endpoint, with the SAME request

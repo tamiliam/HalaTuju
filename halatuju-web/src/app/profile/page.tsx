@@ -786,7 +786,7 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.contactPhone')}</label>
                   <div className="flex gap-2">
                     <input
-                      type="tel"
+                      type="tel" autoComplete="tel"
                       value={contactPhone}
                       onChange={e => {
                         setContactPhone(formatPhone(e.target.value))
@@ -833,7 +833,7 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          inputMode="numeric"
+                          inputMode="numeric" autoComplete="one-time-code"
                           value={phoneCode}
                           onChange={e => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                           placeholder={t('profile.phoneCodePlaceholder')}
@@ -972,7 +972,7 @@ export default function ProfilePage() {
                   <div>
                     <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.postalCode')}</label>
                     <input
-                      type="text"
+                      type="text" inputMode="numeric" autoComplete="postal-code"
                       value={postalCode}
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, '').slice(0, 5)

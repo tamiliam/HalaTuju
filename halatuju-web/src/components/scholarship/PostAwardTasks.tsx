@@ -136,7 +136,7 @@ export function BankDetailsTask({
                 : uploaded ? t('scholarship.actionCentre.bank.reupload')
                 : t('scholarship.actionCentre.bank.upload')}
               <input
-                type="file" accept="image/*,.pdf" className="hidden" disabled={busy}
+                type="file" accept="image/*,.pdf" className="sr-only" disabled={busy}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }}
               />
             </label>

@@ -27,8 +27,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast container — fixed bottom-right */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      {/* Toast container — bottom-right on a desktop; on a phone, full width less 16 px gutters and above the home bar (Mobile M1a) */}
+      <div className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col gap-2 sm:left-auto sm:right-4 sm:bottom-4">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}
@@ -49,7 +49,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastState; onDismiss: (id: nu
     : 'bg-critical-fill text-critical-fill-ink'
 
   return (
-    <div className={`${styles} px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slide-in flex items-center gap-2 max-w-sm`}>
+    <div className={`${styles} px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slide-in flex items-center gap-2 sm:max-w-sm`}>
       {toast.type === 'success' ? (
         <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

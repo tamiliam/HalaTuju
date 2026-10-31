@@ -7,7 +7,7 @@
    ⚠ MONEY PAINTS IN A FACE WITH TABULAR FIGURES. Lexend has no `tnum` and its digits differ in
    width (500–620 units), so `tabular-nums` alone would jitter; Plex's digits are all 600. A
    surface on a face that has `tnum` keeps it via `--figures-face` (the sponsor portal: Inter). */
-:root { --figures-face: var(--font-ibm-plex-sans), 'IBM Plex Sans', system-ui, sans-serif; }
+:root { --figures-face: var(--font-tamil), var(--font-ibm-plex-sans), 'IBM Plex Sans', system-ui, sans-serif; }
 .tabular-nums:not(.font-mono) { font-family: var(--figures-face); }
 
 /* Brand colour channels (platform Sprint 6, decision D3). Space-separated RGB triplets converted
@@ -489,6 +489,11 @@
      to be the page stop rather than `ground-0`, because `ground-0` is now the RAISED surface. */
   body {
     @apply bg-ground-50 text-ground-900 antialiased;
+    /* Mobile M1a, rule 6: `viewportFit: 'cover'` (layout.tsx) lets the page run under an
+       iPhone's notch, so in LANDSCAPE the sides need the inset back — once, here, for every page.
+       0 on every other device. Fixed and sticky bars pad themselves (mobile-standard.md rule 6). */
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   /* ⚠ EVERY FORM CONTROL, NOT ONLY THE ONES USING `.input` (Layer 1 F7c).
@@ -590,6 +595,34 @@
 
   .grade-badge-g {
     @apply grade-badge bg-ground-100 text-ground-700;
+  }
+}
+
+/* ⚠ TEXT FIELDS ARE 16 PX ON A PHONE (Mobile M1a, mobile-standard.md rule 2).
+   ─────────────────────────────────────────────────────────────────────────────────────────
+   iPhone Safari ZOOMS THE WHOLE PAGE when a field under 16 px is tapped, and leaves it zoomed. The
+   product had ~200 fields at `text-sm` (14 px) and more inheriting a small size from their parent.
+   One rule fixes all of them, present and future, instead of 200 edits that decay.
+
+   ⚠ WHY IT IS OUTSIDE `@layer`, AND WHY THE SELECTOR IS LONG. Inside `@layer base` it would LOSE to
+   every utility (`text-sm` is emitted later, in `utilities`), which is the whole problem. Out here it
+   comes after the utilities, and its `:not(:is(…))` parts give it specificity (0,2,1) against a
+   utility's (0,1,0) — so it beats `text-sm`, `text-xs`, `text-[13px]` and `max-md:text-sm`. It does
+   NOT beat `!text-sm` (`!important`); `mobileStandard.test.ts` holds those at zero.
+
+   ⚠ IT ONLY EVER RAISES. A field that asks for 16 px or more (`text-base` … `text-6xl`, as a whole
+   class) keeps its own size: forcing 16 would SHRINK a big OTP or IC box. (A responsive
+   `md:text-lg` is not a whole-class match, so it does not exempt the phone size — correct.)
+   Below `md` only: from 768 px up every control keeps exactly the size its classes give it.
+   Checkboxes, radios, ranges, file pickers and button-type inputs take no typing and are left alone. */
+@media (max-width: 767.98px) {
+  input:not(:is([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='hidden'],
+    [type='button'], [type='submit'], [type='reset'], [type='image'], [type='color'])):not(:is(
+    [class~='text-base'], [class~='text-lg'], [class~='text-xl'], [class~='text-2xl'],
+    [class~='text-3xl'], [class~='text-4xl'], [class~='text-5xl'], [class~='text-6xl'])),
+  select:not(:is([class~='text-base'], [class~='text-lg'], [class~='text-xl'], [class~='text-2xl'])),
+  textarea:not(:is([class~='text-base'], [class~='text-lg'], [class~='text-xl'], [class~='text-2xl'])) {
+    font-size: 16px;
   }
 }
 

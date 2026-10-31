@@ -384,7 +384,7 @@ function Chrome(
             />
             {/* The drawer is always open and never chorded: there is no hover on a phone and
                 no keyboard to press G on. Same component, different truth about the device. */}
-            <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-ground-0 shadow-xl">
+            <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-ground-0 shadow-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
               <Sidebar
                 groups={groups}
                 activeId={activeId}

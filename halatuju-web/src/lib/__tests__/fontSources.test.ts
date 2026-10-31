@@ -37,7 +37,7 @@ const GOOGLE_LOADER = ['next', 'font', 'google'].join('/')
  * product reaches the fonts through these names (`font-plex` in tailwind.config.ts, the sponsor
  * portal's inline style), so renaming one silently drops that surface to the fallback stack.
  */
-const VARIABLES = ['--font-lexend', '--font-inter', '--font-ibm-plex-sans']
+const VARIABLES = ['--font-lexend', '--font-inter', '--font-ibm-plex-sans', '--font-tamil']
 
 /**
  * The audited files: the latin subset each family was served as by the Google loader on
@@ -51,6 +51,14 @@ const FONT_FILES: Record<string, string> = {
     'c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4',
   'src/fonts/ibm-plex-sans/ibm-plex-sans-latin-wght.woff2':
     '056e4e2459f57a0033c8c9c844ff19d6e42ac8602027803d4345823bcc939818',
+  // Mobile M1a: the TAMIL subset of Mukta Malar, byte-identical to SJKTConnect's
+  // frontend/app/fonts/mukta-malar/ (owner, 2026-10-31).
+  'src/fonts/mukta-malar/MuktaMalar-Tamil-400.woff2':
+    '0d7af641f651bcb741e2a45fb53f46a5032ae1b1f7bb4c268866f73baf9ae66c',
+  'src/fonts/mukta-malar/MuktaMalar-Tamil-600.woff2':
+    'ffa2f0f9e2c5be8d70405238eee090352abe1ac1a16dcc2692379f3ffccf32fd',
+  'src/fonts/mukta-malar/MuktaMalar-Tamil-700.woff2':
+    'a3007075cf034e8483430b28326d6a10266fb9fc6d420ba60f97e459a47ec475',
 }
 
 describe('the build fetches no fonts from Google', () => {
@@ -68,9 +76,9 @@ describe('the build fetches no fonts from Google', () => {
 
   it('the layout loads its fonts with next/font/local', () => {
     expect(layout).toMatch(/import localFont from 'next\/font\/local'/)
-    const calls = floorCount(layout.match(/=\s*localFont\(\{/g) || [], 3, 'localFont() calls',
-      'Lexend, Inter and IBM Plex Sans are each declared once in the root layout')
-    expect(calls).toHaveLength(3)
+    const calls = floorCount(layout.match(/=\s*localFont\(\{/g) || [], 4, 'localFont() calls',
+      'Lexend, Inter, IBM Plex Sans and (since Mobile M1a) Mukta Malar are each declared once')
+    expect(calls).toHaveLength(4)
   })
 })
 
@@ -119,7 +127,9 @@ describe('Lexend actually paints (TD-310)', () => {
 
   it('font-sans leads with the self-hosted variable, not a family name nothing provides', () => {
     const families = tailwindConfig.theme?.extend?.fontFamily as Record<string, string[]>
-    expect(families.sans[0]).toBe('var(--font-lexend)')
+    // Mobile M1a: the Tamil face comes first — it is Tamil-only (unicode-range), so Latin still
+    // reaches Lexend second. Lexend must stay the first LATIN face.
+    expect(families.sans.slice(0, 2)).toEqual(['var(--font-tamil)', 'var(--font-lexend)'])
   })
 
   it('the base html rule reads the same stack from the config', () => {
@@ -141,12 +151,12 @@ describe('Lexend actually paints (TD-310)', () => {
 
   it('money columns paint in a face with tabular figures, because Lexend has none', () => {
     // Lexend's GSUB has no `tnum` and its digits are 500–620 units wide; Plex's are all 600.
-    expect(globals).toMatch(/--figures-face:\s*var\(--font-ibm-plex-sans\)/)
+    expect(globals).toMatch(/--figures-face:\s*var\(--font-tamil\),\s*var\(--font-ibm-plex-sans\)/)
     expect(globals).toMatch(/\.tabular-nums:not\(\.font-mono\)\s*\{\s*font-family:\s*var\(--figures-face\);\s*\}/)
     // The sponsor portal is on Inter, which HAS tabular figures — it keeps its own face.
     const sponsor = readWeb('src/app/sponsor/(portal)/layout.tsx',
       'the sponsor portal sets its figures face to Inter')
-    expect(sponsor).toMatch(/'--figures-face': 'var\(--font-inter\)/)
+    expect(sponsor).toMatch(/'--figures-face': 'var\(--font-tamil\), var\(--font-inter\)/)
   })
 })
 
@@ -155,9 +165,9 @@ describe('the CSS variables the product paints with are still declared', () => {
     expect(layout).toContain(`variable: '${name}'`)
   })
 
-  it('applies all three to <html>', () => {
+  it('applies all four to <html>', () => {
     expect(layout).toMatch(
-      /className=\{`\$\{Lexend\.variable\} \$\{Inter\.variable\} \$\{IBM_Plex_Sans\.variable\}`\}/)
+      /className=\{`\$\{Lexend\.variable\} \$\{Inter\.variable\} \$\{IBM_Plex_Sans\.variable\} \$\{Mukta_Malar\.variable\}`\}/)
   })
 
   it('every var(--font-…) used in the tree is one the layout declares', () => {
@@ -179,5 +189,35 @@ describe('the CSS variables the product paints with are still declared', () => {
     // leaves a consumer pointing at nothing and goes red here too.
     const declared = Array.from(layout.matchAll(/variable: '(--font-[a-z0-9-]+)'/g), (m) => m[1])
     for (const name of Array.from(used)) expect(declared).toContain(name)
+  })
+})
+
+/**
+ * Mobile M1a (owner, 2026-10-31): Tamil paints in Mukta Malar on every device. Each option below
+ * is load-bearing — drop one and either English text changes face or English pages download Tamil:
+ * the unicode-range keeps the face off Latin letters and digits, `preload: false` keeps English
+ * pages from fetching it, and `fallback: []` + `adjustFontFallback: false` stop next/font adding an
+ * UN-ranged fallback face that would sit first in the stack and restyle English. Measured in the
+ * browser (CHANGELOG Mobile M1a): Tamil glyphs render in Mukta Malar, Latin in Lexend, and an
+ * English page requests no Mukta file.
+ */
+describe('Tamil paints in Mukta Malar, and only Tamil (Mobile M1a)', () => {
+  const block = (layout.match(/const Mukta_Malar = localFont\(\{([\s\S]*?)\n\}\)/) ?? ['', ''])[1]
+
+  it('is declared Tamil-only, never preloaded, with no fallback face', () => {
+    expect(block).not.toBe('')
+    expect(block).toContain("variable: '--font-tamil'")
+    expect(block).toMatch(/preload: false/)
+    expect(block).toMatch(/fallback: \[\]/)
+    expect(block).toMatch(/adjustFontFallback: false/)
+    expect(block).toContain("{ prop: 'unicode-range', value: 'U+0964-0965, U+0B82-0BFA, U+200C-200D, U+25CC' }")
+  })
+
+  it('sits first in every stack the product paints with', () => {
+    const families = tailwindConfig.theme?.extend?.fontFamily as Record<string, string[]>
+    expect(families.sans[0]).toBe('var(--font-tamil)')
+    expect(families.plex[0]).toBe('var(--font-tamil)')
+    const sponsor = readWeb('src/app/sponsor/(portal)/layout.tsx', 'the sponsor portal sets its own stack')
+    expect(sponsor).toMatch(/fontFamily: 'var\(--font-tamil\), var\(--font-inter\)/)
   })
 })

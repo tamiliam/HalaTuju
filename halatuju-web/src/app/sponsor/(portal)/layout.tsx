@@ -163,10 +163,11 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
     // `--figures-face` is what `.tabular-nums` paints in (globals.css, TD-310).
     <div className="min-h-screen flex flex-col bg-ground-50"
       style={{
-        fontFamily: 'var(--font-inter), system-ui, sans-serif',
-        '--figures-face': 'var(--font-inter), system-ui, sans-serif',
+        // Tamil first and Tamil-only (unicode-range): Tamil letters in Mukta Malar, the rest Inter.
+        fontFamily: 'var(--font-tamil), var(--font-inter), system-ui, sans-serif',
+        '--figures-face': 'var(--font-tamil), var(--font-inter), system-ui, sans-serif',
       } as React.CSSProperties}>
-      <header className="bg-ground-0 border-b sticky top-0 z-20">
+      <header className="bg-ground-0 border-b sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
             <BrandLogo width={100} height={36} />

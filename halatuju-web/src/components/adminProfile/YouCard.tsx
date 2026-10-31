@@ -75,7 +75,7 @@ export default function YouCard({ state }: CardProps) {
             )}
           </div>
           <p className="text-xs text-ground-500">{t(`${P}.photo.hint`)}</p>
-          <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+          <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1}
             aria-label={t(`${P}.photo.add`)} data-testid="photo-input"
             onChange={(e) => void pick(e.target.files?.[0])} />
           {msg && (

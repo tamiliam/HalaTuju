@@ -87,7 +87,7 @@ export default function ContactPage() {
               <div>
                 <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.name')}</label>
                 <input
-                  type="text"
+                  type="text" autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('contactForm.namePlaceholder')}
@@ -99,7 +99,7 @@ export default function ContactPage() {
               <div>
                 <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.contact')}</label>
                 <input
-                  type="text"
+                  type="text" autoComplete="email"
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   placeholder={t('contactForm.contactPlaceholder')}

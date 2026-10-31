@@ -54,6 +54,32 @@ const IBM_Plex_Sans = localFont({
   variable: '--font-ibm-plex-sans',
 })
 
+// Mukta Malar — the TAMIL face (owner, 2026-10-31: "the font we use in SJKT Connect"; Mobile M1a).
+// Without it every phone drew Tamil in its own system font (Tamil Sangam MN on iPhone, Noto Sans
+// Tamil on Android, Nirmala UI / Latha on Windows), so widths — and what overflowed — differed by
+// device. Only the TAMIL subset is shipped, declared with a Tamil-only `unicode-range`, so the face
+// sits FIRST in every stack (tailwind `sans` / `plex`, the sponsor portal, `--figures-face`) yet
+// never touches a Latin letter or a digit — those still fall through to Lexend / Plex / Inter — and
+// the browser downloads it only on a page that shows Tamil. Copied byte for byte from SJKTConnect's
+// `frontend/lib/fonts.ts` setup; SHA-256s in src/fonts/README.md and fontSources.test.ts.
+//   preload: false        — English pages must not fetch it up front.
+//   fallback: [] and adjustFontFallback: false — any fallback face would sit first in the stack
+//                           WITHOUT the unicode-range and restyle English text.
+const Mukta_Malar = localFont({
+  src: [
+    { path: '../fonts/mukta-malar/MuktaMalar-Tamil-400.woff2', weight: '400', style: 'normal' },
+    { path: '../fonts/mukta-malar/MuktaMalar-Tamil-600.woff2', weight: '600', style: 'normal' },
+    { path: '../fonts/mukta-malar/MuktaMalar-Tamil-700.woff2', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-tamil',
+  preload: false,
+  fallback: [],
+  adjustFontFallback: false,
+  // next/font needs literal values here (no constants).
+  declarations: [{ prop: 'unicode-range', value: 'U+0964-0965, U+0B82-0BFA, U+200C-200D, U+25CC' }],
+})
+
 export const metadata: Metadata = {
   // Base URL so relative OG/Twitter image paths resolve to the production host
   // (without this, social-share previews can resolve the image to the wrong host).
@@ -118,7 +144,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${Lexend.variable} ${Inter.variable} ${IBM_Plex_Sans.variable}`}>
+    <html lang="en" className={`${Lexend.variable} ${Inter.variable} ${IBM_Plex_Sans.variable} ${Mukta_Malar.variable}`}>
       <head>
         {/*
           Paints the person's theme before the first pixel (Layer 1 F1). Render-blocking on

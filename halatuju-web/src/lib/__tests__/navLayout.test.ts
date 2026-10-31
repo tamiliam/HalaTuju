@@ -53,6 +53,22 @@ describe('the Home top bar fits a phone', () => {
   })
 })
 
+// TD-311, closed in Mobile M1a (owner: step the hero down on phones in ALL languages). At 48 px the
+// longest Tamil word of the hero was wider than a phone, so `/` in Tamil measured 458 px at 360 AND
+// 390. At 36 px below `sm` it measures 360 and 390 (Chromium, Mukta Malar) — and desktop is unchanged.
+describe('the Home hero and closing call-to-action fit a phone (TD-311)', () => {
+  it('the hero heading steps down below sm and keeps its desktop sizes', () => {
+    expect(classes(classOf(home, /<h1/))).toEqual(expect.arrayContaining(['text-4xl', 'sm:text-5xl', 'md:text-6xl']))
+    expect(classes(classOf(home, /<h1/))).not.toContain('text-5xl')
+  })
+
+  it('the closing call-to-action is a box, so a long label wraps INSIDE its button', () => {
+    const ctas = Array.from(home.matchAll(/<Link href="\/onboarding\/exam-type" className="([^"]+)"/g), (m) => m[1])
+    expect(ctas.length).toBe(2)
+    expect(classes(ctas[1])).toEqual(expect.arrayContaining(['inline-block', 'max-w-full']))
+  })
+})
+
 // The TD-310 review found the same two defects elsewhere once Lexend (wider than the system font)
 // was on: a label/value row that could not wrap, and a "Log in" label that broke. Measured at 360.
 describe('other rows that must fit a 360 px phone (TD-310 review)', () => {

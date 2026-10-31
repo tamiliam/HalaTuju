@@ -60,8 +60,10 @@ export function CourseActions({ isSaved, isHovering, onSave, onHoverStart, onHov
       <div className="space-y-3">
         <button
           onClick={onSave}
-          onMouseEnter={onHoverStart}
-          onMouseLeave={onHoverEnd}
+          // A MOUSE only (Mobile M1a): a phone tap fires a compatibility mouseenter, which flipped
+          // "Saved" to "Remove from saved" the moment a student saved — and it stayed flipped.
+          onPointerEnter={(e) => { if (e.pointerType === 'mouse') onHoverStart() }}
+          onPointerLeave={(e) => { if (e.pointerType === 'mouse') onHoverEnd() }}
           className={`w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
             isSaved
               ? isHovering

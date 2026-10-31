@@ -428,7 +428,7 @@ export default function ScholarshipApplyPage() {
             per-capita need calc, so both are required. */}
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.household')}>{t('scholarship.apply.householdSizeLabel')}</FieldLabel>
-          <input type="number" min={1} max={20} className="input" value={form.householdSize}
+          <input type="number" inputMode="numeric" min={1} max={20} className="input" value={form.householdSize}
             onChange={(e) => update('householdSize', e.target.value)} />
         </div>
         <div>
@@ -710,7 +710,7 @@ export default function ScholarshipApplyPage() {
       </div>
 
       {/* Bottom tab bar (mobile only — replaced by the left rail on desktop) */}
-      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around py-2 -mx-6 px-2 lg:hidden">
+      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-6 px-2 lg:hidden">
         <Link href="/scholarship" className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
           <svg className="w-6 h-6 text-ground-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />

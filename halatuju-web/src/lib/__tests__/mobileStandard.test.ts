@@ -98,10 +98,6 @@ function smallOnPhone(token: string): boolean {
   return m[2] === 'px' ? n < 16 : n < 1
 }
 
-function smallTextToken(cls: string[]): string | undefined {
-  return cls.find(smallOnPhone)
-}
-
 function isTextEntry(tag: { name: string; attrs: string }): boolean {
   if (tag.name !== 'input') return true
   const type = attr(tag.attrs, 'type')
@@ -121,15 +117,43 @@ describe('rule 2 — text fields are 16 px on phones (no iOS zoom)', () => {
     expect(controls.length).toBeGreaterThanOrEqual(250)
   })
 
-  test('small-text text fields: at or under the floor', () => {
+  /**
+   * ⚠ SINCE MOBILE M1a THE FIX IS ONE RULE, SO THE GUARD CHANGED SHAPE. Before M1a this test counted
+   * every field with a small size on a phone (floor 208 after the M0 review, 182 before it) and the
+   * plan was to fix them one by one. M1a fixed them all at once: a rule in `globals.css` sets 16 px
+   * on every text-entry control below `md`, and it outranks any ordinary utility. Counting `text-sm`
+   * fields now would count fields that are NOT small on a phone, so the guard is two things instead:
+   *   1. the rule exists, below `md`, OUTSIDE every `@layer` (inside `@layer base` it would lose to
+   *      `text-sm` — the very thing it exists to beat), and with the exclusions that keep it from
+   *      touching checkboxes, radios and file pickers;
+   *   2. the sizes it CANNOT beat stay at zero — an `!important` small size (`!text-sm`) wins over
+   *      any selector without `!important`, so a field carrying one would zoom again.
+   * The browser check measures the outcome on every page: `smallInputs` is 0 in every cell.
+   */
+  test('the global 16 px rule exists, below md, outside every @layer', () => {
+    const css = readWeb('src/app/globals.css', 'the one rule that makes text fields 16 px on phones')
+      .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
+    const at = css.indexOf('@media (max-width: 767.98px)')
+    expect(at).toBeGreaterThan(-1)
+    let depth = 0
+    for (const c of css.slice(0, at)) depth += c === '{' ? 1 : c === '}' ? -1 : 0
+    expect(`brace depth before the rule: ${depth}`).toBe('brace depth before the rule: 0')
+    const rule = css.slice(at, css.indexOf('\n}', at))
+    expect(rule).toMatch(/font-size:\s*16px/)
+    for (const t of ['checkbox', 'radio', 'range', 'file', 'hidden']) expect(rule).toContain(`[type='${t}']`)
+    expect(rule).toMatch(/^\s*select:not/m)
+    expect(rule).toMatch(/^\s*textarea:not/m)
+  })
+
+  test('no text field carries a small size the global rule cannot beat (!important)', () => {
     const offenders = controls.flatMap(({ f, tag }) => {
-      const small = smallTextToken(tokens(classText(f, tag, resolve)))
+      const small = tokens(classText(f, tag, resolve))
+        .find((t) => smallOnPhone(t) && /(^|:)!/.test(t))
       return small ? [where(f, tag.start, `<${tag.name} … ${small}`)] : []
     })
-    // M0 review: reader fixed, was 182. The 26 added are shared constants used inside a template
-    // (`${inputCls} w-28`), which the first reader dropped with the template. The code did not get
-    // worse; the count got honest — the ONLY kind of rise a floor may ever take (decisions.md).
-    ratchet('text fields with a small font on phones', offenders, 208)
+    // Mobile M1a: was 208 small-text fields (M0 review: reader fixed, was 182); the global rule
+    // covers all of those, so this counts only what it cannot cover. 0 on 2026-10-31.
+    ratchet('text fields with an !important small font', offenders, 0)
   })
 })
 
@@ -151,7 +175,9 @@ describe('rule 9 — file inputs are sr-only, never hidden', () => {
     const offenders = files
       .filter(({ f, tag }) => tokens(classText(f, tag, resolve)).includes('hidden'))
       .map(({ f, tag }) => where(f, tag.start, '<input type="file" … hidden'))
-    ratchet('file inputs hidden with `hidden`', offenders, 6)
+    // Mobile M1a: 6 -> 0. All six moved to `sr-only` (the two opened by a button's ref.click()
+    // also take tabIndex={-1}, so the invisible input is not a second, silent tab stop).
+    ratchet('file inputs hidden with `hidden`', offenders, 0)
   })
 })
 
@@ -249,9 +275,26 @@ function isIconOnly(content: string): boolean {
   return exprs.every((e) => !e.trim() || (/</.test(e) && !/'[^']*'|"[^"]*"|\bt\(/.test(e)))
 }
 
+/**
+ * Files that serve ONLY desktop-only routes (`mobileClass.ts`, class `desktop`). Below `md` those
+ * routes show the "works best on a computer" panel (rule 13), so a phone never reaches these
+ * controls and a hover hint there is acceptable. Each entry names its route; a stale one fails below.
+ */
+const DESKTOP_ONLY_FILES: Record<string, string> = {
+  'src/components/contracts/ClauseEditor.tsx':
+    "the clause editor's icon toolbar (insert, indent, move, remove) — only on /admin/contracts/[id]",
+}
+
 describe('rule 4 — no title= as the only explanation on an icon-only control', () => {
+  test('a desktop-only exemption names a real file used only by a desktop route', () => {
+    for (const rel of Object.keys(DESKTOP_ONLY_FILES)) {
+      expect(`${rel}: ${FILES.some((f) => f.rel === rel)}`).toBe(`${rel}: true`)
+    }
+    expect(MOBILE_CLASS['/admin/contracts/[id]'].cls).toBe('desktop')
+  })
+
   test('icon-only controls explained only by title=: at or under the floor', () => {
-    const offenders = TSX.flatMap((f) => ['button', 'a', 'Link'].flatMap((name) =>
+    const offenders = TSX.filter((f) => !(f.rel in DESKTOP_ONLY_FILES)).flatMap((f) => ['button', 'a', 'Link'].flatMap((name) =>
       openTags(f.code, name)
         .filter((tag) => /(?:^|\s)title=/.test(tag.attrs))
         .filter((tag) => {
@@ -259,7 +302,10 @@ describe('rule 4 — no title= as the only explanation on an icon-only control',
           return content !== null && isIconOnly(content)
         })
         .map((tag) => where(f, tag.start, `<${name} title=… (icon only)`))))
-    ratchet('icon-only controls with title=', offenders, 7)
+    // Mobile M1a: 7 -> 0. Six were ClauseEditor's toolbar, now exempt above (desktop-only route);
+    // the seventh, the course-interest remove button, has an aria-label and a 44 px target.
+    // VerifiedTick (a role="img" span, which this rule never counted) is tappable too since M1a.
+    ratchet('icon-only controls with title=', offenders, 0)
   })
 })
 

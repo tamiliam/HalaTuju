@@ -150,8 +150,13 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
     const next: Pos = flip
       ? { bottom: Math.round(vh - r.top + GAP) }
       : { top: Math.round(r.bottom + GAP) }
-    if (align === 'right') next.right = Math.round(Math.max(0, vw - r.right))
-    else next.left = Math.round(Math.max(0, r.left))
+    // Clamp BOTH edges (Mobile M1a). It used to clamp only the near one, so on a phone a left-
+    // aligned menu under a right-hand trigger ran off the right edge (and a right-aligned one off
+    // the left). With the width known (second pass), the far edge is kept on screen too.
+    const width = panel.current?.offsetWidth ?? 0
+    const farLimit = Math.max(0, vw - width)
+    if (align === 'right') next.right = Math.round(Math.min(Math.max(0, vw - r.right), farLimit))
+    else next.left = Math.round(Math.min(Math.max(0, r.left), farLimit))
     setPos((prev) => (samePos(prev, next) ? prev : next))
   }, [align])
 

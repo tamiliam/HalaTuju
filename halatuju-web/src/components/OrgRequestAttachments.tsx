@@ -189,7 +189,7 @@ export default function OrgRequestAttachments({
                 : t('admin.requests.attachments.dropZone')}
             </span>
             <span className="text-[11px] text-ground-400">{t('admin.requests.attachments.hint')}</span>
-            <input type="file" accept="image/*" multiple className="hidden" disabled={busy} onChange={onFile} />
+            <input type="file" accept="image/*" multiple className="sr-only" disabled={busy} onChange={onFile} />
           </label>
         </div>
       )}

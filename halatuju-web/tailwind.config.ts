@@ -126,10 +126,13 @@ const config: Config = {
         // this list began with the plain name 'Lexend', which nothing on the page provides (the
         // self-hosted face is registered as `__Lexend_<hash>` behind `--font-lexend`), so every
         // visitor saw system-ui for months while the code said Lexend. `fontSources.test.ts` pins it.
-        sans: ['var(--font-lexend)', 'Lexend', 'system-ui', 'sans-serif'],
+        // ⚠ `var(--font-tamil)` FIRST (Mobile M1a): Mukta Malar carries a Tamil-only unicode-range,
+        // so it paints Tamil letters and nothing else; every Latin letter and digit falls through
+        // to Lexend exactly as before. Same in `plex`, `--figures-face` and the sponsor portal.
+        sans: ['var(--font-tamil)', 'var(--font-lexend)', 'Lexend', 'system-ui', 'sans-serif'],
         // IBM Plex Sans — applied to the four ORGANISATION admin modules only
         // (invite / payments / contracts / sources) via `font-plex`.
-        plex: ['var(--font-ibm-plex-sans)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
+        plex: ['var(--font-tamil)', 'var(--font-ibm-plex-sans)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         // 8px rounded corners from Stitch

@@ -364,7 +364,7 @@ function SearchPageInner() {
               />
             </svg>
             <input
-              type="text"
+              type="search"
               className="w-full pl-10 px-4 py-3 rounded-lg border border-ground-200 bg-ground-50 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent placeholder:text-ground-placeholder"
               placeholder={t('search.searchPlaceholder')}
               value={query}

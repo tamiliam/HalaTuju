@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import clsx from 'clsx'
 
 interface FilterPillProps {
@@ -19,7 +19,20 @@ export default function FilterPill({
   onChange,
 }: FilterPillProps) {
   const [isOpen, setIsOpen] = useState(false)
+  // Open to the LEFT when opening right would run off the screen (Mobile M1a): the 192 px panel
+  // under a right-hand pill on a phone used to open past the right edge, out of reach.
+  const [alignRight, setAlignRight] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (!isOpen) { setAlignRight(false); return }
+    const pill = containerRef.current?.getBoundingClientRect()
+    const width = panelRef.current?.offsetWidth ?? 0
+    if (!pill || !width) return
+    const vw = document.documentElement.clientWidth
+    setAlignRight(pill.left + width > vw - 8 && pill.right - width >= 0)
+  }, [isOpen])
 
   // Close on outside click (same pattern as AppHeader)
   useEffect(() => {
@@ -68,7 +81,8 @@ export default function FilterPill({
 
       {/* Dropdown panel */}
       {isOpen && options.length > 0 && (
-        <div className="absolute left-0 top-full mt-1 z-20 w-48 max-h-60 overflow-y-auto bg-ground-0 rounded-xl shadow-lg border border-ground-200 py-1">
+        <div ref={panelRef} className={clsx('absolute top-full mt-1 z-20 w-48 max-h-60 overflow-y-auto bg-ground-0 rounded-xl shadow-lg border border-ground-200 py-1',
+          alignRight ? 'right-0' : 'left-0')}>
           {/* Reset / "All" option */}
           <button
             type="button"

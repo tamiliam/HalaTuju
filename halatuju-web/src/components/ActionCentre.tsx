@@ -360,7 +360,7 @@ function ActionCard({
                   <input
                     type="file"
                     accept="image/*,.pdf"
-                    className="hidden"
+                    className="sr-only"
                     disabled={busy}
                     onChange={(e) => {
                       const f = e.target.files?.[0]

@@ -301,7 +301,7 @@ export default function AdminRequestsPage() {
                 <span className="text-[11px] text-ground-400">
                   {t('admin.requests.attachments.hint')}
                 </span>
-                <input type="file" accept="image/*" multiple className="hidden"
+                <input type="file" accept="image/*" multiple className="sr-only"
                   onChange={(e) => { stageFiles(e.target.files); e.target.value = '' }} />
               </label>
             )}

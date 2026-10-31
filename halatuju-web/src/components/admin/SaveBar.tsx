@@ -46,7 +46,7 @@ export default function SaveBar({ status, children, testId = 'save-outcome' }: {
 }) {
   return (
     <div data-testid="save-bar"
-      className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
+      className="sticky bottom-[env(safe-area-inset-bottom)] mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
       <div className="text-sm text-ground-700" data-testid={testId}>{status ?? null}</div>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
     </div>

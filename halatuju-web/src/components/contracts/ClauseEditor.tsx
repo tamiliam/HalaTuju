@@ -251,7 +251,7 @@ export default function ClauseEditor(
         <div className="flex flex-wrap items-center justify-between gap-3">
           <LangTabs value={lang} onChange={setLang} />
           <div className="flex items-center gap-2">
-            <input ref={fileRef} type="file" accept=".docx" className="hidden"
+            <input ref={fileRef} type="file" accept=".docx" className="sr-only" tabIndex={-1}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f) }} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={importing} className={btnGhost}>
               {importing ? t('admin.contracts.importing') : t('admin.contracts.importDocx')}
