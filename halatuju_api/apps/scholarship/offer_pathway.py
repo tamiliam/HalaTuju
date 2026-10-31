@@ -24,8 +24,6 @@ from __future__ import annotations
 import re
 
 from .document_snapshot import SNAPSHOT_ORDER
-from .catalogue_levels import (
-    course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
 from .pathway_engine import distinctive_tokens
 from .school_names import (  # STPM school-name casing moved VERBATIM there (TD-145); re-exported here
     _SCHOOL_ACRONYM_EXPAND, _SCHOOL_POSTCODE, clean_school_name, school_name_core)
@@ -291,7 +289,7 @@ def _names_another_institution(campus_name: str, campus_acronym: str, hint: str)
     return '' if same else how
 
 
-def institution_agreement(course_id: str, recorded: str, offer_institution: str) -> str:
+def institution_agreement(course_id: str, recorded: str, offer_institution: str, issuer: str = '') -> str:
     """Do the RECORDED institution and the OFFER LETTER's refer to the same place?
     ``'match'`` / ``'clash'`` / ``'unknown'`` — judged through the CATALOGUE, not by string overlap.
 
@@ -315,7 +313,12 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
     3. **Multi-campus → resolve BOTH sides to a catalogue campus** and agree iff they land on the
        same one. Either side unresolvable → ``'unknown'``, never a clash: for a genuinely
        multi-campus course the campus is a real question, but an unreadable answer is not a wrong one.
+
+    The letter's side is ``offer_course_match.letter_place`` (2026-10-31): a hostel line yields to the
+    ``issuer`` that names the university (#175 UPM, #252 UPSI, #354 UNIMAS, #395 UTHM).
     """
+    from .offer_course_match import letter_place
+    offer_institution = letter_place(course_id, offer_institution, issuer)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return 'unknown'
     rows = _campus_rows(course_id)
@@ -340,7 +343,8 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
     return 'match' if a == b else 'clash'
 
 
-def programme_agreement(course_id: str, offer_programme: str, offer_institution: str) -> str:
+def programme_agreement(course_id: str, offer_programme: str, offer_institution: str,
+                        issuer: str = '') -> str:
     """Does the OFFER LETTER's programme contradict the RECORDED catalogue course?
     ``'match'`` / ``'clash'`` / ``'unknown'`` — judged through the CATALOGUE, not by string overlap.
 
@@ -371,14 +375,14 @@ def programme_agreement(course_id: str, offer_programme: str, offer_institution:
     """
     if not (course_id or '').strip() or not (offer_programme or '').strip():
         return 'unknown'
-    match = resolve_catalogue_course(offer_programme, offer_institution)
+    match = resolve_catalogue_course(offer_programme, offer_institution, issuer)
     resolved = (match or {}).get('course_id') or ''
     if not resolved:
         return 'unknown'                     # umbrella / unpinnable — less specific, not contrary
     return 'match' if resolved == course_id.strip() else 'clash'
 
 
-def offer_contradicts_course_institution(course_id: str, offer_institution: str) -> bool:
+def offer_contradicts_course_institution(course_id: str, offer_institution: str, issuer: str = '') -> bool:
     """True only when the offer letter names a place that is demonstrably NOT any campus of
     ``course_id`` — i.e. the letter and the declared course disagree about WHERE.
 
@@ -395,8 +399,11 @@ def offer_contradicts_course_institution(course_id: str, offer_institution: str)
     place, fill it) from #11's Politeknik Ungku Omar against a UPNM asasi (nothing matches → a human
     decides).
 
-    No campuses on file → False: a catalogue gap is not evidence of disagreement.
+    No campuses on file → False: a catalogue gap is not evidence of disagreement. A hostel line
+    yields to the ``issuer`` exactly as in ``institution_agreement`` (``letter_place``).
     """
+    from .offer_course_match import letter_place
+    offer_institution = letter_place(course_id, offer_institution, issuer)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return False
     rows = _campus_rows(course_id)
@@ -526,51 +533,18 @@ def title_case_programme(name: str) -> str:
     return ' '.join(_recase_programme_token(t, first=(i == 0)) for i, t in enumerate(s.split()))
 
 
-def resolve_catalogue_course(programme: str, institution: str):
-    """Best-effort canonical match for a TERTIARY offer. Returns
-    ``{course_id, course_name, institution}`` ONLY when exactly one catalogue course —
-    offered at an institution whose name aligns with the offer's — has a programme name
-    that aligns with the offer's. Any ambiguity (zero or >1) → ``None`` (caller falls back
-    to labels). Conservative by design: a wrong ``course_id`` is worse than no id. TD-332: a TERTIARY
-    letter skips pre-U virtual courses and courses of another level; TD-150: a private-arm letter and
-    a course more specific than the letter never match (all three in ``catalogue_levels``)."""
-    from apps.courses.models import Institution, CourseInstitution
-    ltype = detect_pathway_type(programme, '') or detect_pathway_type(programme, institution)
-    tertiary = ltype in ('asasi', 'pismp', 'diploma', 'degree')
-
-    pj = distinctive_tokens(programme)
-    ij = distinctive_tokens(institution)
-    if not pj or not ij or private_arm_letter(programme, institution):
-        return None
-
-    inst_ids = [
-        inst.institution_id for inst in Institution.objects.all()
-        if _name_aligns(ij, distinctive_tokens(inst.institution_name))
-    ]
-    if not inst_ids:
-        return None
-
-    uniq = {}
-    offers = CourseInstitution.objects.filter(institution_id__in=inst_ids)
-    if tertiary:
-        offers = offers.exclude(course_id__in=PREU_COURSE_SLUG.values())
-    for off in offers.select_related('course', 'institution'):
-        if tertiary and (fams := course_levels(off.course)) and ltype not in fams:
-            continue
-        base = distinctive_tokens(_ALIRAN_SUFFIX_RE.sub('', off.course.course or ''))
-        if (_name_aligns(pj, distinctive_tokens(off.course.course))
-                and not names_a_specialisation_the_letter_does_not(pj, base)):
-            uniq[off.course.course_id] = {
-                'course_id': off.course.course_id,
-                'course_name': off.course.course,
-                'institution': off.institution.institution_name,
-            }
-    if len(uniq) == 1:
-        return next(iter(uniq.values()))
-    return None
+def resolve_catalogue_course(programme: str, institution: str, issuer: str = ''):
+    """Best-effort canonical match for a TERTIARY offer. Returns ``{course_id, course_name,
+    institution}`` ONLY when exactly one catalogue course qualifies; zero or >1 → ``None`` (caller
+    falls back to labels) — a wrong ``course_id`` is worse than no id. Since 2026-10-31 it searches
+    BOTH catalogues (post-STPM degrees too), reads a printed course code, and lets the ``issuer``
+    stand in for a hostel line: all in ``offer_course_match.match_offer_course``, which keeps
+    TD-332 (level) and TD-150 (private arm, specialisation) from ``catalogue_levels``."""
+    from .offer_course_match import match_offer_course
+    return match_offer_course(programme, institution, issuer)
 
 
-def offer_is_resolvable(programme: str, institution: str) -> bool:
+def offer_is_resolvable(programme: str, institution: str, issuer: str = '') -> bool:
     """True when an offer pins a SPECIFIC pathway we can fill into the course tree by itself: a
     pre-U offer whose stream/jurusan parses (stpm/matric), or a tertiary offer that resolves to a
     UNIQUE catalogue ``course_id``. False = AMBIGUOUS — e.g. a PISMP offer that names the campus but
@@ -580,7 +554,7 @@ def offer_is_resolvable(programme: str, institution: str) -> bool:
     if is_pre_u(ptype):
         track = parse_matric_track(programme) if ptype == 'matric' else parse_stpm_stream(programme)
         return bool(track)
-    match = resolve_catalogue_course(programme, institution)
+    match = resolve_catalogue_course(programme, institution, issuer)
     return bool(match and match.get('course_id'))
 
 

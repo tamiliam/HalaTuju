@@ -176,3 +176,21 @@ hold ≥3 genuine letters (roadmap "Later").
 - A document with NO reporting date that claims to be an offer deserves suspicion (interview slips,
   pemakluman and notices don't summon anyone to register) — but a cropped genuine letter also loses
   it, so it corroborates rather than decides.
+
+## What the programme and institution LINES carry (offer realignment, 2026-10-31)
+
+Read by the course matcher (`apps/scholarship/offer_course_match.py`), measured on the live letters:
+
+- **The institution line is often a HOSTEL, not the university** — UMS ("Kolej Kediaman Tun Pengiran
+  Ahmad Raffae", "Kolej Kediaman Tun Fuad"), UPM ("KOLEJ SRI RAJANG"), UNIMAS ("Kolej Cempaka",
+  "Kolej Allamanda"), UTHM ("KOLEJ KEDIAMAN PERWIRA - DEWAN SULTAN IBRAHIM"), UKM ("Kolej Pendeta
+  Za'ba (L), UKM, BANGI"). The university is then in the ISSUER (letterhead) line — though UMS and UiTM
+  often print only an office there ("BAHAGIAN PERKHIDMATAN AKADEMIK", "Bahagian Pengambilan Pelajar").
+- **UiTM** names the university only by acronym or in a college line: "UiTM CAWANGAN SABAH, KAMPUS
+  KOTA KINABALU", "KOLEJ PERINDU, UNIVERSITI TEKNOLOGI MARA, 40450 SHAH ALAM"; its programme line starts
+  with UiTM's own short code ("BA272 ", "SR241 ", "HS243 ") and may run on into the faculty ("…
+  (KEPUJIAN) FAKULTI SAINS SUKAN DAN …").
+- **UNIMAS** prints our own UPU course code after the name ("Sarjana Muda Ukur Bahan dengan Kepujian -
+  UW6526001") — the same `[A-Z]{2}\d{7}` id both catalogues key by.
+- The catalogue's side carries decorations no letter prints: UPU's trailing " #" and a campus
+  parenthetical ("Diploma Pembangunan Manusia (Kampus Bintulu, Sarawak)").

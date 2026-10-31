@@ -17,6 +17,7 @@ from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services import autofill_pathway_from_offer
+from apps.scholarship.services.offer_sync import plan_bumi_realign
 
 
 class Command(BaseCommand):
@@ -53,6 +54,8 @@ class Command(BaseCommand):
                          and ((chk.get('programme') or '').strip() or (chk.get('institution') or '').strip())
                          and chk.get('pathway') != 'mismatch'
                          and not (cp.get('course_id') and app.pathway_certainty == 'sure'))
+                # The Bumi-only realignment (2026-10-31) writes past the mismatch and lock guards.
+                would = would or (offer is not None and not plan_bumi_realign(app, offer, chk)[0])
                 if would:
                     changed += 1
                     self.stdout.write(

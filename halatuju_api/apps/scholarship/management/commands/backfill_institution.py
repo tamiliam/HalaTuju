@@ -97,7 +97,7 @@ class Command(BaseCommand):
             campuses = len({n.strip() for n, _a in op._campus_rows(cid) if (n or '').strip()})
             if campuses == 0:
                 return 'catalogue_gap', f"course {cid} has no catalogue institution"
-            offer_inst, wrong_person = self._offer_institution(app)
+            offer_inst, wrong_person = self._offer_institution(app, cid)
             if campuses == 1:
                 if op.offer_contradicts_course_institution(cid, offer_inst):
                     return 'clash', (f"offer says '{offer_inst}', course {cid} is at "
@@ -123,8 +123,10 @@ class Command(BaseCommand):
             return 'stpm', f"declared school '{app.pre_u_institution or '-'}' — needs a human"
         return 'unresolvable', f"pathway='{pathway or '-'}' no course_id"
 
-    def _offer_institution(self, app):
-        """(institution, wrong_person) off the LIVE offer, reading stored fields only."""
+    def _offer_institution(self, app, cid=''):
+        """(institution, wrong_person) off the LIVE offer, reading stored fields only. With a
+        ``cid``, the letter's PLACE for that course — the writer's own ``letter_place`` (a hostel
+        line yields to the issuer), so this report and the writer cannot disagree."""
         offer = (ApplicantDocument.objects
                  .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
                  .order_by(*SNAPSHOT_ORDER).first())
@@ -132,4 +134,8 @@ class Command(BaseCommand):
             return '', False
         chk = student_offer_check(offer)
         wrong = chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch'
-        return ('' if wrong else (chk.get('institution') or '').strip()), wrong
+        inst = '' if wrong else (chk.get('institution') or '').strip()
+        if cid and not wrong:
+            from apps.scholarship.offer_course_match import letter_place
+            inst = letter_place(cid, inst, (chk.get('issuer') or '').strip())
+        return inst, wrong

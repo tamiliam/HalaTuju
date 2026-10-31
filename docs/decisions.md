@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## A genuine Bumiputera-only offer replaces the student's own pick; the issuer stands in for a hostel line; the matcher reads the degree catalogue (offer realignment, 2026-10-31)
+
+**Owner, 2026-10-31:** *"Before the fix, bumiputra courses were not shown; so students may have picked others. Now
+that it is fixed, we may realign the course and institutions based on the offer letter, and not treat the previous
+selection as real selection. This should apply to all courses that are open only to bumiputra."*
+
+**Decision.** (1) **The realignment** (`services/offer_sync.plan_bumi_realign` / `realign_bumi_only_pick`). When the
+application's live offer is the applicant's own (name and IC not a mismatch), scored genuine (`offer_band`), names
+ONE catalogue course whose OWN flag is Bumiputera-only (`CourseRequirement` / `StpmRequirement.req_bumiputera` —
+never `StudentProfile.bumiputera`, which stays course-guide only, 2026-10-28), and the stored pick is another
+course that no human or earlier offer settled (`CONFIRMED_CP_SOURCES`; an `offer_letter_auto` pick with no
+course_id is only labels, so it is not settled) — the offer's course replaces the pick, even a locked one, with no
+clash raised. Not for a decided case (a status querying is locked at — `interviewed` onward — or a recorded officer
+verdict), and not for a Form 6 / matriculation pathway or letter: those are listed for a human. It runs wherever
+the autofill runs (upload, re-read, backfills) and in `realign_bumi_offers` (report by default, `--apply`).
+(2) **The pathway follows the course.** `chosen_pathway` becomes the course's own picker pathway
+(`apps/courses/course_pathway.course_pathway_type`, the rule the boot `course_pathway_map` now shares): an STPM
+degree or a UA diploma is `university`, an Asasi `asasi`. The payment calendar (`contracts.pick_schedule_row`) keys
+on the exact value — a UiTM degree left on `poly` would be paid on the polytechnic calendar, and one left on
+`degree` falls to the `default` row. (3) **The profile follows**, in the same transaction, when it follows this
+application (`confirmation.profile_follows`, as a confirm does, TD-210) — else a later /profile save would copy the
+old pathway back over the application (`copy_pathway` copies a non-blank profile pathway). (4) **The issuer stands
+in for a hostel line** (`offer_course_match.letter_place`): only when the institution line names no campus of the
+course, does not EXACTLY name another catalogue institution, and the issuer names a campus. ONE function, read by
+the writer (`sync_institution_from_catalogue`) and both readers (`institution_agreement`,
+`offer_contradicts_course_institution`). (5) **The matcher reads both catalogues** (`StpmCourse` beside
+`CourseInstitution`), a printed course code (unless the letter names another place), an institution's acronym, and
+drops UiTM's local code, a faculty tail, the catalogue's " #" and campus parenthetical. Still one course or none.
+(6) **The Bumi-blind guard gains ONE exception, by path**: `test_bumiputera_blind` (Sprint D1) refused any
+scholarship file naming `req_bumiputera`; the realignment must read the COURSE's flag, so
+`offer_course_match.py` is allowed and a new test pins that it names the flag only inside `is_bumiputera_only`
+and never reads the student's answer. The flag filters nothing any student, reviewer or sponsor is shown.
+
+**Why.** Before Sprint D the pickers hid Bumi-only courses, so a student holding a UiTM place could only have picked
+something else; treating that pick as a declaration made a correct offer read as a clash and asked her to confirm.
+A wrong course_id is worse than none, so every condition is a refusal, and each refusal is printed by the repair.
+
+**Trade-offs.** A resolvable degree letter can now turn a pathway verdict from `unknown` into `clash` where the
+student's pick differs and the course is open to all (dry run: 12 records, 4 of them settled by this realignment);
+those raise the ordinary pathway-confirm question. An open pathway query on a realigned case is closed by the next
+check-2 sync (cockpit open, Action Centre, query emails), not at the moment of the write.
+
+**Revisit if:** a Bumi-only course's flag is wrong in the catalogue (the realignment trusts it), or a Form 6 /
+matriculation Bumi-only track ever needs the same treatment.
+
 ## The phone and "share with students" can no longer be changed through `admin/reviewer-profile/` — 2026-10-31 (owner ruling, TD-439)
 
 **Decision:** `ReviewerProfileSerializer` serves `phone` and `share_phone_with_students` but treats both as

@@ -115,6 +115,11 @@ def sync_institution_from_catalogue(application, offer=None, offer_check=None):
     if offer_inst and (card_display.looks_like_clause_number(offer_inst)
                        or card_display.looks_like_date(offer_inst)):
         offer_inst = ''
+    # The letter's PLACE — a hostel line yields to the issuer naming the university (2026-10-31).
+    # The same `letter_place` the readers (institution_agreement / offer_contradicts_…) use.
+    if cid and not wrong_person:
+        from ..offer_course_match import letter_place
+        offer_inst = letter_place(cid, offer_inst, (offer_check.get('issuer') or '').strip())
 
     resolved = op.sole_catalogue_institution(cid) if cid else ''
     if resolved and op.offer_contradicts_course_institution(cid, offer_inst):
@@ -226,6 +231,8 @@ def autofill_pathway_from_offer(application):
         inst = ''
     if not prog and not inst:
         return wrote_early  # nothing readable to SETTLE — but date/institution may have landed
+    if realign_bumi_only_pick(application, offer, chk):
+        return True         # owner 2026-10-31: a Bumi-only offer replaces a pre-fix student pick
     # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
     # silent overwrite.
     if chk['pathway'] == 'mismatch':
@@ -311,7 +318,7 @@ def autofill_pathway_from_offer(application):
             if canon_inst:
                 new_cp['institution'] = canon_inst
         else:
-            match = op.resolve_catalogue_course(g_prog, g_inst)
+            match = op.resolve_catalogue_course(g_prog, g_inst, (chk.get('issuer') or '').strip())
             if match:
                 new_cp = {**match, 'source': 'offer_letter_auto'}
         # Only overwrite when there's no precise existing pick to protect, and only when the
@@ -349,14 +356,107 @@ def autofill_pathway_from_offer(application):
     elif cid_now:
         if sync_institution_from_catalogue(application, offer=offer, offer_check=chk):
             wrote_early = True    # it saved itself; don't re-add chosen_programme to `fields`
-
-    # Neither the reporting date nor the must-fill institution is synced at the BOTTOM of this
-    # function any more — sync_reporting_date_from_offer() and sync_institution_from_catalogue()
-    # both run at the top, above the guards that used to skip them. See their docstrings.
-
+    # (The date and the must-fill institution are synced at the TOP — see their docstrings.)
     if not fields:
         return wrote_early
     application.save(update_fields=fields)
+    return True
+
+
+def plan_bumi_realign(application, offer, chk):
+    """``(skip_reason, new_chosen_programme, new_pathway)`` — whether the owner's Bumiputera-only
+    realignment applies to this application's live offer. ``skip_reason`` '' means it does.
+
+    Owner, 2026-10-31: *"Before the fix, bumiputra courses were not shown; so students may have
+    picked others. Now that it is fixed, we may realign the course and institutions based on the
+    offer letter, and not treat the previous selection as real selection. This should apply to all
+    courses that are open only to bumiputra."* So a pick the STUDENT made gives way to the offer's
+    course — even a locked one — when ALL of these hold, checked in this order (each failure is the
+    reason the repair command prints):
+
+    ``decided``          the status is one querying is locked at, or an officer verdict is recorded;
+    ``not_own_letter``   the letter's name or IC is a mismatch;
+    ``not_genuine``      the offer is not scored genuine (``offer_band``);
+    ``pre_u_offer``      the letter is a Form 6 / matriculation offer (no catalogue course_id shape);
+    ``unresolved``       the letter does not name ONE catalogue course;
+    ``same_course``      the stored pick already is that course;
+    ``not_bumi_only``    the COURSE's own flag says it is open to all (the student's Bumiputera answer
+                         is never read: it is course-guide only, decisions.md 2026-10-28);
+    ``confirmed_source`` a human or an earlier offer settled the pick (``CONFIRMED_CP_SOURCES``; an
+                         ``offer_letter_auto`` pick WITHOUT a course_id is only labels, so not settled);
+    ``pre_u``            the stored pathway is Form 6 / matriculation — a human decides.
+
+    ``new_pathway`` is the course's own picker pathway (``course_pathway_type``), so the payment
+    calendar, the funding estimate and the semester-result ask read the course she now holds."""
+    from apps.courses.course_pathway import course_pathway_type
+    from .. import card_display
+    from .. import offer_pathway as op
+    from ..family import CONFIRMED_CP_SOURCES
+    from ..offer_course_match import is_bumiputera_only, match_offer_course
+    from ..pathway_engine import offer_band
+    from .querying import QUERYING_LOCKED_STATUSES
+    verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
+    if application.status in QUERYING_LOCKED_STATUSES or verdict.get('overall'):
+        return 'decided', None, ''
+    if chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch':
+        return 'not_own_letter', None, ''
+    if offer_band(offer) != 'genuine':
+        return 'not_genuine', None, ''
+    prog, inst = (chk.get('programme') or '').strip(), (chk.get('institution') or '').strip()
+    if op.is_pre_u(op.detect_pathway_type(prog, inst)):
+        return 'pre_u_offer', None, ''
+    match = match_offer_course(prog, inst, (chk.get('issuer') or '').strip())
+    if not match:
+        return 'unresolved', None, ''
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    if (cp.get('course_id') or '').strip() == match['course_id']:
+        return 'same_course', None, ''
+    if not is_bumiputera_only(match['course_id']):
+        return 'not_bumi_only', None, ''
+    source = cp.get('source') or ''
+    if source in CONFIRMED_CP_SOURCES and (source != 'offer_letter_auto' or cp.get('course_id')):
+        return 'confirmed_source', None, ''
+    if op.is_pre_u((application.chosen_pathway or '').strip().lower()):
+        return 'pre_u', None, ''
+    # card_display.with_institution owns the institution / institution_id pair: a pick that carried
+    # an id gets the new place's catalogue id (or loses the key), never the old campus's id.
+    new_cp = card_display.with_institution(
+        {'institution_id': ''} if 'institution_id' in cp else {}, match['institution'])
+    new_cp.update(course_id=match['course_id'], course_name=match['course_name'],
+                  source='offer_letter_auto')
+    return '', new_cp, course_pathway_type(match['course_id'])
+
+
+def realign_bumi_only_pick(application, offer, chk):
+    """Apply ``plan_bumi_realign``: write the offer's course over the student's own pick, its
+    pathway when that differs, and ``pathway_certainty='sure'``; refresh the PROFILE in the same
+    transaction when it follows this application (as ``confirm_pathway`` does, TD-210 — else a later
+    /profile save would copy the old pathway back). Logs an AUDIT line. Returns True when it wrote.
+    Called from ``autofill_pathway_from_offer`` (upload, re-read, backfill) BEFORE its mismatch exit,
+    and by ``realign_bumi_offers``. Idempotent: the written pick is a confirmed source."""
+    from django.db import transaction
+
+    from .confirmation import profile_follows, sync_profile_pathway
+    reason, new_cp, new_pathway = plan_bumi_realign(application, offer, chk)
+    if reason:
+        return False
+    old_cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    old_pathway = application.chosen_pathway or ''
+    application.chosen_programme = new_cp
+    fields = ['chosen_programme']
+    if new_pathway and new_pathway != old_pathway.strip().lower():
+        application.chosen_pathway = new_pathway
+        fields.append('chosen_pathway')
+    if application.pathway_certainty != 'sure':
+        application.pathway_certainty = 'sure'
+        fields.append('pathway_certainty')
+    with transaction.atomic():
+        application.save(update_fields=fields)
+        if profile_follows(application):
+            sync_profile_pathway(application, may_clear=lambda f: False)
+    logger.info('AUDIT bumi_offer_realign app_id=%s old_course_id=%s new_course_id=%s '
+                'old_pathway=%s new_pathway=%s', application.id, old_cp.get('course_id') or '-',
+                new_cp['course_id'], old_pathway or '-', application.chosen_pathway or '-')
     return True
 
 

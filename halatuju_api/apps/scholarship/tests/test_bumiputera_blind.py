@@ -22,6 +22,9 @@ _READS_FIELD = re.compile(r"""\.bumiputera\b|['"]bumiputera['"]|bumiputera\s*=""
 #: The one legitimate mention: the criteria guard's list of sensitive WORDS (it flags them in
 #: funder copy), which is not a read of the student's answer.
 _ALLOWED = {('scholarship', 'apply_copy.py')}
+#: The ONE scholarship file that reads a COURSE's Bumiputera-only flag (never the student's answer):
+#: the offer realignment, owner rule 2026-10-31. Keyed by path, not file name (TD-277).
+_COURSE_FLAG_READERS = {('scholarship', 'offer_course_match.py')}
 #: Every way the code reads ALL profile columns: a PostgREST `rest(…, "api_student_profiles", "*")`
 #: call (across line breaks), a `select=*` URL, or SQL `SELECT * / alias.* … FROM api_student_profiles`.
 _SELECT_ALL_PROFILES = (
@@ -57,7 +60,11 @@ class TestNoScholarshipOrReportCodeReadsIt(TestCase):
             for path in _sources(app):
                 if (app, path.name) in _ALLOWED:
                     continue
+                # The one course-flag reader's `req_bumiputera=` is the COURSE's flag, not the answer.
+                course_flag_reader = (app, path.relative_to(_APPS / app).as_posix()) in _COURSE_FLAG_READERS
                 for n, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                    if course_flag_reader:
+                        line = line.replace('req_bumiputera', '')
                     if _READS_FIELD.search(line):
                         offenders.append(f'{app}/{path.relative_to(_APPS / app)}:{n}')
         self.assertEqual(offenders, [], 'The Bumiputera answer is course-guide only (owner '
@@ -66,11 +73,29 @@ class TestNoScholarshipOrReportCodeReadsIt(TestCase):
     def test_no_scholarship_or_report_code_reads_the_course_flag_either(self):
         """Bumi Sprint D1: SPM courses carry `CourseRequirement.req_bumiputera` too. The scholarship
         side offers EVERY course (Option A) and reads courses by id, so it has no reason to name the
-        flag — a read of it is the first step to filtering a picker by ethnicity."""
+        flag — a read of it is the first step to filtering a picker by ethnicity.
+
+        ONE exception, by PATH (offer realignment, owner rule 2026-10-31, decisions.md): a genuine
+        offer for a Bumiputera-only COURSE replaces the student's pre-fix pick, so
+        `offer_course_match.is_bumiputera_only` reads the course's flag. It filters nothing a
+        student or sponsor sees; `test_the_one_course_flag_reader_stays_one` holds it to that."""
         offenders = [f'{app}/{path.relative_to(_APPS / app)}'
                      for app in ('scholarship', 'reports') for path in _sources(app)
-                     if 'req_bumiputera' in path.read_text(encoding='utf-8')]
+                     if (app, path.relative_to(_APPS / app).as_posix()) not in _COURSE_FLAG_READERS
+                     and 'req_bumiputera' in path.read_text(encoding='utf-8')]
         self.assertEqual(offenders, [])
+
+    def test_the_one_course_flag_reader_stays_one(self):
+        """The allowed file names the flag exactly twice (one per catalogue), both inside
+        `is_bumiputera_only`, and never touches the student's own answer."""
+        import ast
+        path = _APPS / 'scholarship' / 'offer_course_match.py'
+        text = path.read_text(encoding='utf-8')
+        self.assertEqual(text.count('req_bumiputera'), 2)
+        self.assertIsNone(_READS_FIELD.search(text.replace('req_bumiputera', '')))
+        fn = next(n for n in ast.walk(ast.parse(text))
+                  if isinstance(n, ast.FunctionDef) and n.name == 'is_bumiputera_only')
+        self.assertEqual(ast.get_source_segment(text, fn).count('req_bumiputera'), 2)
 
     def test_nothing_selects_every_profile_column(self):
         """A `select *` from the profile table would carry the answer along without naming it

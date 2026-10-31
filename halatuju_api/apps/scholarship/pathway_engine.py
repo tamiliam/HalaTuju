@@ -448,13 +448,14 @@ def student_offer_check(doc) -> dict:
         if application is not None else ''
     _inst_is_the_offers_own = (not op_is_pre_u(_declared_type)
                                and _cp_source in ('offer_letter_auto', 'offer_letter_confirmed'))
-    inst_agreement = op_institution_agreement(_cid, _stored_inst, institution) if _cid else (
+    issuer = (f.get('issuer') or '').strip()      # 2026-10-31: stands in for a hostel line
+    inst_agreement = op_institution_agreement(_cid, _stored_inst, institution, issuer) if _cid else (
         # No catalogue to ask AND the value came from the letter → we cannot verify it at all.
         'unknown' if _inst_is_the_offers_own else '')
     # The PROGRAMME dimension gets the same catalogue treatment as the institution (request #9):
     # a PISMP letter names the umbrella, the record names the specific option, and the two share no
     # distinctive token — a difference in DETAIL, read as a disagreement. '' → token comparison.
-    prog_agreement = op_programme_agreement(_cid, programme, institution) if _cid else ''
+    prog_agreement = op_programme_agreement(_cid, programme, institution, issuer) if _cid else ''
     pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution,
                                   declared_track=decl_track, offer_stream=stream,
                                   institution_agreement=inst_agreement,
@@ -479,7 +480,7 @@ def student_offer_check(doc) -> dict:
         'institution': institution,
         'stream': stream,                         # #117 (b) — the offer's Bidang, for the track compare
         'bidang': bidang,                         # PISMP BIDANG PENGKHUSUSAN (major) — literally on the letter
-        'issuer': (f.get('issuer') or '').strip(),
+        'issuer': issuer,
         'offer_date': (f.get('offer_date') or '').strip(),
         'intake': intake,
         'reporting_date': reporting_date,         # report/registration = course start (data point)
