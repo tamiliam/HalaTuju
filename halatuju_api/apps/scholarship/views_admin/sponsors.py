@@ -60,7 +60,8 @@ class AdminSponsorListView(_AdminBase):
         # Admin-General / finance. qc + reviewer are refused (nav + endpoint). Finance sees
         # sponsors READ-ONLY — who funds the programme is finance's business; approving them
         # is not, so the review gate (AdminSponsorReviewView) stays super/org_admin.
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.may_read_sponsors(admin):
             return self._deny_role()
         # Deterministic ordering (TD audit 2026-06-14) — without it the row order was
         # undefined. Full pagination is deferred: these are low-cardinality admin tables and
@@ -278,8 +279,9 @@ class AdminSponsorReviewView(_AdminBase):
         sponsorship_service.sync_account_membership(
             sponsor, sponsorship_service.signup_programme_for(sponsor), vetted_by=admin.email)
         from .. import staff_activity     # common profile S4: the vetter's own activity list
-        staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
-                              meta={'decision': new_status, 'kind': 'account'})
+        if previous_status != new_status:  # S4 review L4: a re-click of the same decision is no act
+            staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
+                                  meta={'decision': new_status, 'kind': 'account'})
         # S3: until now this endpoint flipped a field and returned — eight people on production
         # were approved and never told. `previous_status` is read BEFORE the write because an
         # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently

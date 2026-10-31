@@ -13,8 +13,10 @@ staff file, `test_letters`): its staff rows (a close, a released payment) are th
 stamps read here, which are the record, so reading both would write twins.
 
 WHO THE ACTOR IS. A real foreign key to `PartnerAdmin` where the record has one. Otherwise an email
-stamp, used ONLY when exactly one `PartnerAdmin` row has that address (case-insensitive) — an
-ambiguous or unknown address is skipped and counted. A NAME-ONLY stamp (the Foundation's countersign
+stamp, used ONLY when exactly one `PartnerAdmin` row with that address (case-insensitive) EXISTED
+when the act was stamped (`created_at` at or before it; review M1) — an ambiguous, unknown or
+only-later address is skipped and counted. Not rebuilt at all, only counted: a QC accept (its two
+stamps can name different acts, H1) and an interview submit (the submitter is not recorded, M2). A NAME-ONLY stamp (the Foundation's countersign
 name, the super's witness name) is skipped and counted: a name is not a person.
 
 ⚠ NO TWIN OF A LIVE ROW — TWO RULES, BOTH NEEDED. The deploy order is migrate, then the API (live
@@ -58,7 +60,15 @@ V = staff_activity.V
 NO_ACTOR = 'no actor recorded'
 NAME_ONLY = 'name-only stamp'
 UNKNOWN_EMAIL = 'email matches no staff row'
-AMBIGUOUS_EMAIL = 'email matches more than one staff row'
+AMBIGUOUS_EMAIL = 'email matches more than one staff row that existed then'
+EMAIL_HOLDER_LATER = 'email belongs only to a staff row created after the event'
+UNPAIRED_STAMPS = 'who and when are stamped apart and may name different acts'
+SUBMITTER_UNKNOWN = 'who pressed submit is not recorded'
+PART_OF_ACCOUNT_REVIEW = 'the same click as an account review'
+PART_OF_QC_REJECT = 'the reopen inside a QC reject'
+#: L1 / L2: how close two stamps must be to be one click.
+SAME_CLICK = timedelta(seconds=2)
+QC_REJECT_WINDOW = timedelta(seconds=5)
 NO_TIME = 'no event time recorded'
 AFTER_LIVE = 'after live start (has a live row)'
 LIVE_TWIN = 'has a live twin'
@@ -80,15 +90,21 @@ def _email(value):
     return ('email', value.casefold()) if '@' in value else None
 
 
-def _stream(qs, *fields):
-    return qs.values(*fields).iterator(chunk_size=BATCH)
+def _stream(qs, *fields, order=None):
+    """Stream ``fields`` in STAMP order, then id (review L6): unordered rows made each batch's
+    stamp range span the whole history, so the per-batch checks read far more than the batch, and
+    two duplicates in different batches were both counted by a dry run. ``order`` is the stamp;
+    by default `created_at` when it is read, else the id alone (a row with several stamps)."""
+    if order is None and 'created_at' in fields:
+        order = 'created_at'
+    return qs.order_by(*([order] if order else []), 'pk').values(*fields).iterator(chunk_size=BATCH)
 
 
 # ── the sources ────────────────────────────────────────────────────────────────────────────────
 def _first_sign_ins():
     from apps.courses.models import PartnerAdmin
     for r in _stream(PartnerAdmin.objects.filter(first_seen_at__isnull=False),
-                     'id', 'first_seen_at', 'owning_organisation_id'):
+                     'id', 'first_seen_at', 'owning_organisation_id', order='first_seen_at'):
         yield _Cand(V.FIRST_SIGN_IN, r['id'], org_id=r['owning_organisation_id'],
                     at=r['first_seen_at'])
 
@@ -136,7 +152,8 @@ def _queries():
                     r[org], r['created_at'], {'item': r['id'], 'kind': r['kind']})
     for r in _stream(ResolutionItem.objects.filter(status__in=('resolved', 'waived'),
                                                    resolved_at__isnull=False),
-                     'id', 'application_id', 'status', 'resolved_by', 'resolved_at', org):
+                     'id', 'application_id', 'status', 'resolved_by', 'resolved_at', org,
+                     order='resolved_at'):
         if (r['resolved_by'] or '') in ('student', 'system', ''):
             continue        # the student, the system: not a staff action at all
         actor = _email(r['resolved_by'])        # 'officer' (an old fallback) names nobody
@@ -147,13 +164,13 @@ def _queries():
 
 
 def _interviews():
+    """Review M2: COUNTED, never rebuilt. The live row names whoever pressed Submit; nothing stores
+    that person (the session's `interviewer` is who did the interview, and `repair_interview_credit`
+    re-points it), so a rebuilt row would credit the wrong person as often as not."""
     from .models import InterviewSession
-    for r in _stream(InterviewSession.objects.filter(status='submitted'), 'id', 'application_id',
-                     'interviewer_id', 'submitted_at', 'application__owning_organisation_id'):
-        yield _Cand(V.INTERVIEW_SUBMITTED, r['interviewer_id'], 'application', r['application_id'],
-                    r['application__owning_organisation_id'], r['submitted_at'],
-                    {'session': r['id'], 'interviewer': r['interviewer_id']},
-                    skip=None if r['interviewer_id'] else NO_ACTOR)
+    for _ in InterviewSession.objects.filter(status='submitted').values_list(
+            'id', flat=True).iterator(chunk_size=BATCH):
+        yield _Cand(V.INTERVIEW_SUBMITTED, None, skip=SUBMITTER_UNKNOWN)
 
 
 def _application_stamps():
@@ -169,10 +186,14 @@ def _application_stamps():
         pairs = (
             (V.VERIFY_ACCEPT, 'verified', {}),
             (V.VERDICT_RECORDED, 'verdict_decided', {'overall': overall or 'blank'}),
-            (V.QC_DECISION, 'recommended', {'decision': 'accept', 'outcome': 'recommended'}),
             (V.DECLINED, 'rejected', {'category': r['rejection_category'] or None}),
             (V.CASE_CLOSED, 'closed', {'reason': r['closure_reason'] or None}),
         )
+        if r['recommended_at'] is not None:
+            # Review H1: `recommended_at` is stamped on the FIRST accept and `recommended_by` on
+            # EVERY accept, so after a reopen and a second QC the pair names two different acts
+            # (QC2 at QC1's moment) and a re-accept between runs re-keys the row. Counted, not rebuilt.
+            yield _Cand(V.QC_DECISION, None, at=r['recommended_at'], skip=UNPAIRED_STAMPS)
         for verb, stem, meta in pairs:
             at = r[f'{stem}_at']
             by = r[f'{stem}_by']
@@ -185,11 +206,22 @@ def _application_stamps():
 
 
 def _reopens():
+    """A QC REJECT is a reopen and a decline in one click (review L2): the reopen is dropped when a
+    rejection by the same address follows within `QC_REJECT_WINDOW`, so the click rebuilds as ONE
+    `declined` row. ⚠ The difference that remains: live, that click is one `qc_decision` row (reject
+    → declined); rebuilt, it is a `declined` row by the QC — the stamps cannot say it was QC's."""
     from .models import DecisionReopen
     for r in _stream(DecisionReopen.objects.all(), 'application_id', 'reopened_by', 'created_at',
-                     'application__owning_organisation_id'):
+                     'application__owning_organisation_id', 'application__rejected_at',
+                     'application__rejected_by'):
+        by = (r['reopened_by'] or '').strip().casefold()
+        rejected = r['application__rejected_at']
+        qc_reject = (by and rejected is not None
+                     and (r['application__rejected_by'] or '').strip().casefold() == by
+                     and timedelta(0) <= rejected - r['created_at'] <= QC_REJECT_WINDOW)
         yield _Cand(V.DECISION_REOPENED, _email(r['reopened_by']), 'application',
-                    r['application_id'], r['application__owning_organisation_id'], r['created_at'])
+                    r['application_id'], r['application__owning_organisation_id'], r['created_at'],
+                    skip=PART_OF_QC_REJECT if qc_reject else None)
 
 
 def _agreements():
@@ -225,7 +257,7 @@ def _tranches():
     qs = Disbursement.objects.filter(status='released', released_at__isnull=False).exclude(
         reference__startswith='vircle:')     # a run's payout is the run's approval, not a tranche act
     for r in _stream(qs, 'id', 'application_id', 'actioned_by', 'released_at',
-                     'application__owning_organisation_id'):
+                     'application__owning_organisation_id', order='released_at'):
         yield _Cand(V.TRANCHE_RELEASED, _email(r['actioned_by']), 'application', r['application_id'],
                     r['application__owning_organisation_id'], r['released_at'], {'tranche': r['id']})
     # Withheld and returned tranches carry no moment of their own (only `updated_at`, which any save
@@ -266,19 +298,30 @@ def _templates():
 
 
 def _benefactors():
+    """Account vetting also settles the sign-up gift's membership, stamping `vetted_at` milliseconds
+    later (`sync_account_membership`): that membership stamp is the SAME click (review L1) and is
+    dropped when the account review by the same address is within `SAME_CLICK`. The index holds the
+    reviewed sponsors only (hundreds at most)."""
     from .models import Sponsor, SponsorProgrammeMembership
+    reviews = defaultdict(list)
     for r in _stream(Sponsor.objects.filter(reviewed_at__isnull=False), 'id', 'status',
-                     'reviewed_by', 'reviewed_at'):
+                     'reviewed_by', 'reviewed_at', order='reviewed_at'):
+        reviews[r['id']].append(((r['reviewed_by'] or '').strip().casefold(), r['reviewed_at']))
         yield _Cand(V.BENEFACTOR_VETTED, _email(r['reviewed_by']), 'sponsor', r['id'], None,
                     r['reviewed_at'], {'decision': r['status'], 'kind': 'account'})
     for r in _stream(SponsorProgrammeMembership.objects.filter(vetted_at__isnull=False),
                      'sponsor_id', 'programme_id', 'status', 'vetted_by', 'vetted_at',
-                     'programme__organisation_id'):
+                     'programme__organisation_id', order='vetted_at'):
         actor = _email(r['vetted_by'])
+        by = (r['vetted_by'] or '').strip().casefold()
+        same_click = any(email == by and abs(r['vetted_at'] - at) <= SAME_CLICK
+                         for email, at in reviews.get(r['sponsor_id'], ()))
+        skip = (PART_OF_ACCOUNT_REVIEW if same_click
+                else None if actor or not r['vetted_by'] else NAME_ONLY)
         yield _Cand(V.BENEFACTOR_VETTED, actor, 'sponsor', r['sponsor_id'],
                     r['programme__organisation_id'], r['vetted_at'],
                     {'decision': r['status'], 'kind': 'programme', 'programme': r['programme_id']},
-                    skip=None if actor or not r['vetted_by'] else NAME_ONLY)
+                    skip=skip)
 
 
 def _invoices():
@@ -296,7 +339,8 @@ def _invoices():
             yield _Cand(verb, _email(r[by]), 'invoice', r['id'], r['organisation_id'], r[at])
     org = 'invoice__organisation_id'
     for r in _stream(InvoicePaymentDeclaration.objects.all(), 'id', 'invoice_id', org,
-                     'declared_by_email', 'declared_at', 'rejected_by_email', 'rejected_at'):
+                     'declared_by_email', 'declared_at', 'rejected_by_email', 'rejected_at',
+                     order='declared_at'):
         yield _Cand(V.PAYMENT_DECLARED, _email(r['declared_by_email']), 'invoice', r['invoice_id'],
                     r[org], r['declared_at'], {'declaration': r['id']})
         if r['rejected_at'] is not None:
@@ -340,14 +384,27 @@ SOURCES = (_first_sign_ins, _invitations, _permission_changes, _assignments, _qu
 
 # ── the engine ─────────────────────────────────────────────────────────────────────────────────
 def email_index():
-    """``{address: id}`` for the addresses exactly ONE staff row holds, and the set of ambiguous ones."""
+    """``{address: [(id, created_at), ...]}`` over the staff table (hundreds of rows)."""
     from apps.courses.models import PartnerAdmin
     seen = defaultdict(list)
-    for pk, email in PartnerAdmin.objects.values_list('id', 'email'):
+    for pk, email, created in PartnerAdmin.objects.values_list('id', 'email', 'created_at'):
         if email:
-            seen[email.strip().casefold()].append(pk)
-    return ({e: ids[0] for e, ids in seen.items() if len(ids) == 1},
-            {e for e, ids in seen.items() if len(ids) > 1})
+            seen[email.strip().casefold()].append((pk, created))
+    return seen
+
+
+def resolve_email(index, address, at):
+    """``(id, None)`` or ``(None, reason)``. Review M1: an address names only a staff row that
+    EXISTED when the act was stamped. A shared mailbox (``ops@``) deleted and re-created would
+    otherwise credit the old person's acts to the new row — `staff_footprint` does not count most
+    of these email stamps as work, so the old row WAS deletable."""
+    rows = index.get(address)
+    if not rows:
+        return None, UNKNOWN_EMAIL
+    then = [pk for pk, created in rows if created is not None and created <= at]
+    if len(then) == 1:
+        return then[0], None
+    return None, (AMBIGUOUS_EMAIL if then else EMAIL_HOLDER_LATER)
 
 
 def live_cutoff():
@@ -389,7 +446,7 @@ def run(*, apply, before=None, now=None):
     cutoff = live or now
     if before is not None and before < cutoff:
         cutoff = before
-    unique, ambiguous = email_index()
+    index = email_index()
     written, skipped = Counter(), Counter()
     batch = []
 
@@ -423,13 +480,7 @@ def run(*, apply, before=None, now=None):
             if reason is None and c.at is None:
                 reason = NO_TIME
             if reason is None and isinstance(c.actor, tuple):
-                address = c.actor[1]
-                if address in ambiguous:
-                    reason = AMBIGUOUS_EMAIL
-                elif address in unique:
-                    c.actor = unique[address]
-                else:
-                    reason = UNKNOWN_EMAIL
+                c.actor, reason = resolve_email(index, c.actor[1], c.at)
             if reason is None and c.actor is None:
                 reason = NO_ACTOR
             if reason is None and c.at >= cutoff:

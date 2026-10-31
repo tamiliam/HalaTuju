@@ -92,6 +92,9 @@ class AdminSponsorMembershipView(_AdminBase):
         if programme is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
 
+        from ..models import SponsorProgrammeMembership
+        was = (SponsorProgrammeMembership.objects.filter(sponsor=sponsor, programme=programme)
+               .values_list('status', flat=True).first())     # S4 review L4: a no-op writes no row
         try:
             m = sponsorship_service.set_programme_membership(
                 sponsor, programme, (request.data.get('status') or '').strip(),
@@ -103,9 +106,11 @@ class AdminSponsorMembershipView(_AdminBase):
         logger.info('AUDIT sponsor_membership_set sponsor=%s programme=%s status=%s by=%s',
                     sponsor.id, programme.code, m.status, admin.email or '')
         from .. import staff_activity     # common profile S4: the vetter's own activity list
-        staff_activity.record(admin, staff_activity.BENEFACTOR_VETTED, sponsor,
-                              meta={'decision': m.status, 'kind': 'programme', 'programme': programme},
-                              organisation=programme.organisation_id)
+        if was != m.status:
+            staff_activity.record(
+                admin, staff_activity.BENEFACTOR_VETTED, sponsor,
+                meta={'decision': m.status, 'kind': 'programme', 'programme': programme},
+                organisation=programme.organisation_id)
         return Response({'programme_id': programme.id, 'programme': programme.code,
                          'status': m.status})
 

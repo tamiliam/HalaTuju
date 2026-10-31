@@ -40,6 +40,26 @@ order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_st
   live row, AND none with a live row of the same verb, actor and subject within minutes of its stamp (the first
   live action stamps its record a moment before its live row — a test caught the cut-off alone missing that).
   **Idempotent** on (verb, actor, subject, created_at). Streams in batches of 500.
+- **Adversarial review fixes** (`tests/test_staff_activity_review.py`, one regression test each):
+  - H1: a QC accept is no longer rebuilt from `recommended_at` / `recommended_by` (first-only time, last-only
+    person: two different acts) — it is counted as skipped.
+  - M1: an email stamp names only a staff row that existed when the act was stamped, so a re-created shared
+    mailbox (`ops@`) is never credited with its predecessor's acts.
+  - M2: an interview submit is counted, not rebuilt — the person who pressed Submit was never recorded.
+  - M3: every label on `admin/me/activity/` is gated by the SAME predicate its own screen asks today
+    (`apps/scholarship/surface_gates.py`, now used by the Sponsors, Team / Invitations, invoices, contracts and
+    Requests views too; invoices through the invoice screen's own fence), so a demoted viewer sees the neutral
+    word the moment the screen answers 403.
+  - L1: an account vetting's membership stamp (milliseconds later, same person) is the same click and is not
+    rebuilt as a second row.
+  - L2: the reopen inside a QC reject (same address, within seconds) is not rebuilt, so the click rebuilds as one
+    `declined` row (live it is one `qc_decision`; the stamps cannot say the decline was QC's).
+  - L4: a click that changes nothing writes nothing — membership and account vetting re-clicks, and the profile
+    saves (`admin/me/`, the reviewer cards, the source console, a partner's `admin/profile/`) name only the
+    fields whose value changed.
+  - L5: the reader answers 400, never 500, for a non-ASCII digit limit ('²'), an id beyond a bigint or a cursor
+    without a time zone.
+  - L6: every back-fill source streams in stamp order (then id), so each batch's checks span only that batch.
 - Tests: `test_staff_activity_money.py` (each S4 door one row; a payment run, a tranche, a credit and a receipt
   unchanged when the write fails), `test_my_activity.py` (own rows, D7, D8, source, paging, filters, query count,
   the allowlist), `test_staff_activity_backfill.py` (dry run, apply, idempotent, no twins, emails, purges).

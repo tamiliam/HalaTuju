@@ -157,21 +157,28 @@ class AdminMeView(_AdminBase):
         refused = phone_refusal(admin, clean)
         if refused is not None:
             return refused
-        fields = sorted(clean)          # common profile S3: which fields, never their values
+        changed = []    # common profile S3/S4 review L4: the fields whose value CHANGED, never values
         if 'name' in clean:
-            admin.name = clean.pop('name')
+            name = clean.pop('name')
+            changed += ['name'] if name != admin.name else []
+            admin.name = name
             admin.save(update_fields=['name'])
         if 'mentoring_area' in clean:
             # The MENTOR's own record (S7a). Staff never write it; the login row names exactly one.
-            Mentor.objects.filter(pk=admin.mentor_id).update(area=clean.pop('mentoring_area'))
+            mentor = Mentor.objects.filter(pk=admin.mentor_id)
+            area = clean.pop('mentoring_area')
+            changed += ['mentoring_area'] if mentor.exclude(area=area).exists() else []
+            mentor.update(area=area)
         if clean:
             profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin,
                                                             defaults=new_profile_defaults(admin))
+            changed += [key for key, value in clean.items() if getattr(profile, key) != value]
             for key, value in clean.items():
                 setattr(profile, key, value)
             profile.save(update_fields=[*clean, 'updated_at'])
-        if fields:
-            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
+        if changed:
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED,
+                                  meta={'fields': sorted(changed)})
         return Response(self._payload(request, admin))
 
     def _payload(self, request, admin):

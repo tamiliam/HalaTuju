@@ -30,6 +30,12 @@ def _rebuilt():
     return StaffActivity.objects.filter(backfilled=True)
 
 
+def _existed_long_ago(*admins):
+    """Review M1: an email names a staff row only if it EXISTED when the act was stamped."""
+    PartnerAdmin.objects.filter(pk__in=[a.pk for a in admins]).update(
+        created_at=LONG_AGO - timedelta(days=30))
+
+
 class _World(TestCase):
 
     def setUp(self):
@@ -38,6 +44,7 @@ class _World(TestCase):
         self.oa = make_admin('org_admin', owning_org=self.org, email='oa@example.test')
         self.reviewer = make_admin('reviewer', owning_org=self.org, email='rev@example.test')
         self.app = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        _existed_long_ago(self.oa, self.reviewer)
 
     def _event(self, by_email='oa@example.test', when=LONG_AGO, to=None):
         ev = AssignmentEvent.objects.create(application=self.app, to_admin=to or self.reviewer,
@@ -140,8 +147,8 @@ class TestNoTwinOfALiveRow(_World):
 class TestWhoTheActorIs(_World):
 
     def test_an_ambiguous_email_is_skipped_and_counted(self):
-        make_admin('admin', owning_org=self.org, email='Twin@example.test')
-        make_admin('admin', owning_org=self.org, email='twin@example.test')
+        _existed_long_ago(make_admin('admin', owning_org=self.org, email='Twin@example.test'),
+                          make_admin('admin', owning_org=self.org, email='twin@example.test'))
         self._event(by_email='twin@example.test')
         report = self.report()
         self.assertFalse(_rebuilt().filter(verb=V.ASSIGNED).exists())
