@@ -863,7 +863,7 @@ class AdminApplicationDetailSerializer(_gift.ServesTheGift, _family.ServesTheFam
 
 class ReviewerProfileSerializer(serializers.ModelSerializer):
     """A reviewer's own credentials + contact details (F6). Narrow + self-scoped:
-    only the six editable fields are writable; the FK is never exposed or accepted.
+    the phone + share switch are read-only (TD-439); the FK is never exposed or accepted.
     Sensitive staff PII (phone/address) lives only here, never in any outward
     (student/sponsor) serializer.
 
@@ -885,8 +885,8 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
             'field_of_study', 'phone', 'address',
             'street_address', 'postcode', 'city', 'state',
             'english_fluency', 'bm_fluency', 'tamil_fluency', 'other_language', 'other_language_fluency',
-            'share_phone_with_students',
-        ]
+            'share_phone_with_students']
+        read_only_fields = ['phone', 'share_phone_with_students']   # TD-439: written by admin/me/ only
 
     def validate(self, attrs):   # S2: the optional 4th language is both or neither (`staff_languages`)
         from .staff_languages import checked_other_language

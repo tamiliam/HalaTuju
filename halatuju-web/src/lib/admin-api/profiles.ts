@@ -130,7 +130,8 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
 export interface ActivitySubject {
   type: string
   state: 'visible' | 'hidden' | 'removed'
-  label: string
+  /** null for a VISIBLE subject with no name (TD-445): the card uses its own translated word. */
+  label: string | null
   /** The subject's id — only when it is visible. */
   id: number | null
 }
@@ -205,7 +206,8 @@ export async function getReviewerProfile(options?: ApiOptions) {
 }
 
 export async function updateReviewerProfile(
-  data: Partial<ReviewerProfile>,
+  // TD-439: the phone and "share with students" are written by `admin/me/` only — never sent here.
+  data: Partial<Omit<ReviewerProfile, 'phone' | 'share_phone_with_students'>>,
   options?: ApiOptions
 ) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }

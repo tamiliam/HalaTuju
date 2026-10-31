@@ -521,8 +521,9 @@ baseline before you start; never quote an inherited number.
 **Common profile S2 (2026-10-31) — release order and one standing danger.**
 - **Migrate first (scholarship 0193, by hand), then the API, then the web — the API BEFORE the web.**
   The new web saves the phone, the card and a source's name through `admin/me/` (which the old API
-  does not serve); the old web keeps saving the phone through `admin/reviewer-profile/`, which the new
-  API still accepts (and now refuses blank for a `review` holder) until TD-439 makes it read-only.
+  does not serve); the old web kept saving the phone through `admin/reviewer-profile/` during the rollout.
+  *(Superseded 2026-10-31, TD-439: that route serves the phone and "share with students" but no longer
+  writes them; `admin/me/` is their one writer — `docs/decisions.md`.)*
 - **⛔ Never run `cleanup_orphan_blobs --apply` from a checkout or image older than S2.** Its
   `known_paths` learned the staff photos (`ReviewerProfile.photo_path`, `staff-photos/…`) in S2; an
   older copy reads every staff photo as an orphan and DELETES it. Dry-run first, always, and read the
@@ -1176,7 +1177,7 @@ again unless the table is emptied. Doors left unwired on purpose: see CHANGELOG 
 **Gotchas.** Never run `cleanup_orphan_blobs --apply` from a pre-S2 checkout (it would delete staff photos).
 The live sign-in captcha against the service-role password grant is UNVERIFIED: if it blocks, the change answers
 503 `supabase_unavailable` (never "wrong password") — read the auth logs after the first real password change.
-TD-439: make `phone` / `share_phone_with_students` read-only on reviewer-profile now the new web is live.
+TD-439 (resolved 2026-10-31): `phone` / `share_phone_with_students` are read-only on reviewer-profile.
 
 ### ⚠ STATE AT 2026-10-30 — SCHOLARSHIP "MY PLANS" REDESIGN LIVE (main `53706f21`; api-01212-lr2, web-01035-m7b)
 

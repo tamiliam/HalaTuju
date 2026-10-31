@@ -4,16 +4,18 @@
  * never the server's English one), the links, and the grey second line.
  */
 import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
 import { interpolateMessage } from '@/lib/branding'
 import type { ActivityItem } from '@/lib/admin-api'
 import {
   dayGroup, groupByDay, rowContext, sentenceParts, subjectHref, subjectText,
 } from '@/lib/profileActivity'
 
-const t = (key: string, vars?: Record<string, string>) => {
-  const v = key.split('.').reduce<unknown>((c, k) => (c && typeof c === 'object' ? (c as Record<string, unknown>)[k] : undefined), en)
+const tIn = (messages: object) => (key: string, vars?: Record<string, string>) => {
+  const v = key.split('.').reduce<unknown>((c, k) => (c && typeof c === 'object' ? (c as Record<string, unknown>)[k] : undefined), messages)
   return typeof v === 'string' ? interpolateMessage(v, vars) : key
 }
+const t = tIn(en)
 // Wednesday 28 October 2026, 10:00 local.
 const NOW = new Date(2026, 9, 28, 10, 0)
 const at = (y: number, m: number, d: number, h = 9, min = 5) => new Date(y, m - 1, d, h, min).toISOString()
@@ -60,6 +62,16 @@ describe('the sentence and its subject', () => {
     expect(subjectText({ type: 'application', state: 'removed', label: 'SERVER WORD', id: null }, t)).toBe('a student (removed)')
     expect(subjectText({ type: 'new_kind', state: 'removed', label: 'SERVER WORD', id: null }, t)).toBe('something (removed)')
     expect(subjectText(null, t)).toBe('something')
+  })
+  it('TD-445: a visible subject with no name takes OUR translated word, and a student stays linked', () => {
+    const nameless = { type: 'application', state: 'visible' as const, label: null, id: 104 }
+    expect(subjectText(nameless, t)).toBe('a student')
+    expect(subjectText(nameless, tIn(ms))).toBe('seorang pelajar')
+    expect(subjectHref(nameless)).toBe('/admin/scholarship/104')
+    const invitation = { type: 'invitation', state: 'visible' as const, label: null, id: 7 }
+    expect(subjectText(invitation, t)).toBe('someone')
+    expect(subjectText(invitation, tIn(ms))).toBe('seseorang')
+    expect(subjectText({ type: 'payment_run', state: 'visible', label: null, id: 9 }, t)).toBe('a payment run')
   })
   it('links only a visible student or payment run', () => {
     expect(subjectHref({ type: 'application', state: 'visible', label: 'A', id: 4 })).toBe('/admin/scholarship/4')

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Common profile follow-up — TD-439, TD-445, TD-446 (2026-10-31) — BUILT, not deployed
+
+- **TD-439 (owner ruling):** `admin/reviewer-profile/` no longer writes the phone or "share my phone with
+  students" (read-only on `ReviewerProfileSerializer`; the GET still serves them). A PATCH carrying them saves
+  the other fields and leaves those two as they were; its blank-phone refusal is gone, so a `review` holder
+  saving qualifications is never refused over a phone they did not send. `admin/me/` is the one writer.
+- **TD-445:** My activity serves a visible subject with no name (a blanked invitation, a nameless student) as
+  `label: null`, still visible and linked; the card shows its own translated word, never the English one.
+- **TD-446:** a sign-in token refresh no longer reloads My activity or loses the Show older place; the first
+  load still runs when the token arrives. No migration; API and web.
+
 ## TD-440 Sprint: no Resend resets a login the person brought with them (2026-10-31) — LIVE 2026-10-31 (main 5122e299; api-01221-vg6)
 
 - `staff_reinvite.reissue_credential` (staff, source and mentor Resends) writes a new temporary password only when

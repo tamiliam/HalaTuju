@@ -1,5 +1,14 @@
 # Architectural Decisions — HalaTuju
 
+## The phone and "share with students" can no longer be changed through `admin/reviewer-profile/` — 2026-10-31 (owner ruling, TD-439)
+
+**Decision:** `ReviewerProfileSerializer` serves `phone` and `share_phone_with_students` but treats both as
+read-only: a PATCH carrying them saves the other fields and silently leaves those two as they were. Their ONE
+writer is `PATCH admin/me/` (with its blank-phone rule for a `review` holder or mentor). The blank-phone refusal
+on the reviewer-profile PATCH (S2 review fix L3) is removed with it, so a `review` holder saving qualifications
+is never refused over a phone they did not send. **Supersedes** the S2 rollout note that the old route kept the
+phone writable while the old web might be serving (`halatuju_api/CLAUDE.md`, S2 release order).
+
 ## My activity on the Profile page: own rows only, labels decided when read, neutral words translated on the web, chips per person — 2026-10-31 (lead decisions, common profile S5)
 
 **Context:** S3/S4 built the activity list and its reader (`GET admin/me/activity/`); S5 shows it on the
@@ -29,7 +38,7 @@ display names; only a payment run signature's part (maker / checker / approver) 
 
 **Trade-offs:** a visible student whose profile has no name arrives as visible with the server's English
 fallback word (`staff_activity_read._served_subject`, `label or hidden`) — rare, left as is (no API change in
-S5). A person without `review` downloads the activity card's code with the other cards (one chunk).
+S5; *resolved 2026-10-31, TD-445: served `label: null`, the web shows its own word*). A person without `review` downloads the activity card's code with the other cards (one chunk).
 
 **Revisit if:** the payload gains display context (a gift's name), a new subject type gets a page worth linking,
 or the manual gains Malay and Tamil.

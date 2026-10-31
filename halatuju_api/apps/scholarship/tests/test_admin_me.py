@@ -119,9 +119,9 @@ class TestReviewerProfileFollowsTheReviewPermission(TestCase):
                         permissions=['review', 'see_all', 'spending', 'payments_prepare'])
         client = authed_client(me)
         self.assertEqual(client.get(RP).status_code, 200)
-        resp = client.patch(RP, {'phone': '012-345 6789', 'paused': True}, format='json')
+        resp = client.patch(RP, {'university': 'Universiti Malaya', 'paused': True}, format='json')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(ReviewerProfile.objects.get(partner_admin=me).phone, '012-345 6789')
+        self.assertEqual(ReviewerProfile.objects.get(partner_admin=me).university, 'Universiti Malaya')
         me.refresh_from_db()
         self.assertTrue(me.is_paused)
 

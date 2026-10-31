@@ -90,13 +90,13 @@ class TestReviewerProfile(TestCase):
         payload = {
             'highest_qualification': 'PhD', 'university': 'Universiti Malaya',
             'graduation_year': 2015, 'field_of_study': 'Education',
-            'phone': '012-345 6789', 'address': '1 Jalan Ilmu, KL',
+            'address': '1 Jalan Ilmu, KL',
         }
         r = self.client.patch(self.URL, payload, format='json')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()['university'], 'Universiti Malaya')
         prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
-        self.assertEqual(prof.phone, '012-345 6789')
+        self.assertEqual(prof.address, '1 Jalan Ilmu, KL')
         self.assertEqual(prof.graduation_year, 2015)
 
     def test_patch_language_fluency(self):
@@ -151,12 +151,12 @@ class TestReviewerProfile(TestCase):
                          ('12 Jalan Ilmu', '50480', 'Kuala Lumpur', 'W.P. Kuala Lumpur'))
 
     def test_patch_is_partial(self):
-        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='OLD', university='UM')
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, address='OLD', university='UM')
         self._auth('reviewer-uid')
-        r = self.client.patch(self.URL, {'phone': 'NEW'}, format='json')
+        r = self.client.patch(self.URL, {'address': 'NEW'}, format='json')
         self.assertEqual(r.status_code, 200)
         prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
-        self.assertEqual(prof.phone, 'NEW')
+        self.assertEqual(prof.address, 'NEW')
         self.assertEqual(prof.university, 'UM')  # untouched
 
     def test_patch_rejects_implausible_year(self):
@@ -167,21 +167,54 @@ class TestReviewerProfile(TestCase):
     def test_fk_is_not_writable(self):
         """A reviewer cannot reassign their profile to another admin via the payload."""
         self._auth('reviewer-uid')
-        r = self.client.patch(self.URL, {'partner_admin': self.other.id, 'phone': 'x'},
+        r = self.client.patch(self.URL, {'partner_admin': self.other.id, 'university': 'x'},
                               format='json')
         self.assertEqual(r.status_code, 200)
-        prof = ReviewerProfile.objects.get(phone='x')
+        prof = ReviewerProfile.objects.get(university='x')
         self.assertEqual(prof.partner_admin_id, self.reviewer.id)
 
     # --- isolation: one reviewer never touches another's row ------------------
 
     def test_self_scoped_isolation(self):
-        ReviewerProfile.objects.create(partner_admin=self.other, phone='OTHER-PHONE')
+        ReviewerProfile.objects.create(partner_admin=self.other, phone='OTHER-PHONE', address='OTHER-HOME')
         self._auth('reviewer-uid')
         # GET returns my (blank) row, never the other reviewer's
         r = self.client.get(self.URL)
         self.assertEqual(r.json()['phone'], '')
         # PATCH writes only my row; the other reviewer's PII is untouched
-        self.client.patch(self.URL, {'phone': 'MINE'}, format='json')
-        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.other).phone, 'OTHER-PHONE')
-        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.reviewer).phone, 'MINE')
+        self.client.patch(self.URL, {'address': 'MINE'}, format='json')
+        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.other).address, 'OTHER-HOME')
+        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.reviewer).address, 'MINE')
+
+    # --- TD-439 (owner 2026-10-31): the phone has ONE writer, admin/me/ --------
+
+    def test_td439_a_patch_cannot_change_the_phone_or_the_share_switch(self):
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='012-000 0000',
+                                       share_phone_with_students=True)
+        self._auth('reviewer-uid')
+        r = self.client.patch(self.URL, {'phone': '019-999 9999', 'share_phone_with_students': False,
+                                         'university': 'UM'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.json()['phone'], r.json()['share_phone_with_students']), ('012-000 0000', True))
+        prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
+        self.assertEqual((prof.phone, prof.share_phone_with_students, prof.university),
+                         ('012-000 0000', True, 'UM'))
+
+    def test_td439_a_review_holder_saves_other_fields_with_or_without_a_stored_phone(self):
+        # The S2 blank-phone refusal is gone from this route: a phone it does not write is never refused.
+        self._auth('reviewer-uid')
+        for body in ({'university': 'UM'}, {'university': 'UKM', 'phone': ''}):
+            self.assertEqual(self.client.patch(self.URL, body, format='json').status_code, 200, body)
+        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.reviewer).phone, '')
+        ReviewerProfile.objects.filter(partner_admin=self.reviewer).update(phone='012-000 0000')
+        r = self.client.patch(self.URL, {'field_of_study': 'Law', 'phone': '  '}, format='json')
+        self.assertEqual(r.status_code, 200)
+        prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
+        self.assertEqual((prof.phone, prof.field_of_study, prof.university), ('012-000 0000', 'Law', 'UKM'))
+
+    def test_td439_the_get_still_serves_the_phone_and_the_share_switch(self):
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='012-345 6789',
+                                       share_phone_with_students=False)
+        self._auth('reviewer-uid')
+        r = self.client.get(self.URL)
+        self.assertEqual((r.json()['phone'], r.json()['share_phone_with_students']), ('012-345 6789', False))

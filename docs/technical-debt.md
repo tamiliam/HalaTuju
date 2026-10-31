@@ -140,8 +140,6 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-444** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
 - **TD-442** — A QC reject runs `reopen_decision` (its own atomic block) and then `admin_reject`; if the decline raises, the case stays reopened with a 400 and no activity row. *(B · S · raised 2026-10-31 by the common profile S4 review, L3; pre-existing)*
 - **TD-443** — `staff_footprint` ignores most email stamps (assigner, closer, recommender, resolution, permission changer, reopener, credit signers, invoices, receipts, templates, vetting, merchant notes, tranches), so a staff row with real history can be deleted. *(B · M · raised 2026-10-31 by the common profile S4 review, M1; pre-existing)*
-- **TD-445** — My activity: a VISIBLE subject with an empty name arrives with the server's ENGLISH neutral word as its label (`label or hidden`), so ms/ta show e.g. "Menjemput an invitation". Low.
-- **TD-446** — My activity: the card reloads to page one on every sign-in token refresh (the effect depends on `token`), losing the reader's Show older place. Low.
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7108,7 +7106,14 @@ shows the initials instead (`StaffAvatar` falls back on a load error) until the 
 list and the Profile page sign afresh on every visit. Accepted: nothing breaks and nothing private leaks.
 **Fix if it matters:** on the avatar's load error, ask `admin/me/` once more (at most once per hour). *(C · S)*
 
-### [TD-439] `admin/reviewer-profile/` still writes the phone and "share with students" - low
+### ~~[TD-439] `admin/reviewer-profile/` still writes the phone and "share with students" - low~~ — RESOLVED 2026-10-31 (owner ruling; common profile follow-up)
+
+**Resolved 2026-10-31 (owner ruling: reviewers must not change their phone through the old route).**
+`ReviewerProfileSerializer` lists `phone` and `share_phone_with_students` in `read_only_fields`: the GET still
+serves both, a PATCH carrying them saves the other fields and leaves those two unchanged. The reviewer-profile
+`phone_refusal` check is removed (it could only misfire now); `admin/me/` is the one writer. The web never sent
+them there (`updateReviewerProfile`'s type now forbids them). Tests `test_td439_*` (`test_reviewer_profile.py`),
+`test_l3_td439_*` (`test_staff_profile_card.py`); `docs/decisions.md` 2026-10-31.
 
 **Raised 2026-10-31 by the common profile S2 adversarial review (L3).** Since S2 the phone and
 `share_phone_with_students` have ONE writer on the new web — `PATCH admin/me/`. The reviewer-profile
@@ -7190,7 +7195,12 @@ signers, invoice / receipt / declaration stamps, template stamps, membership `ve
 same address (a shared mailbox) then looks like the author. The S4 back-fill is already safe (it maps an email only
 to a row created before the event). **Fix:** widen `footprint` to these stamps and test each one. *(B · M)*
 
-### [TD-445] My activity shows an English word as a name when a visible subject has none - low
+### ~~[TD-445] My activity shows an English word as a name when a visible subject has none - low~~ — RESOLVED 2026-10-31 (common profile follow-up)
+
+**Resolved 2026-10-31.** `staff_activity_read._served_subject` serves a visible subject with an empty name as
+`label: None` (state `visible`, id kept); the web's `subjectText` already falls back to its own translated neutral
+word, and `subjectHref` still links a student. Tests `TestUnnamedVisibleSubject` (`test_my_activity.py`) and the
+TD-445 case in `lib/__tests__/profileActivity.test.ts` (en + ms).
 
 **Raised 2026-10-31 by the common profile S5 code review.** `staff_activity_read._served_subject` sends
 `state: 'visible'` with `label: label or hidden` — when the subject the viewer may see has an EMPTY name (an
@@ -7200,7 +7210,12 @@ an invitation", ta "அழைப்பு அனுப்பினீர்க�
 sends `label: null` for an unnamed visible subject and the web uses its own translated word (keep the link for a
 student); test both. *(B · S)*
 
-### [TD-446] My activity reloads to page one when the sign-in token refreshes - low
+### ~~[TD-446] My activity reloads to page one when the sign-in token refreshes - low~~ — RESOLVED 2026-10-31 (common profile follow-up)
+
+**Resolved 2026-10-31.** `ActivityCard` keeps the latest token in a ref; the load effect depends on `kind`,
+`attempt` and only on whether a token exists, so the first load still runs when the token arrives and a refresh
+neither refetches nor resets Show older (the next page goes out with the new token). Tests: the two TD-446 cases
+in `components/adminProfile/ActivityCard.test.tsx`.
 
 **Raised 2026-10-31 by the common profile S5 code review.** `components/adminProfile/ActivityCard.tsx`: the load
 effect depends on `token`, and `admin-auth-context` hands out a new `access_token` string on every

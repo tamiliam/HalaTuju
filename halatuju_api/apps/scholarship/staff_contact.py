@@ -9,8 +9,8 @@ ONE home for the rules the profile endpoints share (`views_admin/me.py`, `views_
   THE rule for the phone being required, for "share my phone with students" and for the reviewer
   cards a mentor also fills in (qualifications, languages, address — `ReviewerProfileView`). The web
   twin is `lib/profileCards.ts` `worksWithStudents`.
-- `phone_refusal(admin, data)` — the blank-phone refusal, applied by BOTH writers of the phone while
-  the old web (which still saves the phone through `admin/reviewer-profile/`) may be serving.
+- `phone_refusal(admin, data)` — the blank-phone refusal of `admin/me/`, the phone's ONE writer since
+  TD-439 (`admin/reviewer-profile/` serves the phone but no longer writes it).
 - `new_profile_defaults(admin)` — what a profile row starts with when it is CREATED: "share with
   students" is on only for somebody who can be shown the switch (review fix L2).
 - `assigner_sees_phone(target, profile)` — the reviewer DETAIL serves a phone only when the person
