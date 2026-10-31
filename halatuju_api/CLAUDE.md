@@ -1127,13 +1127,17 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0 DONE 2026-10-31, NEXT = M1 global foundations
+### Mobile-native arc (separate stream) — M0 + M1 DONE (M1 live 2026-11-01, main 3ba3be3d, web-01049-tds), NEXT = M2 student shell + onboarding
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
-API data; it is read-only) and `npm run mobile-ledger`. Static ratchets in `mobileStandard.test.ts` may only go
-down. A new `page.tsx` must be classified in `src/lib/mobileClass.ts`. M1 starts with the Tamil font (Mukta Malar,
-from SJKTConnect), the 16 px input rule, the shared Sheet, and the 5.7 MB favicon. Owner pick due in M1: TD-311.
+API data; read-only; warms every page first) and `npm run mobile-ledger`. A new `page.tsx` must be classified in
+`src/lib/mobileClass.ts`. **Since M1:** every overlay is `src/components/Sheet.tsx` (a new `fixed inset-0` outside it
+and the three named panels fails Jest; `dismissible={false}` for sign-in/consent/money, `busy` while saving; it is
+portalled, so pass page-wrapper classes such as `font-plex` via `className`); text fields are 16 px on phones by ONE
+rule at the end of `globals.css`; Tamil renders in Mukta Malar (`--font-tamil`, Tamil-only unicode-range); phone
+fields autofill `tel-national` (never `tel`). `/scholarship/application` sits ~0.23 kB under its first-load line
+(TD-433) and the median 0.5 kB — lazy-load before adding weight. M2 is Stitch-first (one student header).
 
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b LIVE (main 7dc9c15d; api-01224-s6w, web-01047-lvq; 0196 applied by hand, ledger row in)
 

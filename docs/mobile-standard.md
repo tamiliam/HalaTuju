@@ -45,9 +45,10 @@ Three kinds of check, from cheapest to most human:
 ### 2. Text fields are 16 px or more on phones
 - **Why:** iPhone Safari zooms the whole page when you tap a field under 16 px, and it stays zoomed.
 - **Done for you (M1a):** one rule at the end of `src/app/globals.css` sets every text-entry
-  input, select and textarea to 16 px below `md` — outside `@layer`, with enough specificity to beat
+  input, select and textarea to 16 px below `md` AND on any touch-first screen (`pointer: coarse` —
+  an iPhone held sideways is 844–932 px wide, past `md`) — outside `@layer`, with enough specificity to beat
   `text-sm`, `text-xs`, `text-[13px]` and `max-md:` sizes. It only ever raises: a field that asks for
-  `text-base` or larger keeps its size. From `md` up every field keeps its own class size. You do
+  `text-base` or larger keeps its size. On a mouse-driven screen from `md` up every field keeps its own class size. You do
   not need to do anything — just never write `!text-sm` (an `!important` size beats the rule).
 - **Checked by:** static guard (the rule exists, below `md`, outside every `@layer`; no field carries
   an `!important` small size) and mobile-check (the computed size of every visible field: 0 under 16).
@@ -88,7 +89,10 @@ Three kinds of check, from cheapest to most human:
   dialog from `md`. `onSubmit` makes body + footer one form; `busy` blocks closing during an action;
   `dismissible={false}` (consent, sign-in) removes the × and makes Escape and the backdrop do
   nothing. It is portalled to `<body>`: put a menu inside it with the portalled `admin/Menu`, never
-  an `absolute` dropdown (the body scrolls, and would clip it). Sandbox: `sheet-short`,
+  an `absolute` dropdown (the body scrolls, and would clip it). Being portalled, it also leaves its page's
+  wrapper classes behind: pass a page face such as `font-plex` with `className`. **Focus opens on the first
+  field** — when that is not the main action (the sign-in gate's phone box, with phone sign-in off), pass
+  `initialFocus`, or a phone's keyboard rises and pushes the real action out of view. Sandbox: `sheet-short`,
   `sheet-long-form`, `sheet-locked-confirm`.
 
 ### 6. Safe areas and dvh
@@ -104,7 +108,9 @@ Three kinds of check, from cheapest to most human:
   that edge just adds the inset: `pt-[env(safe-area-inset-top)]` (`AppHeader.tsx`, the sponsor portal
   header), `bottom-[env(safe-area-inset-bottom)]` (`admin/SaveBar.tsx`), the admin drawer
   (`AppShell.tsx`). The LEFT and RIGHT insets (landscape) are on `body` once, in `globals.css`.
-  Heights: `dvh` units (`max-h-[90dvh]`, `min-h-dvh`), never `vh`.
+  Heights: `dvh` units (`max-h-[90dvh]`, `min-h-dvh`), never `vh` — but a browser that does not know `dvh`
+  (Safari < 15.4, Chrome < 108) drops the WHOLE declaration, so a cap a screen depends on (the Sheet's) is
+  computed in pixels from `visualViewport` instead.
 
 ### 7. Tables become cards on phones
 - **Why:** a seven-column table dragged sideways is the wrong shape for the screen people check things on.
@@ -117,7 +123,10 @@ Three kinds of check, from cheapest to most human:
 - **Why:** a number pad for a postcode, the one-time-code row for an OTP — fewer mistakes, faster.
 - **Checked by:** review.
 - **Copy this:** `inputMode="numeric"` / `"decimal"` (`src/components/admin/InvoicePaymentPanel.tsx`);
-  `type="tel"`, `type="email"`, `autoComplete="one-time-code"`, `autoComplete="postal-code"`.
+  `type="tel"`, `type="email"`, `autoComplete="one-time-code"`, `autoComplete="postal-code"`. A phone field
+  is `autoComplete="tel-national"` (our fields hold the LOCAL number; `tel` fills "+60 …", which the profile
+  rejected and which cut a digit off an 011 number) or `"off"` for somebody else's number. Guarded: rule 10
+  in `mobileStandard.test.ts` fails on any `autoComplete="tel"`.
 
 ### 9. Files: camera-friendly pickers, PDFs full-screen
 - **Why:** some phones will not open the picker for a `hidden` input; a PDF in an iframe shows only

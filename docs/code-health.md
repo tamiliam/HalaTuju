@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-01 | 49ec378 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 80 | 92 | 0 | 3 | 12 | 163 | 0 | 0 | ok | ok |
 | 2026-11-01 | f908d5b | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 79 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
 | 2026-10-31 | d85eedb | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 76 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
 | 2026-10-31 | 613cfbe | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 75 | 92 | 0 | 3 | 13 | 157 | 0 | 0 | ok | ok |
@@ -116,7 +117,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-01, f908d5b, window 2026-08-03 onward)
+## Latest run (2026-11-01, 49ec378, window 2026-08-03 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -128,12 +129,12 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
+| `halatuju_api/apps/courses/views_admin.py` | 10 | 794 | 7.9 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
-| `halatuju_api/apps/courses/views_admin.py` | 9 | 774 | 7 |
 
 ### Fix ratio
-- 251 fix / 240 feat commits since 2026-08-03
+- 259 fix / 245 feat commits since 2026-08-03
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -176,10 +177,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
-- courses -> scholarship: 17 edges (24 import statements)
+- courses -> scholarship: 18 edges (25 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 52 edges (250 import statements)
+- scholarship -> courses: 52 edges (254 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -198,37 +199,37 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 41 of 327 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
+- 41 of 336 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 446 entries have a defining line; 163 carry no resolution marker on it
+- 447 entries have a defining line; 163 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
-- line 1381: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1403: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1420: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1709: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6205: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6519: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
-- line 6533: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
-- line 6541: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
-- line 6559: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
-- line 6561: - **TD-356 (raised 2026-10-06 by the TD-349 fix) - eligibility, pre-existing: `cancel_reopen` cannot tell an unmoved `interviewing` from a QC reopen's
-- line 6566: - **TD-361 (raised 2026-10-06 by the Consolidation Review's code-health reading — the third-consecutive-accept rule) - low, hygiene: `big` has been ac
-- line 6568: - **TD-363 (raised 2026-10-06 by the TD-352 sprint) - low, officer-visible: the status a case was closed FROM has no field, and the Close card cannot 
-- line 6570: - **TD-365 (raised 2026-10-06 by the TD-352 sprint) - narrow race, money-adjacent, pre-existing class: a close and a fund can interleave.** `close_app
-- line 6572: - **TD-367 (raised 2026-10-06 by the TD-352 adversarial review) - money, pre-existing: a payment run can pay a closed student.** `payments.complete` (
-- line 6573: - **TD-368 (raised 2026-10-06 by the TD-352 review, round 3) - low, pre-existing, shared with rejected/expired: interview times can be proposed and bo
-- line 6588: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
-- line 6591: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
-- line 7136: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
+- line 1380: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1402: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1419: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1708: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6204: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6518: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6532: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
+- line 6540: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
+- line 6558: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
+- line 6560: - **TD-356 (raised 2026-10-06 by the TD-349 fix) - eligibility, pre-existing: `cancel_reopen` cannot tell an unmoved `interviewing` from a QC reopen's
+- line 6565: - **TD-361 (raised 2026-10-06 by the Consolidation Review's code-health reading — the third-consecutive-accept rule) - low, hygiene: `big` has been ac
+- line 6567: - **TD-363 (raised 2026-10-06 by the TD-352 sprint) - low, officer-visible: the status a case was closed FROM has no field, and the Close card cannot 
+- line 6569: - **TD-365 (raised 2026-10-06 by the TD-352 sprint) - narrow race, money-adjacent, pre-existing class: a close and a fund can interleave.** `close_app
+- line 6571: - **TD-367 (raised 2026-10-06 by the TD-352 adversarial review) - money, pre-existing: a payment run can pay a closed student.** `payments.complete` (
+- line 6572: - **TD-368 (raised 2026-10-06 by the TD-352 review, round 3) - low, pre-existing, shared with rejected/expired: interview times can be proposed and bo
+- line 6587: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
+- line 6590: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
+- line 7135: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at d85eedb
+- budgets no looser than at f908d5b
 
 ### tsc
 - 0 errors in 0 files
@@ -236,11 +237,24 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6789
+- Total keys per locale: 6899
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-01 (49ec378, Mobile-native M1 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on the M1 branch with main merged through 8e6773d5). The window since
+f908d5b holds Mobile M1 (web only), Student maintenance Sprint 7b and the My activity follow-ups. Unchanged: `fix%`
+51, `hot#1` officerCockpit.ts 28.2, `big` 15, `long` 15, `dup` 4, `supp` 92, `skip` 0, `mirror` 3, `td_open` 163,
+`unused` 0, `tsc` 0. Moved:
+
+- **`xapp` 79 -> 80 (Sprint 7b, not M1).** M1 changed no api file; the new import is 7b's mentoring code reaching
+  across apps (recorded at its own close). **Accepted** here as not this sprint's.
+- **`guard%` 13 -> 12 (better).** M1 added behaviour tests (Sheet, InfoTip, the gate's focus, the overlays'
+  suites) faster than source-reading guards. No action.
+- **`td_open` 163 -> 163.** TD-450 added (M1 close review's minor findings); TD-311 resolved by M1a. **Accepted.**
 
 ### 2026-11-01 (f908d5b, offer realignment close) — 1 FAIL, accepted
 

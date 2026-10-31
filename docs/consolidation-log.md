@@ -56,6 +56,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-30 Scholarship My Plans redesign (offer question, institution first, unfiltered; + adversarial review round; no migration) — ceb547fc c34519cb 53706f21
 - 2026-10-31 School search + same-name towns + MARA division in the picker (owner follow-ups to My Plans; two adversarial review rounds, money guarded; no migration) — 78348694 4a9777a5 30105247 fadedfc1 9282305d 820c1412
 - 2026-10-31 Mobile-native Sprint M0 (Mobile Standard, ratchet guards, mobile-check + ledger, viewport/manifest) — 9691f9a7 b38e6b67 c4f7d9d6 308ef3b5
+- 2026-11-01 Mobile-native Sprint M1 (M0 tooling review fixes, M1a global foundations, M1b shared Sheet + 15 overlays, review fixes) — 8d667133 225671b1 22eb88cc 9b3f3778 fb710d8f bb3d2722 506df8d1 a59da58b e0e0b7dd bd872cd9
 - 2026-10-31 Common profile Sprints S3-S5 (My activity: staff_activity + writer, reader, back-fill, the card; adversarial review round; migration scholarship 0195) — b269a631 d3e472c7 151de0f2 de573eb1 54e6cf3d 51bf847d
 - 2026-11-01 Common profile follow-up sprint (TD-439 owner ruling: phone written by admin/me only; TD-445, TD-446; no migration) — 83571471
 - 2026-11-01 Offer realignment (degree catalogue in the matcher, issuer for a hostel line, Bumi-only offers realign the pick; two adversarial review rounds; no migration; realign_bumi_offers --apply on live) — a8c763f8 333e7a96 1d849065
