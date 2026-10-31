@@ -283,6 +283,19 @@ async function fillPassword(current: string, pw: string, pw2 = pw) {
 const submitPassword = () => fireEvent.click(within(screen.getByTestId('change-password'))
   .getByText('admin.myProfile.changePassword'))
 
+it('the password change names the sign-in email as the username the browser saves, not the phone', async () => {
+  // Owner report 2026-10-31: Chrome saved the new password under the phone number, the nearest text
+  // field before it. A hidden username field carrying the sign-in email sits in front of the passwords.
+  signIn('reviewer')
+  render(<ProfilePage />)
+  await fillPassword('old-secret', 'longenough1')
+  const username = within(screen.getByTestId('change-password')).getByTestId('password-username') as HTMLInputElement
+  expect(username.getAttribute('autocomplete')).toBe('username')
+  expect(username.value).toBe('priya@example.org')
+  // The phone says it is a phone, so a password manager never takes it for a username.
+  expect(document.querySelector('input[type="tel"]')?.getAttribute('autocomplete')).toBe('tel-national')
+})
+
 it('a password account changes its password through admin/me/password/, never updateUser', async () => {
   signIn('admin')
   mockApi.changeOwnPassword.mockResolvedValue({ ok: true })

@@ -105,7 +105,7 @@ export function PhoneField({ id, value, onChange, required }: {
     <div className="flex items-stretch">
       <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-ground-300 bg-ground-50 text-sm text-ground-500">+60</span>
       <input
-        id={id} type="tel" inputMode="numeric" required={required}
+        id={id} type="tel" inputMode="numeric" autoComplete="tel-national" required={required}
         value={formatMyMobile(value)}
         onChange={(e) => onChange(formatMyMobile(e.target.value))}
         placeholder="12-345 6789"

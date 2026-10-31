@@ -107,6 +107,11 @@ export default function SignInCard({ state }: CardProps) {
       )}
       {hasPassword && open && (
         <div className="grid gap-4 sm:grid-cols-2" data-testid="change-password">
+          {/* The browser's password manager pairs a password with the nearest text field before it —
+              on this page the phone. This hidden field names the sign-in email as the username it
+              should save (owner report 2026-10-31: Chrome stored the phone number). */}
+          <input type="text" name="username" autoComplete="username" value={email} readOnly hidden
+            aria-hidden="true" tabIndex={-1} data-testid="password-username" />
           <div className="sm:col-span-2 sm:max-w-[50%] sm:pr-2">
             <label htmlFor="profile-current-password" className={labelCls}>{t(`${P}.currentPassword`)}</label>
             <input id="profile-current-password" type="password" autoComplete="current-password"

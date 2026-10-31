@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Profile: the browser saves a changed password under the sign-in email, not the phone (owner, 2026-10-31)
+
+- Chrome stored the new password under the phone number (the nearest text field before the password fields). The
+  Sign-in card's change form now carries a hidden `autocomplete="username"` field with the sign-in email, and the
+  phone field says `autocomplete="tel-national"` (`components/adminProfile/SignInCard.tsx`, `shared.tsx`; test in
+  `app/admin/profile/page.test.tsx`).
+
 ## MARA's own diplomas sit under MARA in the scholarship picker (owner, 2026-10-31)
 
 - The 13 diplomas of MARA's education division ("Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi",
