@@ -34,6 +34,7 @@ ISSUE = 'apps.courses.supabase_admin.issue_temp_password'
 KILL = 'apps.courses.supabase_admin.kill_temp_password'
 READ = 'apps.courses.supabase_admin.read_auth_user'
 DELETE = 'apps.courses.supabase_admin.delete_auth_user'
+EXISTS = 'apps.courses.supabase_admin.auth_user_exists'
 
 SUPABASE = dict(SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co')
 
@@ -49,13 +50,15 @@ class _Base(TestCase):
         cls.viewer = make_admin('admin', owning_org=cls.org)
         cls.other_lead = make_admin('org_admin', owning_org=cls.other_org)
 
-    def invite(self, caller=None, new_login=('uid-new', False, None), query='', **body):
+    def invite(self, caller=None, new_login=('uid-new', False, None), query='', exists=False, **body):
         body.setdefault('audience', 'mentor')
         body.setdefault('name', 'Priya Devi')
         body.setdefault('email', 'priya@example.org')
-        with patch(NEW_LOGIN, return_value=new_login) as made:
+        # `exists`: what Supabase Auth answers for a GOOGLE address (`auth_user_exists`); never the
+        # network in a test.
+        with patch(NEW_LOGIN, return_value=new_login) as made,                 patch(EXISTS, return_value=exists) as asked:
             r = authed_client(caller or self.lead).post(INVITE + query, body, format='json')
-        self.new_login = made
+        self.new_login, self.asked = made, asked
         return r
 
     def login(self, email='priya@example.org'):
@@ -532,3 +535,80 @@ class TestReviewFixes(_Base):
         self.assertEqual((login.email, login.supabase_user_id), ('priya@example.org', 'uid-new'))
         self.assertEqual(Invitation.objects.filter(audience='mentor', revoked_at__isnull=True).count(), 1)
         self.assertEqual(mail.outbox, [])
+
+
+class TestAGoogleAddressThatAlreadyHasALogin(_Base):
+    """Lead check of the review fix (2026-10-31): a GOOGLE address is never provisioned, so
+    `already_registered` cannot catch it — Supabase Auth is asked (`auth_user_exists`)."""
+
+    def test_an_invite_to_a_google_address_with_a_login_is_refused(self):
+        r = self.invite(email='Priya@Gmail.com', exists=True)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'))
+        self.asked.assert_called_once_with('priya@gmail.com')
+        self.assertFalse(Mentor.objects.exists())
+        self.assertFalse(PartnerAdmin.objects.filter(role='mentor').exists())
+        self.assertFalse(Invitation.objects.filter(audience='mentor').exists())
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_failed_lookup_fails_closed(self):
+        from apps.courses import supabase_admin
+        r = self.invite(email='priya@gmail.com', exists=supabase_admin.FAILED)
+        self.assertEqual((r.status_code, r.json()['code']), (502, 'create_failed'))
+        self.assertFalse(Mentor.objects.exists())
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_non_google_address_is_not_looked_up(self):
+        self.assertEqual(self.invite().status_code, 201)
+        self.asked.assert_not_called()
+
+    def _move(self, email, exists):
+        account = {'id': 'uid-new', 'email': 'priya@example.org', 'last_sign_in_at': None,
+                   'app_metadata': {'providers': ['email']}, 'identities': []}
+        mentor = Mentor.objects.get()
+        with patch(READ, return_value=account), patch(DELETE, return_value='deleted') as deleted,                 patch(EXISTS, return_value=exists), patch(NEW_LOGIN, return_value=('uid-2', False, None)) as made,                 patch('apps.scholarship.staff_lifecycle.login_used_elsewhere', return_value=False):
+            r = authed_client(self.lead).patch(f'{MENTORS}{mentor.pk}/', {'email': email}, format='json')
+        deleted.assert_not_called()
+        made.assert_not_called()
+        return r
+
+    def test_an_email_move_to_a_google_address_with_a_login_is_refused(self):
+        from apps.courses import supabase_admin
+        self.invite()
+        mail.outbox.clear()
+        for exists, code, http in ((True, 'already_staff', 409), (supabase_admin.FAILED, 'create_failed', 502)):
+            r = self._move('student@gmail.com', exists)
+            self.assertEqual((r.status_code, r.json()['code']), (http, code), exists)
+        login = self.login()
+        self.assertEqual((login.email, login.supabase_user_id), ('priya@example.org', 'uid-new'))
+        self.assertEqual(Invitation.objects.filter(audience='mentor', revoked_at__isnull=True).count(), 1)
+        self.assertEqual(mail.outbox, [])
+
+
+@override_settings(**SUPABASE)
+class TestAuthUserExists(TestCase):
+    """`supabase_admin.auth_user_exists` itself — the network mocked."""
+
+    def answer(self, status=200, users=None, raises=False):
+        from unittest.mock import MagicMock
+        resp = MagicMock(status_code=status)
+        resp.json.return_value = {'users': users if users is not None else []}
+        return patch('apps.courses.supabase_admin.http_requests.get',
+                     side_effect=OSError('down') if raises else None, return_value=resp)
+
+    def test_the_three_answers(self):
+        from apps.courses import supabase_admin
+        with self.answer(users=[{'id': 'a', 'email': 'Priya@gmail.com'}]):
+            self.assertIs(supabase_admin.auth_user_exists('priya@gmail.com'), True)
+        # GoTrue's filter is a SUBSTRING match: a near-miss is not the same login.
+        with self.answer(users=[{'id': 'b', 'email': 'xpriya@gmail.com'}]):
+            self.assertIs(supabase_admin.auth_user_exists('priya@gmail.com'), False)
+        for kw in ({'status': 500}, {'raises': True}):
+            with self.answer(**kw):
+                self.assertEqual(supabase_admin.auth_user_exists('priya@gmail.com'), supabase_admin.FAILED)
+        # A FULL page of near-misses: the exact address could be on the next page — fail closed.
+        page = [{'id': str(i), 'email': f'{i}priya@gmail.com'} for i in range(3)]
+        with self.answer(users=page):
+            self.assertEqual(supabase_admin.auth_user_exists('priya@gmail.com', per_page=3),
+                             supabase_admin.FAILED)
+        with override_settings(SUPABASE_SERVICE_ROLE_KEY=''):
+            self.assertEqual(supabase_admin.auth_user_exists('priya@gmail.com'), supabase_admin.FAILED)

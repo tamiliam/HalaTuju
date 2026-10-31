@@ -53,6 +53,24 @@ MENTOR_ROLE = PartnerAdmin.MENTOR_ROLE
 AUDIENCE = invitations.MENTOR_AUDIENCE
 
 ACTIVE, INVITED, INACTIVE = 'active', 'invited', 'inactive'
+
+
+def google_address_refusal(email):
+    """`already_staff` / `create_failed` / None for a GOOGLE address (lead check of the review fix,
+    2026-10-31). A Google address is never provisioned, so `already_registered` is never seen for it:
+    Supabase Auth is ASKED whether it already holds a login there (a student's who signs in with
+    Google), and one that does is refused. A lookup that fails refuses too (fail closed, nothing kept).
+    Any other address is checked by provisioning itself (`already_registered`)."""
+    from apps.courses import supabase_admin
+    from apps.courses.views_admin import is_google_email
+    if not is_google_email(email):
+        return None
+    found = supabase_admin.auth_user_exists(email)
+    if found is True:
+        return 'already_staff'
+    if found is not False:
+        return 'create_failed'
+    return None
 STATUSES = (ACTIVE, INVITED, INACTIVE)
 
 #: What `invite` did. ``error`` is None, `already_staff` or `create_failed`.
@@ -127,6 +145,9 @@ def invite(caller, *, organisation, email, name):
     are written in ONE transaction, and the letter goes only after it commits."""
     if PartnerAdmin.objects.filter(email__iexact=email).exists():
         return Invited('already_staff', None, None, None, False, False, False)
+    taken = google_address_refusal(email)
+    if taken:
+        return Invited(taken, None, None, None, False, False, False)
     try:
         with transaction.atomic():
             mentor = Mentor.objects.create(organisation=organisation,
@@ -295,6 +316,9 @@ def _move_address(caller, mentor, login, name, email):
         return False, False, 'already_staff'
     if supabase_admin.supabase_config() is None:
         return False, False, 'not_configured'
+    taken = google_address_refusal(email)
+    if taken:
+        return False, False, taken
     old_uid = login.supabase_user_id
     plan, account = staff_lifecycle.plan_login_retirement(login)   # BEFORE the address changes
     if plan == supabase_admin.FAILED:

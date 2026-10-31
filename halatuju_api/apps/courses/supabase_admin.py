@@ -130,6 +130,39 @@ INERT = 'inert'        # no Supabase config at all
 WEAK_PASSWORD = 'weak_password'   # the project's password policy refused a new password
 
 
+def auth_user_exists(email, per_page=50):
+    """Does Supabase Auth already hold a login at exactly ``email``? True / False / `FAILED`.
+
+    Student maintenance S7a review (2026-10-31): a GOOGLE address is never provisioned (no password,
+    the row links on the first Google sign-in by verified email), so nothing else would notice that
+    the address already belongs to somebody — a student, a sponsor — whose own login `get_admin` would
+    then take over. ⚠ FAIL CLOSED: no config, an error, a non-200, or a page FULL of substring matches
+    with no exact one (the exact address could be on the next page) is `FAILED`, never False.
+    GoTrue's admin list `filter` matches by substring, so only an EXACT (case-insensitive) address
+    counts as the same login, as in `_read_back_user_id`."""
+    cfg = supabase_config()
+    if cfg is None:
+        return FAILED
+    wanted = (email or '').strip().lower()
+    try:
+        resp = http_requests.get(f'{cfg[0]}/auth/v1/admin/users',
+                                 params={'filter': wanted, 'per_page': per_page},
+                                 headers=_service_headers(cfg[1]), timeout=15)
+        if resp.status_code != 200:
+            logger.warning('auth_user_exists: %s answered %s', wanted, resp.status_code)
+            return FAILED
+        body = resp.json() or {}
+        users = body.get('users') if isinstance(body, dict) else None
+        if not isinstance(users, list):
+            return FAILED
+    except Exception:
+        logger.warning('auth_user_exists: the lookup of %s failed', wanted, exc_info=True)
+        return FAILED
+    if any(isinstance(u, dict) and (u.get('email') or '').strip().lower() == wanted for u in users):
+        return True
+    return FAILED if len(users) >= per_page else False
+
+
 def supabase_config():
     """`(url, service_role_key)`, or None when either is missing."""
     from django.conf import settings

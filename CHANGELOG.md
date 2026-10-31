@@ -45,7 +45,10 @@ then web.
   Reactivate's letter read it, and a password is reissued only when the newest mentor invitation issued
   one; (3) courses 0090 adds the partial unique index `partner_admin_one_login_per_mentor`; (4) the email
   move is a compare-and-set (no `first_seen_at`, the UID it was read with) — else 409 `managed_by_mentor`,
-  and the new login it made is deleted (best effort, logged `MENTOR_LOGIN_ORPHANED`).
+  and the new login it made is deleted (best effort, logged `MENTOR_LOGIN_ORPHANED`). Lead check: a
+  GOOGLE address is never provisioned, so Supabase Auth is asked (`supabase_admin.auth_user_exists`, exact
+  address, fail closed) at invite and at an email move — a login already there is 409 `already_staff`, a
+  failed lookup 502 `create_failed`, nothing kept.
 
 ## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
 
