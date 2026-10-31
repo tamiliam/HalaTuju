@@ -78,7 +78,10 @@ export function offeringInstitutions(
 /** MARA's education division — `views_offerings.MARA_DIVISION` (a drift test keeps the two equal). */
 export const MARA_DIVISION_ID = 'MARA-BPT'
 /** A pick of the division: by its institution id, or by one of its OP4… diplomas (a pick saved before
- *  the id was stored — live data holds one application and one profile like that). */
+ *  the id was stored — live data holds one application and one profile like that). The OP4 fallback
+ *  holds only while every OP4 course is the division's and no MARA campus course id starts OP4:
+ *  `halatuju_api/apps/courses/tests/test_offerings_mara_division.py` checks both against the catalogue's
+ *  source files, so a new OP4 course elsewhere turns it red before this misreads a pick. */
 export const isDivisionPick = (cp: ChosenProgramme | null | undefined) =>
   !!cp && (cp.institutionId === MARA_DIVISION_ID || /^OP4/i.test(cp.courseId))
 

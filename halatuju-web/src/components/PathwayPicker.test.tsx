@@ -346,6 +346,21 @@ describe('STPM and third-route holders: University → Degree (TD-325 still pick
     expect(checkStpmEligibility).not.toHaveBeenCalled()
   })
 
+  it('an STPM holder picking a degree never stores mara, even over a stale MARA-division pick (money)', async () => {
+    // A stale programme-branch record: university + an old OP4 pick, which the programme branch
+    // would SHOW as MARA. The degree list must not derive the pathway from it.
+    mount(STPM, { ...FORM, pathwayCertainty: 'sure', chosenPathway: 'university',
+      chosenProgramme: { courseId: 'OP4-KEJ', courseName: 'Diploma Kejuruteraan', fieldKey: 'kej' } })
+    await waitFor(() => expect(getPathwayOfferings).toHaveBeenCalledWith('degree'))
+    await waitFor(() => screen.getByLabelText('scholarship.apply.plan.institutionLabel.university'))
+    choose('scholarship.apply.plan.institutionLabel.university', 'UM')
+    fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+    fireEvent.click(screen.getByText('Ijazah Undang-Undang'))
+    expect(latest.chosenProgramme).toMatchObject({ courseId: 'LAW' })
+    expect(latest.chosenPathway).not.toBe('mara')
+    expect(latest.chosenPathway).toBe('university')
+  })
+
   it('"Eligible only" asks the STPM check, with bumiputera: true, and narrows the degrees', async () => {
     mount(STPM)
     click('scholarship.apply.plan.sure')

@@ -21,7 +21,7 @@ from django.utils import timezone
 from apps.scholarship.academic_engine import _school_match
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.pathway_engine import _field_status, offer_pathway_match
-from apps.scholarship.same_name_schools import SAME_NAME_SCHOOLS
+from apps.scholarship.same_name_schools import SAME_NAME_SCHOOL_STATES, SAME_NAME_SCHOOLS
 from apps.scholarship.school_names import clean_school_name, keep_our_town, school_name_core
 from apps.scholarship.services import confirm_pathway
 from apps.scholarship.tests.factories import make_application
@@ -103,6 +103,11 @@ class TestSchoolLeavingCertificate(SimpleTestCase):
                          'mismatch')
 
 
+def _norm(name):
+    """Case, punctuation and spacing ignored: "SMK ST. ANTHONY" is "SMK ST ANTHONY" (review 2)."""
+    return ' '.join(re.sub(r'[^A-Z0-9]+', ' ', name.upper().replace("'", '')).split())
+
+
 class TestGeneratedSetMatchesTheLists(SimpleTestCase):
     """The set is generated with the lists (`scripts/school_town_names.py`); they must agree."""
 
@@ -114,16 +119,23 @@ class TestGeneratedSetMatchesTheLists(SimpleTestCase):
         ours = {n for n in names if n in SAME_NAME_SCHOOLS}
         self.assertEqual(ours, set(SAME_NAME_SCHOOLS))
         # Every member is "<NAME>, <TOWN>" and its NAME is used by another school in the national list.
-        bare = Counter(n.rsplit(', ', 1)[0] if n in SAME_NAME_SCHOOLS else n
+        # A name another school shares once case and punctuation are ignored counts as shared.
+        bare = Counter(_norm(n.rsplit(', ', 1)[0] if n in SAME_NAME_SCHOOLS else n)
                        for n in self._names('secondary-schools.json'))
         for n in SAME_NAME_SCHOOLS:
             self.assertRegex(n, r'^.+, [A-Z0-9 .\'()/-]+$')
-            self.assertGreater(bare[n.rsplit(', ', 1)[0]], 1, n)
+            self.assertGreater(bare[_norm(n.rsplit(', ', 1)[0])], 1, n)
+        self.assertEqual(set(SAME_NAME_SCHOOL_STATES), set(SAME_NAME_SCHOOLS))
 
-    def test_no_name_is_shared_in_either_list(self):
+    def test_no_name_is_shared_in_either_list_even_by_punctuation(self):
         for file in ('secondary-schools.json', 'stpm-schools.json'):
-            dupes = [n for n, c in Counter(self._names(file)).items() if c > 1]
+            dupes = [n for n, c in Counter(map(_norm, self._names(file))).items() if c > 1]
             self.assertEqual(dupes, [], file)
+
+    def test_names_that_differ_only_by_punctuation_carry_their_towns(self):
+        names = set(self._names('secondary-schools.json'))
+        self.assertIn('SMK ST. ANTHONY, TELUK INTAN', names)
+        self.assertIn('SMK METHODIST ACS, SEREMBAN', names)
 
     def test_the_example_rows(self):
         self.assertIn('SMK CONVENT, TAIPING', SAME_NAME_SCHOOLS)
@@ -141,6 +153,27 @@ class TestKeepOurTown(SimpleTestCase):
     def test_a_different_school_replaces_it(self):
         self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', 'Smk St George'), 'Smk St George')
         self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', 'Smk Convent Klang'), 'Smk Convent Klang')
+
+    def test_strict_a_numbered_school_replaces(self):
+        # "SMK SULTAN ISMAIL 2" is another school; a dropped digit used to read it as ours.
+        self.assertEqual(keep_our_town('SMK SULTAN ISMAIL, JOHOR BAHRU', 'Smk Sultan Ismail 2'),
+                         'Smk Sultan Ismail 2')
+
+    def test_strict_a_reordered_name_replaces(self):
+        self.assertEqual(keep_our_town('SMK MUNSHI ABDULLAH, MELAKA', 'Smk Abdullah Munshi'),
+                         'Smk Abdullah Munshi')
+
+    def test_strict_a_school_named_after_its_own_town_replaces(self):
+        self.assertEqual(keep_our_town('SMK KEPALA BATAS, ALOR SETAR', 'Smk Kepala Batas, Kepala Batas'),
+                         'Smk Kepala Batas, Kepala Batas')
+
+    def test_strict_the_plain_same_school_keeps(self):
+        for letter in ('SMK Sultan Ismail', 'Smk Sultan Ismail, Johor Bahru',
+                       'Smk Sultan Ismail, 80100 Johor Bahru, Johor', 'SMK Sultan Ismail Johor'):
+            self.assertEqual(keep_our_town('SMK SULTAN ISMAIL, JOHOR BAHRU', letter),
+                             'SMK SULTAN ISMAIL, JOHOR BAHRU', letter)
+        self.assertEqual(keep_our_town('SMK ST. ANTHONY, TELUK INTAN', 'SMK St Anthony'),
+                         'SMK ST. ANTHONY, TELUK INTAN')                       # "ST." is "ST"
 
     def test_only_our_names_and_never_a_blank_letter(self):
         self.assertEqual(keep_our_town('SMK PETAGAS, PENAMPANG', 'Smk Petagas'), 'Smk Petagas')

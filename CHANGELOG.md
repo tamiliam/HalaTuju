@@ -29,6 +29,12 @@ All notable changes to this project will be documented in this file.
 - **Same-name schools:** confirming an offer, or the silent offer fill, keeps "SMK CONVENT, TAIPING" when the letter
   names that same school (only a different school replaces it); the anonymity check reads the school's name, not
   our town, so a blurb mentioning the town is not flagged.
+- **Second review:** the town is kept only when the letter names EXACTLY our school — our name, or our name and
+  town, with at most a postcode and our state; a numbered school ("SMK SULTAN ISMAIL 2"), a reordered name or a
+  school named after its own town now replaces it. Names that differ only by punctuation ("SMK ST. ANTHONY" /
+  "SMK ST ANTHONY", "SMK METHODIST (ACS)" / "SMK METHODIST ACS") count as shared: 11 more secondary rows and 3
+  more Form 6 rows carry their town. An STPM or third-route holder's degree pick never derives the pathway (a stale
+  MARA-division record could otherwise have saved `mara`).
 
 ## My Plans asks "Which institution?" for Asasi and university (owner, 2026-10-31)
 
@@ -59,8 +65,8 @@ field, which shares the picker).
 - New: `src/lib/schoolSearch.ts`. Tests: `lib/__tests__/schoolSearch.test.ts`, `components/InstitutionPicker.test.tsx`.
 - **Same-name schools carry their town (owner's option 2, separate commit).** A name that more than one school uses
   in the national secondary list now reads "<NAME>, <TOWN>" in both lists — "SMK CONVENT, TAIPING", "SMK CHUNG HUA,
-  SIBU" — so the saved name says which school it is (173 of 2,480 secondary rows, 50 of 584 Form 6 rows; every other
-  name unchanged). Written by the new `halatuju_api/scripts/school_town_names.py` from the MOE workbook. When a
+  SIBU" — so the saved name says which school it is (184 of 2,480 secondary rows, 53 of 584 Form 6 rows, counting names
+  that differ only by punctuation, such as "SMK ST. ANTHONY" and "SMK ST ANTHONY", as one; every other name unchanged). Written by the new `halatuju_api/scripts/school_town_names.py` from the MOE workbook. When a
   record is checked against a document (offer letter, school-leaving certificate), only the NAME is compared — the
   new `school_names.school_name_core` drops our town on both sides; screens still show it. Existing records keep
   what they saved. decisions.md: "Same-name schools carry their town".

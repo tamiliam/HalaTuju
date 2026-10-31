@@ -8,15 +8,18 @@
 import { SECONDARY_SCHOOLS, searchSchools } from '@/data/secondary-schools'
 import { STPM_SCHOOLS } from '@/data/stpm-schools'
 
+// Names are compared as a reader compares them: case, punctuation and spacing ignored, so
+// "SMK ST. ANTHONY" and "SMK ST ANTHONY" are ONE name (review 2, 2026-10-31).
+const norm = (n: string) => n.toUpperCase().replace(/'/g, '').replace(/[^A-Z0-9]+/g, ' ').trim()
 const dupes = (names: string[]) => {
   const seen = new Set<string>()
-  return names.filter((n) => (seen.has(n) ? true : (seen.add(n), false)))
+  return names.map(norm).filter((n) => (seen.has(n) ? true : (seen.add(n), false)))
 }
 // The one MOE name that holds a comma of its own; nothing shares it.
 const OWN_COMMA = 'SMK PETAGAS, PENAMPANG'
 const withTown = (names: string[]) => names.filter((n) => n.includes(', ') && n !== OWN_COMMA)
 
-describe('no two schools share a name', () => {
+describe('no two schools share a name, even by punctuation', () => {
   it('in the secondary list', () => {
     expect(dupes(SECONDARY_SCHOOLS.map((s) => s.name))).toEqual([])
   })
@@ -26,9 +29,14 @@ describe('no two schools share a name', () => {
 })
 
 describe('only the shared names changed', () => {
-  it('173 secondary rows and 50 Form 6 rows carry a town; the rest are as the MOE wrote them', () => {
-    expect(withTown(SECONDARY_SCHOOLS.map((s) => s.name))).toHaveLength(173)
-    expect(withTown(STPM_SCHOOLS.map((s) => s.name))).toHaveLength(50)
+  it('184 secondary rows and 53 Form 6 rows carry a town; the rest are as the MOE wrote them', () => {
+    expect(withTown(SECONDARY_SCHOOLS.map((s) => s.name))).toHaveLength(184)
+    expect(withTown(STPM_SCHOOLS.map((s) => s.name))).toHaveLength(53)
+  })
+  it('names that differ only by punctuation carry their towns too', () => {
+    const names = SECONDARY_SCHOOLS.map((s) => s.name)
+    expect(names).toContain('SMK ST. ANTHONY, TELUK INTAN')
+    expect(names).toContain('SMK METHODIST ACS, SEREMBAN')
   })
   it('a name nobody else uses is unchanged', () => {
     const codes = (name: string) => SECONDARY_SCHOOLS.filter((s) => s.name === name).map((s) => s.code)
@@ -41,10 +49,10 @@ describe('only the shared names changed', () => {
     const bare = new Map<string, number>()
     for (const n of SECONDARY_SCHOOLS.map((s) => s.name)) {
       const b = withTown([n]).length ? n.slice(0, n.lastIndexOf(', ')) : n
-      bare.set(b, (bare.get(b) ?? 0) + 1)
+      bare.set(norm(b), (bare.get(norm(b)) ?? 0) + 1)
     }
     for (const n of withTown(SECONDARY_SCHOOLS.map((s) => s.name))) {
-      expect([n, bare.get(n.slice(0, n.lastIndexOf(', ')))! > 1]).toEqual([n, true])
+      expect([n, bare.get(norm(n.slice(0, n.lastIndexOf(', '))))! > 1]).toEqual([n, true])
     }
   })
   it('the examples: SMK CONVENT in Taiping, SMK CHUNG HUA in Miri and Sibu', () => {

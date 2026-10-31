@@ -121,9 +121,18 @@ class TestADivisionPickIsStoredAsUniversity:
         assert epf_evidence.semester_result_gap(self._app()) is True
         assert epf_evidence.semester_result_gap(self._app(chosen_pathway='mara')) is False
 
-    def test_funding_estimate_is_exactly_todays(self):
-        from apps.scholarship.funding_estimate import classify_pathway
-        assert classify_pathway(self._app()) == 'university'
+    def test_funding_estimate_is_a_university_diplomas(self):
+        # The whole estimate for a division pick, stored the way the picker stores it, equals a plain
+        # UA diploma's — and is NOT what a MARA skills-campus course gets (no estimate at all).
+        from apps.scholarship.funding_estimate import estimate_funding
+        division = estimate_funding(self._app())
+        plain = estimate_funding(self._app(chosen_programme={
+            'course_id': 'UK-DIP', 'course_name': 'Diploma Sains', 'institution_id': 'UNIV-UKM'}))
+        campus = estimate_funding(self._app(chosen_pathway='mara', chosen_programme={
+            'course_id': 'TVET-MARA-1', 'course_name': 'Diploma Teknologi', 'institution_id': 'MARA-001'}))
+        assert division == plain
+        assert division['known'] is True and division['pathway'] == 'university'
+        assert campus['known'] is False
 
     def test_a_upu_diploma_offer_is_the_same_pathway_family(self):
         from apps.scholarship import offer_pathway as op
@@ -134,8 +143,36 @@ class TestADivisionPickIsStoredAsUniversity:
 
 @pytest.mark.django_db
 def test_results_route_sends_a_division_diploma_to_post_spm(catalogue):
-    """A course id decides first: an SPM-catalogue OP diploma is post-SPM, never a degree."""
-    from apps.scholarship.results_route import POST_SPM, destination
-    app = SimpleNamespace(chosen_pathway='university', pre_u_track='', profile=None,
-                          chosen_programme={'course_id': 'OP4-AKAUN', 'course_name': 'Diploma Perakaunan'})
-    assert destination(app) == POST_SPM
+    """The COURSE ID branch decides: `university` alone is ambiguous (''), and a degree-sounding name
+    cannot make an SPM-catalogue OP diploma a degree — only the id (not in `stpm_courses`) answers."""
+    from apps.courses.models import StpmCourse
+    from apps.scholarship.results_route import DEGREE, POST_SPM, UNDECIDED, destination
+
+    def app(cp):
+        return SimpleNamespace(chosen_pathway='university', pre_u_track='', profile=None, chosen_programme=cp)
+
+    assert destination(app({})) == UNDECIDED
+    assert destination(app({'course_id': 'OP4-AKAUN', 'course_name': 'Ijazah Sarjana Muda Perakaunan'})) == POST_SPM
+    StpmCourse.objects.create(course_id='UM-LAW', course_name='Diploma Sains', university='Universiti Malaya',
+                              field_key_id='eng')
+    assert destination(app({'course_id': 'UM-LAW', 'course_name': 'Diploma Sains'})) == DEGREE
+
+
+def test_op4_names_the_division_and_nothing_else():
+    """The web picker's `/^OP4/` fallback (`planPicker.isDivisionPick`) reads an OP4 course as a pick of
+    the division, for picks saved before the institution id was. That holds only while every OP4 course
+    in the catalogue's source files is MARA-BPT's and no MARA campus course id starts with OP4."""
+    import json
+    from pathlib import Path
+    data = Path(__file__).resolve().parents[3] / 'data'
+    spm = [c for f in ('spm/spm_new_courses_D1.json', 'spm/spm_new_courses_D2.json')
+           for c in json.loads((data / f).read_text(encoding='utf-8'))['courses']]
+    tvet = [c for f in ('tvet/tvet_new_courses_F1.json', 'tvet/tvet_new_courses_F2.json')
+            for c in json.loads((data / f).read_text(encoding='utf-8'))['courses']]
+    op4 = [c for c in spm if c['course_id'].upper().startswith('OP4')]
+    assert len(op4) == 13
+    assert {c.get('institution_id') for c in op4} == {MARA_DIVISION}
+    mara_campus = [c for c in tvet if c.get('family') == 'mara']
+    assert mara_campus, 'the MARA campus courses moved: point this test at their new file'
+    assert not [c['course_id'] for c in tvet if c['course_id'].upper().startswith('OP4')]
+    assert not [o for c in tvet for o in c.get('offerings', []) if o.get('institution_id') == MARA_DIVISION]

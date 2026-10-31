@@ -5281,7 +5281,7 @@
 },
 {
 "code":"JEA0016",
-"name":"SMK DATO ONN",
+"name":"SMK DATO ONN, BATU PAHAT",
 "state":"Johor",
 "type":"SMK"
 },
@@ -5317,7 +5317,7 @@
 },
 {
 "code":"NEB4097",
-"name":"SMK DATO SHEIKH AHMAD",
+"name":"SMK DATO SHEIKH AHMAD, SEREMBAN",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
@@ -5527,7 +5527,7 @@
 },
 {
 "code":"WEB0231",
-"name":"SMK DATO' ONN",
+"name":"SMK DATO' ONN, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
@@ -5581,7 +5581,7 @@
 },
 {
 "code":"REA0054",
-"name":"SMK DATO' SHEIKH AHMAD",
+"name":"SMK DATO' SHEIKH AHMAD, ARAU",
 "state":"Perlis",
 "type":"SMK"
 },
@@ -8455,7 +8455,7 @@
 },
 {
 "code":"NEB4091",
-"name":"SMK METHODIST ACS",
+"name":"SMK METHODIST ACS, SEREMBAN",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
@@ -11797,7 +11797,7 @@
 },
 {
 "code":"YFB1205",
-"name":"SMK ST MARY",
+"name":"SMK ST MARY, KUCHING",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -11917,7 +11917,7 @@
 },
 {
 "code":"AEB5167",
-"name":"SMK ST. ANTHONY",
+"name":"SMK ST. ANTHONY, TELUK INTAN",
 "state":"Perak",
 "type":"SMK"
 },
@@ -11959,25 +11959,25 @@
 },
 {
 "code":"YFB4103",
-"name":"SMK ST. JOSEPH",
+"name":"SMK ST. JOSEPH, MIRI",
 "state":"Sarawak",
 "type":"SMK"
 },
 {
 "code":"WEB0224",
-"name":"SMK ST. MARY",
+"name":"SMK ST. MARY, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"AEB2044",
-"name":"SMK ST. MICHAEL",
+"name":"SMK ST. MICHAEL, IPOH",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"YFB3401",
-"name":"SMK ST. PATRICK",
+"name":"SMK ST. PATRICK, MUKAH",
 "state":"Sarawak",
 "type":"SMK"
 },

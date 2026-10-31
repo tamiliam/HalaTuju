@@ -57,7 +57,7 @@
   },
   {
     "code": "JEA0016",
-    "name": "SMK DATO ONN",
+    "name": "SMK DATO ONN, BATU PAHAT",
     "state": "Johor",
     "ppd": "Batu Pahat",
     "streams": [
@@ -2984,7 +2984,7 @@
   },
   {
     "code": "AEB5167",
-    "name": "SMK ST. ANTHONY",
+    "name": "SMK ST. ANTHONY, TELUK INTAN",
     "state": "Perak",
     "ppd": "Hilir Perak",
     "streams": [
@@ -3190,7 +3190,7 @@
   },
   {
     "code": "AEB2044",
-    "name": "SMK ST. MICHAEL",
+    "name": "SMK ST. MICHAEL, IPOH",
     "state": "Perak",
     "ppd": "Kinta Utara",
     "streams": [

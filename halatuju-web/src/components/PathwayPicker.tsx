@@ -94,8 +94,9 @@ export default function PathwayPicker({
   const eligLoading = narrowing && !elig
   const allowed: Allowed = narrowing && elig ? elig.courseIds : null
   // The pathway DRAWN: a MARA-division diploma is stored as `university` but shown under MARA
-  // (`lib/planPicker.ts` shownPathway / storedPathway).
-  const pathway = shownPathway(form.chosenPathway, form.chosenProgramme)
+  // (`lib/planPicker.ts` shownPathway / storedPathway). ONLY on the programme-pathway branch: an STPM
+  // or third-route holder picks from the degree list, where the pathway is never derived (review 2).
+  const pathway = tertiary ? form.chosenPathway : shownPathway(form.chosenPathway, form.chosenProgramme)
 
   // The catalogue of the pathway on screen; a tertiary holder's is the degree list.
   const offeringKey = tertiary ? DEGREE_PATHWAY : (isOfferingPathway(pathway) ? pathway : '')
@@ -142,7 +143,7 @@ export default function PathwayPicker({
   }
   // The ONE place the saved pathway follows the pick: the MARA division's diploma saves `university`.
   const setProgramme = (c: ChosenProgramme | null) => {
-    const stored = storedPathway(pathway, c)
+    const stored = tertiary ? form.chosenPathway : storedPathway(pathway, c)
     onChange(stored === form.chosenPathway ? { chosenProgramme: c } : { chosenProgramme: c, chosenPathway: stored })
   }
   const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }

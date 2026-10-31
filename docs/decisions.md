@@ -36,7 +36,8 @@ is not cleared (as with a hidden campus) and returns when the switch is off.
 
 ## Same-name schools carry their town (owner, 2026-10-31)
 
-**Context.** 68 names are used by more than one school in the MOE's national secondary list (173 rows; "SMK CONVENT"
+**Context.** 79 names are used by more than one school in the MOE's national secondary list (184 rows, counting
+names equal once case, punctuation and spacing are ignored — "SMK ST. ANTHONY" is "SMK ST ANTHONY"; "SMK CONVENT"
 is in nine towns, "SMK CHUNG HUA" is a Form 6 centre in both Miri and Sibu). A student who picked one stored a name
 that did not say which school it was, and a reviewer could not tell.
 
@@ -67,8 +68,13 @@ verdicts). No model prompt matches on the record's school; the profile summary a
 words from `school_name_core(school)`, so a blurb saying "Kuala Lumpur" is not flagged as naming "SMK (L) METHODIST,
 KUALA LUMPUR". (b) Confirming an offer (`confirmation.confirm_pathway`) and the silent offer autofill
 (`offer_sync`) wrote the letter's cleaned name over the stored pre-U school, dropping the town.
-`school_names.keep_our_town` keeps the stored "NAME, TOWN" when the letter names that same school (its words are the
-name's, plus at most the town and a postcode) and lets a letter naming a different school replace it.
+`school_names.keep_our_town` keeps the stored "NAME, TOWN" only when the letter names EXACTLY that school (second
+review: STRICT): compared case-, punctuation- and spacing-blind, a spelt-out leading school type folded to its short
+form, 5-digit postcodes dropped, the letter must be our name, or our name and OUR town, either followed only by our
+state (`same_name_schools.SAME_NAME_SCHOOL_STATES`). No other digit is dropped, no word reordered, no type word
+ignored — "SMK SULTAN ISMAIL 2", "SMK ABDULLAH MUNSHI" and a school named after its own town all replace, as before.
+(c) The generator counts names that differ only by punctuation as shared (79 names, 184 + 53 rows, 14 more than the
+first cut).
 
 **Not changed.** `apps/courses/data/stpm-schools.json` is the input of the historic migration 0018 (it seeded the
 `institutions` table long ago); it keeps the bare names, as production's `institutions` rows do.

@@ -12,7 +12,7 @@ to same-name schools before it is compared with a document: the offer-letter ins
 """
 import re
 
-from .same_name_schools import SAME_NAME_SCHOOLS
+from .same_name_schools import SAME_NAME_SCHOOL_STATES, SAME_NAME_SCHOOLS
 
 
 _SCHOOL_POSTCODE = re.compile(r'\b\d{5}\b')
@@ -50,29 +50,43 @@ def school_name_core(name: str) -> str:
     return s[:s.rindex(',')].rstrip()
 
 
-# School-TYPE words a letter may spell out or shorten — never what tells one school from another.
-_TYPE_WORDS = frozenset({'SMK', 'SMJK', 'SMKA', 'KTE', 'SM', 'SEKOLAH', 'MENENGAH', 'KEBANGSAAN', 'JENIS',
-                         'KOLEJ', 'TINGKATAN', 'ENAM'})
+def _plain(s: str) -> str:
+    """Upper-case, apostrophes dropped, every other mark a space, single-spaced: "St." is "ST"."""
+    return ' '.join(re.sub(r'[^A-Z0-9]+', ' ', (s or '').upper().replace("'", '')).split())
 
 
-def _school_words(s: str) -> set:
-    return {w for w in re.sub(r"[^A-Z0-9 ]+", ' ', (s or '').upper().replace("'", '')).split()
-            if w not in _TYPE_WORDS and not w.isdigit()}
+def _state_forms(state: str) -> set:
+    """Our state as a letter may print it: "WP Kuala Lumpur" also reads "Kuala Lumpur"."""
+    st = _plain(state)
+    bare = re.sub(r'^(WP|W P|WILAYAH PERSEKUTUAN) ', '', st)
+    return {f for f in (st, bare, f'WILAYAH PERSEKUTUAN {bare}' if bare != st else '') if f}
 
 
 def keep_our_town(stored: str, letter: str) -> str:
-    """What to save when an offer letter names the pre-U school (review fix, 2026-10-31): the STORED
-    "NAME, TOWN" when it is one of our same-name schools and the letter names that same school — its
-    distinctive words are the name's, plus at most the town and a postcode — else the letter's own
-    name. So confirming an offer never drops the town that says WHICH school, and a letter naming a
-    different school still replaces it. Pure; never raises."""
+    """What to save when an offer letter names the pre-U school (review fixes, 2026-10-31): the STORED
+    "NAME, TOWN" — one of our same-name schools — only when the letter names EXACTLY that school;
+    else the letter's own name, which is what was saved before.
+
+    STRICT (review 2). Both sides are compared case-, punctuation- and spacing-blind ("ST." is "ST"),
+    a spelt-out leading school type folds to its short form ("Sekolah Menengah Kebangsaan" is "SMK",
+    which `clean_school_name` produces), 5-digit postcodes are dropped, and then the letter must be:
+    our name; or our name and OUR town; either one followed only by our state. Nothing else — no
+    other digit dropped, no word reordered, no type word ignored — so "SMK SULTAN ISMAIL 2", "SMK
+    MUNSHI ABDULLAH" and a school named after its OWN town ("SMK Kepala Batas, Kepala Batas" against
+    "SMK KEPALA BATAS, ALOR SETAR") all replace. Pure; never raises."""
     stored = (stored or '').strip()
     core = school_name_core(stored)
     if not letter or core == stored:
         return letter
-    name, town = _school_words(core), _school_words(stored[len(core):])
-    said = _school_words(letter)
-    return stored if name and name <= said and not (said - name - town) else letter
+    name, town = _plain(core), _plain(stored[len(core):])
+    state = next((SAME_NAME_SCHOOL_STATES[k] for k in _same_name_keys(stored) if k in SAME_NAME_SCHOOL_STATES), '')
+    said = ' '.join(re.sub(r'\b\d{5}\b', ' ', _plain(letter)).split())
+    for st in sorted(_state_forms(state), key=len, reverse=True):
+        if said.endswith(' ' + st):
+            said = said[:-len(st) - 1]
+            break
+    wanted = _same_name_keys(name) | _same_name_keys(f'{name} {town}')
+    return stored if _same_name_keys(said) & wanted else letter
 
 
 def clean_school_name(*candidates: str) -> str:
