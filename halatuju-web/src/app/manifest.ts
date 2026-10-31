@@ -22,7 +22,11 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Masukkan keputusan SPM atau STPM anda dan temui kursus yang anda layak. Percuma.',
     start_url: '/',
     scope: '/',
-    display: 'standalone',
+    // 'browser', NOT 'standalone' — for now. An iPhone home-screen app in standalone mode has no
+    // back button and its OWN storage, separate from Safari: a sign-in or email link opens in
+    // Safari and the app never sees that session. Standalone waits until every screen has its own
+    // way back and the sign-in links are proven inside it (roadmap M8).
+    display: 'browser',
     background_color: 'rgb(255 255 255)',
     theme_color: 'rgb(255 255 255)',
     icons: [

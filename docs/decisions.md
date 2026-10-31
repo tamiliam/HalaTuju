@@ -23,6 +23,9 @@ browser check before a UI push. (5) **Read-only by construction**: the check abo
 Supabase auth, because otherwise each visit would mint an anonymous user on the real project. (6) **Viewport and
 home-screen app**: `viewportFit: 'cover'` (so safe-area insets work), zoom never blocked, a manifest and icons — no
 service worker, because an installed HalaTuju must be the live site, never a cached copy of yesterday's statuses.
+(7) **`display: 'browser'`, not standalone (lead, at review)**: an iPhone standalone web app has no back button and
+keeps storage apart from Safari, so a sign-in or email link opens in Safari and the app never sees that session.
+Standalone is an M8 step, after every screen has its own way back and sign-in is proven inside it.
 
 ## People: Open now is replaced by Awaiting review + Interviewing (request #51, 2026-10-31)
 

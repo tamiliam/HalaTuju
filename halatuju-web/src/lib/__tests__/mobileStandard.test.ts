@@ -280,8 +280,10 @@ describe('HalaTuju installs as a home-screen app', () => {
   }
   const manifest = readWeb('src/app/manifest.ts', 'Next serves the web app manifest from this file')
 
-  test('the manifest opens standalone at the home page', () => {
-    expect(manifest).toMatch(/display:\s*'standalone'/)
+  // 'browser' until M8: an iPhone standalone app has no back button and storage apart from Safari,
+  // so a sign-in link would land in Safari and the app would never see it (see manifest.ts).
+  test('the manifest opens in the browser, not standalone, at the home page', () => {
+    expect(manifest).toMatch(/display:\s*'browser'/)
     expect(manifest).toMatch(/start_url:\s*'\/'/)
   })
 

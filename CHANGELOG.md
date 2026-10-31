@@ -20,8 +20,8 @@ All notable changes to this project will be documented in this file.
   Tamil home page and `/login` by 99 px at 360 (the hero heading is 458 px wide; TD-311), the officer cockpit by
   227–257 px — 30 have small text fields, 18 are clean on all three.
 - Viewport: `viewport` export (`viewportFit: 'cover'`, browser-bar colour = `--ground-0` in each mode); web app manifest
-  and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. No
-  service worker, no offline mode.
+  and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. It
+  opens in the browser (`display: 'browser'`), not standalone, until M8. No service worker, no offline mode.
 
 ## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
 

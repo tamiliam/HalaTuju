@@ -80,6 +80,7 @@ Each sprint: tests + `mobile-check` green, owner sees phone screenshots, **owner
 `docs/mobile-standard.md`, `docs/mobile-ledger.md`, `scripts/mobile-check` + Playwright config, sandbox surfaces for the logged-in Must screens (dashboard, profile, apply, documents, award, sponsor portal, review cockpit), static guards with today's floor counts, workflow lines. `layout.tsx`: `viewport` export (`viewportFit: 'cover'`, `themeColor`), web-app manifest + apple-touch-icon (installs as a home-screen app; no offline mode). Done when: baseline report lists every route × width × language.
 
 **M1 — Global foundations** (medium; fixes the most screens per line changed)
+Found in M0: the favicon `src/app/icon.png` is 5.7 MB (2048 px, with an image-generator watermark) — every phone downloads it; replace it with a small cropped icon like the M0 home-screen icons.
 **Tamil font = Mukta Malar** (owner, 2026-10-31: "use the font we use in SJKT Connect"): copy SJKTConnect's Tamil-only subset (`frontend/app/fonts/mukta-malar/MuktaMalar-Tamil-{400,600,700}.woff2`, loaded via `localFont` in `frontend/lib/fonts.ts`, `--font-tamil` first in the body stack with a Tamil-only unicode-range) — so Tamil looks the same on every phone and is compact in small print; extend `fontSources.test.ts`; re-measure Tamil widths. 16 px input rule in `globals.css`; `InfoTip` tap fix + edge clamp; new shared `Sheet` and migrate all 18 overlays; `Toggle` 44 px hit area; `Toast` phone width; `Menu.tsx` / `FilterPill` right clamp; sticky-hover save button; `hidden`→`sr-only` file inputs; keyboard/autocomplete sweep; `VerifiedTick` visible text; TD-311 Tamil hero. Done when: input and overlay floors reach 0.
 
 **M2 — Student shell + onboarding** (medium; Stitch first for the header)
@@ -101,7 +102,7 @@ Topbar phone version (sticky; search/theme/help into a menu; breadcrumb truncate
 Cards for scholars/sponsors/payments detail tables; `ScholarMoney` stacks; `PartnerEmailsCard` framed; new `DesktopOnly` panel on billing-rates, billing, course-data, contracts, sponsors/terms/[id], partner template editor.
 
 **M8 — Close-out** (low)
-Full re-measure (all routes × 360/390 × 3 languages), owner real-iPhone walkthrough with a short checklist, all floors at 0, ledger 100 % green, retrospective, memory + `projects.json` updated.
+Full re-measure (all routes × 360/390 × 3 languages); decide manifest `display: 'standalone'` only once every screen has its own way back and sign-in links are proven inside the installed app (M0 ships `'browser'`); owner real-iPhone walkthrough with a short checklist, all floors at 0, ledger 100 % green, retrospective, memory + `projects.json` updated.
 
 ## Owner decisions still open (asked at the sprint that needs them)
 - **TD-311 (M1):** shrink the Home heading on phones for all languages (recommended) or Tamil only.
