@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Common profile follow-up — TD-439, TD-445, TD-446 (2026-10-31) — BUILT, not deployed
+## Common profile follow-up — TD-439, TD-445, TD-446 (2026-10-31) — LIVE 2026-11-01 (main 83571471; api-01222-pw7, web-01045-ckt)
 
 - **TD-439 (owner ruling):** `admin/reviewer-profile/` no longer writes the phone or "share my phone with
   students" (read-only on `ReviewerProfileSerializer`; the GET still serves them). A PATCH carrying them saves
