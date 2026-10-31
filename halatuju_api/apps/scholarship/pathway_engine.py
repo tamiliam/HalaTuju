@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 
 from .genuineness.offer_issuers import FAMILY_ISSUER_SIG as _FAMILY_ISSUER_SIG
+from .school_names import school_name_core
 from .vision import name_match, nric_match
 
 
@@ -73,9 +74,10 @@ def distinctive_tokens(text: str) -> set:
 def _field_status(declared: str, offer: str) -> str:
     """Compare one field (institution OR programme): 'match' (share a distinctive
     token), 'clash' (both distinctive, none shared), or 'unknown' (one side has
-    nothing distinctive to compare)."""
-    d = distinctive_tokens(declared)
-    o = distinctive_tokens(offer)
+    nothing distinctive to compare). Both sides go through ``school_name_core`` (owner, 2026-10-31):
+    the school NAME is compared, never the ", TOWN" our lists add to a same-name school."""
+    d = distinctive_tokens(school_name_core(declared))
+    o = distinctive_tokens(school_name_core(offer))
     if not d or not o:
         return 'unknown'
     return 'match' if (d & o) else 'clash'

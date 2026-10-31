@@ -29,6 +29,13 @@ field, which shares the picker).
 - **Same-name schools both show** in the Form 6 picker ("SMK CHUNG HUA" in Miri and in Sibu); before, the two rows
   shared one list key and one could be dropped. What is stored and shown is unchanged.
 - New: `src/lib/schoolSearch.ts`. Tests: `lib/__tests__/schoolSearch.test.ts`, `components/InstitutionPicker.test.tsx`.
+- **Same-name schools carry their town (owner's option 2, separate commit).** A name that more than one school uses
+  in the national secondary list now reads "<NAME>, <TOWN>" in both lists — "SMK CONVENT, TAIPING", "SMK CHUNG HUA,
+  SIBU" — so the saved name says which school it is (173 of 2,480 secondary rows, 50 of 584 Form 6 rows; every other
+  name unchanged). Written by the new `halatuju_api/scripts/school_town_names.py` from the MOE workbook. When a
+  record is checked against a document (offer letter, school-leaving certificate), only the NAME is compared — the
+  new `school_names.school_name_core` drops our town on both sides; screens still show it. Existing records keep
+  what they saved. decisions.md: "Same-name schools carry their town".
 
 ## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31
 

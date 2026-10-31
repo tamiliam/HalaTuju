@@ -146,7 +146,7 @@
   },
   {
     "code": "JEE0041",
-    "name": "SMK TUNKU PUTRA",
+    "name": "SMK TUNKU PUTRA, BATU PAHAT",
     "state": "Johor",
     "ppd": "Batu Pahat",
     "streams": [
@@ -193,7 +193,7 @@
   },
   {
     "code": "JEB1003",
-    "name": "SMK AMINUDDIN BAKI",
+    "name": "SMK AMINUDDIN BAKI, JOHOR BAHRU",
     "state": "Johor",
     "ppd": "Johor Bahru",
     "streams": [
@@ -249,7 +249,7 @@
   },
   {
     "code": "JEA1001",
-    "name": "SMK SULTAN ISMAIL",
+    "name": "SMK SULTAN ISMAIL, JOHOR BAHRU",
     "state": "Johor",
     "ppd": "Johor Bahru",
     "streams": [
@@ -545,7 +545,7 @@
   },
   {
     "code": "JEA5023",
-    "name": "SMK TUN PERAK",
+    "name": "SMK TUN PERAK, MUAR",
     "state": "Johor",
     "ppd": "Muar",
     "streams": [
@@ -751,7 +751,7 @@
   },
   {
     "code": "JEA9010",
-    "name": "SMK BUKIT GAMBIR",
+    "name": "SMK BUKIT GAMBIR, BUKIT GAMBIR",
     "state": "Johor",
     "ppd": "Tangkak",
     "streams": [
@@ -876,7 +876,7 @@
   },
   {
     "code": "KEEB001",
-    "name": "SMK POKOK SENA",
+    "name": "SMK POKOK SENA, POKOK SENA",
     "state": "Kedah",
     "ppd": "Kota Setar",
     "streams": [
@@ -1010,7 +1010,7 @@
   },
   {
     "code": "KEA3046",
-    "name": "SMK KHIR JOHARI",
+    "name": "SMK KHIR JOHARI, SUNGAI PETANI",
     "state": "Kedah",
     "ppd": "Kuala Muda/yan",
     "streams": [
@@ -1322,7 +1322,7 @@
   },
   {
     "code": "KEA6015",
-    "name": "SMK TUNKU PUTRA",
+    "name": "SMK TUNKU PUTRA, LANGKAWI",
     "state": "Kedah",
     "ppd": "Langkawi",
     "streams": [
@@ -1522,7 +1522,7 @@
   },
   {
     "code": "DEB1139",
-    "name": "SMK CHUNG HWA",
+    "name": "SMK CHUNG HWA, KOTA BHARU",
     "state": "Kelantan",
     "ppd": "Kota Bharu",
     "streams": [
@@ -1645,7 +1645,7 @@
   },
   {
     "code": "DEA1135",
-    "name": "SMK PUTERI",
+    "name": "SMK PUTERI, KOTA BHARU",
     "state": "Kelantan",
     "ppd": "Kota Bharu",
     "streams": [
@@ -1667,7 +1667,7 @@
   },
   {
     "code": "DEE1141",
-    "name": "SMK SULTAN ISMAIL",
+    "name": "SMK SULTAN ISMAIL, KOTA BHARU",
     "state": "Kelantan",
     "ppd": "Kota Bharu",
     "streams": [
@@ -1777,7 +1777,7 @@
   },
   {
     "code": "DEA2188",
-    "name": "SMK SERI INTAN",
+    "name": "SMK SERI INTAN, MACHANG",
     "state": "Kelantan",
     "ppd": "Machang",
     "streams": [
@@ -1821,7 +1821,7 @@
   },
   {
     "code": "DEE3244",
-    "name": "SMK RANTAU PANJANG",
+    "name": "SMK RANTAU PANJANG, RANTAU PANJANG",
     "state": "Kelantan",
     "ppd": "Pasir Mas",
     "streams": [
@@ -1909,7 +1909,7 @@
   },
   {
     "code": "DEA4297",
-    "name": "SMK SERI AMAN",
+    "name": "SMK SERI AMAN, PASIR PUTEH",
     "state": "Kelantan",
     "ppd": "Pasir Puteh",
     "streams": [
@@ -2096,7 +2096,7 @@
   },
   {
     "code": "MEB0079",
-    "name": "SMK SULTAN ALAUDDIN",
+    "name": "SMK SULTAN ALAUDDIN, MASJID TANAH",
     "state": "Melaka",
     "ppd": "Alor Gajah",
     "streams": [
@@ -2119,7 +2119,7 @@
   },
   {
     "code": "MEA1060",
-    "name": "SMK ISKANDAR SHAH",
+    "name": "SMK ISKANDAR SHAH, JASIN",
     "state": "Melaka",
     "ppd": "Jasin",
     "streams": [
@@ -2165,7 +2165,7 @@
   },
   {
     "code": "MEA2087",
-    "name": "SMK MUNSHI ABDULLAH",
+    "name": "SMK MUNSHI ABDULLAH, MELAKA",
     "state": "Melaka",
     "ppd": "Melaka Tengah",
     "streams": [
@@ -2177,7 +2177,7 @@
   },
   {
     "code": "MEA2089",
-    "name": "SMK SERI TANJUNG",
+    "name": "SMK SERI TANJUNG, TANJONG KLING",
     "state": "Melaka",
     "ppd": "Melaka Tengah",
     "streams": [
@@ -2414,7 +2414,7 @@
   },
   {
     "code": "NEE5038",
-    "name": "SMK TUANKU ABDUL RAHMAN",
+    "name": "SMK TUANKU ABDUL RAHMAN, GEMAS",
     "state": "Negeri Sembilan",
     "ppd": "Tampin",
     "streams": [
@@ -2541,7 +2541,7 @@
   },
   {
     "code": "CEA4022",
-    "name": "SMK ABDUL RAHMAN TALIB",
+    "name": "SMK ABDUL RAHMAN TALIB, KUANTAN",
     "state": "Pahang",
     "ppd": "Kuantan",
     "streams": [
@@ -2598,7 +2598,7 @@
   },
   {
     "code": "CEE3037",
-    "name": "SMK CLIFFORD",
+    "name": "SMK CLIFFORD, KUALA LIPIS",
     "state": "Pahang",
     "ppd": "Lipis",
     "streams": [
@@ -2699,7 +2699,7 @@
   },
   {
     "code": "CEE5062",
-    "name": "SMK SULTAN AHMAD",
+    "name": "SMK SULTAN AHMAD, PEKAN",
     "state": "Pahang",
     "ppd": "Pekan",
     "streams": [
@@ -2881,7 +2881,7 @@
   },
   {
     "code": "AEEB001",
-    "name": "SMK KHIR JOHARI",
+    "name": "SMK KHIR JOHARI, SUNGAI SUMUN",
     "state": "Perak",
     "ppd": "Bagan Datuk",
     "streams": [
@@ -3133,7 +3133,7 @@
   },
   {
     "code": "AEB2045",
-    "name": "SMK METHODIST (ACS)",
+    "name": "SMK METHODIST (ACS), IPOH",
     "state": "Perak",
     "ppd": "Kinta Utara",
     "streams": [
@@ -3225,7 +3225,7 @@
   },
   {
     "code": "AEE4070",
-    "name": "SMK CLIFFORD",
+    "name": "SMK CLIFFORD, KUALA KANGSAR",
     "state": "Perak",
     "ppd": "Kuala Kangsar",
     "streams": [
@@ -3237,7 +3237,7 @@
   },
   {
     "code": "AEB4072",
-    "name": "SMK RAJA MUDA MUSA",
+    "name": "SMK RAJA MUDA MUSA, KUALA KANGSAR",
     "state": "Perak",
     "ppd": "Kuala Kangsar",
     "streams": [
@@ -3416,7 +3416,7 @@
   },
   {
     "code": "AEE1026",
-    "name": "SMK METHODIST (ACS)",
+    "name": "SMK METHODIST (ACS), SITIAWAN",
     "state": "Perak",
     "ppd": "Manjung",
     "streams": [
@@ -3450,7 +3450,7 @@
   },
   {
     "code": "AEE8701",
-    "name": "SMK ISKANDAR SHAH",
+    "name": "SMK ISKANDAR SHAH, PARIT",
     "state": "Perak",
     "ppd": "Perak Tengah",
     "streams": [
@@ -3496,7 +3496,7 @@
   },
   {
     "code": "REB0057",
-    "name": "SMK PUTRA",
+    "name": "SMK PUTRA, KANGAR",
     "state": "Perlis",
     "ppd": "JPN Perlis",
     "streams": [
@@ -3599,7 +3599,7 @@
   },
   {
     "code": "PEE4037",
-    "name": "SMK TUNKU ABDUL RAHMAN",
+    "name": "SMK TUNKU ABDUL RAHMAN, NIBONG TEBAL",
     "state": "Pulau Pinang",
     "ppd": "Seberang Perai Selatan",
     "streams": [
@@ -3742,7 +3742,7 @@
   },
   {
     "code": "PEB1106",
-    "name": "SMK (L) METHODIST",
+    "name": "SMK (L) METHODIST, GEORGETOWN",
     "state": "Pulau Pinang",
     "ppd": "Timur Laut",
     "streams": [
@@ -5061,7 +5061,7 @@
   },
   {
     "code": "YFB1202",
-    "name": "SMK ST JOSEPH",
+    "name": "SMK ST JOSEPH, KUCHING",
     "state": "Sarawak",
     "ppd": "Kuching",
     "streams": [
@@ -5073,7 +5073,7 @@
   },
   {
     "code": "YFB1204",
-    "name": "SMK ST THOMAS",
+    "name": "SMK ST THOMAS, KUCHING",
     "state": "Sarawak",
     "ppd": "Kuching",
     "streams": [
@@ -5177,7 +5177,7 @@
   },
   {
     "code": "YFB4101",
-    "name": "SMK CHUNG HUA",
+    "name": "SMK CHUNG HUA, MIRI",
     "state": "Sarawak",
     "ppd": "Miri",
     "streams": [
@@ -5337,7 +5337,7 @@
   },
   {
     "code": "YFB6102",
-    "name": "SMK ST ANTHONY",
+    "name": "SMK ST ANTHONY, SARIKEI",
     "state": "Sarawak",
     "ppd": "Sarikei",
     "streams": [
@@ -5406,7 +5406,7 @@
   },
   {
     "code": "YFB3106",
-    "name": "SMK CHUNG HUA",
+    "name": "SMK CHUNG HUA, SIBU",
     "state": "Sarawak",
     "ppd": "Sibu",
     "streams": [
@@ -5474,7 +5474,7 @@
   },
   {
     "code": "YFB3101",
-    "name": "SMK METHODIST",
+    "name": "SMK METHODIST, SIBU",
     "state": "Sarawak",
     "ppd": "Sibu",
     "streams": [
@@ -5498,7 +5498,7 @@
   },
   {
     "code": "YFB3102",
-    "name": "SMK SACRED HEART",
+    "name": "SMK SACRED HEART, SIBU",
     "state": "Sarawak",
     "ppd": "Sibu",
     "streams": [
@@ -5692,7 +5692,7 @@
   },
   {
     "code": "BEA7617",
-    "name": "SMK TAMAN DESA",
+    "name": "SMK TAMAN DESA, RAWANG",
     "state": "Selangor",
     "ppd": "Gombak",
     "streams": [
@@ -5772,7 +5772,7 @@
   },
   {
     "code": "BEA4601",
-    "name": "SMK TAMAN TASIK",
+    "name": "SMK TAMAN TASIK, AMPANG",
     "state": "Selangor",
     "ppd": "Hulu Langat",
     "streams": [
@@ -5963,7 +5963,7 @@
   },
   {
     "code": "BEB8653",
-    "name": "SMK KATHOLIK",
+    "name": "SMK KATHOLIK, PETALING JAYA",
     "state": "Selangor",
     "ppd": "Petaling Utama",
     "streams": [
@@ -6022,7 +6022,7 @@
   },
   {
     "code": "TEA0069",
-    "name": "SMK BUKIT PAYONG",
+    "name": "SMK BUKIT PAYONG, JERTEH",
     "state": "Terengganu",
     "ppd": "Besut",
     "streams": [
@@ -6066,7 +6066,7 @@
   },
   {
     "code": "TEA0073",
-    "name": "SMK PUTRA",
+    "name": "SMK PUTRA, JERTEH",
     "state": "Terengganu",
     "ppd": "Besut",
     "streams": [
@@ -6223,7 +6223,7 @@
   },
   {
     "code": "TEB2025",
-    "name": "SMK SULTAN ISMAIL",
+    "name": "SMK SULTAN ISMAIL, KEMAMAN",
     "state": "Terengganu",
     "ppd": "Kemaman",
     "streams": [
@@ -6280,7 +6280,7 @@
   },
   {
     "code": "TEA3112",
-    "name": "SMK SULTAN AHMAD",
+    "name": "SMK SULTAN AHMAD, KUALA TERENGGANU",
     "state": "Terengganu",
     "ppd": "Kuala Terengganu",
     "streams": [
@@ -6438,7 +6438,7 @@
   },
   {
     "code": "WEB0219",
-    "name": "SMK (L) METHODIST",
+    "name": "SMK (L) METHODIST, KUALA LUMPUR",
     "state": "WP Kuala Lumpur",
     "ppd": "PPW Bangsar Pudu",
     "streams": [
@@ -6450,7 +6450,7 @@
   },
   {
     "code": "WEB0225",
-    "name": "SMK (P) METHODIST",
+    "name": "SMK (P) METHODIST, KUALA LUMPUR",
     "state": "WP Kuala Lumpur",
     "ppd": "PPW Bangsar Pudu",
     "streams": [
@@ -6474,7 +6474,7 @@
   },
   {
     "code": "WEB0229",
-    "name": "SMK SERI PANTAI",
+    "name": "SMK SERI PANTAI, KUALA LUMPUR",
     "state": "WP Kuala Lumpur",
     "ppd": "PPW Bangsar Pudu",
     "streams": [
@@ -6497,7 +6497,7 @@
   },
   {
     "code": "WEA0212",
-    "name": "SMK TAMAN DESA",
+    "name": "SMK TAMAN DESA, KUALA LUMPUR",
     "state": "WP Kuala Lumpur",
     "ppd": "PPW Bangsar Pudu",
     "streams": [
@@ -6533,7 +6533,7 @@
   },
   {
     "code": "WEB0206",
-    "name": "SMK SERI AMPANG",
+    "name": "SMK SERI AMPANG, KUALA LUMPUR",
     "state": "WP Kuala Lumpur",
     "ppd": "PPW Keramat",
     "streams": [

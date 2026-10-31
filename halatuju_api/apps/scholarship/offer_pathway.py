@@ -27,6 +27,8 @@ from .document_snapshot import SNAPSHOT_ORDER
 from .catalogue_levels import (
     course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
 from .pathway_engine import distinctive_tokens
+from .school_names import (  # STPM school-name casing moved VERBATIM there (TD-145); re-exported here
+    _SCHOOL_ACRONYM_EXPAND, _SCHOOL_POSTCODE, clean_school_name, school_name_core)
 
 
 def _norm_inst_name(s: str) -> str:
@@ -255,6 +257,7 @@ def _refers_to_campus(name: str, acronym: str, hint: str) -> bool:
     "UTHM - KAMPUS (CAWANGAN PAGOH)" and "Universiti Tun Hussein Onn Malaysia" the same place;
     they share no distinctive token at all ({uthm, kampus, pagoh} vs {tun, hussein, onn})."""
     from .pathway_engine import distinctive_tokens
+    hint, name = school_name_core(hint), school_name_core(name)   # the NAME, never our ", TOWN"
     hint_tokens = distinctive_tokens(hint)
     if _name_aligns(hint_tokens, distinctive_tokens(name)):
         return True
@@ -272,7 +275,7 @@ def _names_another_institution(campus_name: str, campus_acronym: str, hint: str)
     there is no token tier. 0/2+ hits, or this campus under another row (same name or acronym) → ''."""
     from django.db.models import Q
     from apps.courses.models import Institution
-    hn, ht = _norm_inst_name(hint), distinctive_tokens(hint)
+    hn, ht = _norm_inst_name(h := school_name_core(hint)), distinctive_tokens(h)   # never our ", TOWN"
     q = Q(institution_name__istartswith=hn) if hn else Q()   # filtered — never a whole-table scan
     for t in ht:
         q |= Q(acronym__iexact=t)
@@ -418,7 +421,7 @@ def catalogue_institution(course_id: str, hint: str = '') -> str:
              .values_list('institution__institution_name', flat=True) if n]
     if not names:
         return ''
-    hj = distinctive_tokens(hint)
+    hj = distinctive_tokens(hint := school_name_core(hint))   # the NAME, never our ", TOWN"
     hn = _norm_inst_name(hint)
     # A match is: distinctive tokens align (same place, cleaner) OR names identical modulo a
     # parenthetical/casing (generic-only names like UKM). Require a UNIQUE match — a course
@@ -476,10 +479,6 @@ def preu_course_id(pathway: str, track: str) -> str:
     """The recommender virtual course_id for a pre-U pathway+track (e.g. matric + perakaunan →
     'matric-perakaunan'), or '' — used to reach its catalogue institution list."""
     return PREU_COURSE_SLUG.get(((pathway or '').strip().lower(), (track or '').strip().lower()), '')
-
-
-# STPM school-name casing — moved VERBATIM to `school_names` (TD-145); imported back here.
-from .school_names import _SCHOOL_ACRONYM_EXPAND, _SCHOOL_POSTCODE, clean_school_name
 
 
 # Acronyms in a programme name that must stay UPPER-CASE when a shouty (all-caps) offer

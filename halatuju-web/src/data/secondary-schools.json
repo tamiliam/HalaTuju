@@ -1795,13 +1795,13 @@
 },
 {
 "code":"AFT3004",
-"name":"SMA AL FALAH",
+"name":"SMA AL FALAH, TANJONG PIANDANG",
 "state":"Perak",
 "type":"SM SABK"
 },
 {
 "code":"TFT2001",
-"name":"SMA AL FALAH",
+"name":"SMA AL FALAH, CHUKAI",
 "state":"Terengganu",
 "type":"SM SABK"
 },
@@ -2461,13 +2461,13 @@
 },
 {
 "code":"WEB0219",
-"name":"SMK (L) METHODIST",
+"name":"SMK (L) METHODIST, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"PEB1106",
-"name":"SMK (L) METHODIST",
+"name":"SMK (L) METHODIST, GEORGETOWN",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -2569,31 +2569,31 @@
 },
 {
 "code":"WEB0225",
-"name":"SMK (P) METHODIST",
+"name":"SMK (P) METHODIST, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"CEB4034",
-"name":"SMK (P) METHODIST",
+"name":"SMK (P) METHODIST, KUANTAN",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"CEB6028",
-"name":"SMK (P) METHODIST",
+"name":"SMK (P) METHODIST, RAUB",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"PEB1107",
-"name":"SMK (P) METHODIST",
+"name":"SMK (P) METHODIST, GEORGETOWN",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
 {
 "code":"BEB0105",
-"name":"SMK (P) METHODIST",
+"name":"SMK (P) METHODIST, KLANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -2683,13 +2683,13 @@
 },
 {
 "code":"CEA4022",
-"name":"SMK ABDUL RAHMAN TALIB",
+"name":"SMK ABDUL RAHMAN TALIB, KUANTAN",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"AEA5078",
-"name":"SMK ABDUL RAHMAN TALIB",
+"name":"SMK ABDUL RAHMAN TALIB, TELUK INTAN",
 "state":"Perak",
 "type":"SMK"
 },
@@ -3061,13 +3061,13 @@
 },
 {
 "code":"DRA2001",
-"name":"SMK AGAMA WATANIAH",
+"name":"SMK AGAMA WATANIAH, MACHANG",
 "state":"Kelantan",
 "type":"SMKA"
 },
 {
 "code":"TRA0002",
-"name":"SMK AGAMA WATANIAH",
+"name":"SMK AGAMA WATANIAH, JERTEH",
 "state":"Terengganu",
 "type":"SMKA"
 },
@@ -3223,19 +3223,19 @@
 },
 {
 "code":"JEB1003",
-"name":"SMK AMINUDDIN BAKI",
+"name":"SMK AMINUDDIN BAKI, JOHOR BAHRU",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"WEA0196",
-"name":"SMK AMINUDDIN BAKI",
+"name":"SMK AMINUDDIN BAKI, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"AEE2071",
-"name":"SMK AMINUDDIN BAKI",
+"name":"SMK AMINUDDIN BAKI, CHEMOR",
 "state":"Perak",
 "type":"SMK"
 },
@@ -3709,13 +3709,13 @@
 },
 {
 "code":"JEA7041",
-"name":"SMK BANDAR PUTRA",
+"name":"SMK BANDAR PUTRA, SEGAMAT",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"JEA8012",
-"name":"SMK BANDAR PUTRA",
+"name":"SMK BANDAR PUTRA, KULAI",
 "state":"Johor",
 "type":"SMK"
 },
@@ -3859,13 +3859,13 @@
 },
 {
 "code":"WEA0222",
-"name":"SMK BANDAR TUN RAZAK",
+"name":"SMK BANDAR TUN RAZAK, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"CEA8024",
-"name":"SMK BANDAR TUN RAZAK",
+"name":"SMK BANDAR TUN RAZAK, BANDAR TUN RAZAK",
 "state":"Pahang",
 "type":"SMK"
 },
@@ -4399,13 +4399,13 @@
 },
 {
 "code":"JEA9010",
-"name":"SMK BUKIT GAMBIR",
+"name":"SMK BUKIT GAMBIR, BUKIT GAMBIR",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"PEA1093",
-"name":"SMK BUKIT GAMBIR",
+"name":"SMK BUKIT GAMBIR, GELUGOR",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -4561,13 +4561,13 @@
 },
 {
 "code":"KEAB003",
-"name":"SMK BUKIT PAYONG",
+"name":"SMK BUKIT PAYONG, POKOK SENA",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"TEA0069",
-"name":"SMK BUKIT PAYONG",
+"name":"SMK BUKIT PAYONG, JERTEH",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -4693,13 +4693,13 @@
 },
 {
 "code":"JEB2039",
-"name":"SMK CANOSSIAN CONVENT",
+"name":"SMK CANOSSIAN CONVENT, KLUANG",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"JEB7031",
-"name":"SMK CANOSSIAN CONVENT",
+"name":"SMK CANOSSIAN CONVENT, SEGAMAT",
 "state":"Johor",
 "type":"SMK"
 },
@@ -4897,13 +4897,13 @@
 },
 {
 "code":"DEB1138",
-"name":"SMK CHUNG CHENG",
+"name":"SMK CHUNG CHENG, KOTA BHARU",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"YFB3201",
-"name":"SMK CHUNG CHENG",
+"name":"SMK CHUNG CHENG, SIBU",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -4915,43 +4915,43 @@
 },
 {
 "code":"NEB1083",
-"name":"SMK CHUNG HUA",
+"name":"SMK CHUNG HUA, KUALA PILAH",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
 {
 "code":"YFB3106",
-"name":"SMK CHUNG HUA",
+"name":"SMK CHUNG HUA, SIBU",
 "state":"Sarawak",
 "type":"SMK"
 },
 {
 "code":"YFB4101",
-"name":"SMK CHUNG HUA",
+"name":"SMK CHUNG HUA, MIRI",
 "state":"Sarawak",
 "type":"SMK"
 },
 {
 "code":"DEB1139",
-"name":"SMK CHUNG HWA",
+"name":"SMK CHUNG HWA, KOTA BHARU",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"CEB3039",
-"name":"SMK CHUNG HWA",
+"name":"SMK CHUNG HWA, KUALA LIPIS",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"XFE1306",
-"name":"SMK CHUNG HWA",
+"name":"SMK CHUNG HWA, TENOM",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"BEB0100",
-"name":"SMK CHUNG HWA",
+"name":"SMK CHUNG HWA, SHAH ALAM",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -4981,13 +4981,13 @@
 },
 {
 "code":"CEE3037",
-"name":"SMK CLIFFORD",
+"name":"SMK CLIFFORD, KUALA LIPIS",
 "state":"Pahang",
 "type":"MODEL KHAS"
 },
 {
 "code":"AEE4070",
-"name":"SMK CLIFFORD",
+"name":"SMK CLIFFORD, KUALA KANGSAR",
 "state":"Perak",
 "type":"SMK"
 },
@@ -5011,55 +5011,55 @@
 },
 {
 "code":"JEB0017",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, BATU PAHAT",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"JEB5026",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, MUAR",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"KEB2098",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, ALOR SETAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"AEB1027",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, SITIAWAN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB2048",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, IPOH",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB5169",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, TELUK INTAN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB6053",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, TAIPING",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEB0101",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, KLANG",
 "state":"Selangor",
 "type":"SMK"
 },
 {
 "code":"BEB4068",
-"name":"SMK CONVENT",
+"name":"SMK CONVENT, KAJANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -6205,13 +6205,13 @@
 },
 {
 "code":"AEA0033",
-"name":"SMK HAMID KHAN",
+"name":"SMK HAMID KHAN, TAPAH",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"PEA1210",
-"name":"SMK HAMID KHAN",
+"name":"SMK HAMID KHAN, GELUGOR",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -6349,13 +6349,13 @@
 },
 {
 "code":"JEB1006",
-"name":"SMK INFANT JESUS CONVENT",
+"name":"SMK INFANT JESUS CONVENT, JOHOR BAHRU",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"MEB2097",
-"name":"SMK INFANT JESUS CONVENT",
+"name":"SMK INFANT JESUS CONVENT, MELAKA",
 "state":"Melaka",
 "type":"SMK"
 },
@@ -6373,13 +6373,13 @@
 },
 {
 "code":"MEA1060",
-"name":"SMK ISKANDAR SHAH",
+"name":"SMK ISKANDAR SHAH, JASIN",
 "state":"Melaka",
 "type":"SMK"
 },
 {
 "code":"AEE8701",
-"name":"SMK ISKANDAR SHAH",
+"name":"SMK ISKANDAR SHAH, PARIT",
 "state":"Perak",
 "type":"SMK"
 },
@@ -6391,13 +6391,13 @@
 },
 {
 "code":"KEAB001",
-"name":"SMK JABI",
+"name":"SMK JABI, POKOK SENA",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"TEA0077",
-"name":"SMK JABI",
+"name":"SMK JABI, JERTEH",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -6499,19 +6499,19 @@
 },
 {
 "code":"NEA5056",
-"name":"SMK JELAI",
+"name":"SMK JELAI, GEMAS",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
 {
 "code":"NEA6004",
-"name":"SMK JELAI",
+"name":"SMK JELAI, JOHOL",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
 {
 "code":"AEA6054",
-"name":"SMK JELAI",
+"name":"SMK JELAI, BATU KURAU",
 "state":"Perak",
 "type":"SMK"
 },
@@ -6601,13 +6601,13 @@
 },
 {
 "code":"DEA4292",
-"name":"SMK JERAM",
+"name":"SMK JERAM, PASIR PUTEH",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"BEA3078",
-"name":"SMK JERAM",
+"name":"SMK JERAM, JERAM",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -6931,25 +6931,25 @@
 },
 {
 "code":"MEB2099",
-"name":"SMK KATHOLIK",
+"name":"SMK KATHOLIK, MELAKA",
 "state":"Melaka",
 "type":"SMK"
 },
 {
 "code":"CEB0020",
-"name":"SMK KATHOLIK",
+"name":"SMK KATHOLIK, BENTONG",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"AEBA002",
-"name":"SMK KATHOLIK",
+"name":"SMK KATHOLIK, TANJONG MALIM",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEB8653",
-"name":"SMK KATHOLIK",
+"name":"SMK KATHOLIK, PETALING JAYA",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -7087,13 +7087,13 @@
 },
 {
 "code":"KEA2093",
-"name":"SMK KEPALA BATAS",
+"name":"SMK KEPALA BATAS, ALOR SETAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"PEA2087",
-"name":"SMK KEPALA BATAS",
+"name":"SMK KEPALA BATAS, KEPALA BATAS",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -7195,25 +7195,25 @@
 },
 {
 "code":"KEA3046",
-"name":"SMK KHIR JOHARI",
+"name":"SMK KHIR JOHARI, SUNGAI PETANI",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"AEAA001",
-"name":"SMK KHIR JOHARI",
+"name":"SMK KHIR JOHARI, TANJONG MALIM",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEEB001",
-"name":"SMK KHIR JOHARI",
+"name":"SMK KHIR JOHARI, SUNGAI SUMUN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEA4605",
-"name":"SMK KHIR JOHARI",
+"name":"SMK KHIR JOHARI, BERANANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -8167,13 +8167,13 @@
 },
 {
 "code":"AEA6061",
-"name":"SMK MATANG",
+"name":"SMK MATANG, MATANG",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"TEA5035",
-"name":"SMK MATANG",
+"name":"SMK MATANG, KUALA BERANG",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -8383,67 +8383,67 @@
 },
 {
 "code":"AEB1036",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, AYER TAWAR",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB3041",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, PARIT BUNTAR",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB4075",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, SUNGAI SIPUT (U)",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEBA001",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, TANJONG MALIM",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"PEB4038",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, NIBONG TEBAL",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
 {
 "code":"YFB3101",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, SIBU",
 "state":"Sarawak",
 "type":"SMK"
 },
 {
 "code":"BEB1069",
-"name":"SMK METHODIST",
+"name":"SMK METHODIST, BANTING",
 "state":"Selangor",
 "type":"SMK"
 },
 {
 "code":"AEB2045",
-"name":"SMK METHODIST (ACS)",
+"name":"SMK METHODIST (ACS), IPOH",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEE1026",
-"name":"SMK METHODIST (ACS)",
+"name":"SMK METHODIST (ACS), SITIAWAN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEE9004",
-"name":"SMK METHODIST (ACS)",
+"name":"SMK METHODIST (ACS), KAMPAR",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEB0099",
-"name":"SMK METHODIST (ACS)",
+"name":"SMK METHODIST (ACS), KLANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -8479,13 +8479,13 @@
 },
 {
 "code":"KEE2102",
-"name":"SMK MUADZAM SHAH",
+"name":"SMK MUADZAM SHAH, ALOR STAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"CEA8032",
-"name":"SMK MUADZAM SHAH",
+"name":"SMK MUADZAM SHAH, MUADZAM SHAH",
 "state":"Pahang",
 "type":"SMK"
 },
@@ -8521,19 +8521,19 @@
 },
 {
 "code":"JEB8001",
-"name":"SMK MUNSHI ABDULLAH",
+"name":"SMK MUNSHI ABDULLAH, KULAIJAYA",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"MEA2087",
-"name":"SMK MUNSHI ABDULLAH",
+"name":"SMK MUNSHI ABDULLAH, MELAKA",
 "state":"Melaka",
 "type":"SMK"
 },
 {
 "code":"BEA6042",
-"name":"SMK MUNSHI ABDULLAH",
+"name":"SMK MUNSHI ABDULLAH, SUNGAI AIR TAWAR",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -8851,13 +8851,13 @@
 },
 {
 "code":"JEE2044",
-"name":"SMK PALOH",
+"name":"SMK PALOH, KLUANG",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"DEA8003",
-"name":"SMK PALOH",
+"name":"SMK PALOH, GUA MUSANG",
 "state":"Kelantan",
 "type":"SMK"
 },
@@ -9043,13 +9043,13 @@
 },
 {
 "code":"JEA1066",
-"name":"SMK PASIR PUTIH",
+"name":"SMK PASIR PUTIH, PASIR GUDANG",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"XEA3070",
-"name":"SMK PASIR PUTIH",
+"name":"SMK PASIR PUTIH, TAWAU",
 "state":"Sabah",
 "type":"SMK"
 },
@@ -9343,13 +9343,13 @@
 },
 {
 "code":"XEA2077",
-"name":"SMK PEREMPUAN",
+"name":"SMK PEREMPUAN, SANDAKAN",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"XEA4043",
-"name":"SMK PEREMPUAN",
+"name":"SMK PEREMPUAN, KOTA KINABALU",
 "state":"Sabah",
 "type":"SMK"
 },
@@ -9361,13 +9361,13 @@
 },
 {
 "code":"MEB2095",
-"name":"SMK PEREMPUAN METHODIST",
+"name":"SMK PEREMPUAN METHODIST, MELAKA",
 "state":"Melaka",
 "type":"SMK"
 },
 {
 "code":"AEB2047",
-"name":"SMK PEREMPUAN METHODIST",
+"name":"SMK PEREMPUAN METHODIST, IPOH",
 "state":"Perak",
 "type":"SMK"
 },
@@ -9559,13 +9559,13 @@
 },
 {
 "code":"KEEB001",
-"name":"SMK POKOK SENA",
+"name":"SMK POKOK SENA, POKOK SENA",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"PEA2084",
-"name":"SMK POKOK SENA",
+"name":"SMK POKOK SENA, KEPALA BATAS",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -9739,13 +9739,13 @@
 },
 {
 "code":"DEA1135",
-"name":"SMK PUTERI",
+"name":"SMK PUTERI, KOTA BHARU",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"NEB4092",
-"name":"SMK PUTERI",
+"name":"SMK PUTERI, SEREMBAN",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
@@ -9781,13 +9781,13 @@
 },
 {
 "code":"REB0057",
-"name":"SMK PUTRA",
+"name":"SMK PUTRA, KANGAR",
 "state":"Perlis",
 "type":"SMK"
 },
 {
 "code":"TEA0073",
-"name":"SMK PUTRA",
+"name":"SMK PUTRA, JERTEH",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -9913,19 +9913,19 @@
 },
 {
 "code":"AEB4072",
-"name":"SMK RAJA MUDA MUSA",
+"name":"SMK RAJA MUDA MUSA, KUALA KANGSAR",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"AEB5166",
-"name":"SMK RAJA MUDA MUSA",
+"name":"SMK RAJA MUDA MUSA, TELUK INTAN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEA3077",
-"name":"SMK RAJA MUDA MUSA",
+"name":"SMK RAJA MUDA MUSA, BESTARI JAYA",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -9991,19 +9991,19 @@
 },
 {
 "code":"DEE3244",
-"name":"SMK RANTAU PANJANG",
+"name":"SMK RANTAU PANJANG, RANTAU PANJANG",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"BEA0100",
-"name":"SMK RANTAU PANJANG",
+"name":"SMK RANTAU PANJANG, KLANG",
 "state":"Selangor",
 "type":"SMK"
 },
 {
 "code":"BEA3081",
-"name":"SMK RANTAU PANJANG",
+"name":"SMK RANTAU PANJANG, BESTARI JAYA",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -10111,13 +10111,13 @@
 },
 {
 "code":"PEB3036",
-"name":"SMK SACRED HEART",
+"name":"SMK SACRED HEART, BALIK PULAU",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
 {
 "code":"YFB3102",
-"name":"SMK SACRED HEART",
+"name":"SMK SACRED HEART, SIBU",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -10195,13 +10195,13 @@
 },
 {
 "code":"KEA4037",
-"name":"SMK SANGLANG",
+"name":"SMK SANGLANG, AYER HITAM",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"REA0079",
-"name":"SMK SANGLANG",
+"name":"SMK SANGLANG, SIMPANG EMPAT",
 "state":"Perlis",
 "type":"SMK"
 },
@@ -10627,31 +10627,31 @@
 },
 {
 "code":"JEA3052",
-"name":"SMK SERI AMAN",
+"name":"SMK SERI AMAN, KOTA TINGGI",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"DEA4297",
-"name":"SMK SERI AMAN",
+"name":"SMK SERI AMAN, PASIR PUTEH",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"KEA2187",
-"name":"SMK SERI AMPANG",
+"name":"SMK SERI AMPANG, ALOR SETAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"WEB0206",
-"name":"SMK SERI AMPANG",
+"name":"SMK SERI AMPANG, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"AEA2050",
-"name":"SMK SERI AMPANG",
+"name":"SMK SERI AMPANG, IPOH",
 "state":"Perak",
 "type":"SMK"
 },
@@ -10741,13 +10741,13 @@
 },
 {
 "code":"AEA7009",
-"name":"SMK SERI BUDIMAN",
+"name":"SMK SERI BUDIMAN, GERIK",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"TEA3085",
-"name":"SMK SERI BUDIMAN",
+"name":"SMK SERI BUDIMAN, KUALA TERENGGANU",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -10831,19 +10831,19 @@
 },
 {
 "code":"JEA2038",
-"name":"SMK SERI INTAN",
+"name":"SMK SERI INTAN, KLUANG",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"DEA2188",
-"name":"SMK SERI INTAN",
+"name":"SMK SERI INTAN, MACHANG",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"AEB2056",
-"name":"SMK SERI INTAN",
+"name":"SMK SERI INTAN, IPOH",
 "state":"Perak",
 "type":"SMK"
 },
@@ -11035,13 +11035,13 @@
 },
 {
 "code":"KEA2185",
-"name":"SMK SERI PANTAI",
+"name":"SMK SERI PANTAI, ALOR STAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"WEB0229",
-"name":"SMK SERI PANTAI",
+"name":"SMK SERI PANTAI, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
@@ -11209,13 +11209,13 @@
 },
 {
 "code":"AEA5079",
-"name":"SMK SERI SETIA",
+"name":"SMK SERI SETIA, TELUK INTAN",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"YEA1202",
-"name":"SMK SERI SETIA",
+"name":"SMK SERI SETIA, KUCHING",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -11227,13 +11227,13 @@
 },
 {
 "code":"MEA2089",
-"name":"SMK SERI TANJUNG",
+"name":"SMK SERI TANJUNG, TANJONG KLING",
 "state":"Melaka",
 "type":"SMK"
 },
 {
 "code":"BEA3074",
-"name":"SMK SERI TANJUNG",
+"name":"SMK SERI TANJUNG, KUALA SELANGOR",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -11707,19 +11707,19 @@
 },
 {
 "code":"WFE1022",
-"name":"SMK ST ANTHONY",
+"name":"SMK ST ANTHONY, W.P. LABUAN",
 "state":"Labuan",
 "type":"SMK"
 },
 {
 "code":"XFE1334",
-"name":"SMK ST ANTHONY",
+"name":"SMK ST ANTHONY, TENOM",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"YFB6102",
-"name":"SMK ST ANTHONY",
+"name":"SMK ST ANTHONY, SARIKEI",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -11755,25 +11755,25 @@
 },
 {
 "code":"XFE4353",
-"name":"SMK ST JOHN",
+"name":"SMK ST JOHN, TUARAN",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"XFE6051",
-"name":"SMK ST JOHN",
+"name":"SMK ST JOHN, BEAUFORT",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"XFE4253",
-"name":"SMK ST JOSEPH",
+"name":"SMK ST JOSEPH, PAPAR",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"YFB1202",
-"name":"SMK ST JOSEPH",
+"name":"SMK ST JOSEPH, KUCHING",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -11815,37 +11815,37 @@
 },
 {
 "code":"KEB2097",
-"name":"SMK ST MICHAEL",
+"name":"SMK ST MICHAEL, ALOR SETAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"XFE2045",
-"name":"SMK ST MICHAEL",
+"name":"SMK ST MICHAEL, SANDAKAN",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"XFE4117",
-"name":"SMK ST MICHAEL",
+"name":"SMK ST MICHAEL, PENAMPANG",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"KEB5028",
-"name":"SMK ST PATRICK",
+"name":"SMK ST PATRICK, KULIM",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"XFE3044",
-"name":"SMK ST PATRICK",
+"name":"SMK ST PATRICK, TAWAU",
 "state":"Sabah",
 "type":"SMK"
 },
 {
 "code":"XFE6101",
-"name":"SMK ST PATRICK",
+"name":"SMK ST PATRICK, MEMBAKUT",
 "state":"Sabah",
 "type":"SMK"
 },
@@ -11887,13 +11887,13 @@
 },
 {
 "code":"CEB4033",
-"name":"SMK ST THOMAS",
+"name":"SMK ST THOMAS, KUANTAN",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"YFB1204",
-"name":"SMK ST THOMAS",
+"name":"SMK ST THOMAS, KUCHING",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -12061,13 +12061,13 @@
 },
 {
 "code":"BEA0096",
-"name":"SMK SULTAN ABDUL SAMAD",
+"name":"SMK SULTAN ABDUL SAMAD, KLANG",
 "state":"Selangor",
 "type":"SMK"
 },
 {
 "code":"BEB8657",
-"name":"SMK SULTAN ABDUL SAMAD",
+"name":"SMK SULTAN ABDUL SAMAD, PETALING JAYA",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -12085,13 +12085,13 @@
 },
 {
 "code":"CEE5062",
-"name":"SMK SULTAN AHMAD",
+"name":"SMK SULTAN AHMAD, PEKAN",
 "state":"Pahang",
 "type":"SMK"
 },
 {
 "code":"TEA3112",
-"name":"SMK SULTAN AHMAD",
+"name":"SMK SULTAN AHMAD, KUALA TERENGGANU",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -12109,13 +12109,13 @@
 },
 {
 "code":"JEA3056",
-"name":"SMK SULTAN ALAUDDIN",
+"name":"SMK SULTAN ALAUDDIN, KULAI",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"MEB0079",
-"name":"SMK SULTAN ALAUDDIN",
+"name":"SMK SULTAN ALAUDDIN, MASJID TANAH",
 "state":"Melaka",
 "type":"SMK"
 },
@@ -12163,19 +12163,19 @@
 },
 {
 "code":"JEA1001",
-"name":"SMK SULTAN ISMAIL",
+"name":"SMK SULTAN ISMAIL, JOHOR BAHRU",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"DEE1141",
-"name":"SMK SULTAN ISMAIL",
+"name":"SMK SULTAN ISMAIL, KOTA BHARU",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"TEB2025",
-"name":"SMK SULTAN ISMAIL",
+"name":"SMK SULTAN ISMAIL, KEMAMAN",
 "state":"Terengganu",
 "type":"SMK"
 },
@@ -12715,13 +12715,13 @@
 },
 {
 "code":"WEA0212",
-"name":"SMK TAMAN DESA",
+"name":"SMK TAMAN DESA, KUALA LUMPUR",
 "state":"Kuala Lumpur",
 "type":"SMK"
 },
 {
 "code":"BEA7617",
-"name":"SMK TAMAN DESA",
+"name":"SMK TAMAN DESA, RAWANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -12949,13 +12949,13 @@
 },
 {
 "code":"KEA3120",
-"name":"SMK TAMAN RIA",
+"name":"SMK TAMAN RIA, SUNGAI PETANI",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"XEA4303",
-"name":"SMK TAMAN RIA",
+"name":"SMK TAMAN RIA, TUARAN",
 "state":"Sabah",
 "type":"SMK"
 },
@@ -13057,13 +13057,13 @@
 },
 {
 "code":"AEA6055",
-"name":"SMK TAMAN TASIK",
+"name":"SMK TAMAN TASIK, TAIPING",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEA4601",
-"name":"SMK TAMAN TASIK",
+"name":"SMK TAMAN TASIK, AMPANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -13189,13 +13189,13 @@
 },
 {
 "code":"KEAA180",
-"name":"SMK TANAH MERAH",
+"name":"SMK TANAH MERAH, PENDANG",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"NEE2065",
-"name":"SMK TANAH MERAH",
+"name":"SMK TANAH MERAH, PORT DICKSON",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
@@ -13231,13 +13231,13 @@
 },
 {
 "code":"DEA3431",
-"name":"SMK TANJONG BUNGA",
+"name":"SMK TANJONG BUNGA, PASIR MAS",
 "state":"Kelantan",
 "type":"SMK"
 },
 {
 "code":"PEE1092",
-"name":"SMK TANJONG BUNGA",
+"name":"SMK TANJONG BUNGA, TANJUNG BUNGAH",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -14101,13 +14101,13 @@
 },
 {
 "code":"NEE5038",
-"name":"SMK TUANKU ABDUL RAHMAN",
+"name":"SMK TUANKU ABDUL RAHMAN, GEMAS",
 "state":"Negeri Sembilan",
 "type":"SMK"
 },
 {
 "code":"BEB7655",
-"name":"SMK TUANKU ABDUL RAHMAN",
+"name":"SMK TUANKU ABDUL RAHMAN, RAWANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -14191,13 +14191,13 @@
 },
 {
 "code":"JEA2031",
-"name":"SMK TUN HUSSEIN ONN",
+"name":"SMK TUN HUSSEIN ONN, KLUANG",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"PEA0014",
-"name":"SMK TUN HUSSEIN ONN",
+"name":"SMK TUN HUSSEIN ONN, PERAI",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
@@ -14227,19 +14227,19 @@
 },
 {
 "code":"JEA5023",
-"name":"SMK TUN PERAK",
+"name":"SMK TUN PERAK, MUAR",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"AEE4081",
-"name":"SMK TUN PERAK",
+"name":"SMK TUN PERAK, PADANG RENGAS",
 "state":"Perak",
 "type":"SMK"
 },
 {
 "code":"BEA7623",
-"name":"SMK TUN PERAK",
+"name":"SMK TUN PERAK, RAWANG",
 "state":"Selangor",
 "type":"SMK"
 },
@@ -14335,19 +14335,19 @@
 },
 {
 "code":"KEB2099",
-"name":"SMK TUNKU ABDUL RAHMAN",
+"name":"SMK TUNKU ABDUL RAHMAN, ALOR SETAR",
 "state":"Kedah",
 "type":"SMK"
 },
 {
 "code":"PEE4037",
-"name":"SMK TUNKU ABDUL RAHMAN",
+"name":"SMK TUNKU ABDUL RAHMAN, NIBONG TEBAL",
 "state":"Pulau Pinang",
 "type":"SMK"
 },
 {
 "code":"YEA1303",
-"name":"SMK TUNKU ABDUL RAHMAN",
+"name":"SMK TUNKU ABDUL RAHMAN, KUCHING",
 "state":"Sarawak",
 "type":"SMK"
 },
@@ -14431,13 +14431,13 @@
 },
 {
 "code":"JEE0041",
-"name":"SMK TUNKU PUTRA",
+"name":"SMK TUNKU PUTRA, BATU PAHAT",
 "state":"Johor",
 "type":"SMK"
 },
 {
 "code":"KEA6015",
-"name":"SMK TUNKU PUTRA",
+"name":"SMK TUNKU PUTRA, LANGKAWI",
 "state":"Kedah",
 "type":"SMK"
 },

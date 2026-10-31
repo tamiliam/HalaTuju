@@ -1,5 +1,41 @@
 # Architectural Decisions — HalaTuju
 
+## Same-name schools carry their town (owner, 2026-10-31)
+
+**Context.** 68 names are used by more than one school in the MOE's national secondary list (173 rows; "SMK CONVENT"
+is in nine towns, "SMK CHUNG HUA" is a Form 6 centre in both Miri and Sibu). A student who picked one stored a name
+that did not say which school it was, and a reviewer could not tell.
+
+**Decision (owner's option 2).** (1) ONLY for a name more than one school uses in the NATIONAL secondary list, the
+name in our data is "<NAME>, <TOWN>" — "SMK CONVENT, TAIPING" — the town being the MOE directory's postal town
+(`BANDARSURAT` in `docs/SenaraiSekolahWeb_April2026.xlsx`, joined on the MOE code). The same national rule applies
+to the Form 6 list, so a centre carries its town even when it is the only centre of that name ("SMK SULTAN ISMAIL,
+JOHOR BAHRU"). Every other name is byte-identical. With the town added no two rows clash in either list; were one
+to, the PPD replaces the town for those rows. (2) The student sees and saves the longer name; the town words are
+searchable ("convent taiping"). (3) **The transform is `halatuju_api/scripts/school_town_names.py`** — a plain,
+re-runnable script (no database, no Django; `openpyxl` from requirements-dev), because nothing generated these files
+before. It rewrites only the "name" lines of `halatuju-web/src/data/secondary-schools.json` and `stpm-schools.json`
+and writes the server's set, `apps/scholarship/same_name_schools.py`. (4) **Existing records are left alone**: we
+never stored the MOE code, so a bare shared name already saved cannot be repaired.
+
+**Owner ruling on comparison, same day:** *"The model need to match the school names only and not the town as
+well for this set of schools."* So `school_names.school_name_core` drops our ", TOWN" — only when the whole string
+is one of OUR disambiguated names (a re-cased or spelt-out copy counts; "SMK PETAGAS, PENAMPANG", the MOE's own
+comma, and anything a student typed are left whole) — on BOTH sides of every record-vs-document school compare:
+the offer letter's institution (`pathway_engine._field_status` → `institution_status`), the catalogue hint
+checks in `offer_pathway` (`_refers_to_campus`, `_names_another_institution`, `catalogue_institution`), and the
+school-leaving certificate's school chip (`academic_engine._school_match`). The SPM slip's school tick is still
+PAUSED (2026-10-30) and has no code; when it is built it compares through `_school_match`. The cockpit and every
+screen still SHOW the full name with its town; no web code compares school names (the ticks read the server's
+verdicts). No model prompt matches on the record's school; the profile summary a model reads keeps the full name.
+
+**Not changed.** `apps/courses/data/stpm-schools.json` is the input of the historic migration 0018 (it seeded the
+`institutions` table long ago); it keeps the bare names, as production's `institutions` rows do.
+
+**Guards.** `src/data/__tests__/sameNameSchools.test.ts` (no shared name in either list; only the shared names
+changed); `apps/scholarship/tests/test_same_name_schools.py` (the helper, the offer and certificate compares, and the
+server set equal to the web lists).
+
 ## Every person's own card; the PHONE (not the address) may now reach the Team page and the inviting organisation — 2026-10-31 (owner rulings, common profile S2)
 
 **Context:** S1 gave every role one Profile page; the owner's card list (Podio's pattern) adds a photo, a

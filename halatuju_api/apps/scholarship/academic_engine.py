@@ -25,6 +25,8 @@ from __future__ import annotations
 import math
 import re
 
+from .school_names import school_name_core
+
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
 _SUBJECT_BM = {
     'bm': 'Bahasa Melayu', 'eng': 'Bahasa Inggeris', 'math': 'Matematik',
@@ -810,8 +812,13 @@ def _school_tokens(s: str) -> set:
 def _school_match(cert: str, profile: str) -> str:
     """Abbreviation-aware school match → 'match' / 'partial' / 'mismatch' / 'no_ref'. Compares the
     DISTINCTIVE tokens after stripping the generic school-type words (so SMK ↔ Sekolah Menengah
-    Kebangsaan). Pure; never raises."""
-    a, b = _school_tokens(cert), _school_tokens(profile)
+    Kebangsaan). Pure; never raises.
+
+    Both sides go through ``school_name_core`` (owner, 2026-10-31): the NAME is compared, never the
+    ", TOWN" our lists add to a same-name school ("SMK CONVENT, TAIPING" is "SMK CONVENT" here). ⚠ The
+    SPM slip's school tick is PAUSED (decisions.md 2026-10-30) and has no code yet; when it is built,
+    compare through THIS function so the same rule holds."""
+    a, b = _school_tokens(school_name_core(cert)), _school_tokens(school_name_core(profile))
     if not a or not b:
         return 'no_ref'
     inter = a & b
