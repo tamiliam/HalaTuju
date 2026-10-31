@@ -6,9 +6,12 @@ on file. The owner's compulsory set: professional credentials (qualification, un
 graduation year, field of study) + at least one language fluency + a phone number. The
 reviewer's NAME (on PartnerAdmin) is compulsory too.
 
-Reviewer-only: `role='reviewer'` is the only role that sees the reviewer-profile cards on
-/admin/profile, so it's the only role the gate applies to. super / qc / viewer / partner / admin
-are always complete (nothing to fill) — the flag is True for them.
+Reviewer-ROLE only, on purpose. Since common profile S1 (2026-10-31) the reviewer-profile cards on
+/admin/profile follow the `review` PERMISSION, so an admin, qc, finance or org admin given `review`
+sees them too — but this HOLD stays on `role='reviewer'` (owner ruling): anyone else holding
+`review` gets a reminder banner, never a block. super / qc / viewer / partner / admin / org admin
+are always complete here — the flag is True for them. (TD-435: a Reviewer whose `review` was taken
+away before onboarding is still held.)
 
 `reviewer_profile_complete` is the single source of truth: surfaced on GET /api/v1/admin/role/ as
 `reviewer_profile_complete`, which the login/callback landing + the admin layout guard branch on.

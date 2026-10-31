@@ -18,8 +18,15 @@ courses view would have needed one more cross-app import. The scholarship app al
 reads only the caller's own row (`get_admin` on the JWT subject) and writes nothing; the source's
 programme list is the same one its scope switcher already serves (`AdminScopeListView`).
 `permissions` is the RESOLVED set (`PartnerAdmin.permission_set`), the one `admin/role/` serves.
+
+`POST admin/me/password/` — the signed-in person changes their OWN password (see `AdminMePasswordView`).
 """
+from rest_framework import status
 from rest_framework.response import Response
+
+from apps.courses import supabase_admin
+from halatuju.middleware.supabase_auth import auth_sub
+from halatuju.throttling import PasswordChangeRateThrottle
 
 from .base import _AdminBase
 
@@ -74,3 +81,65 @@ class AdminMeView(_AdminBase):
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
         })
+
+
+def _password_refusal(code, http=status.HTTP_400_BAD_REQUEST):
+    return Response({'error': code, 'code': code}, status=http)
+
+
+class AdminMePasswordView(_AdminBase):
+    """POST /api/v1/admin/me/password/ `{current_password, new_password}` — a signed-in person
+    changes their OWN password (common profile S1, 2026-10-31; the Profile page's Sign-in card).
+
+    ⚠ WHY SERVER-SIDE. The project refuses a client `updateUser({password})` ("Current password
+    required", `app/admin/set-password`), so the browser cannot do this itself. And it is NOT
+    `admin/set-password/`: that endpoint sets a password with no current one, and is open only while
+    a temporary password is owed or a recovery link was just followed (TD-207, TD-322). Here the
+    current password IS the proof, checked by a password grant against the caller's own account.
+
+    ⚠ THE ACCOUNT IS THE JWT'S, NEVER THE BODY'S. The user id is `auth_sub`; the email checked is the
+    one Supabase holds for that id (read with the service role). Any `email` / `user_id` in the body
+    is ignored. Refusals: 400 `current_password_required`, `password_too_short` (the shared
+    `MIN_PASSWORD_LENGTH`), `same_password`, `no_password_sign_in` (a Google-only account),
+    `weak_password` (the project's password policy), `wrong_current_password` (nothing more said); 429 after about five attempts in fifteen minutes
+    (`PasswordChangeRateThrottle`); 503 `supabase_unavailable` when Supabase cannot be asked — never
+    a 500. Success sets the password only (no metadata: `must_change_password` is untouched).
+    Opted in for a source user, on POST only.
+    """
+    source_partner_methods = ('post',)
+    throttle_classes = [PasswordChangeRateThrottle]
+
+    def post(self, request):
+        admin = self.get_admin(request)
+        uid = auth_sub(request)
+        if not admin or not uid:
+            return self._deny()
+        data = request.data if isinstance(request.data, dict) else {}
+        current = data.get('current_password') or ''
+        new = data.get('new_password') or ''
+        if not isinstance(current, str) or not isinstance(new, str):
+            return _password_refusal('bad_request')
+        if not current:
+            return _password_refusal('current_password_required')
+        if len(new) < supabase_admin.MIN_PASSWORD_LENGTH:
+            return _password_refusal('password_too_short')
+        if new == current:
+            return _password_refusal('same_password')
+        unavailable = _password_refusal('supabase_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+        account = supabase_admin.read_auth_user(uid)
+        if not isinstance(account, dict) or not account.get('email'):
+            return unavailable
+        providers = (account.get('app_metadata') or {}).get('providers') or []
+        if 'email' not in providers:
+            return _password_refusal('no_password_sign_in')
+        checked = supabase_admin.verify_password(account['email'], current)
+        if checked is False:
+            return _password_refusal('wrong_current_password')
+        if checked is not True:
+            return unavailable
+        written = supabase_admin.set_password(uid, new)
+        if written == supabase_admin.WEAK_PASSWORD:
+            return _password_refusal('weak_password')
+        if written is not True:
+            return unavailable
+        return Response({'ok': True})

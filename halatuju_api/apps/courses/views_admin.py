@@ -32,7 +32,7 @@ from halatuju.pagination import FlexiblePageNumberPagination
 from . import password_change_flag, referral_links, staff_permissions, staff_reinvite
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
-from .supabase_admin import _service_headers
+from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
 from .models import StudentProfile, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
@@ -653,7 +653,7 @@ class AdminSetPasswordView(PartnerAdminMixin, APIView):
         if admin is None:
             return Response({'error': 'not_an_admin'}, status=403)
         password = request.data.get('password') or ''
-        if len(password) < 8:
+        if len(password) < MIN_PASSWORD_LENGTH:
             return Response({'error': 'password_too_short'}, status=400)
 
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')

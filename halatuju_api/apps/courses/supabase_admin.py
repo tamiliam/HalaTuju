@@ -15,6 +15,11 @@ from . import password_change_flag
 
 logger = logging.getLogger(__name__)
 
+#: The shortest password a staff or source account may choose — the ONE home of the rule, read by
+#: `AdminSetPasswordView` (onboarding and reset) and `AdminMePasswordView` (a signed-in change).
+#: The web's copy is `halatuju-web/src/lib/adminPassword.ts`, held by its drift test.
+MIN_PASSWORD_LENGTH = 8
+
 
 def _service_headers(service_role_key):
     return {
@@ -122,6 +127,7 @@ def _read_back_user_id(supabase_url, service_role_key, email):
 GONE = 'gone'          # the auth user does not exist (404) — nothing left to clean up
 FAILED = 'failed'      # Supabase could not be read or written; the caller decides what that stops
 INERT = 'inert'        # no Supabase config at all
+WEAK_PASSWORD = 'weak_password'   # the project's password policy refused a new password
 
 
 def supabase_config():
@@ -228,3 +234,62 @@ def delete_auth_user(uid):
                      uid, resp.status_code, resp.text)
         return FAILED
     return 'deleted'
+
+
+def verify_password(email, password):
+    """Whether ``password`` is the CURRENT password of the Supabase account ``email``: True, False,
+    or `FAILED` (Supabase could not be asked) / `INERT` (no config).
+
+    A password grant (`/auth/v1/token?grant_type=password`) is the only check GoTrue offers. It
+    MINTS A SESSION as a side effect, so a correct answer is followed by a best-effort sign-out of
+    that one session (`scope=local`), never of the caller's own. ``email`` must come from the server
+    (the caller's own auth user), never from a request body. Common profile S1, 2026-10-31.
+    """
+    cfg = supabase_config()
+    if cfg is None:
+        return INERT
+    try:
+        resp = http_requests.post(f'{cfg[0]}/auth/v1/token?grant_type=password',
+                                  json={'email': email, 'password': password},
+                                  headers=_service_headers(cfg[1]), timeout=15)
+    except Exception:
+        logger.warning('password check: Supabase could not be reached', exc_info=True)
+        return FAILED
+    if resp.status_code == 200:
+        try:
+            token = (resp.json() or {}).get('access_token')
+        except ValueError:
+            token = None
+        if token:
+            try:
+                http_requests.post(f'{cfg[0]}/auth/v1/logout?scope=local', timeout=15,
+                                   headers={'apikey': cfg[1], 'Authorization': f'Bearer {token}'})
+            except Exception:  # the check's own session lapses on its own; never fail the change
+                logger.warning('password check: could not sign the check session out', exc_info=True)
+        return True
+    if resp.status_code in (400, 401):
+        return False                    # GoTrue's invalid_grant: wrong password (or no such login)
+    logger.warning('password check: Supabase answered %s', resp.status_code)
+    return FAILED
+
+
+def set_password(uid, password):
+    """Set ``password`` on the Supabase account ``uid`` through the service-role admin API — the
+    call `AdminSetPasswordView` makes, with the password ONLY: no metadata is sent, so a voluntary
+    change leaves `must_change_password` and every other flag exactly as it was. True on 2xx,
+    `WEAK_PASSWORD` when the project's own password policy refuses it (GoTrue 422), else False."""
+    cfg = supabase_config()
+    if cfg is None:
+        return False
+    try:
+        resp = http_requests.put(f'{cfg[0]}/auth/v1/admin/users/{uid}', json={'password': password},
+                                 headers=_service_headers(cfg[1]), timeout=15)
+    except Exception:
+        logger.error('password change: Supabase errored for %s', uid, exc_info=True)
+        return False
+    if resp.status_code == 422:
+        return WEAK_PASSWORD
+    if resp.status_code not in (200, 201):
+        logger.error('password change failed for %s: %s', uid, resp.status_code)
+        return False
+    return True

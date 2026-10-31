@@ -60,6 +60,10 @@ ALLOWED = {
 #: temporary one is still owed — a temp-password source invitee needs it; source sign-in S2).
 REACHED = {
     ('api/v1/admin/set-password/', 'post'): 400,
+    # Common profile S1 (2026-10-31): the caller's OWN password change. With the sweep's empty
+    # body it is 400 `current_password_required` before Supabase is asked; it only ever changes the
+    # JWT's own account, after a password grant proves the current one (`test_admin_me.py`).
+    ('api/v1/admin/me/password/', 'post'): 400,
     # Source sign-in S4: the witness POST on the source's OWN student with no agreement yet is 400
     # `not_ready` — the view ran its gate (source user, scope, witness) and refused the state. It
     # writes only with an agreement, the guarantor's signature and `confirm: true`

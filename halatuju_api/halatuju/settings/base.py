@@ -109,6 +109,7 @@ REST_FRAMEWORK = {
         'anon': '1000/min',         # anti-runaway-scrape only; safe for shared-NAT classrooms
         'upload': '40/hour',        # document uploads — each triggers a billable Vision-OCR call
         'public_count': '120/min',  # public (AllowAny) sponsor-count endpoint
+        'password_change': '5/15m',  # a signed-in password change (PasswordChangeRateThrottle)
     },
 }
 

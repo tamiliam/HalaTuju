@@ -74,3 +74,29 @@ class PublicCountRateThrottle(SimpleRateThrottle):
 
     def get_cache_key(self, request, view):
         return self.cache_format % {'scope': self.scope, 'ident': client_ip(request)}
+
+
+class PasswordChangeRateThrottle(SimpleRateThrottle):
+    """About five password-change attempts per fifteen minutes per signed-in person (common profile
+    S1, 2026-10-31) — a stolen session must not be able to guess the current password at speed.
+
+    Keyed on the REAL JWT subject (`auth_sub`), never `request.user_id`, which a student's profile
+    alias may redirect (TD-254). Only POST counts. DRF reads a rate's period by its FIRST letter
+    only, so ``'5/15m'`` would mean five a minute; `parse_rate` here reads the number in front."""
+    scope = 'password_change'
+
+    def parse_rate(self, rate):
+        if rate is None:
+            return (None, None)
+        num, period = rate.split('/')
+        digits = ''.join(ch for ch in period if ch.isdigit())
+        unit = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}[period.lstrip('0123456789')[0]]
+        return (int(num), (int(digits) if digits else 1) * unit)
+
+    def get_cache_key(self, request, view):
+        if request.method != 'POST':
+            return None
+        from halatuju.middleware.supabase_auth import auth_sub
+        sub = auth_sub(request)
+        ident = f'user:{sub}' if sub else f'ip:{client_ip(request)}'
+        return self.cache_format % {'scope': self.scope, 'ident': ident}

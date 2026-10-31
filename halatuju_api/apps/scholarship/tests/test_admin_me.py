@@ -5,6 +5,8 @@ role and a source user alike: its own row, nothing else, and no write. The revie
 (`admin/reviewer-profile/`) is now gated on the `review` PERMISSION, not the Reviewer role (owner
 ruling 2026-10-31); the first-sign-in hold stays Reviewer-role only, pinned at the foot.
 """
+from unittest import mock
+
 from django.test import TestCase, override_settings
 
 from apps.scholarship.models import ProgrammeReferralSource, ReviewerProfile
@@ -158,3 +160,149 @@ class TestReviewerProfileFollowsTheReviewPermission(TestCase):
         role = authed_client(make_admin('admin', owning_org=self.org, permissions=['review'])
                              ).get('/api/v1/admin/role/').json()
         self.assertIs(role['reviewer_profile_complete'], True)
+
+
+class _Resp:
+    def __init__(self, status_code, body=None):
+        self.status_code, self._body, self.text = status_code, body or {}, ''
+
+    def json(self):
+        return self._body
+
+
+PW = '/api/v1/admin/me/password/'
+SUPA = dict(SUPABASE_URL='https://supa.test', SUPABASE_SERVICE_ROLE_KEY='service-key')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET, **SUPA)
+class TestOwnPasswordChange(TestCase):
+    """`POST admin/me/password/` — the Sign-in card's change, checked by the CURRENT password."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()                      # the throttle counts in the cache
+        self.me = make_admin('reviewer', owning_org=make_org(), uid='me-uid', email='me@example.test')
+        self.account = {'id': 'me-uid', 'email': 'me@example.test',
+                        'app_metadata': {'providers': ['email']}}
+        patcher = mock.patch('apps.courses.supabase_admin.http_requests')
+        self.http = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.http.get.return_value = _Resp(200, self.account)
+        self.http.post.return_value = _Resp(200, {'access_token': 'check-session'})
+        self.http.put.return_value = _Resp(200, {'id': 'me-uid'})
+
+    def _post(self, body, admin=None):
+        return authed_client(admin or self.me).post(PW, body, format='json')
+
+    def _grant_calls(self):
+        return [c for c in self.http.post.call_args_list if 'grant_type=password' in c.args[0]]
+
+    def test_the_right_current_password_sets_the_new_one_on_the_callers_own_account(self):
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        self.assertEqual((resp.status_code, resp.json()), (200, {'ok': True}))
+        self.assertEqual(self._grant_calls()[0].kwargs['json'],
+                         {'email': 'me@example.test', 'password': 'old-secret'})
+        self.assertEqual(self.http.put.call_args.args[0], 'https://supa.test/auth/v1/admin/users/me-uid')
+        # The password ONLY: no metadata, so `must_change_password` and its clock are untouched.
+        self.assertEqual(self.http.put.call_args.kwargs['json'], {'password': 'new-secret-1'})
+        # The check's own session is signed out (scope=local), with the CHECK session's token.
+        logout = [c for c in self.http.post.call_args_list if 'logout' in c.args[0]]
+        self.assertEqual(len(logout), 1)
+        self.assertIn('scope=local', logout[0].args[0])
+        self.assertEqual(logout[0].kwargs['headers']['Authorization'], 'Bearer check-session')
+
+    def test_a_wrong_current_password_is_400_and_nothing_is_set(self):
+        self.http.post.return_value = _Resp(400, {'error': 'invalid_grant'})
+        resp = self._post({'current_password': 'guess', 'new_password': 'new-secret-1'})
+        self.assertEqual((resp.status_code, resp.json()['error']), (400, 'wrong_current_password'))
+        self.assertEqual(set(resp.json()), {'error', 'code'})       # nothing said about the account
+        self.http.put.assert_not_called()
+
+    def test_an_email_or_user_id_in_the_body_is_ignored(self):
+        make_admin('reviewer', uid='victim-uid', email='victim@example.test')
+        self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1',
+                    'email': 'victim@example.test', 'user_id': 'victim-uid'})
+        self.assertEqual(self.http.get.call_args.args[0], 'https://supa.test/auth/v1/admin/users/me-uid')
+        self.assertEqual(self._grant_calls()[0].kwargs['json']['email'], 'me@example.test')
+        self.assertTrue(self.http.put.call_args.args[0].endswith('/me-uid'))
+
+    def test_the_shared_minimum_length_and_same_password_rules(self):
+        from apps.courses.supabase_admin import MIN_PASSWORD_LENGTH
+        short = 'x' * (MIN_PASSWORD_LENGTH - 1)
+        self.assertEqual(self._post({'current_password': 'old', 'new_password': short}).json()['error'],
+                         'password_too_short')
+        self.assertEqual(self._post({'current_password': 'same-secret', 'new_password': 'same-secret'}
+                                    ).json()['error'], 'same_password')
+        self.assertEqual(self._post({'new_password': 'new-secret-1'}).json()['error'],
+                         'current_password_required')
+        self.http.get.assert_not_called()
+        self.http.post.assert_not_called()
+
+    def test_a_password_the_project_policy_refuses_is_400_weak_password(self):
+        self.http.put.return_value = _Resp(422, {'error_code': 'weak_password'})
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'aaaaaaaa'})
+        self.assertEqual((resp.status_code, resp.json()['error']), (400, 'weak_password'))
+
+    def test_a_google_only_account_has_no_password_to_change(self):
+        self.account['app_metadata'] = {'providers': ['google']}
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        self.assertEqual(resp.json()['error'], 'no_password_sign_in')
+        self.http.post.assert_not_called()
+
+    def test_supabase_down_is_503_never_500(self):
+        cases = [
+            ('get', Exception('down'), None),           # the account cannot be read
+            ('post', Exception('down'), None),          # the password grant cannot be made
+            ('post', None, _Resp(500)),                 # the grant answers oddly
+            ('put', Exception('down'), None),           # the new password cannot be written
+        ]
+        for method, raises, answer in cases:
+            self.http.reset_mock(return_value=False, side_effect=True)
+            self.http.get.return_value = _Resp(200, self.account)
+            self.http.post.return_value = _Resp(200, {'access_token': 'check-session'})
+            self.http.put.return_value = _Resp(200, {'id': 'me-uid'})
+            fn = getattr(self.http, method)
+            if raises:
+                fn.side_effect = raises
+            else:
+                fn.return_value = answer
+            resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+            self.assertEqual((resp.status_code, resp.json()['error']), (503, 'supabase_unavailable'),
+                             method)
+            self.assertNotIn('Traceback', resp.content.decode())
+
+    def test_the_sixth_attempt_in_fifteen_minutes_is_429(self):
+        self.http.post.return_value = _Resp(400)
+        body = {'current_password': 'g', 'new_password': 'new-secret-1'}
+        for _ in range(5):
+            self.assertEqual(self._post(body).status_code, 400)
+        self.assertEqual(self._post(body).status_code, 429)
+        # Per person: somebody else is not held by my attempts.
+        other = make_admin('reviewer', uid='other-uid')
+        self.assertEqual(self._post(body, admin=other).status_code, 400)
+
+    def test_the_throttle_window_is_fifteen_minutes(self):
+        from halatuju.throttling import PasswordChangeRateThrottle
+        self.assertEqual(PasswordChangeRateThrottle().parse_rate('5/15m'), (5, 900))
+        self.assertEqual(PasswordChangeRateThrottle().parse_rate('40/hour'), (40, 3600))
+
+    def test_a_source_user_may_change_its_own_password(self):
+        source_user = make_admin('source_partner', uid='src-uid', email='src@example.test')
+        self.http.get.return_value = _Resp(200, {**self.account, 'id': 'src-uid', 'email': 'src@example.test'})
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'},
+                          admin=source_user)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(self.http.put.call_args.args[0].endswith('/src-uid'))
+
+    def test_a_non_admin_is_refused_before_supabase_is_asked(self):
+        resp = authed_client('stranger-uid').post(
+            PW, {'current_password': 'a', 'new_password': 'new-secret-1'}, format='json')
+        self.assertEqual(resp.status_code, 403)
+        self.http.get.assert_not_called()
+
+    def test_a_body_that_is_not_an_object_is_a_400_not_a_500(self):
+        resp = authed_client(self.me).post(PW, ['x'], format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_get_is_not_served(self):
+        self.assertEqual(authed_client(self.me).get(PW).status_code, 405)
