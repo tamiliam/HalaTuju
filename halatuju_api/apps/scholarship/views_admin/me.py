@@ -259,8 +259,10 @@ class AdminMeActivityView(_AdminBase):
     Every role, a super included, reads only their own rows. A subject's name is looked up NOW and
     shown only when the caller may see that subject now (D8); a subject that is gone reads
     "(removed)" (D7). `next` is an opaque cursor, keyed on (created_at, id); null on the last page.
-    Refusals (400): `bad_kind`, `bad_cursor`, `bad_limit` (1-100). Opted in for a source user."""
+    Refusals (400): `bad_kind`, `bad_cursor`, `bad_limit` (1-100). Opted in for a source user and a
+    mentor (S7a), who read their own rows like anyone else."""
     source_partner_methods = ('get',)
+    mentor_methods = ('get',)
 
     def get(self, request):
         admin = self.get_admin(request)

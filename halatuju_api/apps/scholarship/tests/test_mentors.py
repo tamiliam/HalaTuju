@@ -90,6 +90,19 @@ class TestInvite(_Base):
         self.assertEqual((body['mentor']['status'], body['mentor']['signed_in'], body['emailed']),
                          ('invited', False, True))
 
+    def test_the_invite_and_its_resend_are_on_the_inviters_own_activity_list(self):
+        """Common profile S3/S4: whoever pressed Invite / Resend gets an `invitation_sent` row; the
+        mentor gets none for being invited."""
+        from apps.scholarship.models import StaffActivity
+        r = self.invite()
+        self.act(r.json()['mentor']['id'], 'resend')
+        rows = list(StaffActivity.objects.filter(verb='invitation_sent').order_by('id')
+                    .values_list('actor_id', 'subject_type', 'meta'))
+        self.assertEqual([(a, t) for a, t, _ in rows], [(self.lead.pk, 'invitation')] * 2)
+        self.assertEqual([(m['audience'], m['resend']) for _, _, m in rows],
+                         [('mentor', False), ('mentor', True)])
+        self.assertFalse(StaffActivity.objects.filter(actor=self.login()).exists())
+
     def test_the_mentor_letter_is_the_only_email_and_carries_the_password(self):
         self.invite()
         self.assertEqual(len(mail.outbox), 1)

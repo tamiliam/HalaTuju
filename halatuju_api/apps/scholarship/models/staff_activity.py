@@ -1,4 +1,4 @@
-"""A staff member's own activity list (common profile S3, 2026-10-31) — model 71, NEW.
+"""A staff member's own activity list (common profile S3, 2026-10-31) — model 72, NEW.
 
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3 writes, S4 reads and back-fills, S5
 shows it on the profile page). One row each time a person on the admin platform DOES something:

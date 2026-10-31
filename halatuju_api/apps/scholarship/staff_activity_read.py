@@ -20,6 +20,8 @@ today, by today's rules, not by whatever they could see on the day they acted:
   * a benefactor: a super, or the benefactor is a member of one of the viewer's organisation's gifts.
   * a credit and a shop flag: always the neutral word (a bank reference and a shop name are not
     worth the risk of a leak, and the money screens show them).
+  * a MENTOR (student maintenance S7a) is an outsider like a source user: no permission and on no staff
+    list, so every subject but themself reads as the neutral word (`_outsider`).
 ⚠ D7 — a subject whose row is gone (a purged student, a deleted account) reads "… (removed)".
 
 Every subject type is fetched in ONE query per page, whatever the page size (`test_my_activity.py`
@@ -101,6 +103,11 @@ def _subject_ids(rows, kind):
     return {r.subject_id for r in rows if r.subject_type == kind and r.subject_id is not None}
 
 
+def _outsider(viewer):
+    """A source user or a mentor: deny by default, on no staff list — names nothing but themself."""
+    return viewer.is_source_user or viewer.is_mentor
+
+
 def _same_org(viewer, org_id):
     return viewer.is_super or (org_id is not None and org_id == viewer.owning_organisation_id)
 
@@ -113,6 +120,8 @@ def _applications(viewer, ids, view):
         from . import source_access
         visible = set(source_access.applications_for(viewer).filter(pk__in=list(found))
                       .values_list('pk', flat=True)) if found else set()
+    elif viewer.is_mentor:
+        visible = set()
     else:
         scope = view._b40_scope(viewer)
         visible = {pk for pk, app in found.items()
@@ -127,14 +136,14 @@ def _staff(viewer, ids):
     out = {}
     for pa in PartnerAdmin.objects.filter(pk__in=ids) if ids else ():   # org-fence: judged below
         mine = pa.pk == viewer.pk
-        team = (not viewer.is_source_user) and _same_org(viewer, pa.owning_organisation_id)
+        team = (not _outsider(viewer)) and _same_org(viewer, pa.owning_organisation_id)
         out[pa.pk] = pa.name if (mine or team) else False
     return out
 
 
 def _by_org(model, ids, viewer, label, org_field='organisation_id', allowed=True, related=()):
     qs = model.objects.filter(pk__in=ids).select_related(*related) if ids else ()  # org-fence: below
-    return {o.pk: (label(o) if allowed and not viewer.is_source_user
+    return {o.pk: (label(o) if allowed and not _outsider(viewer)
                    and _same_org(viewer, _attr(o, org_field)) else False) for o in qs}
 
 
@@ -149,7 +158,7 @@ def _sponsors(viewer, ids):
     found = list(Sponsor.objects.filter(pk__in=ids)) if ids else []   # org-fence: judged below
     if viewer.is_super:
         member = {s.pk for s in found}
-    elif viewer.is_source_user or not found or viewer.owning_organisation_id is None:
+    elif _outsider(viewer) or not found or viewer.owning_organisation_id is None:
         member = set()
     else:
         member = set(SponsorProgrammeMembership.objects.filter(
