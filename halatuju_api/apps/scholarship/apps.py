@@ -21,3 +21,9 @@ class ScholarshipConfig(AppConfig):
         from .staff_photo import on_profile_deleted
         post_delete.connect(on_profile_deleted, sender=StaffProfile,
                             dispatch_uid='staff_photo_on_profile_deleted')
+        # Common profile S3: the courses app records its staff actions (first sign-in, a referral
+        # partner's profile save) through `staff_activity_hook` — registered here, not imported
+        # there, for the same app-boundary reason as the witness above.
+        from apps.courses import staff_activity_hook
+        from .staff_activity import record
+        staff_activity_hook.RECORDER = record

@@ -39,7 +39,7 @@ from apps.courses import supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
-from .. import staff_photo
+from .. import staff_activity, staff_photo
 from ..staff_contact import new_profile_defaults, phone_refusal, works_with_students
 from ..models import Mentor, StaffProfile
 from .base import _AdminBase
@@ -157,6 +157,7 @@ class AdminMeView(_AdminBase):
         refused = phone_refusal(admin, clean)
         if refused is not None:
             return refused
+        fields = sorted(clean)          # common profile S3: which fields, never their values
         if 'name' in clean:
             admin.name = clean.pop('name')
             admin.save(update_fields=['name'])
@@ -169,6 +170,8 @@ class AdminMeView(_AdminBase):
             for key, value in clean.items():
                 setattr(profile, key, value)
             profile.save(update_fields=[*clean, 'updated_at'])
+        if fields:
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
         return Response(self._payload(request, admin))
 
     def _payload(self, request, admin):
@@ -233,6 +236,7 @@ class AdminMePhotoView(_AdminBase):
             return _me_refusal(e.code)
         if key is None:
             return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+        staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['photo']})
         return Response({'photo_url': staff_photo.signed_url(key)})
 
     def delete(self, request):
@@ -240,8 +244,11 @@ class AdminMePhotoView(_AdminBase):
         if not admin:
             return self._deny()
         profile = _profile_of(admin)
+        had_photo = bool(profile is not None and profile.photo_path)
         if profile is not None and not staff_photo.remove(profile):
             return _me_refusal('storage_unavailable', status.HTTP_503_SERVICE_UNAVAILABLE)
+        if had_photo:       # common profile S3: only a photo that was there and is now gone
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['photo']})
         return Response({'photo_url': None})
 
 
@@ -311,6 +318,7 @@ class AdminMePasswordView(_AdminBase):
             return _me_refusal('weak_password')
         if written is not True:
             return unavailable
+        staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': ['password']})
         # Review fix M2: every OTHER session ends; this tab keeps its own (`scope=others`).
         others = supabase_admin.sign_out_other_sessions(request.META.get('HTTP_AUTHORIZATION', ''))
         return Response({'ok': True, 'others_signed_out': others})

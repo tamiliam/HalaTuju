@@ -220,7 +220,7 @@ class AdminInvitationsView(_ReviewersBase):
         ok, error = send_sponsor_invitation_email(
             email, org_name=(org.name if org else ''), note=(request.data.get('note') or ''),
             code=inv.code, invited_by=admin.name)
-        inv_service.record_send(inv, ok, error)
+        inv_service.record_send(inv, ok, error, actor=admin)
         return Response({'id': inv.id, 'emailed': ok},
                         status=status.HTTP_201_CREATED if ok else status.HTTP_502_BAD_GATEWAY)
 

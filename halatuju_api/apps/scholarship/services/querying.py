@@ -113,7 +113,7 @@ def _maybe_autofinalise(application, session):
         pass  # never let auto-finalise break interview submission
 
 
-def submit_interview(session):
+def submit_interview(session, actor=None):
     """Phase C: finalise an interview session. Marks it submitted and moves the
     application into the reviewer's working state ('interviewing'). Idempotent on the
     session status. Returns True if it advanced the application.
@@ -124,9 +124,14 @@ def submit_interview(session):
     still locks here via ``querying_locked``'s submitted-session check (no regression).
 
     S4: submitting also auto-finalises the polished profile from the findings (gated +
-    best-effort — see _maybe_autofinalise) and is the point querying locks."""
+    best-effort — see _maybe_autofinalise) and is the point querying locks.
+
+    ``actor`` — the admin who pressed Submit (the view passes it), who is NOT always the session's
+    ``interviewer`` (lessons.md 2026-08-02) — gets an `interview_submitted` row on their own activity
+    list (common profile S3), once: a re-submit of a submitted session writes nothing."""
     now = timezone.now()
-    if session.status != 'submitted':
+    submitted_now = session.status != 'submitted'
+    if submitted_now:
         session.status = 'submitted'
         session.submitted_at = now
         session.save(update_fields=['status', 'submitted_at'])
@@ -140,5 +145,9 @@ def submit_interview(session):
         app.status = 'interviewing'
         app.save(update_fields=['status'])
         advanced = True
+    if submitted_now:
+        from .. import staff_activity
+        staff_activity.record(actor, staff_activity.INTERVIEW_SUBMITTED, app, meta=lambda: {
+            'session': session, 'interviewer': session.interviewer_id})
     _maybe_autofinalise(app, session)
     return advanced

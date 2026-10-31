@@ -9,7 +9,7 @@ Endpoints:
 - GET /api/v1/admin/students/<user_id>/ - Student detail
 - DELETE /api/v1/admin/students/<user_id>/ - Delete student (super admin only)
 - GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
-- GET/PUT /api/v1/admin/profile/ - View/edit own admin profile
+(GET/PUT /api/v1/admin/profile/ is `views_profile.py` since common profile S3, 2026-10-31.)
 (The staff-account views — invite, admins list, revoke/restore, resend and delete — are in
 `views_staff.py` since request #39 Sprint 1, 2026-10-19; the role switch is
 `apps.scholarship.views_admin.staff`.)
@@ -29,7 +29,8 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from . import password_change_flag, referral_links, staff_permissions, staff_reinvite
+from . import (password_change_flag, referral_links, staff_activity_hook, staff_permissions,
+               staff_reinvite)
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
@@ -226,13 +227,14 @@ def _record_invitation(created_admin, role, organisation, request, *, credential
         return None
 
 
-def _record_invitation_send(inv, ok, error=''):
-    """Remember whether the invitation email actually went. See `Invitation`'s send-record block."""
+def _record_invitation_send(inv, ok, error='', actor=None):
+    """Remember whether the invitation email went; ``actor`` (who pressed Invite / Resend) goes on
+    their activity list (common profile S3). See `Invitation`'s send-record block."""
     if inv is None:
         return
     try:
         from apps.scholarship import invitations
-        invitations.record_send(inv, ok, error)
+        invitations.record_send(inv, ok, error, actor=actor)
     except Exception:   # noqa: BLE001
         pass
 
@@ -297,6 +299,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         # only — a conditional UPDATE whose rowcount is 1 exactly once in the row's life — so an
         # invitation is closed at the one moment it can be, and cannot be re-accepted later.
         if _touch_seen(admin):
+            staff_activity_hook.record(admin, 'first_sign_in')   # S3; best-effort, never raises
             try:
                 from apps.scholarship import invitations
                 invitations.accept_for_admin(admin)
@@ -708,49 +711,6 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
             'id', 'code', 'name', 'contact_person', 'phone',
         )
         return Response({'orgs': list(orgs)})
-
-
-class AdminProfileView(PartnerAdminMixin, APIView):
-    """GET/PUT /api/v1/admin/profile/ - View/edit own admin profile."""
-    source_partner_methods = ('get',)   # their own row; S3 gives a source its own profile write
-
-    def get(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return Response({'error': 'Not an admin'}, status=403)
-
-        return Response({
-            'id': admin.id,
-            'name': admin.name,
-            'email': admin.email,
-            'is_super_admin': admin.is_super_admin,
-            'org_name': admin.org.name if admin.org else None,
-            'org_contact_person': admin.org.contact_person if admin.org else None,
-            'org_phone': admin.org.phone if admin.org else None,
-        })
-
-    def put(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return Response({'error': 'Not an admin'}, status=403)
-
-        name = request.data.get('name', '').strip()
-        if name:
-            admin.name = name
-            admin.save(update_fields=['name'])
-
-        # Org admins can edit their org's contact info
-        if admin.org:
-            contact = request.data.get('org_contact_person')
-            phone = request.data.get('org_phone')
-            if contact is not None:
-                admin.org.contact_person = contact.strip()
-            if phone is not None:
-                admin.org.phone = phone.strip()
-            if contact is not None or phone is not None:
-                admin.org.save(update_fields=['contact_person', 'phone'])
-
-        return Response({'message': 'Profile updated'})
 
 
 def _course_data_payload():

@@ -319,7 +319,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
         else:
             emailed = send_partner_welcome_email(email, name, role, temp_password=made.temp_password)
-        _record_invitation_send(inv, emailed)
+        _record_invitation_send(inv, emailed, actor=admin)
 
         if google:
             message = f'{name} added — they sign in with Google ({email}).'
@@ -387,7 +387,7 @@ class AdminResendView(PartnerAdminMixin, APIView):
         emailed = send_partner_welcome_email(
             target.email, target.name, target.role, temp_password=temp_password,
         )
-        _record_invitation_send(inv, emailed, 'send failed')
+        _record_invitation_send(inv, emailed, 'send failed', actor=admin)
         if not emailed:
             return Response({'error': 'Failed to send the email', 'emailed': False}, status=502)
         return Response({

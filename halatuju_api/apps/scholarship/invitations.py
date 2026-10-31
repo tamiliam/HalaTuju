@@ -13,6 +13,7 @@ import secrets
 
 from django.utils import timezone
 
+from . import staff_activity
 from .models import Invitation
 
 #: How long a staff invitation is good for. ⚠ MUST TRACK THE TEMP-PASSWORD TTL: the login gate
@@ -259,12 +260,17 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
         referral_source=referral_source, mentor=mentor, expires_at=expires)
 
 
-def record_send(inv, ok, error=''):
+def record_send(inv, ok, error='', *, actor=None):
     """Remember that we tried to email this invitation, and whether it worked.
 
     The answer to "invitations send email, but that is not shown to anyone". A failure is kept
     verbatim because a bounce is usually the whole explanation for an invitation nobody acted on.
     Never raises: recording the attempt must not be able to fail the attempt.
+
+    ``actor`` — the person who pressed Invite or Resend, passed by every live door (staff, source,
+    sponsor) — gets an `invitation_sent` row on their own activity list (common profile S3). This is
+    the ONE place an invitation is sent from, so it is the one place that row is written; the
+    historic back-fill (`backfill_invitations`) never calls it, so it writes none.
     """
     try:
         inv.send_count = (inv.send_count or 0) + 1
@@ -275,6 +281,8 @@ def record_send(inv, ok, error=''):
                                 'last_send_error', 'updated_at'])
     except Exception:   # noqa: BLE001
         pass
+    staff_activity.record(actor, staff_activity.INVITATION_SENT, inv, meta=lambda: {
+        'audience': inv.audience, 'emailed': bool(ok), 'resend': (inv.send_count or 0) > 1})
     return inv
 
 
@@ -291,14 +299,24 @@ def accept_for_admin(admin, now=None):
 
     Best-effort — somebody signing in must never be blocked by our bookkeeping about how they came
     to be here.
+
+    Each invitation it closes is an `invitation_accepted` row on the arriving person's own activity
+    list (common profile S3) — written here, the one place an invitation is accepted.
     """
     try:
         now = now or timezone.now()
-        return Invitation.objects.filter(
+        closing = list(Invitation.objects.filter(
             audience__in=ACCOUNT_AUDIENCES, partner_admin=admin,
+            accepted_at__isnull=True, revoked_at__isnull=True).values_list('pk', 'organisation_id'))
+        done = Invitation.objects.filter(
+            pk__in=[pk for pk, _ in closing],
             accepted_at__isnull=True, revoked_at__isnull=True).update(accepted_at=now)
     except Exception:   # noqa: BLE001
         return 0
+    for pk, org_id in (closing if done else ()):
+        staff_activity.record(admin, staff_activity.INVITATION_ACCEPTED, ('invitation', pk),
+                              organisation=org_id)
+    return done
 
 
 def revoke(inv, now=None):

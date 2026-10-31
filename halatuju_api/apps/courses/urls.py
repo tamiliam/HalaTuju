@@ -4,11 +4,12 @@ URL patterns for the courses app.
 from django.urls import path
 from . import health, views, views_offerings, views_stpm_quiz
 from .views_admin import (
-    AdminRoleView, AdminOrgsView, AdminSetPasswordView, AdminProfileView,
+    AdminRoleView, AdminOrgsView, AdminSetPasswordView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
     AdminCourseDataView, AdminCourseDataCheckView,
 )
+from .views_profile import AdminProfileView
 from .views_staff import (AdminDeleteView, AdminInviteView, AdminListView, AdminResendView,
                           AdminRevokeView)
 from .views_referral_partners import AdminReferralPartnerDetailView, AdminReferralPartnerListView
