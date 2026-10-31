@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## An offer-sourced, labels-only pick is LINKED to its catalogue course; its source is kept (owner, 2026-11-01)
+
+**Context.** #243's record held only the letter's labels ("Sarjana Muda Seni Halus (Kepujian)" at "KOLEJ SEROJA,
+UNIVERSITI TEKNOLOGI MARA", `offer_letter_confirmed`, no `course_id`): she confirmed before the matcher could read
+a degree, so the cockpit showed no course link and a hostel line as her institution. The realignment skipped it
+(`confirmed_source`) because it REPLACES a choice.
+
+**Decision.** Linking is not replacing: the labels came off the same letter, so the catalogue course they name is
+the same pick, given its id. `services/offer_link.plan_offer_link` links a pick only when its source is the
+letter's own reading, it has no `course_id`, the case is not decided (the realignment's test), the letter is the
+applicant's own and not a fake, it names ONE course at ONE campus at its own level (`pinned_course`), and the
+stored name names that course. A genuine score is not required — suspect and unscored letters link, a fake never.
+The source is kept. `chosen_pathway` changes only from blank or a non-picker value (`degree`, written by older
+confirms), to the course's picker pathway — the payment calendar reads it, so the repair lists every such change.
+The offer confirm now links a labels-only pick the same way (`_settle_stale_course_id`).
+
+**Revisit if:** a linked course is found wrong (the labels test is the guard), or the confirm's own `degree`
+pathway write is changed to store a picker value.
+
 ## Mobile M1b: one Sheet — a bottom sheet on phones, portalled, with dismissible={false} for flows that must not vanish (2026-10-31)
 
 **Decision.** One overlay component, `Sheet.tsx`, for every dialog: a bottom sheet below `md`, a centred dialog above.

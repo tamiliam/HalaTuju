@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Offer link: an offer-sourced, labels-only pick is linked to its catalogue course (2026-11-01)
+
+Owner, 2026-11-01 (#243). Not deployed; no migration; no MODEL_VERSION bump (no reading change).
+
+- New `services/offer_link.py`: `pinned_course` (the letter names ONE catalogue course at ONE campus, at the
+  letter's own level) and `plan_offer_link` / `link_offer_course`. A pick whose `source` is `offer_letter_auto`
+  or `offer_letter_confirmed` and that has no `course_id` gets the course id, the catalogue's course name and
+  campus (`card_display.with_institution` keeps `institution_id` true); the source is KEPT. Skips:
+  not offer-sourced, has a course id, decided, not own letter, a FAKE letter (suspect and unscored letters
+  link — linking replaces no choice), Form 6 / matric letter or pathway, unresolved, no course name, labels
+  that name another course. `chosen_pathway` is set to the course's picker pathway only when it is blank or
+  not a picker value (`degree`); the profile follows; AUDIT `offer_course_link`.
+- New command `link_offer_courses` (report by default, `--apply`): one line per offer-sourced pick with a live
+  offer, and the pathway changes listed apart.
+- Forward path: the offer confirm now links a labels-only pick (`_settle_stale_course_id` calls
+  `pinned_course`); the autofill already pinned one for a new degree letter (now tested).
+- Tests: `test_offer_link.py`.
+
 ## My activity: 10 rows first, no per-row rebuilt tag (owner, 2026-11-01) — LIVE 2026-11-01 (main 8e6773d5; web-01050-vfk)
 
 - **Ten rows first**: `FIRST_PAGE` 6 → 10 in `components/adminProfile/ActivityCard.tsx` (first load, chip change, Try again); Show older stays at 20.
