@@ -17,7 +17,12 @@ let mockAuth: Record<string, unknown> = {}
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => mockAuth }))
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push, replace: jest.fn() }) }))
 const updateUser = jest.fn()
-jest.mock('@/lib/admin-supabase', () => ({ getAdminSupabase: () => ({ auth: { updateUser } }) }))
+const refreshSession = jest.fn()
+const signInAgain = jest.fn()
+jest.mock('@/lib/admin-supabase', () => ({
+  getAdminSupabase: () => ({ auth: { updateUser, refreshSession } }),
+  adminSignInWithPassword: (...a: unknown[]) => signInAgain(...a),
+}))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
@@ -184,40 +189,78 @@ it('a Google-only account sees no password change', async () => {
   expect(within(card).queryByText('admin.myProfile.changePassword')).toBeNull()
 })
 
-it('a password account changes its password on the admin Supabase client, with the set-password rules', async () => {
+/** Opens the change form and fills it. */
+async function fillPassword(current: string, pw: string, pw2 = pw) {
+  fireEvent.click(within(await screen.findByTestId('profile-card-signin')).getByText('admin.myProfile.changePassword'))
+  fireEvent.change(screen.getByLabelText('admin.myProfile.currentPassword'), { target: { value: current } })
+  fireEvent.change(screen.getByLabelText('admin.myProfile.newPassword'), { target: { value: pw } })
+  fireEvent.change(screen.getByLabelText('admin.myProfile.confirmPassword'), { target: { value: pw2 } })
+}
+const submitPassword = () => fireEvent.click(within(screen.getByTestId('change-password'))
+  .getByText('admin.myProfile.changePassword'))
+
+it('a password account changes its password through admin/me/password/, never updateUser', async () => {
   signIn('admin')
-  updateUser.mockResolvedValue({ error: null })
+  mockApi.changeOwnPassword.mockResolvedValue({ ok: true })
+  refreshSession.mockResolvedValue({ error: null })
   render(<ProfilePage />)
-  const card = await screen.findByTestId('profile-card-signin')
-  fireEvent.click(within(card).getByText('admin.myProfile.changePassword'))
-  const [pw, pw2] = [screen.getByLabelText('admin.myProfile.newPassword'),
-    screen.getByLabelText('admin.myProfile.confirmPassword')]
-  const go = () => fireEvent.click(within(screen.getByTestId('change-password'))
-    .getByText('admin.myProfile.changePassword'))
-  fireEvent.change(pw, { target: { value: 'short' } }); fireEvent.change(pw2, { target: { value: 'short' } }); go()
+  await fillPassword('old-secret', 'short')
+  submitPassword()
   expect((await screen.findByRole('alert')).textContent).toBe('admin.passwordTooShort')
-  fireEvent.change(pw, { target: { value: 'longenough1' } }); fireEvent.change(pw2, { target: { value: 'longenough2' } }); go()
+  fireEvent.change(screen.getByLabelText('admin.myProfile.newPassword'), { target: { value: 'longenough1' } })
+  fireEvent.change(screen.getByLabelText('admin.myProfile.confirmPassword'), { target: { value: 'longenough2' } })
+  submitPassword()
   await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('admin.passwordMismatch'))
-  expect(updateUser).not.toHaveBeenCalled()
-  fireEvent.change(pw2, { target: { value: 'longenough1' } }); go()
-  await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ password: 'longenough1' }))
+  expect(mockApi.changeOwnPassword).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByLabelText('admin.myProfile.confirmPassword'), { target: { value: 'longenough1' } })
+  submitPassword()
+  await waitFor(() => expect(mockApi.changeOwnPassword).toHaveBeenCalledWith(
+    'old-secret', 'longenough1', { token: 'tok' }))
   expect(await screen.findByText('admin.myProfile.passwordChanged')).toBeTruthy()
-  // Not part of the page's Save: nothing was written to our API.
+  expect(updateUser).not.toHaveBeenCalled()
+  expect(signInAgain).not.toHaveBeenCalled()
+  // Not part of the page's Save, and the fields are cleared (the form closes).
   expect(mockApi.updateAdminProfile).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByText('admin.myProfile.changePassword'))
+  expect((screen.getByLabelText('admin.myProfile.currentPassword') as HTMLInputElement).value).toBe('')
+  expect((screen.getByLabelText('admin.myProfile.newPassword') as HTMLInputElement).value).toBe('')
+})
+
+it('a session the change ended is signed in again with the new password, and says so', async () => {
+  signIn('admin')
+  mockApi.changeOwnPassword.mockResolvedValue({ ok: true })
+  refreshSession.mockResolvedValue({ error: { message: 'Invalid Refresh Token' } })
+  signInAgain.mockResolvedValue({ error: null })
+  render(<ProfilePage />)
+  await screen.findByDisplayValue('Priya')
+  await fillPassword('old-secret', 'longenough1')
+  submitPassword()
+  expect(await screen.findByText('admin.myProfile.signedInAgain')).toBeTruthy()
+  expect(signInAgain).toHaveBeenCalledWith('priya@example.org', 'longenough1')
+})
+
+it('the new password equal to the current one is refused before the call', async () => {
+  signIn('admin')
+  render(<ProfilePage />)
+  await fillPassword('same-secret1', 'same-secret1')
+  submitPassword()
+  expect((await screen.findByRole('alert')).textContent).toBe('admin.myProfile.samePassword')
+  expect(mockApi.changeOwnPassword).not.toHaveBeenCalled()
 })
 
 it.each([
-  ['same_password', 'admin.myProfile.samePassword'],
-  ['reauthentication_needed', 'admin.myProfile.reauthNeeded'],
-  ['odd', 'admin.myProfile.passwordFailed'],
-])('a Supabase %s refusal reads in its own words and takes the focus', async (code, words) => {
+  [{ code: 'wrong_current_password', status: 400 }, 'admin.myProfile.wrongCurrent'],
+  [{ code: 'weak_password', status: 400 }, 'admin.myProfile.weakPassword'],
+  [{ code: 'no_password_sign_in', status: 400 }, 'admin.myProfile.noPasswordSignIn'],
+  [{ code: '', status: 429 }, 'admin.myProfile.tooManyAttempts'],
+  [{ code: 'supabase_unavailable', status: 503 }, 'admin.myProfile.unavailable'],
+  [{ code: 'odd', status: 400 }, 'admin.myProfile.passwordFailed'],
+])('a %j refusal reads in its own words and takes the focus', async (e, words) => {
   signIn('admin')
-  updateUser.mockResolvedValue({ error: { code, message: 'x' } })
+  mockApi.changeOwnPassword.mockRejectedValue(Object.assign(new Error('x'), e))
   render(<ProfilePage />)
-  fireEvent.click(within(await screen.findByTestId('profile-card-signin')).getByText('admin.myProfile.changePassword'))
-  fireEvent.change(screen.getByLabelText('admin.myProfile.newPassword'), { target: { value: 'longenough1' } })
-  fireEvent.change(screen.getByLabelText('admin.myProfile.confirmPassword'), { target: { value: 'longenough1' } })
-  fireEvent.click(within(screen.getByTestId('change-password')).getByText('admin.myProfile.changePassword'))
+  await fillPassword('old-secret', 'longenough1')
+  submitPassword()
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe(words)
   await waitFor(() => expect(document.activeElement).toBe(alert))

@@ -46,7 +46,7 @@ export type {
 
 // An admin's own profile, and a reviewer's own credentials.
 export {
-  getAdminMe, getAdminProfile, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
+  changeOwnPassword, getAdminMe, getAdminProfile, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
 } from './admin-api/profiles'
 export type { AdminMe, AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
 

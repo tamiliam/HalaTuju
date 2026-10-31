@@ -34,6 +34,8 @@ export type T = (k: string, vars?: Record<string, string>) => string
 
 export interface ProfileState {
   t: T
+  /** The admin session's token — for the one card that calls our API itself (Sign-in). */
+  token: string | null
   me: AdminMe | null
   /** The effective role (`super` for a legacy super flag). */
   role: string | undefined

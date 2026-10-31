@@ -41,12 +41,13 @@ jest.mock('@/lib/programmeScope', () => ({
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
-/** The ONLY calls a source page may make: `lib/admin-api/sourceConsole`, plus `getAdminMe`
- *  (`admin/me/`, opted in for a source user — common profile S1, the shared Profile page). */
+/** The ONLY calls a source page may make: `lib/admin-api/sourceConsole`, plus `getAdminMe` and
+ *  `changeOwnPassword` (`admin/me/` GET and `admin/me/password/` POST, opted in for a source user —
+ *  common profile S1, the shared Profile page). */
 const SOURCE_CALLS = new Set([
   'getSourceProfile', 'updateSourceProfile', 'getSourceOverview', 'getSourceApplications',
   'getSourceApplication', 'getSourceAgreement', 'witnessAsSource', 'getSourceScholars', 'getSourceScholar',
-  'getAdminMe',
+  'getAdminMe', 'changeOwnPassword',
 ])
 
 beforeEach(() => {

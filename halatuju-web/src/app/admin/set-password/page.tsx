@@ -7,8 +7,7 @@ import { getAdminSupabase } from '@/lib/admin-supabase'
 import { adminSetPassword } from '@/lib/admin-api'
 import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
-
-const MIN_LEN = 8
+import { MIN_PASSWORD_LENGTH } from '@/lib/adminPassword'
 
 // Reached from an INVITE or a PASSWORD-RESET email link. The Supabase client processes the
 // link on load and establishes a (recovery/invite) session; this page then lets the user
@@ -49,7 +48,7 @@ export default function AdminSetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (password.length < MIN_LEN) { setError(t('admin.passwordTooShort')); return }
+    if (password.length < MIN_PASSWORD_LENGTH) { setError(t('admin.passwordTooShort')); return }
     if (password !== password2) { setError(t('admin.passwordMismatch')); return }
 
     setLoading(true)

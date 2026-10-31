@@ -51,7 +51,7 @@ const sourceFormOf = (d: SourceProfile): SourceForm => ({
  *   `admin/source/profile/` PATCH; the reviewer cards — `admin/reviewer-profile/` PATCH.
  *
  * ⚠ A SOURCE USER IS REFUSED EVERY STAFF ENDPOINT (deny by default), so its page calls only
- * `admin/me/` GET and `admin/source/profile/` GET/PATCH (and Supabase itself for a password
+ * `admin/me/` GET, `admin/source/profile/` GET/PATCH and `admin/me/password/` POST (a password
  * change) — `components/source/noStaffCalls.test.tsx` holds it to that.
  *
  * ⚠ THE FIRST-SIGN-IN HOLD STAYS REVIEWER-ROLE ONLY. A Reviewer whose compulsory fields are missing
@@ -201,7 +201,7 @@ export default function AdminProfilePage() {
   const meta = (session?.user?.app_metadata ?? {}) as { providers?: string[]; provider?: string }
   const providers = meta.providers ?? (meta.provider ? [meta.provider] : [])
   const state: ProfileState = {
-    t, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
+    t, token, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
     draft, saved, set, setRev, report, orgName, providers,
   }
 

@@ -1,7 +1,7 @@
 /**
  * An admin's own profile, and a reviewer's own credentials and language fluency (F6).
  */
-import { API_BASE, adminFetch } from './client'
+import { API_BASE, adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 
 // ── Admin profile ───────────────────────────────────────────────────
@@ -64,6 +64,18 @@ export interface AdminMe {
 
 export async function getAdminMe(lang: string, options?: ApiOptions) {
   return adminFetch<AdminMe>(`/api/v1/admin/me/?lang=${encodeURIComponent(lang)}`, options)
+}
+
+/**
+ * `POST admin/me/password/` — the signed-in person changes their OWN password; the current one is
+ * the proof (checked by the server against Supabase). A refusal throws with `code`:
+ * `wrong_current_password`, `password_too_short`, `same_password`, `weak_password`,
+ * `no_password_sign_in`, `current_password_required`, `supabase_unavailable` (503), or a 429.
+ * Opted in for a source user (common profile S1).
+ */
+export async function changeOwnPassword(currentPassword: string, newPassword: string, options?: ApiOptions) {
+  return adminMutate<{ ok: true }>('/api/v1/admin/me/password/', 'POST',
+    { current_password: currentPassword, new_password: newPassword }, options)
 }
 
 // ── Reviewer profile (F6) ───────────────────────────────────────────

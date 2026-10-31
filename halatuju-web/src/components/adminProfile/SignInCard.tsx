@@ -1,24 +1,27 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { getAdminSupabase } from '@/lib/admin-supabase'
+import { changeOwnPassword } from '@/lib/admin-api'
+import { adminSignInWithPassword, getAdminSupabase } from '@/lib/admin-supabase'
+import { MIN_PASSWORD_LENGTH } from '@/lib/adminPassword'
 import { formatDateTime } from '@/lib/formatDate'
 import { CardFrame, inputCls, labelCls, type CardProps } from './shared'
 
-/** The set-password page's rule (`app/admin/set-password`): eight characters at least. */
-const MIN_LEN = 8
+const P = 'admin.myProfile'
 
-/** A Supabase refusal, in the reader's words. Unknown codes read as the generic failure. */
-function refusal(err: { code?: string; message?: string }): string {
-  const code = err.code ?? ''
-  if (code === 'same_password') return 'admin.myProfile.samePassword'
-  if (code === 'weak_password') return 'admin.myProfile.weakPassword'
-  // The project re-checks a password change (GoTrue "secure password change"): an older session is
-  // asked to prove itself again, which a fresh sign-in does.
-  if (code === 'reauthentication_needed' || /current password|reauthenticat/i.test(err.message ?? '')) {
-    return 'admin.myProfile.reauthNeeded'
+/** A refusal of `admin/me/password/`, in the reader's words. Unknown codes read as the generic one. */
+function refusal(err: { code?: string; status?: number }): string {
+  if (err.status === 429) return `${P}.tooManyAttempts`
+  switch (err.code) {
+    case 'wrong_current_password': return `${P}.wrongCurrent`
+    case 'current_password_required': return `${P}.currentRequired`
+    case 'password_too_short': return 'admin.passwordTooShort'
+    case 'same_password': return `${P}.samePassword`
+    case 'weak_password': return `${P}.weakPassword`
+    case 'no_password_sign_in': return `${P}.noPasswordSignIn`
+    case 'supabase_unavailable': return `${P}.unavailable`
+    default: return `${P}.passwordFailed`
   }
-  return 'admin.myProfile.passwordFailed'
 }
 
 /**
@@ -27,16 +30,24 @@ function refusal(err: { code?: string; message?: string }): string {
  * about once a day — NULL is "not recorded"), and, ONLY for an account that has the email
  * provider, a password change.
  *
- * ⚠ The change is its own action, not part of the page's Save: it goes straight to Supabase on
- * the ADMIN client (`updateUser({ password })`), never to our API, so a source user may use it too.
+ * ⚠ THE CHANGE GOES THROUGH OUR SERVER (`admin/me/password/`), NOT `updateUser({ password })`: the
+ * project refuses a client-side change ("Current password required", `app/admin/set-password`). The
+ * current password is the proof. It is its own action, not part of the page's Save, and a source
+ * user may use it too (opted in).
+ *
+ * ⚠ STAYING SIGNED IN. The server sets the password through the service-role admin API, which does
+ * not end this tab's session (`app/admin/set-password` relies on the same: it reads `admin/role/`
+ * with the same token straight after). The card still checks: if the session can no longer be
+ * refreshed, it signs in again with the new password and says so.
  */
 export default function SignInCard({ state }: CardProps) {
-  const { t, me, providers } = state
+  const { t, me, providers, token, email } = state
   const hasPassword = providers.includes('email')
   const methods = providers.map((p) => p === 'google' ? 'Google'
-    : p === 'email' ? t('admin.myProfile.password') : p)
+    : p === 'email' ? t(`${P}.password`) : p)
 
   const [open, setOpen] = useState(false)
+  const [current, setCurrent] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [busy, setBusy] = useState(false)
@@ -44,27 +55,45 @@ export default function SignInCard({ state }: CardProps) {
   const msgRef = useRef<HTMLParagraphElement>(null)
   useEffect(() => { if (msg && !msg.ok) msgRef.current?.focus() }, [msg])
 
+  const clear = () => { setCurrent(''); setPw(''); setPw2('') }
+
+  /** After a change: is this tab's session still good? If not, sign in again with the new one. */
+  const stayIn = async (newPassword: string): Promise<string> => {
+    try {
+      const { error } = await getAdminSupabase().auth.refreshSession()
+      if (!error) return `${P}.passwordChanged`
+    } catch { /* fall through to a fresh sign-in */ }
+    try {
+      const { error } = await adminSignInWithPassword(email, newPassword)
+      return error ? `${P}.signInAgainNeeded` : `${P}.signedInAgain`
+    } catch {
+      return `${P}.signInAgainNeeded`
+    }
+  }
+
   const change = async () => {
     setMsg(null)
-    if (pw.length < MIN_LEN) { setMsg({ ok: false, text: t('admin.passwordTooShort') }); return }
+    if (!current) { setMsg({ ok: false, text: t(`${P}.currentRequired`) }); return }
+    if (pw.length < MIN_PASSWORD_LENGTH) { setMsg({ ok: false, text: t('admin.passwordTooShort') }); return }
     if (pw !== pw2) { setMsg({ ok: false, text: t('admin.passwordMismatch') }); return }
+    if (pw === current) { setMsg({ ok: false, text: t(`${P}.samePassword`) }); return }
     setBusy(true)
     try {
-      const { error } = await getAdminSupabase().auth.updateUser({ password: pw })
-      if (error) { setMsg({ ok: false, text: t(refusal(error)) }); return }
-      setPw(''); setPw2(''); setOpen(false)
-      setMsg({ ok: true, text: t('admin.myProfile.passwordChanged') })
-    } catch {
-      setMsg({ ok: false, text: t('admin.myProfile.passwordFailed') })
+      await changeOwnPassword(current, pw, { token: token ?? undefined })
+      const newPassword = pw
+      clear(); setOpen(false)
+      setMsg({ ok: true, text: t(await stayIn(newPassword)) })
+    } catch (err) {
+      setMsg({ ok: false, text: t(refusal(err as { code?: string; status?: number })) })
     } finally { setBusy(false) }
   }
 
   return (
-    <CardFrame title={t('admin.myProfile.signin')} testId="signin">
+    <CardFrame title={t(`${P}.signin`)} testId="signin">
       <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">
-        <dt className="text-ground-500">{t('admin.myProfile.method')}</dt>
-        <dd className="text-ground-900">{methods.length ? methods.join(', ') : t('admin.myProfile.unknown')}</dd>
-        <dt className="text-ground-500">{t('admin.myProfile.lastSignedIn')}</dt>
+        <dt className="text-ground-500">{t(`${P}.method`)}</dt>
+        <dd className="text-ground-900">{methods.length ? methods.join(', ') : t(`${P}.unknown`)}</dd>
+        <dt className="text-ground-500">{t(`${P}.lastSignedIn`)}</dt>
         <dd className="text-ground-900">
           {me?.last_seen_at ? formatDateTime(me.last_seen_at) : t('admin.reviewers.lastSeenUnknown')}
         </dd>
@@ -72,27 +101,32 @@ export default function SignInCard({ state }: CardProps) {
       {hasPassword && !open && (
         <button type="button" onClick={() => { setOpen(true); setMsg(null) }}
           className="text-sm font-medium text-info-700 hover:underline">
-          {t('admin.myProfile.changePassword')}
+          {t(`${P}.changePassword`)}
         </button>
       )}
       {hasPassword && open && (
         <div className="grid gap-4 sm:grid-cols-2" data-testid="change-password">
+          <div className="sm:col-span-2 sm:max-w-[50%] sm:pr-2">
+            <label htmlFor="profile-current-password" className={labelCls}>{t(`${P}.currentPassword`)}</label>
+            <input id="profile-current-password" type="password" autoComplete="current-password"
+              value={current} onChange={(e) => setCurrent(e.target.value)} className={inputCls} />
+          </div>
           <div>
-            <label htmlFor="profile-new-password" className={labelCls}>{t('admin.myProfile.newPassword')}</label>
-            <input id="profile-new-password" type="password" autoComplete="new-password" minLength={MIN_LEN}
+            <label htmlFor="profile-new-password" className={labelCls}>{t(`${P}.newPassword`)}</label>
+            <input id="profile-new-password" type="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH}
               value={pw} onChange={(e) => setPw(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label htmlFor="profile-new-password2" className={labelCls}>{t('admin.myProfile.confirmPassword')}</label>
-            <input id="profile-new-password2" type="password" autoComplete="new-password" minLength={MIN_LEN}
+            <label htmlFor="profile-new-password2" className={labelCls}>{t(`${P}.confirmPassword`)}</label>
+            <input id="profile-new-password2" type="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH}
               value={pw2} onChange={(e) => setPw2(e.target.value)} className={inputCls} />
           </div>
           <div className="flex flex-wrap gap-3 sm:col-span-2">
-            <button type="button" onClick={change} disabled={busy || !pw || !pw2}
+            <button type="button" onClick={change} disabled={busy || !current || !pw || !pw2}
               className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-              {busy ? t('admin.saving') : t('admin.myProfile.changePassword')}
+              {busy ? t('admin.saving') : t(`${P}.changePassword`)}
             </button>
-            <button type="button" onClick={() => { setOpen(false); setPw(''); setPw2(''); setMsg(null) }}
+            <button type="button" onClick={() => { setOpen(false); clear(); setMsg(null) }}
               className="rounded-lg border border-ground-300 px-5 py-2 text-sm text-ground-700">
               {t('common.cancel')}
             </button>
