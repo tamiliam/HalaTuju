@@ -35,7 +35,7 @@ from rest_framework.response import Response
 
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from .. import source_access, source_console
+from .. import source_access, source_console, staff_activity
 from .base import _AdminBase
 from .sources import DETAIL_FIELDS, detail_values, text_of
 from .source_users import _bad_email
@@ -144,6 +144,10 @@ class AdminSourceProfileView(_SourceConsoleBase):
             for field, value in cleaned.items():
                 setattr(source, field, value)
             source.save(update_fields=list(cleaned))
+        # Common profile S3: the source user's own activity list — which parts, never the values.
+        fields = ['name'] * (name is not None) + ['organisation'] * bool(cleaned)
+        if fields:
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
         return Response(source_console.profile_dict(admin, source))
 
 

@@ -13,6 +13,7 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
+from .. import staff_activity
 from ..models import ReviewerProfile, ScholarshipApplication
 from ..serializers_admin import ReviewerProfileSerializer
 from ..services import PauseError, is_review_target, set_paused
@@ -545,10 +546,16 @@ class ReviewerProfileView(_AdminBase):
         serializer = ReviewerProfileSerializer(profile, data=body, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        fields, refusal = sorted(serializer.validated_data), None   # common profile S3: names only
         if 'paused' in request.data:
             try:
                 set_paused(admin, request.data.get('paused'))
+                fields.append('paused')
             except PauseError as e:
-                return Response({'error': e.code, 'code': e.code},
-                                status=status.HTTP_400_BAD_REQUEST)
+                refusal = Response({'error': e.code, 'code': e.code},
+                                   status=status.HTTP_400_BAD_REQUEST)
+        if fields:      # what WAS saved, even when the pause was then refused
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
+        if refusal is not None:
+            return refusal
         return Response(self._payload(profile, admin))

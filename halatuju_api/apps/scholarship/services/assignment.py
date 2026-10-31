@@ -184,6 +184,16 @@ def _locked(reviewer):
     return PartnerAdmin.objects.select_for_update().filter(pk=reviewer.pk).first() or reviewer
 
 
+def _record_assignment(by_admin, application, current, reviewer):
+    """Common profile S3: every (re)assignment is an `assigned` row on ``by_admin``'s own activity
+    list, an unassignment an `unassigned` one. `assign_reviewer` is the ONE door, so it is written
+    here and nowhere else — inside the target's row lock when there is one. Best-effort."""
+    from .. import staff_activity
+    staff_activity.record(
+        by_admin, staff_activity.UNASSIGNED if reviewer is None else staff_activity.ASSIGNED,
+        application, meta=lambda: {'from_admin': current, 'to_admin': reviewer})
+
+
 def assign_reviewer(application, *, reviewer, by_admin, now=None):
     """F7: (re)assign an application to a reviewer, audited. The caller must already
     have checked the actor is a super-admin. Rules:
@@ -266,6 +276,7 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
         if status_reverted:
             _fields.append('status')
         application.save(update_fields=_fields)
+        _record_assignment(by_admin, application, current, reviewer)
 
     # Notify the reviewer they have a new applicant to review. Only on an actual
     # assignment (not an unassign); the no-op short-circuit above means an unchanged

@@ -162,7 +162,8 @@ def _void_booking(pk):
         reviewer_reason='The application was closed by an officer.')
 
 
-def close_application(application, *, closure_reason, by_email='', pre_award_allowed=True):
+def close_application(application, *, closure_reason, by_email='', pre_award_allowed=True,
+                      actor=None):
     """Manually close an application. Stamps closed_at / closed_by, flips status to 'closed' and
     returns the application. Checked in this order, each a ``ClosureError`` code:
 
@@ -213,6 +214,9 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
     and does not fit a student who was funded or holds an award — her closure is told through the
     in-programme page as before. The email is sent OUTSIDE the transaction, so it never goes for
     a close that rolled back (the one caller, the admin view, is not inside an outer atomic).
+
+    ``actor`` (the admin who pressed Close; the view passes it) gets a `case_closed` row on their own
+    activity list (common profile S3), in the same transaction. None — management code — writes none.
     """
     if application is None or application.pk is None:
         raise ClosureError('not_closeable')
@@ -242,6 +246,9 @@ def close_application(application, *, closure_reason, by_email='', pre_award_all
         from .models.activity import EVENT_CLOSED
         activity.log_event(row, EVENT_CLOSED, actor_email=by_email,
                            meta={'reason': closure_reason, 'from': closed_from})
+        from . import staff_activity
+        staff_activity.record(actor, staff_activity.CASE_CLOSED, row,
+                              meta={'reason': closure_reason, 'from_status': closed_from})
         if closed_from in PRE_AWARD_STATUSES:
             _withdraw_proposed_times(row, row.closed_at)
             if _booking_ahead(row, row.closed_at):

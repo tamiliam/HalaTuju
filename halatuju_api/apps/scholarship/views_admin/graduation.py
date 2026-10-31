@@ -150,7 +150,7 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             agreement = source_witness.record_once(
                 agreement, org=org,
                 by_name=getattr(admin, 'name', '') or '',
-                witness_name=request.data.get('witness_name', '') or '')
+                witness_name=request.data.get('witness_name', '') or '', actor=admin)
         except source_witness.AlreadyWitnessed:
             return Response({'error': 'already_witnessed', 'code': 'already_witnessed'},
                             status=status.HTTP_409_CONFLICT)

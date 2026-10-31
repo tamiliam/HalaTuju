@@ -7,6 +7,7 @@ and every importer are unchanged.
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from .. import staff_activity
 from ..emails import send_request_info_email
 from ..serializers_admin import AdminApplicationDetailSerializer
 
@@ -28,6 +29,8 @@ class AdminRequestInfoView(_AdminBase):
         app.info_request_note = note
         app.info_requested_at = timezone.now()
         app.save(update_fields=['info_request_note', 'info_requested_at'])
+        # Common profile S3: on the officer's own list — the kind of ask, never the note itself.
+        staff_activity.record(admin, staff_activity.QUERY_RAISED, app, meta={'kind': 'note'})
         name = getattr(app.profile, 'name', '') if app.profile else ''
         from .. import usage as _usage
         with _usage.usage_context(application=app):   # S6a: billed to her organisation
@@ -72,7 +75,7 @@ class AdminResolutionItemView(_AdminBase):
                                 admin_email=getattr(admin, 'email', '') or '',
                                 doc_type=doc_type,
                                 fact=(request.data.get('fact') or 'other').strip(),
-                                household_member=member)
+                                household_member=member, actor=admin)
         if extra:
             item.params = {**(item.params or {}), **extra}
             item.save(update_fields=['params'])
@@ -121,4 +124,11 @@ class AdminResolutionItemActionView(_AdminBase):
             item.resolved_by = getattr(admin, 'email', '') or 'officer'
             item.resolved_at = timezone.now()
         item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+        # Common profile S3: "Ask again" raises the query again; waive / resolve closes it.
+        if action == 'reopen':
+            staff_activity.record(admin, staff_activity.QUERY_RAISED, item.application,
+                                  meta={'item': item, 'asked_again': True})
+        else:
+            staff_activity.record(admin, staff_activity.QUERY_RESOLVED, item.application,
+                                  meta={'item': item, 'action': action})
         return Response(AdminApplicationDetailSerializer(item.application).data)

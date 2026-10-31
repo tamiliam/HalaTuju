@@ -68,8 +68,12 @@ def latest_reopen(app):
     return app.decision_reopens.order_by('-created_at').first()
 
 
-def reopen_decision(app, *, by_admin, reason):
+def reopen_decision(app, *, by_admin, reason, activity=True):
     """Reopen a recorded decision: hold the sponsor profile, open an audit row.
+
+    ``activity``: the reopen is a `decision_reopened` row on ``by_admin``'s own activity list
+    (common profile S3), in this transaction. The QC's reopen / reject pass False — the QC's click
+    is ONE row, `qc_decision`, written by its view.
 
     Validates a decision exists and isn't already reopened, and that a reason was
     given (a reopen asserts a reviewer error — it must be justified). Returns the
@@ -105,6 +109,7 @@ def reopen_decision(app, *, by_admin, reason):
     sp = SponsorProfile.objects.filter(application=app).first()
     was_published = bool(sp and sp.anon_published)
 
+    reopened_from = app.status
     with transaction.atomic():
         if was_published:
             # Hold the profile from the pool. Reset realtime_notified_at so a later
@@ -137,6 +142,10 @@ def reopen_decision(app, *, by_admin, reason):
             reason=reason,
             was_published=was_published,
         )
+        if activity:
+            from . import staff_activity
+            staff_activity.record(by_admin, staff_activity.DECISION_REOPENED, app,
+                                  meta={'from_status': reopened_from})
     return row
 
 
