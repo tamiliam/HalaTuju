@@ -7222,3 +7222,29 @@ effect depends on `token`, and `admin-auth-context` hands out a new `access_toke
 `TOKEN_REFRESHED` (about hourly, or on tab focus near expiry). Someone several "Show older" pages deep sees the list
 blank, "Loading", and page one again. No wrong data. **Fix:** read the token through a ref and keep it out of the
 effect's dependencies; a test that a token change does not refetch. *(B · S)*
+
+### [TD-447] Offer confirm can still store a hostel line when the stored course is stale - low
+
+**Raised 2026-11-01 by the offer realignment's round-2 review.** `services/confirmation.py::_confirmed_place` reads
+the letter's place through `letter_place` with the STORED course id. When a student confirms an offer for a
+DIFFERENT course while the old course id is still stored, `letter_place(old id, hostel, issuer)` finds the issuer
+names no campus of the OLD course and keeps the hostel line, so a hostel can become the sponsor-facing institution
+until `_settle_stale_course_id` re-pins. Pre-existing; no live record has the shape. **Fix:** resolve the letter's
+course first (or re-run `_confirmed_place` after the re-pin) and test a stale-id confirm with a hostel line. *(B · S)*
+
+### [TD-448] A Bumi-only realign waits for a re-read when genuineness lands after the autofill - low
+
+**Raised 2026-11-01 by the offer realignment build.** `realign_bumi_only_pick` runs inside
+`autofill_pathway_from_offer`, which needs `offer_band == 'genuine'`. If an offer's genuineness score is stored
+AFTER the autofill ran (an AI outage, a late scorer), nothing re-runs the realign until a re-read or
+`realign_bumi_offers --apply`. **Fix:** call the realign from the place that stores the genuineness score too, or
+add `realign_bumi_offers --apply` to the post-outage re-score runbook. *(B · S)*
+
+### [TD-449] The offer check's catalogue queries sit outside every query budget - low
+
+**Raised 2026-11-01 by the offer realignment build.** Each `student_offer_check` now runs about 3 to 6 more
+queries (`letter_place`, `_campus_rows`, the StpmCourse scan, `_names_another_institution`, a second
+`_institutions` scan; measured 3 → 8 for a hostel letter, 6 → 10 for UiTM). No list endpoint runs it per row
+today, and `test_query_budgets` passes at 38, but its fixtures carry no offer fields, so this path is unmeasured.
+**Fix:** give the budget fixture an offer letter with programme, institution and issuer, and pin the cockpit
+detail's count. *(B · S)*

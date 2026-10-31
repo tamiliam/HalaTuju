@@ -57,6 +57,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-31 Mobile-native Sprint M0 (Mobile Standard, ratchet guards, mobile-check + ledger, viewport/manifest) — 9691f9a7 b38e6b67 c4f7d9d6 308ef3b5
 - 2026-10-31 Common profile Sprints S3-S5 (My activity: staff_activity + writer, reader, back-fill, the card; adversarial review round; migration scholarship 0195) — b269a631 d3e472c7 151de0f2 de573eb1 54e6cf3d 51bf847d
 - 2026-11-01 Common profile follow-up sprint (TD-439 owner ruling: phone written by admin/me only; TD-445, TD-446; no migration) — 83571471
+- 2026-11-01 Offer realignment (degree catalogue in the matcher, issuer for a hostel line, Bumi-only offers realign the pick; two adversarial review rounds; no migration; realign_bumi_offers --apply on live) — a8c763f8 333e7a96 1d849065
 
 ## Reviews
 

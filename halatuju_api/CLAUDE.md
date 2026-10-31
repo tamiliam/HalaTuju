@@ -1135,6 +1135,17 @@ API data; it is read-only) and `npm run mobile-ledger`. Static ratchets in `mobi
 down. A new `page.tsx` must be classified in `src/lib/mobileClass.ts`. M1 starts with the Tamil font (Mukta Malar,
 from SJKTConnect), the 16 px input rule, the shared Sheet, and the 5.7 MB favicon. Owner pick due in M1: TD-311.
 
+### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT LIVE (main f908d5ba; api-01223-8xk; no migration)
+
+The offer → course matcher is `apps/scholarship/offer_course_match.py` (`match_offer_course`, `letter_place`,
+`is_bumiputera_only`); `offer_pathway.resolve_catalogue_course` is a thin caller with an optional `issuer`. It reads
+BOTH catalogues (`StpmCourse` too), names institutions in tiers (exact name / unique acronym, then the issuer, then
+words with the institution's words inside the line), and returns one course or none. Owner rule: a genuine, own
+offer for a Bumi-only course replaces a student-made pick on an undecided case (`services/offer_sync.plan_bumi_realign`);
+`realign_bumi_offers` (report default, `--apply`) was applied on live 2026-11-01. `is_bumiputera_only` is pinned to
+one reader and one caller (`test_bumiputera_blind`); never read `StudentProfile.bumiputera`. Open: TD-447, TD-448,
+TD-449. Retro: `docs/retrospectives/retrospective-2026-11-01-offer-realignment.md`.
+
 ### ⚠ STATE AT 2026-10-31 — STUDENT MAINTENANCE SPRINT 7a LIVE (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
 Migrations scholarship 0194 and courses 0090 APPLIED BY HAND 2026-10-31 and recorded — never re-apply that DDL.

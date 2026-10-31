@@ -1777,3 +1777,11 @@ is prefetched — weight moved off a route's first load can still travel in the 
   a missing module, not on code. **Rule:** after a rebase that changes `halatuju-web/package.json`, check each new
   dependency exists in the shared `node_modules` before the gates; add it with `npm install --no-save <pkg>@<exact>`
   in the main checkout, never `npm ci` there (other sessions run from it). (Common profile S3–S5, 2026-10-31)
+- **A matcher whose SEARCH SPACE widens must have its "names this place" test re-proved against COUNTERFACTUAL
+  catalogue rows, not only against today's live data.** The offer matcher gained 1,112 degree courses but kept a
+  shared-word, either-direction idea of "this line names that institution": "UNIVERSITI TEKNOLOGI MARA" named MARA's
+  division (acronym MARA), a UTM letter named UiTM, a centre line "Pusat Asasi Sains" named USM. The live dry run
+  was clean because no live letter happened to hit those rows; the adversarial review found all three by adding a
+  plausible row. **Rule:** when a matcher reads a bigger table, name the institution in tiers (exact name or a
+  unique acronym first; words only when the INSTITUTION's words sit inside the line), and have the reviewer seed
+  trap rows next to every live string. (Offer realignment, 2026-11-01)
