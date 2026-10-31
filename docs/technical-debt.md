@@ -132,11 +132,10 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 11
+### Now — money, identity, eligibility or security — 10
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 
-- **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. Narrowed 2026-10-31: `reissue_credential` now never resets a login that is also a student's or sponsor's. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
 - **TD-441** — An admin role (mentor or staff) on a student's or sponsor's own login has side effects: a student's claimed-profile alias stops working, a sponsor-portal sign-in counts as the mentor accepting, and the `get_admin` link is not a compare-and-set. *(B · M · raised 2026-10-31 by the S7a follow-up review; pre-existing for staff)*
 - **TD-444** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
 - **TD-442** — A QC reject runs `reopen_decision` (its own atomic block) and then `admin_reject`; if the decline raises, the case stays reopened with a 400 and no activity row. *(B · S · raised 2026-10-31 by the common profile S4 review, L3; pre-existing)*
@@ -7128,7 +7127,16 @@ not affected (its `invitation_sent` row takes the actor passed explicitly to `in
 **Fix:** pass the inviting admin into `_record_invitation` the same way, and add a test that a staff invite
 stores `invited_by`. S4's back-fill cannot rebuild `invitation_sent` rows for old staff invites until then
 (no actor to write them under). *(B · S)*
-### [TD-440] Staff Resend can reset the password of a login the person brought with them - high
+
+### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
+
+**CLOSED 2026-10-31 by the TD-440 sprint.** `staff_reinvite.reissue_credential` — the one door the staff, source and
+mentor Resends rotate a password through — now rotates only when the row's newest invitation issued a password
+(`staff_lifecycle.credential_was_issued`), never on a student's, alias's or sponsor's login, and never on a login the
+LIVE Supabase record shows was used with a password of its own (`_chose_own_password`, the re-invite's own test —
+it covers backfilled invitations that guessed "issued" and a `first_seen_at` never stamped); the staff Resend
+refuses a row that has signed in (400 `already_joined`), like the other two. Regression tests
+`test_td440_*` in `courses/tests/test_admin_auth.py`. Live 2026-10-31: no active staff row was waiting with a UID.
 
 **Raised 2026-10-31 by the student maintenance S7a adversarial review (pre-existing, staff path).**
 `get_admin` (`courses/views_admin.py` `_find_admin`) links a staff row with no UID to the caller's VERIFIED email

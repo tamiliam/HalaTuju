@@ -58,6 +58,17 @@ def may_reuse(caller, existing):
     return not staff_footprint.has_footprint(existing)
 
 
+def _chose_own_password(account):
+    """True when this Supabase login has signed in AND its password is the person's own — no
+    rotation owed, or one owed but the login touched since (`staff_lifecycle.login_untouched`).
+    Read off the LIVE login, so it holds whatever `first_seen_at` or an invitation row says."""
+    from .views_admin import scholarship_staff
+    _, staff_lifecycle = scholarship_staff()
+    owes = password_change_flag.rotation_state(account)[0] is not None
+    fresh = owes and staff_lifecycle.login_untouched(account)
+    return bool(account.get('last_sign_in_at')) and not fresh
+
+
 def _login_for(row, name, temp_password):
     """``(user_id, already_registered, error)`` — the same triple `_create_supabase_user` returns,
     plus the error ``'not_reusable'`` (the caller's 409) for a login somebody has really used."""
@@ -65,11 +76,7 @@ def _login_for(row, name, temp_password):
     if uid:
         account = supabase_admin.read_auth_user(uid)
         if isinstance(account, dict):
-            from .views_admin import scholarship_staff
-            _, staff_lifecycle = scholarship_staff()
-            owes = password_change_flag.rotation_state(account)[0] is not None
-            fresh = owes and staff_lifecycle.login_untouched(account)
-            if account.get('last_sign_in_at') and not fresh:
+            if _chose_own_password(account):
                 # Signed in AND chose their own password — here, or elsewhere after the temp one
                 # expired (round 2, N1): this person arrived, whatever `first_seen_at` says.
                 # Restore is the way back, never a re-invite (H1).
@@ -170,6 +177,15 @@ def reissue_credential(target):
     or sponsor's address may hold an admin role, a UID that is ALSO a student profile, a profile
     alias or a sponsor (`staff_lifecycle.login_used_elsewhere`) is theirs — ``(None, None)``, the same
     as no UID, whichever Resend (staff, source, mentor) asks and however the UID got onto the row.
+
+    ⚠ NEVER A LOGIN THE PERSON BROUGHT WITH THEM (TD-440, 2026-10-31): `get_admin` links a row with no
+    UID to the caller's verified email on ANY admin request, without stamping `first_seen_at`. So a
+    UID alone does not mean we made the login: a password is rotated only when the row's newest
+    invitation issued one (`staff_lifecycle.credential_was_issued`); otherwise ``(None, None)``.
+    And the LIVE login is read (TD-440 review): one that has signed in with a password of its own
+    (`_chose_own_password`, the re-invite's own test) is never reset either — that catches what the
+    rows cannot (a backfilled invitation that guessed "issued", a `first_seen_at` never stamped).
+    A login that cannot be read is ``'reset_failed'``: nothing is written on a guess.
     """
     from .views_admin import generate_temp_password, scholarship_staff
     if supabase_admin.supabase_config() is None:
@@ -177,7 +193,13 @@ def reissue_credential(target):
     if not target.supabase_user_id:
         return None, None
     _, staff_lifecycle = scholarship_staff()
-    if staff_lifecycle.login_used_elsewhere(target.supabase_user_id):
+    if (staff_lifecycle.login_used_elsewhere(target.supabase_user_id)
+            or not staff_lifecycle.credential_was_issued(target)):
+        return None, None
+    account = supabase_admin.read_auth_user(target.supabase_user_id)
+    if not isinstance(account, dict):
+        return None, 'reset_failed'
+    if _chose_own_password(account):
         return None, None
     temp_password = generate_temp_password()
     if not supabase_admin.issue_temp_password(target.supabase_user_id, target.name, temp_password):

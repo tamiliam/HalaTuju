@@ -452,6 +452,9 @@ class PartnerAccountCreationTest(TestCase):
 class AdminResendTest(TestCase):
     """Resend exists because there was previously NO way to re-send an invite to anyone."""
 
+    #: TD-440: a Resend reads the live login first — one nobody has used since we made it.
+    UNTOUCHED = {'id': 'target-uid', 'last_sign_in_at': None, 'app_metadata': {}}
+
     @classmethod
     def setUpTestData(cls):
         cls.superadmin = PartnerAdmin.objects.create(
@@ -466,6 +469,20 @@ class AdminResendTest(TestCase):
         cls.no_uid = PartnerAdmin.objects.create(
             role='reviewer', is_active=True, name='Prior', email='prior@example.com',
         )
+        # TD-440: a login is OURS only when its newest invitation issued a password.
+        from apps.scholarship import invitations
+        invitations.create_or_refresh(
+            audience='staff', email=cls.target.email, name=cls.target.name, role='reviewer',
+            organisation=None, partner_admin=cls.target, credential_issued=True)
+        # TD-440: a UID `get_admin` linked from the person's OWN login (Google, or one they already
+        # had) — the invitation issued no password, and `admin/role/` has not stamped the sign-in.
+        cls.linked = PartnerAdmin.objects.create(
+            supabase_user_id='their-own-uid', role='reviewer', is_active=True,
+            name='Linked', email='linked@example.com',
+        )
+        invitations.create_or_refresh(
+            audience='staff', email=cls.linked.email, name=cls.linked.name, role='reviewer',
+            organisation=None, partner_admin=cls.linked, credential_issued=False)
 
     def setUp(self):
         self.client = APIClient()
@@ -473,7 +490,7 @@ class AdminResendTest(TestCase):
         mail.outbox = []
 
     def test_resend_rotates_the_password_and_re_emails(self):
-        with patch('apps.courses.views_admin.http_requests.put') as mock_put:
+        with patch('apps.courses.views_admin.http_requests.put') as mock_put, patch('apps.courses.supabase_admin.read_auth_user', return_value=self.UNTOUCHED):
             mock_put.return_value = MagicMock(status_code=200, text='ok', json=lambda: {})
             r = self.client.post(f'/api/v1/admin/admins/{self.target.id}/resend/', {}, format='json')
         self.assertEqual(r.status_code, 200)
@@ -499,8 +516,44 @@ class AdminResendTest(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertNotIn('temporary password', mail.outbox[0].body)
 
-    def test_resend_reports_a_rotation_failure(self):
+    def test_td440_resend_never_resets_a_login_the_person_brought(self):
+        """TD-440 (2026-10-31): the UID was linked from their own login, not made by us — no reset."""
         with patch('apps.courses.views_admin.http_requests.put') as mock_put:
+            r = self.client.post(f'/api/v1/admin/admins/{self.linked.id}/resend/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        mock_put.assert_not_called()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertNotIn('temporary password', mail.outbox[0].body)
+
+    def test_td440_resend_is_refused_once_they_have_signed_in(self):
+        from django.utils import timezone
+        PartnerAdmin.objects.filter(pk=self.target.pk).update(first_seen_at=timezone.now())
+        with patch('apps.courses.views_admin.http_requests.put') as mock_put:
+            r = self.client.post(f'/api/v1/admin/admins/{self.target.id}/resend/', {}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'already_joined'))
+        mock_put.assert_not_called()
+        self.assertEqual(mail.outbox, [])
+
+    def test_td440_resend_never_resets_a_password_the_person_chose(self):
+        """TD-440 review: the rows can be wrong (a backfilled invitation guessed "issued", a
+        `first_seen_at` never stamped) — the LIVE login says it was used with a password of its own."""
+        used = {'id': 'target-uid', 'last_sign_in_at': '2026-10-01T00:00:00Z', 'app_metadata': {}}
+        with patch('apps.courses.views_admin.http_requests.put') as mock_put,                 patch('apps.courses.supabase_admin.read_auth_user', return_value=used):
+            r = self.client.post(f'/api/v1/admin/admins/{self.target.id}/resend/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        mock_put.assert_not_called()
+        self.assertNotIn('temporary password', mail.outbox[0].body)
+
+    def test_td440_a_login_that_cannot_be_read_is_not_reset(self):
+        from apps.courses import supabase_admin
+        with patch('apps.courses.views_admin.http_requests.put') as mock_put,                 patch('apps.courses.supabase_admin.read_auth_user', return_value=supabase_admin.FAILED):
+            r = self.client.post(f'/api/v1/admin/admins/{self.target.id}/resend/', {}, format='json')
+        self.assertEqual(r.status_code, 502)
+        mock_put.assert_not_called()
+        self.assertEqual(mail.outbox, [])
+
+    def test_resend_reports_a_rotation_failure(self):
+        with patch('apps.courses.views_admin.http_requests.put') as mock_put, patch('apps.courses.supabase_admin.read_auth_user', return_value=self.UNTOUCHED):
             mock_put.return_value = MagicMock(status_code=500, text='boom', json=lambda: {})
             r = self.client.post(f'/api/v1/admin/admins/{self.target.id}/resend/', {}, format='json')
         self.assertEqual(r.status_code, 502)

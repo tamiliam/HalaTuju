@@ -332,7 +332,9 @@ class TestResendCancelRevoke(_Base):
     def post(self, caller, verb, user=None):
         user = user or self.user_row
         client = authed_client(caller)
-        with patch(ISSUE, return_value=True) as issued, patch(KILL, return_value='killed') as kill:
+        # TD-440: a Resend reads the live login first; this one has never been used.
+        with patch(ISSUE, return_value=True) as issued, patch(KILL, return_value='killed') as kill, \
+                patch('apps.courses.supabase_admin.read_auth_user', return_value={'id': 'x', 'last_sign_in_at': None, 'app_metadata': {}}):
             if verb == 'resend':
                 r = client.post(f'/api/v1/admin/source-users/{user.pk}/resend/', {}, format='json')
             else:

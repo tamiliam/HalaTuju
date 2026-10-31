@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-440 Sprint: no Resend resets a login the person brought with them (2026-10-31)
+
+- `staff_reinvite.reissue_credential` (staff, source and mentor Resends) writes a new temporary password only when
+  the row's newest invitation issued one (`staff_lifecycle.credential_was_issued`). A login `get_admin` linked from
+  the person's own Google or existing sign-in is sent the "sign in as you always do" note instead. Its review added
+  a read of the LIVE login: one that has signed in with a password of its own is never reset, whatever the rows say
+  (a backfilled invitation, an unstamped `first_seen_at`); a login that cannot be read is a 502, nothing written.
+- The staff Resend refuses a row that has already signed in (400 `already_joined`), like the source and mentor
+  Resends. The page already offered Resend only on a waiting invitation.
+- The mentor Resend drops its own copy of the rule. TD-440 closed. No migration; API only.
+
 ## Common profile S5 — My activity on the Profile page - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no

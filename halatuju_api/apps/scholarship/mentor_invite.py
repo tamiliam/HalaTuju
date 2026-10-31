@@ -171,11 +171,9 @@ def _send_again(caller, mentor, login):
     """A fresh credential (where we issued one) on a fresh invitation, and the letter: ``(emailed,
     error)``. Shared by Resend and by Reactivate of a mentor who never signed in."""
     from apps.courses.views_admin import is_google_email
-    # Review fix: a password is reissued ONLY onto a login we issued one for (the newest invitation
-    # says so) — never onto a login somebody brought with them.
-    newest = _newest_invitation(login)
-    temp_password, err = (staff_reinvite.reissue_credential(login)
-                          if newest is not None and newest.credential_issued else (None, None))
+    # A password is reissued ONLY onto a login we issued one for — never onto one somebody brought
+    # with them: `reissue_credential` holds that rule for every Resend since TD-440.
+    temp_password, err = staff_reinvite.reissue_credential(login)
     if err:
         return False, err
     inv = invitations.create_or_refresh(
