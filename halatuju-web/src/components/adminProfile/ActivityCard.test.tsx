@@ -102,3 +102,34 @@ it('an answer for a chip the reader has left never lands', async () => {
   expect(screen.getAllByTestId('activity-row')).toHaveLength(1)
   expect(screen.queryByText(/Recorded a verdict/)).toBeNull()
 })
+
+it('TD-446: a sign-in token refresh neither reloads the list nor loses the Show older place', async () => {
+  mockApi.getMyActivity
+    .mockResolvedValueOnce(page([item({ id: 2, verb: 'first_sign_in' })], 'CUR1'))
+    .mockResolvedValueOnce(page([item({ id: 1, verb: 'profile_updated', created_at: LONG_AGO })], 'CUR2'))
+    .mockResolvedValue(page([item({ id: 0, verb: 'first_sign_in', created_at: LONG_AGO })]))
+  const at = (token: string) => ({ ...state('reviewer', ['review']), token }) as ProfileState
+  const { rerender } = render(<ActivityCard state={at('tok')} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Show older' }))
+  await waitFor(() => expect(screen.getAllByTestId('activity-row')).toHaveLength(2))
+  rerender(<ActivityCard state={at('tok-refreshed')} />)
+  await new Promise((r) => setTimeout(r, 20))
+  expect(mockApi.getMyActivity).toHaveBeenCalledTimes(2)
+  expect(screen.getAllByTestId('activity-row')).toHaveLength(2)
+  // The next page goes out with the NEW token.
+  fireEvent.click(screen.getByRole('button', { name: 'Show older' }))
+  await waitFor(() => expect(screen.getAllByTestId('activity-row')).toHaveLength(3))
+  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR2', { token: 'tok-refreshed' })
+})
+
+it('TD-446: the first load waits for the token and happens the moment it arrives', async () => {
+  mockApi.getMyActivity.mockResolvedValue(page([item({ verb: 'first_sign_in' })]))
+  const at = (token: string) => ({ ...state('reviewer', ['review']), token }) as ProfileState
+  const { rerender } = render(<ActivityCard state={at('')} />)
+  await new Promise((r) => setTimeout(r, 20))
+  expect(mockApi.getMyActivity).not.toHaveBeenCalled()
+  rerender(<ActivityCard state={at('tok')} />)
+  expect(await screen.findByText('Signed in for the first time')).toBeTruthy()
+  expect(mockApi.getMyActivity).toHaveBeenCalledTimes(1)
+  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, { token: 'tok' })
+})

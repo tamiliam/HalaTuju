@@ -33,16 +33,23 @@ export default function ActivityCard({ state }: CardProps) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [moreFailed, setMoreFailed] = useState(false)
   const view = useRef(0)
+  // TD-446: a sign-in token refresh (a new `token` string, about hourly) must not reload the list or
+  // lose the reader's Show older place. The load reads the LATEST token through this ref and depends
+  // only on whether there is one, so the first load still happens the moment the token arrives.
+  const tokenRef = useRef(token)
+  const hasToken = Boolean(token)
+  useEffect(() => { tokenRef.current = token }, [token])
 
   useEffect(() => {
-    if (!token) return
+    const current = tokenRef.current
+    if (!hasToken || !current) return
     const mine = ++view.current
     setRows(null); setNext(null); setFailed(false); setLoadingMore(false); setMoreFailed(false)
-    getMyActivity(kind, null, { token })
+    getMyActivity(kind, null, { token: current })
       .then((p) => { if (view.current === mine) { setRows(p.results); setNext(p.next) } })
       .catch(() => { if (view.current === mine) setFailed(true) })
     return () => { view.current += 1 }
-  }, [token, kind, attempt])
+  }, [hasToken, kind, attempt])
 
   const showOlder = () => {
     if (!token || !next || loadingMore) return

@@ -146,6 +146,28 @@ class TestDecidedNow(_World):
                          'a payment run')
 
 
+class TestUnnamedVisibleSubject(_World):
+    """TD-445: a subject the viewer may see but which has no name is served `label: None` (the web
+    puts in its own translated word), still `visible` and with its id, so a student stays linked."""
+
+    def test_an_invitation_with_a_blank_name_is_visible_with_no_label(self):
+        inv = Invitation.objects.create(audience='staff', email='blank@example.test', code='td445',
+                                        organisation=self.org, name='')
+        lead = make_admin('org_admin', owning_org=self.org)
+        _row(lead, V.INVITATION_SENT, inv)
+        subject = self.results(lead)['results'][0]['subject']
+        self.assertEqual(subject, {'type': 'invitation', 'state': 'visible', 'label': None, 'id': inv.pk})
+
+    def test_a_student_with_no_name_is_visible_with_no_label_and_keeps_its_id(self):
+        nameless = make_application('assigned', cohort=self.cohort, reviewer=self.reviewer)
+        nameless.profile.name = ''
+        nameless.profile.save()
+        _row(self.reviewer, V.VERDICT_RECORDED, nameless)
+        subject = self.results(self.reviewer)['results'][0]['subject']
+        self.assertEqual(subject, {'type': 'application', 'state': 'visible', 'label': None,
+                                   'id': nameless.pk})
+
+
 class TestSourceUser(_World):
 
     def test_a_source_reads_its_own_list_and_only_its_own_cases_by_name(self):

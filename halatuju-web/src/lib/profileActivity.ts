@@ -98,7 +98,8 @@ export function sentenceParts(template: string): [string, string | null] {
 }
 
 /** The words for the subject: a visible one's own label, verbatim (a reference with its kind in
- *  front); otherwise OUR neutral word, translated — never the server's English one. */
+ *  front); otherwise OUR neutral word, translated — never the server's English one. A visible
+ *  subject with no name arrives with `label: null` (TD-445) and takes the neutral word too. */
 export function subjectText(subject: ActivitySubject | null, t: T): string {
   if (!subject) return t(`${ACTIVITY_KEY}.something`)
   if (subject.state === 'visible' && subject.label) {

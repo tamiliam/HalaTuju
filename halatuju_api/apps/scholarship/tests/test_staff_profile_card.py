@@ -421,12 +421,10 @@ class ReviewFixesM1L2L3(TestCase):
         authed_client(sup).get('/api/v1/admin/reviewer-profile/')
         self.assertFalse(StaffProfile.objects.get(partner_admin=sup).share_phone_with_students)
 
-    def test_l3_the_old_web_cannot_blank_a_review_holders_phone_through_the_reviewer_profile(self):
+    def test_l3_td439_the_reviewer_profile_can_neither_blank_nor_change_a_review_holders_phone(self):
         reviewer = make_admin('reviewer', owning_org=self.org)
         StaffProfile.objects.create(partner_admin=reviewer, phone='011-1111 1111')
-        resp = authed_client(reviewer).patch('/api/v1/admin/reviewer-profile/', {'phone': '  '}, format='json')
-        self.assertEqual((resp.status_code, resp.json()['error']), (400, 'phone_required'))
-        self.assertEqual(StaffProfile.objects.get(partner_admin=reviewer).phone, '011-1111 1111')
-        # Still accepted there during the rollout (TD-439): a non-blank phone saves.
-        self.assertEqual(authed_client(reviewer).patch('/api/v1/admin/reviewer-profile/',
-                                                       {'phone': '019-999 9999'}, format='json').status_code, 200)
+        for phone in ('  ', '019-999 9999'):    # TD-439: read-only there, so ignored, never refused
+            resp = authed_client(reviewer).patch('/api/v1/admin/reviewer-profile/', {'phone': phone}, format='json')
+            self.assertEqual(resp.status_code, 200, phone)
+            self.assertEqual(StaffProfile.objects.get(partner_admin=reviewer).phone, '011-1111 1111')

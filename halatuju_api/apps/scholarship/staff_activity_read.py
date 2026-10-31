@@ -245,7 +245,9 @@ def _served_subject(row, labels):
     label = labels[key]
     if label is False:
         return {'type': row.subject_type, 'state': 'hidden', 'label': hidden, 'id': None}
-    return {'type': row.subject_type, 'state': 'visible', 'label': label or hidden,
+    # TD-445: a visible subject with no name (a purged invitation, a student with no name) is served
+    # `label: None`, never the English neutral word: the web puts in its own translated one.
+    return {'type': row.subject_type, 'state': 'visible', 'label': label or None,
             'id': row.subject_id}
 
 

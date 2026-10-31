@@ -21,7 +21,7 @@ from ..services import PauseError, is_review_target, set_paused
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
 from ..staff_contact import (
-    assigner_sees_phone, new_profile_defaults, phone_refusal, works_with_students,
+    assigner_sees_phone, new_profile_defaults, works_with_students,
 )
 
 
@@ -529,11 +529,8 @@ class ReviewerProfileView(_AdminBase):
         admin, err = self._require_review_holder(request)
         if err:
             return err
-        # Review fix L3: the old web still saves the phone here during the rollout, so the blank-phone
-        # rule `admin/me/` applies holds here too (TD-439 makes these two fields read-only here).
-        refused = phone_refusal(admin, request.data)
-        if refused is not None:
-            return refused
+        # TD-439 (owner 2026-10-31): the phone and "share with students" are read-only here (the
+        # serializer drops them), so no blank-phone refusal: `admin/me/` is their one writer.
         if admin.is_mentor and 'paused' in request.data:
             # S7a: refused BEFORE anything is written — a mentor is never handed cases to pause.
             return Response({'error': 'not_reviewable', 'code': 'not_reviewable'},
