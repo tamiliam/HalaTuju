@@ -121,7 +121,7 @@ from .views_admin import (
     AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminVerdictMetricsView,
-    ReviewerProfileView,
+    AdminMeView, ReviewerProfileView,
     AdminSponsorListView,
     AdminSponsorPendingCountView,
     AdminSponsorDetailView,
@@ -590,6 +590,7 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
+    path('admin/me/', AdminMeView.as_view()),   # common profile S1: own account, every role
     # F9a — graduation thank-you moderation queue
     path('admin/graduation-messages/', AdminGraduationMessageListView.as_view()),
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),

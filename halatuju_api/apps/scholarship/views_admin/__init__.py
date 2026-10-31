@@ -137,6 +137,8 @@ from .profiles import (
 from .resolution import (
     AdminRequestInfoView, AdminResolutionItemActionView, AdminResolutionItemView,
 )
+# Common profile S1 (2026-10-31) — the signed-in person's own account, every role and a source.
+from .me import AdminMeView, programmes_of
 from .reviewers import (
     _REVIEWER_OPEN_STATUSES, _REVIEWER_PROGRESSED_STATUSES, _REVIEW_FLUENCY, _ReviewersBase,
     _median_days, _reviewer_dict, _reviewer_languages, _reviewer_workloads,

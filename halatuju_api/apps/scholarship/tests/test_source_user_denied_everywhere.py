@@ -35,6 +35,8 @@ ALLOWED = {
     ('api/v1/admin/role/', 'get'),
     ('api/v1/admin/scholarship/scopes/', 'get'),
     ('api/v1/admin/profile/', 'get'),
+    # Common profile S1 (2026-10-31): the caller's OWN account for the shared Profile page.
+    ('api/v1/admin/me/', 'get'),
     # Source sign-in S3 (2026-10-30) — the source console, built for this role and no other. Each
     # serves an allowlist payload scoped by `source_access`; `test_source_console.py` proves what
     # each returns, to whom, and that no never-list key appears in any of them. The profile PATCH
@@ -171,6 +173,10 @@ class TestSourceUserIsDeniedEveryAdminRoute(TestCase):
         self.assertEqual(role['permissions'], [])
         profile = client.get('/api/v1/admin/profile/').json()
         self.assertEqual((profile['id'], profile['email']), (self.user.pk, self.user.email))
+        me = client.get('/api/v1/admin/me/').json()
+        self.assertEqual((me['id'], me['role'], me['source']['id'], me['permissions']),
+                         (self.user.pk, 'source_partner', self.source.pk, []))
+        self.assertEqual([p['id'] for p in me['programmes']], [self.gift.pk])
         scopes = client.get('/api/v1/admin/scholarship/scopes/').json()
         self.assertEqual([o['id'] for o in scopes['organisations']], [self.org.pk])
         self.assertEqual([p['id'] for p in scopes['programmes']], [self.gift.pk])

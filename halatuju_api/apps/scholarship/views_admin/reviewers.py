@@ -455,9 +455,22 @@ class ReviewerProfileView(_AdminBase):
     """GET/PATCH /api/v1/admin/reviewer-profile/ — a reviewer's OWN credentials +
     contact details (F6). Self-scoped: it only ever reads/writes the calling admin's
     own row (resolved from the JWT via get_admin), so one admin can never see or edit
-    another's. Reviewer + super only — a viewer (read-only staff) gets 403. The
-    sensitive PII (phone/address) lives in its own table and is exposed by no other
-    serializer."""
+    another's. The sensitive PII (phone/address) lives in its own table and is exposed by
+    no other serializer.
+
+    ⚠ GATED ON THE `review` PERMISSION, NOT THE REVIEWER ROLE (common profile S1, owner
+    2026-10-31). An admin given `review` gets the reviewer cards and may save them; a reviewer
+    whose `review` was taken away gets 403 here (the row is kept, never deleted). A super holds
+    every key, so a super still passes, as it did under the role check. A source user is refused
+    by `get_admin` (deny by default). `_require_reviewer` is NOT used: other writes rely on it."""
+
+    def _require_review_holder(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not admin.has_perm('review'):
+            return None, self._deny_role()
+        return admin, None
 
     def _payload(self, profile, admin):
         """The profile, plus the pause state — which lives on `PartnerAdmin`, not here.
@@ -473,14 +486,14 @@ class ReviewerProfileView(_AdminBase):
         return data
 
     def get(self, request):
-        admin, err = self._require_reviewer(request)
+        admin, err = self._require_review_holder(request)
         if err:
             return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
         return Response(self._payload(profile, admin))
 
     def patch(self, request):
-        admin, err = self._require_reviewer(request)
+        admin, err = self._require_review_holder(request)
         if err:
             return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)

@@ -637,6 +637,7 @@ class TestFenceCoverageCompleteness(TestCase):
     'AdminSponsorTermsImportDocxView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
+        'AdminMeView': 'self-scoped',   # common profile S1: the caller's own account
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)
         'AdminBursaryWitnessView': 'grandfathered',
     }
