@@ -40,9 +40,12 @@ export const MATRIC_TRACKS = ['sains', 'kejuruteraan', 'sains_komputer', 'peraka
 export const isOfferingPathway = (key: string) => OFFERING_PATHWAYS.includes(key)
 export const asksStateFirst = (key: string) => STATE_FIRST.includes(key)
 
-/** Which institution label a pathway uses: a university, a polytechnic, or a campus. */
-export function institutionKind(pathway: string): 'university' | 'poly' | 'campus' {
+/** Which institution label a pathway uses: a university, a polytechnic, a campus, or the neutral
+ *  "institution". Asasi and the university pathway list polytechnics and MARA's education division
+ *  too, so they ask "Which institution?"; STPM degrees are all at universities (owner, 2026-10-31). */
+export function institutionKind(pathway: string): 'university' | 'institution' | 'poly' | 'campus' {
   if (pathway === 'poly') return 'poly'
+  if (pathway === 'asasi' || pathway === 'university') return 'institution'
   return asksStateFirst(pathway) ? 'campus' : 'university'
 }
 

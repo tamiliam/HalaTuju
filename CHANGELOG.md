@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## My Plans asks "Which institution?" for Asasi and university (owner, 2026-10-31)
+
+The Asasi list holds ten polytechnics and MARA's education division, and the university list holds MARA too, so
+both now ask "Which institution?" (`institutionKind` → `'institution'`). STPM degrees keep "Which university?";
+polytechnic and campus labels are unchanged. New key `scholarship.apply.plan.institutionLabel.institution` (ms and
+ta carry the English for now).
+
 ## School search understands the long forms (owner, 2026-10-31)
 
 A follow-up to the My Plans sprint. Our school lists use the Ministry's short names ("SMK (P) TEMENGGONG

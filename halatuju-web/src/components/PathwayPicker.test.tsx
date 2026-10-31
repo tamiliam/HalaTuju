@@ -136,13 +136,13 @@ it('polytechnic: State → Polytechnic → Course, and the pick names the instit
   expect(screen.getByText('scholarship.apply.plan.offerNote')).toBeTruthy()
 })
 
-it('university: University → Course, with no state step', async () => {
+it('university: Institution → Course, with no state step', async () => {
   mount(SPM)
   click('scholarship.apply.plan.sure')
   choose('scholarship.apply.plan.pathwayLabel', 'university')
-  await waitFor(() => expect(screen.getByLabelText('scholarship.apply.plan.institutionLabel.university')).toBeTruthy())
+  await waitFor(() => expect(screen.getByLabelText('scholarship.apply.plan.institutionLabel.institution')).toBeTruthy())
   expect(screen.queryByLabelText('scholarship.apply.plan.stateLabel')).toBeNull()
-  choose('scholarship.apply.plan.institutionLabel.university', 'UITM')
+  choose('scholarship.apply.plan.institutionLabel.institution', 'UITM')
   fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
   fireEvent.click(screen.getByText('Diploma Sains'))
   expect(latest.chosenProgramme?.institution).toBe('Universiti Teknologi MARA')

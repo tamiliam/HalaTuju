@@ -960,6 +960,7 @@
         "statePlaceholder": "Choose a state",
         "institutionLabel": {
           "university": "Which university?",
+          "institution": "Which institution?",
           "poly": "Which polytechnic?",
           "campus": "Which campus?"
         },

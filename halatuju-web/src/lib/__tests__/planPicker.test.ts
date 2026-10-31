@@ -34,7 +34,9 @@ describe('the steps each pathway asks for', () => {
   it('names the institution step by its kind', () => {
     expect(institutionKind('poly')).toBe('poly')
     expect(institutionKind('mara')).toBe('campus')
-    expect(institutionKind('university')).toBe('university')
+    // Asasi and university lists hold polytechnics and MARA too (owner, 2026-10-31).
+    expect(institutionKind('university')).toBe('institution')
+    expect(institutionKind('asasi')).toBe('institution')
     expect(institutionKind(DEGREE_PATHWAY)).toBe('university')
   })
   it('every programme pathway in PATHWAY_ORDER is served by the catalogue; the pre-U two are not', () => {
