@@ -32,7 +32,10 @@ drops UiTM's local code, a faculty tail, the catalogue's " #" and campus parenth
 scholarship file naming `req_bumiputera`; the realignment must read the COURSE's flag, so
 `offer_course_match.py` is allowed and a new test pins that it names the flag only inside `is_bumiputera_only`
 and never reads the student's answer. The flag filters nothing any student, reviewer or sponsor is shown;
-only `services/offer_sync.py` calls `is_bumiputera_only` (pinned by a test). (7) **The matcher's institution
+only `services/offer_sync.py` calls `is_bumiputera_only` (pinned by a test). **Owner chose this exception (option
+A, 2026-10-31)** over keeping the guard and fixing the records by hand, and ruled that a case in `interviewing`
+with no submitted interview session is still realigned (#288, #322): the letter is a fact, and the officer sees
+the right course in the cockpit. (7) **The matcher's institution
 test, tightened at the adversarial review (same day).** A hint names an institution, most specific first: by its
 bracket-stripped name (equal, or whole inside the line) or by an acronym held by ONE row that is no word of another
 row's name — and when any row is named so, only those rows count ("UNIVERSITI TEKNOLOGI MALAYSIA" is UTM, never
