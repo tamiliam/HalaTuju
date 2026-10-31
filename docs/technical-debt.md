@@ -7084,3 +7084,19 @@ password straight away", which helps only under the recent-sign-in rule. **Fix:*
 before the S2 deploy; under the current-password rule, add a "current password" field and send it (or the
 `reauthenticate()` nonce flow); never route this through the service-role endpoint, whose gate is the point of
 TD-207 and TD-322. *(A · S)*
+
+### [TD-437] A source's Organisation card has no Website, because `ReferralSource` has no column for it - low
+
+**Raised 2026-10-31 by common profile S2.** The roadmap's Organisation card lists "name, contact person, email
+for updates, phone, website"; `ReferralSource` has no website field, and S2's brief forbade a new column. The
+card shows the four fields it can save. **Fix when wanted:** an additive `website` URLField (blank, db_default
+'') on `referral_sources`, added to `sources.DETAIL_FIELDS` (the Sources page) and the source's own PATCH,
+validated as http(s). *(C · S)*
+
+### [TD-438] The header photo's signed link expires after about an hour in a tab left open - low
+
+**Raised 2026-10-31 by common profile S2.** The auth context reads `admin/me/` ONCE per session for the
+header photo, and the URL it gets is signed for about an hour (`staff_photo.SIGNED_FOR`). A tab open longer
+shows the initials instead (`StaffAvatar` falls back on a load error) until the next full page load; the Team
+list and the Profile page sign afresh on every visit. Accepted: nothing breaks and nothing private leaks.
+**Fix if it matters:** on the avatar's load error, ask `admin/me/` once more (at most once per hour). *(C · S)*

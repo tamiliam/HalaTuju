@@ -76,6 +76,9 @@ Lead decisions (owner may overturn):
   an admin with `review` gets the reviewer cards; a reviewer is still held on first sign-in.
 
 ### S2 — Photo, job title, About, phone for everyone — medium, ~25 files
+**Status:** BUILT 2026-10-31 on branch `profiles` (not pushed). Migration `scholarship/0193_staff_profile_card`
+(ADD COLUMNs only, `db_default`); the model kept its name with `StaffProfile` as an alias, not renamed. Owner
+addition: one optional fourth language (name + fluency) on the Qualifications and languages card.
 - Migration (additive): the personal-profile row (today `reviewer_profiles`, one per person) gains
   `job_title`, `about`, `photo_path`, `share_phone_with_team`. The model is renamed in Python to
   `StaffProfile` with the same table (no data moves); `ReviewerProfile` stays as an alias.

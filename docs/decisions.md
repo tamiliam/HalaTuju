@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## Every person's own card; the PHONE (not the address) may now reach the Team page and the inviting organisation — 2026-10-31 (owner rulings, common profile S2)
+
+**Context:** S1 gave every role one Profile page; the owner's card list (Podio's pattern) adds a photo, a
+job title, an About and a phone for everyone. Until now a reviewer's phone and address were "exposed by no
+other serializer" than the reviewer's own (bar the org admin's reviewer detail, 2026-08-02).
+
+**Decision:** (1) The fields live on the existing personal-profile row (`reviewer_profiles`): the class
+keeps its name `ReviewerProfile` and gains the alias `StaffProfile` — chosen over a rename because a
+`RenameModel` would rewrite content types and the migration had to be ADD COLUMNs only (migrate first, the
+old image still inserting rows; each column carries `db_default`). (2) **The phone rule is revised for the
+PHONE ONLY:** it appears on the Team (People) list when its owner switches "Show my phone to my team" on
+(off by default), and a source user's phone is shown to the organisation that invited it. The home address
+stays private — still serialised nowhere but the owner's own reviewer profile (`docs/scholarship/role-
+matrix.md`). (3) Photos are staff-only (header, own Profile, Team list), stored as our own re-encoded WebP
+(content-checked, metadata stripped) under `staff-photos/<admin>/<uuid>.webp`, signed for about an hour,
+signed in ONE batch per list, never added to `admin/role/`; the orphan sweep and account deletion know
+them. (4) `PATCH admin/me/` writes the card and the name for every role (a source's name included); the
+phone and "share with students" have ONE writer (`admin/me/`), not two; a holder of `review` must keep a
+phone. (5) No Website field for a source in S2: the model has none and the brief forbade a new column.
+(6) Owner addition, same day: ONE optional fourth language beside English / BM / Tamil (for Sabah's students:
+Mandarin, Kadazandusun, Bajau…), stored by NAME with its fluency, both or neither. It is served beside the
+en/ms/ta codes as `other_language`, never inside them, and it does NOT satisfy the onboarding hold — a
+reviewer interviews in English, BM or Tamil.
+
+**Trade-offs:** a header photo URL expires after about an hour in a tab left open; the avatar falls back to
+the initials until the next page load (TD-438). The People list's admin tab reads one more query for the
+profiles (no budget on it); the reviewers tab reuses its existing join, so its budget (6) holds.
+
 ## One Profile page from one card list; the reviewer cards follow `review`; the hold stays Reviewer-only — 2026-10-31 (owner rulings, common profile S1)
 
 **Context:** every admin-platform person has a Profile page, but it was two screens (staff

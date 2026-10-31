@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## Common profile S2 — photo, job title, About, phone for everyone (migration 0193) - 2026-10-31 — BUILT, not deployed
+
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.
+Built on branch `profiles`. **First deploy point: migrate first** (0193, hand-applied; the old image keeps
+inserting profile rows because every new column has a database default), then API, then web.
+
+- **Migration `scholarship/0193_staff_profile_card`** — six ADD COLUMNs on `reviewer_profiles`, each NOT NULL
+  with `db_default`: `job_title` (120), `about` (text; 600 enforced by the API), `photo_path` (255),
+  `share_phone_with_team` (false), `other_language` (60) and `other_language_fluency` (20). No rename, no data move, no new table (RLS unchanged). The model keeps
+  its name `ReviewerProfile`; `StaffProfile` is the same class under the new name (`models/review.py`), so
+  no `RenameModel` and no content-type rewrite.
+- **`PATCH /api/v1/admin/me/`** — `name, job_title, about, phone, share_phone_with_team,
+  share_phone_with_students`; only the keys sent are written; any other key 400 `not_editable` (+ `fields`),
+  `share_phone_with_students` too for anyone without `review` (and a super). `phone_required` for a holder
+  of `review`; anyone else may clear theirs. Opted in for a source user, whose NAME now saves here
+  (`admin/source/profile/` keeps its `user.name` branch for the image still serving). `GET admin/me/` adds
+  the card fields and `photo_url` (signed ~1 h, only when a photo exists; never on `admin/role/`).
+- **`POST / DELETE /api/v1/admin/me/photo/`** (`apps/scholarship/staff_photo.py`) — one file, at most
+  2 MB, JPEG / PNG / WebP decided by the CONTENT (Pillow), re-encoded upright to a metadata-free WebP of at
+  most 512 x 512 (EXIF/GPS gone), stored at `staff-photos/<admin id>/<uuid>.webp` in the private bucket;
+  replacing deletes the old object; DELETE removes object then path; throttled like document uploads.
+  Opted in for a source user. Deleting a staff account deletes the photo after the commit (`post_delete`
+  on the profile row, so every cascade path is covered). The orphan sweep knows the fifth kind of stored
+  file (`cleanup_orphan_blobs.known_paths`); `resolve_org_for_path` reads no organisation from the key.
+- **Team (People) page** — each reviewer and admin row carries `photo_url` and `phone` (the phone ONLY when
+  its owner switched "Show my phone to my team" on); one profile read (joined on the reviewers list, so its
+  query budget holds at 6) and ONE batch signing call per page (`storage.create_signed_download_urls`).
+- **Invitations → Source roster** — a source person's own phone, for the organisation that invited them.
+- **Web** — Contact card for everyone (phone; "Show my phone to my team (Team page)" for staff; "The
+  organisation that invited you can see this number" for a partner or source; "Share my phone with students I
+  interview" for a `review` holder). You card: photo (96 px; Add / Change / Remove, straight away), name,
+  job title, About (600, counter), sign-in email. The phone and the students switch moved from the reviewer
+  save to `admin/me/` (one field, one writer). Header avatar: the photo through the auth context, ONE
+  `admin/me/` read per session, initials when none or when the link has expired (`StaffAvatar`).
+- **A fourth, optional language (owner, 2026-10-31)** — one slot beside English / BM / Tamil, by NAME (Mandarin,
+  Kadazandusun, Bajau…) with its fluency, on the Qualifications and languages card: suggestions (Mandarin,
+  Cantonese, Hokkien, Kadazandusun, Bajau, Murut, Iban, Bidayuh, Telugu, Malayalam, Punjabi, Arabic) plus free
+  text (`SelectWithOther`). Both or neither: half is refused inline and by the reviewer-profile serializer (400
+  `other_language_incomplete`); trimmed, at most 60. Saved through `admin/reviewer-profile/` with the other
+  three. Served as `other_language` (the name, '' unless spoken conversationally or better) BESIDE the en/ms/ta
+  code list on the People list, the reviewer detail and the assignment picker; shown as an extra chip. It does
+  NOT count for the onboarding hold, which still needs English, BM or Tamil (tested).
+- en / ms / ta: `admin.myProfile.photo.*`, `admin.reviewer.otherLang.*` and the suggestion names, job title, About, contact notes, `admin.myProfile.error.*`.
+- Tests: api `test_staff_profile_card.py` (25), `test_admin_me.py`, the deny sweep, the org fence, the
+  reviewers surface key set; web `page.test.tsx`, `profileCards.test.ts`, `StaffAvatar.test.tsx`, the People
+  page and the Source roster.
+- Not done, by the brief: a Website field for a source (the model has none; no column added — TD-437).
+
 ## Common profile S1 — one Profile page from one card list (no migration) - 2026-10-31 — BUILT, not deployed
 
 Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.

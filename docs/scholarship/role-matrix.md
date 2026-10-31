@@ -381,6 +381,16 @@ record; its serializer's docstring says so. This surface widens it, and the ruli
 The address is not merely hidden in the template — it is **not serialised**, and a test asserts it
 cannot appear in the payload. Widen this cell only by owner decision, recorded here first.
 
+**Common profile S2 (owner, 2026-10-31) — the PHONE only, widened twice more; the address unchanged.**
+
+| Where | Who sees it | When |
+|---|---|---|
+| Team (People) list — reviewers and admins tabs | everyone who may open that page (super, org_admin, admin, finance) | ONLY when its owner switched "Show my phone to my team" on (`share_phone_with_team`, off by default); otherwise the row carries `phone: null` |
+| Invitations → Source roster | the organisation that invited the source user (super, org_admin; admin/finance read) | always — a source has no team, and its Contact card says "The organisation that invited you can see this number" |
+| Staff photo (`photo_url`, signed ~1 h) | staff screens only: the header, the person's own Profile, the Team list | whenever one exists; NEVER a student, sponsor or source-console payload (`test_staff_profile_card.py`) |
+
+The home address still reaches no serializer but the owner's own reviewer profile.
+
 **No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
 carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare
 number beside a volunteer's name reads as a competence score to whoever hands out the next case, so
