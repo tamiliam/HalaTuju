@@ -59,7 +59,9 @@ apps/courses/
 ├── org_config_rules.py            # RULES between settings (R1-R7 + window_inverted), checked on the MERGED values; refusal = {code, key, rule}
 ├── models_staff.py                # PartnerAdmin (moved out of models.py, request #39 S1; re-exported there) + `permissions`
 ├── staff_permissions.py           # #39 LEAF: permission catalogue, presets, lead tier, resolve/holds/holders, team_holding (Q for lists; no scholarship import)
-├── views_admin.py                 # /admin/role/ (serves permissions/preset/custom), dashboard, students, set-password, profile
+├── views_admin.py                 # /admin/role/ (serves permissions/preset/custom), dashboard, students, set-password
+├── views_profile.py               # GET/PUT /admin/profile/ (a referral partner's name + organisation contact; moved out at common profile S3)
+├── staff_activity_hook.py         # Common profile S3: courses' door to the staff activity list (the writer is REGISTERED here by scholarship; no import)
 ├── views_staff.py                 # staff accounts: invite (+ `already_exists_answer`: own team named / everyone else one neutral 409), resend, list, revoke, delete
 │
 ├── management/commands/
@@ -202,6 +204,7 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 │   ├── electricity_doc.py         #   electricity_genuineness — issuer identity + bill grammar (2026-07-10, MODEL_VERSION 1.0.0)
 │   └── water_doc.py               #   water_genuineness — GRAMMAR-first, operator-as-bonus (2026-07-10, MODEL_VERSION 1.0.0)
 ├── doc_signatures.py              # back-compat shim → genuineness/results_doc + bands
+├── staff_activity.py              # Common profile S3: THE writer of `staff_activity` — record(actor, verb, subject, meta): best-effort, savepoint, ids only; S3_WIRED = every verb's writers
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
 └── tests/                         # test_models.py (4), test_api.py (13)
