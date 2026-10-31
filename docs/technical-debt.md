@@ -141,6 +141,8 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 - **TD-444** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
 - **TD-442** — A QC reject runs `reopen_decision` (its own atomic block) and then `admin_reject`; if the decline raises, the case stays reopened with a 400 and no activity row. *(B · S · raised 2026-10-31 by the common profile S4 review, L3; pre-existing)*
 - **TD-443** — `staff_footprint` ignores most email stamps (assigner, closer, recommender, resolution, permission changer, reopener, credit signers, invoices, receipts, templates, vetting, merchant notes, tranches), so a staff row with real history can be deleted. *(B · M · raised 2026-10-31 by the common profile S4 review, M1; pre-existing)*
+- **TD-445** — My activity: a VISIBLE subject with an empty name arrives with the server's ENGLISH neutral word as its label (`label or hidden`), so ms/ta show e.g. "Menjemput an invitation". Low.
+- **TD-446** — My activity: the card reloads to page one on every sign-in token refresh (the effect depends on `token`), losing the reader's Show older place. Low.
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7179,3 +7181,21 @@ signers, invoice / receipt / declaration stamps, template stamps, membership `ve
 `actioned_by`. An admin, finance or org_admin whose work is only of those kinds can be deleted, and a new row on the
 same address (a shared mailbox) then looks like the author. The S4 back-fill is already safe (it maps an email only
 to a row created before the event). **Fix:** widen `footprint` to these stamps and test each one. *(B · M)*
+
+### [TD-445] My activity shows an English word as a name when a visible subject has none - low
+
+**Raised 2026-10-31 by the common profile S5 code review.** `staff_activity_read._served_subject` sends
+`state: 'visible'` with `label: label or hidden` — when the subject the viewer may see has an EMPTY name (an
+invitation whose `name` the PII purge blanked; a student profile with no name) the label is the server's English
+neutral word, and the web (`lib/profileActivity.ts` `subjectText`) prints a visible label verbatim: ms "Menjemput
+an invitation", ta "அழைப்பு அனுப்பினீர்கள்: an invitation". Nothing hidden leaks; words only. **Fix:** the server
+sends `label: null` for an unnamed visible subject and the web uses its own translated word (keep the link for a
+student); test both. *(B · S)*
+
+### [TD-446] My activity reloads to page one when the sign-in token refreshes - low
+
+**Raised 2026-10-31 by the common profile S5 code review.** `components/adminProfile/ActivityCard.tsx`: the load
+effect depends on `token`, and `admin-auth-context` hands out a new `access_token` string on every
+`TOKEN_REFRESHED` (about hourly, or on tab focus near expiry). Someone several "Show older" pages deep sees the list
+blank, "Loading", and page one again. No wrong data. **Fix:** read the token through a ref and keep it out of the
+effect's dependencies; a test that a token change does not refetch. *(B · S)*

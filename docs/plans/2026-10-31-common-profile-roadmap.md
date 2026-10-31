@@ -2,7 +2,9 @@
 
 **Status:** APPROVED 2026-10-31 (roadmap + mock-ups https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582).
 **S1 + S2 LIVE 2026-10-31** (main `3ad1f387`, migration scholarship 0193; retro
-`docs/retrospectives/retrospective-2026-10-31-common-profile-s1-s2.md`). Next: S3.
+`docs/retrospectives/retrospective-2026-10-31-common-profile-s1-s2.md`).
+**S3 + S4 + S5 LIVE 2026-10-31 — ARC DONE** (main `d85eedbc`; api-01220-drw, web-01044-mjt; migration scholarship
+0195; back-fill 961 rows; retro `docs/retrospectives/retrospective-2026-10-31-common-profile-s3-s5.md`).
 
 ## Why
 

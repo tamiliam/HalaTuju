@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Common profile S5 — My activity on the Profile page - 2026-10-31 — BUILT, not deployed
+## Common profile S5 — My activity on the Profile page - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no
 migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migrate (0195), then the API, then
@@ -41,8 +41,24 @@ migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migra
   bundle median 147.095 kB (0.9 kB under 148). The budget script still reports ONE pre-existing problem:
   `/scholarship/application` 211.751 kB against 212 (0.249 kB of room, TD-433) — none of this change's code or
   strings is in that route's chunks (checked in `.next/app-build-manifest.json`); the new words are admin-slice only.
+- **Gates (lead, merged tree on main 4b0bff39):** pytest 11,203 passed / 3 skipped (`-n auto`, the gate's line) ·
+  `makemigrations --check` no changes · `npm run gates` (typecheck 0, lint 0, i18n 6,789 keys, jest 5,813 / 354
+  suites) · `npm run bundle-budget -- --gate` ok (median 147.097 kB; `/scholarship/application` 0.247 kB of room,
+  printed and passed, TD-433) · drift test bitten (a Tamil verb key renamed → red; restored by digest).
+  **mobile-check:** every sandbox cell passed and none got worse; 77 PUBLIC cells timed out at the `lang` wait in
+  both runs (cold `next dev` compiles on a loaded box; no public page touched; one re-run alone passed) — not a
+  finding (Mobile session agrees; its M1 adds a warm-up). `/admin/profile` is not a mobile-check target.
+- **Deploy:** scholarship 0195 by hand (table, 3 indexes, RLS + 1 service_role policy, ledger row; Security
+  Advisor shows no finding for `staff_activity`), then main d85eedbc → api-01220-drw + web-01044-mjt (both
+  builds SUCCESS; health 200; `admin/me/activity/` 401 unauthenticated). Back-fill through `release-decisions`:
+  dry run 961 to rebuild / 241 skipped (reasons as designed: no actor, name-only stamps, interview submit, QC
+  decisions); `--apply` wrote 961 rows (28 people, 2026-06-10 → 2026-10-31); a second dry run rebuilt 0
+  (1,202 "already rebuilt" or skipped) — idempotent.
+- **Close:** code review of the S5 diff found no high or medium; two lows logged (TD-445 an unnamed visible
+  subject shows the server's English word; TD-446 the card resets on a token refresh). Retro
+  `docs/retrospectives/retrospective-2026-10-31-common-profile-s3-s5.md`. Common profile arc DONE.
 
-## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — BUILT, not deployed
+## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
 
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of
 S3; no web change and no new migration (`0195_staff_activity` loses two subject types it never needed). **Deploy
@@ -104,6 +120,44 @@ order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_st
   unchanged when the write fails), `test_my_activity.py` (own rows, D7, D8, source, paging, filters, query count,
   the allowlist), `test_staff_activity_backfill.py` (dry run, apply, idempotent, no twins, emails, purges).
 
+## Common profile S3 — the activity list, part 1: the list and the case actions (migration 0195) - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
+visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5 the card. **Migrate first**
+(0195, hand-applied, new table + RLS + policy); the API never fails without it (see D9) but would record nothing.
+
+- **New table `staff_activity`** (`StaffActivity`, `apps/scholarship/models/staff_activity.py`, model 71): one row
+  each time a person on the admin platform does something — `actor` (CASCADE: the list is own-only and goes with
+  the person, D6), `organisation`, `verb` from a CLOSED list, `subject_type` + `subject_id` (an id, NOT a foreign
+  key, so a student's purge never touches anybody's history, D7), a small `meta`, `created_at` (a plain default, so
+  the S4 back-fill can date a row in the past) and `backfilled` (database default false). Index (actor, newest
+  first). The closed list also declares the S4 verbs (money, contracts, requests), so S4 needs no choices migration.
+- **Rows hold ids, never copied text.** `meta` takes only listed keys, each an id, a boolean, a number or a short
+  lower-case code; a sentence, a name or an email address is dropped (and logged), the row still written.
+- **One writer, best-effort (D9):** `apps/scholarship/staff_activity.record(actor, verb, subject, meta)` never
+  raises; it writes in its own savepoint inside the caller's transaction, so its own database error cannot spoil
+  the action, and an action that rolls back takes its row with it. No actor (a cron or system path) writes nothing.
+  The courses app reaches it through `apps/courses/staff_activity_hook.py`, which the scholarship app registers at
+  start-up, so the `courses -> scholarship` import count is unchanged.
+- **Wired into:** invitation sent (staff, source and sponsor — `invitations.record_send`), invitation accepted
+  and first sign-in, profile updated (`admin/me/`, photo, password, the reviewer cards, the source console, a
+  referral partner's `admin/profile/`), permissions changed (the editor and a role change that reset a custom
+  set), assign / unassign, query raised (a ticket, a note, "Ask again") / resolved, interview submitted,
+  verdict recorded, verify-and-accept, decline sent to QC, declined, QC decision, decision reopened, case closed,
+  contract witnessed (the source's door and the super's). **One click is one row:** the QC's reject runs a reopen
+  and a decline underneath and still writes only `qc_decision`. The actor is whoever pressed the button.
+- **Moves-only split:** `AdminProfileView` moved verbatim to `apps/courses/views_profile.py` (`views_admin.py` sat
+  exactly at its line allowance). `AdminRecordVerdictView.post` gives its saving block to `_save_verdict` and
+  `assign_reviewer` its row to `_record_assignment`, to stay under the 150-line standard.
+- Tests: `apps/scholarship/tests/test_staff_activity.py` — each verb's door(s) write exactly one row; the write
+  failing (a real database error, or the writer's own code raising) leaves the action and its transaction intact;
+  a rollback leaves no row; free text dropped; no actor, no row; and a drift test that reads the source and
+  requires the writers of each verb to be exactly the `S3_WIRED` registry.
+- Doors found but left unwired on purpose (not on the S3 list): interview reopen, cancel reopen, cancel a pending
+  decline, the witness-organisation override, a role change that resets no custom set, the first-login temp
+  password, cancelling an invitation or revoking a source, and a source re-invite that reactivates a user. Found on
+  the way: staff invitations never store `invited_by` (TD-444).
+
 ## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31) — LIVE 2026-10-31 (main b714a74c; api-01219-xt2, web-01043-49w)
 
 Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no migration.
@@ -144,44 +198,6 @@ Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no mig
 - Viewport: `viewport` export (`viewportFit: 'cover'`, browser-bar colour = `--ground-0` in each mode); web app manifest
   and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. It
   opens in the browser (`display: 'browser'`), not standalone, until M8. No service worker, no offline mode.
-
-## Common profile S3 — the activity list, part 1: the list and the case actions (migration 0195) - 2026-10-31 — BUILT, not deployed
-
-Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
-visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5 the card. **Migrate first**
-(0195, hand-applied, new table + RLS + policy); the API never fails without it (see D9) but would record nothing.
-
-- **New table `staff_activity`** (`StaffActivity`, `apps/scholarship/models/staff_activity.py`, model 71): one row
-  each time a person on the admin platform does something — `actor` (CASCADE: the list is own-only and goes with
-  the person, D6), `organisation`, `verb` from a CLOSED list, `subject_type` + `subject_id` (an id, NOT a foreign
-  key, so a student's purge never touches anybody's history, D7), a small `meta`, `created_at` (a plain default, so
-  the S4 back-fill can date a row in the past) and `backfilled` (database default false). Index (actor, newest
-  first). The closed list also declares the S4 verbs (money, contracts, requests), so S4 needs no choices migration.
-- **Rows hold ids, never copied text.** `meta` takes only listed keys, each an id, a boolean, a number or a short
-  lower-case code; a sentence, a name or an email address is dropped (and logged), the row still written.
-- **One writer, best-effort (D9):** `apps/scholarship/staff_activity.record(actor, verb, subject, meta)` never
-  raises; it writes in its own savepoint inside the caller's transaction, so its own database error cannot spoil
-  the action, and an action that rolls back takes its row with it. No actor (a cron or system path) writes nothing.
-  The courses app reaches it through `apps/courses/staff_activity_hook.py`, which the scholarship app registers at
-  start-up, so the `courses -> scholarship` import count is unchanged.
-- **Wired into:** invitation sent (staff, source and sponsor — `invitations.record_send`), invitation accepted
-  and first sign-in, profile updated (`admin/me/`, photo, password, the reviewer cards, the source console, a
-  referral partner's `admin/profile/`), permissions changed (the editor and a role change that reset a custom
-  set), assign / unassign, query raised (a ticket, a note, "Ask again") / resolved, interview submitted,
-  verdict recorded, verify-and-accept, decline sent to QC, declined, QC decision, decision reopened, case closed,
-  contract witnessed (the source's door and the super's). **One click is one row:** the QC's reject runs a reopen
-  and a decline underneath and still writes only `qc_decision`. The actor is whoever pressed the button.
-- **Moves-only split:** `AdminProfileView` moved verbatim to `apps/courses/views_profile.py` (`views_admin.py` sat
-  exactly at its line allowance). `AdminRecordVerdictView.post` gives its saving block to `_save_verdict` and
-  `assign_reviewer` its row to `_record_assignment`, to stay under the 150-line standard.
-- Tests: `apps/scholarship/tests/test_staff_activity.py` — each verb's door(s) write exactly one row; the write
-  failing (a real database error, or the writer's own code raising) leaves the action and its transaction intact;
-  a rollback leaves no row; free text dropped; no actor, no row; and a drift test that reads the source and
-  requires the writers of each verb to be exactly the `S3_WIRED` registry.
-- Doors found but left unwired on purpose (not on the S3 list): interview reopen, cancel reopen, cancel a pending
-  decline, the witness-organisation override, a role change that resets no custom set, the first-login temp
-  password, cancelling an invitation or revoking a source, and a source re-invite that reactivates a user. Found on
-  the way: staff invitations never store `invited_by` (TD-444).
 
 ## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 

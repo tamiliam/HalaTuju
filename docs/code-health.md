@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-31 | d85eedb | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 76 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
 | 2026-10-31 | 613cfbe | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 75 | 92 | 0 | 3 | 13 | 157 | 0 | 0 | ok | ok |
 | 2026-10-31 | 53706f2 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 75 | 91 | 0 | 3 | 12 | 151 | 0 | 0 | ok | ok |
 | 2026-10-30 | f45bc55 | 90 | 51 | officerCockpit.ts 28.2 | 16 | 15 | 4 | 75 | 93 | 0 | 3 | 12 | 151 | 0 | 0 | ok | ok |
@@ -114,7 +115,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-10-31, 613cfbe, window 2026-08-02 onward)
+## Latest run (2026-10-31, d85eedb, window 2026-08-02 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -127,11 +128,11 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 11 | 1026 | 11.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
-| `halatuju_api/apps/courses/views_admin.py` | 9 | 814 | 7.3 |
-| `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1007 | 7 |
+| `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
+| `halatuju_api/apps/courses/views_admin.py` | 9 | 774 | 7 |
 
 ### Fix ratio
-- 248 fix / 237 feat commits since 2026-08-02
+- 251 fix / 240 feat commits since 2026-08-02
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -142,11 +143,11 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1271  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
-- `1143  halatuju_api/apps/scholarship/contracts.py`
+- `1151  halatuju_api/apps/scholarship/contracts.py`
 - `1054  halatuju_api/apps/courses/models.py`
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
 - `1026  halatuju_api/apps/scholarship/serializers_admin.py`
-- `1007  halatuju_api/apps/scholarship/sponsorship.py`
+- `1010  halatuju_api/apps/scholarship/sponsorship.py`
 - `1005  halatuju-web/src/lib/scholarship.ts`
 - `1004  halatuju_api/apps/scholarship/verdict_engine.py`
 
@@ -160,7 +161,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `215  halatuju_api/apps/scholarship/verdict_engine.py:499 _verdict_income`
 - `192  halatuju_api/apps/scholarship/services/offer_sync.py:169 autofill_pathway_from_offer`
-- `186  halatuju_api/apps/scholarship/resolution.py:275 doc_match_verdict`
+- `186  halatuju_api/apps/scholarship/resolution.py:282 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `165  halatuju_api/apps/courses/views.py:1017 get`
 - `162  halatuju_api/apps/scholarship/help_engine.py:342 verdict_for_document`
@@ -177,7 +178,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 17 edges (24 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 48 edges (242 import statements)
+- scholarship -> courses: 49 edges (244 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -190,42 +191,42 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Front-end rules mirrored from the backend with no drift test
-- 53 of 56 mirror claims in src/lib name a drift test
+- 54 of 57 mirror claims in src/lib name a drift test
 - halatuju-web/src/lib/incomeWizard.ts:1  Pure mirror of the backend income requirement engine (apps/scholarship/income_engine). Kep
 - halatuju-web/src/lib/incomeWizard.ts:98  Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that carries o
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 41 of 325 web test files read source text (signals: readFileSync, apiSource); drift 26 (*Drift.test.ts, counted apart)
+- 41 of 327 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 437 entries have a defining line; 157 carry no resolution marker on it
+- 443 entries have a defining line; 163 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
-- line 1378: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
-- line 1400: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
-- line 1417: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
-- line 1706: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
-- line 6202: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
-- line 6516: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
-- line 6530: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
-- line 6538: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
-- line 6556: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
-- line 6558: - **TD-356 (raised 2026-10-06 by the TD-349 fix) - eligibility, pre-existing: `cancel_reopen` cannot tell an unmoved `interviewing` from a QC reopen's
-- line 6563: - **TD-361 (raised 2026-10-06 by the Consolidation Review's code-health reading — the third-consecutive-accept rule) - low, hygiene: `big` has been ac
-- line 6565: - **TD-363 (raised 2026-10-06 by the TD-352 sprint) - low, officer-visible: the status a case was closed FROM has no field, and the Close card cannot 
-- line 6567: - **TD-365 (raised 2026-10-06 by the TD-352 sprint) - narrow race, money-adjacent, pre-existing class: a close and a fund can interleave.** `close_app
-- line 6569: - **TD-367 (raised 2026-10-06 by the TD-352 adversarial review) - money, pre-existing: a payment run can pay a closed student.** `payments.complete` (
-- line 6570: - **TD-368 (raised 2026-10-06 by the TD-352 review, round 3) - low, pre-existing, shared with rejected/expired: interview times can be proposed and bo
-- line 6585: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
-- line 6588: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
+- line 1384: - **TD-058**: The **prod DB has no `django_content_type` / auth tables** (the contenttypes/admin apps' tables were never created on this Supabase inst
+- line 1406: - **TD-068**: **Contractual rejection (bucket 4) has no admin-typed reason or post-award capture flow.** v2.19.0 shipped the `contractual` category + 
+- line 1423: - **TD-075**: **Phase E3 — the money + the rest of the sponsorship flow (deferred; built dark on mocked money in E3a).** v2.26.0 shipped the wallet/ma
+- line 1712: - **TD-115**: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+- line 6208: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 6522: - **TD-318 (raised 2026-09-30 by the register review; the leftover of TD-135) — low, AN OWNER ACTION.** The WhatsApp inbound STOP/START webhook is bui
+- line 6536: - **TD-328 (raised 2026-10-03 by Now sprint 5 part 1, TD-229) - medium, money — RULED 2026-10-04 (owner): the flat RM200 default STAYS until the FIRST
+- line 6544: - **TD-336 (raised 2026-10-05 by Later-tier batch 5's review, TD-334) - low, tenancy-adjacent: the Programme Overview pools platform-wide money totals
+- line 6562: - **TD-354 (raised 2026-10-05 by the same review, finding 8) - low, student-visible: the "This application is closed" card offers "See programmes that
+- line 6564: - **TD-356 (raised 2026-10-06 by the TD-349 fix) - eligibility, pre-existing: `cancel_reopen` cannot tell an unmoved `interviewing` from a QC reopen's
+- line 6569: - **TD-361 (raised 2026-10-06 by the Consolidation Review's code-health reading — the third-consecutive-accept rule) - low, hygiene: `big` has been ac
+- line 6571: - **TD-363 (raised 2026-10-06 by the TD-352 sprint) - low, officer-visible: the status a case was closed FROM has no field, and the Close card cannot 
+- line 6573: - **TD-365 (raised 2026-10-06 by the TD-352 sprint) - narrow race, money-adjacent, pre-existing class: a close and a fund can interleave.** `close_app
+- line 6575: - **TD-367 (raised 2026-10-06 by the TD-352 adversarial review) - money, pre-existing: a payment run can pay a closed student.** `payments.complete` (
+- line 6576: - **TD-368 (raised 2026-10-06 by the TD-352 review, round 3) - low, pre-existing, shared with rejected/expired: interview times can be proposed and bo
+- line 6591: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
+- line 6594: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 53706f2
+- budgets no looser than at 613cfbe
 
 ### tsc
 - 0 errors in 0 files
@@ -233,11 +234,26 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6699
+- Total keys per locale: 6789
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-10-31 (d85eedb, common profile S3–S5 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since 613cfbe holds common profile S3–S5
+and the maintenance 7a follow-up. Unchanged: `fix%` 51, `hot#1` officerCockpit.ts 28.2, `big` 15, `long` 15, `dup`
+4, `supp` 92, `skip` 0, `mirror` 3, `guard%` 13, `unused` 0, `tsc` 0. Moved:
+
+- **`xapp` 75 -> 76 (common profile S3/S4).** The activity list's actor is a `courses.PartnerAdmin`, so the new
+  scholarship-side modules (reader, back-fill, tests) import it from courses. The other direction stays shut: the
+  courses app writes through `apps/courses/staff_activity_hook.py` (a registered callback), never by importing
+  scholarship. The tool counts import statements, so a correct new module that names the actor model reads as one
+  more. **Accepted.**
+- **`td_open` 157 -> 163.** Mine: TD-442, TD-443 (pre-existing faults found by the S4 review), TD-444 (invitations
+  never store `invited_by`), TD-445 and TD-446 (two low S5 review findings, logged instead of a third deploy).
+  One is maintenance's TD-441. **Accepted**; all six are scheduled as debt, none is a blocker.
 
 ### 2026-10-31 (613cfbe, Mobile-native M0 close) — 0 FAIL; the readings cover four streams since 53706f2
 
