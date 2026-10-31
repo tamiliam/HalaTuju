@@ -30,6 +30,7 @@ OWNER_SWITCHABLE = {
     'application_received', 'question_reminder', 'submission_received', 'profile_complete',
     'interviewer_assigned', 'interview_reminders',
     'results_due', 'results_overdue', 'result_queried',
+    'mentor_assigned',   # S7b: "You have a mentor" (owner-approved MentoringTouches board, 2026-10-31)
 }
 
 

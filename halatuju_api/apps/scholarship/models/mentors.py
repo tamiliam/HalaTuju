@@ -6,8 +6,9 @@ A mentor is INVITED by staff (name + email) and SIGNS IN on the source-partner p
 database check). The mentor fills in their own profile — the common `/admin/profile` page, with the
 reviewer's qualification, language and address cards and the `area` below. Staff cannot edit those.
 
-⚠ KEPT SMALL ON PURPOSE. Sprint 7b adds `MentorAssignment` / `MentoringSession` pointing at this
-model. What a mentor IS lives here; who they are (name, email, sign-in) lives on their login row.
+⚠ KEPT SMALL ON PURPOSE. What a mentor IS lives here; who they are (name, email, sign-in) lives on
+their login row. Sprint 7b adds `MentorAssignment` / `MentoringSession` below (rules:
+`apps/scholarship/mentoring.py`).
 
 ⚠ NEVER DELETED. A mentor is DEACTIVATED (`deactivated_at`), which also switches their login off;
 past meetings stay on each scholar's file (7b). Status is DERIVED (`mentor_invite.status_of`), never
@@ -40,3 +41,69 @@ class Mentor(models.Model):
 
     def __str__(self):
         return f'Mentor {self.pk} org={self.organisation_id}'
+
+
+class MentorAssignment(models.Model):
+    """One mentor's time with one scholar (student maintenance S7b, 2026-11-01).
+
+    ⚠ ONE OPEN ROW PER APPLICATION, held by the DATABASE (a partial unique index on
+    `ended_at IS NULL`), not only by the code: two racing "assign" requests cannot both leave an
+    open row. A CHANGE ends the open row (it stays, the history) and starts a new one, in one
+    transaction (`mentoring.assign`). Never deleted; never reopened.
+
+    `end_reason` is STAFF ONLY (never on a student payload). `emailed_student` records whether the
+    "You have a mentor" email actually went (set after the send).
+    """
+    application = models.ForeignKey(
+        'ScholarshipApplication', on_delete=models.CASCADE, related_name='mentor_assignments')
+    mentor = models.ForeignKey(Mentor, on_delete=models.PROTECT, related_name='assignments')
+    started_at = models.DateTimeField(auto_now_add=True)
+    started_by_email = models.CharField(max_length=254, blank=True, default='')
+    #: NULL = the current assignment.
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by_email = models.CharField(max_length=254, blank=True, default='')
+    end_reason = models.TextField(blank=True, default='')
+    emailed_student = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'mentor_assignments'
+        ordering = ['-started_at', '-id']
+        constraints = [
+            models.UniqueConstraint(fields=['application'], condition=models.Q(ended_at__isnull=True),
+                                    name='mentor_assignment_one_open'),
+        ]
+
+    def __str__(self):
+        return f'MentorAssignment {self.pk} app={self.application_id} mentor={self.mentor_id}'
+
+
+class MentoringSession(models.Model):
+    """One meeting between a scholar and their mentor, logged by STAFF (S7b; mentors log their own
+    from 7c). Logged only while an assignment is open, with that assignment's mentor.
+
+    ⚠ `notes` and `next_step` are STAFF ONLY: the student sees the date and how, nothing else.
+    """
+    MODE_IN_PERSON, MODE_VIDEO, MODE_PHONE = 'in_person', 'video', 'phone'
+    MODE_CHOICES = [(MODE_IN_PERSON, 'In person'), (MODE_VIDEO, 'Video call'), (MODE_PHONE, 'Phone call')]
+
+    application = models.ForeignKey(
+        'ScholarshipApplication', on_delete=models.CASCADE, related_name='mentoring_sessions')
+    #: The mentor at the time (kept even after a change).
+    mentor = models.ForeignKey(Mentor, on_delete=models.PROTECT, related_name='sessions')
+    assignment = models.ForeignKey(MentorAssignment, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='sessions')
+    met_on = models.DateField()
+    mode = models.CharField(max_length=12, choices=MODE_CHOICES)
+    minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+    next_step = models.TextField(blank=True, default='')
+    logged_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'mentoring_sessions'
+        ordering = ['-met_on', '-id']
+        indexes = [models.Index(fields=['application', '-met_on'], name='mentoring_session_app_idx')]
+
+    def __str__(self):
+        return f'MentoringSession {self.pk} app={self.application_id} on={self.met_on}'

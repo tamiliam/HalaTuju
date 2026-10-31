@@ -18,7 +18,7 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import activity, scholars
+from .. import activity, mentoring, scholars
 from ..maintenance_scope import has_file, is_in_maintenance
 from ..models import SemesterResult, StudentActivity
 from .base import _AdminBase
@@ -65,7 +65,8 @@ class _ScholarsBase(_AdminBase):
 
 class AdminScholarListView(_ScholarsBase):
     """GET admin/scholarship/scholars/ — `?programme=` `?closed=1` `?substate=` `?on_hold=1`
-    `?search=` `?sort=` `?page=` `?page_size=`. Returns `{summary, count, page, page_size, results}`.
+    `?search=` `?sort=` `?page=` `?page_size=` `?mentoring=no_mentor|asked_for_help` (S7b).
+    Returns `{summary, count, page, page_size, results}`.
     `summary` counts the scoped in-maintenance population (closed or not, it is what the tiles say)."""
 
     def get(self, request):
@@ -91,10 +92,14 @@ class AdminScholarListView(_ScholarsBase):
         lines = scholars.custom_lines()             # ONE read: every organisation's minimum + grace
         below, overdue = scholars.below_minimum_q(lines), scholars.overdue_q(lines)
         wanted = q.get('standing')
+        # S7b: the mentor column, the two Mentoring pills and their counts are for the roles that
+        # see the Mentoring tab (`mentoring.may_act`); for the rest the keys are absent.
+        sees_mentors = mentoring.may_act(admin)
         qs = scholars.filter_rows(scholars.annotate(scoped(closed)), substate=q.get('substate', ''),
                                   on_hold=q.get('on_hold') == '1', search=q.get('search', ''),
                                   below=below if wanted == 'below_minimum' else None,
-                                  overdue=overdue if wanted == 'results_overdue' else None)
+                                  overdue=overdue if wanted == 'results_overdue' else None,
+                                  mentoring=q.get('mentoring', '') if sees_mentors else '')
         sort = q.get('sort') or scholars.DEFAULT_SORT
         qs = qs.order_by(*scholars.SORTS.get(sort, scholars.SORTS['name']))
         count = qs.count()
@@ -102,8 +107,12 @@ class AdminScholarListView(_ScholarsBase):
         page = _int(q.get('page'), 1, 1, max(1, -(-count // size)))
         page_rows = list(qs[(page - 1) * size:page * size])
         summary = scholars.summary(scholars.annotate(scoped(None)), below, overdue)
+        results = scholars.rows(page_rows)
+        if not sees_mentors:
+            summary = {k: v for k, v in summary.items() if k not in scholars.MENTORING_KEYS}
+            results = [{k: v for k, v in r.items() if k not in ('mentor', 'asked_for_help')} for r in results]
         return Response({'summary': summary, 'count': count, 'page': page, 'page_size': size,
-                         'results': scholars.rows(page_rows)})
+                         'results': results})
 
 
 class AdminScholarFileView(_ScholarsBase):
@@ -114,7 +123,10 @@ class AdminScholarFileView(_ScholarsBase):
         if err:
             return err
         from .. import payments
-        return Response({**scholars.file_payload(app), 'controls': scholars.controls(
+        body = scholars.file_payload(app)
+        if not mentoring.may_act(admin):   # S7b: the mentor card is the Mentoring tab's roles' only
+            body = {k: v for k, v in body.items() if k not in ('mentor', 'asked_for_help')}
+        return Response({**body, 'controls': scholars.controls(
             app, can_write=self._can_review_app(admin, app), can_hold=payments.may_prepare(admin))})
 
 

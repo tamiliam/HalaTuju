@@ -9,8 +9,10 @@
 //
 // ⚠ NO STANDING IS JUDGED HERE. The server's `standing` (S4a, `standing.py`: the latest ACCEPTED
 // result against the organisation's thresholds) is drawn as it comes; "Underperforming" asks the
-// server (`standing=below_minimum`). "Results overdue" (S4b) and "Wants a mentor" (S7) stay
-// DISABLED (PanelTabs' rule: a tab not built yet is shown, never hidden) rather than faked.
+// server (`standing=below_minimum`); "Results overdue" (S4b) asks `standing=results_overdue`.
+// ⚠ S7b: the Mentor column, the "No mentor" / "Asked for help" pills and the row's "Asked for help"
+// chip are for the roles that see mentors (`MENTORING_ROLES`); the server leaves those keys out for
+// the rest, and ignores the filter.
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -29,12 +31,12 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, nextSort, type SortDir } from '@/
 import { getScholars, type ScholarList, type ScholarRow } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
 
-import { STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
+import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 
 const SourceScholars = lazySource(() => import('@/components/source/SourceScholars').then((m) => m.default))
 
 type Filter = 'all' | 'on_track' | 'probation' | 'on_hold' | 'ready_to_close' | 'closed'
-  | 'underperforming' | 'overdue' | 'wantsMentor'
+  | 'underperforming' | 'overdue' | 'noMentor' | 'askedForHelp'
 type SortKey = 'name' | 'cgpa' | 'due' | 'activity'
 
 const FIRST_DIR: Record<SortKey, SortDir> = { name: 'asc', cgpa: 'desc', due: 'asc', activity: 'desc' }
@@ -51,6 +53,7 @@ function StaffScholarsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)
+  const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
   const programme = useProgrammeParam()
   const gate = useGiftGate(role)
 
@@ -85,6 +88,7 @@ function StaffScholarsPage() {
     getScholars({
       programme, closed: filter === 'closed', substate, search,
       standing: filter === 'underperforming' ? 'below_minimum' : filter === 'overdue' ? 'results_overdue' : '',
+      mentoring: filter === 'noMentor' ? 'no_mentor' : filter === 'askedForHelp' ? 'asked_for_help' : '',
       sort: `${sort.dir === 'desc' ? '-' : ''}${sort.key}`, page, page_size: pageSize,
     }, { token })
       .then((d) => { if (ticket === latest.current) setData(d) })
@@ -112,7 +116,10 @@ function StaffScholarsPage() {
     { key: 'ready_to_close', labelKey: 'admin.maintenance.substate.ready_to_close', count: s?.ready_to_close },
     { key: 'underperforming', labelKey: 'admin.scholars.filter.underperforming', count: s?.below_minimum },
     { key: 'overdue', labelKey: 'admin.scholars.filter.overdue', count: s?.results_overdue },
-    { key: 'wantsMentor', labelKey: 'admin.scholars.filter.wantsMentor', disabled: true },
+    ...(seesMentors ? [
+      { key: 'noMentor' as const, labelKey: 'admin.scholars.filter.noMentor', count: s?.no_mentor },
+      { key: 'askedForHelp' as const, labelKey: 'admin.scholars.filter.askedForHelp', count: s?.asked_for_help },
+    ] : []),
     { key: 'closed', labelKey: 'admin.scholars.filter.closed', count: s?.closed },
   ]
   const tiles: { key: string; value: number | undefined; tone: string }[] = [
@@ -165,7 +172,9 @@ function StaffScholarsPage() {
           <Link key={r.id} href={`/admin/scholars/${r.id}`}
             className="block rounded-xl border border-ground-200 bg-ground-0 p-3 hover:border-info-300">
             <div className="flex items-start justify-between gap-3">
-              <span className="text-sm font-semibold text-primary-600">{r.name || '—'}</span>
+              <span className="text-sm font-semibold text-primary-600">
+                {r.name || '—'}{r.asked_for_help && <HelpChip text={t('admin.scholars.askedForHelp')} />}
+              </span>
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                 r.status === 'closed' ? 'bg-ground-100 text-ground-600' : SUBSTATE_TONE[r.maintenance_substate]}`}>
                 {r.status === 'closed' ? t('admin.scholars.closed')
@@ -180,6 +189,7 @@ function StaffScholarsPage() {
               <span>{t('admin.scholars.col.cgpa')} {r.latest_result?.cgpa ?? '—'}</span>
               <span>{t(`admin.scholars.standing.${r.standing}`)}</span>
               {r.next_due && <span>{t('admin.scholars.col.nextDue')} {formatDate(r.next_due)}</span>}
+              {seesMentors && <span>{t('admin.scholars.col.mentor')} {r.mentor || '—'}</span>}
             </p>
           </Link>
         ))}
@@ -195,7 +205,7 @@ function StaffScholarsPage() {
               <SortHeader col="cgpa" label={t('admin.scholars.col.cgpa')} sort={sort} onSort={onSort} align="right" />
               <th className={TH}>{t('admin.scholars.col.standing')}</th>
               <SortHeader col="due" label={t('admin.scholars.col.nextDue')} sort={sort} onSort={onSort} />
-              <th className={TH}>{t('admin.scholars.col.mentor')}</th>
+              {seesMentors && <th className={TH}>{t('admin.scholars.col.mentor')}</th>}
               <SortHeader col="activity" label={t('admin.scholars.col.lastActivity')} sort={sort} onSort={onSort} />
             </tr>
           </thead>
@@ -206,6 +216,7 @@ function StaffScholarsPage() {
                   <Link href={`/admin/scholars/${r.id}`} className="font-medium text-primary-600 hover:underline">
                     {r.name || '—'}
                   </Link>
+                  {r.asked_for_help && <HelpChip text={t('admin.scholars.askedForHelp')} />}
                   <div className="text-xs text-ground-500">#{r.id}</div>
                 </td>
                 <td className="px-4 py-3 text-ground-700">
@@ -230,7 +241,11 @@ function StaffScholarsPage() {
                 <td className="px-4 py-3 text-ground-600" data-testid="next-due">
                   {r.next_due ? formatDate(r.next_due) : '—'}
                 </td>
-                <td className="px-4 py-3 text-ground-500">—</td>
+                {seesMentors && (
+                  <td className={`px-4 py-3 ${r.mentor ? 'text-ground-700' : 'text-ground-500'}`} data-testid="mentor-cell">
+                    {r.mentor || '—'}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-ground-600">
                   {r.last_activity_at ? formatDate(r.last_activity_at) : '—'}
                 </td>
@@ -248,10 +263,22 @@ function StaffScholarsPage() {
         )}
       </TableFrame>
 
+      {seesMentors && <p className="mt-3 text-xs text-ground-600">{t('admin.scholars.askedForHelpNote')}</p>}
+
       <Pagination page={data?.page ?? page} totalPages={Math.max(1, Math.ceil(total / pageSize))}
         total={total} pageSize={pageSize} onPageChange={setPage}
         pageSizeOptions={PAGE_SIZE_OPTIONS}
         onPageSizeChange={(n) => { setPageSize(n); setPage(1) }} />
     </div>
+  )
+}
+
+/** S7b: "Asked for help" beside a scholar's name (the board's amber chip). */
+function HelpChip({ text }: { text: string }) {
+  return (
+    <span className="ml-1.5 whitespace-nowrap rounded-full bg-caution-50 px-2 py-0.5 text-[11px] font-medium text-caution-800"
+      data-testid="asked-for-help">
+      {text}
+    </span>
   )
 }

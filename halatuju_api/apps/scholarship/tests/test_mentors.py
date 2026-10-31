@@ -239,7 +239,8 @@ class TestTheMentorsPage(_Base):
         row = body['mentors'][0]
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'phone', 'status', 'area', 'languages', 'other_language',
-            'invited_at', 'signed_in', 'last_seen_at', 'deactivated_at', 'manageable'})
+            'invited_at', 'signed_in', 'last_seen_at', 'deactivated_at', 'manageable',
+            'scholars_now'})   # S7b
         self.assertEqual((row['name'], row['email'], row['phone'], row['area']),
                          ('Priya Devi', 'priya@example.org', '12-345 6789', 'Accounting, finance'))
         self.assertEqual(row['languages'], {'en': 'fluent', 'ms': 'conversational', 'ta': ''})

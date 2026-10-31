@@ -32,7 +32,10 @@ export interface ScholarRow {
   standing: ScholarStanding
   /** S4b: her earliest open result term's due date (a past date = late), or null. */
   next_due?: string | null
-  mentor: null
+  /** S7b: the current mentor's name (null: none). ABSENT for a role without the Mentoring tab. */
+  mentor?: string | null
+  /** S7b: asked for help with university or scholarship applications, or flagged by staff. */
+  asked_for_help?: boolean
   last_activity_at: string | null
 }
 
@@ -46,6 +49,10 @@ export interface ScholarSummary {
   below_minimum: number
   /** S4b: an open result term past its due date and the organisation's grace. */
   results_overdue: number
+  /** S7b: in maintenance with no current mentor (absent for a role without the Mentoring tab). */
+  no_mentor?: number
+  /** S7b: in maintenance and asked for help (absent for a role without the Mentoring tab). */
+  asked_for_help?: number
 }
 
 export interface ScholarList {
@@ -64,11 +71,13 @@ export interface ScholarListQuery {
   sort?: string
   /** S4a: 'below_minimum' narrows to the Underperforming filter. */
   standing?: 'below_minimum' | 'results_overdue' | ''
+  /** S7b: the two Mentoring pills (ignored by the server for a role without the tab). */
+  mentoring?: 'no_mentor' | 'asked_for_help' | ''
   page?: number
   page_size?: number
 }
 
-export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_at'> {
+export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'asked_for_help' | 'last_activity_at'> {
   in_maintenance: boolean
   has_file: boolean
   closure_reason: string
@@ -86,7 +95,10 @@ export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'last_activity_
   thresholds?: { minimum: string; failing: string }
   /** S4b: when her next result is due (null: no open term). */
   next_due?: string | null
-  mentor: null
+  /** S7b: the Overview's mentor card (null: none). ABSENT for a role without the Mentoring tab. */
+  mentor?: { name: string; since: string; meetings: number } | null
+  /** S7b: what the scholar asked for (absent for a role without the Mentoring tab). */
+  asked_for_help?: { university: boolean; scholarship: boolean; flagged: boolean }
   /** S6b: the Overview's letters card — counts and the newest three. */
   letters: {
     count: number
@@ -142,6 +154,7 @@ export function scholarsQuery(q: ScholarListQuery): string {
   if (q.search?.trim()) p.set('search', q.search.trim())
   if (q.sort) p.set('sort', q.sort)
   if (q.standing) p.set('standing', q.standing)
+  if (q.mentoring) p.set('mentoring', q.mentoring)
   if (q.page) p.set('page', String(q.page))
   if (q.page_size) p.set('page_size', String(q.page_size))
   const s = p.toString()

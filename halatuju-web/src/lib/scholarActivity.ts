@@ -49,6 +49,18 @@ export function activityText(
     case 'letter_withdrawn':
     case 'letter_acknowledged':
       return t(`admin.scholars.event.${a.event}`, { subject: str(m.subject) || '—' })
+    // S7b: mentoring (the names as they were at the time; staff-only reasons never enter the log).
+    case 'mentor_assigned':
+      return t('admin.scholars.event.mentor_assigned', { mentor: str(m.mentor) || '—' })
+    case 'mentor_changed':
+      return t('admin.scholars.event.mentor_changed', { mentor: str(m.mentor) || '—', was: str(m.was) || '—' })
+    case 'mentor_ended':
+      return t(`admin.scholars.event.mentor_ended.${['mentor_deactivated', 'file_closed'].includes(str(m.cause))
+        ? str(m.cause) : 'staff'}`, { mentor: str(m.mentor) || '—' })
+    case 'session_logged':
+      return t(m.minutes ? 'admin.scholars.event.session_logged' : 'admin.scholars.event.session_logged_no_minutes', {
+        mode: t(`admin.scholars.mentoring.mode.${['in_person', 'video', 'phone'].includes(str(m.mode)) ? str(m.mode) : 'in_person'}`).toLowerCase(),
+        minutes: str(m.minutes) })
     default:
       return t('admin.scholars.event.other')
   }

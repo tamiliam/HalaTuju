@@ -6,6 +6,9 @@ Three kinds, each in the student's language (en / ms / ta), each the ORGANISATIO
   * ``results_overdue`` — a result is past its due date and the grace (the daily `results-overdue-flag`);
   * ``result_queried``  — an officer queried a result she sent, with the officer's note.
 
+S6b added ``letter_issued`` (a formal letter, locked) and S7b ``mentor_assigned`` ("You have a mentor",
+switchable, sent by `mentoring.assign` to the student only).
+
 WHERE THE WORDS LIVE. The platform's default wording is HERE, in code (``DEFAULTS``). An organisation
 that edits a letter (Organisation → Settings → Student communications) gets its own
 ``StudentEmailTemplate`` row for that (kind, language); "Reset" deletes the row and the default
@@ -29,7 +32,7 @@ from django.db import transaction
 from . import email_templates
 from .models import StudentEmailTemplate
 
-KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued')
+KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned')
 #: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
 #: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
 PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
@@ -42,6 +45,9 @@ PLACEHOLDERS = {
     'results_overdue': _COMMON + ('due_date',),
     'result_queried': _COMMON + ('semester', 'note'),
     'letter_issued': _COMMON + ('response_due', 'letter_subject'),
+    # S7b: the mentor's details as the student may see them (`mentoring._send_you_have_a_mentor`):
+    # `mentor_contact` is the email, and the phone ONLY when the mentor shares it with students.
+    'mentor_assigned': _COMMON + ('mentor_name', 'mentor_area', 'mentor_languages', 'mentor_contact'),
 }
 
 DEFAULTS = {
@@ -111,6 +117,29 @@ DEFAULTS = {
                'அன்புள்ள {name},\n\n{programme} தொடர்பாக உங்களுக்கு ஒரு முறையான கடிதத்தை அனுப்பியுள்ளோம்: '
                '"{letter_subject}".\n\nஎனது உதவித்தொகை பக்கத்தில் அதைப் படித்து, {response_due}-க்குள் அது '
                'கிடைத்ததை உறுதிசெய்யுங்கள்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.'
+               '\n\n{signoff}'),
+    },
+    # S7b: staff assigned or changed the student's mentor. Switchable (the catalogue): staff can still
+    # tell the student themselves. Never sent to the mentor.
+    'mentor_assigned': {
+        'en': ('You have a mentor: {mentor_name}',
+               'Dear {name},\n\nWe have found you a mentor for your {programme}: {mentor_name}.\n\n'
+               'Area: {mentor_area}\nLanguages: {mentor_languages}\nContact: {mentor_contact}\n\n'
+               'A mentor is someone who can guide you through your studies. You can read more about your '
+               'mentor, and see your meetings, on your My Bursary page:\n{link}\n\n'
+               'If you have a question, write to {support}.\n\n{signoff}'),
+        'ms': ('Anda mempunyai mentor: {mentor_name}',
+               'Salam {name},\n\nKami telah menetapkan seorang mentor untuk anda bagi {programme}: '
+               '{mentor_name}.\n\nBidang: {mentor_area}\nBahasa: {mentor_languages}\nHubungi: '
+               '{mentor_contact}\n\nMentor ialah seseorang yang boleh membimbing anda sepanjang pengajian. '
+               'Anda boleh membaca lebih lanjut tentang mentor anda, dan melihat pertemuan anda, di halaman '
+               'Biasiswa Saya:\n{link}\n\nJika ada pertanyaan, tulis kepada {support}.\n\n{signoff}'),
+        'ta': ('உங்களுக்கு ஒரு வழிகாட்டி: {mentor_name}',
+               'அன்புள்ள {name},\n\n{programme}-க்காக உங்களுக்கு ஒரு வழிகாட்டியை நியமித்துள்ளோம்: '
+               '{mentor_name}.\n\nதுறை: {mentor_area}\nமொழிகள்: {mentor_languages}\nதொடர்புக்கு: '
+               '{mentor_contact}\n\nவழிகாட்டி என்பவர் உங்கள் படிப்பில் ஆலோசனை கூறி உதவக்கூடியவர். உங்கள் '
+               'வழிகாட்டியைப் பற்றி மேலும் அறியவும், உங்கள் சந்திப்புகளைப் பார்க்கவும் எனது உதவித்தொகை '
+               'பக்கத்தைத் திறவுங்கள்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.'
                '\n\n{signoff}'),
     },
 }

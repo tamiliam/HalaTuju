@@ -18,7 +18,8 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
  *
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own (their Profile);
  * blank shows "Not filled in yet". ⚠ A MENTOR IS NEVER DELETED: Deactivate, and Reactivate.
- * ⚠ NO "SCHOLARS NOW" COLUMN until mentors can be assigned (Sprint 7b).
+ * S7b: "Scholars now" — how many scholars each mentor has now (the server's `scholars_now`, one
+ * query for the page). Assigning happens on the scholar's file, never here.
  */
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -205,7 +206,7 @@ export default function MentorsAdmin() {
               <table className="w-full text-sm">
                 <thead className="border-b bg-ground-50">
                   <tr>
-                    {['mentor', 'area', 'languages', 'status'].map((c) => (
+                    {['mentor', 'area', 'languages', 'scholarsNow', 'status'].map((c) => (
                       <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>
                     ))}
                     <th className={TH}><span className="sr-only">{t(`${K}.col.actions`)}</span></th>
@@ -224,6 +225,7 @@ export default function MentorsAdmin() {
                         </td>
                         <td className={`px-4 py-3 ${m.area ? '' : 'text-ground-500'}`}>{m.area || t(`${K}.notFilled`)}</td>
                         <td className={`px-4 py-3 ${langs ? '' : 'text-ground-500'}`}>{langs || t(`${K}.notFilled`)}</td>
+                        <td className="px-4 py-3 tabular-nums" data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>
                         <td className="px-4 py-3">
                           <span className={`rounded-full px-2.5 py-0.5 text-xs ${CHIP_TONE[m.status]}`}>{statusText(t, m)}</span>
                         </td>

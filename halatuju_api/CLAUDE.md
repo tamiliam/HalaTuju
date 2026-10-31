@@ -1135,6 +1135,16 @@ API data; it is read-only) and `npm run mobile-ledger`. Static ratchets in `mobi
 down. A new `page.tsx` must be classified in `src/lib/mobileClass.ts`. M1 starts with the Tamil font (Mukta Malar,
 from SJKTConnect), the 16 px input rule, the shared Sheet, and the 5.7 MB favicon. Owner pick due in M1: TD-311.
 
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b BUILT, NOT LIVE (branch maint-s7)
+
+Mentoring: `MentorAssignment` / `MentoringSession` (scholarship **0196_mentoring — MIGRATE FIRST by hand**, DDL +
+RLS + service_role policies + ledger row + rollback in its docstring, then the Security Advisor), rules in
+`apps/scholarship/mentoring.py`, staff tab `views_admin/mentoring.py` (`admin/scholarship/scholars/<id>/mentoring/`
++ `assign/`, `end/`, `sessions/`; super / org_admin / admin only), the student's `scholarship/bursary/mentoring/`,
+"You have a mentor" (`student_comms` kind `mentor_assigned`, switchable, Mentoring heading). Deactivate / Revoke
+and closing a file end open assignments. **Next free migration numbers: scholarship 0197, courses 0091.**
+Release order: 0196 by hand, then API, then web. Later: 7c — mentors see their students and log meetings.
+
 ### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT LIVE (main f908d5ba; api-01223-8xk; no migration)
 
 The offer → course matcher is `apps/scholarship/offer_course_match.py` (`match_offer_course`, `letter_place`,
@@ -1156,8 +1166,8 @@ Resend, pre-existing). **NEXT = Sprint 7b** (assignments, meetings, the Mentorin
 (`PartnerAdmin.mentor`, `Invitation.mentor`), deny by default (`mentor_methods`), the Mentors page
 (`/admin/organisation/mentors`, `GET admin/mentors/`, actions `admin/mentors/<id>/<action>/`, invite through
 `POST admin/invitations/` `audience='mentor'`), and the mentor's own profile (`admin/me/` `mentoring_area`;
-`staff_contact.works_with_students`). Rules: `apps/scholarship/mentor_invite.py`. **Next free migration
-numbers: scholarship 0196, courses 0091** (0195 = common profile S3, live). Release order: apply scholarship 0194 THEN courses 0090 by hand
+`staff_contact.works_with_students`). Rules: `apps/scholarship/mentor_invite.py`. Next free migration
+numbers: scholarship 0196, courses 0091 *(superseded by 7b above — 0197)* (0195 = common profile S3, live). Release order: apply scholarship 0194 THEN courses 0090 by hand
 (DDL + ledger rows in each docstring; the new `mentors` table gets RLS + one service_role policy in the
 same transaction; then the Security Advisor), then API, then web. Next: Sprint 7b (assignments, meetings,
 the Mentoring tabs) — 7b's mock-ups are in the maintenance design project.

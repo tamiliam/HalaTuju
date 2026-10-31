@@ -4,9 +4,10 @@
  * The officer's Scholars list (student maintenance Sprint 2). Pinned from the harm:
  *  * the list asks the SERVER for each filter, search, sort and page — a client-side filter over a
  *    page of 25 would quietly miss the rest of the list;
- *  * the filter for what is NOT built yet (Wants a mentor) is shown DISABLED, never faked and never
- *    hidden (PanelTabs' rule); Underperforming (S4a) and Results overdue (S4b) are live and ask the
- *    SERVER (`standing=below_minimum` / `results_overdue`) — the browser never judges a date or a CGPA;
+ *  * Underperforming (S4a) and Results overdue (S4b) are live and ask the SERVER
+ *    (`standing=below_minimum` / `results_overdue`) — the browser never judges a date or a CGPA;
+ *  * S7b: the Mentor column, "No mentor" / "Asked for help" (with the server's counts, asking the
+ *    server `mentoring=`) and the row's "Asked for help" chip — for super / org_admin / admin only;
  *  * the row's standing is the server's word (`standing.py`), drawn as given;
  *  * finance cannot open the page (the server refuses too) — names beside case data.
  */
@@ -30,10 +31,12 @@ const ROW: api.ScholarRow = {
   course: 'Diploma in Accounting', institution: 'Politeknik Ungku Omar', status: 'awarded',
   maintenance_substate: 'probation', is_on_hold: false,
   latest_result: { cgpa: '2.85', semester: 'Sem 2', at: '2026-07-12T00:00:00Z' },
-  standing: 'underperforming', next_due: '2026-12-15', mentor: null, last_activity_at: '2026-10-27T00:00:00Z',
+  standing: 'underperforming', next_due: '2026-12-15', mentor: 'Kavitha Raman', asked_for_help: true,
+  last_activity_at: '2026-10-27T00:00:00Z',
 }
 const LIST: api.ScholarList = {
-  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2, below_minimum: 3, results_overdue: 4 },
+  summary: { in_programme: 65, on_hold: 1, probation: 5, ready_to_close: 0, closed: 2, below_minimum: 3, results_overdue: 4,
+    no_mentor: 58, asked_for_help: 22 },
   count: 1, page: 1, page_size: 25, results: [ROW],
 }
 
@@ -56,18 +59,40 @@ it('draws the tiles, the row and its link to the file', async () => {
   expect(screen.getAllByText('admin.scholars.standing.underperforming')).toHaveLength(2)
 })
 
-it('shows the not-yet-built filters disabled', async () => {
+it('S7b: the Mentor column, the two Mentoring pills with their counts, and the Asked-for-help chip', async () => {
+  render(<ScholarsPage />)
+  await screen.findAllByText(/NUR AISYAH/)
+  expect(screen.getByTestId('mentor-cell').textContent).toBe('Kavitha Raman')
+  expect(screen.getAllByTestId('asked-for-help')).toHaveLength(2)          // phone card + desktop row
+  expect(screen.getByText('admin.scholars.askedForHelpNote')).toBeTruthy()
+  const none = screen.getByRole('tab', { name: /admin\.scholars\.filter\.noMentor/ })
+  expect(none.textContent).toContain('58')
+  fireEvent.click(none)
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ mentoring: 'no_mentor', standing: '' }), { token: 'tok' }))
+  const asked = screen.getByRole('tab', { name: /admin\.scholars\.filter\.askedForHelp/ })
+  expect(asked.textContent).toContain('22')
+  fireEvent.click(asked)
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ mentoring: 'asked_for_help' }), { token: 'tok' }))
+})
+
+it('S7b: a role that does not see mentors gets no Mentor column and no Mentoring pills', async () => {
+  mockRole = { role: 'qc', owning_org_id: 11 }
+  const { mentor: _m, asked_for_help: _a, ...bare } = ROW
+  mockApi.getScholars.mockResolvedValue({ ...LIST, results: [bare] })
   render(<ScholarsPage />)
   await screen.findAllByText('NUR AISYAH')
-  for (const key of ['wantsMentor']) {
-    const tab = screen.getByText(`admin.scholars.filter.${key}`).closest('button')!
-    expect([tab.getAttribute('role'), tab.hasAttribute('disabled')]).toEqual(['tab', true])
-  }
+  expect(screen.queryByTestId('mentor-cell')).toBeNull()
+  expect(screen.queryByText('admin.scholars.col.mentor')).toBeNull()
+  expect(screen.queryByRole('tab', { name: /noMentor/ })).toBeNull()
+  expect(screen.queryByRole('tab', { name: /askedForHelp/ })).toBeNull()
+  expect(screen.queryByTestId('asked-for-help')).toBeNull()
 })
 
 it('Underperforming is live: it carries its count and asks the server, never the browser', async () => {
   render(<ScholarsPage />)
-  await screen.findAllByText('NUR AISYAH')
+  await screen.findAllByText(/NUR AISYAH/)
   const tab = screen.getByRole('tab', { name: /admin\.scholars\.filter\.underperforming/ })
   expect(tab.hasAttribute('disabled')).toBe(false)
   expect(tab.textContent).toContain('3')

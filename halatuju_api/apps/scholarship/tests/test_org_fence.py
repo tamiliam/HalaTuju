@@ -306,6 +306,12 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarLetterPreviewView': 'scholars-org-fenced',   # S6b: `_file_for`
         'AdminScholarLetterActionView': 'scholars-org-fenced',   # S6b: `_file_for`
         'AdminScholarLetterPdfView': 'scholars-org-fenced',   # S6b: `_file_for`
+        # S7b: the Mentoring tab — the file's door (`_file_for`) plus `mentoring.may_act`; a mentor in
+        # the body must be the application's own organisation's (`mentoring.refusal_for_mentor`).
+        '_MentoringBase': 'scholars-org-fenced',
+        'AdminScholarMentoringView': 'scholars-org-fenced',
+        'AdminScholarMentoringActionView': 'scholars-org-fenced',
+        'AdminScholarMentoringSessionsView': 'scholars-org-fenced',
         'AdminScholarResultReviewView': 'scholars-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
@@ -743,6 +749,8 @@ class TestOrgFenceStaticGuard(TestCase):
                'scholars.py',
                # Source sign-in S1 (2026-10-30) — what a source user may reach, on the day written.
                'source_access.py',
+               # Student maintenance S7b (2026-11-01) — the mentoring rules, on the day written.
+               'mentoring.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')

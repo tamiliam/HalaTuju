@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 7b — mentoring: assignments, meetings and the two Mentoring tabs (not yet live)
+
+Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 7b); rules `apps/scholarship/mentoring.py`;
+decisions.md 2026-11-01. **Migration scholarship 0196 (`0196_mentoring`) — MIGRATE FIRST, by hand** (DDL, RLS +
+one service_role policy per table, ledger row and rollback in its docstring), then the API, then the web.
+
+- **Models:** `MentorAssignment` (`mentor_assignments`: one mentor's time with one scholar; a PARTIAL UNIQUE INDEX
+  holds one open row per application; staff-only `end_reason`; `emailed_student`) and `MentoringSession`
+  (`mentoring_sessions`: date, in person / video / phone, minutes, staff-only notes and next step). The student
+  email family gains the kind `mentor_assigned` (choices only).
+- **One mentor at a time.** Staff (super, org admin, admin — the Mentors roster's readers; org-fenced, 404
+  outside) assign, change (the old assignment ends with its reason and stays in the history) and end a mentor,
+  and log meetings, from the scholar file's **Mentoring tab** (`GET/POST admin/scholarship/scholars/<id>/mentoring/`
+  `…/assign/`, `…/end/`, `…/sessions/`). A reviewer or QC who may open the file is refused this tab (403) and
+  does not see it. A mentor may be assigned when they are the application's own organisation's and not
+  deactivated (an invited mentor is allowed) — and NEVER to their own application (same Supabase UID or a
+  claimed alias, or the same email as the student's contact or notify email). A closed file reads, and refuses
+  every write. A meeting is logged only with the current mentor, never in the future or before the assignment
+  started. Every write is a line on the file's activity log (`mentor_assigned`, `mentor_changed`,
+  `mentor_ended`, `session_logged`).
+- **Ended by other doors, no email:** Deactivate (and Revoke) of a mentor ends all their open assignments
+  ("Mentor deactivated"); closing a file ends its assignment ("File closed"). Reactivate restores none.
+- **"You have a mentor"** goes to the STUDENT only (never the mentor), after the transaction, when staff leave
+  "Email the student" on (a site Toggle, offered only when the organisation sends it). Switchable and worded
+  per organisation on Organisation → Settings → Student communications under a new **Mentoring** heading (en /
+  ms / ta); `may_send` at the send site; `StudentEmailLog`; metered. The phone only when the mentor shares it.
+- **The student's Mentoring tab** on My Bursary (its own chunk; `GET scholarship/bursary/mentoring/`): the
+  current mentor's name, area, languages, About, Email, Call only when the phone is shared, "Your mentor since",
+  and meetings as date + how. Never a photo, note, next step, minutes, reason or past mentor. Shown when the
+  student has or had a mentor, or the organisation has a mentor who is not deactivated.
+- **Scholars list:** a Mentor column, the **No mentor** and **Asked for help** pills with counts (`?mentoring=`;
+  asked for help = yes / not sure to university or scholarship help, or flagged for mentoring), the row's chip
+  and the note — for super / org admin / admin only (the keys are absent for other roles). One subquery; the
+  query budget is unchanged. The file's Overview mentor card and header chip likewise.
+- **Mentors page:** a "Scholars now" column (one query for every row).
+- **Never sponsors or partners:** a test drives the sponsor's own-student detail and the partner student
+  serializer with a mentored, met scholar, and a source scan holds every sponsor / partner / source module clear.
+
 ## My activity: a fixed-height column that scrolls (owner, 2026-11-01) — LIVE 2026-11-01 (main f451a105; web-01046-krt)
 
 - **The admin Profile page's My activity card no longer grows down the page** (owner ruling option A). From `xl` it is exactly as tall as the left column (cards + Save; floor 24rem) and the right cell adds no height; below `xl` it stays last, capped at 32rem. Title, chips and footer stay fixed; the rows and Show older scroll inside a keyboard-reachable region (`tabIndex=0`, labelled "My activity"), which returns to the top on a chip change. Same data, chips, Show older and token/race guards (`app/admin/profile/page.tsx`, `components/adminProfile/ActivityCard.tsx`, `CardFrame` takes a `className`).

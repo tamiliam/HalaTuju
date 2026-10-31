@@ -11,10 +11,9 @@ active, maintenance); `?closed=1` lists the closed students who still have a fil
 STANDING (S4a) is `standing.py`'s, from the latest ACCEPTED result and the organisation's
 thresholds; a result awaiting review never moves it (it reads `awaiting_review`).
 
-⚠ WHAT IS DELIBERATELY NOT HERE YET, so nothing is invented:
-  * MENTOR (Sprint 7), LETTERS (Sprint 6), SPENDING (Sprint 5) — served as null / [] / absent.
-  * A signed-PDF link (Sprint 5) — the contract summary says only whether an agreement exists and
-    its derived status.
+MENTOR (S7b): the current mentor's name (one subquery on the list query), whether the student asked
+for help (`ASKED_FOR_HELP_Q`), and the No mentor / Asked for help counts. The VIEW strips all of it for a
+role that may not see the Mentoring tab (`mentoring.may_act`).
 """
 from decimal import Decimal
 
@@ -27,8 +26,8 @@ from apps.courses.search import _digits_expr
 from . import card_display, maintenance_scope, standing
 from .results_review import PENDING, accepted, latest_accepted
 from .models import (
-    BursaryAgreement, Disbursement, ResultsExpectation, ScholarshipApplication, SemesterResult,
-    StudentActivity,
+    BursaryAgreement, Disbursement, MentorAssignment, ResultsExpectation, ScholarshipApplication,
+    SemesterResult, StudentActivity,
 )
 
 #: The sub-states an officer may filter on (the model's choices).
@@ -65,6 +64,18 @@ def _latest(field):
                     .order_by('-created_at', '-id').values(field)[:1])
 
 
+#: S7b: "Asked for help" — yes or not sure to help with university or scholarship applications when
+#: applying, or flagged by staff for mentoring (`mentoring.help_asked` is the one-record twin).
+ASKED_FOR_HELP_Q = (Q(help_university__in=('yes', 'unsure')) | Q(help_scholarship__in=('yes', 'unsure'))
+                    | Q(mentoring_candidate=True))
+#: `?mentoring=` filters (S7b).
+MENTORING_FILTERS = ('no_mentor', 'asked_for_help')
+
+
+def _open_assignment(app_ref):
+    return MentorAssignment.objects.filter(application=app_ref, ended_at__isnull=True)
+
+
 def base_queryset(*, closed=False):
     """The population, before the fence (the VIEW applies it — `_org_scoped`). `closed=None` is
     EVERY file (in maintenance and closed) — the summary counts both in one query."""
@@ -91,7 +102,10 @@ def annotate(qs):
                           .order_by('-created_at', '-id').values('created_at')[:1]),
                       # S4b: her earliest OPEN result term — its due date (past = late) and start.
                       next_due=Subquery(_open_term(OuterRef('pk')).values('due_on')[:1]),
-                      next_due_starts=Subquery(_open_term(OuterRef('pk')).values('term_starts_on')[:1]))
+                      next_due_starts=Subquery(_open_term(OuterRef('pk')).values('term_starts_on')[:1]),
+                      # S7b: the current mentor (their login's name) — one subquery, no per-row read.
+                      has_mentor=Exists(_open_assignment(OuterRef('pk'))),
+                      mentor_name=Subquery(_mentor_name(OuterRef('pk'))))
             # Something she sent THIS term is waiting for the officer: not her lateness (review M3).
             .annotate(pending_for_due=Exists(SemesterResult.objects.filter(
                 application=OuterRef('pk'), review_status=PENDING,
@@ -99,6 +113,13 @@ def annotate(qs):
                       # A graduating result accepted: she has finished, never "not submitted" (review M2).
                       graduated_any=Exists(accepted(SemesterResult.objects.filter(
                           application=OuterRef('pk'), graduated=True)))))
+
+
+def _mentor_name(app_ref):
+    from apps.courses.models import PartnerAdmin
+    return (PartnerAdmin.objects.filter(mentor__assignments__application=app_ref,
+                                        mentor__assignments__ended_at__isnull=True)
+            .order_by('id').values('name')[:1])
 
 
 def _open_term(app_ref):
@@ -148,9 +169,14 @@ def below_minimum_q(custom=None):
     return below & cond
 
 
-def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdue=None):
+def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdue=None, mentoring=''):
     """`below` (from `below_minimum_q`) narrows to the students under their minimum; `overdue`
-    (from `overdue_q`) to those with a result past due and grace (S4b)."""
+    (from `overdue_q`) to those with a result past due and grace (S4b); `mentoring` (S7b) to
+    `no_mentor` or `asked_for_help` (an ANNOTATED queryset)."""
+    if mentoring == 'no_mentor':
+        qs = qs.filter(has_mentor=False)
+    elif mentoring == 'asked_for_help':
+        qs = qs.filter(ASKED_FOR_HELP_Q)
     if below is not None:
         qs = qs.filter(below)
     if overdue is not None:
@@ -181,7 +207,9 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdu
 
 
 SUMMARY_KEYS = ('in_programme', 'on_hold', 'probation', 'ready_to_close', 'closed', 'below_minimum',
-                'results_overdue')
+                'results_overdue', 'no_mentor', 'asked_for_help')
+#: The keys only a Mentoring-tab role is served (S7b; the view strips them for the rest).
+MENTORING_KEYS = ('no_mentor', 'asked_for_help')
 
 
 def summary(qs, below, overdue):
@@ -195,7 +223,10 @@ def summary(qs, below, overdue):
         ready_to_close=Count('id', filter=live & Q(maintenance_substate='ready_to_close')),
         closed=Count('id', filter=~live),
         below_minimum=Count('id', filter=live & below),
-        results_overdue=Count('id', filter=live & overdue))
+        results_overdue=Count('id', filter=live & overdue),
+        # S7b: the pills' counts, over the students in maintenance (closed files have no mentor).
+        no_mentor=Count('id', filter=live & Q(has_mentor=False)),
+        asked_for_help=Count('id', filter=live & ASKED_FOR_HELP_Q))
     return {k: row[k] or 0 for k in SUMMARY_KEYS}
 
 
@@ -253,10 +284,17 @@ def rows(apps):
                          and not app.pending_for_due and results_expectations.is_overdue(app.next_due, grace))),
             # A closed file has no next due date (review M2).
             'next_due': app.next_due if live else None,
-            'mentor': None,
+            'mentor': app.mentor_name or None,
+            'asked_for_help': _asked(app),
             'last_activity_at': app.last_activity_at,
         })
     return out
+
+
+def _asked(app):
+    from .mentoring import help_asked
+    h = help_asked(app)
+    return h['university'] or h['scholarship'] or h['flagged']
 
 
 def file_payload(app):
@@ -297,7 +335,8 @@ def file_payload(app):
         },
         'contract': {'exists': agreement is not None,
                      'status': agreement.status if agreement is not None else None},
-        'mentor': None,
+        'mentor': _mentor_summary(app),     # S7b (the view strips it for a role without the tab)
+        'asked_for_help': _help(app),       # S7b
         'letters': _letters_summary(app),   # S6b
         'last_activity_at': last_activity,
     }
@@ -359,6 +398,22 @@ def activity_dict(row):
         'meta': row.meta or {}, 'actor_email': row.actor_email, 'internal': row.internal,
         'created_at': row.created_at,
     }
+
+
+def _mentor_summary(app):
+    """The Overview's mentor card: the current mentor's name, since when and how many meetings."""
+    from .models import MentoringSession
+    a = _open_assignment(app).select_related('mentor').first()
+    if a is None:
+        return None
+    from .mentoring import mentor_name
+    return {'name': mentor_name(a.mentor), 'since': a.started_at,
+            'meetings': MentoringSession.objects.filter(assignment=a).count()}
+
+
+def _help(app):
+    from .mentoring import help_asked
+    return help_asked(app)
 
 
 def _letters_summary(app):

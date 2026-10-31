@@ -6337,8 +6337,9 @@
         "all": "All",
         "underperforming": "Underperforming",
         "overdue": "Results overdue",
-        "wantsMentor": "Wants a mentor",
-        "closed": "Closed"
+        "closed": "Closed",
+        "noMentor": "No mentor",
+        "askedForHelp": "Asked for help"
       },
       "col": {
         "name": "Name",
@@ -6408,7 +6409,6 @@
         "executed": "Signed and executed"
       },
       "later": {
-        "mentor": "Mentors are coming in a later update.",
         "letters": "Letters are coming in a later update.",
         "surveys": "Surveys are coming in a later phase."
       },
@@ -6444,7 +6444,16 @@
         "results_overdue": "Result not submitted (due {date})",
         "letter_issued": "Letter issued · {subject}",
         "letter_withdrawn": "Letter withdrawn · {subject}",
-        "letter_acknowledged": "Letter acknowledged by the student · {subject}"
+        "letter_acknowledged": "Letter acknowledged by the student · {subject}",
+        "mentor_assigned": "Mentor assigned: {mentor}",
+        "mentor_changed": "Mentor changed to {mentor} (was {was})",
+        "mentor_ended": {
+          "staff": "Mentoring with {mentor} ended",
+          "mentor_deactivated": "Mentoring with {mentor} ended: the mentor was deactivated",
+          "file_closed": "Mentoring with {mentor} ended: the file was closed"
+        },
+        "session_logged": "Mentoring meeting logged: {mode}, {minutes} min",
+        "session_logged_no_minutes": "Mentoring meeting logged: {mode}"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6619,7 +6628,109 @@
           "file_closed": "The file is closed, so this letter is not sent again.",
           "withdrawn": "This letter was withdrawn, so it is not sent again."
         }
-      }
+      },
+      "mentoring": {
+        "loadFailed": "The mentoring details could not be loaded.",
+        "readOnly": "This file is closed, so mentoring is read only.",
+        "notFilled": "Area not filled in yet",
+        "someone": "a staff member",
+        "open": "Open mentoring",
+        "card": "{name} · since {date} · {count} meetings",
+        "change": "Change mentor",
+        "cancel": "Cancel",
+        "current": {
+          "label": "Mentor",
+          "speaks": "Speaks {languages}",
+          "since": "Since {date}",
+          "assignedBy": "assigned by {name}",
+          "meetings": "{count} meetings",
+          "last": "last {date}",
+          "emailed": "\"You have a mentor\" emailed {date}",
+          "invited": "Invited, not signed in yet.",
+          "fromProfile": "Details come from the mentor's own profile."
+        },
+        "end": {
+          "open": "End mentoring",
+          "title": "End mentoring",
+          "confirm": "End mentoring",
+          "note": "{name}'s time with this scholar ends today and stays in the history below. Nobody is emailed."
+        },
+        "none": {
+          "title": "No mentor yet",
+          "assign": "Assign a mentor"
+        },
+        "help": {
+          "asked": "Asked for help with {what}.",
+          "university": "university applications",
+          "scholarship": "scholarship applications",
+          "and": " and ",
+          "flagged": "Staff flagged this scholar for mentoring.",
+          "chip": "Asked for help: {what}",
+          "flaggedChip": "Flagged for mentoring"
+        },
+        "form": {
+          "assignTitle": "Assign a mentor",
+          "changeTitle": "Change mentor",
+          "mentor": "Mentor",
+          "invitedOption": "{name} — invited, not signed in yet",
+          "scholarsNow": "{count} scholars",
+          "noneAvailable": "There is no other mentor to choose. Invite one on Organisation → Mentors.",
+          "reason": "Reason (staff only)",
+          "reasonPlaceholder": "For example: changed course",
+          "email": "Email the student \"You have a mentor\" with the mentor's name and contact",
+          "changeNote": "{name}'s time with this scholar ends today and stays in the history below. The system does not email mentors.",
+          "assignNote": "The system does not email mentors.",
+          "assign": "Assign"
+        },
+        "meetings": {
+          "title": "Meetings",
+          "log": "Log a meeting",
+          "date": "Date (DD-MM-YYYY)",
+          "how": "How",
+          "minutes": "Minutes (optional)",
+          "notes": "Notes (staff only — the student does not see these)",
+          "nextStep": "Next step (optional, staff only)",
+          "save": "Save meeting",
+          "none": "No meetings logged yet.",
+          "minutesShort": "{count} min",
+          "withBy": "With {mentor} · logged by {name}",
+          "nextStepLine": "Next step: {step}"
+        },
+        "mode": {
+          "in_person": "In person",
+          "video": "Video call",
+          "phone": "Phone call"
+        },
+        "history": {
+          "line": "Earlier mentor: {name}, {from} – {to}. {count} meetings.",
+          "reason": "Reason: {reason}"
+        },
+        "done": {
+          "assigned": "{name} is now the mentor.",
+          "assignedEmailed": "{name} is now the mentor. The student was emailed.",
+          "ended": "Mentoring with {name} has ended.",
+          "logged": "Meeting saved."
+        },
+        "error": {
+          "mentor_not_found": "That mentor cannot be found in this organisation.",
+          "mentor_inactive": "That mentor has been deactivated.",
+          "own_application": "A mentor cannot be assigned to their own application.",
+          "already_assigned": "That mentor is already this scholar's mentor.",
+          "file_closed": "This file is closed, so nothing can be changed.",
+          "conflict": "Someone else changed the mentor at the same moment. Reload the page and try again.",
+          "too_long": "That is too long. Shorten it and try again.",
+          "no_mentor": "This scholar has no mentor now.",
+          "bad_date": "Type the date as DD-MM-YYYY.",
+          "future_date": "A meeting cannot be in the future.",
+          "before_assignment": "That date is before this mentor was assigned.",
+          "bad_mode": "Choose how you met.",
+          "bad_minutes": "Minutes must be a whole number above 0.",
+          "notes_required": "Write a few words about the meeting.",
+          "generic": "That did not go through. Please try again."
+        }
+      },
+      "askedForHelp": "Asked for help",
+      "askedForHelpNote": "\"Asked for help\" means the student said yes or not sure to help with university or scholarship applications when applying, or staff flagged them for mentoring. Mentors and meetings never reach sponsors or partners."
     },
     "contracts": {
       "title": "Contract templates",
@@ -7631,7 +7742,8 @@
           "agreement_executed": "Agreement signed and in effect",
           "vircle_setup": "Set up your Vircle wallet",
           "closed_by_officer": "Application closed by our team",
-          "letter_issued": "A letter has been issued"
+          "letter_issued": "A letter has been issued",
+          "mentor_assigned": "You have a mentor"
         },
         "when": {
           "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
@@ -7663,7 +7775,8 @@
           "agreement_executed": "When every party has signed. Her copy of the signed agreement is attached.",
           "vircle_setup": "When her agreement takes effect: how to set up the wallet the bursary is paid into.",
           "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request.",
-          "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date."
+          "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date.",
+          "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor."
         },
         "language": {
           "en": "English",
@@ -7728,7 +7841,8 @@
           "award": "Award and contract",
           "results": "Results",
           "closure": "Closure",
-          "letters": "Letters"
+          "letters": "Letters",
+          "mentoring": "Mentoring"
         },
         "chip": {
           "en": "EN",
@@ -8289,7 +8403,8 @@
         "area": "Area",
         "languages": "Languages",
         "status": "Status",
-        "actions": "Actions"
+        "actions": "Actions",
+        "scholarsNow": "Scholars now"
       },
       "notFilled": "Not filled in yet",
       "activeSeen": "Active · last signed in {date}",
@@ -8313,7 +8428,7 @@
         "reactivateInvited": "{name} can sign in again. The invitation was sent again.",
         "notEmailed": "The email could not be sent. Try Resend."
       },
-      "note": "You can assign a mentor only after they have signed in and filled in their profile. A mentor is never deleted: Deactivate instead. Past meetings stay on each scholar's file.",
+      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
       "empty": "No mentors in this list.",
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8455,6 +8570,31 @@
       "pdfLang": {
         "en": "English",
         "ms": "Malay"
+      }
+    },
+    "mentoring": {
+      "tab": "Mentoring",
+      "title": "Your mentor",
+      "loadFailed": "Your mentor's details could not be loaded. Please try again.",
+      "lang": {
+        "en": "English",
+        "ms": "Malay",
+        "ta": "Tamil"
+      },
+      "email": "Email {name}",
+      "call": "Call {phone}",
+      "since": "Your mentor since {date}",
+      "meetings": "Your meetings",
+      "noMeetings": "No meetings yet.",
+      "mode": {
+        "in_person": "In person",
+        "video": "Video call",
+        "phone": "Phone call"
+      },
+      "contact": "Want a different mentor, or something is wrong? Write to {supportEmail}.",
+      "none": {
+        "title": "You do not have a mentor yet",
+        "body": "A mentor is someone who can guide you through your studies. If you would like one, write to {supportEmail}."
       }
     }
   }

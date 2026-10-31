@@ -1,5 +1,47 @@
 # Architectural Decisions — HalaTuju
 
+## Mentoring: one mentor at a time, staff act, never to their own application, the student sees no notes — 2026-11-01 (owner rulings, student maintenance S7b)
+
+**Context:** 7a gave mentors a sign-in and a profile. 7b makes them mentors of someone: an assignment per
+scholar, the meetings, a Mentoring tab on the scholar file and one on the student's My Bursary.
+
+**Decision:** (1) **One mentor at a time.** A change ENDS the open assignment (it stays, with its staff-only
+reason) and starts the new one, in one transaction under a row lock on the application; a partial unique index
+(`mentor_assignment_one_open`) refuses a second open row even if two requests race. (2) **Who acts:** super,
+org_admin and admin — the Mentors roster's readers (`mentoring.may_act` = `mentor_invite.may_read`) — inside
+the scholar file's own fence (another organisation's file is 404). A reviewer or QC who may open the file is
+refused the tab (403) and the web hides it, the mentor column and the two pills; finance, partners, sources and
+mentors are refused by the file itself. Mentors see nothing new (7c). (3) **Who may be assigned:** the
+application's own organisation's mentor, not deactivated — an invited mentor is allowed — and **never the
+student themselves**: refused when the mentor's login carries the profile's Supabase UID or a claimed alias
+UID, or the same email (case-blind) as the profile's contact email or the application's notify email
+(`own_application`; the picker never offers such a mentor). (4) **A closed file is read-only** (the
+maintenance predicate). (5) **Meetings** are logged only while an assignment is open, with its mentor; never
+in the future, never before the assignment started (local dates). Notes are required; minutes optional.
+(6) **Other doors end mentoring, with no email:** Deactivate and Revoke of a mentor end all their open
+assignments ("Mentor deactivated"); closing the file ends its one ("File closed"); Reactivate restores none.
+(7) **"You have a mentor"** goes to the STUDENT only, after the commit, when staff leave "Email the student"
+on — a site Toggle offered only when the organisation's switch is on (Student communications, Mentoring
+heading, en/ms/ta, editable; `may_send` at the send site). The phone line only when the mentor shares it.
+(8) **What the student sees** is an allowlist (`mentoring.student_payload`): the current mentor's name, area,
+languages, About, email, the phone only when shared, "since", and meetings as date + how. Never a photo, a
+note, a next step, minutes, a reason or a past mentor. The no-mentor state points to the organisation's own
+`{supportEmail}` — the contact the student's emails already give; no new contact source. (9) **The student's tab
+shows** when they have or had an assignment, or the organisation has at least one mentor who is not
+deactivated. (10) Mentors and meetings never reach sponsors or partners (tested on the payloads and by a
+source scan).
+
+**Alternatives considered:** QC / an assigned reviewer reading the tab — rejected (the brief names super,
+org_admin and admin; put to the lead at build time): mentors are the Mentors roster's people, whose readers are super / org_admin / admin. An invited
+mentor refused until signed in (the Mentors board's footnote) — rejected by the owner's ruling; the picker says
+"invited, not signed in yet" and the Mentors page note was reworded.
+
+**Trade-offs:** `MentorAssignment.application` is CASCADE in Django, like `letters` and `student_activity` (file
+records), not PROTECT. An award that falls back to the pool from a live wallet (`award_revert`) leaves its open
+assignment in place, unreachable on any screen until the file returns (not one of the owner's ending doors).
+
+**Revisit if:** mentors log their own meetings (7c), or a scholar may have more than one mentor.
+
 ## A genuine Bumiputera-only offer replaces the student's own pick; the issuer stands in for a hostel line; the matcher reads the degree catalogue (offer realignment, 2026-10-31)
 
 **Owner, 2026-10-31:** *"Before the fix, bumiputra courses were not shown; so students may have picked others. Now

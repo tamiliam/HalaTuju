@@ -69,7 +69,22 @@ export const roleOrgAdmin: ManualChapter = {
         remains &mdash; the same figures as the Payments page &mdash; with her last three payments and, for anyone
         who may open Spending, what she has spent this term by category. The <strong>Contract</strong> tab shows a
         contract signed on the platform: the date it took effect, who signed it, and the signed PDF. Anything else
-        reads &ldquo;No contract on file&rdquo;.</p></>
+        reads &ldquo;No contract on file&rdquo;.</p>
+        <p className="mt-2">The file&rsquo;s <strong>Mentoring</strong> tab is where you give a student a
+        mentor from <strong>Organisation &rarr; Mentors</strong> &mdash; one at a time. <strong>Change
+        mentor</strong> ends the current one (with a reason only staff see; it stays in the history) and starts the
+        new one; <strong>End mentoring</strong> ends it. A mentor who is invited but has not signed in yet can be
+        assigned; a deactivated one cannot, and nobody can be mentor to their own application. Leave
+        <strong> Email the student</strong> on and the student is sent &ldquo;You have a mentor&rdquo; with the
+        mentor&rsquo;s name and contact (the phone only if the mentor shares it) &mdash; the system never emails
+        the mentor. <strong>Log a meeting</strong> records the date, how you met and notes; notes and next steps
+        are for staff only. On My Bursary the student sees the mentor, the Email button (and Call, if the phone is
+        shared) and the meetings as dates. Deactivating a mentor, or closing the file, ends the mentoring. The
+        Scholars list has a <strong>Mentor</strong> column and two filters, <strong>No mentor</strong> and
+        <strong> Asked for help</strong> (the student asked for help with university or scholarship applications,
+        or was flagged for mentoring). &ldquo;You have a mentor&rdquo; is under <strong>Student communications
+        &rarr; Mentoring</strong>, where you can switch it off or change its wording. Mentors and meetings never
+        reach sponsors or partners.</p></>
       ),
     },
     {
