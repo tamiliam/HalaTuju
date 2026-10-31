@@ -138,7 +138,7 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    **7a** — the `mentor` role on the source-partner pattern (`Mentor`, `PartnerAdmin.mentor`,
    `Invitation.mentor`; scholarship 0194 + courses 0090), invite / resend / revoke / deactivate /
    reactivate, the mentor's own profile (the common `/admin/profile` with a Mentoring card), and the Mentors
-   page. **7a BUILT 2026-10-31, NOT LIVE** (branch `maint-s7`). **7b** — `MentorAssignment` /
+   page. **7a LIVE 2026-10-31** (main f0bcc0f0; api-01218-7sr, web-01041-xhh). **7b** — `MentorAssignment` /
    `MentoringSession`, the Mentoring tab on the scholar file, the student's Mentoring tab, the "Scholars now"
    column and the "Asked for help" filter.
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,

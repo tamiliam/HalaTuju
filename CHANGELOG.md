@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 7a — mentors log in (not yet live) - 2026-10-31
+## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
 Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`
 (Sprint 7 split into 7a / 7b). Built on branch `maint-s7`. **Migrate first, by hand: scholarship 0194, then

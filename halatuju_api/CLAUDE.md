@@ -1107,7 +1107,11 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### ⚠ STATE AT 2026-10-31 — STUDENT MAINTENANCE SPRINT 7a BUILT, NOT LIVE (branch `maint-s7`)
+### ⚠ STATE AT 2026-10-31 — STUDENT MAINTENANCE SPRINT 7a LIVE (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
+
+Migrations scholarship 0194 and courses 0090 APPLIED BY HAND 2026-10-31 and recorded — never re-apply that DDL.
+Retro: `docs/retrospectives/retrospective-2026-10-31-maintenance-s7a.md`. Open from the review: TD-440 (staff
+Resend, pre-existing). **NEXT = Sprint 7b** (assignments, meetings, the Mentoring tabs, "You have a mentor").
 
 **What it is.** Mentors log in, on the source-partner pattern: role `mentor`, `scholarship.Mentor`
 (`PartnerAdmin.mentor`, `Invitation.mentor`), deny by default (`mentor_methods`), the Mentors page
