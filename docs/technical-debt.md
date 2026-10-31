@@ -132,9 +132,11 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 9
+### Now — money, identity, eligibility or security — 10
 Class A at any size, and class B that is small or medium. Schedule these first.
 
+
+- **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7110,3 +7112,17 @@ OLD web saves the phone there during the rollout; the view refuses a blank phone
 (`staff_contact.phone_refusal`), the same rule as `admin/me/`. **Fix once the S2 web is live:** make both
 read-only on that serializer (serializers_admin.py is at its 1026-line allowance — add them to a
 `read_only_fields` on the existing Meta line, never grow the file), and keep the GET serving them. *(B · S)*
+
+### [TD-440] Staff Resend can reset the password of a login the person brought with them - high
+
+**Raised 2026-10-31 by the student maintenance S7a adversarial review (pre-existing, staff path).**
+`get_admin` (`courses/views_admin.py` `_find_admin`) links a staff row with no UID to the caller's VERIFIED email
+on ANY admin request, a refused one too, without stamping `first_seen_at` (only `admin/role/` does).
+`AdminResendView.post` (`courses/views_staff.py` ~355–373) checks only `is_active`, then calls
+`staff_reinvite.reissue_credential(target)`, which writes a temporary password onto ANY row that has a UID. So
+a staff invitee who signs in with their own existing login (a Google account, or one they already had) and has
+not yet reached `admin/role/` can have their own password replaced by a Resend. The S7a mentor path is fixed
+(`mentor_invite.has_signed_in`; a password is reissued only when the newest invitation issued one). **Fix:**
+the same rule on the staff path — reissue only when the newest staff invitation has `credential_issued`, and
+treat a UID with no issued credential as signed in for Resend; regression test with the attach-then-Resend
+chain. *(A · S)*
