@@ -58,6 +58,10 @@ NO_DOOR = {
                            'override (CLAUDE.md, How a change reaches production, item 12): preview, '
                            '--apply --koko-only before the deploy, --apply after. Owner-gated.'),
     'repair_chosen_programme': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_staff_activity': ('Common profile S4 (2026-10-31) — run ONCE at the S5 deploy point through '
+                                'the release-decisions job args override (CLAUDE.md, How a change '
+                                'reaches production, item 12): --dry-run, then --apply, AFTER the API '
+                                'deploy. Idempotent; lead-gated.'),
     'repair_interview_credit': 'TD-234 — predates the guard; ran locally with exported prod creds.',
 }
 

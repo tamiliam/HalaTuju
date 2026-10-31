@@ -6,11 +6,11 @@ Part of the `views_admin` package. Every name below is re-exported from
 """
 import logging
 
-from django.conf import settings
 from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.response import Response
 
+from .. import staff_activity
 from ..models import OrgRequest, OrgRequestAnalysis, OrgRequestComment
 from ..serializers_admin import OrgRequestOrgSerializer, OrgRequestOwnerSerializer
 from .base import _AdminBase
@@ -50,7 +50,8 @@ class _OrgRequestsBase(_AdminBase):
 
     def _flag(self):
         """Returns an error Response (404) when the feature is dark, else None."""
-        if not getattr(settings, 'REQUESTS_ENABLED', False):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.requests_live():
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return None
 
@@ -73,10 +74,11 @@ class _OrgRequestsBase(_AdminBase):
     # ── role prologues (flag already assumed checked by the caller) ──────────────
     def _org_side(self, request):
         """Caller must be an org_admin or super (the roles that OPEN the Requests area)."""
+        from .. import surface_gates
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not surface_gates.requests_role(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -179,6 +181,7 @@ class AdminOrgRequestListView(_OrgRequestsBase):
                 steps_to_reproduce=request.data.get('steps_to_reproduce') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_RAISED, req)   # common profile S4
         # Best-effort post-commit: notify the owner + auto-run the AI reviewer (never fails create).
         try:
             from .. import emails
@@ -313,6 +316,7 @@ class AdminOrgRequestApproveView(_OrgRequestsBase):
             req = org_requests.approve(req, admin, by_role=by_role)
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_APPROVED, req, meta={'role': by_role})
         try:
             from .. import emails
             emails.send_org_request_accepted_email(req)
@@ -377,6 +381,7 @@ class AdminOrgRequestDeclineView(_OrgRequestsBase):
                                        reason=request.data.get('reason') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
+        staff_activity.record(admin, staff_activity.ORG_REQUEST_DECLINED, req, meta={'role': by_role})
         return Response(self._serialize(admin, req))
 
 

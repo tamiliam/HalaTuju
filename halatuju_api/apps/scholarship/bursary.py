@@ -536,7 +536,7 @@ def _maybe_activate(agreement):
         app.save(update_fields=fields)
 
 
-def countersign_foundation(agreement, *, by_name):
+def countersign_foundation(agreement, *, by_name, actor=None):
     """Stamp the Foundation's countersignature and re-render/regenerate the PDF so the
     countersignature appears in the artefact. Best-effort on the PDF: a render failure still stamps
     the fields (the signature record is what binds). The Foundation signs LAST, so this normally
@@ -552,6 +552,9 @@ def countersign_foundation(agreement, *, by_name):
     # distribute the signed PDF (student notice + witness/org copies + Drive).
     if agreement.application.status == 'active':
         distribute_executed_agreement(agreement)
+    from . import staff_activity     # common profile S4: the super who countersigned (never raises)
+    staff_activity.record(actor, staff_activity.CONTRACT_COUNTERSIGNED, agreement.application,
+                          meta={'agreement': agreement})
     return agreement
 
 

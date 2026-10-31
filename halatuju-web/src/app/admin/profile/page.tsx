@@ -10,7 +10,7 @@ import {
   type AdminMe, type AdminMeCard, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
 import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
-import { cardsFor, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
+import { SIDE_CARDS, cardsFor, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
 import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
 import { lazySource } from '@/components/source/LazySource'
@@ -34,6 +34,7 @@ const CARDS: Record<ProfileCardId, ComponentType<CardProps>> = {
   takingPart: lazySource(() => loadCards().then((m) => m.TakingPartCard)),
   organisation: lazySource(() => loadCards().then((m) => m.OrganisationCard)),
   signin: lazySource(() => loadCards().then((m) => m.SignInCard)),
+  activity: lazySource(() => loadCards().then((m) => m.ActivityCard)),
 }
 
 const sourceFormOf = (d: SourceProfile): SourceForm => ({
@@ -69,8 +70,9 @@ const ME_REFUSALS = ['name_required', 'name_too_long', 'phone_required', 'phone_
  *   `admin/me/password/`), not part of Save.
  *
  * ⚠ A SOURCE USER IS REFUSED EVERY STAFF ENDPOINT (deny by default), so its page calls only
- * `admin/me/` GET/PATCH, `admin/me/photo/`, `admin/me/password/` and `admin/source/profile/`
- * GET/PATCH — `components/source/noStaffCalls.test.tsx` holds it to that.
+ * `admin/me/` GET/PATCH, `admin/me/photo/`, `admin/me/password/`, `admin/source/profile/`
+ * GET/PATCH and (the My activity card's own read, S5) `admin/me/activity/` GET —
+ * `components/source/noStaffCalls.test.tsx` holds it to that.
  *
  * ⚠ THE FIRST-SIGN-IN HOLD STAYS REVIEWER-ROLE ONLY. A Reviewer whose compulsory fields are missing
  * is held here (the layout guard) and sent on to Applications by the save that completes them; a
@@ -260,60 +262,77 @@ export default function AdminProfilePage() {
     onPhoto,
   }
 
-  return (
-    <form onSubmit={save} className="space-y-6" data-testid="admin-profile">
-      <h1 className="text-2xl font-bold text-ground-900">{t('admin.profile')}</h1>
+  const main = cards.filter((id) => !SIDE_CARDS.has(id))
+  const side = cards.filter((id) => SIDE_CARDS.has(id))
 
-      {gated && (
-        <div className={`rounded-lg p-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
-          <p className={`text-sm font-medium ${missing.length ? 'text-caution-900' : 'text-positive-800'}`}>
-            {missing.length ? t('admin.reviewer.onboarding.title') : t('admin.reviewer.onboarding.allSet')}
-          </p>
-          {missing.length > 0 && (
-            <>
-              <p className="text-sm text-caution-800 mt-1">{t('admin.reviewer.onboarding.intro')}</p>
-              <ul className="mt-1 list-disc ml-5 text-sm text-caution-800">
+  // S5: two columns from `xl` up — the cards and Save on the left, My activity at 380 px on the
+  // right; below that ONE column, My activity last. `min-w-0` on both, so a long name wraps inside
+  // its card instead of pushing the page sideways at 360 px.
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-ground-900">{t('admin.profile')}</h1>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+        <form onSubmit={save} className="min-w-0 space-y-6" data-testid="admin-profile">
+          {gated && (
+            <div className={`rounded-lg p-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
+              <p className={`text-sm font-medium ${missing.length ? 'text-caution-900' : 'text-positive-800'}`}>
+                {missing.length ? t('admin.reviewer.onboarding.title') : t('admin.reviewer.onboarding.allSet')}
+              </p>
+              {missing.length > 0 && (
+                <>
+                  <p className="text-sm text-caution-800 mt-1">{t('admin.reviewer.onboarding.intro')}</p>
+                  <ul className="mt-1 list-disc ml-5 text-sm text-caution-800">
+                    {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* S7a: a mentor who has not yet named an area is welcomed, never held (the MentorProfile board). */}
+          {isMentor && !saved.mentoringArea && (
+            <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="mentor-welcome">
+              <p className="text-sm text-info-900">{t('admin.mentors.profile.welcome')}</p>
+            </div>
+          )}
+
+          {/* Anyone else holding `review`: a reminder, never a block (owner ruling 2026-10-31). */}
+          {remind && (
+            <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="reviewer-reminder">
+              <p className="text-sm font-medium text-info-900">{t('admin.myProfile.reminderTitle')}</p>
+              <p className="text-sm text-info-800 mt-1">{t('admin.myProfile.reminderIntro')}</p>
+              <ul className="mt-1 list-disc ml-5 text-sm text-info-800">
                 {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
               </ul>
-            </>
+            </div>
           )}
-        </div>
-      )}
 
-      {/* S7a: a mentor who has not yet named an area is welcomed, never held (the MentorProfile board). */}
-      {isMentor && !saved.mentoringArea && (
-        <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="mentor-welcome">
-          <p className="text-sm text-info-900">{t('admin.mentors.profile.welcome')}</p>
-        </div>
-      )}
+          {main.map((id) => {
+            const Card = CARDS[id]
+            return <Card key={id} state={state} />
+          })}
 
-      {/* Anyone else holding `review`: a reminder, never a block (owner ruling 2026-10-31). */}
-      {remind && (
-        <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="reviewer-reminder">
-          <p className="text-sm font-medium text-info-900">{t('admin.myProfile.reminderTitle')}</p>
-          <p className="text-sm text-info-800 mt-1">{t('admin.myProfile.reminderIntro')}</p>
-          <ul className="mt-1 list-disc ml-5 text-sm text-info-800">
-            {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {cards.map((id) => {
-        const Card = CARDS[id]
-        return <Card key={id} state={state} />
-      })}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={saving || !draft.name.trim() || !dirty || blocked}
-          title={dirty ? undefined : t('common.nothingToSave')}
-          className="w-full sm:w-auto px-8 bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
-          {saving ? t('admin.saving') : t('common.save')}
-        </button>
-        {message && (
-          <p ref={messageRef} tabIndex={-1} role={message.ok ? 'status' : 'alert'}
-            className={`text-sm outline-none ${message.ok ? 'text-positive-700' : 'text-critical-600'}`}>{message.text}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={saving || !draft.name.trim() || !dirty || blocked}
+              title={dirty ? undefined : t('common.nothingToSave')}
+              className="w-full sm:w-auto px-8 bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
+              {saving ? t('admin.saving') : t('common.save')}
+            </button>
+            {message && (
+              <p ref={messageRef} tabIndex={-1} role={message.ok ? 'status' : 'alert'}
+                className={`text-sm outline-none ${message.ok ? 'text-positive-700' : 'text-critical-600'}`}>{message.text}</p>
+            )}
+          </div>
+        </form>
+        {side.length > 0 && (
+          <aside className="min-w-0 space-y-6">
+            {side.map((id) => {
+              const Card = CARDS[id]
+              return <Card key={id} state={state} />
+            })}
+          </aside>
         )}
       </div>
-    </form>
+    </div>
   )
 }

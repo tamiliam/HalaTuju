@@ -131,12 +131,16 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 11
+### Now — money, identity, eligibility or security — 10
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 
-- **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. Narrowed 2026-10-31: `reissue_credential` now never resets a login that is also a student's or sponsor's. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
 - **TD-441** — An admin role (mentor or staff) on a student's or sponsor's own login has side effects: a student's claimed-profile alias stops working, a sponsor-portal sign-in counts as the mentor accepting, and the `get_admin` link is not a compare-and-set. *(B · M · raised 2026-10-31 by the S7a follow-up review; pre-existing for staff)*
+- **TD-444** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
+- **TD-442** — A QC reject runs `reopen_decision` (its own atomic block) and then `admin_reject`; if the decline raises, the case stays reopened with a 400 and no activity row. *(B · S · raised 2026-10-31 by the common profile S4 review, L3; pre-existing)*
+- **TD-443** — `staff_footprint` ignores most email stamps (assigner, closer, recommender, resolution, permission changer, reopener, credit signers, invoices, receipts, templates, vetting, merchant notes, tranches), so a staff row with real history can be deleted. *(B · M · raised 2026-10-31 by the common profile S4 review, M1; pre-existing)*
+- **TD-445** — My activity: a VISIBLE subject with an empty name arrives with the server's ENGLISH neutral word as its label (`label or hidden`), so ms/ta show e.g. "Menjemput an invitation". Low.
+- **TD-446** — My activity: the card reloads to page one on every sign-in token refresh (the effect depends on `token`), losing the reader's Show older place. Low.
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7113,7 +7117,25 @@ OLD web saves the phone there during the rollout; the view refuses a blank phone
 read-only on that serializer (serializers_admin.py is at its 1026-line allowance — add them to a
 `read_only_fields` on the existing Meta line, never grow the file), and keep the GET serving them. *(B · S)*
 
-### [TD-440] Staff Resend can reset the password of a login the person brought with them - high
+### [TD-444] Staff invitations never record who sent them (`invited_by` is always NULL) - low
+
+**Found 2026-10-31 by the common profile S3 build.** `courses/views_admin._record_invitation` sets
+`Invitation.invited_by=getattr(request, '_inviting_admin', None)`, and nothing ever sets
+`request._inviting_admin` — so every staff invitation row has `invited_by` NULL. The new activity list is
+not affected (its `invitation_sent` row takes the actor passed explicitly to `invitations.record_send`).
+**Fix:** pass the inviting admin into `_record_invitation` the same way, and add a test that a staff invite
+stores `invited_by`. S4's back-fill cannot rebuild `invitation_sent` rows for old staff invites until then
+(no actor to write them under). *(B · S)*
+
+### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
+
+**CLOSED 2026-10-31 by the TD-440 sprint.** `staff_reinvite.reissue_credential` — the one door the staff, source and
+mentor Resends rotate a password through — now rotates only when the row's newest invitation issued a password
+(`staff_lifecycle.credential_was_issued`), never on a student's, alias's or sponsor's login, and never on a login the
+LIVE Supabase record shows was used with a password of its own (`_chose_own_password`, the re-invite's own test —
+it covers backfilled invitations that guessed "issued" and a `first_seen_at` never stamped); the staff Resend
+refuses a row that has signed in (400 `already_joined`), like the other two. Regression tests
+`test_td440_*` in `courses/tests/test_admin_auth.py`. Live 2026-10-31: no active staff row was waiting with a UID.
 
 **Raised 2026-10-31 by the student maintenance S7a adversarial review (pre-existing, staff path).**
 `get_admin` (`courses/views_admin.py` `_find_admin`) links a staff row with no UID to the caller's VERIFIED email
@@ -7146,3 +7168,41 @@ address may be invited as a mentor, as it already could as staff). All three are
    key; a staff email move committing in between can be overwritten (milliseconds). The worst outcome (a Resend
    resetting the student's password) is closed by the `reissue_credential` guard; a wrong-person link is not.
    **Fix:** link with `filter(pk=..., email__iexact=..., supabase_user_id__isnull=True).update(...)`. *(B · M)*
+
+### [TD-442] A QC reject can leave a case reopened with no decline - medium
+
+**Raised 2026-10-31 by the common profile S4 adversarial review (L3); pre-existing.** In
+`views_admin/verdict.py` `AdminQcDecisionView` the reject branch calls `reopen_service.reopen_decision` (which commits
+in its own `transaction.atomic()`), then `admin_reject`. If `admin_reject` raises `ValueError` the view answers 400,
+but the reopen has already committed: the case sits reopened, nobody declined it, and no `qc_decision` row is written.
+The QC-accept branch saves before `publish_profile_to_pool`, with the same shape. **Fix:** wrap the reject branch in
+one `transaction.atomic()` (the decline email must then go `on_commit`), and test that a failing decline leaves the
+case exactly as it was. *(B · S)*
+
+### [TD-443] `staff_footprint` misses most of a staff member's history - medium
+
+**Raised 2026-10-31 by the common profile S4 adversarial review (M1); pre-existing.** `staff_footprint.footprint`
+decides whether a staff row may be deleted, but it ignores most email stamps: assigner `by_email`, `closed_by`,
+`recommended_by`, resolution `created_by` / `resolved_by`, permission `changed_by_email`, `reopened_by`, credit
+signers, invoice / receipt / declaration stamps, template stamps, membership `vetted_by`, merchant notes and tranche
+`actioned_by`. An admin, finance or org_admin whose work is only of those kinds can be deleted, and a new row on the
+same address (a shared mailbox) then looks like the author. The S4 back-fill is already safe (it maps an email only
+to a row created before the event). **Fix:** widen `footprint` to these stamps and test each one. *(B · M)*
+
+### [TD-445] My activity shows an English word as a name when a visible subject has none - low
+
+**Raised 2026-10-31 by the common profile S5 code review.** `staff_activity_read._served_subject` sends
+`state: 'visible'` with `label: label or hidden` — when the subject the viewer may see has an EMPTY name (an
+invitation whose `name` the PII purge blanked; a student profile with no name) the label is the server's English
+neutral word, and the web (`lib/profileActivity.ts` `subjectText`) prints a visible label verbatim: ms "Menjemput
+an invitation", ta "அழைப்பு அனுப்பினீர்கள்: an invitation". Nothing hidden leaks; words only. **Fix:** the server
+sends `label: null` for an unnamed visible subject and the web uses its own translated word (keep the link for a
+student); test both. *(B · S)*
+
+### [TD-446] My activity reloads to page one when the sign-in token refreshes - low
+
+**Raised 2026-10-31 by the common profile S5 code review.** `components/adminProfile/ActivityCard.tsx`: the load
+effect depends on `token`, and `admin-auth-context` hands out a new `access_token` string on every
+`TOKEN_REFRESHED` (about hourly, or on tab focus near expiry). Someone several "Show older" pages deep sees the list
+blank, "Loading", and page one again. No wrong data. **Fix:** read the token through a ref and keep it out of the
+effect's dependencies; a test that a token change does not refetch. *(B · S)*

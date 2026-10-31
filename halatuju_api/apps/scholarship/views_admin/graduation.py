@@ -112,7 +112,8 @@ class AdminBursaryCountersignView(_BursaryAdminBase):
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         from .. import bursary
         from ..serializers import BursaryAgreementSerializer
-        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '')
+        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '',
+                                       actor=admin)
         return Response(BursaryAgreementSerializer(agreement).data)
 
 
@@ -150,7 +151,7 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             agreement = source_witness.record_once(
                 agreement, org=org,
                 by_name=getattr(admin, 'name', '') or '',
-                witness_name=request.data.get('witness_name', '') or '')
+                witness_name=request.data.get('witness_name', '') or '', actor=admin)
         except source_witness.AlreadyWitnessed:
             return Response({'error': 'already_witnessed', 'code': 'already_witnessed'},
                             status=status.HTTP_409_CONFLICT)

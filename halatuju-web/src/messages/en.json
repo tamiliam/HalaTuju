@@ -5151,7 +5151,129 @@
         "mentoring_area_too_long": "Keep the area of mentoring to 120 characters."
       },
       "assignerSees": "The people who assign your cases can see this number.",
-      "othersStillIn": "Your password is changed, but other devices may still be signed in. Sign out of them from those devices."
+      "othersStillIn": "Your password is changed, but other devices may still be signed in. Sign out of them from those devices.",
+      "activity": {
+        "title": "My activity",
+        "filterLabel": "Show",
+        "filter": {
+          "all": "All",
+          "students": "Students",
+          "money": "Money",
+          "profile": "Profile and sign-in"
+        },
+        "group": {
+          "today": "Today",
+          "week": "This week",
+          "earlier": "Earlier"
+        },
+        "rebuilt": "rebuilt",
+        "showOlder": "Show older",
+        "moreError": "We could not load older entries. Try again.",
+        "footer": "Only you can see this list. Older entries were rebuilt from past records, so some may be missing.",
+        "empty": "Nothing here yet. What you do in the console will be listed here.",
+        "emptyFiltered": "Nothing of this kind yet.",
+        "error": "We could not load your activity.",
+        "retry": "Try again",
+        "unknownVerb": "Took an action in the console",
+        "something": "something",
+        "somethingRemoved": "something (removed)",
+        "signedAs": {
+          "maker": "as the preparer",
+          "checker": "as the checker",
+          "approver": "as the approver"
+        },
+        "subject": {
+          "application": {
+            "hidden": "a student",
+            "removed": "a student (removed)"
+          },
+          "staff": {
+            "hidden": "a team member",
+            "removed": "a team member (removed)"
+          },
+          "invitation": {
+            "hidden": "someone",
+            "removed": "someone (invitation removed)"
+          },
+          "payment_run": {
+            "hidden": "a payment run",
+            "removed": "a payment run (removed)",
+            "named": "payment run {label}"
+          },
+          "credit": {
+            "hidden": "a credit",
+            "removed": "a credit (removed)"
+          },
+          "contract_template": {
+            "hidden": "a contract template",
+            "removed": "a contract template (removed)",
+            "named": "contract template {label}"
+          },
+          "sponsor": {
+            "hidden": "a benefactor",
+            "removed": "a benefactor (removed)"
+          },
+          "invoice": {
+            "hidden": "an invoice",
+            "removed": "an invoice (removed)",
+            "named": "invoice {label}"
+          },
+          "org_request": {
+            "hidden": "a request",
+            "removed": "a request (removed)",
+            "named": "request {label}"
+          },
+          "merchant_flag": {
+            "hidden": "a shop",
+            "removed": "a shop (removed)"
+          }
+        },
+        "verb": {
+          "invitation_sent": "Invited {subject}",
+          "invitation_accepted": "Accepted your invitation",
+          "first_sign_in": "Signed in for the first time",
+          "profile_updated": "Updated your profile",
+          "permissions_changed": "Changed what {subject} can do",
+          "assigned": "Assigned the case of {subject}",
+          "unassigned": "Unassigned the case of {subject}",
+          "query_raised": "Raised a query with {subject}",
+          "query_resolved": "Closed a query for {subject}",
+          "interview_submitted": "Submitted the interview findings for {subject}",
+          "verdict_recorded": "Recorded a verdict for {subject}",
+          "verify_accept": "Verified {subject} and sent the recommendation to QC",
+          "decline_sent_to_qc": "Sent a decline for {subject} to QC",
+          "declined": "Declined the application from {subject}",
+          "qc_decision": "Made the QC decision for {subject}",
+          "decision_reopened": "Reopened the decision for {subject}",
+          "case_closed": "Closed the case of {subject}",
+          "contract_witnessed": "Witnessed the agreement of {subject}",
+          "payment_run_created": "Prepared {subject}",
+          "payment_run_signed": "Signed {subject}",
+          "tranche_released": "Released a payment to {subject}",
+          "tranche_withheld": "Withheld a payment from {subject}",
+          "tranche_returned": "Recorded a returned payment for {subject}",
+          "credit_recorded": "Recorded {subject}",
+          "credit_checked": "Checked {subject}",
+          "credit_confirmed": "Confirmed {subject}",
+          "contract_template_created": "Created {subject}",
+          "contract_template_vetted": "Vetted {subject}",
+          "contract_template_submitted": "Submitted {subject} for deployment",
+          "contract_template_deployed": "Deployed {subject}",
+          "contract_countersigned": "Countersigned the agreement of {subject}",
+          "benefactor_vetted": "Vetted {subject}",
+          "invoice_issued": "Issued {subject}",
+          "invoice_sent": "Sent {subject}",
+          "invoice_voided": "Voided {subject}",
+          "payment_declared": "Declared a payment against {subject}",
+          "payment_confirmed": "Confirmed a payment against {subject}",
+          "payment_rejected": "Rejected a declared payment against {subject}",
+          "org_request_raised": "Raised {subject}",
+          "org_request_approved": "Approved {subject}",
+          "org_request_declined": "Declined {subject}",
+          "merchant_flag_opened": "Flagged {subject}",
+          "merchant_flag_closed": "Cleared the flag on {subject}"
+        }
+      }
     },
     "superAdmin": "Super Admin",
     "loginTitle": "Partner Login",

@@ -28,6 +28,7 @@ from django.utils import timezone
 
 from . import award
 from . import gemini
+from . import staff_activity
 from .models import ContractClause, ContractTemplate, PaymentScheduleRow
 
 # The three languages the module carries. English is authoritative.
@@ -252,7 +253,8 @@ def _require_draft(template):
 # Authoring (draft-only)
 # ─────────────────────────────────────────────────────────────────────────────
 @transaction.atomic
-def create_template(organisation, version, *, programme=None, created_by_email='', copy_from=None):
+def create_template(organisation, version, *, programme=None, created_by_email='', copy_from=None,
+                    actor=None):
     """Create a new DRAFT template for ``organisation``, written for the gift ``programme``
     (REQUIRED since TD-229 — `programme_required` without one; a gift of another organisation
     is refused the same way). With ``copy_from`` (a ContractTemplate), clone its config +
@@ -276,6 +278,9 @@ def create_template(organisation, version, *, programme=None, created_by_email='
     )
     if copy_from is not None:
         _clone_content(copy_from, template)
+    # Common profile S4: the person who pressed the button gets the row on their own activity list
+    # (best-effort; never raises). A management command passes no actor and writes nothing.
+    staff_activity.record(actor, staff_activity.CONTRACT_TEMPLATE_CREATED, template)
     return template
 
 
@@ -415,7 +420,7 @@ def replace_schedule(template, rows):
     return template.schedule_rows.all()
 
 
-def record_vetting(template, *, vetted_by_name, vetted_on, attested_by_email):
+def record_vetting(template, *, vetted_by_name, vetted_on, attested_by_email, actor=None):
     """Record the lawyer-vetting attestation (who + date) — the T2 gate."""
     _require_draft(template)
     if not (vetted_by_name and vetted_on and attested_by_email):
@@ -428,6 +433,7 @@ def record_vetting(template, *, vetted_by_name, vetted_on, attested_by_email):
         'vetted_by_name', 'vetted_on', 'vetting_attested_by_email',
         'vetting_attested_at', 'updated_at',
     ])
+    staff_activity.record(actor, staff_activity.CONTRACT_TEMPLATE_VETTED, template)
     return template
 
 
@@ -876,7 +882,7 @@ def validate_for_deployment(template):
 # ─────────────────────────────────────────────────────────────────────────────
 # Lifecycle
 # ─────────────────────────────────────────────────────────────────────────────
-def submit_for_deployment(template, *, submitted_by_email=''):
+def submit_for_deployment(template, *, submitted_by_email='', actor=None):
     """draft → pending_deployment. Refuses unless validation passes."""
     if template.status != 'draft':
         raise ContractsError('not_draft')
@@ -891,6 +897,7 @@ def submit_for_deployment(template, *, submitted_by_email=''):
     template.save(update_fields=[
         'status', 'submitted_by_email', 'submitted_by_at', 'updated_at',
     ])
+    staff_activity.record(actor, staff_activity.CONTRACT_TEMPLATE_SUBMITTED, template)
     return template
 
 
@@ -908,7 +915,7 @@ def revert_to_draft(template):
 
 
 @transaction.atomic
-def deploy(template, *, deployed_by_email='', is_super=False):
+def deploy(template, *, deployed_by_email='', is_super=False, actor=None):
     """pending_deployment → active (SUPER only). Atomically archives THE SAME GIFT's
     previous active version — exactly one active template per GIFT (TD-229; the
     `uniq_contract_template_active_per_programme` index backs it). A template with no gift
@@ -939,6 +946,7 @@ def deploy(template, *, deployed_by_email='', is_super=False):
     template.save(update_fields=[
         'status', 'deployed_by_email', 'deployed_by_at', 'updated_at',
     ])
+    staff_activity.record(actor, staff_activity.CONTRACT_TEMPLATE_DEPLOYED, template)
     return template
 
 

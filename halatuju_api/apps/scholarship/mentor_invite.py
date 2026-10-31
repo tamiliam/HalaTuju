@@ -151,17 +151,19 @@ def invite(caller, *, organisation, email, name):
     except IntegrityError:
         # The address was taken between the check and the write (`PartnerAdmin.email` is unique).
         return Invited('already_staff', None, None, None, False, False, False)
-    emailed = send(inv, made.account, organisation, made.temp_password, made.google)
+    emailed = send(inv, made.account, organisation, made.temp_password, made.google, actor=caller)
     return Invited(None, mentor, made.account, inv, made.google, made.already_registered, emailed)
 
 
-def send(inv, account, organisation, temp_password, google):
-    """Send the mentor letter for ``inv`` and record whether it went. Returns ``emailed``."""
+def send(inv, account, organisation, temp_password, google, *, actor=None):
+    """Send the mentor letter for ``inv`` and record whether it went. Returns ``emailed``.
+    ``actor`` (the staff member who pressed Invite / Resend / changed the address) gets the
+    `invitation_sent` row on their own activity list (common profile S3)."""
     from .emails import send_mentor_invitation_email
     ok, error = send_mentor_invitation_email(
         account.email, name=account.name, org_name=getattr(organisation, 'name', ''),
         temp_password=temp_password, google=google)
-    invitations.record_send(inv, ok, error)
+    invitations.record_send(inv, ok, error, actor=actor)
     return ok
 
 
@@ -169,11 +171,9 @@ def _send_again(caller, mentor, login):
     """A fresh credential (where we issued one) on a fresh invitation, and the letter: ``(emailed,
     error)``. Shared by Resend and by Reactivate of a mentor who never signed in."""
     from apps.courses.views_admin import is_google_email
-    # Review fix: a password is reissued ONLY onto a login we issued one for (the newest invitation
-    # says so) — never onto a login somebody brought with them.
-    newest = _newest_invitation(login)
-    temp_password, err = (staff_reinvite.reissue_credential(login)
-                          if newest is not None and newest.credential_issued else (None, None))
+    # A password is reissued ONLY onto a login we issued one for — never onto one somebody brought
+    # with them: `reissue_credential` holds that rule for every Resend since TD-440.
+    temp_password, err = staff_reinvite.reissue_credential(login)
     if err:
         return False, err
     inv = invitations.create_or_refresh(
@@ -181,7 +181,7 @@ def _send_again(caller, mentor, login):
         organisation=mentor.organisation, invited_by=caller, partner_admin=login,
         credential_issued=bool(temp_password), mentor=mentor)
     google = temp_password is None and is_google_email(login.email)
-    return send(inv, login, mentor.organisation, temp_password, google), None
+    return send(inv, login, mentor.organisation, temp_password, google, actor=caller), None
 
 
 def resend_invite(caller, mentor, login):
@@ -330,7 +330,8 @@ def _move_address(caller, mentor, login, name, email):
         return False, False, ('managed_by_mentor' if isinstance(lost, _MoveLost) else 'already_staff')
     if old_uid and old_uid != new_login.uid and plan in ('delete', 'kill'):
         staff_lifecycle.retire_login(old_uid, plan, account)
-    emailed = send(inv, login, mentor.organisation, new_login.temp_password, new_login.google)
+    emailed = send(inv, login, mentor.organisation, new_login.temp_password, new_login.google,
+                   actor=caller)
     return True, emailed, None
 
 

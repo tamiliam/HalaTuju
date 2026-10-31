@@ -14,8 +14,8 @@ import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { adminLanding, mustCompleteProfile } from '@/lib/adminLanding'
 import {
-  PROFILE_CARDS, accessLines, cardsFor, profileContext, reviewsCases, worksWithStudents,
-  type ProfileCardContext,
+  PROFILE_CARDS, SIDE_CARDS, accessLines, activityFilters, cardsFor, profileContext, reviewsCases,
+  worksWithStudents, type ProfileCardContext,
 } from '@/lib/profileCards'
 
 const PRESET: Record<string, string[]> = {
@@ -38,16 +38,16 @@ const REVIEWER_CARDS = ['qualifications', 'address', 'takingPart']
 
 describe('each role sees exactly its cards, in page order', () => {
   it.each([
-    ['super', ['you', 'contact', 'access', 'signin']],
-    ['org_admin', ['you', 'contact', 'access', 'signin']],
-    ['admin', ['you', 'contact', 'access', 'signin']],
-    ['finance', ['you', 'contact', 'access', 'signin']],
-    ['qc', ['you', 'contact', 'access', 'signin']],
-    ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin']],
-    ['partner', ['you', 'contact', 'access', 'organisation', 'signin']],
-    ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin']],
+    ['super', ['you', 'contact', 'access', 'signin', 'activity']],
+    ['org_admin', ['you', 'contact', 'access', 'signin', 'activity']],
+    ['admin', ['you', 'contact', 'access', 'signin', 'activity']],
+    ['finance', ['you', 'contact', 'access', 'signin', 'activity']],
+    ['qc', ['you', 'contact', 'access', 'signin', 'activity']],
+    ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin', 'activity']],
+    ['partner', ['you', 'contact', 'access', 'organisation', 'signin', 'activity']],
+    ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin', 'activity']],
     // S7a (2026-10-31, the MentorProfile board): the reviewer cards but `takingPart`, plus Mentoring.
-    ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin']],
+    ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity']],
   ])('%s', (role, cards) => {
     expect(cardsFor(ctx(role))).toEqual(cards)
   })
@@ -62,20 +62,20 @@ describe('the reviewer cards follow the `review` PERMISSION, not the Reviewer ro
   it('a reviewer whose permissions lost `review` loses them', () => {
     const got = cardsFor(ctx('reviewer', []))
     for (const id of REVIEWER_CARDS) expect(got).not.toContain(id)
-    expect(got).toEqual(['you', 'contact', 'access', 'signin'])
+    expect(got).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
   })
 
   it('a super — who holds every key — never gets them', () => {
     expect(reviewsCases(ctx('super'))).toBe(false)
     // Whatever the payload says, and whatever role column a legacy super row carries.
-    expect(cardsFor({ role: 'super', permissions: ['review'], isSuper: true })).toEqual(['you', 'contact', 'access', 'signin'])
+    expect(cardsFor({ role: 'super', permissions: ['review'], isSuper: true })).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
     const legacy = profileContext({ role: 'reviewer', is_super_admin: true, permissions: ['review'] })
     expect(legacy).toEqual({ role: 'super', permissions: ['review'], isSuper: true })
-    expect(cardsFor(legacy)).toEqual(['you', 'contact', 'access', 'signin'])
+    expect(cardsFor(legacy)).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
   })
 
   it('a payload with no permissions shows no reviewer card (never invents one)', () => {
-    expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toEqual(['you', 'contact', 'access', 'signin'])
+    expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
   })
 })
 
@@ -109,6 +109,43 @@ describe('the registry itself', () => {
     const block = page.slice(page.indexOf('const CARDS'), page.indexOf('}', page.indexOf('const CARDS')))
     const onPage = [...block.matchAll(/^\s+(\w+): lazySource\(/gm)].map((m) => m[1]).sort()
     expect(onPage).toEqual(PROFILE_CARDS.map((c) => c.id).sort())
+  })
+})
+
+describe('My activity (common profile S5)', () => {
+  it('is for everyone, a super and a source included, and is the one side-column card', () => {
+    for (const role of Object.keys(PRESET)) expect(cardsFor(ctx(role))).toContain('activity')
+    expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toContain('activity')
+    expect([...SIDE_CARDS]).toEqual(['activity'])
+  })
+
+  // The chips: only the ones that make sense for this person. All and Profile and sign-in always.
+  it.each([
+    ['super', ['all', 'students', 'money', 'profile']],
+    ['org_admin', ['all', 'students', 'money', 'profile']],
+    ['admin', ['all', 'students', 'money', 'profile']],
+    ['finance', ['all', 'money', 'profile']],
+    ['qc', ['all', 'students', 'profile']],
+    // The approved mock-up: a reviewer has no money powers, so no Money chip.
+    ['reviewer', ['all', 'students', 'profile']],
+    ['partner', ['all', 'profile']],
+    ['source_partner', ['all', 'students', 'profile']],
+    ['mentor', ['all', 'profile']],
+  ])('%s is offered its chips', (role, chips) => {
+    expect(activityFilters(ctx(role))).toEqual(chips)
+  })
+
+  it('a power GIVEN counts as much as the role itself', () => {
+    expect(activityFilters(ctx('reviewer', ['review', 'spending']))).toEqual(['all', 'students', 'money', 'profile'])
+    expect(activityFilters(ctx('finance', ['payments_approve', 'review']))).toEqual(['all', 'students', 'money', 'profile'])
+    expect(activityFilters(ctx('partner', ['payments_check']))).toEqual(['all', 'money', 'profile'])
+    expect(activityFilters({ role: undefined, permissions: null, isSuper: false })).toEqual(['all', 'profile'])
+  })
+
+  it.each([['en', en], ['ms', ms], ['ta', ta]] as const)('every chip has its words in %s', (_l, msgs) => {
+    const filter = (msgs as { admin: { myProfile: { activity: { filter: Record<string, string> } } } })
+      .admin.myProfile.activity.filter
+    for (const f of ['all', 'students', 'money', 'profile']) expect(typeof filter[f]).toBe('string')
   })
 })
 

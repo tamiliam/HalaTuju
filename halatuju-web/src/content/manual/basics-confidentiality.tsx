@@ -27,6 +27,19 @@ export const basicsConfidentiality: ManualChapter = {
       ),
     },
     {
+      anchor: 'my-activity',
+      title: 'My activity',
+      body: (
+        <>Your <strong>Profile</strong> has a <strong>My activity</strong> card: the things you have done in the
+        console, newest first, grouped into Today, This week and Earlier. Only <strong>you</strong> can see your
+        list &mdash; nobody else, an organisation admin included. Use the chips to narrow it (All, Students, Money,
+        Profile and sign-in &mdash; you only see the ones that fit your work) and <strong>Show older</strong> to go
+        further back. A student you can no longer open shows as &ldquo;a student&rdquo;, and one whose record was
+        deleted as &ldquo;a student (removed)&rdquo;. Entries marked <strong>rebuilt</strong> were put together
+        from older records, so a few early ones may be missing.</>
+      ),
+    },
+    {
       anchor: 'getting-help',
       title: 'Getting help',
       body: (

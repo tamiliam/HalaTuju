@@ -5151,7 +5151,129 @@
         "mentoring_area_too_long": "Hadkan bidang bimbingan kepada 120 aksara."
       },
       "assignerSees": "Mereka yang menugaskan kes kepada anda boleh melihat nombor ini.",
-      "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri."
+      "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri.",
+      "activity": {
+        "title": "Aktiviti saya",
+        "filterLabel": "Tunjukkan",
+        "filter": {
+          "all": "Semua",
+          "students": "Pelajar",
+          "money": "Wang",
+          "profile": "Profil dan log masuk"
+        },
+        "group": {
+          "today": "Hari ini",
+          "week": "Minggu ini",
+          "earlier": "Lebih awal"
+        },
+        "rebuilt": "dibina semula",
+        "showOlder": "Tunjukkan yang lebih lama",
+        "moreError": "Kami tidak dapat memuatkan entri yang lebih lama. Cuba lagi.",
+        "footer": "Hanya anda yang dapat melihat senarai ini. Entri yang lebih lama dibina semula daripada rekod lalu, jadi sesetengahnya mungkin tiada.",
+        "empty": "Belum ada apa-apa di sini. Apa yang anda lakukan dalam konsol akan disenaraikan di sini.",
+        "emptyFiltered": "Belum ada apa-apa daripada jenis ini.",
+        "error": "Kami tidak dapat memuatkan aktiviti anda.",
+        "retry": "Cuba lagi",
+        "unknownVerb": "Melakukan satu tindakan dalam konsol",
+        "something": "sesuatu",
+        "somethingRemoved": "sesuatu (telah dipadam)",
+        "signedAs": {
+          "maker": "sebagai penyedia",
+          "checker": "sebagai penyemak",
+          "approver": "sebagai pelulus"
+        },
+        "subject": {
+          "application": {
+            "hidden": "seorang pelajar",
+            "removed": "seorang pelajar (telah dipadam)"
+          },
+          "staff": {
+            "hidden": "seorang ahli pasukan",
+            "removed": "seorang ahli pasukan (telah dipadam)"
+          },
+          "invitation": {
+            "hidden": "seseorang",
+            "removed": "seseorang (jemputan telah dipadam)"
+          },
+          "payment_run": {
+            "hidden": "satu larian pembayaran",
+            "removed": "satu larian pembayaran (telah dipadam)",
+            "named": "larian pembayaran {label}"
+          },
+          "credit": {
+            "hidden": "satu kredit",
+            "removed": "satu kredit (telah dipadam)"
+          },
+          "contract_template": {
+            "hidden": "satu templat kontrak",
+            "removed": "satu templat kontrak (telah dipadam)",
+            "named": "templat kontrak {label}"
+          },
+          "sponsor": {
+            "hidden": "seorang penderma",
+            "removed": "seorang penderma (telah dipadam)"
+          },
+          "invoice": {
+            "hidden": "satu invois",
+            "removed": "satu invois (telah dipadam)",
+            "named": "invois {label}"
+          },
+          "org_request": {
+            "hidden": "satu permintaan",
+            "removed": "satu permintaan (telah dipadam)",
+            "named": "permintaan {label}"
+          },
+          "merchant_flag": {
+            "hidden": "sebuah kedai",
+            "removed": "sebuah kedai (telah dipadam)"
+          }
+        },
+        "verb": {
+          "invitation_sent": "Menjemput {subject}",
+          "invitation_accepted": "Menerima jemputan anda",
+          "first_sign_in": "Log masuk buat kali pertama",
+          "profile_updated": "Mengemas kini profil anda",
+          "permissions_changed": "Mengubah apa yang boleh dilakukan oleh {subject}",
+          "assigned": "Menugaskan kes {subject}",
+          "unassigned": "Membatalkan tugasan kes {subject}",
+          "query_raised": "Mengemukakan pertanyaan kepada {subject}",
+          "query_resolved": "Menutup pertanyaan untuk {subject}",
+          "interview_submitted": "Menghantar dapatan temu duga untuk {subject}",
+          "verdict_recorded": "Merekodkan keputusan untuk {subject}",
+          "verify_accept": "Mengesahkan {subject} dan menghantar syor kepada QC",
+          "decline_sent_to_qc": "Menghantar penolakan untuk {subject} kepada QC",
+          "declined": "Menolak permohonan daripada {subject}",
+          "qc_decision": "Membuat keputusan QC untuk {subject}",
+          "decision_reopened": "Membuka semula keputusan untuk {subject}",
+          "case_closed": "Menutup kes {subject}",
+          "contract_witnessed": "Menjadi saksi perjanjian {subject}",
+          "payment_run_created": "Menyediakan {subject}",
+          "payment_run_signed": "Menandatangani {subject}",
+          "tranche_released": "Mengeluarkan bayaran kepada {subject}",
+          "tranche_withheld": "Menahan bayaran untuk {subject}",
+          "tranche_returned": "Merekodkan bayaran yang dikembalikan untuk {subject}",
+          "credit_recorded": "Merekodkan {subject}",
+          "credit_checked": "Menyemak {subject}",
+          "credit_confirmed": "Mengesahkan {subject}",
+          "contract_template_created": "Mencipta {subject}",
+          "contract_template_vetted": "Mengesahkan {subject}",
+          "contract_template_submitted": "Menghantar {subject} untuk dilancarkan",
+          "contract_template_deployed": "Melancarkan {subject}",
+          "contract_countersigned": "Menandatangani balas perjanjian {subject}",
+          "benefactor_vetted": "Menyemak {subject}",
+          "invoice_issued": "Mengeluarkan {subject}",
+          "invoice_sent": "Menghantar {subject}",
+          "invoice_voided": "Membatalkan {subject}",
+          "payment_declared": "Menyatakan bayaran bagi {subject}",
+          "payment_confirmed": "Mengesahkan bayaran bagi {subject}",
+          "payment_rejected": "Menolak bayaran yang dinyatakan bagi {subject}",
+          "org_request_raised": "Mengemukakan {subject}",
+          "org_request_approved": "Meluluskan {subject}",
+          "org_request_declined": "Menolak {subject}",
+          "merchant_flag_opened": "Menanda {subject}",
+          "merchant_flag_closed": "Membuang tanda pada {subject}"
+        }
+      }
     },
     "superAdmin": "Pentadbir Utama",
     "loginTitle": "Log Masuk Rakan Kongsi",

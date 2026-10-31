@@ -125,7 +125,8 @@ class _ContractsBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.may_open_contracts(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -230,7 +231,8 @@ class AdminContractTemplateListView(_ContractsBase):
         try:
             template = contracts.create_template(
                 org, (request.data.get('version') or '').strip(), programme=programme,
-                created_by_email=getattr(admin, 'email', '') or '', copy_from=copy_from)
+                created_by_email=getattr(admin, 'email', '') or '', copy_from=copy_from,
+                actor=admin)
         except contracts.ContractsError as e:
             return _contracts_err(e)
         return Response(_contract_template_detail(template), status=status.HTTP_201_CREATED)
@@ -328,7 +330,7 @@ class AdminContractVettingView(_ContractsBase):
                 template,
                 vetted_by_name=(request.data.get('vetted_by_name') or '').strip(),
                 vetted_on=parse_date((request.data.get('vetted_on') or '').strip()),
-                attested_by_email=(getattr(admin, 'email', '') or '').strip())
+                attested_by_email=(getattr(admin, 'email', '') or '').strip(), actor=admin)
         except contracts.ContractsError as e:
             return _contracts_err(e)
         template.refresh_from_db()
@@ -354,7 +356,7 @@ class AdminContractSubmitView(_ContractsBase):
         from .. import contracts
         try:
             contracts.submit_for_deployment(
-                template, submitted_by_email=getattr(admin, 'email', '') or '')
+                template, submitted_by_email=getattr(admin, 'email', '') or '', actor=admin)
         except contracts.ContractsError as e:
             return _contracts_err(e)
         template.refresh_from_db()
@@ -388,7 +390,7 @@ class AdminContractDeployView(_ContractsBase):
         from .. import contracts
         try:
             contracts.deploy(template, is_super=True,
-                             deployed_by_email=getattr(admin, 'email', '') or '')
+                             deployed_by_email=getattr(admin, 'email', '') or '', actor=admin)
         except contracts.ContractsError as e:
             return _contracts_err(e)
         template.refresh_from_db()

@@ -319,7 +319,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
         else:
             emailed = send_partner_welcome_email(email, name, role, temp_password=made.temp_password)
-        _record_invitation_send(inv, emailed)
+        _record_invitation_send(inv, emailed, actor=admin)
 
         if google:
             message = f'{name} added — they sign in with Google ({email}).'
@@ -366,10 +366,15 @@ class AdminResendView(PartnerAdminMixin, APIView):
         if not target.is_active:
             return Response({'error': f'{target.name} cannot sign in — restore them first.',
                              'code': 'not_active'}, status=400)
-        # No UID = the account pre-existed ours (student/Google sign-up), so we never issued a
-        # password and must not reset theirs. Re-send the "sign in as you always do" note.
-        # A Resend gives a fresh temp password AND a fresh TTL clock (`staff_reinvite.
-        # reissue_credential`, shared with the source Resend since source sign-in S2).
+        # Signed in = their password is their own (TD-440): the page offers Resend only on a waiting
+        # invitation, and a direct call is refused the same way, as the source and mentor Resends are.
+        if target.first_seen_at is not None:
+            return Response({'error': f'{target.name} has already signed in.',
+                             'code': 'already_joined'}, status=400)
+        # A login we did not make (no UID; or a UID `get_admin` linked from the person's own
+        # Google or existing login — TD-440) is never reset: `reissue_credential` answers no
+        # password and the "sign in as you always do" note is re-sent. Otherwise a fresh temp
+        # password AND a fresh TTL clock (shared with the source and mentor Resends).
         temp_password, err = staff_reinvite.reissue_credential(target)
         if err == 'not_configured':
             return Response({'error': 'Supabase service role key not configured'}, status=500)
@@ -387,7 +392,7 @@ class AdminResendView(PartnerAdminMixin, APIView):
         emailed = send_partner_welcome_email(
             target.email, target.name, target.role, temp_password=temp_password,
         )
-        _record_invitation_send(inv, emailed, 'send failed')
+        _record_invitation_send(inv, emailed, 'send failed', actor=admin)
         if not emailed:
             return Response({'error': 'Failed to send the email', 'emailed': False}, status=502)
         return Response({

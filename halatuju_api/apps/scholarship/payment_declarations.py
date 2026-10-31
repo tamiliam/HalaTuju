@@ -34,6 +34,7 @@ from datetime import date
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from . import staff_activity
 from .invoicing import InvoicingError, _today, email_receipt, record_receipt
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def open_declaration(invoice):
     return None
 
 
-def declare_payment(invoice, *, paid_on, reference, declared_by_email='', today=None):
+def declare_payment(invoice, *, paid_on, reference, declared_by_email='', today=None, actor=None):
     """The TENANT'S claim that this invoice has been paid. Creates no receipt and moves no money.
 
     Refused when there is nothing to declare against, so a claim never lands somewhere it will be
@@ -109,6 +110,8 @@ def declare_payment(invoice, *, paid_on, reference, declared_by_email='', today=
             raise InvoicingError(
                 'already_declared',
                 f'A payment has already been declared for {locked.number} and is being checked.')
+        staff_activity.record(actor, staff_activity.PAYMENT_DECLARED, locked,   # S4, same txn
+                              meta={'declaration': declaration})
     logger.info('invoicing: payment declared for %s paid_on=%s by=%s',
                 locked.number, paid_on, declared_by_email or '-')
     # ⚠ AFTER THE COMMIT, never inside it: an email cannot be rolled back, so sending from inside
@@ -121,7 +124,7 @@ def declare_payment(invoice, *, paid_on, reference, declared_by_email='', today=
 
 
 def confirm_payment(declaration, *, amount_myr, received_on=None, reference='',
-                    method='bank_transfer', note='', confirmed_by_email='', today=None):
+                    method='bank_transfer', note='', confirmed_by_email='', today=None, actor=None):
     """The OWNER found the money. Mints the receipt and closes the claim, in one transaction.
 
     ⚠ **THE OWNER'S FIGURES WIN, not the tenant's.** `amount_myr` is required and comes from the
@@ -156,7 +159,8 @@ def confirm_payment(declaration, *, amount_myr, received_on=None, reference='',
             received_on=received_on or declaration.paid_on,
             amount_myr=amount_myr,
             reference=(reference or '').strip() or declaration.reference,
-            method=method, note=note, recorded_by_email=confirmed_by_email, today=today)
+            method=method, note=note, recorded_by_email=confirmed_by_email, today=today,
+            actor=actor)     # the receipt writes the ONE `payment_confirmed` row
         locked.receipt = receipt
         locked.confirmed_at = timezone.now()
         locked.confirmed_by_email = confirmed_by_email or ''
@@ -174,7 +178,7 @@ def confirm_payment(declaration, *, amount_myr, received_on=None, reference='',
     return receipt
 
 
-def reject_declaration(declaration, *, reason, rejected_by_email=''):
+def reject_declaration(declaration, *, reason, rejected_by_email='', actor=None):
     """The OWNER could not find the money. Closes the claim and tells the tenant why.
 
     ⚠ The reason is REQUIRED and is shown to the tenant. "Not found" with no reason leaves a
@@ -204,6 +208,8 @@ def reject_declaration(declaration, *, reason, rejected_by_email=''):
         locked.rejected_by_email = rejected_by_email or ''
         locked.reject_reason = reason
         locked.save(update_fields=['rejected_at', 'rejected_by_email', 'reject_reason'])
+        staff_activity.record(actor, staff_activity.PAYMENT_REJECTED, declaration.invoice,
+                              meta={'declaration': locked})     # common profile S4
     declaration.refresh_from_db()
     logger.info('invoicing: payment declaration rejected for %s by=%s',
                 declaration.invoice.number, rejected_by_email or '-')

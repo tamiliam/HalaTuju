@@ -147,7 +147,7 @@ def invite(caller, *, email, name, source=None, make_source=None):
             inv.accepted_at = now
     source.refresh_from_db()
     emailed = send(inv, account, source, made.temp_password if made else None,
-                   bool(made and made.google))
+                   bool(made and made.google), actor=caller)
     return Invited(None, account, inv, source, bool(made and made.google),
                    made is None or made.already_registered, reuse is not None, emailed)
 
@@ -164,13 +164,14 @@ def _reactivate(row, source, name):
     return row
 
 
-def send(inv, account, source, temp_password, google):
-    """Send the source letter for ``inv`` and record whether it went. Returns ``emailed``."""
+def send(inv, account, source, temp_password, google, actor=None):
+    """Send the source letter for ``inv`` and record whether it went. Returns ``emailed``. ``actor``
+    (who pressed Invite / Resend) gets the activity row (`invitations.record_send`)."""
     from .emails import send_source_invitation_email
     ok, error = send_source_invitation_email(
         account.email, name=account.name, source_name=source.name,
         temp_password=temp_password, google=google)
-    invitations.record_send(inv, ok, error)
+    invitations.record_send(inv, ok, error, actor=actor)
     return ok
 
 
@@ -196,7 +197,7 @@ def resend(caller, target):
         organisation=source.organisation, invited_by=caller, partner_admin=target,
         credential_issued=bool(temp_password), referral_source=source)
     google = temp_password is None and is_google_email(target.email)
-    return send(inv, target, source, temp_password, google), None
+    return send(inv, target, source, temp_password, google, actor=caller), None
 
 
 def revoke(target):

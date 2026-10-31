@@ -56,6 +56,173 @@ All notable changes to this project will be documented in this file.
   own sandbox-slug reader.
 - `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
 
+## TD-440 Sprint: no Resend resets a login the person brought with them (2026-10-31)
+
+- `staff_reinvite.reissue_credential` (staff, source and mentor Resends) writes a new temporary password only when
+  the row's newest invitation issued one (`staff_lifecycle.credential_was_issued`). A login `get_admin` linked from
+  the person's own Google or existing sign-in is sent the "sign in as you always do" note instead. Its review added
+  a read of the LIVE login: one that has signed in with a password of its own is never reset, whatever the rows say
+  (a backfilled invitation, an unstamped `first_seen_at`); a login that cannot be read is a 502, nothing written.
+- The staff Resend refuses a row that has already signed in (400 `already_joined`), like the source and mentor
+  Resends. The page already offered Resend only on a waiting invitation.
+- The mentor Resend drops its own copy of the rule. TD-440 closed. No migration; API only.
+
+## Common profile S5 — My activity on the Profile page - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no
+migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migrate (0195), then the API, then
+`backfill_staff_activity --dry-run`, then `--apply`, then the web.
+
+- **The My activity card** (`components/adminProfile/ActivityCard.tsx`), everyone's (card id `activity` in
+  `lib/profileCards.ts`): the person's OWN rows from `GET admin/me/activity/`, grouped Today / This week (since
+  Monday) / Earlier, one sentence a row and a grey line under it (the time today, else the date and time; "as the
+  preparer / checker / approver" on a payment run signature — the only context the payload carries). Back-filled
+  rows carry a small "rebuilt" mark; **Show older** follows the cursor and goes when there is no more; plain empty
+  and error states (Try again); footer "Only you can see this list…". A chip switched while a page is loading
+  never paints the old filter's rows.
+- **Chips per person** (`activityFilters`): All and Profile and sign-in for everyone; Students for a case role
+  or permission (super, org admin, admin, QC, reviewer, source, or `review` / `see_all` / `qc`); Money for a money
+  role or permission (super, org admin, admin, finance, or `spending` / `payments_*`). A reviewer: All / Students
+  / Profile and sign-in. A chip is a shortcut, never a fence: every row is under All.
+- **Subjects:** a visible one shows the server's label verbatim (a reference with its kind: "payment run
+  PR-…"); hidden and removed show OUR translated neutral word per subject type ("a student", "a student
+  (removed)"), never the server's English one. Links only where this person may open the page: a visible
+  student (`/admin/scholarship/<id>`, a source's own student screen too) and a visible payment run
+  (`/admin/payments/<id>`). Words: `lib/profileActivity.ts`; en / ms / ta under `admin.myProfile.activity`.
+- **Layout:** `/admin/profile` is now a WIDE route (`lib/pageWidth.ts`): from `xl` the cards and Save on the left,
+  My activity in a 380 px column on the right; below that one column, My activity last. Chips wrap, long names
+  break, every chip and button is 44 px tall (the Mobile standard).
+- **D10:** the card ships INSIDE the existing lazy `adminProfile/cards` chunk — no new chunk, no new runtime
+  entry. **D3:** its one call (`getMyActivity`) is opted in for a source; `noStaffCalls.test.tsx` now mounts the
+  card as a source user and allows only that.
+- **Guide + FAQ:** a "My activity" section in Basics → Confidentiality & help (every role with a Guide) and an
+  Everyone FAQ entry. English only, as the whole manual is (`content/manual/types.ts`).
+- **Tests:** `profileActivityDrift.test.ts` (every server verb has a sentence in en / ms / ta, `{subject}` exactly
+  when it names somebody; every subject type its hidden / removed words, a reference type its `named` form; the
+  web's verb, subject and filter lists equal the server's both ways; `NEUTRAL` covers every type);
+  `profileActivity.test.ts` (day groups, words, links, second line); `ActivityCard.test.tsx` (chips, rows, Show
+  older, empty, error, a superseded answer); `profileCards.test.ts` (every role has the card; the chip matrix).
+- **Gates (builder, branch tree):** jest 5,795 / 353 suites · tsc 0 · lint 0 errors · i18n 6,789 keys per locale ·
+  bundle median 147.095 kB (0.9 kB under 148). The budget script still reports ONE pre-existing problem:
+  `/scholarship/application` 211.751 kB against 212 (0.249 kB of room, TD-433) — none of this change's code or
+  strings is in that route's chunks (checked in `.next/app-build-manifest.json`); the new words are admin-slice only.
+- **Gates (lead, merged tree on main 4b0bff39):** pytest 11,203 passed / 3 skipped (`-n auto`, the gate's line) ·
+  `makemigrations --check` no changes · `npm run gates` (typecheck 0, lint 0, i18n 6,789 keys, jest 5,813 / 354
+  suites) · `npm run bundle-budget -- --gate` ok (median 147.097 kB; `/scholarship/application` 0.247 kB of room,
+  printed and passed, TD-433) · drift test bitten (a Tamil verb key renamed → red; restored by digest).
+  **mobile-check:** every sandbox cell passed and none got worse; 77 PUBLIC cells timed out at the `lang` wait in
+  both runs (cold `next dev` compiles on a loaded box; no public page touched; one re-run alone passed) — not a
+  finding (Mobile session agrees; its M1 adds a warm-up). `/admin/profile` is not a mobile-check target.
+- **Deploy:** scholarship 0195 by hand (table, 3 indexes, RLS + 1 service_role policy, ledger row; Security
+  Advisor shows no finding for `staff_activity`), then main d85eedbc → api-01220-drw + web-01044-mjt (both
+  builds SUCCESS; health 200; `admin/me/activity/` 401 unauthenticated). Back-fill through `release-decisions`:
+  dry run 961 to rebuild / 241 skipped (reasons as designed: no actor, name-only stamps, interview submit, QC
+  decisions); `--apply` wrote 961 rows (28 people, 2026-06-10 → 2026-10-31); a second dry run rebuilt 0
+  (1,202 "already rebuilt" or skipped) — idempotent.
+- **Close:** code review of the S5 diff found no high or medium; two lows logged (TD-445 an unnamed visible
+  subject shows the server's English word; TD-446 the card resets on a token refresh). Retro
+  `docs/retrospectives/retrospective-2026-10-31-common-profile-s3-s5.md`. Common profile arc DONE.
+
+## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of
+S3; no web change and no new migration (`0195_staff_activity` loses two subject types it never needed). **Deploy
+order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_staff_activity --dry-run`, then
+`--apply`.
+
+- **Every verb in the closed list now has a writer** (one registry, `staff_activity.WIRED`; the S3 "later" list is
+  gone and the drift test requires all of them). Recorded where each act happens, the actor always the person
+  who pressed the button, inside the same transaction, best-effort; the money paths' own writes, order and
+  responses are unchanged:
+  payment run created (`payments.create_run`) and signed (`payments_chain.sign`, `role` maker / checker /
+  approver — the approver's payouts are that one row, not a tranche row each); tranche released / withheld /
+  returned (`disbursement.*_tranche`; subject = the student); credit recorded / checked / confirmed (the three
+  signatures in `sponsorship.sign_admin_credit` — a draft is not yet a credit); contract template created /
+  vetted / submitted / deployed (`contracts.*`); the Foundation's countersign (`bursary.countersign_foundation`);
+  benefactor vetted (the account review and the per-gift decision — the two views; the sponsor's own
+  registration writes nothing); invoice issued / sent / voided (`invoicing.*`; the monthly cron writes nothing);
+  payment declared / rejected (`payment_declarations.*`) and confirmed (`invoice_receipts.record_receipt`, the one
+  place a receipt is minted — a confirmed declaration is ONE row); request raised / approved / declined (the
+  three views: `org_requests.py` sits at its line allowance and each service has one door); shop flag opened /
+  closed (`merchant_flags.change_flag`; a note alone is not an act).
+- **`GET /api/v1/admin/me/activity/?kind=all|students|money|profile&cursor=&limit=`** (`views_admin/me.py`,
+  reader `apps/scholarship/staff_activity_read.py`): the caller's OWN rows, every role (a super too), opted in for
+  source users. Newest first, cursor on (created_at, id), 30 a page (at most 100); 400 `bad_kind` / `bad_cursor` /
+  `bad_limit`. Each item: `id, verb, kind, created_at, backfilled, subject {type, state, label, id}, meta`.
+  **D8:** a subject's label is decided NOW — a student's name only if the viewer may open that application today
+  (the staff detail view's own fence and scope, read through its helpers; `source_access` for a source user),
+  else "a student"; a team member's name only inside the viewer's organisation; a run, template, invoice or
+  request by its REFERENCE, never typed text; a credit or a shop always the neutral word. **D7:** a subject that is
+  gone reads "… (removed)". One query per subject type per page, whatever the page size (tested).
+- **`manage.py backfill_staff_activity --dry-run | --apply [--before ISO]`** (`apps/scholarship/
+  staff_activity_backfill.py`): rebuilds rows (`backfilled=True`, dated at the original moment) from the history
+  tables and the single stamps. The actor is a real foreign key, or an email held by exactly ONE staff row;
+  ambiguous, unknown and name-only stamps are skipped and counted. **No twins:** only events before the earliest
+  live row, AND none with a live row of the same verb, actor and subject within minutes of its stamp (the first
+  live action stamps its record a moment before its live row — a test caught the cut-off alone missing that).
+  **Idempotent** on (verb, actor, subject, created_at). Streams in batches of 500.
+- **Adversarial review fixes** (`tests/test_staff_activity_review.py`, one regression test each):
+  - H1: a QC accept is no longer rebuilt from `recommended_at` / `recommended_by` (first-only time, last-only
+    person: two different acts) — it is counted as skipped.
+  - M1: an email stamp names only a staff row that existed when the act was stamped, so a re-created shared
+    mailbox (`ops@`) is never credited with its predecessor's acts.
+  - M2: an interview submit is counted, not rebuilt — the person who pressed Submit was never recorded.
+  - M3: every label on `admin/me/activity/` is gated by the SAME predicate its own screen asks today
+    (`apps/scholarship/surface_gates.py`, now used by the Sponsors, Team / Invitations, invoices, contracts and
+    Requests views too; invoices through the invoice screen's own fence), so a demoted viewer sees the neutral
+    word the moment the screen answers 403.
+  - L1: an account vetting's membership stamp (milliseconds later, same person) is the same click and is not
+    rebuilt as a second row.
+  - L2: the reopen inside a QC reject (same address, within seconds) is not rebuilt, so the click rebuilds as one
+    `declined` row (live it is one `qc_decision`; the stamps cannot say the decline was QC's).
+  - L4: a click that changes nothing writes nothing — membership and account vetting re-clicks, and the profile
+    saves (`admin/me/`, the reviewer cards, the source console, a partner's `admin/profile/`) name only the
+    fields whose value changed.
+  - L5: the reader answers 400, never 500, for a non-ASCII digit limit ('²'), an id beyond a bigint or a cursor
+    without a time zone.
+  - L6: every back-fill source streams in stamp order (then id), so each batch's checks span only that batch.
+- Tests: `test_staff_activity_money.py` (each S4 door one row; a payment run, a tranche, a credit and a receipt
+  unchanged when the write fails), `test_my_activity.py` (own rows, D7, D8, source, paging, filters, query count,
+  the allowlist), `test_staff_activity_backfill.py` (dry run, apply, idempotent, no twins, emails, purges).
+
+## Common profile S3 — the activity list, part 1: the list and the case actions (migration 0195) - 2026-10-31 — LIVE 2026-10-31 (main d85eedbc; api-01220-drw, web-01044-mjt; migration 0195 by hand; back-fill 961 rows)
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
+visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5 the card. **Migrate first**
+(0195, hand-applied, new table + RLS + policy); the API never fails without it (see D9) but would record nothing.
+
+- **New table `staff_activity`** (`StaffActivity`, `apps/scholarship/models/staff_activity.py`, model 71): one row
+  each time a person on the admin platform does something — `actor` (CASCADE: the list is own-only and goes with
+  the person, D6), `organisation`, `verb` from a CLOSED list, `subject_type` + `subject_id` (an id, NOT a foreign
+  key, so a student's purge never touches anybody's history, D7), a small `meta`, `created_at` (a plain default, so
+  the S4 back-fill can date a row in the past) and `backfilled` (database default false). Index (actor, newest
+  first). The closed list also declares the S4 verbs (money, contracts, requests), so S4 needs no choices migration.
+- **Rows hold ids, never copied text.** `meta` takes only listed keys, each an id, a boolean, a number or a short
+  lower-case code; a sentence, a name or an email address is dropped (and logged), the row still written.
+- **One writer, best-effort (D9):** `apps/scholarship/staff_activity.record(actor, verb, subject, meta)` never
+  raises; it writes in its own savepoint inside the caller's transaction, so its own database error cannot spoil
+  the action, and an action that rolls back takes its row with it. No actor (a cron or system path) writes nothing.
+  The courses app reaches it through `apps/courses/staff_activity_hook.py`, which the scholarship app registers at
+  start-up, so the `courses -> scholarship` import count is unchanged.
+- **Wired into:** invitation sent (staff, source and sponsor — `invitations.record_send`), invitation accepted
+  and first sign-in, profile updated (`admin/me/`, photo, password, the reviewer cards, the source console, a
+  referral partner's `admin/profile/`), permissions changed (the editor and a role change that reset a custom
+  set), assign / unassign, query raised (a ticket, a note, "Ask again") / resolved, interview submitted,
+  verdict recorded, verify-and-accept, decline sent to QC, declined, QC decision, decision reopened, case closed,
+  contract witnessed (the source's door and the super's). **One click is one row:** the QC's reject runs a reopen
+  and a decline underneath and still writes only `qc_decision`. The actor is whoever pressed the button.
+- **Moves-only split:** `AdminProfileView` moved verbatim to `apps/courses/views_profile.py` (`views_admin.py` sat
+  exactly at its line allowance). `AdminRecordVerdictView.post` gives its saving block to `_save_verdict` and
+  `assign_reviewer` its row to `_record_assignment`, to stay under the 150-line standard.
+- Tests: `apps/scholarship/tests/test_staff_activity.py` — each verb's door(s) write exactly one row; the write
+  failing (a real database error, or the writer's own code raising) leaves the action and its transaction intact;
+  a rollback leaves no row; free text dropped; no actor, no row; and a drift test that reads the source and
+  requires the writers of each verb to be exactly the `S3_WIRED` registry.
+- Doors found but left unwired on purpose (not on the S3 list): interview reopen, cancel reopen, cancel a pending
+  decline, the witness-organisation override, a role change that resets no custom set, the first-login temp
+  password, cancelling an invitation or revoking a source, and a source re-invite that reactivates a user. Found on
+  the way: staff invitations never store `invited_by` (TD-444).
+
 ## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31) — LIVE 2026-10-31 (main b714a74c; api-01219-xt2, web-01043-49w)
 
 Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no migration.

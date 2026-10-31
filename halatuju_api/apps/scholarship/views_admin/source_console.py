@@ -35,7 +35,7 @@ from rest_framework.response import Response
 
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from .. import source_access, source_console
+from .. import source_access, source_console, staff_activity
 from .base import _AdminBase
 from .sources import DETAIL_FIELDS, detail_values, text_of
 from .source_users import _bad_email
@@ -137,6 +137,9 @@ class AdminSourceProfileView(_SourceConsoleBase):
             return _error('source_name_required', status.HTTP_400_BAD_REQUEST)
         if cleaned.get('contact_email') and _bad_email(cleaned['contact_email']):
             return _error('bad_email', status.HTTP_400_BAD_REQUEST)
+        # Common profile S3 / S4 review L4: which parts CHANGED, never the values.
+        fields = (['name'] * (name is not None and name != admin.name)
+                  + ['organisation'] * any(getattr(source, f) != v for f, v in cleaned.items()))
         if name is not None:
             admin.name = name
             admin.save(update_fields=['name'])
@@ -144,6 +147,8 @@ class AdminSourceProfileView(_SourceConsoleBase):
             for field, value in cleaned.items():
                 setattr(source, field, value)
             source.save(update_fields=list(cleaned))
+        if fields:
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
         return Response(source_console.profile_dict(admin, source))
 
 

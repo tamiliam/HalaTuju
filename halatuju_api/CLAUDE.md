@@ -1145,12 +1145,12 @@ Resend, pre-existing). **NEXT = Sprint 7b** (assignments, meetings, the Mentorin
 (`/admin/organisation/mentors`, `GET admin/mentors/`, actions `admin/mentors/<id>/<action>/`, invite through
 `POST admin/invitations/` `audience='mentor'`), and the mentor's own profile (`admin/me/` `mentoring_area`;
 `staff_contact.works_with_students`). Rules: `apps/scholarship/mentor_invite.py`. **Next free migration
-numbers: scholarship 0195, courses 0091.** Release order: apply scholarship 0194 THEN courses 0090 by hand
+numbers: scholarship 0196, courses 0091** (0195 = common profile S3, live). Release order: apply scholarship 0194 THEN courses 0090 by hand
 (DDL + ledger rows in each docstring; the new `mentors` table gets RLS + one service_role policy in the
 same transaction; then the Security Advisor), then API, then web. Next: Sprint 7b (assignments, meetings,
 the Mentoring tabs) — 7b's mock-ups are in the maintenance design project.
 
-### ⚠ STATE AT 2026-10-31 — COMMON PROFILE S1+S2 LIVE (main `3ad1f387`; api-01214-hhw, web-01037-j7p; migration scholarship 0193 applied by hand + recorded)
+### ⚠ STATE AT 2026-10-31 — COMMON PROFILE ARC DONE: S1+S2 LIVE (main `3ad1f387`, migration 0193) and S3–S5 LIVE (main `d85eedbc`; api-01220-drw, web-01044-mjt; migration scholarship 0195 applied by hand + recorded; back-fill applied)
 
 **What it is.** One `/admin/profile` page for EVERY role (source users included), built from the card registry
 `halatuju-web/src/lib/profileCards.ts` (`PROFILE_CARDS`, `cardsFor`); cards in `src/components/adminProfile/`
@@ -1161,9 +1161,17 @@ temp password cleared in the same write, other sessions signed out, atomic 5/15 
 `StaffProfile` = alias of `ReviewerProfile` (table `reviewer_profiles`, +6 columns in 0193 incl. `other_language`).
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`; retro `retrospective-2026-10-31-common-profile-s1-s2.md`.
 
-**Next:** S3 (StaffActivity list + case actions) → S4 (money/contracts/requests + back-fill, adversarial review)
-→ S5 (My activity card, Guide/FAQ, second deploy). The Maintenance session builds the MENTOR role (7a) on top of
-this — mentor rules for qualifications / address / share-with-students go in THEIR sprint.
+**S3–S5 LIVE 2026-10-31 — My activity.** Table `staff_activity` (`models/staff_activity.py`), the ONE best-effort
+writer `staff_activity.record()` (savepoint, never raises, closed verb + meta-key lists, no free text), every verb
+in `staff_activity.WIRED` (drift test `tests/test_staff_activity.py`); courses-side actions through
+`apps/courses/staff_activity_hook.py`. Reader `GET admin/me/activity/` (`staff_activity_read.py`: own rows only,
+D7 removed, D8 names decided at read time by the screens' own gates in `surface_gates.py`; source users and
+mentors are outsiders). Web: the My activity card (`components/adminProfile/ActivityCard.tsx`, words
+`lib/profileActivity.ts`, drift test `profileActivityDrift.test.ts`). **A NEW VERB needs: the TextChoice, a
+`record()` call listed in `WIRED`, a `KIND_OF_VERB` entry, and its en/ms/ta sentence** — the two drift tests
+turn red otherwise. Back-fill `manage.py backfill_staff_activity --dry-run | --apply` was applied once
+(961 rows, `backfilled=true`); it is idempotent and rebuilds only before the earliest live row — never needed
+again unless the table is emptied. Doors left unwired on purpose: see CHANGELOG S3. Open: TD-442, TD-443, TD-444.
 
 **Gotchas.** Never run `cleanup_orphan_blobs --apply` from a pre-S2 checkout (it would delete staff photos).
 The live sign-in captcha against the service-role password grant is UNVERIFIED: if it blocks, the change answers

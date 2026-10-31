@@ -5151,7 +5151,129 @@
         "mentoring_area_too_long": "வழிகாட்டும் துறையை 120 எழுத்துகளுக்குள் வைக்கவும்."
       },
       "assignerSees": "உங்களுக்கு வழக்குகளை ஒதுக்குபவர்கள் இந்த எண்ணைப் பார்க்க முடியும்.",
-      "othersStillIn": "உங்கள் கடவுச்சொல் மாற்றப்பட்டது; ஆனால் பிற சாதனங்களில் இன்னும் உள்நுழைந்திருக்கலாம். அந்தச் சாதனங்களிலிருந்தே வெளியேறவும்."
+      "othersStillIn": "உங்கள் கடவுச்சொல் மாற்றப்பட்டது; ஆனால் பிற சாதனங்களில் இன்னும் உள்நுழைந்திருக்கலாம். அந்தச் சாதனங்களிலிருந்தே வெளியேறவும்.",
+      "activity": {
+        "title": "எனது செயல்பாடுகள்",
+        "filterLabel": "காட்டு",
+        "filter": {
+          "all": "அனைத்தும்",
+          "students": "மாணவர்கள்",
+          "money": "பணம்",
+          "profile": "சுயவிவரமும் உள்நுழைவும்"
+        },
+        "group": {
+          "today": "இன்று",
+          "week": "இந்த வாரம்",
+          "earlier": "முன்னர்"
+        },
+        "rebuilt": "மீட்டமைக்கப்பட்டது",
+        "showOlder": "பழையவற்றைக் காட்டு",
+        "moreError": "பழைய பதிவுகளை ஏற்ற முடியவில்லை. மீண்டும் முயலவும்.",
+        "footer": "இந்தப் பட்டியலை நீங்கள் மட்டுமே பார்க்க முடியும். பழைய பதிவுகள் முந்தைய பதிவேடுகளிலிருந்து மீட்டமைக்கப்பட்டவை; எனவே சில விடுபட்டிருக்கலாம்.",
+        "empty": "இங்கு இன்னும் எதுவுமில்லை. கட்டுப்பாட்டகத்தில் நீங்கள் செய்பவை இங்கே பட்டியலிடப்படும்.",
+        "emptyFiltered": "இந்த வகையில் இன்னும் எதுவுமில்லை.",
+        "error": "உங்கள் செயல்பாடுகளை ஏற்ற முடியவில்லை.",
+        "retry": "மீண்டும் முயல்",
+        "unknownVerb": "கட்டுப்பாட்டகத்தில் ஒரு செயலைச் செய்தீர்கள்",
+        "something": "ஒரு பதிவு",
+        "somethingRemoved": "நீக்கப்பட்ட ஒரு பதிவு",
+        "signedAs": {
+          "maker": "தயாரிப்பவராக",
+          "checker": "சரிபார்ப்பவராக",
+          "approver": "ஒப்புதல் அளிப்பவராக"
+        },
+        "subject": {
+          "application": {
+            "hidden": "ஒரு மாணவர்",
+            "removed": "நீக்கப்பட்ட ஒரு மாணவர்"
+          },
+          "staff": {
+            "hidden": "ஒரு குழு உறுப்பினர்",
+            "removed": "நீக்கப்பட்ட ஒரு குழு உறுப்பினர்"
+          },
+          "invitation": {
+            "hidden": "ஒருவர்",
+            "removed": "அழைப்பு நீக்கப்பட்ட ஒருவர்"
+          },
+          "payment_run": {
+            "hidden": "ஒரு கட்டண இயக்கம்",
+            "removed": "நீக்கப்பட்ட ஒரு கட்டண இயக்கம்",
+            "named": "கட்டண இயக்கம் {label}"
+          },
+          "credit": {
+            "hidden": "ஒரு வரவு",
+            "removed": "நீக்கப்பட்ட ஒரு வரவு"
+          },
+          "contract_template": {
+            "hidden": "ஓர் ஒப்பந்த வார்ப்புரு",
+            "removed": "நீக்கப்பட்ட ஓர் ஒப்பந்த வார்ப்புரு",
+            "named": "ஒப்பந்த வார்ப்புரு {label}"
+          },
+          "sponsor": {
+            "hidden": "ஒரு கொடையாளர்",
+            "removed": "நீக்கப்பட்ட ஒரு கொடையாளர்"
+          },
+          "invoice": {
+            "hidden": "ஒரு விலைப்பட்டியல்",
+            "removed": "நீக்கப்பட்ட ஒரு விலைப்பட்டியல்",
+            "named": "விலைப்பட்டியல் {label}"
+          },
+          "org_request": {
+            "hidden": "ஒரு கோரிக்கை",
+            "removed": "நீக்கப்பட்ட ஒரு கோரிக்கை",
+            "named": "கோரிக்கை {label}"
+          },
+          "merchant_flag": {
+            "hidden": "ஒரு கடை",
+            "removed": "நீக்கப்பட்ட ஒரு கடை"
+          }
+        },
+        "verb": {
+          "invitation_sent": "அழைப்பு அனுப்பினீர்கள்: {subject}",
+          "invitation_accepted": "உங்களுக்கு வந்த அழைப்பை ஏற்றுக்கொண்டீர்கள்",
+          "first_sign_in": "முதல் முறையாக உள்நுழைந்தீர்கள்",
+          "profile_updated": "உங்கள் சுயவிவரத்தைப் புதுப்பித்தீர்கள்",
+          "permissions_changed": "அனுமதிகளை மாற்றினீர்கள்: {subject}",
+          "assigned": "வழக்கை ஒதுக்கினீர்கள்: {subject}",
+          "unassigned": "வழக்கின் ஒதுக்கீட்டை நீக்கினீர்கள்: {subject}",
+          "query_raised": "வினா எழுப்பினீர்கள்: {subject}",
+          "query_resolved": "வினாவை முடித்துவைத்தீர்கள்: {subject}",
+          "interview_submitted": "நேர்காணல் கண்டறிதல்களைச் சமர்ப்பித்தீர்கள்: {subject}",
+          "verdict_recorded": "தீர்ப்பைப் பதிவு செய்தீர்கள்: {subject}",
+          "verify_accept": "சரிபார்த்துப் பரிந்துரையை QC-க்கு அனுப்பினீர்கள்: {subject}",
+          "decline_sent_to_qc": "நிராகரிப்பை QC-க்கு அனுப்பினீர்கள்: {subject}",
+          "declined": "விண்ணப்பத்தை நிராகரித்தீர்கள்: {subject}",
+          "qc_decision": "QC முடிவை எடுத்தீர்கள்: {subject}",
+          "decision_reopened": "முடிவை மீண்டும் திறந்தீர்கள்: {subject}",
+          "case_closed": "வழக்கை மூடினீர்கள்: {subject}",
+          "contract_witnessed": "ஒப்பந்தத்திற்குச் சாட்சியாக இருந்தீர்கள்: {subject}",
+          "payment_run_created": "தயாரித்தீர்கள்: {subject}",
+          "payment_run_signed": "கையொப்பமிட்டீர்கள்: {subject}",
+          "tranche_released": "தவணையை வழங்கினீர்கள்: {subject}",
+          "tranche_withheld": "தவணையைத் தடுத்து வைத்தீர்கள்: {subject}",
+          "tranche_returned": "திரும்பப் பெறப்பட்ட தவணையைப் பதிவு செய்தீர்கள்: {subject}",
+          "credit_recorded": "பதிவு செய்தீர்கள்: {subject}",
+          "credit_checked": "சரிபார்த்தீர்கள்: {subject}",
+          "credit_confirmed": "உறுதிப்படுத்தினீர்கள்: {subject}",
+          "contract_template_created": "உருவாக்கினீர்கள்: {subject}",
+          "contract_template_vetted": "சரிபார்த்தீர்கள்: {subject}",
+          "contract_template_submitted": "செயல்படுத்துவதற்குச் சமர்ப்பித்தீர்கள்: {subject}",
+          "contract_template_deployed": "செயல்படுத்தினீர்கள்: {subject}",
+          "contract_countersigned": "ஒப்பந்தத்தில் எதிர்க் கையொப்பமிட்டீர்கள்: {subject}",
+          "benefactor_vetted": "சரிபார்த்தீர்கள்: {subject}",
+          "invoice_issued": "வெளியிட்டீர்கள்: {subject}",
+          "invoice_sent": "அனுப்பினீர்கள்: {subject}",
+          "invoice_voided": "செல்லாததாக்கினீர்கள்: {subject}",
+          "payment_declared": "கட்டணத்தைத் தெரிவித்தீர்கள்: {subject}",
+          "payment_confirmed": "கட்டணத்தை உறுதிப்படுத்தினீர்கள்: {subject}",
+          "payment_rejected": "தெரிவிக்கப்பட்ட கட்டணத்தை நிராகரித்தீர்கள்: {subject}",
+          "org_request_raised": "சமர்ப்பித்தீர்கள்: {subject}",
+          "org_request_approved": "ஒப்புதல் அளித்தீர்கள்: {subject}",
+          "org_request_declined": "நிராகரித்தீர்கள்: {subject}",
+          "merchant_flag_opened": "கொடியிட்டீர்கள்: {subject}",
+          "merchant_flag_closed": "கொடியை நீக்கினீர்கள்: {subject}"
+        }
+      }
     },
     "superAdmin": "தலைமை நிர்வாகி",
     "loginTitle": "கூட்டாளர் உள்நுழைவு",

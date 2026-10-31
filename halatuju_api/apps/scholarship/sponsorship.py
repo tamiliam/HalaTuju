@@ -339,7 +339,7 @@ def sign_admin_credit(credit, admin, typed_name):
     the last one degrades it back to two steps. ⚠ The finance-ROLE rule is
     ``payments.credit_check_required`` since #39 S2 (runs moved to permissions). Returns the credit.
     """
-    from . import payments
+    from . import payments, staff_activity
     if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
                              Donation.STATUS_FINANCE_CHECKED):
         raise CreditError('bad_state')
@@ -359,6 +359,7 @@ def sign_admin_credit(credit, admin, typed_name):
         credit.status = Donation.STATUS_ADMIN_SIGNED
         credit.save(update_fields=[
             'recorded_by', 'recorded_by_email', 'recorded_at', 'status'])
+        staff_activity.record(admin, staff_activity.CREDIT_RECORDED, credit)   # common profile S4
         return credit
 
     if credit.status == Donation.STATUS_ADMIN_SIGNED and needs_finance:
@@ -374,6 +375,7 @@ def sign_admin_credit(credit, admin, typed_name):
         credit.status = Donation.STATUS_FINANCE_CHECKED
         credit.save(update_fields=[
             'finance_checked_by', 'finance_checked_by_email', 'finance_checked_at', 'status'])
+        staff_activity.record(admin, staff_activity.CREDIT_CHECKED, credit)
         return credit
 
     # admin_signed (finance dormant) or finance_checked → the approver countersigns.
@@ -387,6 +389,7 @@ def sign_admin_credit(credit, admin, typed_name):
     credit.status = Donation.STATUS_CONFIRMED
     credit.save(update_fields=[
         'confirmed_by', 'confirmed_by_email', 'confirmed_at', 'status'])
+    staff_activity.record(admin, staff_activity.CREDIT_CONFIRMED, credit)
     # S3: tell the donor, but ONLY here — this is the single line in the chain where the money
     # becomes spendable, and it is the only point at which saying "we hold it" is true. Fired
     # from the SERVICE rather than the endpoint so a shell-driven confirmation notifies too, and

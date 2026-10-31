@@ -283,6 +283,7 @@ def sign(run, admin, typed_name):
     `wrong_role` / `same_signer` / `finance_check_required`. Emails, best-effort (never raise): after
     the maker, the checkers when the check is armed, else the approvers (else the organisation admins
     under the fallback); after the check, the approvers. Returns the run."""
+    from . import staff_activity     # common profile S4: one `payment_run_signed` row per signature
     from .payments import PaymentsError, _name_matches, complete
     _lock(run)
     if run.status not in _IN_FLIGHT:
@@ -302,6 +303,7 @@ def sign(run, admin, typed_name):
         run.status = 'admin_signed'
         run.save(update_fields=[
             'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'status', 'updated_at'])
+        staff_activity.record(admin, staff_activity.PAYMENT_RUN_SIGNED, run, meta={'role': 'maker'})
         if check_required_for(run):
             emails.send_payment_finance_check_email(run)
         else:
@@ -316,6 +318,7 @@ def sign(run, admin, typed_name):
         run.save(update_fields=[
             'finance_signed_name', 'finance_signed_email', 'finance_signed_at',
             'status', 'updated_at'])
+        staff_activity.record(admin, staff_activity.PAYMENT_RUN_SIGNED, run, meta={'role': 'checker'})
         emails.send_payment_countersign_email(run)
         return run
 
@@ -328,6 +331,7 @@ def sign(run, admin, typed_name):
         'org_admin_signed_name', 'org_admin_signed_email', 'org_admin_signed_at',
         'status', 'updated_at'])
     complete(run)
+    staff_activity.record(admin, staff_activity.PAYMENT_RUN_SIGNED, run, meta={'role': 'approver'})
     return run
 
 

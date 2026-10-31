@@ -257,19 +257,26 @@ def resolve_item(item, *, text='', doc=None, by='student'):
 
 
 def add_officer_item(application, *, kind, prompt, admin_email, doc_type='', fact='other',
-                     household_member=''):
+                     household_member='', actor=None):
     """Officer raises a manual ticket — the structured successor to
     ``info_request_note``. Codes are synthetic ``officer_<n>``. For a per-person
     document request (e.g. the father's salary slip), ``household_member`` is stashed
     in ``params`` so the student's upload tags the right (doc_type, member) slot —
-    closing the salary-route Action-Centre tagging gap without a schema change."""
+    closing the salary-route Action-Centre tagging gap without a schema change.
+
+    ``actor`` (the officer; the view passes it) gets a `query_raised` row on their own activity list
+    (common profile S3) — the item's id and kind, never its prompt."""
     n = application.resolution_items.filter(source='officer').count() + 1
     params = {'household_member': household_member} if household_member else {}
-    return ResolutionItem.objects.create(
+    item = ResolutionItem.objects.create(
         application=application, source='officer', code=f'officer_{n}',
         fact=fact or 'other', kind=kind, doc_type=doc_type, prompt=prompt or '',
         params=params, created_by=admin_email or '',
     )
+    from . import staff_activity
+    staff_activity.record(actor, staff_activity.QUERY_RAISED, application,
+                          meta=lambda: {'item': item, 'kind': kind})
+    return item
 
 
 def doc_match_verdict(doc):

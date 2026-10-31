@@ -19,3 +19,4 @@ export { default as AddressCard } from './AddressCard'
 export { default as TakingPartCard } from './TakingPartCard'
 export { default as OrganisationCard } from './OrganisationCard'
 export { default as SignInCard } from './SignInCard'
+export { default as ActivityCard } from './ActivityCard'   // S5: My activity (in this chunk too)

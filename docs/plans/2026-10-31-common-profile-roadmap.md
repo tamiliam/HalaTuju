@@ -2,7 +2,9 @@
 
 **Status:** APPROVED 2026-10-31 (roadmap + mock-ups https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582).
 **S1 + S2 LIVE 2026-10-31** (main `3ad1f387`, migration scholarship 0193; retro
-`docs/retrospectives/retrospective-2026-10-31-common-profile-s1-s2.md`). Next: S3.
+`docs/retrospectives/retrospective-2026-10-31-common-profile-s1-s2.md`).
+**S3 + S4 + S5 LIVE 2026-10-31 — ARC DONE** (main `d85eedbc`; api-01220-drw, web-01044-mjt; migration scholarship
+0195; back-fill 961 rows; retro `docs/retrospectives/retrospective-2026-10-31-common-profile-s3-s5.md`).
 
 ## Why
 
@@ -88,6 +90,11 @@ addition: one optional fourth language (name + fluency) on the Qualifications an
 - **First deploy point** (owner go): migrate first, then API, then web.
 
 ### S3 — The activity list, part 1: the list and the case actions — high, ~30 files
+**Status:** BUILT 2026-10-31 on branch profiles (not pushed). Migration `scholarship/0195_staff_activity` (written
+against 0193; another session holds 0194 — renumber at merge). Writer `apps/scholarship/staff_activity.record`;
+the courses app reaches it through `apps/courses/staff_activity_hook.py` (registered at start-up, no import).
+Verbs added beyond the list: `decline_sent_to_qc` (the reviewer's decline road) beside `declined`; the QC's
+click is one `qc_decision` row. The S4 verbs are already in the closed list.
 - Model `StaffActivity` (actor FK, organisation, `verb` from a closed list, subject type + id, small
   `meta` with no free text, `created_at`, `backfilled`). Helper `staff_activity.record(...)` (D9).
 - Wired into: invitation accepted, first sign-in, profile updated, verify-and-accept, verdict, decline,
@@ -95,6 +102,12 @@ addition: one optional fourth language (name + fluency) on the Qualifications an
   witness a contract, permission change, invitation sent.
 
 ### S4 — The activity list, part 2: money, contracts, requests + back-fill — high, ~30 files
+**Status:** BUILT 2026-10-31 on branch profiles (not pushed). Every verb wired (`staff_activity.WIRED`); reader
+`GET admin/me/activity/` (`staff_activity_read.py`); back-fill `backfill_staff_activity` with a cut-off AND a
+per-event twin check (the cut-off alone rebuilt the first live action — the stamp precedes its live row).
+StudentActivity is not read: its staff rows duplicate the stamps. Withheld/returned tranches, declined requests
+and name-only stamps (countersign, a super's witness) cannot be dated or attributed and are counted, not rebuilt.
+Adversarial review: pending (lead).
 - Wired into: payment run created / signed (maker, checker, approver), tranche release / withhold / return,
   credit recorded / checked / confirmed, contract template create / vet / submit / deploy, countersign,
   benefactor vetting, invoice issue / send / void, payment declared / confirmed / rejected, org request
@@ -108,6 +121,9 @@ addition: one optional fourth language (name + fluency) on the Qualifications an
 - **Adversarial review** (money + identity).
 
 ### S5 — My activity on the page + close — medium, ~20 files
+**Status:** BUILT 2026-10-31 on branch `profiles` (not pushed; web only, no API change). The card sits in the existing
+lazy `adminProfile/cards` chunk (D10); `/admin/profile` became a wide route for its right-hand column. Guide + FAQ
+are English only (the manual is). Retrospective: after deploy (lead).
 - The activity card (day groups, filters "All / Students / Money / Profile and sign-in", Show older,
   "only you can see this"; back-filled rows marked as rebuilt).
 - en / ms / ta text (Tamil style guide), Guide + FAQ for every role, decisions, CHANGELOG,

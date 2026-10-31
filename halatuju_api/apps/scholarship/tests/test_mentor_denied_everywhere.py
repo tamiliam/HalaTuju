@@ -26,10 +26,12 @@ from apps.scholarship.tests.test_source_user_denied_everywhere import (
 
 #: (route, method) pairs a mentor may receive data from in S7a. Each is about the caller's OWN
 #: account: the sign-in record, the common Profile page (`admin/me/`), the reviewer cards a mentor also
-#: fills in (`admin/reviewer-profile/`), and removing its own photo (none here, so nothing to remove).
+#: fills in (`admin/reviewer-profile/`), removing its own photo (none here, so nothing to remove), and
+#: its own activity list (common profile S4: own rows only, every other subject a neutral word).
 ALLOWED = {
     ('api/v1/admin/role/', 'get'),
     ('api/v1/admin/me/', 'get'),
+    ('api/v1/admin/me/activity/', 'get'),
     ('api/v1/admin/me/', 'patch'),
     ('api/v1/admin/me/photo/', 'delete'),
     ('api/v1/admin/reviewer-profile/', 'get'),

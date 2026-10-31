@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from halatuju.pagination import FlexiblePageNumberPagination
 from apps.courses.search import apply_people_search
 from .. import reopen as reopen_service
+from .. import staff_activity
 from ..document_snapshot import document_snapshot
 from ..models import Referee, ScholarshipApplication
 from ..serializers import RefereeSerializer
@@ -341,6 +342,9 @@ class AdminVerifyAcceptView(_AdminBase):
             app.verified_by = admin.email
             app.verify_checklist = request.data.get('checklist', {}) or {}
             app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+            # Common profile S3: the reviewer's own activity list, in this transaction. The only
+            # writer of `verified_at`, so the only door.
+            staff_activity.record(admin, staff_activity.VERIFY_ACCEPT, app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

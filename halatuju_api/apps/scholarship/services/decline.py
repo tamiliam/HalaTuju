@@ -161,8 +161,11 @@ def _finalise_reject(application, category, by_email):
     _send_decline_for(application)
 
 
-def admin_reject(application, admin, category, cooloff=None):
+def admin_reject(application, admin, category, cooloff=None, *, activity=True):
     """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
+
+    ``activity``: the decline is a `declined` row on ``admin``'s own activity list (common profile
+    S3). The QC's decision passes False — its click is ONE row, `qc_decision`, written by the view.
 
     ``cooloff`` (a ``timedelta``) overrides the organisation's day-based ``decline_hold_days``
     embargo — used by the QC-confirmed decline, whose window is the organisation's
@@ -232,6 +235,10 @@ def admin_reject(application, admin, category, cooloff=None):
                                         'pending_decline_by'])
     else:
         _send_decline_for(application)
+    if activity:
+        from .. import staff_activity
+        staff_activity.record(admin, staff_activity.DECLINED, application,
+                              meta={'category': category})
     return True
 
 
@@ -259,6 +266,8 @@ def org_admin_reject(application, admin, comments):
         raise ValueError('comments_required')
     _record_reject(application, 'incomplete', getattr(admin, 'email', '') or '', comments=comments)
     _send_decline_for(application)
+    from .. import staff_activity     # common profile S3; the reason itself is never copied
+    staff_activity.record(admin, staff_activity.DECLINED, application, meta={'category': 'incomplete'})
     logger.info('AUDIT org_admin_reject app_id=%s by=%s', application.id,
                 getattr(admin, 'email', '') or '?')
     return True

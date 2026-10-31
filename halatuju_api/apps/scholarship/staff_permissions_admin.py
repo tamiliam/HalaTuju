@@ -181,13 +181,23 @@ def plan_change(target, asked, *, by=None):
 
 
 def record(target, before, after, *, by, kind):
-    """One history row. Written inside the caller's transaction."""
+    """One history row. Written inside the caller's transaction.
+
+    The ONE writer of a permission change — the editor's PATCH (`change_permissions`, kind 'edit')
+    and a role change that reset a custom set (`staff_lifecycle.change_role`, kind 'role_change')
+    both come through here — so it is also where ``by`` gets the `permissions_changed` row on their
+    own activity list (common profile S3): the subject is the person changed, never a copied name."""
+    from . import staff_activity
     from .models import StaffPermissionChange
-    return StaffPermissionChange.objects.create(
+    row = StaffPermissionChange.objects.create(
         target=target, target_email=target.email or '', organisation_id=target.owning_organisation_id,
         kind=kind, role=target.role, before=list(before), after=list(after),
         changed_by_email=(getattr(by, 'email', '') or ''),
         changed_by_role=('super' if getattr(by, 'is_super', False) else getattr(by, 'role', '')) or '')
+    staff_activity.record(by, staff_activity.PERMISSIONS_CHANGED, target, meta=lambda: {
+        'kind': kind, 'added': [k for k in after if k not in before],
+        'removed': [k for k in before if k not in after]})
+    return row
 
 
 def change_permissions(target_id, asked, *, by, dry_run=False):

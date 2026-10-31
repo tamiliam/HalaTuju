@@ -14,6 +14,7 @@ from apps.courses.models import PartnerAdmin
 from .. import birth_state
 from .. import pool
 from .. import reopen as reopen_service
+from .. import staff_activity
 from ..interview_completeness import decision_gate_applies, decision_refusal
 from ..verdict_engine import build_verdict
 from ..models import ScholarshipApplication, SponsorProfile
@@ -42,6 +43,32 @@ def _text(value):
 
 _OFFICER_FACT_VALUES = {'pass', 'fail', ''}
 _OFFICER_OVERALL_VALUES = {'accept', 'decline', 'hold', ''}
+
+
+def _save_verdict(app, admin, verdict_fields, sp_to_save):
+    """The recorded verdict's writes, as ONE unit of change (TD audit 2026-06-14): the application,
+    the finalised profile, the close of a reopen it corrects, and — common profile S3 — the
+    `verdict_recorded` row on the officer's own activity list. (Extracted from
+    `AdminRecordVerdictView.post` when the activity row joined, to keep it under 150 lines.)"""
+    with transaction.atomic():
+        app.save(update_fields=verdict_fields)
+        if sp_to_save is not None:
+            sp_to_save.save()
+        # If this re-records a REOPENED decision, that's a real correction
+        # (counting model B) — close the audit row + clear the reopened flag.
+        # Publishing is NOT done here — it is bound to QC-Accept (the case re-enters
+        # AWAITING QC after verify-accept, and QC re-publishes on clearance).
+        reopen_service.close_reopen_with_change(app)
+        staff_activity.record(admin, staff_activity.VERDICT_RECORDED, app, meta=lambda: {
+            'overall': app.officer_verdict.get('overall') or 'blank',
+            'finalised': sp_to_save is not None})
+
+
+def _record_qc(admin, app, decision, outcome):
+    """Common profile S3: the QC's click is ONE `qc_decision` row on the QC's own activity list —
+    the services it runs underneath (`reopen_decision`, `admin_reject`) are told not to add theirs."""
+    staff_activity.record(admin, staff_activity.QC_DECISION, app,
+                          meta={'decision': decision, 'outcome': outcome})
 
 
 class AdminRecordVerdictView(_AdminBase):
@@ -182,15 +209,7 @@ class AdminRecordVerdictView(_AdminBase):
                         # so the FE messages "ready for QC", never "published to sponsors".
                         finalise_result = {'ok': True, 'published': False, 'leaks': leaks}
 
-        with transaction.atomic():
-            app.save(update_fields=verdict_fields)
-            if sp_to_save is not None:
-                sp_to_save.save()
-            # If this re-records a REOPENED decision, that's a real correction
-            # (counting model B) — close the audit row + clear the reopened flag.
-            # Publishing is NOT done here — it is bound to QC-Accept (the case re-enters
-            # AWAITING QC after verify-accept, and QC re-publishes on clearance).
-            reopen_service.close_reopen_with_change(app)
+        _save_verdict(app, admin, verdict_fields, sp_to_save)
         if 'award_amount' in verdict_fields:
             logger.info('AUDIT award_amount_set app_id=%s by=%s was=%s now=%s via=verdict',
                         app.id, (getattr(admin, 'email', '') or '?'),
@@ -249,6 +268,7 @@ class AdminSubmitDeclineView(_AdminBase):
                  'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
         app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
         app.save(update_fields=['status'])
+        staff_activity.record(admin, staff_activity.DECLINE_SENT_TO_QC, app)   # common profile S3
         logger.info('AUDIT submit_decline admin_id=%s app_id=%s', admin.id, pk)
         return Response(AdminApplicationDetailSerializer(app).data)
 
@@ -319,10 +339,12 @@ class AdminQcDecisionView(_AdminBase):
                 from apps.courses import org_config
                 hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
                 try:
-                    admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
+                    admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours),
+                                 activity=False)
                 except ValueError:
                     return Response({'error': 'This case cannot be declined from its current state.',
                                      'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+                _record_qc(admin, app, 'accept', 'declined')
                 app.refresh_from_db()
                 logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
                 return Response(AdminApplicationDetailSerializer(app).data)
@@ -368,6 +390,7 @@ class AdminQcDecisionView(_AdminBase):
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
             pool.publish_profile_to_pool(app)
+            _record_qc(admin, app, 'accept', 'recommended')
             logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         if decision == 'reopen':
@@ -377,9 +400,10 @@ class AdminQcDecisionView(_AdminBase):
                     {'error': 'Say what was missing so the reviewer can fix it.',
                      'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
             try:
-                reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
+                reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
             except reopen_service.ReopenError as e:
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            _record_qc(admin, app, 'reopen', 'reopened')
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):
                 from ..emails import send_qc_returned_email
@@ -407,7 +431,7 @@ class AdminQcDecisionView(_AdminBase):
                     {'error': 'Say why you are rejecting so the reviewer has your reason.',
                      'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
             try:
-                reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
+                reopen_service.reopen_decision(app, by_admin=admin, reason=comments, activity=False)
             except reopen_service.ReopenError as e:
                 return Response({'error': e.message, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
             reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
@@ -415,10 +439,11 @@ class AdminQcDecisionView(_AdminBase):
             from apps.courses import org_config
             hours = org_config.value(app.owning_organisation, 'qc_decline_hold_hours')
             try:
-                admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
+                admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours), activity=False)
             except ValueError:
                 return Response({'error': 'This case cannot be rejected from its current state.',
                                  'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+            _record_qc(admin, app, 'reject', 'declined')
             app.refresh_from_db()
             reviewer = app.assigned_to
             if reviewer is not None and getattr(reviewer, 'email', ''):

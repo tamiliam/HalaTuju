@@ -196,6 +196,17 @@ def login_used_elsewhere(uid):
             or Sponsor.objects.filter(supabase_user_id=uid).exists())
 
 
+def credential_was_issued(admin):
+    """True when the NEWEST invitation for this login row issued a temporary password — then its UID
+    is a login WE made. False (no invitation, or one that issued none) means the UID came with the
+    person: a Google sign-in or a login they already had, linked by `get_admin` on a verified email.
+    TD-440 (2026-10-31): a Resend rotates a password only on the first."""
+    from .models import Invitation
+    inv = (Invitation.objects.filter(partner_admin=admin).order_by('-created_at', '-id')
+           .only('credential_issued').first())
+    return bool(inv and inv.credential_issued)
+
+
 def kill_for_cancel(account, inv):
     """After a staff invitation is cancelled: make the emailed temporary password stop working.
 

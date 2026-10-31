@@ -1768,3 +1768,12 @@ is prefetched — weight moved off a route's first load can still travel in the 
   moment the project's captcha (or any other policy) refused the check. **Rule:** match the provider's documented
   codes (`invalid_credentials`, `invalid_grant`); every other refusal is "could not check" (503). (Common profile
   S1+S2, 2026-10-31)
+- **A branch's debt numbers are only provisional until it is rebased.** Two sessions each took "the next free TD"
+  (TD-440, then TD-441) and the clash surfaced only at rebase. **Rule:** at every rebase, grep the incoming main's
+  `docs/technical-debt.md` for each TD number the branch adds, and renumber in that same rebase. (Common profile
+  S3–S5, 2026-10-31)
+- **A worktree's `node_modules` junction does not follow a peer's new dependency.** Mobile M0 added
+  `@playwright/test`; the shared main-checkout `node_modules` predated it, so the merged tree's typecheck failed on
+  a missing module, not on code. **Rule:** after a rebase that changes `halatuju-web/package.json`, check each new
+  dependency exists in the shared `node_modules` before the gates; add it with `npm install --no-save <pkg>@<exact>`
+  in the main checkout, never `npm ci` there (other sessions run from it). (Common profile S3–S5, 2026-10-31)

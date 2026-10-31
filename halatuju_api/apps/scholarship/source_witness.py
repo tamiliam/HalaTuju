@@ -53,7 +53,7 @@ def console_link(source, application):
     return _cockpit_link(application)
 
 
-def record_once(agreement, *, org, by_name, witness_name='', admin=None, ip=None):
+def record_once(agreement, *, org, by_name, witness_name='', admin=None, ip=None, actor=None):
     """Record the witness through `bursary.record_witness`, exactly once; returns the agreement.
 
     ``admin`` / ``ip`` are the SOURCE user and their address (a super passes neither). Under the row
@@ -67,8 +67,13 @@ def record_once(agreement, *, org, by_name, witness_name='', admin=None, ip=None
     distribution inline, and the super's fallback and its suite (`test_bursary_agreement.py`, which
     asserts the re-render and the mail on the same call, inside `TestCase` where on-commit callbacks
     never run) rely on that. The cost is a longer-held lock on ONE agreement row, at a volume of a
-    handful of witnesses a month."""
-    from . import bursary
+    handful of witnesses a month.
+
+    The witness is a `contract_witnessed` row on the witnessing person's own activity list (common
+    profile S3), in this transaction: ``admin`` for a source user, ``actor`` for the super's fallback
+    (which passes no ``admin``, because ``witness_admin`` names a SOURCE user only). Both doors come
+    through here, so the row is written once whichever door was used."""
+    from . import bursary, staff_activity
     from .models import BursaryAgreement, ScholarshipApplication
     with transaction.atomic():
         # The application FIRST (the override lives on it), then the agreement. `of=('self',)` and
@@ -88,4 +93,7 @@ def record_once(agreement, *, org, by_name, witness_name='', admin=None, ip=None
             locked.witness_admin = admin
             locked.witness_ip = ip
             locked.save(update_fields=['witness_admin', 'witness_ip', 'updated_at'])
+        staff_activity.record(actor or admin, staff_activity.CONTRACT_WITNESSED, application,
+                              meta=lambda: {'agreement': locked,
+                                            'by': 'source' if admin is not None else 'staff'})
     return locked

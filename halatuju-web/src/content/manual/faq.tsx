@@ -66,6 +66,12 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>Email the HalaTuju team at <strong>help@halatuju.xyz</strong> and we&rsquo;ll help.</>,
     },
     {
+      q: <>Who can see <strong>My activity</strong> on my profile? Why are some entries missing?</>,
+      a: <>Only you. The list shows what you did, newest first, and nobody else can open it. Entries marked
+        <strong> rebuilt</strong> were put together from older records when the list began, so a few early ones
+        may be missing. A student you can no longer open shows as &ldquo;a student&rdquo; rather than by name.</>,
+    },
+    {
       q: <>I can see a page my role doesn&rsquo;t usually have. Is that a mistake?</>,
       a: <>Probably not. Your organisation admin can give a person more than their role&rsquo;s usual set
         &mdash; a reviewer who also looks after <strong>Spending</strong>, for example &mdash; or take something

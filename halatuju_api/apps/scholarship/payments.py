@@ -371,7 +371,7 @@ def _next_reference(payment_date):
 
 
 @transaction.atomic
-def create_run(organisation, programme, payment_date, period_month, by_email=''):
+def create_run(organisation, programme, payment_date, period_month, by_email='', actor=None):
     """Create a DRAFT run for ``organisation``'s ``programme`` on ``payment_date`` paying for
     ``period_month`` (any day of the covered month; stored normalised to the 1st) — D4/D6.
     Rejects a past date (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student.
@@ -417,6 +417,10 @@ def create_run(organisation, programme, payment_date, period_month, by_email='')
             paid_to_date_snapshot=paid_to_date(app),
             vircle_id_snapshot=(app.vircle_id or ''),
         )
+    # Common profile S3/S4: the maker's own activity list (best-effort; never raises). The view
+    # passes the person who pressed Create; a call with no actor writes nothing.
+    from . import staff_activity
+    staff_activity.record(actor, staff_activity.PAYMENT_RUN_CREATED, run)
     return run
 
 

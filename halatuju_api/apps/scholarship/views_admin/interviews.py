@@ -222,7 +222,7 @@ class AdminInterviewSubmitView(_AdminBase):
         if session.interviewer_id is None:
             session.interviewer = admin
             session.save(update_fields=['interviewer'])
-        submit_interview(session)
+        submit_interview(session, actor=admin)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

@@ -25,7 +25,7 @@
 
 export type ProfileCardId =
   | 'you' | 'contact' | 'mentoring' | 'access' | 'qualifications' | 'address' | 'takingPart'
-  | 'organisation' | 'signin'
+  | 'organisation' | 'signin' | 'activity'
 
 export interface ProfileCardContext {
   role: string | undefined
@@ -62,11 +62,46 @@ export const PROFILE_CARDS: readonly ProfileCard[] = [
   { id: 'organisation', order: 70,
     show: (ctx) => !ctx.isSuper && (ctx.role === 'partner' || ctx.role === 'source_partner') },
   { id: 'signin', order: 80, show: everyone },
+  // S5: My activity — everyone, OWN rows only (the server reads `actor = the caller`, every role).
+  // It sits in the page's side column (`SIDE_CARDS`), not under Sign-in.
+  { id: 'activity', order: 90, show: everyone },
 ]
+
+/** The cards drawn in the page's right-hand column on a wide screen (stacked last on a phone). */
+export const SIDE_CARDS: ReadonlySet<ProfileCardId> = new Set<ProfileCardId>(['activity'])
 
 /** The cards this person sees, in page order. */
 export function cardsFor(ctx: ProfileCardContext): ProfileCardId[] {
   return [...PROFILE_CARDS].sort((a, b) => a.order - b.order).filter((c) => c.show(ctx)).map((c) => c.id)
+}
+
+/** The filters of the My activity card — `?kind=` on `GET admin/me/activity/`. */
+export type ActivityFilter = 'all' | 'students' | 'money' | 'profile'
+
+const MONEY_PERMS = ['spending', 'payments_prepare', 'payments_check', 'payments_approve']
+const CASE_PERMS = ['review', 'see_all', 'qc']
+
+/**
+ * The My activity chips THIS person is offered (common profile S5), in order. All and "Profile and
+ * sign-in" are everyone's; Students only for somebody who acts on cases (a case permission, or a role
+ * whose work is cases — a source witnesses its students' agreements); Money only for somebody with a
+ * money power (a money permission, or a role that signs or records money). A reviewer gets All /
+ * Students / Profile and sign-in (the approved mock-up); a mentor and a referral partner All / Profile.
+ *
+ * ⚠ A CHIP IS A SHORTCUT, NEVER A FENCE. The list holds the person's own rows only; a row of a kind
+ * whose chip is not offered (a power taken away since) is still under All. The role OR the
+ * permission counts, so a power that is a role's (an admin recording a credit) is not missed.
+ */
+export function activityFilters(ctx: ProfileCardContext): ActivityFilter[] {
+  const has = (keys: readonly string[]) => keys.some((k) => ctx.permissions?.includes(k))
+  const role = ctx.role ?? ''
+  const out: ActivityFilter[] = ['all']
+  if (ctx.isSuper || has(CASE_PERMS) || ['org_admin', 'admin', 'qc', 'reviewer', 'source_partner'].includes(role)) {
+    out.push('students')
+  }
+  if (ctx.isSuper || has(MONEY_PERMS) || ['org_admin', 'admin', 'finance'].includes(role)) out.push('money')
+  out.push('profile')
+  return out
 }
 
 /** The context for the signed-in person, from what `/admin/role/` served. */

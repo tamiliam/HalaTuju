@@ -13,6 +13,7 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from apps.courses.models import PartnerAdmin
+from .. import staff_activity
 from ..models import ReviewerProfile, ScholarshipApplication
 from ..serializers_admin import ReviewerProfileSerializer
 from ..services import PauseError, is_review_target, set_paused
@@ -234,7 +235,8 @@ class _ReviewersBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.may_read_team(admin):
             return None, None, self._deny_role()
         org_id = None if self.has_role(admin, 'super') else admin.owning_organisation_id
         return admin, org_id, None
@@ -544,11 +546,22 @@ class ReviewerProfileView(_AdminBase):
         body = {k: v for k, v in request.data.items() if k not in ('paused', 'paused_at')}
         serializer = ReviewerProfileSerializer(profile, data=body, partial=True)
         serializer.is_valid(raise_exception=True)
+        # Common profile S3 / S4 review L4: the names of the fields whose value CHANGED, only.
+        fields = sorted(k for k, v in serializer.validated_data.items() if getattr(profile, k) != v)
         serializer.save()
+        refusal = None
         if 'paused' in request.data:
+            was = PartnerAdmin.objects.filter(pk=admin.pk).values_list('paused_at', flat=True).first()
             try:
                 set_paused(admin, request.data.get('paused'))
+                now = PartnerAdmin.objects.filter(pk=admin.pk).values_list(
+                    'paused_at', flat=True).first()
+                fields += ['paused'] if (was is None) != (now is None) else []
             except PauseError as e:
-                return Response({'error': e.code, 'code': e.code},
-                                status=status.HTTP_400_BAD_REQUEST)
+                refusal = Response({'error': e.code, 'code': e.code},
+                                   status=status.HTTP_400_BAD_REQUEST)
+        if fields:      # what WAS saved, even when the pause was then refused
+            staff_activity.record(admin, staff_activity.PROFILE_UPDATED, meta={'fields': fields})
+        if refusal is not None:
+            return refusal
         return Response(self._payload(profile, admin))

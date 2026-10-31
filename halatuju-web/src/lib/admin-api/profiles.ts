@@ -121,6 +121,47 @@ export async function changeOwnPassword(currentPassword: string, newPassword: st
     { current_password: currentPassword, new_password: newPassword }, options)
 }
 
+// ── My activity (common profile S5) ──────────────────────────────────
+// `GET admin/me/activity/` — the caller's OWN rows, newest first (`staff_activity_read.items`).
+// Opted in for a source user and a mentor. A subject's `label` is decided by the server when the
+// list is read: a name or a reference when `state` is 'visible', else an English neutral word the
+// card does NOT show (it translates its own, `lib/profileActivity.ts`).
+
+export interface ActivitySubject {
+  type: string
+  state: 'visible' | 'hidden' | 'removed'
+  label: string
+  /** The subject's id — only when it is visible. */
+  id: number | null
+}
+
+export interface ActivityItem {
+  id: number
+  verb: string
+  kind: 'students' | 'money' | 'profile' | 'other'
+  created_at: string
+  /** Rebuilt from an older record by the back-fill (shown as "rebuilt"). */
+  backfilled: boolean
+  subject: ActivitySubject | null
+  /** Ids, short codes, numbers and booleans only (`staff_activity.META_KEYS`). */
+  meta: Record<string, unknown>
+}
+
+export interface ActivityPage {
+  results: ActivityItem[]
+  /** The opaque cursor of the next page; null on the last. */
+  next: string | null
+}
+
+/** Refusals (400) throw with `code`: `bad_kind`, `bad_cursor`, `bad_limit`. */
+export async function getMyActivity(
+  kind: 'all' | 'students' | 'money' | 'profile', cursor: string | null, options?: ApiOptions,
+) {
+  const q = new URLSearchParams({ kind })
+  if (cursor) q.set('cursor', cursor)
+  return adminFetch<ActivityPage>(`/api/v1/admin/me/activity/?${q.toString()}`, options)
+}
+
 // ── Reviewer profile (F6) ───────────────────────────────────────────
 // A reviewer's own credentials + contact details. Self-scoped endpoint
 // (always the calling admin's own row). phone/address are private staff

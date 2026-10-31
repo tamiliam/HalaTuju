@@ -6,7 +6,6 @@ Build hours left for `build_hours.py` on 2026-10-28, moves only: this file had r
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
-from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -140,12 +139,13 @@ class _InvoiceBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, False, self._deny()
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
         is_super = self.has_role(admin, 'super')
         # Same 404-first gate as the usage screen: every non-super keeps getting the dark 404
         # while `BILLING_USAGE_ENABLED` is off, so the invoices route adds no existence signal.
-        if not is_super and not getattr(settings, 'BILLING_USAGE_ENABLED', False):
+        if not is_super and not surface_gates.billing_live():
             return None, False, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        if not (is_super or admin.role == 'org_admin'):
+        if not surface_gates.may_read_invoices(admin):
             return None, False, self._deny_role()
         return admin, is_super, None
 
@@ -263,7 +263,7 @@ class AdminInvoicesView(_InvoiceBase):
                             status=status.HTTP_404_NOT_FOUND)
         try:
             inv = invoicing.issue_invoice(
-                org, month, issued_by_email=admin.email or '',
+                org, month, issued_by_email=admin.email or '', actor=admin,
                 override_reason=body.get('override_reason') or '',
                 # Blank = today, the ordinary case. A value BACK-DATES the printed issue date and
                 # the due date with it; `invoicing.issue_date_for` holds the bounds.
@@ -292,9 +292,10 @@ class AdminInvoiceActionView(_InvoiceBase):
         by = admin.email or ''
         try:
             if action == 'send':
-                invoicing.send_invoice(inv, sent_by_email=by)
+                invoicing.send_invoice(inv, sent_by_email=by, actor=admin)
             elif action == 'void':
-                invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by)
+                invoicing.void_invoice(inv, reason=request.data.get('reason'), voided_by_email=by,
+                                       actor=admin)
             elif action == 'receipt':
                 receipt = invoicing.record_receipt(
                     inv,
@@ -303,7 +304,7 @@ class AdminInvoiceActionView(_InvoiceBase):
                     reference=request.data.get('reference'),
                     method=(request.data.get('method') or 'bank_transfer').strip(),
                     note=request.data.get('note') or '',
-                    recorded_by_email=by)
+                    recorded_by_email=by, actor=admin)
                 # AFTER the money is recorded, never before — see `invoicing.email_receipt`. The
                 # result is not checked here on purpose: the receipt exists either way, and
                 # whether it went is read off `emailed_at` in the payload below.

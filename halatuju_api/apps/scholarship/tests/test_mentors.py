@@ -35,6 +35,9 @@ KILL = 'apps.courses.supabase_admin.kill_temp_password'
 READ = 'apps.courses.supabase_admin.read_auth_user'
 DELETE = 'apps.courses.supabase_admin.delete_auth_user'
 
+#: TD-440: a Resend reads the live login first — one nobody has used yet.
+UNTOUCHED = {'id': 'x', 'last_sign_in_at': None, 'app_metadata': {}}
+
 SUPABASE = dict(SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co')
 
 
@@ -63,7 +66,8 @@ class _Base(TestCase):
         return PartnerAdmin.objects.get(email=email)
 
     def act(self, mentor_id, action, caller=None):
-        with patch(ISSUE, return_value=True), patch(KILL, return_value='killed'):
+        with patch(ISSUE, return_value=True), patch(KILL, return_value='killed'), \
+                patch(READ, return_value=UNTOUCHED):
             return authed_client(caller or self.lead).post(f'{MENTORS}{mentor_id}/{action}/',
                                                            {}, format='json')
 
@@ -89,6 +93,19 @@ class TestInvite(_Base):
                          ('mentor', 'mentor', self.org.pk, mentor.pk, login.pk, True, 1))
         self.assertEqual((body['mentor']['status'], body['mentor']['signed_in'], body['emailed']),
                          ('invited', False, True))
+
+    def test_the_invite_and_its_resend_are_on_the_inviters_own_activity_list(self):
+        """Common profile S3/S4: whoever pressed Invite / Resend gets an `invitation_sent` row; the
+        mentor gets none for being invited."""
+        from apps.scholarship.models import StaffActivity
+        r = self.invite()
+        self.act(r.json()['mentor']['id'], 'resend')
+        rows = list(StaffActivity.objects.filter(verb='invitation_sent').order_by('id')
+                    .values_list('actor_id', 'subject_type', 'meta'))
+        self.assertEqual([(a, t) for a, t, _ in rows], [(self.lead.pk, 'invitation')] * 2)
+        self.assertEqual([(m['audience'], m['resend']) for _, _, m in rows],
+                         [('mentor', False), ('mentor', True)])
+        self.assertFalse(StaffActivity.objects.filter(actor=self.login()).exists())
 
     def test_the_mentor_letter_is_the_only_email_and_carries_the_password(self):
         self.invite()
@@ -510,7 +527,7 @@ class TestReviewFixes(_Base):
         # And a temp-password mentor's Resend still rotates its password.
         self.invite(new_login=('uid-tp', False, None), email='tp@example.org')
         tp = Mentor.objects.exclude(pk=mentor.pk).get()
-        with patch(ISSUE, return_value=True) as issued:
+        with patch(ISSUE, return_value=True) as issued, patch(READ, return_value=UNTOUCHED):
             r = authed_client(self.lead).post(f'{MENTORS}{tp.pk}/resend/', {}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
         issued.assert_called_once()
@@ -585,7 +602,12 @@ class TestNoResendResetsAStudentsOrSponsorsLogin(_Base):
         ours = make_admin('reviewer', owning_org=self.org)
         PartnerAdmin.objects.filter(pk=ours.pk).update(supabase_user_id='ours-uid')
         ours.refresh_from_db()
-        with patch(ISSUE, return_value=True) as issued:
+        from apps.scholarship import invitations
+        for row in (theirs, ours):   # both look like logins WE made (TD-440); only the student check differs
+            invitations.create_or_refresh(audience='staff', email=row.email, name=row.name,
+                                          role='reviewer', organisation=self.org, partner_admin=row,
+                                          credential_issued=True)
+        with patch(ISSUE, return_value=True) as issued, patch(READ, return_value=UNTOUCHED):
             self.assertEqual(staff_reinvite.reissue_credential(theirs), (None, None))
             issued.assert_not_called()
             temp, err = staff_reinvite.reissue_credential(ours)
