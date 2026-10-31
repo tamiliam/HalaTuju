@@ -204,7 +204,9 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 │   ├── electricity_doc.py         #   electricity_genuineness — issuer identity + bill grammar (2026-07-10, MODEL_VERSION 1.0.0)
 │   └── water_doc.py               #   water_genuineness — GRAMMAR-first, operator-as-bonus (2026-07-10, MODEL_VERSION 1.0.0)
 ├── doc_signatures.py              # back-compat shim → genuineness/results_doc + bands
-├── staff_activity.py              # Common profile S3: THE writer of `staff_activity` — record(actor, verb, subject, meta): best-effort, savepoint, ids only; S3_WIRED = every verb's writers
+├── staff_activity.py              # Common profile S3: THE writer of `staff_activity` — record(actor, verb, subject, meta): best-effort, savepoint, ids only; WIRED = every verb's writers, KIND_OF_VERB = the filters
+├── staff_activity_read.py         # Common profile S4: the reader behind GET admin/me/activity/ — own rows, cursor paging, labels decided NOW (D8), "(removed)" (D7), one query per subject type
+├── staff_activity_backfill.py     # Common profile S4: `manage.py backfill_staff_activity --dry-run|--apply` — rebuilds rows from history tables + stamps; cut-off + live-twin check; idempotent
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
 └── tests/                         # test_models.py (4), test_api.py (13)

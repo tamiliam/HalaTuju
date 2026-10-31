@@ -124,6 +124,8 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   user did (actor, organisation, a verb from a closed list, subject type + id, a `meta` of ids and codes only,
   `created_at`, `backfilled`). Own-only (rows go with the person), ids never copied text, `subject_id` not a
   foreign key (a purge never touches it). Written only by `apps/scholarship/staff_activity.record`, best-effort.
+  Read only through `GET admin/me/activity/` (`staff_activity_read.py`: own rows; names decided at read time, D8);
+  rebuilt from older records by `backfill_staff_activity` (S4; rows marked `backfilled`).
 
 ## Scheduled work
 

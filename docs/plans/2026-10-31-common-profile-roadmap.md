@@ -100,6 +100,12 @@ click is one `qc_decision` row. The S4 verbs are already in the closed list.
   witness a contract, permission change, invitation sent.
 
 ### S4 — The activity list, part 2: money, contracts, requests + back-fill — high, ~30 files
+**Status:** BUILT 2026-10-31 on branch profiles (not pushed). Every verb wired (`staff_activity.WIRED`); reader
+`GET admin/me/activity/` (`staff_activity_read.py`); back-fill `backfill_staff_activity` with a cut-off AND a
+per-event twin check (the cut-off alone rebuilt the first live action — the stamp precedes its live row).
+StudentActivity is not read: its staff rows duplicate the stamps. Withheld/returned tranches, declined requests
+and name-only stamps (countersign, a super's witness) cannot be dated or attributed and are counted, not rebuilt.
+Adversarial review: pending (lead).
 - Wired into: payment run created / signed (maker, checker, approver), tranche release / withhold / return,
   credit recorded / checked / confirmed, contract template create / vet / submit / deploy, countersign,
   benefactor vetting, invoice issue / send / void, payment declared / confirmed / rejected, org request
