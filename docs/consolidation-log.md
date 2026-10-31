@@ -35,6 +35,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-30 Student maintenance Sprint 5a (scholar file Money + Contract tabs; Payments-rule money, countersigned contract) — 3d636795 cebc9850
 - 2026-10-30 Student maintenance Sprint 5b (her Funds + Contract tabs on My Bursary; bursary message slice; closed file promises nothing) — f9c484df 2b62a6f8
 - 2026-10-30 Student maintenance Sprint 6a (one Student communications page for all 29 student emails; switches for the 9 safe ones; forward-only billing of student sends; migration 0189) — a1c9f85b 002c6ad7
+- 2026-10-31 Student maintenance Sprint 6b (letters on the scholar file and on My Bursary; documents only; + adversarial review round; migration 0192) — 0e506798 98b0f964
 - 2026-10-28 Back-issuing invoices, grouped development lines, bug work free (migrations 0181, 0182) — ec21c0b5 4c6aca75 fc864c2c 62ebb121 b0473994 ceea94e0
 - 2026-10-29 Billing — the busy-meter guard, the tenant payment declaration and the owner's four readings (migrations 0184, 0185) — dec989c6 b1045b8b e20a3363 8e946874 6db38edc
 - 2026-10-29 Student maintenance Sprint 2 (admin Scholars list and maintenance file) — 3b27acbd 1debc6cc _(logged by the billing session at its close, as above)_

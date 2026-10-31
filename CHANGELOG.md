@@ -2,10 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31
+## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31 — LIVE 2026-10-31 (main 98b0f964; api-01213-crq, web-01036-mkf)
 
 Roadmap Sprint 6, second half (owner-approved design: LettersAdmin, LettersStudent, CommsLetters). Migration
-`scholarship/0192_letters` — MIGRATE FIRST, by hand (two new tables, RLS + service_role policy each). Not pushed.
+`scholarship/0192_letters` — applied by hand on prod 2026-10-31 before the push (two new tables, RLS + one
+service_role policy each, ledger row recorded — never re-apply that DDL). Both builds SUCCESS, health 200, no 500s.
 
 - **The scholar file's Letters tab:** every letter with its kind, who issued it and when, the PDF language, whether
   the email went (or "Not emailed — Resend email"), and its state — awaiting acknowledgement, overdue, acknowledged

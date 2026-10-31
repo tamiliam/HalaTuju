@@ -1234,13 +1234,15 @@ git-pruned, no junctions, three harmless files).
 
 ---
 
-**Student maintenance Sprints 1–6a are ALL LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
+**Student maintenance Sprints 1–6b are ALL LIVE (S1 `99ee813b` + migration `scholarship/0183`, S2 `1debc6cc`,
 S3 `c007883e`, S4a `10072c71` + `scholarship/0186`, S4b `47d00f11` + `scholarship/0188`, S5a `cebc9850`, S5b
 `2b62a6f8`, S6a `a1c9f85b` + review `002c6ad7` + `scholarship/0189` (api-01209-74s, 2026-10-30 ~08:20 UTC; 0189
 applied by hand first, recorded — never re-apply that DDL); retros `docs/retrospectives/retrospective-2026-10-29-maintenance-s1.md` …
 `-s4a.md`, `retrospective-2026-10-30-maintenance-s4b.md`, `-s5a.md`, `-s5b.md`, `-s6a.md`; roadmap
-`docs/plans/2026-10-29-student-maintenance-roadmap.md`). Sprint 6b, LETTERS, is BUILT on branch `maint-s6b`
-(committed, NOT pushed; migration `scholarship/0192_letters` NOT applied — the lead applies it by hand first).**
+`docs/plans/2026-10-29-student-maintenance-roadmap.md`). S6b letters LIVE 2026-10-31: `0e506798` + review
+`98b0f964` + `scholarship/0192_letters` (applied by hand first, recorded — never re-apply that DDL; api-01213-crq,
+web-01036-mkf; retro `retrospective-2026-10-31-maintenance-s6b.md`). NEXT = Sprint 7, mentors (records) — design
+first. Next free scholarship migration: 0193.**
 - Letters (S6b): `letters.py` is the rule (who issues which kind, the typed name, closed-file kinds, withdraw,
   acknowledge, the one `state`), `views_admin/letters.py` the fence, `urls_letters.py` the routes (urls.py is at 600).
   Documents only: never a status or money write. The notice email `letter_issued` is locked and NOT behind
