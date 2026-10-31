@@ -13,6 +13,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-10-31 18192946 fix: profile password change saves under the sign-in email, not the phone (halatuju-web/src/components/adminProfile/SignInCard.tsx, shared.tsx, app/admin/profile/page.test.tsx)
 - 2026-10-30 827c8b05 fix: cockpit ticks mean a document backs the value (halatuju-web/src/lib/fieldVerification.ts, ApplicantCards.tsx, faq-reviewer.tsx, role-reviewer.tsx; owner ruling, display only)
 - 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
+- 2026-10-31 a0344a35 fix: a profile save keeps the catalogue-filled institution; backfill sees post-STPM degrees (halatuju_api/apps/scholarship/family.py, management/commands/backfill_institution.py + 3 test files; owner-approved backfill --apply on live after deploy: 47 + 45 rows)
 
 ## Sprints since the last review
 
