@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — BUILT, not deployed
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of
+S3; no web change and no new migration (`0195_staff_activity` loses two subject types it never needed). **Deploy
+order at S5:** migrate (0195), then the API (live rows start), THEN `backfill_staff_activity --dry-run`, then
+`--apply`.
+
+- **Every verb in the closed list now has a writer** (one registry, `staff_activity.WIRED`; the S3 "later" list is
+  gone and the drift test requires all of them). Recorded where each act happens, the actor always the person
+  who pressed the button, inside the same transaction, best-effort; the money paths' own writes, order and
+  responses are unchanged:
+  payment run created (`payments.create_run`) and signed (`payments_chain.sign`, `role` maker / checker /
+  approver — the approver's payouts are that one row, not a tranche row each); tranche released / withheld /
+  returned (`disbursement.*_tranche`; subject = the student); credit recorded / checked / confirmed (the three
+  signatures in `sponsorship.sign_admin_credit` — a draft is not yet a credit); contract template created /
+  vetted / submitted / deployed (`contracts.*`); the Foundation's countersign (`bursary.countersign_foundation`);
+  benefactor vetted (the account review and the per-gift decision — the two views; the sponsor's own
+  registration writes nothing); invoice issued / sent / voided (`invoicing.*`; the monthly cron writes nothing);
+  payment declared / rejected (`payment_declarations.*`) and confirmed (`invoice_receipts.record_receipt`, the one
+  place a receipt is minted — a confirmed declaration is ONE row); request raised / approved / declined (the
+  three views: `org_requests.py` sits at its line allowance and each service has one door); shop flag opened /
+  closed (`merchant_flags.change_flag`; a note alone is not an act).
+- **`GET /api/v1/admin/me/activity/?kind=all|students|money|profile&cursor=&limit=`** (`views_admin/me.py`,
+  reader `apps/scholarship/staff_activity_read.py`): the caller's OWN rows, every role (a super too), opted in for
+  source users. Newest first, cursor on (created_at, id), 30 a page (at most 100); 400 `bad_kind` / `bad_cursor` /
+  `bad_limit`. Each item: `id, verb, kind, created_at, backfilled, subject {type, state, label, id}, meta`.
+  **D8:** a subject's label is decided NOW — a student's name only if the viewer may open that application today
+  (the staff detail view's own fence and scope, read through its helpers; `source_access` for a source user),
+  else "a student"; a team member's name only inside the viewer's organisation; a run, template, invoice or
+  request by its REFERENCE, never typed text; a credit or a shop always the neutral word. **D7:** a subject that is
+  gone reads "… (removed)". One query per subject type per page, whatever the page size (tested).
+- **`manage.py backfill_staff_activity --dry-run | --apply [--before ISO]`** (`apps/scholarship/
+  staff_activity_backfill.py`): rebuilds rows (`backfilled=True`, dated at the original moment) from the history
+  tables and the single stamps. The actor is a real foreign key, or an email held by exactly ONE staff row;
+  ambiguous, unknown and name-only stamps are skipped and counted. **No twins:** only events before the earliest
+  live row, AND none with a live row of the same verb, actor and subject within minutes of its stamp (the first
+  live action stamps its record a moment before its live row — a test caught the cut-off alone missing that).
+  **Idempotent** on (verb, actor, subject, created_at). Streams in batches of 500.
+- Tests: `test_staff_activity_money.py` (each S4 door one row; a payment run, a tranche, a credit and a receipt
+  unchanged when the write fails), `test_my_activity.py` (own rows, D7, D8, source, paging, filters, query count,
+  the allowlist), `test_staff_activity_backfill.py` (dry run, apply, idempotent, no twins, emails, purges).
+
 ## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31) — LIVE 2026-10-31 (main b714a74c; api-01219-xt2, web-01043-49w)
 
 Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no migration.
