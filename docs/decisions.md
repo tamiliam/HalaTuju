@@ -197,7 +197,9 @@ row of a kind whose chip is not offered (a power taken away since) is still unde
 a right-hand column (380 px) from `xl`, so `/admin/profile` becomes a WIDE route; below `xl` it stacks last. (6)
 **Bundle (D10):** the card ships inside the existing lazy `adminProfile/cards` chunk, not a chunk of its own
 (each chunk is a runtime entry every route pays for). (7) **Guide + FAQ in English only**, like the whole manual
-(`content/manual/types.ts`: the owner is the Tamil authority; no machine translation of the manual).
+(`content/manual/types.ts`: the owner is the Tamil authority; no machine translation of the manual). *Rows
+rebuilt by the back-fill carried a small "rebuilt" mark — superseded 2026-11-01: the per-row tag was removed
+(owner); the footer still says older entries were rebuilt. The API still sends `backfilled`.*
 
 **Alternatives considered:** (A) show the server's `label` for every state — rejected: it is English. (B) one
 fixed chip row for everybody — rejected: a reviewer offered Money sees an empty filter for ever. (C) a per-verb

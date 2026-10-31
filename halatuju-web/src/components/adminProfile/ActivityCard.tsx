@@ -9,9 +9,9 @@ import {
 } from '@/lib/profileActivity'
 import { CardFrame, type CardProps } from './shared'
 
-// Owner ruling 2026-11-01: a few rows first so the box does not scroll by default; the scroll
-// appears only once Show older has added more.
-export const FIRST_PAGE = 6
+// Owner rulings 2026-11-01: ten rows first (first 6, then 10 the same day); the scroll appears
+// only once Show older has added more.
+export const FIRST_PAGE = 10
 export const OLDER_PAGE = 20
 
 /**
@@ -100,11 +100,8 @@ export default function ActivityCard({ state }: CardProps) {
             ? <Link href={href} className="font-medium text-primary-600 hover:underline">{words}</Link>
             : <span className="font-medium">{words}</span>)}
           {after}
-          {item.backfilled && (
-            // A badge, so 11 px is allowed (rule 12); no hover text (rule 4) — the footer says what it means.
-            <span className="ml-2 inline-block rounded bg-ground-100 px-1.5 py-0.5 align-middle text-[11px] text-ground-600"
-              data-testid="activity-rebuilt">{t(`${P}.rebuilt`)}</span>
-          )}
+          {/* No per-row "rebuilt" tag (owner, 2026-11-01): everything before 1 November 2026 is rebuilt,
+              so the tag said nothing; the footer still says older entries were rebuilt. */}
         </p>
         <p className="text-xs text-ground-500">{rowContext(item, now, t)}</p>
       </li>

@@ -141,7 +141,7 @@ export interface ActivityItem {
   verb: string
   kind: 'students' | 'money' | 'profile' | 'other'
   created_at: string
-  /** Rebuilt from an older record by the back-fill (shown as "rebuilt"). */
+  /** Rebuilt from an older record by the back-fill. Not shown per row since 2026-11-01 (owner). */
   backfilled: boolean
   subject: ActivitySubject | null
   /** Ids, short codes, numbers and booleans only (`staff_activity.META_KEYS`). */
