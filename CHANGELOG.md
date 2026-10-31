@@ -43,6 +43,40 @@ Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no mig
   and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. It
   opens in the browser (`display: 'browser'`), not standalone, until M8. No service worker, no offline mode.
 
+## Common profile S3 — the activity list, part 1: the list and the case actions (migration 0195) - 2026-10-31 — BUILT, not deployed
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S3; D6, D7, D9). Built on branch `profiles`. Nothing
+visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5 the card. **Migrate first**
+(0195, hand-applied, new table + RLS + policy); the API never fails without it (see D9) but would record nothing.
+
+- **New table `staff_activity`** (`StaffActivity`, `apps/scholarship/models/staff_activity.py`, model 71): one row
+  each time a person on the admin platform does something — `actor` (CASCADE: the list is own-only and goes with
+  the person, D6), `organisation`, `verb` from a CLOSED list, `subject_type` + `subject_id` (an id, NOT a foreign
+  key, so a student's purge never touches anybody's history, D7), a small `meta`, `created_at` (a plain default, so
+  the S4 back-fill can date a row in the past) and `backfilled` (database default false). Index (actor, newest
+  first). The closed list also declares the S4 verbs (money, contracts, requests), so S4 needs no choices migration.
+- **Rows hold ids, never copied text.** `meta` takes only listed keys, each an id, a boolean, a number or a short
+  lower-case code; a sentence, a name or an email address is dropped (and logged), the row still written.
+- **One writer, best-effort (D9):** `apps/scholarship/staff_activity.record(actor, verb, subject, meta)` never
+  raises; it writes in its own savepoint inside the caller's transaction, so its own database error cannot spoil
+  the action, and an action that rolls back takes its row with it. No actor (a cron or system path) writes nothing.
+  The courses app reaches it through `apps/courses/staff_activity_hook.py`, which the scholarship app registers at
+  start-up, so the `courses -> scholarship` import count is unchanged.
+- **Wired into:** invitation sent (staff, source and sponsor — `invitations.record_send`), invitation accepted
+  and first sign-in, profile updated (`admin/me/`, photo, password, the reviewer cards, the source console, a
+  referral partner's `admin/profile/`), permissions changed (the editor and a role change that reset a custom
+  set), assign / unassign, query raised (a ticket, a note, "Ask again") / resolved, interview submitted,
+  verdict recorded, verify-and-accept, decline sent to QC, declined, QC decision, decision reopened, case closed,
+  contract witnessed (the source's door and the super's). **One click is one row:** the QC's reject runs a reopen
+  and a decline underneath and still writes only `qc_decision`. The actor is whoever pressed the button.
+- **Moves-only split:** `AdminProfileView` moved verbatim to `apps/courses/views_profile.py` (`views_admin.py` sat
+  exactly at its line allowance). `AdminRecordVerdictView.post` gives its saving block to `_save_verdict` and
+  `assign_reviewer` its row to `_record_assignment`, to stay under the 150-line standard.
+- Tests: `apps/scholarship/tests/test_staff_activity.py` — each verb's door(s) write exactly one row; the write
+  failing (a real database error, or the writer's own code raising) leaves the action and its transaction intact;
+  a rollback leaves no row; free text dropped; no actor, no row; and a drift test that reads the source and
+  requires the writers of each verb to be exactly the `S3_WIRED` registry.
+
 ## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
 Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`

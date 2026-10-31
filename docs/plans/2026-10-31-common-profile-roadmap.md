@@ -88,6 +88,11 @@ addition: one optional fourth language (name + fluency) on the Qualifications an
 - **First deploy point** (owner go): migrate first, then API, then web.
 
 ### S3 — The activity list, part 1: the list and the case actions — high, ~30 files
+**Status:** BUILT 2026-10-31 on branch profiles (not pushed). Migration `scholarship/0195_staff_activity` (written
+against 0193; another session holds 0194 — renumber at merge). Writer `apps/scholarship/staff_activity.record`;
+the courses app reaches it through `apps/courses/staff_activity_hook.py` (registered at start-up, no import).
+Verbs added beyond the list: `decline_sent_to_qc` (the reviewer's decline road) beside `declined`; the QC's
+click is one `qc_decision` row. The S4 verbs are already in the closed list.
 - Model `StaffActivity` (actor FK, organisation, `verb` from a closed list, subject type + id, small
   `meta` with no free text, `created_at`, `backfilled`). Helper `staff_activity.record(...)` (D9).
 - Wired into: invitation accepted, first sign-in, profile updated, verify-and-accept, verdict, decline,

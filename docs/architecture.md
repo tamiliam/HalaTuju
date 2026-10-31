@@ -120,6 +120,10 @@ languages. Partner, sponsor and student comms each have a platform switch and a 
   `student_email_templates` / `student_email_switches` / `student_email_log` (Student communications, S4b–S6a) and
   `letters` / `letter_templates` (S6b): a letter's text frozen at issue, its PDF at `<org>/<app>/letters/<id>.pdf`
   in the private bucket, never edited or deleted (withdrawn with a reason instead).
+- Staff activity (common profile S3, 2026-10-31): `staff_activity` — one row per thing a staff member or source
+  user did (actor, organisation, a verb from a closed list, subject type + id, a `meta` of ids and codes only,
+  `created_at`, `backfilled`). Own-only (rows go with the person), ids never copied text, `subject_id` not a
+  foreign key (a purge never touches it). Written only by `apps/scholarship/staff_activity.record`, best-effort.
 
 ## Scheduled work
 
