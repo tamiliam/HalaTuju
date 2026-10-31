@@ -50,6 +50,32 @@ inserting profile rows because every new column has a database default), then AP
   page and the Source roster.
 - Not done, by the brief: a Website field for a source (the model has none; no column added — TD-437).
 
+### S2 review fixes (adversarial review, 2026-10-31)
+
+- **H1** — `admin/me/password/` while a temporary password is still owed now clears the flag in the SAME
+  Supabase write (`app_metadata` cleared, `user_metadata` scrubbed — `AdminSetPasswordView`'s body), so the
+  expiry job can no longer overwrite the chosen password and `admin/set-password/` closes. Nothing owed →
+  the password only, as before.
+- **M1** — the reviewer DETAIL serves a phone only for someone who can be assigned cases (`review`) or who
+  shows it to the team (`staff_contact.assigner_sees_phone`); a `qc` or admin without either reads ''. The
+  Contact card tells a `review` holder "The people who assign your cases can see this number."
+- **M2** — after a password change every OTHER session ends (`POST /auth/v1/logout?scope=others` with the
+  caller's own token; this tab stays). If that fails the change still stands and the card says other devices
+  may still be signed in (`others_signed_out: false`).
+- **M3** — the five-in-fifteen-minutes limit is now ATOMIC across workers and instances
+  (`supabase_admin.take_password_attempt`: numbered `cache.add` slots, taken before the password is tried;
+  `DatabaseCache.incr` is get-then-set and would not be). The DRF `PasswordChangeRateThrottle` is removed.
+- **L1** — photo decode guard 64 → 16 MP, read from the header before any decode; a JPEG decodes at a reduced
+  scale (`Image.draft`).
+- **L2** — a profile row CREATED from now on shares the phone with students only for a `review` holder
+  (`staff_contact.new_profile_defaults`); existing rows are unchanged.
+- **L3** — `admin/reviewer-profile/` refuses a blank phone from a `review` holder too (the old web still saves
+  the phone there during the rollout); TD-439 makes those two fields read-only there next sprint.
+- **L4/L5** — `halatuju_api/CLAUDE.md` pre-deploy notes: API before web; never `cleanup_orphan_blobs --apply`
+  from a pre-S2 checkout.
+- **L6** — the header photo is cleared on sign-out and never shown to the next person signed in
+  (`adminAuthPhoto.test.tsx`).
+
 ## Common profile S1 — one Profile page from one card list (no migration) - 2026-10-31 — BUILT, not deployed
 
 Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`.

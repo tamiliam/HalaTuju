@@ -7100,3 +7100,13 @@ header photo, and the URL it gets is signed for about an hour (`staff_photo.SIGN
 shows the initials instead (`StaffAvatar` falls back on a load error) until the next full page load; the Team
 list and the Profile page sign afresh on every visit. Accepted: nothing breaks and nothing private leaks.
 **Fix if it matters:** on the avatar's load error, ask `admin/me/` once more (at most once per hour). *(C · S)*
+
+### [TD-439] `admin/reviewer-profile/` still writes the phone and "share with students" - low
+
+**Raised 2026-10-31 by the common profile S2 adversarial review (L3).** Since S2 the phone and
+`share_phone_with_students` have ONE writer on the new web — `PATCH admin/me/`. The reviewer-profile
+serializer (`ReviewerProfileSerializer`) still accepts both because the API deploys before the web and the
+OLD web saves the phone there during the rollout; the view refuses a blank phone from a `review` holder
+(`staff_contact.phone_refusal`), the same rule as `admin/me/`. **Fix once the S2 web is live:** make both
+read-only on that serializer (serializers_admin.py is at its 1026-line allowance — add them to a
+`read_only_fields` on the existing Meta line, never grow the file), and keep the GET serving them. *(B · S)*

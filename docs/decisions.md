@@ -22,7 +22,11 @@ phone. (5) No Website field for a source in S2: the model has none and the brief
 (6) Owner addition, same day: ONE optional fourth language beside English / BM / Tamil (for Sabah's students:
 Mandarin, Kadazandusun, Bajau…), stored by NAME with its fluency, both or neither. It is served beside the
 en/ms/ta codes as `other_language`, never inside them, and it does NOT satisfy the onboarding hold — a
-reviewer interviews in English, BM or Tamil.
+reviewer interviews in English, BM or Tamil. (7) Review fixes, same day: the reviewer DETAIL serves a
+staff phone only for someone who can be assigned cases (`review` — the 2026-08-02 "the assigner must reach
+the reviewer" rule) or who shows it to the team; the Team list itself shows it only when shared. A
+password change through `admin/me/password/` clears an owed temporary-password flag in the same write and
+ends every other session; its five-attempt limit is atomic (`cache.add` slots), not a DRF throttle.
 
 **Trade-offs:** a header photo URL expires after about an hour in a tab left open; the avatar falls back to
 the initials until the next page load (TD-438). The People list's admin tab reads one more query for the

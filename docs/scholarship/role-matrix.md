@@ -389,7 +389,10 @@ cannot appear in the payload. Widen this cell only by owner decision, recorded h
 | Invitations → Source roster | the organisation that invited the source user (super, org_admin; admin/finance read) | always — a source has no team, and its Contact card says "The organisation that invited you can see this number" |
 | Staff photo (`photo_url`, signed ~1 h) | staff screens only: the header, the person's own Profile, the Team list | whenever one exists; NEVER a student, sponsor or source-console payload (`test_staff_profile_card.py`) |
 
-The home address still reaches no serializer but the owner's own reviewer profile.
+| Reviewer DETAIL (`admin/reviewers/<id>/`) | super, org_admin, admin, finance | the phone ONLY when the person holds `review` (they can be assigned cases — the 2026-08-02 rule) or shows it to the team; a `qc` / admin without either reads '' (review fix M1). Their Contact card says so |
+
+The home address still reaches no serializer but the owner's own reviewer profile. The student-facing
+interviewer phone (the advance email, the student's interview card) is unchanged: `share_phone_with_students`.
 
 **No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
 carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare

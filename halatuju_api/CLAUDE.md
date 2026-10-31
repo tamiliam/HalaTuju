@@ -500,6 +500,16 @@ baseline before you start; never quote an inherited number.
    reviewer Guide + FAQ in the same change.
 7. The owner's yes to push.
 
+**Common profile S2 (2026-10-31) — release order and one standing danger.**
+- **Migrate first (scholarship 0193, by hand), then the API, then the web — the API BEFORE the web.**
+  The new web saves the phone, the card and a source's name through `admin/me/` (which the old API
+  does not serve); the old web keeps saving the phone through `admin/reviewer-profile/`, which the new
+  API still accepts (and now refuses blank for a `review` holder) until TD-439 makes it read-only.
+- **⛔ Never run `cleanup_orphan_blobs --apply` from a checkout or image older than S2.** Its
+  `known_paths` learned the staff photos (`ReviewerProfile.photo_path`, `staff-photos/…`) in S2; an
+  older copy reads every staff photo as an orphan and DELETES it. Dry-run first, always, and read the
+  list.
+
 ### Test fixtures
 
 `apps/scholarship/tests/factories.py` builds the supporting rows (`make_org`, `make_programme`,
