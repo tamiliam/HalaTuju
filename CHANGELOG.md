@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 - Tests: `Sheet.test.tsx` (pixel cap, no `dvh`), `InfoTip.test.tsx` (a tap on the bubble), `mobileStandard.test.ts`
   (the rule's media query). Bite-checked: reverting each fix turns its test red. Minor findings left: TD-450.
 
-## My activity: 10 rows first, no per-row rebuilt tag (owner, 2026-11-01) — BUILT, not deployed
+## My activity: 10 rows first, no per-row rebuilt tag (owner, 2026-11-01) — LIVE 2026-11-01 (main 8e6773d5; web-01050-vfk)
 
 - **Ten rows first**: `FIRST_PAGE` 6 → 10 in `components/adminProfile/ActivityCard.tsx` (first load, chip change, Try again); Show older stays at 20.
 - **No "rebuilt" tag on a row**: everything before 1 November 2026 is rebuilt, so the tag added nothing (owner). The footer is unchanged ("Older entries were rebuilt from past records, so some may be missing."). Key `admin.myProfile.activity.rebuilt` removed from en / ms / ta; the API and the `backfilled` field are untouched.
