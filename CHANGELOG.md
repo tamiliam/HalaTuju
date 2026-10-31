@@ -10,13 +10,25 @@ All notable changes to this project will be documented in this file.
   (`views_offerings.MARA_DIVISION`).
 - Under MARA the division is the first choice in the State list, in plain words — "MARA college (Bahagian
   Pendidikan Tinggi)" — and goes straight to its courses (it has no single campus).
-- With "Eligible only" on, MARA is offered when she qualifies for any course it lists (eligibility counts the
-  division's diplomas under University).
+- **Shown under MARA, saved as University.** Choosing the division saves `chosen_pathway='university'`, exactly as
+  before, so her payment calendar (August start, November skipped), the semester-result ask, the funding estimate
+  and the officer's card are unchanged; a MARA skills campus still saves `mara`. A saved division pick (or an older
+  OP4 pick) reopens under MARA with the division chosen.
+- With "Eligible only" on, University and MARA are each offered only when their own list holds a course she
+  qualifies for (eligibility counts the division's diplomas under University). If the switch hides a saved
+  division, the State box shows its placeholder and the pick is kept.
 - Plan labels: "University" (was "Public university") and "MARA college or institute" (was "MARA skills
-  institute"); ms and ta carry the English until reviewed in Sol.
-- A student who picks one of these under MARA keeps today's funding estimate (the diploma decides it), and a UPU
-  diploma offer is the same pathway family as MARA, so no false pathway switch. decisions.md: "MARA's own diplomas
-  sit under MARA in the scholarship picker".
+  institute"); Malay "Universiti" / "Kolej atau institut MARA" and Tamil drafts for Sol. decisions.md: "MARA's own
+  diplomas sit under MARA in the scholarship picker".
+
+## School batch review fixes (2026-10-31)
+
+- **School search:** more spellings find each other — KAMPONG (with KG / KAMPUNG), AYER / AIR, TELOK / TELUK,
+  LUBOK / LUBUK, TASEK / TASIK, ULU / HULU, KRIAN / KERIAN, SUNGEI / SUNGAI and BAGAN DATOH / DATUK. BAHRU and
+  BHARU stay apart (different places). A typed query that is only punctuation ("-", "()") finds nothing again.
+- **Same-name schools:** confirming an offer, or the silent offer fill, keeps "SMK CONVENT, TAIPING" when the letter
+  names that same school (only a different school replaces it); the anonymity check reads the school's name, not
+  our town, so a blurb mentioning the town is not flagged.
 
 ## My Plans asks "Which institution?" for Asasi and university (owner, 2026-10-31)
 

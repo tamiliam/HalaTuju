@@ -52,8 +52,9 @@ export default function InstitutionPicker({
   const belowMin = q.length < minChars
   // Word-AND over the name, its spelt-out MOE short forms and the keywords (lib/schoolSearch):
   // "kolej tingkatan enam pontian" finds "KTE PONTIAN"; anything found before is still found.
+  // A typed query with no words in it ("-", "()") matches nothing, as before; only an empty box browses.
   const words = searchWords(q)
-  const filtered = belowMin
+  const filtered = belowMin || (q && words.length === 0)
     ? []
     : q
       ? options.filter((o) => matchesWords(`${schoolSearchText(o.name)} ${normaliseSearch(o.keywords ?? '')}`, words))

@@ -83,6 +83,30 @@ describe('one word, two spellings: either finds the other', () => {
   })
 })
 
+describe('old Malay spellings beside the new ones (review, 2026-10-31)', () => {
+  const both = (a: RegExp, q: string) => names(q).some((n) => a.test(n))
+  it('KAMPONG joins KG / KAMPUNG; AYER and AIR; TELOK and TELUK', () => {
+    expect(both(/\bKAMPONG\b/, 'kampung')).toBe(true)
+    expect(both(/\bKG\b/, 'kampong')).toBe(true)
+    expect(both(/\bAIR\b/, 'ayer')).toBe(true)
+    expect(both(/\bAYER\b/, 'air')).toBe(true)
+    expect(both(/\bTELUK\b/, 'telok')).toBe(true)
+    expect(both(/\bTELOK\b/, 'teluk')).toBe(true)
+  })
+  it('LUBOK / LUBUK, TASEK / TASIK, ULU / HULU, KRIAN / KERIAN, SUNGEI, DATOH', () => {
+    expect(both(/\bLUBUK\b/, 'lubok')).toBe(true)
+    expect(both(/\bTASIK\b/, 'tasek')).toBe(true)
+    expect(both(/\bULU\b/, 'hulu')).toBe(true)
+    expect(both(/\bKERIAN\b/, 'krian')).toBe(true)
+    expect(both(/\bSUNGAI\b/, 'sungei')).toBe(true)
+    expect(both(/\bBAGAN DATOH\b/, 'bagan datuk')).toBe(true)
+  })
+  it('BAHRU and BHARU stay apart: they are different places', () => {
+    expect(names('bahru').some((n) => /\bBHARU\b/.test(n))).toBe(false)
+    expect(names('bharu').some((n) => /\bBAHRU\b/.test(n))).toBe(false)
+  })
+})
+
 describe('nothing found before is lost', () => {
   it('a bare query that matched as one substring still matches, prefix first', () => {
     const res = names('smk bandar')

@@ -5,10 +5,14 @@
 import type { PathwayOfferings } from '@/lib/api'
 import {
   DEGREE_PATHWAY, MATRIC_TRACKS, aliranOfCourse, applyPlanPatch, asksStateFirst, coursesAt,
-  degreeChoices, institutionKind, institutionOf, isOfferingPathway, noCampusInstitutions,
-  offeringInstitutions, offeringStates, pickProgramme, pismpAliransOf, pismpBidang,
+  MARA_DIVISION_ID, degreeChoices, institutionKind, institutionOf, isDivisionPick, isOfferingPathway,
+  noCampusInstitutions, offeringInstitutions, offeringStates, pickProgramme, pismpAliransOf, pismpBidang,
+  shownPathway, storedPathway,
 } from '@/lib/planPicker'
 import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
+import { readApi } from '@/test/apiSource'
 import {
   PATHWAY_ORDER, chosenProgrammeFromApi, chosenProgrammeToApi, profileToApplyDefaults,
 } from '@/lib/scholarship'
@@ -62,6 +66,33 @@ describe('the steps each pathway asks for', () => {
     expect(plan.pathway.university).toBe('University')
     expect(plan.pathway.mara).toBe('MARA college or institute')
     expect(plan.maraDivision).toBe('MARA college (Bahagian Pendidikan Tinggi)')
+  })
+  it('Malay and Tamil keep a translation of the two pathway labels, never the English', () => {
+    for (const cat of [ms, ta] as unknown as { scholarship: { apply: { plan: { pathway: Record<string, string> } } } }[]) {
+      const p = cat.scholarship.apply.plan.pathway
+      expect([p.university, p.mara]).not.toContain('University')
+      expect([p.university, p.mara]).not.toContain('MARA college or institute')
+    }
+    expect((ms as { scholarship: { apply: { plan: { pathway: Record<string, string> } } } }).scholarship.apply.plan.pathway)
+      .toMatchObject({ university: 'Universiti', mara: 'Kolej atau institut MARA' })
+  })
+  it('the MARA division id is the server MARA_DIVISION', () => {
+    const src = readApi('apps/courses/views_offerings.py')
+    expect(src).toMatch(new RegExp(`^MARA_DIVISION = '${MARA_DIVISION_ID}'`, 'm'))
+  })
+  it('a division pick is SHOWN under MARA and STORED as university; a MARA campus stays mara', () => {
+    const division = { courseId: 'OP4-KEJ', courseName: 'Diploma Kejuruteraan', fieldKey: '', institutionId: 'MARA-BPT' }
+    const legacy = { courseId: 'OP4-KEJ', courseName: 'Diploma Kejuruteraan', fieldKey: '' }
+    const campus = { courseId: 'TVET-1', courseName: 'Diploma Teknologi', fieldKey: '', institutionId: 'MARA-001' }
+    expect(storedPathway('mara', division)).toBe('university')
+    expect(storedPathway('mara', campus)).toBe('mara')
+    expect(storedPathway('mara', null)).toBe('mara')
+    expect(storedPathway('university', null)).toBe('university')
+    expect(shownPathway('university', division)).toBe('mara')
+    expect(shownPathway('university', legacy)).toBe('mara')
+    expect(shownPathway('university', { courseId: 'UK-DIP', courseName: 'x', fieldKey: '' })).toBe('university')
+    expect(shownPathway('mara', campus)).toBe('mara')
+    expect(isDivisionPick(campus)).toBe(false)
   })
   it('every programme pathway in PATHWAY_ORDER is served by the catalogue; the pre-U two are not', () => {
     for (const p of PATHWAY_ORDER) expect(isOfferingPathway(p)).toBe(p !== 'matric' && p !== 'stpm')

@@ -45,8 +45,12 @@ const LONG: Record<string, string> = {
 
 const SAME: Record<string, string> = {
   jln: 'jalan',
-  sg: 'sungai', sgai: 'sungai',
-  kg: 'kampung', kpg: 'kampung',
+  sg: 'sungai', sgai: 'sungai', sungei: 'sungai',
+  kg: 'kampung', kpg: 'kampung', kampong: 'kampung',
+  // Old Malay spellings that sit beside the new ones in the MOE list (review, 2026-10-31).
+  // BAHRU and BHARU are NOT joined: they name different places.
+  ayer: 'air', telok: 'teluk', lubok: 'lubuk', tasek: 'tasik', ulu: 'hulu', krian: 'kerian',
+  datoh: 'datuk',
   tmn: 'taman',
   bdr: 'bandar',
   bt: 'batu',

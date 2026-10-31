@@ -64,8 +64,12 @@ export default function InstitutionCoursePicker({
   const states = stateFirst ? offeringStates(offerings, allowed) : []
   const divisions = stateFirst ? noCampusInstitutions(offerings, allowed) : []
   const division = divisions.find((i) => NO_CAMPUS + i.id === state) ?? null
+  // "Eligible only" can hide a saved division: the State box then reads "Choose a state" rather than
+  // holding a value it cannot show. The saved pick is not cleared (as with a hidden campus) and comes
+  // back the moment the switch is off.
+  const stateShown = state.startsWith(NO_CAMPUS) && !division ? '' : state
   const institutions = division ? [division]
-    : stateFirst && !state ? [] : offeringInstitutions(offerings, stateFirst ? state : null, allowed)
+    : stateFirst && !stateShown ? [] : offeringInstitutions(offerings, stateFirst ? stateShown : null, allowed)
   const inst = division ?? institutions.find((i) => i.id === instId) ?? null
   const courses = inst ? coursesAt(offerings, inst.id, allowed) : []
   const instLabel = t(`scholarship.apply.plan.institutionLabel.${kind}`)
@@ -88,7 +92,7 @@ export default function InstitutionCoursePicker({
         {stateFirst && (
           <div>
             <FieldLabel required={apply}>{t('scholarship.apply.plan.stateLabel')}</FieldLabel>
-            <select className="input" aria-label={t('scholarship.apply.plan.stateLabel')} value={state}
+            <select className="input" aria-label={t('scholarship.apply.plan.stateLabel')} value={stateShown}
               onChange={(e) => chooseState(e.target.value)}>
               <option value="">{t('scholarship.apply.plan.statePlaceholder')}</option>
               {divisions.map((d) => (
@@ -99,7 +103,7 @@ export default function InstitutionCoursePicker({
             </select>
           </div>
         )}
-        {(!stateFirst || state) && !division && (
+        {(!stateFirst || stateShown) && !division && (
           <div>
             <FieldLabel required={apply} tip={apply ? t('scholarship.apply.plan.institutionTip') : undefined}>{instLabel}</FieldLabel>
             <select className="input" aria-label={instLabel} value={inst ? inst.id : ''}

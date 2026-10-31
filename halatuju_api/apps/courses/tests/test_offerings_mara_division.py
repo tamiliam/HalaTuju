@@ -86,31 +86,56 @@ class TestOfferings:
         assert apps.get_app_config('courses').course_pathway_map == MAP
 
 
-class TestReadersOfMaraWithADivisionDiploma:
-    """`chosen_pathway='mara'` + an OP course: what the server does with it."""
+class TestADivisionPickIsStoredAsUniversity:
+    """Review fix, 2026-10-31: the picker SHOWS the division under MARA but SAVES `chosen_pathway=
+    'university'` (`planPicker.storedPathway`), because the money and document readers key on the
+    stored pathway. Each test shows the reader on the stored value AND what `mara` would have done."""
 
     @staticmethod
     def _app(**kw):
-        base = dict(pathway_certainty='sure', chosen_pathway='mara', intended_pathway='',
-                    chosen_programme={'course_id': 'OP4100001', 'course_name': 'Diploma Perakaunan'},
-                    pathways_considered=[])
+        base = dict(pathway_certainty='sure', chosen_pathway='university', intended_pathway='',
+                    chosen_programme={'course_id': 'OP4100001', 'course_name': 'Diploma Perakaunan',
+                                      'institution_id': MARA_DIVISION},
+                    pathways_considered=[], profile=None, cohort=None)
         base.update(kw)
         return SimpleNamespace(**base)
 
+    def test_the_payment_calendar_is_the_university_one(self, monkeypatch):
+        from apps.scholarship import award, contracts
+        from apps.scholarship.default_schedule import default_rows
+        monkeypatch.setattr(award, '_stpm_continuing', lambda app: False)
+        row = contracts.pick_schedule_row(default_rows(), self._app())
+        assert (row.pathway, row.start_month) == ('university', 8)      # August, November skipped
+        assert 3 not in row.paid_offsets
+        # Stored as 'mara' it would fall to the default row: July, ten months straight.
+        stray = contracts.pick_schedule_row(default_rows(), self._app(chosen_pathway='mara'))
+        assert (stray.pathway, stray.start_month) == ('default', 7)
+
+    def test_a_continuing_student_is_still_asked_for_her_semester_result(self, monkeypatch):
+        from apps.scholarship import pathway_engine
+        from apps.scholarship.income_engine import epf_evidence
+        monkeypatch.setattr(epf_evidence, '_docs_or_none', lambda app: [])
+        monkeypatch.setattr(epf_evidence, '_has_read_doc', lambda app, kind: False)
+        monkeypatch.setattr(epf_evidence, 'heading_for', lambda prof: 'spm')
+        monkeypatch.setattr(pathway_engine, 'started_before_cohort', lambda app: True)
+        assert epf_evidence.semester_result_gap(self._app()) is True
+        assert epf_evidence.semester_result_gap(self._app(chosen_pathway='mara')) is False
+
     def test_funding_estimate_is_exactly_todays(self):
         from apps.scholarship.funding_estimate import classify_pathway
-        # 'mara' has no estimate category, so the programme decides: an OP id has no no-estimate
-        # prefix and its name says Diploma -> 'university', the same as under chosen_pathway='university'.
         assert classify_pathway(self._app()) == 'university'
-        assert classify_pathway(self._app(chosen_pathway='university')) == 'university'
 
     def test_a_upu_diploma_offer_is_the_same_pathway_family(self):
         from apps.scholarship import offer_pathway as op
         offer_type = op.detect_pathway_type('DIPLOMA PERAKAUNAN', 'KOLEJ PROFESIONAL MARA BERANANG')
         assert offer_type == 'diploma'
-        assert op.pathway_family(offer_type) == op.pathway_family('mara') == 'tertiary'
-        assert not op.is_pre_u('mara')
+        assert op.pathway_family(offer_type) == op.pathway_family('university') == 'tertiary'
 
-    def test_results_route_reads_post_spm(self):
-        from apps.scholarship.results_route import POST_SPM_CODES
-        assert 'mara' in POST_SPM_CODES
+
+@pytest.mark.django_db
+def test_results_route_sends_a_division_diploma_to_post_spm(catalogue):
+    """A course id decides first: an SPM-catalogue OP diploma is post-SPM, never a degree."""
+    from apps.scholarship.results_route import POST_SPM, destination
+    app = SimpleNamespace(chosen_pathway='university', pre_u_track='', profile=None,
+                          chosen_programme={'course_id': 'OP4-AKAUN', 'course_name': 'Diploma Perakaunan'})
+    assert destination(app) == POST_SPM

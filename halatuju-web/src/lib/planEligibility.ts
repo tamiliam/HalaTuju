@@ -51,11 +51,13 @@ export async function loadPlanEligibility(
   const courseIds = new Set((elig.eligible_courses || []).map((c) => c.course_id))
   const pathways = new Set(PATHWAY_ORDER.filter((k) => (stats[k] || 0) > 0))
   // MARA's own diplomas are counted under `university` by eligibility, but the picker lists them
-  // under `mara` (owner, 2026-10-31): offer MARA when any course it lists is one she qualifies for.
-  if (!pathways.has('mara')) {
-    const mara = await getPathwayOfferings('mara').catch(() => null)
-    if (mara?.courses.some((c) => courseIds.has(c.course_id))) pathways.add('mara')
-  }
+  // under `mara` (owner, 2026-10-31). So both are decided by the LISTS: University when its own list
+  // (the division left out) holds a course she qualifies for, MARA when the division or a MARA campus
+  // does. A list that fails to load leaves the count's answer standing.
+  const listHasOne = async (p: string) =>
+    (await getPathwayOfferings(p).catch(() => null))?.courses.some((c) => courseIds.has(c.course_id))
+  if (pathways.has('university') && (await listHasOne('university')) === false) pathways.delete('university')
+  if (!pathways.has('mara') && (await listHasOne('mara'))) pathways.add('mara')
   return {
     courseIds,
     pathways,

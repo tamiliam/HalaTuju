@@ -91,12 +91,12 @@ const SPM = { ...sandboxProfileFormSix, results_held: 'spm' }
 const STPM = { ...sandboxProfileStpm, results_held: 'stpm' }
 
 let latest: PathwayForm = FORM
-function Harness({ profile }: { profile: Record<string, unknown> }) {
-  const [form, setForm] = useState<PathwayForm>(FORM)
+function Harness({ profile, initial = FORM }: { profile: Record<string, unknown>; initial?: PathwayForm }) {
+  const [form, setForm] = useState<PathwayForm>(initial)
   latest = form
   return <PathwayPicker value={form} onChange={(p) => setForm((f) => ({ ...f, ...p }))} profile={profile as never} token="tkn" />
 }
-const mount = (profile: Record<string, unknown>) => render(<Harness profile={profile} />)
+const mount = (profile: Record<string, unknown>, initial?: PathwayForm) => render(<Harness profile={profile} initial={initial} />)
 const click = (key: string) => fireEvent.click(screen.getByText(key).closest('button') as HTMLButtonElement)
 const choose = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
 const options = (label: string) => Array.from((screen.getByLabelText(label) as HTMLSelectElement).options)
@@ -192,10 +192,57 @@ it('MARA: its education division comes before the states and goes straight to it
   expect(latest.chosenProgramme).toEqual({
     courseId: 'OP4-AKAUN', courseName: 'Diploma Perakaunan', fieldKey: 'akaun',
     institution: 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi', institutionId: 'MARA-BPT' })
-  // A real state still lists only its campuses.
+  // STORED as university (the payment calendar and the semester-result ask read it), SHOWN as MARA.
+  expect(latest.chosenPathway).toBe('university')
+  expect((screen.getByLabelText('scholarship.apply.plan.pathwayLabel') as HTMLSelectElement).value).toBe('mara')
+  // A real state still lists only its campuses, and leaving the division stores MARA again.
   choose('scholarship.apply.plan.stateLabel', 'Terengganu')
   expect(latest.chosenProgramme).toBeNull()
+  expect(latest.chosenPathway).toBe('mara')
   expect(options('scholarship.apply.plan.institutionLabel.campus')).toEqual(['MARA-001'])
+  choose('scholarship.apply.plan.institutionLabel.campus', 'MARA-001')
+  fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+  fireEvent.click(screen.getByText('Diploma Teknologi Automotif'))
+  expect(latest.chosenPathway).toBe('mara')                 // a MARA skills campus saves mara, as before
+})
+
+describe('a saved division pick reopens under MARA', () => {
+  const saved = (cp: PathwayForm['chosenProgramme']): PathwayForm =>
+    ({ ...FORM, pathwayCertainty: 'sure', chosenPathway: 'university', chosenProgramme: cp })
+  const stateBox = () => screen.getByLabelText('scholarship.apply.plan.stateLabel') as HTMLSelectElement
+
+  it('by the division id', async () => {
+    mount(SPM, saved({ courseId: 'OP4-AKAUN', courseName: 'Diploma Perakaunan', fieldKey: 'akaun',
+      institution: 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi', institutionId: 'MARA-BPT' }))
+    expect((screen.getByLabelText('scholarship.apply.plan.pathwayLabel') as HTMLSelectElement).value).toBe('mara')
+    await waitFor(() => expect(stateBox().value).toBe('@MARA-BPT'))
+    expect(getPathwayOfferings).toHaveBeenCalledWith('mara')
+    expect(latest.chosenPathway).toBe('university')          // opening it writes nothing
+  })
+
+  it('by an OP4 course alone (a pick saved before the id was stored; live data holds two)', async () => {
+    mount(SPM, saved({ courseId: 'OP4-KEJ', courseName: 'Diploma Kejuruteraan', fieldKey: 'kej' }))
+    expect((screen.getByLabelText('scholarship.apply.plan.pathwayLabel') as HTMLSelectElement).value).toBe('mara')
+    await waitFor(() => expect(stateBox().value).toBe('@MARA-BPT'))
+  })
+
+  it('"Eligible only" hiding the division leaves the State box on its placeholder, the pick kept', async () => {
+    mount(SPM, saved({ courseId: 'OP4-AKAUN', courseName: 'Diploma Perakaunan', fieldKey: 'akaun',
+      institution: 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi', institutionId: 'MARA-BPT' }))
+    await waitFor(() => expect(stateBox().value).toBe('@MARA-BPT'))
+    // She qualifies for a MARA campus course, not for the division's diplomas.
+    ;(checkEligibility as jest.Mock).mockResolvedValueOnce({
+      pathway_stats: { mara: 1 }, eligible_courses: [{ course_id: 'TVET-1', course_name: 'Diploma Teknologi Automotif' }] })
+    fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+    await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+    await waitFor(() => expect(options('scholarship.apply.plan.stateLabel')).toEqual(['Terengganu']))
+    expect(stateBox().value).toBe('')
+    // ...and no empty campus box hangs off a state that no longer exists.
+    expect(screen.queryByLabelText('scholarship.apply.plan.institutionLabel.campus')).toBeNull()
+    expect(latest.chosenProgramme?.courseId).toBe('OP4-AKAUN')
+    fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+    await waitFor(() => expect(stateBox().value).toBe('@MARA-BPT'))
+  })
 })
 
 it('matriculation: all four tracks, unfiltered', () => {
@@ -226,19 +273,29 @@ describe('"Eligible only" — off by default, narrows when switched on', () => {
     expect(screen.queryByText('Diploma Kejuruteraan Mekanikal')).toBeNull()
   })
 
-  it('offers MARA when she qualifies for one of its division diplomas (counted under university)', async () => {
+  it('offers MARA, not an empty University, when her only university-counted course is a division diploma', async () => {
     ;(checkEligibility as jest.Mock).mockResolvedValueOnce({
       pathway_stats: { university: 1 }, eligible_courses: [{ course_id: 'OP4-KEJ', course_name: 'Diploma Kejuruteraan' }] })
     mount(SPM)
     click('scholarship.apply.plan.sure')
     fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
-    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['university', 'mara']))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['mara']))
     choose('scholarship.apply.plan.pathwayLabel', 'mara')
     await waitFor(() => expect(options('scholarship.apply.plan.stateLabel')).toEqual(['@MARA-BPT']))
     choose('scholarship.apply.plan.stateLabel', '@MARA-BPT')
     fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
     expect(screen.getByText('Diploma Kejuruteraan')).toBeTruthy()
     expect(screen.queryByText('Diploma Perakaunan')).toBeNull()
+  })
+
+  it('keeps University when its own list holds a course she qualifies for', async () => {
+    ;(checkEligibility as jest.Mock).mockResolvedValueOnce({
+      pathway_stats: { university: 2 },
+      eligible_courses: [{ course_id: 'DSAINS', course_name: 'Diploma Sains' }, { course_id: 'OP4-KEJ', course_name: 'Diploma Kejuruteraan' }] })
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['university', 'mara']))
   })
 
   it('narrows the matriculation tracks', async () => {

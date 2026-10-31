@@ -75,6 +75,27 @@ export function offeringInstitutions(
     .sort(byName)
 }
 
+/** MARA's education division — `views_offerings.MARA_DIVISION` (a drift test keeps the two equal). */
+export const MARA_DIVISION_ID = 'MARA-BPT'
+/** A pick of the division: by its institution id, or by one of its OP4… diplomas (a pick saved before
+ *  the id was stored — live data holds one application and one profile like that). */
+export const isDivisionPick = (cp: ChosenProgramme | null | undefined) =>
+  !!cp && (cp.institutionId === MARA_DIVISION_ID || /^OP4/i.test(cp.courseId))
+
+/**
+ * The division's diplomas are SHOWN under MARA but STORED as `university` (review fix, 2026-10-31):
+ * the payment calendar (`default_schedule` / `contracts.pick_schedule_row`) and the semester-result
+ * ask (`epf_evidence._MULTI_YEAR_PATHWAYS`) read `chosen_pathway`, and a MARA-division student must
+ * keep exactly what a university diploma student has. `shownPathway` is what the picker draws;
+ * `storedPathway` is the ONE place the patch decides what is saved.
+ */
+export function shownPathway(stored: string, cp: ChosenProgramme | null | undefined): string {
+  return stored === 'university' && isDivisionPick(cp) ? 'mara' : stored
+}
+export function storedPathway(shown: string, cp: ChosenProgramme | null | undefined): string {
+  return shown === 'mara' && isDivisionPick(cp) ? 'university' : shown
+}
+
 /** Institutions with no single campus (MARA's education division under `mara`, owner 2026-10-31):
  *  offered BEFORE the state step, since no state would find them. With an allowed course only. */
 export function noCampusInstitutions(o: PathwayOfferings | null, allowed: Allowed): OfferingInstitution[] {
@@ -94,6 +115,8 @@ export function institutionOf(o: PathwayOfferings | null, cp: ChosenProgramme | 
   if (!o || !cp) return undefined
   return o.institutions.find((i) => !!cp.institutionId && i.institution_id === cp.institutionId)
     ?? o.institutions.find((i) => !!cp.institution && i.name === cp.institution)
+    // A no-campus institution is the only home of its courses, so the course alone names it.
+    ?? o.institutions.find((i) => i.no_campus && !!cp.courseId && i.course_ids.includes(cp.courseId))
 }
 
 /** PISMP: the school types present (among allowed courses), in display order. */

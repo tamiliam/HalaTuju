@@ -16,6 +16,7 @@ from apps.courses.exam_questions import (QUALIFICATION_LABELS, THIRD_ROUTE, over
                                          results_held)
 from apps.courses.stpm_pngk import stpm_cgpa_of
 
+from .school_names import school_name_core
 from .shortlisting import count_spm_a_grades
 
 # Fixed salt so a student's public alias is stable across deploys but not a
@@ -266,7 +267,9 @@ def scan_anon_for_identifiers(text, profile):
         if re.search(rf'\b{re.escape(tok)}\b', low):
             found.append('name')
             break
-    for tok in _distinct_tokens(getattr(profile, 'school', ''), _GENERIC_SCHOOL):
+    # The school's NAME only: the ", TOWN" our lists add to a same-name school is not the school, and a
+    # blurb saying "Kuala Lumpur" must not read as naming it (school_name_core, owner 2026-10-31).
+    for tok in _distinct_tokens(school_name_core(getattr(profile, 'school', '')), _GENERIC_SCHOOL):
         if re.search(rf'\b{re.escape(tok)}\b', low):
             found.append('school')
             break

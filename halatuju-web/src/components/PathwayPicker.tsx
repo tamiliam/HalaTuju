@@ -34,7 +34,7 @@ import { useT } from '@/lib/i18n'
 import type { PlanEligibility } from '@/lib/planEligibility'
 import {
   DEGREE_PATHWAY, MATRIC_TRACKS, aliranOfCourse, degreeChoices, institutionOf, isOfferingPathway,
-  pismpAliransOf, pismpBidang, type Allowed,
+  pismpAliransOf, pismpBidang, shownPathway, storedPathway, type Allowed,
 } from '@/lib/planPicker'
 import { isTertiary, isThirdRoute } from '@/lib/qualification'
 import {
@@ -93,9 +93,12 @@ export default function PathwayPicker({
   const narrowing = eligibleOnly && canNarrow
   const eligLoading = narrowing && !elig
   const allowed: Allowed = narrowing && elig ? elig.courseIds : null
+  // The pathway DRAWN: a MARA-division diploma is stored as `university` but shown under MARA
+  // (`lib/planPicker.ts` shownPathway / storedPathway).
+  const pathway = shownPathway(form.chosenPathway, form.chosenProgramme)
 
   // The catalogue of the pathway on screen; a tertiary holder's is the degree list.
-  const offeringKey = tertiary ? DEGREE_PATHWAY : (isOfferingPathway(form.chosenPathway) ? form.chosenPathway : '')
+  const offeringKey = tertiary ? DEGREE_PATHWAY : (isOfferingPathway(pathway) ? pathway : '')
   const needOfferings = !!offeringKey && (offer || (tertiary && !!onTopChoices && form.pathwayCertainty === 'uncertain'))
   const [offerings, setOfferings] = useState<PathwayOfferings | null>(null)
   const [failed, setFailed] = useState(false)
@@ -114,15 +117,15 @@ export default function PathwayPicker({
 
   // PISMP: the school type is local; it re-opens on a saved pick, or the Action Centre's ?aliran hint.
   const [pismpAliran, setPismpAliran] = useState('')
-  const alirans = form.chosenPathway === 'pismp' ? pismpAliransOf(current, allowed) : []
+  const alirans = pathway === 'pismp' ? pismpAliransOf(current, allowed) : []
   useEffect(() => {
-    if (form.chosenPathway !== 'pismp' || !current) return
+    if (pathway !== 'pismp' || !current) return
     const fromChosen = aliranOfCourse(current, form.chosenProgramme?.courseId)
     if (fromChosen) { setPismpAliran(fromChosen); return }
     const present: string[] = pismpAliransOf(current, allowed)
     const hint = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('aliran') : null
     setPismpAliran((a) => a || (hint && present.includes(hint) ? hint : present.length === 1 ? present[0] : ''))
-  }, [form.chosenPathway, form.chosenProgramme, current, allowed])
+  }, [pathway, form.chosenProgramme, current, allowed])
 
   const setCertainty = (c: 'sure' | 'uncertain') => onChange(
     c === 'sure'
@@ -137,7 +140,11 @@ export default function PathwayPicker({
     setPismpAliran('')
     onChange({ chosenPathway: key, chosenProgramme: null, preUTrack: '', preUInstitution: '' })
   }
-  const setProgramme = (c: ChosenProgramme | null) => onChange({ chosenProgramme: c })
+  // The ONE place the saved pathway follows the pick: the MARA division's diploma saves `university`.
+  const setProgramme = (c: ChosenProgramme | null) => {
+    const stored = storedPathway(pathway, c)
+    onChange(stored === form.chosenPathway ? { chosenProgramme: c } : { chosenProgramme: c, chosenPathway: stored })
+  }
   const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }
   const toggle = (list: string[], key: string) => (list.includes(key) ? list.filter((k) => k !== key) : [...list, key])
   const chip = (on: boolean) =>
@@ -159,13 +166,13 @@ export default function PathwayPicker({
   )
 
   const pathways = narrowing && elig
-    ? PATHWAY_ORDER.filter((k) => elig.pathways.has(k) || k === form.chosenPathway) : PATHWAY_ORDER
+    ? PATHWAY_ORDER.filter((k) => elig.pathways.has(k) || k === pathway) : PATHWAY_ORDER
   const tracks = narrowing && elig
     ? MATRIC_TRACKS.filter((tr) => elig.matricTracks.includes(tr) || tr === form.preUTrack) : MATRIC_TRACKS
 
   // What she named, read back to her: "<course> · <institution>, <state>" (or the pre-U track / school).
   const cp = form.chosenProgramme
-  const preU = form.chosenPathway === 'matric' ? 'track' : 'stream'
+  const preU = pathway === 'matric' ? 'track' : 'stream'
   const named = !offer ? '' : cp
     ? [cp.courseName, [cp.institution, institutionOf(current, cp)?.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')
     : form.preUInstitution && form.preUTrack
@@ -213,19 +220,19 @@ export default function PathwayPicker({
       {offer && !tertiary && (
         <div>
           {label('pathwayLabel', 'pathwayTip')}
-          <PathwaySelect pathways={pathways} value={form.chosenPathway} onChange={setPathway}
+          <PathwaySelect pathways={pathways} value={pathway} onChange={setPathway}
             loading={eligLoading} label={t('scholarship.apply.plan.pathwayLabel')} />
         </div>
       )}
 
       {offer && failed && failedLine}
 
-      {offer && !failed && (tertiary || (form.chosenPathway && form.chosenPathway !== 'pismp' && isOfferingPathway(form.chosenPathway))) && (
+      {offer && !failed && (tertiary || (pathway && pathway !== 'pismp' && isOfferingPathway(pathway))) && (
         <InstitutionCoursePicker key={offeringKey} pathway={offeringKey} offerings={current} loading={listLoading}
           allowed={allowed} value={form.chosenProgramme} onChange={setProgramme} apply={apply} />
       )}
 
-      {offer && !failed && !tertiary && form.chosenPathway === 'pismp' && (
+      {offer && !failed && !tertiary && pathway === 'pismp' && (
         // Teacher training: school type (Aliran) → subject (Bidang), not a typed course name.
         <div className="space-y-4">
           <div>
@@ -243,7 +250,7 @@ export default function PathwayPicker({
         </div>
       )}
 
-      {offer && !tertiary && form.chosenPathway === 'matric' && (
+      {offer && !tertiary && pathway === 'matric' && (
         <div className="space-y-4">
           <div>
             {label('trackLabel', 'trackTip')}
@@ -267,7 +274,7 @@ export default function PathwayPicker({
         </div>
       )}
 
-      {offer && !tertiary && form.chosenPathway === 'stpm' && (
+      {offer && !tertiary && pathway === 'stpm' && (
         <div className="space-y-4">
           <div>
             {label('streamLabel', 'streamTip')}

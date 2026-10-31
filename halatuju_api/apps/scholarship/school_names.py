@@ -50,6 +50,31 @@ def school_name_core(name: str) -> str:
     return s[:s.rindex(',')].rstrip()
 
 
+# School-TYPE words a letter may spell out or shorten — never what tells one school from another.
+_TYPE_WORDS = frozenset({'SMK', 'SMJK', 'SMKA', 'KTE', 'SM', 'SEKOLAH', 'MENENGAH', 'KEBANGSAAN', 'JENIS',
+                         'KOLEJ', 'TINGKATAN', 'ENAM'})
+
+
+def _school_words(s: str) -> set:
+    return {w for w in re.sub(r"[^A-Z0-9 ]+", ' ', (s or '').upper().replace("'", '')).split()
+            if w not in _TYPE_WORDS and not w.isdigit()}
+
+
+def keep_our_town(stored: str, letter: str) -> str:
+    """What to save when an offer letter names the pre-U school (review fix, 2026-10-31): the STORED
+    "NAME, TOWN" when it is one of our same-name schools and the letter names that same school — its
+    distinctive words are the name's, plus at most the town and a postcode — else the letter's own
+    name. So confirming an offer never drops the town that says WHICH school, and a letter naming a
+    different school still replaces it. Pure; never raises."""
+    stored = (stored or '').strip()
+    core = school_name_core(stored)
+    if not letter or core == stored:
+        return letter
+    name, town = _school_words(core), _school_words(stored[len(core):])
+    said = _school_words(letter)
+    return stored if name and name <= said and not (said - name - town) else letter
+
+
 def clean_school_name(*candidates: str) -> str:
     """Casing-only standardisation of a recorded STPM school name — NO catalogue lookup, so the
     school IDENTITY never changes (avoids the SMK↔SMJK / "Tun Hussein Onn" vs "Bandar Tun Hussein

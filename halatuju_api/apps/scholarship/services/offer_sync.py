@@ -9,6 +9,7 @@ import logging
 from django.utils.dateparse import parse_date
 
 from ..document_snapshot import SNAPSHOT_ORDER
+from ..school_names import keep_our_town
 from .completeness import application_completeness
 
 #: ⚠ THE PACKAGE NAME, WRITTEN OUT. Never `__name__`: in a submodule that reads
@@ -277,7 +278,7 @@ def autofill_pathway_from_offer(application):
             # institution failed to extract — so the cockpit showed the SMK as if the offer said so.
             # If the offer institution is blank, leave it blank rather than attribute the student's
             # own answer to the letter.
-            return op.clean_school_name(inst)
+            return keep_our_town(application.pre_u_institution, op.clean_school_name(inst))
         return ''
 
     if not locked:

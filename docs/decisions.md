@@ -13,23 +13,26 @@ division only, with the row marked `no_campus: true`. The two Asasi courses stay
 eligibility and the course guide are unchanged. (2) **The picker** (State → Campus → Course for MARA) offers the
 division as the FIRST choice in the State list, "MARA college (Bahagian Pendidikan Tinggi)", which goes straight to
 its courses; a real state lists only campuses (`planPicker.noCampusInstitutions`). (3) **"Eligible only"** filters by
-course id, so the division's eligible diplomas show under MARA; and because eligibility counts them under
-`university`, `planEligibility` adds MARA to the pathway list when any course MARA lists is eligible. (4) **Plan
-labels** `scholarship.apply.plan.pathway.university` "University" and `.mara` "MARA college or institute". These keys
-are read only by scholarship surfaces: the picker, /profile's plan summary, the student's next steps, and the
-officer's Academic card, which shows the pathway's label as the programme title when no course is named. The course
-guide's `pathways.types.*` labels are untouched.
+course id, so the division's eligible diplomas show under MARA. Eligibility counts them under `university`, so the
+pathway list is decided by the LISTS (`planEligibility`): University when its own list (the division left out) holds
+an eligible course, MARA when the division or a MARA campus does. (4) **Plan labels**
+`scholarship.apply.plan.pathway.university` "University" and `.mara` "MARA college or institute" (ms "Universiti" /
+"Kolej atau institut MARA", ta drafts for Sol). These keys are read only by scholarship surfaces: the picker,
+/profile's plan summary, the student's next steps, and the officer's Academic card, which shows the pathway's label
+as the programme title when no course is named. The course guide's `pathways.types.*` labels are untouched.
 
-**Readers of `chosen_pathway='mara'` with an OP course, walked:** `funding_estimate.classify_pathway` — `mara` has no
-category, the programme decides (an OP id, a "Diploma" name) → `university`, exactly today's estimate (tested).
-`offer_pathway.pathway_family` — `mara` and a UPU letter's `diploma` are both `tertiary`, so neither the verdict
-engine's `pathway_type_switch` nor `confirmation`'s type adoption fires (tested); `is_pre_u('mara')` is false, so the
-pre-U fields are not read; `_declared_pathway` reads the course and institution, not the pathway code, and the
-institution verdict comes from the catalogue course (`institution_agreement`), as before. `results_route` — `mara` is
-a post-SPM code and a course id decides first → post-SPM. `card_display` — names come from the catalogue course; no
-pre-U label for `mara`. `family.copy_pathway` / `profile_sync` copy `chosen_pathway` verbatim. The cockpit names the catalogue course
-(the pathway label only when there is none, see (4)); its Pathway chip reads the verdicts above. The bursary amount
-does not depend on the pathway (STPM aside).
+**Review fix, same day: a division pick is SHOWN under MARA but STORED as `chosen_pathway='university'`.** The first
+cut stored `mara`, and two readers key on the stored pathway: the payment calendar (`default_schedule` /
+`contracts.pick_schedule_row`: `mara` has no row, so it fell to `default` — July, ten months — instead of
+`university`'s August start with November skipped) and the continuing student's semester-result ask
+(`epf_evidence._MULTI_YEAR_PATHWAYS` has no `mara`). So `planPicker.storedPathway` — the ONE place the picker's
+patch decides — saves `university` for a pick of the division (its id `MARA-BPT`, or an `OP4…` course saved before
+the id was), and `mara` for a MARA skills campus, as before; `shownPathway` reopens a stored `university` division
+pick under MARA with the division chosen (live data held one application and one profile with an OP4 course, both
+`university`). Every server reader therefore sees exactly what it saw before this change, and the officer's card
+says University as before. `test_offerings_mara_division.py` pins the calendar row, the semester-result ask, the
+funding estimate, the offer's pathway family and the results route on the stored value. If "Eligible only" hides a saved division, the State box shows its placeholder; the pick
+is not cleared (as with a hidden campus) and returns when the switch is off.
 
 ## Same-name schools carry their town (owner, 2026-10-31)
 
@@ -59,6 +62,13 @@ school-leaving certificate's school chip (`academic_engine._school_match`). The 
 PAUSED (2026-10-30) and has no code; when it is built it compares through `_school_match`. The cockpit and every
 screen still SHOW the full name with its town; no web code compares school names (the ticks read the server's
 verdicts). No model prompt matches on the record's school; the profile summary a model reads keeps the full name.
+
+**Review fixes, same day.** (a) The strict anonymity scan (`pool.scan_anon_for_identifiers`) takes its school
+words from `school_name_core(school)`, so a blurb saying "Kuala Lumpur" is not flagged as naming "SMK (L) METHODIST,
+KUALA LUMPUR". (b) Confirming an offer (`confirmation.confirm_pathway`) and the silent offer autofill
+(`offer_sync`) wrote the letter's cleaned name over the stored pre-U school, dropping the town.
+`school_names.keep_our_town` keeps the stored "NAME, TOWN" when the letter names that same school (its words are the
+name's, plus at most the town and a postcode) and lets a letter naming a different school replace it.
 
 **Not changed.** `apps/courses/data/stpm-schools.json` is the input of the historic migration 0018 (it seeded the
 `institutions` table long ago); it keeps the bare names, as production's `institutions` rows do.

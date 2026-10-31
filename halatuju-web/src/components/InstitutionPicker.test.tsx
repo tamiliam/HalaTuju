@@ -32,6 +32,20 @@ it('finds a short MOE name by its long form', () => {
   expect(rows()).toEqual([])
 })
 
+it('a typed query with no words in it matches nothing; an empty box browses', () => {
+  render(<InstitutionPicker value="" onChange={() => {}} options={[
+    { name: 'KTE PONTIAN', hint: 'Johor' }, { name: 'KM Perak', hint: 'Perak' },
+  ]} />)
+  fireEvent.focus(box())
+  expect(rows()).toHaveLength(2)
+  for (const q of ['-', '()', "'"]) {
+    fireEvent.change(box(), { target: { value: q } })
+    expect([q, rows()]).toEqual([q, []])
+  }
+  fireEvent.change(box(), { target: { value: '' } })
+  expect(rows()).toHaveLength(2)
+})
+
 it('draws both of two schools that share a name', () => {
   const error = jest.spyOn(console, 'error').mockImplementation(() => {})
   render(<InstitutionPicker value="" onChange={() => {}} options={[

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .. import requirements
 from ..document_snapshot import SNAPSHOT_ORDER
+from ..school_names import keep_our_town
 from ..emails import (
     send_profile_complete_admin_email, send_submission_received_email,
 )
@@ -184,7 +185,7 @@ def confirm_pathway(application):
         f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
         if pw == 'stpm':
             stream = op.parse_stpm_stream(f'{f.get("stream", "")} {chk["programme"]}')
-            inst = op.clean_school_name(chk['institution'])
+            inst = keep_our_town(application.pre_u_institution, op.clean_school_name(chk['institution']))
         else:  # matric — track from the programme, institution from the state-unique catalogue
             stream = op.parse_matric_track(chk['programme'])
             vc = op.preu_course_id('matric', stream or (application.pre_u_track or ''))

@@ -13,13 +13,18 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 
 from apps.scholarship.academic_engine import _school_match
+from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.pathway_engine import _field_status, offer_pathway_match
 from apps.scholarship.same_name_schools import SAME_NAME_SCHOOLS
-from apps.scholarship.school_names import clean_school_name, school_name_core
+from apps.scholarship.school_names import clean_school_name, keep_our_town, school_name_core
+from apps.scholarship.services import confirm_pathway
+from apps.scholarship.tests.factories import make_application
 
 WEB_DATA = Path(__file__).resolve().parents[4] / 'halatuju-web' / 'src' / 'data'
 
@@ -124,3 +129,79 @@ class TestGeneratedSetMatchesTheLists(SimpleTestCase):
         self.assertIn('SMK CONVENT, TAIPING', SAME_NAME_SCHOOLS)
         self.assertIn('SMK CHUNG HUA, SIBU', SAME_NAME_SCHOOLS)
         self.assertTrue(all(not re.search(r',\s*$', n) for n in SAME_NAME_SCHOOLS))
+
+
+class TestKeepOurTown(SimpleTestCase):
+    """Review fix 6: a letter naming the SAME school never drops our ", TOWN"; another school replaces it."""
+
+    def test_the_same_school_keeps_the_stored_name(self):
+        for letter in ('Smk Convent', 'Sekolah Menengah Kebangsaan Convent Taiping', 'Smk Convent, 34000 Taiping'):
+            self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', letter), 'SMK CONVENT, TAIPING', letter)
+
+    def test_a_different_school_replaces_it(self):
+        self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', 'Smk St George'), 'Smk St George')
+        self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', 'Smk Convent Klang'), 'Smk Convent Klang')
+
+    def test_only_our_names_and_never_a_blank_letter(self):
+        self.assertEqual(keep_our_town('SMK PETAGAS, PENAMPANG', 'Smk Petagas'), 'Smk Petagas')
+        self.assertEqual(keep_our_town('SMK CONVENT, TAIPING', ''), '')
+
+
+class TestConfirmKeepsTheTown(TestCase):
+    """Through `confirm_pathway`, the path that wrote the letter's cleaned name over ours."""
+
+    @staticmethod
+    def _stpm_app():
+        return make_application('shortlisted', chosen_pathway='stpm', pre_u_track='sains',
+                                pre_u_institution='SMK CONVENT, TAIPING')
+
+    def _app_and_offer(self, institution):
+        app = self._stpm_app()
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
+            vision_fields={'fields': {'institution': institution, 'programme': 'Tingkatan Enam Semester 1',
+                                      'stream': 'SAINS'}, 'student_verdict': 'ok',
+                           'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        return app
+
+    def test_same_school_keeps_name_and_town(self):
+        app = self._app_and_offer('SEKOLAH MENENGAH KEBANGSAAN CONVENT TAIPING')
+        self.assertEqual(app.pre_u_institution, 'SMK CONVENT, TAIPING')
+        self.assertEqual(app.chosen_programme['institution'], 'SMK CONVENT, TAIPING')
+
+    def test_a_different_school_still_replaces_it(self):
+        app = self._app_and_offer('KOLEJ TINGKATAN ENAM GOMBAK')
+        self.assertEqual(app.pre_u_institution, 'Kolej Tingkatan Enam Gombak')
+
+    def test_the_silent_autofill_keeps_it_too(self):
+        from apps.scholarship.services import autofill_pathway_from_offer
+        app = self._stpm_app()
+        profile = app.profile
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/y',
+            vision_fields={'fields': {'institution': 'SMK CONVENT TAIPING', 'stream': 'SAINS',
+                                      'programme': 'Tingkatan Enam Semester 1',
+                                      'candidate_name': profile.name, 'candidate_nric': profile.nric},
+                           'student_verdict': 'ok', 'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme.get('institution'), 'SMK CONVENT, TAIPING')
+
+
+class TestAnonymityScanReadsTheName(SimpleTestCase):
+    """Review fix 5: our town is not the school, so a blurb naming the town is not flagged as it."""
+
+    def _profile(self, school):
+        return SimpleNamespace(name='Zxqvbn', school=school, city='', nric='', contact_phone='',
+                               contact_email='')
+
+    def test_the_town_is_not_the_school(self):
+        from apps.scholarship.pool import scan_anon_for_identifiers
+        prof = self._profile('SMK (L) METHODIST, KUALA LUMPUR')
+        self.assertIn('SMK (L) METHODIST, KUALA LUMPUR', SAME_NAME_SCHOOLS)
+        self.assertEqual(scan_anon_for_identifiers('She grew up in Kuala Lumpur.', prof), [])
+        self.assertEqual(scan_anon_for_identifiers('She studied at Methodist.', prof), ['school'])
