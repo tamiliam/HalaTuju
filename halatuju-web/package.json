@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit --incremental false",
     "i18n": "node scripts/check-i18n.js",
     "bundle-budget": "next build | node scripts/bundle-budget.js",
+    "mobile-check": "node mobile-check/run.mjs",
+    "mobile-ledger": "node --no-warnings mobile-check/ledger.mjs",
     "gates": "npm run typecheck && npm run lint && npm run i18n && npm run test"
   },
   "dependencies": {
@@ -30,6 +32,7 @@
     "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",

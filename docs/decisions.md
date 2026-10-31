@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## The Mobile Standard: written rules, ratchets, classes in code, a local browser check (Mobile M0, 2026-10-31)
+
+**Context.** Students use HalaTuju on phones almost all the time, and it "works most of the time" on an iPhone.
+Measured live: the Tamil home page scrolls sideways, small fields make iPhone zoom on tap, header and footer links
+are 18–20 px tall. Nothing measured any of it, so every fix could quietly come undone.
+
+**Decision.** (1) **A written standard** — `docs/mobile-standard.md`, 14 rules, each naming how it is checked and the
+pattern to copy. (2) **Static guards as ratchets** (`mobileStandard.test.ts`, in the deploy gate): each rule that can
+be read from source counts today's offenders and holds that count as a floor that may only go down — the same shape
+as `code-standards.json`. A floor is today's EXACT count, so a fix must lower it in the same change (the test says
+so) and the room cannot be re-spent. The reader is best effort and says where it is blind (`src/test/mobileScan.ts`);
+it under-counts rather than cry wolf. (3) **The classification lives in code** (`src/lib/mobileClass.ts`), not in a
+document: every `page.tsx` is Must / Can / Desktop-only, a desktop-only route cannot compile without its reason, and a
+closed-set test fails on an unclassed page or a stale entry. The ledger (`docs/mobile-ledger.md`) is GENERATED from
+it plus the browser baseline, so it cannot rot the way the old project-status tables did. (4) **A real-browser check
+runs locally, not in Cloud Build** (`npm run mobile-check`, Playwright, Chromium phone emulation): ~220 page visits
+would cost build minutes on every push. It holds a committed baseline per page × width × language and fails when a
+cell gets worse; `--update` only lowers numbers, and `MOBILE_ALLOW_WORSE=1` (a moved measurement, never a regression)
+is the written exception. The static guards keep the line in the gate between runs; the workflows require the
+browser check before a UI push. (5) **Read-only by construction**: the check aborts every non-GET request and
+Supabase auth, because otherwise each visit would mint an anonymous user on the real project. (6) **Viewport and
+home-screen app**: `viewportFit: 'cover'` (so safe-area insets work), zoom never blocked, a manifest and icons — no
+service worker, because an installed HalaTuju must be the live site, never a cached copy of yesterday's statuses.
+
 ## People: Open now is replaced by Awaiting review + Interviewing (request #51, 2026-10-31)
 
 **Context.** Open now summed `profile_complete` and `interviewing`, so a reviewer with interviews running but

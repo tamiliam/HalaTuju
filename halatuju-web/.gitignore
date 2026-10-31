@@ -36,3 +36,6 @@ next-env.d.ts
 
 # Worktrees
 .worktrees/
+
+# Mobile check (screenshots, per-cell results, Playwright scratch)
+mobile-check/output/

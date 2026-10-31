@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M0: the Mobile Standard, its guards and the phone baseline (2026-10-31)
+
+- New `docs/mobile-standard.md`: 14 rules for phone screens (360–430 px, iPhone Safari first, en/ms/ta), each with
+  why, how it is checked and the pattern to copy. Roadmap: `docs/plans/2026-10-31-mobile-native-roadmap.md`.
+- Every route is classed Must / Can / Desktop-only in `halatuju-web/src/lib/mobileClass.ts` (93 routes: 64 / 23 / 6);
+  a desktop-only route needs a written reason, and a closed-set test fails on an unclassed page or a stale entry.
+- Static guards (`mobileStandard.test.ts`, in the deploy gate), each a floor that may only go down: text fields with an
+  unprefixed small font **182**, `hidden` file inputs **6**, hand-rolled `fixed inset-0` overlays **18**, `vh`
+  heights **3**, `min-h-screen` **71**, icon-only controls explained only by `title=` **7**. The root layout must keep
+  `viewportFit: 'cover'` and never block zoom.
+- `npm run mobile-check` (new, local only — `@playwright/test` 1.64.1, Chromium): every public page and every sandbox
+  surface at 360 and 390 px in three languages; fails when a cell gets worse than `mobile-check/baseline.json`
+  (sideways scroll, fields under 16 px, targets under 44 px). Read-only: never signs in, blocks anonymous sign-in and
+  every non-GET request. `npm run mobile-ledger` writes `docs/mobile-ledger.md` from the classes and the baseline.
+- Baseline: 210 cells (17 public pages + 18 sandbox surfaces × 2 widths × 3 languages). 30 scroll sideways — the
+  Tamil home page and `/login` by 99 px at 360 (the hero heading is 458 px wide; TD-311), the officer cockpit by
+  227–257 px — 30 have small text fields, 18 are clean on all three.
+- Viewport: `viewport` export (`viewportFit: 'cover'`, browser-bar colour = `--ground-0` in each mode); web app manifest
+  and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. No
+  service worker, no offline mode.
+
 ## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
 
 - Fix: a /profile save no longer erases an institution filled from the catalogue — when the profile names the same

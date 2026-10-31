@@ -458,6 +458,21 @@ npx next lint                # ⚠ 0 ERRORS REQUIRED (warnings are fine — pass
 node scripts/check-i18n.js   # parity across en/ms/ta
 ```
 
+**⚠ AND FOR ANY UI CHANGE, THE PHONE CHECK (Mobile M0, 2026-10-31)** — local only, not in Cloud
+Build (build minutes). Rules: `docs/mobile-standard.md`; status: `docs/mobile-ledger.md` (generated).
+
+```bash
+cd halatuju-web
+MOBILE_PUBLIC_BASE=https://halatuju.xyz npm run mobile-check
+                             # public pages (from live — .env.local's API is localhost:8000, and the
+                             # live API refuses a localhost origin) + every sandbox surface (local
+                             # `next dev -p 3100`, started for you) × 360/390 px × en/ms/ta. FAILS if
+                             # any cell is worse than mobile-check/baseline.json. Read-only: never
+                             # signs in, blocks anonymous sign-in and every non-GET request.
+npm run mobile-check -- --update   # after a fix: lowers the baseline, never raises it
+npm run mobile-ledger        # regenerate docs/mobile-ledger.md; commit it with baseline.json
+```
+
 **⚠ AND FOR INTERACTIVE BEHAVIOUR, A RENDERED TEST — a source-shape guard is not evidence.**
 This repo has 17 `@testing-library/react` + jsdom tests; `components/admin/CommandPalette.test.tsx`
 is the model and its docblock states the reason. Source-shape guards are right for **structural**
@@ -600,6 +615,7 @@ message itself tells you what to do; this table is the why.
 | **New tests use the factory** — a test file not already in the ledger of 134 may not call `ScholarshipApplication.objects.create(`; a listed file's count may only fall | `test_code_standards.py` | A hand-built fixture can describe a state the product cannot reach, and then the test passes for ever while testing nothing (BrightPath #24). See **Test fixtures** below |
 | **A route may not get heavier** — no route's first-load JS may reach **250 kB** (300 until TD-360, 2026-10-21) unless it is in the `first_load_js` ledger with its own number, no ledgered route may pass that number, and the **median across all routes** may not rise above **180 kB** (256 until TD-300, 229 until TD-360) | `scripts/bundle-budget.js` **in the deploy gate** (+ `codeStandards.test.ts` for the ledger and the wiring) | A visitor downloaded 1.53 MB of message catalogues to read one language, and nothing counted it for a year. See **The two budgets H18 added** below — this one is NOT measured by jest and that matters |
 | **Opening one applicant may not cost more queries** — the officer's applicant-detail GET is pinned at **38**, with or without documents, with ZERO slack | `test_query_budgets.py` (the reading) + `test_code_standards.py` (the ratchet) | It was **315** and **385** — an N+1 nobody had counted since June. TD-282 fixed it with the document snapshot (below); the two numbers are now EQUAL because a document costs nothing extra to open. The budget's job now is to notice if that comes undone |
+| **The Mobile Standard may not slip** — small-text fields, `hidden` file inputs, hand-rolled `fixed inset-0` overlays, `vh` heights, `min-h-screen` and `title=`-only icon controls are each a floor that only goes down; the root layout keeps `viewportFit: 'cover'` and never blocks zoom; every `page.tsx` is classed Must / Can / Desktop-only in `src/lib/mobileClass.ts` (closed set) | `mobileStandard.test.ts` **in the deploy gate** · `npm run mobile-check` (local, browser: overflow, fields < 16 px, targets < 44 px per page × width × language against `mobile-check/baseline.json`) | Students use HalaTuju on phones; the Tamil home page scrolled sideways and iPhone zoomed on every small field, and nothing measured it. Rules and the why: `docs/mobile-standard.md` |
 
 **Post-freeze query budgets — `_admitted` (TD-286, 2026-10-04).** A query budget set after H18 is a
 dated record in the `_admitted` array of `halatuju_api/code-standards.json` — `{on, by, why, ledger,
