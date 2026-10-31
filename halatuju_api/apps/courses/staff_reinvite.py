@@ -165,11 +165,19 @@ def reissue_credential(target):
     and must not reset theirs: ``(None, None)`` and the caller re-sends the "sign in as you always
     do" note. Otherwise a fresh temporary password AND a fresh TTL clock (`issue_temp_password`).
     ``error``: ``'not_configured'`` (the caller's 500) or ``'reset_failed'`` (its 502).
+
+    ⚠ NEVER A STUDENT'S OR SPONSOR'S OWN LOGIN (S7a follow-up review, 2026-10-31): since a student's
+    or sponsor's address may hold an admin role, a UID that is ALSO a student profile, a profile
+    alias or a sponsor (`staff_lifecycle.login_used_elsewhere`) is theirs — ``(None, None)``, the same
+    as no UID, whichever Resend (staff, source, mentor) asks and however the UID got onto the row.
     """
-    from .views_admin import generate_temp_password
+    from .views_admin import generate_temp_password, scholarship_staff
     if supabase_admin.supabase_config() is None:
         return None, 'not_configured'
     if not target.supabase_user_id:
+        return None, None
+    _, staff_lifecycle = scholarship_staff()
+    if staff_lifecycle.login_used_elsewhere(target.supabase_user_id):
         return None, None
     temp_password = generate_temp_password()
     if not supabase_admin.issue_temp_password(target.supabase_user_id, target.name, temp_password):

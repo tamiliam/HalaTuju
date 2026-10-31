@@ -8146,7 +8146,7 @@
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
       },
       "error": {
-        "already_staff": "This email address already has a HalaTuju sign-in, so it cannot be invited as a mentor.",
+        "already_staff": "This email address already has a HalaTuju admin sign-in, so it cannot be invited as a mentor.",
         "bad_email": "That email address does not look right.",
         "name_required": "Type the mentor's name.",
         "organisation_required": "Choose an organisation first.",

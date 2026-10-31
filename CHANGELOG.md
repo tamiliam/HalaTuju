@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31)
+
+Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no migration.
+
+- A mentor invitation (and a staff email correction before the first sign-in) to an address that already has a
+  student's or sponsor's login is now ACCEPTED, as for staff and sources. The person keeps their own login: no
+  password is issued, the letter says "sign in the way you normally do", and the row links on their next sign-in.
+  Resend, Revoke, Reactivate and an email move never touch that login (tests
+  `test_a_students_or_sponsors_login_may_be_a_mentor`, `test_their_own_login_is_never_reset_killed_or_deleted`,
+  `test_an_email_move_to_a_students_address_keeps_their_login`).
+- Still refused (409 `already_staff`): an address with any admin sign-in (staff, source, another mentor). The
+  message now says "admin sign-in" (en / ms / ta).
+- Deleted: `supabase_admin.auth_user_exists` and `mentor_invite.google_address_refusal` (a Google address is no
+  longer looked up), with their tests.
+- Adversarial review: `staff_reinvite.reissue_credential` (every Resend: staff, source, mentor) now never writes a
+  password onto a login that is also a student profile, profile alias or sponsor. This narrows TD-440. Three
+  smaller side effects of an admin role on a student's or sponsor's login (pre-existing for staff) are TD-441.
+
 ## Mobile M0: the Mobile Standard, its guards and the phone baseline (2026-10-31)
 
 - New `docs/mobile-standard.md`: 14 rules for phone screens (360–430 px, iPhone Safari first, en/ms/ta), each with

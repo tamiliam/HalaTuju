@@ -1,5 +1,26 @@
 # Architectural Decisions — HalaTuju
 
+## A student's or sponsor's login may be a mentor: one admin sign-in per email, not one sign-in — 2026-10-31 (owner ruling, student maintenance S7a follow-up)
+
+**Context:** the 7a review refused a mentor invitation to ANY address that already had a HalaTuju login (a
+student's, a sponsor's), and a Google address was looked up in Supabase Auth for the same reason. The owner
+corrected the rule: the admin platform and the student/sponsor platform are separate domains. The owner signs
+in as super admin, student and sponsor with one email. An email may hold only ONE admin-side role.
+
+**Decision:** (1) The mentor invite follows the staff and source invites: an address with any `PartnerAdmin`
+row (staff, source, another mentor) is refused `already_staff`; a student's or sponsor's login is NOT refused.
+It keeps its own login (`already_registered`): the row is written with no UID, no password is issued, the
+letter says "sign in the way you normally do", and `get_admin` links the row on their next verified-email
+sign-in. The same holds for an email move before the first sign-in. (2) The 7a review's protection stays: a
+password is reissued only when the newest mentor invitation issued one, and a linked login with no issued
+password counts as signed in (`mentor_invite.has_signed_in`), so nothing can reset, kill or delete the person's
+own login. (3) `supabase_admin.auth_user_exists` and `mentor_invite.google_address_refusal` are deleted: nothing
+needs them now.
+
+**Trade-offs:** a student can be a mentor, so Sprint 7b must refuse assigning a mentor to their OWN
+application (same person). A typed address that happens to be a student's will reach that student with a
+mentor letter; that is the same exposure the staff invite already has.
+
 ## The Mobile Standard: written rules, ratchets, classes in code, a local browser check (Mobile M0, 2026-10-31)
 
 **Context.** Students use HalaTuju on phones almost all the time, and it "works most of the time" on an iPhone.
@@ -44,7 +65,8 @@ migrations scholarship 0194, courses 0090), deny by default on every view (`ment
 staff list, holding no permission. (2) Staff invite with a name and an email; **only `super` and
 `org_admin` invite, resend, revoke, deactivate or reactivate**, inside their own organisation (an `admin`
 reads the Mentors page). One email, one sign-in: an address that already has any sign-in is refused
-(`already_staff`). (3) **The mentor fills in their own profile and staff cannot edit it** — the common
+(`already_staff`) — *narrowed the same day to one ADMIN sign-in; a student's or sponsor's login may be a
+mentor (entry above)*. (3) **The mentor fills in their own profile and staff cannot edit it** — the common
 `/admin/profile` with You, Contact (with "Show my phone to my students"), Mentoring (area of mentoring,
 required), Qualifications and languages, Address, Your access (Role Mentor) and Sign-in; not Taking part
 (a mentor is never handed cases to pause). Photos stay staff-only. Staff may correct the NAME or EMAIL only

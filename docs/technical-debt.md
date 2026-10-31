@@ -132,11 +132,12 @@ Each line is the question. Nothing here can be closed by engineering alone.
 - **TD-262** — The income rule is almost one rule now. Say yes or no to option 4 so this ticket can close. *(D · S · partly done)*
 - **TD-114** — Old uploads never scored for genuineness can no longer read Certain; re-scoring them costs a paid read per document (the IC scorer is Gemini). Pay for it, or leave them at Probable? *(B · M · verdict half done 2026-10-02)*
 
-### Now — money, identity, eligibility or security — 10
+### Now — money, identity, eligibility or security — 11
 Class A at any size, and class B that is small or medium. Schedule these first.
 
 
-- **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
+- **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. Narrowed 2026-10-31: `reissue_credential` now never resets a login that is also a student's or sponsor's. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
+- **TD-441** — An admin role (mentor or staff) on a student's or sponsor's own login has side effects: a student's claimed-profile alias stops working, a sponsor-portal sign-in counts as the mentor accepting, and the `get_admin` link is not a compare-and-set. *(B · M · raised 2026-10-31 by the S7a follow-up review; pre-existing for staff)*
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7125,4 +7126,24 @@ not yet reached `admin/role/` can have their own password replaced by a Resend. 
 (`mentor_invite.has_signed_in`; a password is reissued only when the newest invitation issued one). **Fix:**
 the same rule on the staff path — reissue only when the newest staff invitation has `credential_issued`, and
 treat a UID with no issued credential as signed in for Resend; regression test with the attach-then-Resend
-chain. *(A · S)*
+chain. *(A · S)* **Narrowed 2026-10-31 (S7a follow-up):** `reissue_credential` returns no password for a UID that is
+also a student profile, profile alias or sponsor (`staff_lifecycle.login_used_elsewhere`), on every Resend path. Left:
+an invitee whose own login is admin-only (no student or sponsor side).
+
+### [TD-441] An admin role on a student's or sponsor's own login has side effects - medium
+
+**Raised 2026-10-31 by the adversarial review of the S7a follow-up** (owner ruling: a student's or sponsor's
+address may be invited as a mentor, as it already could as staff). All three are pre-existing on the staff path.
+1. **A claimed-profile alias stops working.** `resolve_login_alias` (`halatuju/middleware/supabase_auth.py`)
+   ignores a `ProfileLoginAlias` whenever `is_staff_or_sponsor_sub` is true (any `PartnerAdmin` row, active or not).
+   A student who claimed an old profile with a newer login, then is linked as a mentor, acts as the new login on
+   the student side: their profile and applications disappear. Mentors are never deleted, so it is permanent.
+   Live 2026-10-31: 0 alias rows. **Fix:** decide whether a `mentor` row (no permissions) may keep an alias, or
+   refuse a mentor invite to an aliased login.
+2. **A sponsor-portal sign-in counts as the mentor accepting.** `sessionPolicy.enforceSingleScope` calls
+   `admin/role/` on every sponsor sign-in; `_find_admin` links the mentor row and `_touch_seen` stamps
+   `first_seen_at`, so the mentor shows Active, and staff lose Edit and Revoke, without the console ever opened.
+3. **The `get_admin` link is not a compare-and-set.** It reads the row by email, then writes the UID by primary
+   key; a staff email move committing in between can be overwritten (milliseconds). The worst outcome (a Resend
+   resetting the student's password) is closed by the `reissue_credential` guard; a wrong-person link is not.
+   **Fix:** link with `filter(pk=..., email__iexact=..., supabase_user_id__isnull=True).update(...)`. *(B · M)*

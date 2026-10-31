@@ -11,8 +11,15 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
   (`staff_reinvite.provision_for_invite`), a Resend rotates the password through the staff Resend's
   `staff_reinvite.reissue_credential`. Only the LETTER differs (`emails.send_mentor_invitation_email`)
   — and ⚠ it is the ONLY email a mentor is ever sent (owner ruling), with its resend.
-- ONE EMAIL, ONE LOGIN: an address that already has ANY `PartnerAdmin` row is refused `already_staff`.
-  There is no re-invite: a mentor is NEVER DELETED, so the way back is Reactivate.
+- ONE EMAIL, ONE ADMIN SIGN-IN: an address that already has ANY `PartnerAdmin` row (staff, source,
+  another mentor) is refused `already_staff`. There is no re-invite: a mentor is NEVER DELETED, so
+  the way back is Reactivate.
+- A STUDENT'S OR SPONSOR'S LOGIN MAY BE A MENTOR (owner ruling 2026-10-31, replacing the review's
+  "any existing sign-in is refused"): the admin side and the student/sponsor side are separate
+  domains, as for staff. Such an address keeps its own login — `provision_*` answers
+  `already_registered`, the row is written with NO UID and is never issued a password, the letter
+  says "sign in the way you normally do", and `get_admin` links the row on their next verified-email
+  sign-in. Every later door then treats it as somebody's own login (`has_signed_in` below).
 - STAFF EDIT NAME AND EMAIL ONLY UNTIL THE FIRST SIGN-IN (`edit`): after it, 409 `managed_by_mentor` —
   the mentor keeps their own details up to date. Staff never write the mentor's profile.
 - DEACTIVATE switches the login off (`is_active=False`, the source user's revoke), withdraws a waiting
@@ -22,16 +29,14 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
 STATUS IS DERIVED (`status_of`), never stored: `inactive` when deactivated; `invited` until the login's
 first sign-in (`has_signed_in`); else `active`.
 
-⚠ REVIEW FIXES (2026-10-31, adversarial review of 7a):
-- ANY EXISTING SIGN-IN IS REFUSED (owner rule): an address the login side already knows (a student, a
-  sponsor — `provision_*` answers `already_registered`) is `already_staff`, at invite and at an email
-  move, never a mentor row that `get_admin` would later attach to that person's own login.
+⚠ REVIEW FIX (2026-10-31, adversarial review of 7a):
 - "SIGNED IN" IS NOT ONLY `first_seen_at`. `get_admin` links a row with no UID to a caller's VERIFIED
   email on ANY admin request — a refused one too — without stamping `first_seen_at` (only
   `admin/role/` does). A mentor login we never issued a password for (the newest invitation's
-  `credential_issued` is false: a Google address) that carries a UID was linked that way, so it has
-  signed in: Resend, Revoke, the email move and Reactivate's letter all treat it so, and a password is
-  only ever reissued when the newest invitation issued one.
+  `credential_issued` is false: a Google address, or a student's or sponsor's own login) that carries
+  a UID was linked that way, so it has signed in: Resend, Revoke, the email move and Reactivate's
+  letter all treat it so, and a password is only ever reissued when the newest invitation issued one.
+  Before that link the row has no UID, so nothing can reset, kill or delete the person's own login.
 """
 import logging
 from collections import namedtuple
@@ -55,22 +60,6 @@ AUDIENCE = invitations.MENTOR_AUDIENCE
 ACTIVE, INVITED, INACTIVE = 'active', 'invited', 'inactive'
 
 
-def google_address_refusal(email):
-    """`already_staff` / `create_failed` / None for a GOOGLE address (lead check of the review fix,
-    2026-10-31). A Google address is never provisioned, so `already_registered` is never seen for it:
-    Supabase Auth is ASKED whether it already holds a login there (a student's who signs in with
-    Google), and one that does is refused. A lookup that fails refuses too (fail closed, nothing kept).
-    Any other address is checked by provisioning itself (`already_registered`)."""
-    from apps.courses import supabase_admin
-    from apps.courses.views_admin import is_google_email
-    if not is_google_email(email):
-        return None
-    found = supabase_admin.auth_user_exists(email)
-    if found is True:
-        return 'already_staff'
-    if found is not False:
-        return 'create_failed'
-    return None
 STATUSES = (ACTIVE, INVITED, INACTIVE)
 
 #: What `invite` did. ``error`` is None, `already_staff` or `create_failed`.
@@ -145,9 +134,6 @@ def invite(caller, *, organisation, email, name):
     are written in ONE transaction, and the letter goes only after it commits."""
     if PartnerAdmin.objects.filter(email__iexact=email).exists():
         return Invited('already_staff', None, None, None, False, False, False)
-    taken = google_address_refusal(email)
-    if taken:
-        return Invited(taken, None, None, None, False, False, False)
     try:
         with transaction.atomic():
             mentor = Mentor.objects.create(organisation=organisation,
@@ -158,11 +144,6 @@ def invite(caller, *, organisation, email, name):
             if made.error:
                 transaction.set_rollback(True)
                 return Invited('create_failed', None, None, None, False, False, False)
-            if made.already_registered:
-                # Review fix (owner rule): the address already has a sign-in — a student's, a
-                # sponsor's. Refused; nothing is kept (no login was created for it).
-                transaction.set_rollback(True)
-                return Invited('already_staff', None, None, None, False, False, False)
             inv = invitations.create_or_refresh(
                 audience=AUDIENCE, email=email, name=name, role=MENTOR_ROLE,
                 organisation=organisation, invited_by=caller, partner_admin=made.account,
@@ -289,8 +270,9 @@ def edit(caller, mentor, login, *, name=None, email=None):
     is withdrawn and its login retired the way a staff delete retires one (`staff_lifecycle`: removed
     only when ours and unused, else its temporary password killed, else left alone and unlinked), a
     login is provisioned for the new address by the invite's own branches, and the invitation is sent
-    there. `already_staff` when the new address already has a sign-in; `create_failed` / `retire_failed`
-    when Supabase could not be asked (nothing changes)."""
+    there. `already_staff` when the new address already has an admin sign-in (a student's or sponsor's
+    login is kept, as at invite); `create_failed` / `retire_failed` when Supabase could not be asked
+    (nothing changes)."""
     if login is None or has_signed_in(login):
         return False, False, 'managed_by_mentor'
     if status_of(mentor, login) == INACTIVE:
@@ -316,9 +298,6 @@ def _move_address(caller, mentor, login, name, email):
         return False, False, 'already_staff'
     if supabase_admin.supabase_config() is None:
         return False, False, 'not_configured'
-    taken = google_address_refusal(email)
-    if taken:
-        return False, False, taken
     old_uid = login.supabase_user_id
     plan, account = staff_lifecycle.plan_login_retirement(login)   # BEFORE the address changes
     if plan == supabase_admin.FAILED:
@@ -327,8 +306,6 @@ def _move_address(caller, mentor, login, name, email):
     new_login = staff_reinvite.provision_login(email, name)
     if new_login.error:
         return False, False, 'create_failed'
-    if new_login.already_registered:
-        return False, False, 'already_staff'   # review fix: an address with a sign-in is refused
     try:
         with transaction.atomic():
             # Review fix: COMPARE-AND-SET. The row moves only if, in the database, nobody has signed
