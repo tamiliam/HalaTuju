@@ -25,18 +25,13 @@ def pinned_course(cp, programme, institution, issuer=''):
     """``cp`` with the catalogue course the letter names — ``course_id``, the catalogue's
     ``course_name``, its campus as ``institution`` (``card_display.with_institution`` keeps the
     ``institution_id`` true) — or None when the letter names no ONE course, cannot pin its campus,
-    names a pre-U virtual course, or names a course of another level than it states. Other keys of
-    ``cp`` (``source`` included) are kept. Read-only."""
+    names a pre-U virtual course, or does not STATE a level that is the course's own
+    (``offer_course_match.pinned_match``, the test the realignment shares). Other keys of ``cp``
+    (``source`` included) are kept. Read-only."""
     from .. import card_display
-    from .. import offer_pathway as op
-    from ..offer_course_match import match_offer_course
-    match = match_offer_course(programme, institution, issuer)
-    if not match or not (match.get('institution') or '').strip():
-        return None
-    if match['course_id'] in set(op.PREU_COURSE_SLUG.values()):
-        return None
-    level = op.detect_pathway_type(programme, '')
-    if level and level != op.detect_pathway_type(match['course_name'], ''):
+    from ..offer_course_match import pinned_match
+    reason, match = pinned_match(programme, institution, issuer)
+    if reason:
         return None
     out = card_display.with_institution(cp if isinstance(cp, dict) else {}, match['institution'])
     out.update(course_id=match['course_id'], course_name=match['course_name'])
@@ -73,10 +68,16 @@ def plan_offer_link(application, offer, chk):
                            is NOT required — suspect and unscored letters link; a fake never does;
     ``pre_u_offer`` / ``pre_u``  a Form 6 / matriculation letter or stored pathway (no course_id shape);
     ``unresolved``         the letter names no ONE catalogue course at one campus, at its own level;
-    ``no_course_name`` / ``labels_disagree``  the stored labels name nothing, or another course.
+    ``no_course_name`` / ``labels_disagree``  the stored labels name nothing, or another course;
+    ``place_disagrees``    the stored institution label names another place than the matched campus
+                           (when it is a hostel line, the letter's issuer must name the campus — the
+                           shared ``letter_place``). Round-3 review: labels "Seni Halus" at "UNIVERSITI
+                           MALAYA" and a later letter for Seni Halus at UiTM is not the same pick.
 
     ``new_pathway`` is the course's picker pathway, set only when the stored value is blank or not
-    a picker value (``degree``); a picker value is the student's or a confirm's and is kept."""
+    a picker value (``degree``); a picker value is the student's or a confirm's and is kept — UNLESS the
+    realignment would take this record too, when the link gives the realignment's own answer, so the
+    two never leave a record different by the order they ran in (round-3 review)."""
     from apps.courses.course_pathway import course_pathway_type
     from .. import offer_pathway as op
     from ..pathway_engine import offer_band
@@ -106,8 +107,28 @@ def plan_offer_link(application, offer, chk):
         return 'no_course_name', None, ''
     if not labels_describe(cp['course_name'], new_cp['course_name']):
         return 'labels_disagree', None, ''
+    if not _label_names_campus(cp.get('institution') or '', new_cp, (chk.get('issuer') or '').strip()):
+        return 'place_disagrees', None, ''
+    from .offer_sync import plan_bumi_realign
+    realign = plan_bumi_realign(application, offer, chk)
+    if not realign[0]:
+        return '', new_cp, realign[2]                  # the realignment's own pathway answer
     new_pathway = '' if pathway in picker_pathways() else course_pathway_type(new_cp['course_id'])
     return '', new_cp, new_pathway
+
+
+def _label_names_campus(label, new_cp, issuer):
+    """Does the stored institution label name the matched campus — itself, or as a hostel line whose
+    letterhead names it (``letter_place``)? A blank label names nothing."""
+    from .. import offer_pathway as op
+    from ..offer_course_match import catalogue_index, letter_place
+    if not label.strip():
+        return False
+    rows = op._campus_rows(new_cp['course_id'])
+    index = catalogue_index()
+    place = letter_place(new_cp['course_id'], label, issuer, rows=rows, index=index)
+    campus = (new_cp.get('institution') or '').strip()
+    return any(n.strip() == campus and op._refers_to_campus(n, a, place, index) for n, a in rows)
 
 
 def link_offer_course(application, offer, chk):
@@ -126,6 +147,9 @@ def link_offer_course(application, offer, chk):
     if new_pathway and new_pathway != old_pathway.strip().lower():
         application.chosen_pathway = new_pathway
         fields.append('chosen_pathway')
+    if application.pathway_certainty != 'sure':        # the place is settled, as the autofill says
+        application.pathway_certainty = 'sure'
+        fields.append('pathway_certainty')
     with transaction.atomic():
         application.save(update_fields=fields)
         if profile_follows(application):

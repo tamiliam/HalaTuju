@@ -416,7 +416,8 @@ def plan_bumi_realign(application, offer, chk):
     ``not_own_letter``   the letter's name or IC is a mismatch;
     ``not_genuine``      the offer is not scored genuine (``offer_band``);
     ``pre_u_offer``      the letter is a Form 6 / matriculation offer (no catalogue course_id shape);
-    ``unresolved``       the letter does not name ONE catalogue course;
+    ``unresolved``       the letter does not name ONE catalogue course, at the level it states (a
+                         letter with no level word, or a pre-U virtual course, never realigns);
     ``campus_unpinned``  the course has several campuses and the letter names none or several — the
                          realignment never writes a campus it cannot pin (a human does);
     ``same_course``      the stored pick already is that course;
@@ -433,7 +434,7 @@ def plan_bumi_realign(application, offer, chk):
     from .. import card_display
     from .. import offer_pathway as op
     from ..family import CONFIRMED_CP_SOURCES
-    from ..offer_course_match import match_offer_course
+    from ..offer_course_match import pinned_match
     from ..pathway_engine import offer_band
     from .querying import querying_locked
     verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
@@ -446,11 +447,11 @@ def plan_bumi_realign(application, offer, chk):
     prog, inst = (chk.get('programme') or '').strip(), (chk.get('institution') or '').strip()
     if op.is_pre_u(op.detect_pathway_type(prog, inst)):
         return 'pre_u_offer', None, ''
-    match = match_offer_course(prog, inst, (chk.get('issuer') or '').strip())
-    if not match:
-        return 'unresolved', None, ''
-    if not (match.get('institution') or '').strip():
-        return 'campus_unpinned', None, ''
+    # The link's and the confirm's own test (round-3 review): ONE course, never a pre-U virtual one,
+    # at the level the letter STATES, at ONE campus.
+    why, match = pinned_match(prog, inst, (chk.get('issuer') or '').strip())
+    if why:
+        return why, None, ''
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     if (cp.get('course_id') or '').strip() == match['course_id']:
         return 'same_course', None, ''

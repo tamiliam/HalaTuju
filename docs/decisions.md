@@ -16,8 +16,16 @@ own words (two or more, not only place words) sit in the line and one of them be
 town never does. #168's Institution was ticked "Politeknik Kota Kinabalu" against a UMS letter because the hostel
 line ended "UMS Kota Kinabalu".
 
+**Round-3 review (same day).** The whole-table "a word no other row carries" test is withdrawn: it lost true matches
+(UTHM, UMPSA, most polytechnics) and let a new school row flip a tick. A campus is judged against ITSELF — name or
+unique acronym, a listed alias, else its own words either way round with at least one non-place word (towns listed in
+code, `_TOWN_WORDS`); the "names another institution outright" guard reads only exact names and acronyms one row holds,
+so a new school row cannot change it unless its whole name is in the line. The realignment, the link and the confirm
+share one "pinned" test (no pre-U virtual course, a level the letter states, one campus); the link also checks the
+place and gives the same row whichever of the two runs first.
+
 **Revisit if:** a pick turns out to have been made after the cut-off on a profile saved before it (the rule would then
-realign a real choice), or a campus is named on letters only by words other rows share (it then reads `unknown`).
+realign a real choice), or a campus is named on letters only by place words (it then reads `unknown` — add an alias).
 
 ## An offer-sourced, labels-only pick is LINKED to its catalogue course; its source is kept (owner, 2026-11-01)
 

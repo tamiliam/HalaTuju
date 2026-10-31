@@ -64,7 +64,7 @@ def catalogue_name(name: str) -> str:
     return ' '.join(_CAMPUS_PAREN_RE.sub(' ', name or '').split())
 
 
-def letter_place(course_id: str, institution: str, issuer: str = '', rows=None) -> str:
+def letter_place(course_id: str, institution: str, issuer: str = '', rows=None, index=None) -> str:
     """WHERE the letter says the student is going, for ``course_id`` — the institution line, or the
     ISSUER standing in for it. THE one definition: `institution_agreement`,
     `offer_contradicts_course_institution` and the writer `sync_institution_from_catalogue` all read
@@ -81,9 +81,9 @@ def letter_place(course_id: str, institution: str, issuer: str = '', rows=None) 
     rows = _campus_rows(course_id) if rows is None else rows   # a caller's own read, reused
     if not rows:
         return inst
-    index = catalogue_index()
-    if inst and (any(CampusReader(inst, index).names(n, a) for n, a in rows)
-                 or _names_another_institution('', '', inst)):
+    index = index if index is not None else catalogue_index()      # one read for the whole call
+    line = CampusReader(inst, index) if inst else None
+    if inst and (any(line.names(n, a) for n, a in rows) or _names_another_institution('', '', inst)):
         return inst
     reader = CampusReader(iss, index)
     return iss if any(reader.names(n, a) for n, a in rows) else inst
@@ -113,7 +113,8 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
     review 2026-10-31, #349 / #322). ``institution`` is the catalogue's own spelling."""
     if private_arm_letter(programme, f'{institution or ""} {issuer or ""}'):
         return None                                 # the issuer may be the only line naming SATU
-    coded = _printed_course(programme, institution, issuer)
+    index = catalogue_index()                     # ONE read of the table for this whole call
+    coded = _printed_course(programme, institution, issuer, index)
     if coded is not None:
         return coded or None                        # {} = the code names another place: no match
     name = letter_programme(programme)
@@ -121,9 +122,9 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
     if not pj:
         return None
     ltype = detect_pathway_type(name, '') or detect_pathway_type(name, institution)
-    line = _institutions(institution)
+    line = _institutions(institution, index)
     borrow = bool((issuer or '').strip()) and not line[0] and not _names_another_institution('', '', institution)
-    issued = _institutions(issuer) if borrow else ([], [])
+    issued = _institutions(issuer, index) if borrow else ([], [])
     for insts in (line[0], issued[0], line[1], issued[1]):
         hits = _named_courses(pj, ltype, insts)
         if hits:
@@ -131,20 +132,38 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
     return None
 
 
-def _printed_course(programme, institution, issuer):
+def pinned_match(programme, institution, issuer=''):
+    """``(reason, match)`` — ``''`` and the ONE catalogue course the letter names at ONE campus, at the
+    level the letter itself STATES; else ``'unresolved'`` (no one course, a pre-U virtual course, no
+    level word on the letter or a course of another level) or ``'campus_unpinned'``. The one test the
+    realignment, the offer link and the offer confirm share (round-3 review, 2026-11-01: an old pick
+    with a letter reading only "SAINS" at a school had realigned to ``stpm-sains``, and "SAINS SUKAN"
+    with no level word to a diploma)."""
+    match = match_offer_course(programme, institution, issuer)
+    if not match or match['course_id'] in set(PREU_COURSE_SLUG.values()):
+        return 'unresolved', None
+    level = detect_pathway_type(programme, '')
+    if not level or level != detect_pathway_type(match['course_name'], ''):
+        return 'unresolved', None
+    if not (match.get('institution') or '').strip():
+        return 'campus_unpinned', None
+    return '', match
+
+
+def _printed_course(programme, institution, issuer, index=None):
     """The course a printed code names: its row, ``{}`` when the letter contradicts it — its printed
     NAME is another course (review 2026-10-31: "Ukur Bahan … - UW6526002" is Kejuruteraan Awam's
     code) or it names another place — or None when no printed code is in either catalogue."""
     pj = distinctive_tokens(letter_programme(programme))
     for code in dict.fromkeys(c.upper() for c in COURSE_CODE_RE.findall(programme or '')):
-        row = _course_row(code, institution, issuer)
+        row = _course_row(code, institution, issuer, index)
         if row is None:
             continue
         if not _names(pj, row['course_name']):
             return {}
-        place = letter_place(code, institution, issuer)
         rows = _campus_rows(code)
-        reader = CampusReader(place) if place else None
+        place = letter_place(code, institution, issuer, rows=rows, index=index)
+        reader = CampusReader(place, index) if place else None
         if place and not any(reader.names(n, a) for n, a in rows) \
                 and _names_another_institution('', '', place):
             return {}
@@ -152,7 +171,7 @@ def _printed_course(programme, institution, issuer):
     return None
 
 
-def _course_row(course_id, institution, issuer):
+def _course_row(course_id, institution, issuer, index=None):
     from apps.courses.models import Course, StpmCourse
     stpm = StpmCourse.objects.filter(course_id=course_id).values_list('course_name', 'university').first()
     if stpm:
@@ -162,8 +181,8 @@ def _course_row(course_id, institution, issuer):
         return None
     campuses = {n.strip() for n, _a in _campus_rows(course_id) if (n or '').strip()}
     if len(campuses) > 1:
-        place = letter_place(course_id, institution, issuer)
-        reader = CampusReader(place) if place else None
+        place = letter_place(course_id, institution, issuer, index=index)
+        reader = CampusReader(place, index) if place else None
         named = {n.strip() for n, a in _campus_rows(course_id) if place and reader.names(n, a)}
         campuses = named if len(named) == 1 else set()
     return {'course_id': course_id, 'course_name': name,
@@ -178,6 +197,28 @@ _PLACE_WORDS = frozenset({
     'penang', 'perak', 'perlis', 'sabah', 'sarawak', 'selangor', 'terengganu', 'kuala', 'lumpur',
     'putrajaya', 'labuan', 'wilayah', 'persekutuan'})
 
+#: Towns (and the place nouns of town names) that host a campus. A campus whose own words are only
+#: these is named by its name or acronym, never by the words: "…, UMS Kota Kinabalu" is not
+#: Politeknik Kota Kinabalu (#168, 2026-11-01). Written out, not inferred from the table, so a new row
+#: can never move a verdict.
+_TOWN_WORDS = frozenset({
+    'kota', 'bharu', 'bahru', 'kinabalu', 'kuching', 'kuantan', 'arau', 'kangar', 'batu', 'pahat', 'ipoh',
+    'shah', 'alam', 'seremban', 'nilai', 'sandakan', 'tawau', 'miri', 'sibu', 'bintulu', 'mukah', 'samarahan',
+    'segamat', 'muar', 'kluang', 'mersing', 'pagoh', 'dungun', 'kemaman', 'besut', 'marang', 'machang', 'jeli',
+    'tumpat', 'bachok', 'pasir', 'gambang', 'pekan', 'temerloh', 'raub', 'bentong', 'jerantut', 'bangi',
+    'serdang', 'skudai', 'sintok', 'alor', 'setar', 'jitra', 'kulim', 'gajah', 'kampar', 'malim', 'tanjong',
+    'tanjung', 'jasin', 'merlimau', 'ayer', 'keroh', 'nibong', 'tebal', 'butterworth', 'balik', 'kerian',
+    'kajang', 'klang', 'gombak', 'rawang', 'sepang', 'cyberjaya', 'petaling', 'jaya', 'subang', 'puchong',
+    'seri', 'sri', 'bandar', 'teluk', 'sungai', 'parit', 'kampus', 'cawangan'})
+
+#: Former names and common short forms of catalogue institutions whose own distinctive words are only
+#: place words once the town is dropped — the one case the word tier cannot see. Keyed by the
+#: catalogue's bracket-stripped, lower-cased name. Explicit on purpose: an alias is a fact, not a guess.
+#: "Universiti Malaysia Pahang" was UMPSA's name until 2023 ({pahang} is a state).
+_ALIASES = {
+    'universiti malaysia pahang al-sultan abdullah': ('Universiti Malaysia Pahang', 'UMP'),
+}
+
 
 def _plain_words(s: str) -> str:
     return ' '.join(re.findall(r'[a-z0-9]+', re.sub(r'\([^)]*\)', ' ', (s or '').lower())))
@@ -191,16 +232,19 @@ class CampusReader:
     1. **By name or unique acronym** (``named``) — the bracket-stripped name equals the line or sits
        whole inside it ("KOLEJ PERINDU, UNIVERSITI TEKNOLOGI MARA, …"), or an acronym held by ONE row
        and no word of any other row's name is a whole word of the line ("UiTM", "UMS"; never "MARA",
-       a word of "Universiti Teknologi MARA", nor GIATMARA / IKM / KKTM, which many rows share).
-    2. **By words** (``worded``) — only when the line names NO institution by tier 1, and only from
-       the institution's OWN words: two or more distinctive words, all inside the line, not only
-       place words, and at least one word NO other catalogue row carries. A town is no such word:
-       "Kota Kinabalu" is in four rows' names, so "…, UMS Kota Kinabalu" never names Politeknik Kota
-       Kinabalu (#168's false Institution tick, 2026-11-01); "Ungku Omar" is Politeknik Ungku Omar's
-       alone.
+       a word of "Universiti Teknologi MARA", nor GIATMARA / IKM / KKTM, which many rows share). A new
+       row can change this tier only by having its WHOLE name in the line, or by sharing an acronym in
+       the line (or holding it as a word); a school row such as "SMK Sultan Azlan Shah" cannot.
+    2. **By words** (``worded``, the matcher's whole-table search) — only when nothing is named by
+       tier 1: the institution's OWN words, two or more, all inside the line, and not only place words
+       (states, the towns in ``_TOWN_WORDS``).
 
-    ``names(name, acronym)`` asks it of one campus: tier 1 names it; a line that names ANOTHER
-    institution by tier 1 never names it; else the word tier decides."""
+    ``names(name, acronym)`` asks it of ONE campus of the course being checked: tier 1 or a listed
+    alias (``_ALIASES``) names it; a line that names ANOTHER institution by tier 1 never names it
+    (#168: "…, UMS Kota Kinabalu"); else the words, either way round as before, with at least one
+    word that is not a place. Judged against that campus only — no other row's words count, so a new
+    catalogue row never flips a tick (round-3 review: a whole-table "word nobody else has" rule lost
+    UTHM, UMPSA and most polytechnics, and a new school row could flip a verdict)."""
 
     def __init__(self, hint, index=None):
         self.index = index if index is not None else catalogue_index()
@@ -210,7 +254,7 @@ class CampusReader:
         self._named = [(iid, n, a) for iid, n, a, _s in self.index.rows if live and self._tier1(n, a)]
         self.named = [(iid, n) for iid, n, _a in self._named]
         self.worded = [] if self.named or not live else [
-            (iid, n) for iid, n, _a, _s in self.index.rows if self._worded(n)]
+            (iid, n) for iid, n, _a, _s in self.index.rows if self._contained(n)]
 
     def _tier1(self, name, acronym):
         acr, nw = (acronym or '').strip().lower(), _plain_words(name)
@@ -220,33 +264,43 @@ class CampusReader:
         return bool((self.hn and _norm_inst_name(name) == self.hn)
                     or (len(nw.split()) > 1 and f' {nw} ' in self.hw) or unique_acr)
 
-    def _worded(self, name):
+    def _contained(self, name):
+        """The matcher's word tier: two or more of the institution's own words, all in the line."""
         nt = distinctive_tokens(school_name_core(name or ''))
-        return (len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place)
-                and any(self.index.token_rows[t] == 1 for t in nt))
+        return len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place)
+
+    def _aliased(self, name):
+        for alias in _ALIASES.get(_norm_inst_name(name), ()):
+            if ' ' not in alias and alias.lower() in self.ht:
+                return True
+            if ' ' in alias and f' {_plain_words(alias)} ' in self.hw:
+                return True
+        return False
 
     def names(self, name, acronym=''):
         """Does the line name this campus? (See the class.)"""
         if not (self.ht or self.hn) or not (name or '').strip():
             return False
-        if self._tier1(name, acronym):
+        if self._tier1(name, acronym) or self._aliased(name):
             return True
         if self._named:                               # the line names an institution outright:
             nn, acr = _norm_inst_name(name), (acronym or '').strip().lower()   # this one, or another
             return any(_norm_inst_name(n) == nn or (acr and (a or '').strip().lower() == acr)
                        for _i, n, a in self._named)
-        return self._worded(name)
+        nt = distinctive_tokens(school_name_core(name))
+        if not _name_aligns(self.ht, nt):
+            return False
+        return bool((nt if nt <= self.ht else self.ht) - self.index.place)   # not only place words
 
 
 class _Index:
     def __init__(self, rows):
         self.rows = rows
-        self.place = _PLACE_WORDS | {w for *_x, st in rows for w in _plain_words(st).split()}
-        self.acr_rows, self.word_rows, self.token_rows = Counter(), Counter(), Counter()
+        self.place = _PLACE_WORDS | _TOWN_WORDS | {w for *_x, st in rows for w in _plain_words(st).split()}
+        self.acr_rows, self.word_rows = Counter(), Counter()
         for _iid, name, acr, _st in rows:
             self.acr_rows[(acr or '').strip().lower()] += 1
             self.word_rows.update(set(_plain_words(name).split()))
-            self.token_rows.update(distinctive_tokens(school_name_core(name or '')))
 
 
 def catalogue_index():

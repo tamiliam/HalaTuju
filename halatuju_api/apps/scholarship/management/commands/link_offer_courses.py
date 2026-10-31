@@ -24,6 +24,7 @@ from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services.offer_link import OFFER_SOURCES, link_offer_course, plan_offer_link
+from apps.scholarship.services.offer_sync import plan_bumi_realign, realign_basis, realign_bumi_only_pick
 
 
 def _pick(cp):
@@ -55,6 +56,16 @@ class Command(BaseCommand):
                      .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
                      .order_by(*SNAPSHOT_ORDER).first())
             chk = student_offer_check(offer)
+            realign = plan_bumi_realign(app, offer, chk)
+            if not realign[0]:
+                # The realignment's record first (round-3 review: one order, whatever runs first).
+                counts['realign_first'] += 1
+                basis = realign_basis(app, realign[1]['course_id'])
+                if apply:
+                    realign_bumi_only_pick(app, offer, chk)
+                self.stdout.write(f"  #{app.pk} [{app.status}] ({cp.get('source')}) REALIGN-FIRST {basis}"
+                                  f"{'' if apply else ' (would)'}: {_pick(cp)}  ->  {_pick(realign[1])}")
+                continue
             reason, new_cp, new_pathway = plan_offer_link(app, offer, chk)
             head = f"#{app.pk} [{app.status}] ({cp.get('source')})"
             if reason:

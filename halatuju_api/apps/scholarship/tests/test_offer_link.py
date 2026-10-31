@@ -72,13 +72,15 @@ class Link243Test(_Base):
         self.assertEqual(app.chosen_programme['institution_id'], 'RA-UITM')
 
     def test_a_picker_pathway_is_kept(self):
-        app = self._app(pathway='poly', pick={**LABELS, 'source': 'offer_letter_auto'})
+        # A CONFIRMED pick (round-3 review: an automatic one the realignment would also take gets the
+        # realignment's pathway — see OrderIndependenceTest).
+        app = self._app(pathway='poly')
         offer = _offer(app, SENI_HALUS)
         self.assertEqual(_plan(app, offer)[2], '')
         link_offer_course(app, offer, student_offer_check(offer))
         app.refresh_from_db()
         self.assertEqual((app.chosen_pathway, app.chosen_programme['course_id']), ('poly', 'UE6211001'))
-        self.assertEqual(app.chosen_programme['source'], 'offer_letter_auto')
+        self.assertEqual(app.chosen_programme['source'], 'offer_letter_confirmed')
 
     def test_a_suspect_or_unscored_letter_links_a_fake_never(self):
         for status, reason in (('suspect', ''), ('', ''), ('not_offer_letter', 'not_offer_letter')):
@@ -181,3 +183,44 @@ class CommandTest(_Base):
         out = StringIO()
         call_command('link_offer_courses', '--apply', stdout=out)
         self.assertIn(f'#{app.id} [profile_complete] (offer_letter_confirmed) SKIP has_course_id', out.getvalue())
+
+
+class Round3LinkTest(_Base):
+    """Round-3 review (2026-11-01): the link checks the PLACE, and its outcome does not depend on
+    whether the realignment ran first."""
+
+    def test_a_label_naming_another_place_is_not_linked(self):
+        app = self._app(pick={**LABELS, 'institution': 'UNIVERSITI MALAYA'})
+        offer = _offer(app, SENI_HALUS, status='suspect')
+        self.assertEqual(_plan(app, offer)[0], 'place_disagrees')
+        app = self._app(pick={**LABELS, 'institution': ''})
+        self.assertEqual(_plan(app, _offer(app, SENI_HALUS))[0], 'place_disagrees')
+
+    def _both_apply(self):
+        # An automatic labels-only pick (not settled) and a genuine Bumi-only letter: both the link and
+        # the realignment take it.
+        return self._app(pathway='poly', pathway_certainty='uncertain',
+                         pick={**LABELS, 'source': 'offer_letter_auto'})
+
+    def _row(self, app):
+        app.refresh_from_db()
+        return app.chosen_programme, app.chosen_pathway, app.pathway_certainty
+
+    def test_link_then_realign_equals_realign_then_link(self):
+        from apps.scholarship.services.offer_sync import realign_bumi_only_pick
+        a, b = self._both_apply(), self._both_apply()
+        oa, ob = _offer(a, SENI_HALUS), _offer(b, SENI_HALUS)
+        link_offer_course(a, oa, student_offer_check(oa))
+        realign_bumi_only_pick(a, oa, student_offer_check(oa))
+        realign_bumi_only_pick(b, ob, student_offer_check(ob))
+        link_offer_course(b, ob, student_offer_check(ob))
+        self.assertEqual(self._row(a), self._row(b))
+        self.assertEqual(self._row(a)[1:], ('university', 'sure'))
+
+    def test_the_link_command_runs_the_realignment_first(self):
+        app = self._both_apply()
+        _offer(app, SENI_HALUS)
+        out = StringIO()
+        call_command('link_offer_courses', stdout=out)
+        self.assertIn(f'#{app.id} [profile_complete] (offer_letter_auto) REALIGN-FIRST bumi_only (would)',
+                      out.getvalue())

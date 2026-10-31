@@ -192,3 +192,113 @@ class TheDateRuleTest(TestCase):
         out = StringIO()
         call_command('realign_bumi_offers', stdout=out)
         self.assertIn(f'#{app.id} [profile_complete] REALIGN old_pick (would): POLY-DIP-019', out.getvalue())
+
+
+class Round3CampusTest(TestCase):
+    """Round-3 review (2026-11-01): a whole-table "word nobody else has" rule lost true matches and let
+    a new school row flip a tick. The campus test is now judged against the course's own campus only;
+    the reviewer's four strings read match, #168 stays unknown, a school row changes nothing."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_168()
+        ft = FieldTaxonomy.objects.get(key='realign')
+        poly = Course.objects.get(course_id='POLY-DIP-019')
+        for iid, name, acr in (('RA-POLISAS', 'Politeknik Sultan Haji Ahmad Shah', 'POLISAS'),
+                               ('RA-PSAS', 'Politeknik Sultan Azlan Shah', 'PSAS')):
+            CourseInstitution.objects.create(course=poly, institution=Institution.objects.create(
+                institution_id=iid, institution_name=name, acronym=acr, type='Politeknik', state='Pahang'))
+        umpsa = Institution.objects.get(institution_id='RA-UMPSA')
+        sc = StpmCourse.objects.create(course_id='UJ6481004', field_key=ft, institution=umpsa,
+                                       course_name='Sarjana Muda Sains Komputer (Keselamatan Siber) dengan Kepujian',
+                                       university='Universiti Malaysia Pahang Al-Sultan Abdullah')
+        StpmRequirement.objects.create(course=sc)
+        Institution.objects.create(institution_id='RA-SMK-THO', institution_name='SMK Bandar Tun Hussein Onn 2',
+                                   type='Sekolah Menengah', state='Johor')
+
+    def test_the_reviewers_four_strings_read_match(self):
+        self.assertEqual(op.institution_agreement('UB6523001', '', 'UNIVERSITI TUN HUSSEIN ONN'), 'match')
+        self.assertEqual(op.institution_agreement('UJ6481004', '', 'UNIVERSITI MALAYSIA PAHANG'), 'match')
+        self.assertEqual(op.institution_agreement('RA-POLY-DPM', '', 'POLITEKNIK PREMIER UNGKU OMAR'), 'match')
+        self.assertTrue(CampusReader('POLITEKNIK SULTAN HJ AHMAD SHAH').names('Politeknik Sultan Haji Ahmad Shah',
+                                                                             'POLISAS'))
+        for cid, line in (('UB6523001', 'UNIVERSITI TUN HUSSEIN ONN'), ('UJ6481004', 'UNIVERSITI MALAYSIA PAHANG'),
+                          ('RA-POLY-DPM', 'POLITEKNIK PREMIER UNGKU OMAR'),
+                          ('POLY-DIP-019', 'POLITEKNIK SULTAN HJ AHMAD SHAH')):
+            with self.subTest(line=line):
+                self.assertFalse(op.offer_contradicts_course_institution(cid, line))
+
+    def test_the_former_name_alias(self):
+        self.assertEqual(op.institution_agreement('UJ6481004', '', 'UMP, GAMBANG'), 'match')
+
+    def test_168_stays_unknown(self):
+        self.assertNotEqual(op.institution_agreement('POLY-DIP-019', 'Politeknik Kota Kinabalu',
+                                                     LETTER_168[1], LETTER_168[2]), 'match')
+
+    def test_a_new_school_row_changes_nothing(self):
+        line = 'POLITEKNIK PREMIER SULTAN AZLAN SHAH'
+        before = (CampusReader(line).names('Politeknik Sultan Azlan Shah', 'PSAS'),
+                  op.offer_contradicts_course_institution('POLY-DIP-019', line))
+        Institution.objects.create(institution_id='RA-SMK-SAS', institution_name='SMK Sultan Azlan Shah',
+                                   type='Sekolah Menengah', state='Perak')
+        after = (CampusReader(line).names('Politeknik Sultan Azlan Shah', 'PSAS'),
+                 op.offer_contradicts_course_institution('POLY-DIP-019', line))
+        self.assertEqual(before, (True, False))
+        self.assertEqual(after, before)
+
+    def test_one_read_of_the_institution_table_per_check(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as q:
+            op.institution_agreement('POLY-DIP-019', 'Politeknik Kota Kinabalu', LETTER_168[1], LETTER_168[2])
+        full = [x for x in q.captured_queries if '"institutions"' in x['sql'] and 'WHERE' not in x['sql']]
+        self.assertEqual(len(full), 1)
+
+
+class Round3RealignLevelTest(TestCase):
+    """Round-3 review: the date-rule realign uses the link's own test — no pre-U virtual course, a
+    level the letter STATES, one campus."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_168()
+        ft = FieldTaxonomy.objects.get(key='realign')
+        smk = Institution.objects.create(institution_id='RA-SMK-DO', institution_name='SMK Dato Omar',
+                                         type='Sekolah Menengah', state='Kedah')
+        stpm, _ = Course.objects.get_or_create(course_id='stpm-sains', defaults={
+            'course': 'STPM Sains', 'level': 'Pra-U', 'department': 'x', 'field': 'x', 'field_key': ft})
+        CourseInstitution.objects.get_or_create(course=stpm, institution=smk)
+        ums = Institution.objects.get(institution_id='RA-UMS')
+        for cid, name in (('RA-UMS-DSS', 'Diploma Sains Sukan'), ('RA-UMS-DPS', 'Diploma Pengurusan Sukan')):
+            dip = Course.objects.create(course_id=cid, course=name, level='Diploma', department='x', field='x',
+                                        field_key=ft)
+            CourseInstitution.objects.create(course=dip, institution=ums)
+            CourseRequirement.objects.create(course=dip, source_type='ua')
+
+    def _old_app(self):
+        app = make_application('profile_complete', student=make_student(), pathway_certainty='sure',
+                               chosen_pathway='poly', chosen_programme=dict(PICK_168))
+        ScholarshipApplication.objects.filter(id=app.id).update(submitted_at=BEFORE)
+        StudentProfile.objects.filter(pk=app.profile_id).update(updated_at=BEFORE)
+        app.refresh_from_db()
+        app.profile.refresh_from_db()
+        return app
+
+    def test_a_school_letter_never_realigns_to_a_pre_u_virtual_course(self):
+        app = self._old_app()
+        offer = _offer(app, ('SAINS', 'SMK DATO OMAR', ''))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+        # The shared test refuses the virtual course itself, even when the letter's level is its own.
+        from apps.scholarship.offer_course_match import pinned_match
+        self.assertEqual(pinned_match('STPM SAINS', 'SMK DATO OMAR'), ('unresolved', None))
+
+    def test_a_letter_with_no_level_word_never_realigns(self):
+        app = self._old_app()
+        offer = _offer(app, ('SAINS SUKAN', 'Universiti Malaysia Sabah', 'Universiti Malaysia Sabah'))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+        # The same shape with no other course to blur it: still no level word, still no realign.
+        offer = _offer(app, ('PENGURUSAN SUKAN', 'Universiti Malaysia Sabah', 'Universiti Malaysia Sabah'))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+        self.assertFalse(realign_bumi_only_pick(app, offer, student_offer_check(offer)))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'POLY-DIP-019')

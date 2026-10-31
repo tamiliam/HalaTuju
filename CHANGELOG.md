@@ -21,6 +21,16 @@ Owner rulings 2026-11-01 (decisions.md). Not deployed; no migration; no MODEL_VE
   sit in the line and one of them is no other row's. #168's hostel line "…, UMS Kota Kinabalu" had named
   Politeknik Kota Kinabalu by its town words and ticked the Institution (`chosen_institution_status`, served; the
   web only reads it). Dry run: #168 alone changes (match → unknown; offer contradicts False → True).
+- **Round-3 review fixes (third commit):** the campus test no longer asks for "a word no other row has" over the
+  whole table (it lost UTHM, UMPSA and most polytechnics, and a new school row could flip a tick). A campus is
+  judged against itself: name or unique acronym, a listed alias (`_ALIASES`: "Universiti Malaysia Pahang" / UMP for
+  UMPSA), else its own words either way round with at least one that is not a place word (states and the towns in
+  `_TOWN_WORDS`); a line naming another institution outright still never names it. The realignment, the link and
+  the confirm share `offer_course_match.pinned_match` (one course, never a pre-U virtual course, a level the letter
+  STATES, one campus). The link also requires the stored institution label to name the matched campus
+  (`place_disagrees`), sets `pathway_certainty='sure'`, gives the realignment's pathway when the realignment would
+  take the record too, and its command runs the realignment first — so the order of the two never changes a row.
+  One read of the institution table per check (#168's shape: 8 queries / 4 full reads → 6 / 2).
 - Tests: `test_offer_date_rule.py`. Amended with the reason written in: a UKM letter holding UKM's full name now
   reads `match` (was `unknown`) in `test_td145_wrong_university.py`; `TestCatalogueHint` is a `TestCase` (the test
   reads the catalogue); the multi-campus tests name both campuses by name.
