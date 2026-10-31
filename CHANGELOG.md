@@ -77,6 +77,49 @@ All notable changes to this project will be documented in this file.
   own sandbox-slug reader.
 - `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
 
+## Offer realignment: the degree catalogue in the matcher, the issuer for a hostel line, Bumi-only offers realigned (2026-10-31)
+
+Owner rule 2026-10-31 (decisions.md, same date). Not deployed; no migration; no MODEL_VERSION bump (no reading or
+genuineness change — stored `vision_fields` are read as they are).
+
+- **The course matcher sees the degree catalogue** (new `apps/scholarship/offer_course_match.py`;
+  `offer_pathway.resolve_catalogue_course` is now a thin caller and takes an optional `issuer`). It searches
+  `StpmCourse` (1,112 post-STPM degrees) beside `CourseInstitution`, reads a printed UPU course code
+  (`[A-Z]{2}\d{7}`, unless the letter names a different institution), counts an institution's acronym ("UiTM
+  CAWANGAN SABAH"), and drops UiTM's local code ("BA272 "), a faculty tail, the catalogue's " #" and campus
+  parenthetical. Still one course or none; TD-332 / TD-150 refusals kept; a private arm named only in the issuer
+  is refused too. Dry run on the 250 live offers: 46 → 138 resolve.
+- **The issuer stands in for a hostel line** (`offer_course_match.letter_place`, one definition for the writer
+  `sync_institution_from_catalogue` and the readers `institution_agreement` / `offer_contradicts_course_institution`,
+  which take an optional `issuer`): #175, #252, #354, #395 now agree and fill; a polytechnic or private-college line
+  against a public course stays a clash.
+- **Bumiputera-only offers realign the pick** (`services/offer_sync.plan_bumi_realign` / `realign_bumi_only_pick`,
+  called from `autofill_pathway_from_offer` before its mismatch exit): a genuine, own, Bumi-only offer replaces a
+  pick the student made (even a locked one), sets `chosen_pathway` to the course's own picker pathway and
+  certainty `sure`, refreshes the following profile, and logs `AUDIT bumi_offer_realign`. Skips: decided, not own
+  letter, not genuine, Form 6 / matric letter, unresolved, same course, not Bumi-only, confirmed source, pre-U pathway.
+- **Repair command** `realign_bumi_offers` (report by default, `--apply`): one line per live offer — the realign
+  (old → new course, institution, pathway) or its skip reason, plus the hostel-line institution fill. Dry run: 11
+  realign candidates. `backfill_offer_pathways`'s dry run and `backfill_institution`'s report now see the same rules.
+- `apps/courses/course_pathway.py`: `pathway_for_requirement` (now also used by the boot `course_pathway_map`) and
+  `course_pathway_type` for one course.
+- **Adversarial review fixes (second commit):** an institution is named by its name or a UNIQUE acronym first
+  (UTM is never UiTM; "UNIVERSITI TEKNOLOGI MARA" never names MARA's division; shared acronyms such as GIATMARA,
+  IKM and KKTM name nothing alone); a state word alone names no institution (UiTM Perlis / Sabah / Sarawak /
+  Kelantan / Terengganu / Melaka are never UniMAP / UMS / UNIMAS / UMK / UMT / Politeknik Melaka); a printed
+  code must agree with the printed name; a multi-campus course carries a campus only when the letter names
+  exactly one, and the realignment skips `campus_unpinned` otherwise; "decided" = `querying_locked` or
+  `verdict_decided_at`; the offer confirm's stale-course check reads the issuer; only `offer_sync` may call
+  `is_bumiputera_only`; `backfill_offer_pathways`' dry run plans on the live offer; the repair command's report
+  reads a new read-only `institution_fill` planner and never runs a writer.
+- **Round-2 review fixes (third commit):** the word tier needs the institution's own words (two or more) inside the
+  line; the issuer named by name or acronym outranks the line's word tier (#349 "Pusat Persediaan Sains dan
+  Teknologi" + UMS → UH0010001, #322 "Pusat Asasi Sains" + UM → UM0421001, never USM / USIM / UTM); the offer
+  confirm stores the catalogue campus, never a hostel line ("KOLEJ SRI RAJANG" + UPM → "Universiti Putra Malaysia").
+- Tests: `test_offer_course_match.py`, `test_offer_realign.py`; one patch target in `test_td331_td332_programme.py`
+  follows the moved matcher. `test_bumiputera_blind`: the course-flag scan allows `offer_course_match.py` by path,
+  and a new test pins that it reads the COURSE flag only inside `is_bumiputera_only` (owner rule, decisions.md).
+
 ## Common profile follow-up — TD-439, TD-445, TD-446 (2026-10-31) — LIVE 2026-11-01 (main 83571471; api-01222-pw7, web-01045-ckt)
 
 - **TD-439 (owner ruling):** `admin/reviewer-profile/` no longer writes the phone or "share my phone with

@@ -836,7 +836,7 @@ def _verdict_pathway(application):
             # offer; a multi-aliran bidang still needs the profile picker.
             pismp_unique = offer_type == 'pismp' and bool(
                 _op.resolve_pismp_course((chk.get('bidang') or '').strip()))
-            if _op.offer_is_resolvable(prog, inst) or pismp_unique:
+            if _op.offer_is_resolvable(prog, inst, chk.get('issuer') or '') or pismp_unique:
                 cp = {'programme': prog, 'institution': inst,
                       'declared_programme': '', 'declared_institution': ''}
                 if offer_type == 'pismp':

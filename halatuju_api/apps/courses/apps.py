@@ -199,23 +199,15 @@ class CoursesConfig(AppConfig):
             if cid not in course_pathway_map:
                 course_pathway_map[cid] = 'tvet'
 
-        # Non-TVET courses
+        # Non-TVET courses — the one rule a single-course reader also uses (course_pathway.py)
+        from .course_pathway import pathway_for_requirement
         for req in CourseRequirement.objects.exclude(
             source_type='tvet'
         ).select_related('course').values(
             'course_id', 'source_type', 'course__level'
         ):
-            cid = req['course_id']
-            st = req['source_type']
-            level = req['course__level'] or ''
-            if st == 'ua':
-                course_pathway_map[cid] = (
-                    'asasi' if level.lower() == 'asasi' else 'university'
-                )
-            elif st in ('matric', 'stpm'):
-                course_pathway_map[cid] = st
-            else:
-                course_pathway_map[cid] = st  # poly, kkom, pismp
+            course_pathway_map[req['course_id']] = pathway_for_requirement(
+                req['source_type'], req['course__level'])
 
         logger.info(
             f"Loaded {len(course_pathway_map)} course pathway mappings"

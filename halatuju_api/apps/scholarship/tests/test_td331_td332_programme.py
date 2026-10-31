@@ -156,7 +156,10 @@ class LevelIsReadFromTheRightPlaceTest(_Catalogue):
         # switched off: a course NAMED "Diplomasi" is not a diploma, so the degree letter still
         # reaches it. (A letter that PRINTS "(DIPLOMASI)" is the next test — TD-333, closed.)
         from unittest import mock
-        with mock.patch.object(op, 'names_a_specialisation_the_letter_does_not', return_value=False):
+        # The matcher moved to offer_course_match (2026-10-31); the patch follows the name it reads.
+        from apps.scholarship import offer_course_match
+        with mock.patch.object(offer_course_match, 'names_a_specialisation_the_letter_does_not',
+                               return_value=False):
             self.assertEqual(op.resolve_catalogue_course(
                 'IJAZAH SARJANA MUDA HUBUNGAN ANTARABANGSA', UTHM.upper())['course_id'], 'TD-UTHM-HUB')
 
