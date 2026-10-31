@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
 import { Providers } from './providers'
@@ -83,6 +83,33 @@ export const metadata: Metadata = {
     description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,300+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
     images: ['/og-image.png'],
   },
+}
+
+/**
+ * The phone viewport (Mobile M0, docs/mobile-standard.md rule 6).
+ *
+ * `viewportFit: 'cover'` lets the page run under the iPhone notch and home bar, which is what makes
+ * `env(safe-area-inset-*)` return real numbers — without it they are always 0 and a sticky bottom
+ * bar can never pad itself clear of the home indicator. Width and scale are Next's own defaults,
+ * written out so the whole tag is in one place.
+ *
+ * ⚠ NO `maximumScale`, NO `userScalable`. Blocking pinch-zoom is the lazy cure for iOS zooming into
+ * small text fields; the real cure is 16 px fields (rule 2). A person who needs bigger text must
+ * always be able to pinch. `mobileStandard.test.ts` fails if either appears.
+ *
+ * `themeColor` tints the browser bar to match the page header (`bg-ground-0`): `--ground-0` in each
+ * mode, as the `rgb()` the tokens hold (the test checks the two agree). It follows the DEVICE's
+ * light/dark setting — a meta tag cannot read the in-app theme choice — so a person who picked a
+ * mode different from their phone's sees a bar of the other mode. Cosmetic, and only that.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'rgb(255 255 255)' },
+    { media: '(prefers-color-scheme: dark)', color: 'rgb(31 41 55)' },
+  ],
 }
 
 export default function RootLayout({
