@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Request #51: People shows Awaiting review and Interviewing instead of Open now (2026-10-31)
+
+- BrightPath could not tell when a reviewer had nothing left to start, because Open now added the cases
+  awaiting review and the ones being interviewed into one figure. The reviewers table, its phone cards and
+  each reviewer's own page now show the two figures apart; Open now is gone (the requester asked to replace
+  it, not to keep three columns).
+- Both columns sort, and each breaks its ties on the other. The table opens sorted by Awaiting review,
+  fullest first. A zero is grey: that is the "can take more" signal.
+- The server serves `awaiting_review` and `interviewing` beside `open_now`; they always sum to it. `open_now`
+  stays because the revoke warning counts both kinds. No figure changed. No migration.
+- Org-admin Guide (Assigning applicants) and a new FAQ entry explain the two figures.
+
 ## Profile: the browser saves a changed password under the sign-in email, not the phone (owner, 2026-10-31)
 
 - Chrome stored the new password under the phone number (the nearest text field before the password fields). The

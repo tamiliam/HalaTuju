@@ -142,7 +142,11 @@ export const roleOrgAdmin: ManualChapter = {
         <>On <strong>Applications</strong> you get an <strong>Assigned</strong> column with an inline control
         to give a case to one of <em>your</em> reviewers (and the same control sits on each applicant&rsquo;s
         page). You can only assign your own organisation&rsquo;s active reviewers. A case can only change hands
-        while a review is live (Awaiting review / Interviewing) — the control is disabled otherwise.</>
+        while a review is live (Awaiting review / Interviewing) — the control is disabled otherwise.
+        <span className="mt-2 block">To see who can take more, open <strong>People</strong>. Each reviewer shows
+        two figures: <strong>Awaiting review</strong> (cases they have not started) and <strong>Interviewing</strong>
+        (cases they are working on). A grey 0 under Awaiting review means they can take a new case now, even
+        while their interviews are still running.</span></>
       ),
       img: '/manual/org-admin-assign.png',
       alt: 'The Assigned column and inline reviewer control (placeholder)',

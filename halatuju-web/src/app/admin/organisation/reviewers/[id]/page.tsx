@@ -279,7 +279,9 @@ export default function AdminReviewerDetailPage() {
             {giftError && <p className="text-sm text-critical-600 mt-1.5">{giftError}</p>}
           </div>
           <div className="flex gap-6 sm:gap-8">
-            <Figure label={t('admin.reviewers.colOpen')} value={String(detail.open_now)} />
+            {/* Request #51: the list's two halves, not their sum. */}
+            <Figure label={t('admin.reviewers.colAwaiting')} value={String(detail.awaiting_review)} />
+            <Figure label={t('admin.reviewers.colInterviewing')} value={String(detail.interviewing)} />
             <Figure label={t('admin.reviewers.colCompleted')} value={String(detail.completed)} />
             <Figure
               label={t('admin.reviewers.colTurnaround')}

@@ -231,6 +231,13 @@ export const FAQ: Record<Audience, QA[]> = {
         and wallet credits gain their finance check.</>,
     },
     {
+      q: <>How do I know which reviewer can take another case?</>,
+      a: <>Open <strong>People</strong>. <strong>Awaiting review</strong> counts the cases a reviewer has not
+        started; <strong>Interviewing</strong> counts the ones they are working on. A grey 0 under Awaiting
+        review means they can take a new case now, even while interviews are still running. Click either
+        heading to sort by it.</>,
+    },
+    {
       q: <>Can I change somebody&rsquo;s role?</>,
       a: <>Yes, within two pairs: <strong>Admin</strong> and <strong>Finance</strong>, and
         <strong> Reviewer</strong> and <strong>QC</strong>. Use <strong>Change role</strong> on their row in

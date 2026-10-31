@@ -9,7 +9,7 @@ import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { listReviewers, type AdminItem, type AdminReviewer } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { isFree, orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
+import { orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
 import {
   DEFAULT_SORT, REVIEWER_SORT_LABEL, firstDirFor, sortReviewers,
   type ReviewerSortKey,
@@ -62,6 +62,8 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // key and a header for a fact most organisations never see is furniture.
 
 const roleBadge = (r: string) => roleBadgeClass(r)
+// A caseload figure: grey at zero (normal, never a flag), bold otherwise.
+const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
 
 
 export default function AdminReviewersList() {
@@ -251,9 +253,10 @@ export default function AdminReviewersList() {
         <>
         {/* ── PHONE: one card per reviewer (owner, 2026-09-08) ────────────────────────────────
             Seven columns do not fit. The name and the STATUS lead — a paused volunteer is the
-            thing you scan this list for — and **open now** is the large figure, because "who is
-            free" is the question this page answers. Completed and turnaround follow it as
-            context, on one line, in the same order as the table's columns.
+            thing you scan this list for — and **awaiting review** and **interviewing** are the
+            large figures, because "who is free" is the question this page answers (request #51
+            split the old Open now in two). Completed and turnaround follow them as context, on
+            one line, in the same order as the table's columns.
 
             ⚠ THE TWO "NORMAL EMPTY" READINGS SURVIVE, and they are the reason this page has
             careful greys: an empty caseload is a volunteer between assignments (greyed, never
@@ -284,11 +287,13 @@ export default function AdminReviewersList() {
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-ground-600">
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="text-ground-500">{t('admin.reviewers.colOpen')}</span>
-                    <span className={`text-base tabular-nums ${
-                      isFree(r) ? 'text-ground-400' : 'font-semibold text-ground-900'}`}>{r.open_now}</span>
-                  </span>
+                  {([['colAwaiting', r.awaiting_review], ['colInterviewing', r.interviewing]] as const)
+                    .map(([key, n]) => (
+                      <span key={key} className="flex items-baseline gap-1.5">
+                        <span className="text-ground-500">{t(`admin.reviewers.${key}`)}</span>
+                        <span className={`text-base tabular-nums ${figureTone(n)}`}>{n}</span>
+                      </span>
+                    ))}
                   <span>
                     <span className="text-ground-500">{t('admin.reviewers.colCompleted')}</span>{' '}
                     <span className="tabular-nums">{r.completed > 0 ? r.completed : '—'}</span>
@@ -326,7 +331,7 @@ export default function AdminReviewersList() {
           })}
         </div>
 
-        <TableFrame className="hidden md:block" minWidth={1120} label={t('admin.reviewers.title')}>
+        <TableFrame className="hidden md:block" minWidth={1200} label={t('admin.reviewers.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -336,7 +341,8 @@ export default function AdminReviewersList() {
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.reviewers.colLanguages')}
                 </th>
-                <SortHeader col="openNow" label={t(REVIEWER_SORT_LABEL.openNow)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="awaitingReview" label={t(REVIEWER_SORT_LABEL.awaitingReview)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="interviewing" label={t(REVIEWER_SORT_LABEL.interviewing)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="completed" label={t(REVIEWER_SORT_LABEL.completed)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="turnaround" label={t(REVIEWER_SORT_LABEL.turnaround)} sort={sort} onSort={onSort} align="right" />
                 <SortHeader col="status" label={t(REVIEWER_SORT_LABEL.status)} sort={sort} onSort={onSort} />
@@ -406,11 +412,16 @@ export default function AdminReviewersList() {
                           </span>
                         )}
                     </td>
-                    {/* An empty caseload is the normal state of a volunteer between assignments —
-                        it is greyed, never flagged. */}
-                    <td className={`px-4 py-3 text-right tabular-nums ${
-                      isFree(r) ? 'text-ground-400' : 'text-ground-900 font-semibold'}`}>
-                      {r.open_now}
+                    {/* An empty figure is the normal state of a volunteer between assignments —
+                        greyed, never flagged. A grey Awaiting review is the signal request #51
+                        asked for: this person can take more, even while interviews run. */}
+                    <td className={`px-4 py-3 text-right tabular-nums ${figureTone(r.awaiting_review)}`}
+                      data-testid={`awaiting-${r.id}`}>
+                      {r.awaiting_review}
+                    </td>
+                    <td className={`px-4 py-3 text-right tabular-nums ${figureTone(r.interviewing)}`}
+                      data-testid={`interviewing-${r.id}`}>
+                      {r.interviewing}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-ground-700">
                       {r.completed > 0 ? r.completed : <span className="text-ground-400">—</span>}

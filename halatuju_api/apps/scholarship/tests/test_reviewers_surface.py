@@ -142,6 +142,8 @@ class TestTheTable(_Base):
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'role', 'languages',
             'open_now', 'completed', 'turnaround_days', 'paused', 'paused_at',
+            # Request #51: open now's two halves, shown as two columns.
+            'awaiting_review', 'interviewing',
             # 2026-09-09: the table now shows who still has access and when they were last here.
             # `is_active` because revoked is NOT paused and the screen has to say which;
             # `last_seen_at` because NULL means not recorded, never "never signed in".
@@ -207,6 +209,21 @@ class TestTheFigures(_Base):
         row = next(x for x in self.client.get(LIST).json()['reviewers'] if x['name'] == 'Anand')
         self.assertEqual(row['open_now'], 2)
         self.assertEqual(row['completed'], 2)
+
+    def test_open_now_splits_into_awaiting_review_and_interviewing(self):
+        # Request #51: "once there are zero awaiting review I would like to assign more" — so the
+        # halves are served apart, and always sum to open_now.
+        self._app(reviewer=self.reviewer, status='interviewing')
+        self._app(reviewer=self.reviewer, status='interviewing', nric_seed='02')
+        self._app(reviewer=self.reviewer, status='profile_complete', nric_seed='03')
+        self._app(reviewer=self.reviewer, status='recommended', decided_days_ago=4,
+                  nric_seed='04')                                      # decided: in neither
+        self._auth('rv-oa')
+        row = next(x for x in self.client.get(LIST).json()['reviewers'] if x['name'] == 'Anand')
+        self.assertEqual((row['awaiting_review'], row['interviewing']), (1, 2))
+        self.assertEqual(row['awaiting_review'] + row['interviewing'], row['open_now'])
+        d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
+        self.assertEqual((d['awaiting_review'], d['interviewing']), (1, 2))
 
     def test_a_case_SOMEBODY_ELSE_recorded_the_verdict_on_still_counts(self):
         # ⚠ REVERSED 2026-08-02, and production is why. The first cut excluded these, to keep another

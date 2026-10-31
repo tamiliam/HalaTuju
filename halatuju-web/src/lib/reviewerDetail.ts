@@ -34,16 +34,6 @@ export function turnaroundBand(days: number | null): TurnaroundBand {
 }
 
 /**
- * Whether this reviewer is holding anything at all — the difference between "free" and "idle".
- *
- * Deliberately not a band with a colour. An empty caseload is the normal state of a volunteer
- * between assignments and must not read as a criticism.
- */
-export function isFree(r: AdminReviewer): boolean {
-  return r.open_now === 0
-}
-
-/**
  * What became of the cases this reviewer decided, as bar segments.
  *
  * `decided_by_other` is deliberately **not** a segment: those are cases assigned to them that

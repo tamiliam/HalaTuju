@@ -8,7 +8,7 @@ import type { AdminReviewer } from './admin-api'
 import { byNumber, byText, sortRows, type SortDir } from './tableView'
 
 export const REVIEWER_SORT_KEYS = [
-  'name', 'role', 'openNow', 'completed', 'turnaround', 'status',
+  'name', 'role', 'awaitingReview', 'interviewing', 'completed', 'turnaround', 'status',
 ] as const
 export type ReviewerSortKey = (typeof REVIEWER_SORT_KEYS)[number]
 
@@ -16,7 +16,8 @@ export type ReviewerSortKey = (typeof REVIEWER_SORT_KEYS)[number]
 export const REVIEWER_SORT_LABEL: Record<ReviewerSortKey, string> = {
   name: 'admin.reviewers.colName',
   role: 'admin.reviewers.colRole',
-  openNow: 'admin.reviewers.colOpen',
+  awaitingReview: 'admin.reviewers.colAwaiting',
+  interviewing: 'admin.reviewers.colInterviewing',
   completed: 'admin.reviewers.colCompleted',
   turnaround: 'admin.reviewers.colTurnaround',
   status: 'admin.reviewers.colStatus',
@@ -47,9 +48,13 @@ export function statusRank(r: AdminReviewer): number {
 /**
  * **Who is carrying the most, right now.** This is the question the page is opened to answer —
  * an org_admin comes here before handing out the next case, not to browse a staff list.
+ *
+ * Request #51 split the old Open now column in two and replaced it. The default follows Awaiting
+ * review, because "nothing left to start" is the signal the requester assigns on; ties fall to
+ * Interviewing, so the order still reads as the fullest caseload first.
  */
 export const DEFAULT_SORT: { key: ReviewerSortKey; dir: SortDir } = {
-  key: 'openNow', dir: 'desc',
+  key: 'awaitingReview', dir: 'desc',
 }
 
 /**
@@ -60,7 +65,7 @@ export const DEFAULT_SORT: { key: ReviewerSortKey; dir: SortDir } = {
  * Name, role and status open ascending.
  */
 const FIRST_DIR: Record<ReviewerSortKey, SortDir> = {
-  name: 'asc', role: 'asc', openNow: 'desc', completed: 'desc',
+  name: 'asc', role: 'asc', awaitingReview: 'desc', interviewing: 'desc', completed: 'desc',
   turnaround: 'desc', status: 'asc',
 }
 
@@ -71,7 +76,11 @@ export function firstDirFor(key: ReviewerSortKey): SortDir {
 const COMPARE: Record<ReviewerSortKey, (a: AdminReviewer, b: AdminReviewer) => number> = {
   name: (a, b) => byText(a.name, b.name),
   role: (a, b) => byNumber(ROLE_ORDER[a.role] ?? 99, ROLE_ORDER[b.role] ?? 99),
-  openNow: (a, b) => byNumber(a.open_now, b.open_now),
+  // Each half breaks its ties on the other, so equal rows still order by the whole caseload.
+  awaitingReview: (a, b) =>
+    byNumber(a.awaiting_review, b.awaiting_review) || byNumber(a.interviewing, b.interviewing),
+  interviewing: (a, b) =>
+    byNumber(a.interviewing, b.interviewing) || byNumber(a.awaiting_review, b.awaiting_review),
   completed: (a, b) => byNumber(a.completed, b.completed),
   turnaround: (a, b) => byNumber(a.turnaround_days, b.turnaround_days),
   status: (a, b) => byNumber(statusRank(a), statusRank(b)),

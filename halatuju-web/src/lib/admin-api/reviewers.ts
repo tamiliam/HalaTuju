@@ -41,7 +41,11 @@ export interface AdminReviewer {
   languages: string[]
   /** Common profile S2: the optional fourth language by NAME, '' when none (beside the codes). */
   other_language?: string
+  /** Both kinds together. Kept for the revoke warning, which counts interviews too. */
   open_now: number
+  /** Request #51: open now's two halves — they always sum to `open_now`. */
+  awaiting_review: number
+  interviewing: number
   completed: number
   /** MEDIAN days from assignment to verdict. `null` = no completed review, NOT zero. */
   turnaround_days: number | null

@@ -7,13 +7,13 @@
  */
 import type { AdminReviewer, AdminReviewerDetail } from '@/lib/admin-api'
 import {
-  LONG_WAIT_DAYS, credentialLines, displayPhone, hasNoHistory, isFree, orderedLanguages,
+  LONG_WAIT_DAYS, credentialLines, displayPhone, hasNoHistory, orderedLanguages,
   outcomeSegments, phoneState, turnaroundBand,
 } from '@/lib/reviewerDetail'
 
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
-  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+  open_now: 0, awaiting_review: 0, interviewing: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
   // Revoked is NOT paused (2026-09-09); `last_seen_at` null means NOT RECORDED.
   is_active: true, last_seen_at: null,
   // NULL = every gift, the permissive default with no backfill — never "no gift".
@@ -45,13 +45,6 @@ describe('turnaroundBand', () => {
     // have medians of 2.0 to 10.1 days. A guard that stays quiet on current data is working, not
     // missing — this pins that it would speak up if the spread moved.
     for (const d of [2.0, 4.2, 5.7, 8.7, 10.1]) expect(turnaroundBand(d)).toBe('measured')
-  })
-})
-
-describe('isFree', () => {
-  it('is a plain fact about the caseload, not a judgement', () => {
-    expect(isFree(R({ open_now: 0 }))).toBe(true)
-    expect(isFree(R({ open_now: 1 }))).toBe(false)
   })
 })
 

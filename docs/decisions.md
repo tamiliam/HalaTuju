@@ -1,5 +1,15 @@
 # Architectural Decisions — HalaTuju
 
+## People: Open now is replaced by Awaiting review + Interviewing (request #51, 2026-10-31)
+
+**Context.** Open now summed `profile_complete` and `interviewing`, so a reviewer with interviews running but
+nothing left to start looked as busy as one with a full queue. BrightPath assigns on "nothing awaiting review".
+
+**Decision.** The table, phone cards and detail page show the two halves; Open now is removed (requester, on the
+request thread: "only 2 columns"). The default sort moves from Open now to **Awaiting review, descending**, ties
+broken by Interviewing, so the order still reads fullest first. The server keeps `open_now` beside the halves —
+the revoke warning still counts both kinds, because closing an account strands interviews too.
+
 ## MARA's own diplomas sit under MARA in the scholarship picker (owner, 2026-10-31)
 
 **Context.** `MARA-BPT`, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi" (WP Kuala Lumpur), offers two

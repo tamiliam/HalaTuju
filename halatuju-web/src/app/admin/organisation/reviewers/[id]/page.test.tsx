@@ -35,7 +35,7 @@ const mockApi = api as jest.Mocked<typeof api>
 
 const DETAIL = {
   id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
-  languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
+  languages: ['ta', 'en'], open_now: 3, awaiting_review: 1, interviewing: 2, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
   recommended: 6, declined: 0, rejected_after_review: 2, awaiting_qc: 0,
   created_at: '2026-03-01T00:00:00Z',
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
@@ -148,7 +148,7 @@ describe('the honest empty states', () => {
   })
 
   it('says nothing has ever been assigned when that is the case', async () => {
-    await loaded({ open_now: 0, completed: 0 })
+    await loaded({ open_now: 0, awaiting_review: 0, interviewing: 0, completed: 0 })
     expect(screen.getByText('admin.reviewers.detail.noHistory')).toBeTruthy()
   })
 })

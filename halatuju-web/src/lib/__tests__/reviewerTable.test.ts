@@ -13,7 +13,7 @@ import en from '@/messages/en.json'
 
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
-  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+  open_now: 0, awaiting_review: 0, interviewing: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
   // Revoked is NOT paused (2026-09-09); `last_seen_at` null means NOT RECORDED.
   is_active: true, last_seen_at: null,
   // NULL = every gift, the permissive default with no backfill — never "no gift".
@@ -36,20 +36,34 @@ describe('the column labels', () => {
 })
 
 describe('the default sort', () => {
-  it('opens on who is carrying the most RIGHT NOW', () => {
+  it('opens on Awaiting review, the figure request #51 assigns on', () => {
     // The page is opened before handing out the next case, not to browse a staff list.
-    expect(DEFAULT_SORT).toEqual({ key: 'openNow', dir: 'desc' })
+    expect(DEFAULT_SORT).toEqual({ key: 'awaitingReview', dir: 'desc' })
   })
 
-  it('puts the fullest caseload at the top', () => {
-    const rows = [R({ id: 1, open_now: 1 }), R({ id: 2, open_now: 5 }), R({ id: 3, open_now: 0 })]
-    expect(sortReviewers(rows, 'openNow', 'desc').map((r) => r.id)).toEqual([2, 1, 3])
+  it('puts the most awaiting review at the top, ties broken by interviewing', () => {
+    const rows = [
+      R({ id: 1, awaiting_review: 1, interviewing: 0 }),
+      R({ id: 2, awaiting_review: 5, interviewing: 0 }),
+      R({ id: 3, awaiting_review: 0, interviewing: 4 }),
+      R({ id: 4, awaiting_review: 1, interviewing: 3 }),
+    ]
+    expect(sortReviewers(rows, 'awaitingReview', 'desc').map((r) => r.id)).toEqual([2, 4, 1, 3])
+  })
+
+  it('sorts by interviewing on its own column', () => {
+    const rows = [
+      R({ id: 1, awaiting_review: 3, interviewing: 1 }),
+      R({ id: 2, awaiting_review: 0, interviewing: 6 }),
+    ]
+    expect(sortReviewers(rows, 'interviewing', 'desc').map((r) => r.id)).toEqual([2, 1])
   })
 })
 
 describe('first click direction', () => {
   it('opens the three figures at their INTERESTING end', () => {
-    expect(firstDirFor('openNow')).toBe('desc')
+    expect(firstDirFor('awaitingReview')).toBe('desc')
+    expect(firstDirFor('interviewing')).toBe('desc')
     expect(firstDirFor('completed')).toBe('desc')
     // Slowest first: a fast turnaround needs nobody's attention.
     expect(firstDirFor('turnaround')).toBe('desc')
@@ -111,8 +125,8 @@ describe('the name column', () => {
 
 describe('sorting never mutates', () => {
   it('leaves the caller\'s array alone', () => {
-    const rows = [R({ id: 1, open_now: 1 }), R({ id: 2, open_now: 9 })]
-    sortReviewers(rows, 'openNow', 'desc')
+    const rows = [R({ id: 1, awaiting_review: 1 }), R({ id: 2, awaiting_review: 9 })]
+    sortReviewers(rows, 'awaitingReview', 'desc')
     expect(rows.map((r) => r.id)).toEqual([1, 2])
   })
 })

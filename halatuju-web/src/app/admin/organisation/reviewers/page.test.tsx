@@ -28,12 +28,12 @@ const mockApi = api as jest.Mocked<typeof api>
 const REVIEWERS = [
   {
     id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
-    languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
+    languages: ['ta', 'en'], open_now: 3, awaiting_review: 1, interviewing: 2, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
     is_active: true, last_seen_at: '2026-09-04T09:00:00Z',
   },
   {
     id: 6, name: 'Hafiz Rahman', email: 'hafiz@example.org', role: 'qc',
-    languages: [], open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+    languages: [], open_now: 0, awaiting_review: 0, interviewing: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
     is_active: true, last_seen_at: null,
   },
 ] as unknown as api.AdminReviewer[]
@@ -82,12 +82,25 @@ const loaded = async () => {
 }
 
 describe('what the table shows', () => {
-  it('draws the six columns the surface was approved with', async () => {
+  it('draws the columns the surface was approved with', async () => {
     await loaded()
-    for (const key of ['colName', 'colRole', 'colLanguages', 'colOpen', 'colCompleted',
+    for (const key of ['colName', 'colRole', 'colLanguages', 'colAwaiting', 'colInterviewing', 'colCompleted',
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
+  })
+
+  it('replaces Open now with its two halves, and greys a zero (request #51)', async () => {
+    await loaded()
+    expect(screen.queryByText('admin.reviewers.colOpen')).toBeNull()
+    expect(ui().getByTestId('awaiting-5').textContent).toBe('1')
+    expect(ui().getByTestId('interviewing-5').textContent).toBe('2')
+    // Nothing awaiting review: greyed — the "can take more" signal the requester asked for.
+    expect(ui().getByTestId('awaiting-6').className).toContain('text-ground-400')
+    expect(ui().getByTestId('awaiting-5').className).not.toContain('text-ground-400')
+    // The phone cards carry the same two figures.
+    expect(within(cards()).getAllByText('admin.reviewers.colAwaiting').length).toBe(2)
+    expect(within(cards()).getAllByText('admin.reviewers.colInterviewing').length).toBe(2)
   })
 
   it('opens each reviewer\'s own record from their name', async () => {
@@ -109,7 +122,7 @@ describe('the two figures that lie if you let them', () => {
   const turnaroundOf = (id: number) => {
     const row = screen.getAllByRole('row').slice(1).find((r) =>
       r.querySelector('a')!.getAttribute('href')!.endsWith(`/${id}`))!
-    return row.querySelectorAll('td')[5].textContent
+    return row.querySelectorAll('td')[6].textContent
   }
 
   it('says "no reviews yet" rather than showing a turnaround of nothing', async () => {

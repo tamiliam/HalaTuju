@@ -113,8 +113,9 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
         # Reviewers surface passes none and is byte-unchanged.
         rows = rows.filter(cohort=cohort)
     by_email = {a.id: (a.email or '').strip().lower() for a in admins}
-    out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
-               'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
+    out = {i: {'open_now': 0, 'awaiting_review': 0, 'interviewing': 0, 'completed': 0,
+               'recommended': 0, 'declined': 0, 'rejected_after_review': 0, 'awaiting_qc': 0,
+               'unaccounted': 0, '_days': []}
            for i in ids}
     for aid, status, assigned_at, decided_at, verdict, recommended_at in rows.values_list(
             'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict',
@@ -123,6 +124,9 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:
                 slot['open_now'] += 1
+                # Request #51: the table shows the two halves, so "nothing awaiting review" is
+                # visible while interviews are still running. They always sum to `open_now`.
+                slot['awaiting_review' if status == 'profile_complete' else 'interviewing'] += 1
             continue
         slot['completed'] += 1
         if status == 'closed' and recommended_at is None:
@@ -179,7 +183,10 @@ def _reviewer_dict(admin, work):
         # Common profile S2: the optional fourth language, by NAME ('' when none or not spoken well
         # enough) — beside the en/ms/ta codes, never inside them.
         'other_language': _other_language(admin),
+        # `open_now` stays: the revoke warning counts both kinds (request #51's analysis).
         'open_now': work['open_now'],
+        'awaiting_review': work['awaiting_review'],
+        'interviewing': work['interviewing'],
         'completed': work['completed'],
         'turnaround_days': work['turnaround_days'],
         'paused': admin.paused_at is not None,
