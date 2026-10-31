@@ -21,6 +21,12 @@ import { CardFrame, type CardProps } from './shared'
  * ⚠ A SUPERSEDED ANSWER IS DROPPED. Switching chips while a page is in the air must never paint the
  * old filter's rows under the new chip, nor append an older page to the wrong list: every request
  * carries the number of the view it was made for (`view`), and only the current view's lands.
+ *
+ * ⚠ A FIXED HEIGHT, THE ROWS SCROLL INSIDE (owner ruling 2026-11-01, option A). The title, the chips
+ * and the footer stay put; only the rows (and Show older, at their end) scroll, in a region a
+ * keyboard can reach. From `xl` the page's right-hand cell sizes the card to the left column
+ * (`app/admin/profile/page.tsx`); below `xl` the card is at most `max-h-[32rem]`. A chip change
+ * puts the rows back at the top.
  */
 export default function ActivityCard({ state }: CardProps) {
   const { t, token, role, isSuper, permissions } = state
@@ -33,6 +39,9 @@ export default function ActivityCard({ state }: CardProps) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [moreFailed, setMoreFailed] = useState(false)
   const view = useRef(0)
+  const scroller = useRef<HTMLDivElement>(null)
+  // A new chip starts at the top of its list, not where the last one was scrolled to.
+  useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0 }, [kind])
   // TD-446: a sign-in token refresh (a new `token` string, about hourly) must not reload the list or
   // lose the reader's Show older place. The load reads the LATEST token through this ref and depends
   // only on whether there is one, so the first load still happens the moment the token arrives.
@@ -98,7 +107,8 @@ export default function ActivityCard({ state }: CardProps) {
   }
 
   return (
-    <CardFrame title={t(`${P}.title`)} testId="activity">
+    <CardFrame title={t(`${P}.title`)} testId="activity"
+      className="flex max-h-[32rem] flex-col xl:max-h-none xl:min-h-0 xl:flex-1">
       <div role="group" aria-label={t(`${P}.filterLabel`)} className="flex flex-wrap gap-2">
         {filters.map((f) => (
           <button key={f} type="button" aria-pressed={kind === f} onClick={() => setKind(f)} className={chip(kind === f)}>
@@ -107,33 +117,37 @@ export default function ActivityCard({ state }: CardProps) {
         ))}
       </div>
 
-      {failed ? (
-        <div role="alert" className="text-sm text-critical-600">
-          <p>{t(`${P}.error`)}</p>
-          <button type="button" onClick={() => setAttempt((n) => n + 1)} className="mt-1 min-h-11 font-medium text-primary-600 hover:underline">
-            {t(`${P}.retry`)}
-          </button>
-        </div>
-      ) : rows === null ? (
-        <p className="text-sm text-ground-500">{t('common.loading')}</p>
-      ) : rows.length === 0 ? (
-        <p className="text-sm text-ground-500" data-testid="activity-empty">{t(kind === 'all' ? `${P}.empty` : `${P}.emptyFiltered`)}</p>
-      ) : (
-        groupByDay(rows, now).map((g, i) => (
-          <section key={`${g.group}-${i}`} aria-label={t(`${P}.group.${g.group}`)}>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ground-400">{t(`${P}.group.${g.group}`)}</h3>
-            <ul className="space-y-3">{g.rows.map(row)}</ul>
-          </section>
-        ))
-      )}
+      {/* The rows, and only they, scroll: a region a keyboard can reach (Tab, then the arrow keys). */}
+      <div ref={scroller} tabIndex={0} role="region" aria-label={t(`${P}.title`)} data-testid="activity-scroll"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain rounded-md pr-1 outline-none focus-visible:ring-2 focus-visible:ring-info-500">
+        {failed ? (
+          <div role="alert" className="text-sm text-critical-600">
+            <p>{t(`${P}.error`)}</p>
+            <button type="button" onClick={() => setAttempt((n) => n + 1)} className="mt-1 min-h-11 font-medium text-primary-600 hover:underline">
+              {t(`${P}.retry`)}
+            </button>
+          </div>
+        ) : rows === null ? (
+          <p className="text-sm text-ground-500">{t('common.loading')}</p>
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-ground-500" data-testid="activity-empty">{t(kind === 'all' ? `${P}.empty` : `${P}.emptyFiltered`)}</p>
+        ) : (
+          groupByDay(rows, now).map((g, i) => (
+            <section key={`${g.group}-${i}`} aria-label={t(`${P}.group.${g.group}`)}>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ground-400">{t(`${P}.group.${g.group}`)}</h3>
+              <ul className="space-y-3">{g.rows.map(row)}</ul>
+            </section>
+          ))
+        )}
 
-      {rows !== null && next && (
-        <button type="button" onClick={showOlder} disabled={loadingMore}
-          className="min-h-11 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
-          {loadingMore ? t('common.loading') : t(`${P}.showOlder`)}
-        </button>
-      )}
-      {moreFailed && <p role="alert" className="text-sm text-critical-600">{t(`${P}.moreError`)}</p>}
+        {rows !== null && next && (
+          <button type="button" onClick={showOlder} disabled={loadingMore}
+            className="min-h-11 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
+            {loadingMore ? t('common.loading') : t(`${P}.showOlder`)}
+          </button>
+        )}
+        {moreFailed && <p role="alert" className="text-sm text-critical-600">{t(`${P}.moreError`)}</p>}
+      </div>
 
       <p className="text-xs text-ground-500">{t(`${P}.footer`)}</p>
     </CardFrame>

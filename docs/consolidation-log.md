@@ -14,6 +14,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-10-30 827c8b05 fix: cockpit ticks mean a document backs the value (halatuju-web/src/lib/fieldVerification.ts, ApplicantCards.tsx, faq-reviewer.tsx, role-reviewer.tsx; owner ruling, display only)
 - 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
 - 2026-10-31 a0344a35 fix: a profile save keeps the catalogue-filled institution; backfill sees post-STPM degrees (halatuju_api/apps/scholarship/family.py, management/commands/backfill_institution.py + 3 test files; owner-approved backfill --apply on live after deploy: 47 + 45 rows)
+- 2026-11-01 f451a105 fix: My activity is a fixed-height column that scrolls (owner, option A) (halatuju-web/src/app/admin/profile/page.tsx, components/adminProfile/ActivityCard.tsx, shared.tsx + tests)
 
 ## Sprints since the last review
 
@@ -57,6 +58,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-31 Mobile-native Sprint M0 (Mobile Standard, ratchet guards, mobile-check + ledger, viewport/manifest) — 9691f9a7 b38e6b67 c4f7d9d6 308ef3b5
 - 2026-10-31 Common profile Sprints S3-S5 (My activity: staff_activity + writer, reader, back-fill, the card; adversarial review round; migration scholarship 0195) — b269a631 d3e472c7 151de0f2 de573eb1 54e6cf3d 51bf847d
 - 2026-11-01 Common profile follow-up sprint (TD-439 owner ruling: phone written by admin/me only; TD-445, TD-446; no migration) — 83571471
+- 2026-11-01 Offer realignment (degree catalogue in the matcher, issuer for a hostel line, Bumi-only offers realign the pick; two adversarial review rounds; no migration; realign_bumi_offers --apply on live) — a8c763f8 333e7a96 1d849065
 
 ## Reviews
 

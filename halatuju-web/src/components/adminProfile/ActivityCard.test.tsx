@@ -122,6 +122,39 @@ it('TD-446: a sign-in token refresh neither reloads the list nor loses the Show 
   expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR2', { token: 'tok-refreshed' })
 })
 
+// ── A fixed height, the rows scroll inside (owner ruling 2026-11-01, option A) ──────────────────
+it('the rows and Show older scroll in a keyboard-reachable region; the title, chips and footer stay outside', async () => {
+  mockApi.getMyActivity.mockResolvedValue(page([item({ verb: 'first_sign_in' })], 'CUR1'))
+  render(<ActivityCard state={state('reviewer', ['review'])} />)
+  const card = screen.getByTestId('profile-card-activity')
+  expect(card.className).toEqual(expect.stringContaining('flex-col'))
+  expect(card.className.split(' ')).toEqual(expect.arrayContaining(['max-h-[32rem]', 'xl:max-h-none', 'xl:min-h-0', 'xl:flex-1']))
+  const scroll = screen.getByTestId('activity-scroll')
+  expect(scroll.getAttribute('tabindex')).toBe('0')
+  expect(scroll.getAttribute('role')).toBe('region')
+  expect(scroll.getAttribute('aria-label')).toBe('My activity')
+  expect(scroll.className.split(' ')).toEqual(expect.arrayContaining(['min-h-0', 'flex-1', 'overflow-y-auto']))
+  await screen.findAllByTestId('activity-row')
+  expect(within(scroll).getAllByTestId('activity-row')).toHaveLength(1)
+  expect(within(scroll).getByRole('button', { name: 'Show older' })).toBeTruthy()
+  expect(within(scroll).queryByRole('heading', { name: 'My activity' })).toBeNull()
+  expect(within(scroll).queryByRole('group', { name: 'Show' })).toBeNull()
+  expect(within(scroll).queryByText(/Only you can see this list/)).toBeNull()
+  expect(within(card).getByText(/Only you can see this list/)).toBeTruthy()
+})
+
+it('a chip change puts the rows back at the top', async () => {
+  mockApi.getMyActivity.mockResolvedValue(page([item({ verb: 'first_sign_in' })]))
+  render(<ActivityCard state={state('reviewer', ['review'])} />)
+  await screen.findAllByTestId('activity-row')
+  const scroll = screen.getByTestId('activity-scroll')
+  scroll.scrollTop = 240
+  expect(scroll.scrollTop).toBe(240)
+  fireEvent.click(screen.getByRole('button', { name: 'Students' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('students', null, { token: 'tok' }))
+  expect(scroll.scrollTop).toBe(0)
+})
+
 it('TD-446: the first load waits for the token and happens the moment it arrives', async () => {
   mockApi.getMyActivity.mockResolvedValue(page([item({ verb: 'first_sign_in' })]))
   const at = (token: string) => ({ ...state('reviewer', ['review']), token }) as ProfileState

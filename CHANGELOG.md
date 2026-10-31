@@ -106,10 +106,17 @@ All notable changes to this project will be documented in this file.
   own sandbox-slug reader.
 - `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
 
-## Offer realignment: the degree catalogue in the matcher, the issuer for a hostel line, Bumi-only offers realigned (2026-10-31)
+## My activity: a fixed-height column that scrolls (owner, 2026-11-01) — LIVE 2026-11-01 (main f451a105; web-01046-krt)
 
-Owner rule 2026-10-31 (decisions.md, same date). Not deployed; no migration; no MODEL_VERSION bump (no reading or
-genuineness change — stored `vision_fields` are read as they are).
+- **The admin Profile page's My activity card no longer grows down the page** (owner ruling option A). From `xl` it is exactly as tall as the left column (cards + Save; floor 24rem) and the right cell adds no height; below `xl` it stays last, capped at 32rem. Title, chips and footer stay fixed; the rows and Show older scroll inside a keyboard-reachable region (`tabIndex=0`, labelled "My activity"), which returns to the top on a chip change. Same data, chips, Show older and token/race guards (`app/admin/profile/page.tsx`, `components/adminProfile/ActivityCard.tsx`, `CardFrame` takes a `className`).
+
+## Offer realignment: the degree catalogue in the matcher, the issuer for a hostel line, Bumi-only offers realigned (2026-10-31) — LIVE 2026-11-01 (main f908d5ba; api-01223-8xk)
+
+Owner rule 2026-10-31 (decisions.md, same date). No migration; no MODEL_VERSION bump (no reading or
+genuineness change — stored `vision_fields` are read as they are). **Applied on live 2026-11-01 (owner yes):**
+`realign_bumi_offers --apply` through the release-decisions job — 13 picks realigned (#171, 215, 245, 256, 268, 273,
+288, 322, 323, 346, 349, 399, 407; profiles followed) and 3 hostel-line institutions filled (#175 UPM, #252 UPSI,
+#354 UNIMAS). Skipped for a human: decided #305, #274, #31; confirmed source #243, #397.
 
 - **The course matcher sees the degree catalogue** (new `apps/scholarship/offer_course_match.py`;
   `offer_pathway.resolve_catalogue_course` is now a thin caller and takes an optional `issuer`). It searches
