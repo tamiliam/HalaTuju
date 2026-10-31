@@ -141,12 +141,19 @@ its own system font, so widths differ by device; Tamil widths are re-measured af
 ```bash
 cd halatuju-web
 npm run gates                       # includes the static guards
-npm run mobile-check                # local dev server with the sandbox, all cells
-MOBILE_PUBLIC_BASE=https://halatuju.xyz npm run mobile-check   # public pages from live (no local API)
-MOBILE_BASE=https://halatuju.xyz npm run mobile-check          # live site, public pages only
+npm run mobile-check                # BEFORE A PUSH: this branch — public pages + every sandbox surface
 npm run mobile-check -- --update    # after a fix: lower the baseline (never raises)
 npm run mobile-ledger               # regenerate docs/mobile-ledger.md
+MOBILE_PUBLIC_BASE=https://halatuju.xyz npm run mobile-check   # AFTER A DEPLOY: live public pages + local sandbox
+MOBILE_BASE=https://halatuju.xyz npm run mobile-check          # AFTER A DEPLOY: live public pages only
 ```
+
+**Which to use when.** The default run measures **this branch**: it starts `next dev` on port 3100
+with the sandbox on, and the public pages get their data from the live API — the check fetches each
+API read from production itself (no local API needed, and no CORS in the way) and hands it to the
+page. So a sprint that changes a public page checks its own work before the push. The two
+`halatuju.xyz` lines measure **production**, so they only tell you what is deployed: use them after a
+deploy, never instead of the default run.
 
 Screenshots of every cell land in `halatuju-web/mobile-check/output/screenshots/` (gitignored).
 The check is read-only: it never signs in, never submits, and blocks anonymous sign-in so it creates

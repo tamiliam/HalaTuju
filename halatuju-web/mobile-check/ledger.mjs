@@ -79,7 +79,7 @@ const md = `# Mobile ledger
 > \`halatuju-web/src/lib/mobileClass.ts\`; numbers in \`halatuju-web/mobile-check/baseline.json\`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **${m.updated ?? 'never'}** · public pages measured from \`${m.public ?? '—'}\` ·
+Baseline last updated **${m.updated ?? 'never'}** · public pages measured from \`${m.public ?? '—'}\`${/localhost|127\.0\.0\.1/.test(m.public ?? '') ? ' (this branch, live API data)' : ''} ·
 sandbox surfaces from \`${m.sandbox ?? '—'}\` · widths 360 and 390 px · English, Malay and Tamil.
 
 **${total} routes:** ${tally.must} Must · ${tally.can} Can · ${tally.desktop} Desktop-only.

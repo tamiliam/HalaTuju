@@ -7,11 +7,19 @@
  *                       `next dev` with the design sandbox switched on. A remote base (for example
  *                       https://halatuju.xyz) measures the public pages only — the sandbox does not
  *                       exist in a production build.
- *   MOBILE_PUBLIC_BASE  optional: measure the PUBLIC pages from here instead. Needed when the local
- *                       API is not running: `.env.local` points the web app at localhost:8000, and
- *                       the live API refuses a localhost origin (CORS), so public pages measured
- *                       locally without halatuju_api would be measured with their data missing.
- *                       The spec refuses such a measurement rather than record it.
+ *   MOBILE_PUBLIC_BASE  optional: measure the PUBLIC pages from here instead — the "measure the live
+ *                       site" mode (https://halatuju.xyz), for checking a deploy AFTER it lands. It
+ *                       measures production, not this branch, so it can never stand in for the
+ *                       default run before a push.
+ *
+ * ⚠ THE DEFAULT RUN MEASURES THIS BRANCH, WITH LIVE DATA. Locally the app calls its API at
+ * `APP_API` (`.env.local`, normally localhost:8000), which is usually not running — and the live API
+ * refuses a localhost origin (no CORS header). So the spec PROXIES: each GET/HEAD the page sends to
+ * `APP_API/api/…` is fetched from `LIVE_API` by Playwright's own request client (not bound by CORS)
+ * and handed back with an `access-control-allow-origin` for the page; preflights are answered too.
+ * Writes are still aborted before they leave. The page is this branch's code over production's
+ * read-only data — the same data the live site shows. If a proxied call fails, the spec refuses to
+ * record the cell rather than measure a page drawn without its data.
  *   MOBILE_UPDATE=1     rewrite the baseline after the run (`npm run mobile-check -- --update`).
  *   MOBILE_ALLOW_WORSE=1  let that rewrite RAISE numbers. See run.mjs for why it exists.
  */
@@ -34,6 +42,40 @@ export function isLocal(base: string): boolean {
 
 /** The sandbox only exists on a local dev server started with NEXT_PUBLIC_SANDBOX=1. */
 export const SANDBOX_ON = isLocal(BASE)
+
+/** `NEXT_PUBLIC_API_URL` from an env file, or undefined. */
+function envFileApi(file: string): string | undefined {
+  const full = path.join(WEB_ROOT, file)
+  if (!fs.existsSync(full)) return undefined
+  const m = fs.readFileSync(full, 'utf8').match(/^NEXT_PUBLIC_API_URL=(.+)$/m)
+  return m ? m[1].trim().replace(/\/$/, '') : undefined
+}
+
+/**
+ * The API the LOCAL app calls: what `next dev` reads — the process env first, then `.env.local`,
+ * then next.config.js's own default.
+ */
+export const APP_API = (process.env.NEXT_PUBLIC_API_URL || envFileApi('.env.local')
+  || 'http://localhost:8000').replace(/\/$/, '')
+
+/**
+ * The live API: `.env.production`'s NEXT_PUBLIC_API_URL, which must equal the Dockerfile's
+ * `ARG API_URL` default (what Cloud Build actually bakes in). Read, never typed here; if the two
+ * disagree, the check stops rather than pick one.
+ */
+export function liveApi(): string {
+  const env = envFileApi('.env.production')
+  const docker = (fs.readFileSync(path.join(WEB_ROOT, 'Dockerfile'), 'utf8')
+    .match(/^ARG API_URL=(\S+)$/m) ?? [])[1]?.replace(/\/$/, '')
+  if (!env || !docker || env !== docker) {
+    throw new Error(`mobile-check: cannot settle the live API — .env.production says ${env ?? 'nothing'}, `
+      + `the Dockerfile's ARG API_URL says ${docker ?? 'nothing'}. They must exist and agree.`)
+  }
+  return env
+}
+
+/** Proxy the local app's API calls to the live API (see the header): only when pages are local. */
+export const PROXY_API = isLocal(PUBLIC_BASE)
 
 /**
  * 360 is the narrowest phone in the standard (small Android); 390 is today's iPhone. 375 and 430

@@ -1,7 +1,7 @@
 {
   "_how_this_works": "The mobile-check ratchet (Mobile M0). One cell per page × width × language: overflow = sideways scroll in CSS px, smallInputs = text fields under 16 px, smallTargets = controls under 44 × 44 px. A run fails when a cell gets worse. `npm run mobile-check -- --update` rewrites this file and only ever LOWERS numbers (MOBILE_ALLOW_WORSE=1 is the documented exception — see mobile-check/run.mjs). Never edit by hand.",
   "measured": {
-    "public": "https://halatuju.xyz",
+    "public": "http://localhost:3100",
     "sandbox": "http://localhost:3100",
     "updated": "2026-10-31"
   },

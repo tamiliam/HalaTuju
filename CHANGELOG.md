@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - New `docs/mobile-standard.md`: 14 rules for phone screens (360–430 px, iPhone Safari first, en/ms/ta), each with
   why, how it is checked and the pattern to copy. Roadmap: `docs/plans/2026-10-31-mobile-native-roadmap.md`.
-- Every route is classed Must / Can / Desktop-only in `halatuju-web/src/lib/mobileClass.ts` (93 routes: 64 / 23 / 6);
+- Every route is classed Must / Can / Desktop-only in `halatuju-web/src/lib/mobileClass.ts` (94 routes: 64 / 24 / 6);
   a desktop-only route needs a written reason, and a closed-set test fails on an unclassed page or a stale entry.
 - Static guards (`mobileStandard.test.ts`, in the deploy gate), each a floor that may only go down: text fields with an
   unprefixed small font **182**, `hidden` file inputs **6**, hand-rolled `fixed inset-0` overlays **18**, `vh`
@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
   surface at 360 and 390 px in three languages; fails when a cell gets worse than `mobile-check/baseline.json`
   (sideways scroll, fields under 16 px, targets under 44 px). Read-only: never signs in, blocks anonymous sign-in and
   every non-GET request. `npm run mobile-ledger` writes `docs/mobile-ledger.md` from the classes and the baseline.
+  The default run measures THIS branch (local `next dev`): API reads are fetched from the live API by Playwright and
+  handed to the page, so no local API is needed; `MOBILE_PUBLIC_BASE=https://halatuju.xyz` measures production, after a deploy.
 - Baseline: 210 cells (17 public pages + 18 sandbox surfaces × 2 widths × 3 languages). 30 scroll sideways — the
   Tamil home page and `/login` by 99 px at 360 (the hero heading is 458 px wide; TD-311), the officer cockpit by
   227–257 px — 30 have small text fields, 18 are clean on all three.

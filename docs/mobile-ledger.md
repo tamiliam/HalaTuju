@@ -4,10 +4,10 @@
 > `halatuju-web/src/lib/mobileClass.ts`; numbers in `halatuju-web/mobile-check/baseline.json`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **2026-10-31** · public pages measured from `https://halatuju.xyz` ·
+Baseline last updated **2026-10-31** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
-**93 routes:** 64 Must · 23 Can · 6 Desktop-only.
+**94 routes:** 64 Must · 24 Can · 6 Desktop-only.
 **21 measured** (public page or sandbox surface), **0 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
@@ -34,6 +34,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/invite` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/staff` |
 | `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 2 | ❌ |  |
 | `/admin/organisation` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/organisation/mentors` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisation/programmes` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
 | `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisation/reviewers/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |

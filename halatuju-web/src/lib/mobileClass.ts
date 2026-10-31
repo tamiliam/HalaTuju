@@ -153,6 +153,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/requests/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/organisations': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/staff': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/mentors': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/settings': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7' },

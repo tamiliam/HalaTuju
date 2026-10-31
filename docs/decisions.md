@@ -20,7 +20,12 @@ would cost build minutes on every push. It holds a committed baseline per page Ã
 cell gets worse; `--update` only lowers numbers, and `MOBILE_ALLOW_WORSE=1` (a moved measurement, never a regression)
 is the written exception. The static guards keep the line in the gate between runs; the workflows require the
 browser check before a UI push. (5) **Read-only by construction**: the check aborts every non-GET request and
-Supabase auth, because otherwise each visit would mint an anonymous user on the real project. (6) **Viewport and
+Supabase auth, because otherwise each visit would mint an anonymous user on the real project. **It measures this
+branch, with live data**: locally the app's API is `localhost:8000` (rarely running) and the live API refuses a
+localhost origin, so Playwright fetches each API READ from the live API (`.env.production` = the Dockerfile's
+`API_URL`, checked to agree) and fulfils it with a CORS header for the page. Measuring public pages from
+halatuju.xyz instead would measure production, so a sprint could not check its own public-page change before the
+push; that mode stays only for checking a deploy after it lands. (6) **Viewport and
 home-screen app**: `viewportFit: 'cover'` (so safe-area insets work), zoom never blocked, a manifest and icons â€” no
 service worker, because an installed HalaTuju must be the live site, never a cached copy of yesterday's statuses.
 (7) **`display: 'browser'`, not standalone (lead, at review)**: an iPhone standalone web app has no back button and

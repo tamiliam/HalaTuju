@@ -463,14 +463,17 @@ Build (build minutes). Rules: `docs/mobile-standard.md`; status: `docs/mobile-le
 
 ```bash
 cd halatuju-web
-MOBILE_PUBLIC_BASE=https://halatuju.xyz npm run mobile-check
-                             # public pages (from live — .env.local's API is localhost:8000, and the
-                             # live API refuses a localhost origin) + every sandbox surface (local
-                             # `next dev -p 3100`, started for you) × 360/390 px × en/ms/ta. FAILS if
-                             # any cell is worse than mobile-check/baseline.json. Read-only: never
-                             # signs in, blocks anonymous sign-in and every non-GET request.
+npm run mobile-check         # BEFORE A PUSH. THIS BRANCH's public pages + every sandbox surface
+                             # (local `next dev -p 3100`, started for you) × 360/390 px × en/ms/ta.
+                             # API reads are fetched from the live API by Playwright and handed to the
+                             # page (no local API needed; CORS does not apply). FAILS if any cell is
+                             # worse than mobile-check/baseline.json. Read-only: never signs in, blocks
+                             # anonymous sign-in and every non-GET request.
 npm run mobile-check -- --update   # after a fix: lowers the baseline, never raises it
 npm run mobile-ledger        # regenerate docs/mobile-ledger.md; commit it with baseline.json
+MOBILE_PUBLIC_BASE=https://halatuju.xyz npm run mobile-check
+                             # AFTER A DEPLOY: measures PRODUCTION's public pages — never a
+                             # substitute for the default run before a push
 ```
 
 **⚠ AND FOR INTERACTIVE BEHAVIOUR, A RENDERED TEST — a source-shape guard is not evidence.**
