@@ -78,24 +78,26 @@ beforeEach(() => {
   mockApi.updateAdminProfile.mockResolvedValue({})
   mockApi.updateReviewerProfile.mockResolvedValue(FULL_REVIEWER)
   mockApi.getSourceProfile.mockResolvedValue(PROFILE)
+  mockApi.getMyActivity.mockResolvedValue({ results: [], next: null })   // S5: My activity's own read
 })
 
 // ── The card matrix, rendered ──────────────────────────────────────────────────────────────────
 describe.each([
-  ['super', ['you', 'contact', 'access', 'signin']],
-  ['org_admin', ['you', 'contact', 'access', 'signin']],
-  ['admin', ['you', 'contact', 'access', 'signin']],
-  ['finance', ['you', 'contact', 'access', 'signin']],
-  ['qc', ['you', 'contact', 'access', 'signin']],
-  ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin']],
-  ['partner', ['you', 'contact', 'access', 'organisation', 'signin']],
-  ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin']],
-  ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin']],
+  ['super', ['you', 'contact', 'access', 'signin', 'activity']],
+  ['org_admin', ['you', 'contact', 'access', 'signin', 'activity']],
+  ['admin', ['you', 'contact', 'access', 'signin', 'activity']],
+  ['finance', ['you', 'contact', 'access', 'signin', 'activity']],
+  ['qc', ['you', 'contact', 'access', 'signin', 'activity']],
+  ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin', 'activity']],
+  ['partner', ['you', 'contact', 'access', 'organisation', 'signin', 'activity']],
+  ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin', 'activity']],
+  ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity']],
 ] as const)('%s', (role, cards) => {
   it('renders exactly its cards, in order', async () => {
     signIn(role)
     render(<ProfilePage />)
     await screen.findByTestId('profile-card-signin')
+    await screen.findByTestId('profile-card-activity')
     await waitFor(() => expect(shownCards()).toEqual(cards))
     // A card that is not shown is never fetched for: no reviewer profile without the cards, and the
     // staff profile only for the partner's organisation.
@@ -120,7 +122,7 @@ it('a reviewer whose `review` was taken away loses the reviewer cards', async ()
   signIn('reviewer', { permissions: [] })
   render(<ProfilePage />)
   await screen.findByTestId('profile-card-signin')
-  await waitFor(() => expect(shownCards()).toEqual(['you', 'contact', 'access', 'signin']))
+  await waitFor(() => expect(shownCards()).toEqual(['you', 'contact', 'access', 'signin', 'activity']))
   expect(mockApi.getReviewerProfile).not.toHaveBeenCalled()
 })
 

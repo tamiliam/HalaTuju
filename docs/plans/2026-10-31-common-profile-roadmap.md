@@ -119,6 +119,9 @@ Adversarial review: pending (lead).
 - **Adversarial review** (money + identity).
 
 ### S5 — My activity on the page + close — medium, ~20 files
+**Status:** BUILT 2026-10-31 on branch `profiles` (not pushed; web only, no API change). The card sits in the existing
+lazy `adminProfile/cards` chunk (D10); `/admin/profile` became a wide route for its right-hand column. Guide + FAQ
+are English only (the manual is). Retrospective: after deploy (lead).
 - The activity card (day groups, filters "All / Students / Money / Profile and sign-in", Show older,
   "only you can see this"; back-filled rows marked as rebuilt).
 - en / ms / ta text (Tamil style guide), Guide + FAQ for every role, decisions, CHANGELOG,

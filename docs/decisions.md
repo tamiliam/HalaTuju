@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## My activity on the Profile page: own rows only, labels decided when read, neutral words translated on the web, chips per person — 2026-10-31 (lead decisions, common profile S5)
+
+**Context:** S3/S4 built the activity list and its reader (`GET admin/me/activity/`); S5 shows it on the
+Profile page as the owner-approved mock-up's "My activity" card.
+
+**Decision:** (1) **Own rows only, for every role** — the card asks for nothing but the caller's own list (the
+reader filters `actor = the caller`, a super included); the footer says "Only you can see this list". (2) **A
+subject's label is decided by the SERVER when the list is read** (D8): the card shows a visible label verbatim
+(a reference with its kind in front, "payment run PR-…"), and links it only where this person may open the
+page — a visible student (`/admin/scholarship/<id>`, which is also a source's own student screen) and a visible
+payment run (`/admin/payments/<id>`, visible = the run page's own gate). (3) **Hidden and removed subjects use
+the WEB's translated neutral word per subject type** ("a student", "a student (removed)"), never the server's
+English one, so ms and ta readers never see English; a drift test holds every verb and subject type to its words
+in all three languages. An accepted invitation names nobody (its subject is the person's own invitation). (4)
+**Chips per person** (`lib/profileCards.activityFilters`): All and Profile and sign-in for everyone; Students and
+Money only for a person whose role OR permissions give that kind of work. A chip is a shortcut, never a fence: a
+row of a kind whose chip is not offered (a power taken away since) is still under All. (5) **Layout:** the card is
+a right-hand column (380 px) from `xl`, so `/admin/profile` becomes a WIDE route; below `xl` it stacks last. (6)
+**Bundle (D10):** the card ships inside the existing lazy `adminProfile/cards` chunk, not a chunk of its own
+(each chunk is a runtime entry every route pays for). (7) **Guide + FAQ in English only**, like the whole manual
+(`content/manual/types.ts`: the owner is the Tamil authority; no machine translation of the manual).
+
+**Alternatives considered:** (A) show the server's `label` for every state — rejected: it is English. (B) one
+fixed chip row for everybody — rejected: a reviewer offered Money sees an empty filter for ever. (C) a per-verb
+context line from `meta` (programme, decision codes) — rejected for now: `meta` carries ids and codes with no
+display names; only a payment run signature's part (maker / checker / approver) is shown.
+
+**Trade-offs:** a visible student whose profile has no name arrives as visible with the server's English
+fallback word (`staff_activity_read._served_subject`, `label or hidden`) — rare, left as is (no API change in
+S5). A person without `review` downloads the activity card's code with the other cards (one chunk).
+
+**Revisit if:** the payload gains display context (a gift's name), a new subject type gets a page worth linking,
+or the manual gains Malay and Tamil.
+
 ## A student's or sponsor's login may be a mentor: one admin sign-in per email, not one sign-in — 2026-10-31 (owner ruling, student maintenance S7a follow-up)
 
 **Context:** the 7a review refused a mentor invitation to ANY address that already had a HalaTuju login (a

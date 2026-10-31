@@ -50,6 +50,8 @@ const SOURCE_CALLS = new Set([
   'getAdminMe', 'changeOwnPassword',
   // Common profile S2: the card's own writes, opted in for a source user too.
   'updateAdminMe', 'uploadAdminPhoto', 'deleteAdminPhoto',
+  // Common profile S5: the My activity card's own read (`admin/me/activity/`, opted in — D3).
+  'getMyActivity',
 ])
 
 beforeEach(() => {
@@ -63,6 +65,7 @@ beforeEach(() => {
   mockApi.getSourceScholar.mockResolvedValue(SCHOLAR)
   mockApi.getSourceProfile.mockResolvedValue(PROFILE)
   mockApi.getAdminMe.mockResolvedValue(ME)
+  mockApi.getMyActivity.mockResolvedValue({ results: [], next: null })
 })
 
 const staffCalls = () => Object.entries(mockApi)
@@ -89,8 +92,10 @@ it('the shared Profile shell renders every card a source is shown, and still cal
   const { findByTestId } = render(<ProfilePage />)
   // Every card of the source's matrix has MOUNTED (each is a lazy chunk), so a staff call placed in
   // any of them would have run before this is judged.
-  for (const id of ['you', 'access', 'organisation', 'signin']) await findByTestId(`profile-card-${id}`)
+  for (const id of ['you', 'access', 'organisation', 'signin', 'activity']) await findByTestId(`profile-card-${id}`)
   await waitFor(() => expect(mockApi.getAdminMe).toHaveBeenCalled())
+  // S5: My activity read its own list — the ONE extra call, and an allowed one.
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenCalled())
   await new Promise((r) => setTimeout(r, 50))
   expect(staffCalls()).toEqual([])
   expect(global.fetch).not.toHaveBeenCalled()

@@ -205,7 +205,7 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 │   └── water_doc.py               #   water_genuineness — GRAMMAR-first, operator-as-bonus (2026-07-10, MODEL_VERSION 1.0.0)
 ├── doc_signatures.py              # back-compat shim → genuineness/results_doc + bands
 ├── staff_activity.py              # Common profile S3: THE writer of `staff_activity` — record(actor, verb, subject, meta): best-effort, savepoint, ids only; WIRED = every verb's writers, KIND_OF_VERB = the filters
-├── staff_activity_read.py         # Common profile S4: the reader behind GET admin/me/activity/ — own rows, cursor paging, labels decided NOW (D8), "(removed)" (D7), one query per subject type
+├── staff_activity_read.py         # Common profile S4: the reader behind GET admin/me/activity/ — own rows, cursor paging, labels decided NOW (D8), "(removed)" (D7), one query per subject type; shown by the web's My activity card (S5, "The common Profile page — web")
 ├── staff_activity_backfill.py     # Common profile S4: `manage.py backfill_staff_activity --dry-run|--apply` — rebuilds rows from history tables + stamps; cut-off + live-twin check; idempotent
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
@@ -1332,6 +1332,26 @@ only (the API: "SOURCE CONSOLE API" and "A SOURCE WITNESSES THE CONTRACT FROM IT
   existing or a new source, roster with Resend / Cancel / Remove; super + org_admin act) and the
   Sources page (no Add — "Invite a source →"; Sign-in badge; Edit locks once joined, 409
   `managed_by_source`).
+
+## The common Profile page — web (common profile S1–S5, 2026-10-31)
+
+One page for every admin-platform person (`app/admin/profile/page.tsx`), built from ONE card registry
+(`lib/profileCards.ts`: id, order, `show(ctx)`; `profileCards.test.ts` holds the role matrix). The cards live in
+`components/adminProfile/` and load as ONE lazy chunk (`cards.tsx`, via `lazySource`). The page owns the data and
+the one Save; two cards call the API themselves: Sign-in (`admin/me/password/`) and My activity.
+
+- **My activity (S5)** — `components/adminProfile/ActivityCard.tsx`, card id `activity`, everyone's, drawn in the
+  page's right-hand column from `xl` (`SIDE_CARDS`; `/admin/profile` is a wide route). Reads
+  `GET admin/me/activity/?kind=&cursor=` (`lib/admin-api/profiles.getMyActivity`; reader
+  `apps/scholarship/staff_activity_read.py`), own rows only, opted in for source users and mentors. Chips per
+  person (`activityFilters`); day groups, sentences, neutral subject words, links and the second line in
+  `lib/profileActivity.ts`; words under `admin.myProfile.activity` (en / ms / ta).
+- **Drift test** `lib/__tests__/profileActivityDrift.test.ts` reads `models/staff_activity.py`
+  (`StaffActivityVerb`, `StaffActivitySubject`) and `staff_activity_read.py` (`FILTERS`, `NEUTRAL`): every verb
+  has a sentence in all three languages (`{subject}` exactly when it names somebody), every subject type its
+  hidden / removed words.
+- **Source users (D3):** `components/source/noStaffCalls.test.tsx` mounts every card a source sees, My activity
+  included, and allows only the `admin/me/...` and `admin/source/` calls.
 
 ## Partner-organisation comms (2026-07-26)
 

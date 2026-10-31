@@ -10,7 +10,9 @@ import { formatMyMobile } from '@/lib/sponsorAuth'
  * view of `ProfileState`, loaded as its own chunk, and writes only through `set` / `setRev`.
  *
  * ⚠ A SOURCE USER RENDERS THESE CARDS TOO. No card may call a staff endpoint: the page makes every
- * call, and `components/source/noStaffCalls.test.tsx` holds the source's page to its allowlist.
+ * call but two — Sign-in's password change and My activity's own list (S5), both `admin/me/...`
+ * endpoints opted in for a source — and `components/source/noStaffCalls.test.tsx` holds the
+ * source's page to its allowlist.
  */
 
 /** A source's organisation fields — the editable half of `admin/source/profile/`. */

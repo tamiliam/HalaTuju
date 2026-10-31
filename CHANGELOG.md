@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## Common profile S5 — My activity on the Profile page - 2026-10-31 — BUILT, not deployed
+
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S5; D3, D7, D8, D10). Web only — no API file, no
+migration. Built on branch `profiles` on top of S4. **Deploy (owner go):** migrate (0195), then the API, then
+`backfill_staff_activity --dry-run`, then `--apply`, then the web.
+
+- **The My activity card** (`components/adminProfile/ActivityCard.tsx`), everyone's (card id `activity` in
+  `lib/profileCards.ts`): the person's OWN rows from `GET admin/me/activity/`, grouped Today / This week (since
+  Monday) / Earlier, one sentence a row and a grey line under it (the time today, else the date and time; "as the
+  preparer / checker / approver" on a payment run signature — the only context the payload carries). Back-filled
+  rows carry a small "rebuilt" mark; **Show older** follows the cursor and goes when there is no more; plain empty
+  and error states (Try again); footer "Only you can see this list…". A chip switched while a page is loading
+  never paints the old filter's rows.
+- **Chips per person** (`activityFilters`): All and Profile and sign-in for everyone; Students for a case role
+  or permission (super, org admin, admin, QC, reviewer, source, or `review` / `see_all` / `qc`); Money for a money
+  role or permission (super, org admin, admin, finance, or `spending` / `payments_*`). A reviewer: All / Students
+  / Profile and sign-in. A chip is a shortcut, never a fence: every row is under All.
+- **Subjects:** a visible one shows the server's label verbatim (a reference with its kind: "payment run
+  PR-…"); hidden and removed show OUR translated neutral word per subject type ("a student", "a student
+  (removed)"), never the server's English one. Links only where this person may open the page: a visible
+  student (`/admin/scholarship/<id>`, a source's own student screen too) and a visible payment run
+  (`/admin/payments/<id>`). Words: `lib/profileActivity.ts`; en / ms / ta under `admin.myProfile.activity`.
+- **Layout:** `/admin/profile` is now a WIDE route (`lib/pageWidth.ts`): from `xl` the cards and Save on the left,
+  My activity in a 380 px column on the right; below that one column, My activity last. Chips wrap, long names
+  break, every chip and button is 44 px tall (the Mobile standard).
+- **D10:** the card ships INSIDE the existing lazy `adminProfile/cards` chunk — no new chunk, no new runtime
+  entry. **D3:** its one call (`getMyActivity`) is opted in for a source; `noStaffCalls.test.tsx` now mounts the
+  card as a source user and allows only that.
+- **Guide + FAQ:** a "My activity" section in Basics → Confidentiality & help (every role with a Guide) and an
+  Everyone FAQ entry. English only, as the whole manual is (`content/manual/types.ts`).
+- **Tests:** `profileActivityDrift.test.ts` (every server verb has a sentence in en / ms / ta, `{subject}` exactly
+  when it names somebody; every subject type its hidden / removed words, a reference type its `named` form; the
+  web's verb, subject and filter lists equal the server's both ways; `NEUTRAL` covers every type);
+  `profileActivity.test.ts` (day groups, words, links, second line); `ActivityCard.test.tsx` (chips, rows, Show
+  older, empty, error, a superseded answer); `profileCards.test.ts` (every role has the card; the chip matrix).
+- **Gates (builder, branch tree):** jest 5,795 / 353 suites · tsc 0 · lint 0 errors · i18n 6,789 keys per locale ·
+  bundle median 147.095 kB (0.9 kB under 148). The budget script still reports ONE pre-existing problem:
+  `/scholarship/application` 211.751 kB against 212 (0.249 kB of room, TD-433) — none of this change's code or
+  strings is in that route's chunks (checked in `.next/app-build-manifest.json`); the new words are admin-slice only.
+
 ## Common profile S4 — the activity list, part 2: money, contracts, requests, the reader and the back-fill - 2026-10-31 — BUILT, not deployed
 
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md` (S4; D7, D8, D9). Built on branch `profiles`, on top of

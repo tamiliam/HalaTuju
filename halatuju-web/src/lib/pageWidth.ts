@@ -66,6 +66,9 @@ export const WIDE_ROUTES: readonly string[] = [
   '/admin/organisations',
   '/admin/partners',
   '/admin/administration',
+  // Common profile S5 (2026-10-31): the cards beside a 380 px My activity column from `xl` up — laid
+  // out ACROSS the page. At the reading width the cards would be squeezed to ~490 px.
+  '/admin/profile',
 ]
 
 /** Routes BELOW a wide route that read DOWN the page rather than across — they win by being
