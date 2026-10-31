@@ -1161,7 +1161,16 @@ temp password cleared in the same write, other sessions signed out, atomic 5/15 
 `StaffProfile` = alias of `ReviewerProfile` (table `reviewer_profiles`, +6 columns in 0193 incl. `other_language`).
 Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`; retro `retrospective-2026-10-31-common-profile-s1-s2.md`.
 
-**Next:** S3 (StaffActivity list + case actions) → S4 (money/contracts/requests + back-fill, adversarial review)
+**S3 BUILT 2026-10-31 on branch `profiles` (NOT pushed — ships at S5's deploy point).** Table `staff_activity`
+(`models/staff_activity.py`), the ONE best-effort writer `staff_activity.record()` (savepoint, never raises,
+closed verb + meta-key lists, no free text), wired into 18 case/sign-in/profile verbs (`S3_WIRED`; drift test
+`tests/test_staff_activity.py`). Courses-side actions go through `apps/courses/staff_activity_hook.py` (writer
+registered in `ScholarshipConfig.ready`, no courses→scholarship import). **Migrate-first at deploy:** scholarship
+`0195_staff_activity` (SQL with RLS + ledger row in its docstring); it depends on 0193 — repoint to the
+Maintenance session's `0194_mentors` if that lands first. Doors left unwired on purpose (interview reopen, cancel
+reopen/decline, witness-org override, temp-password set, invitation cancel/revoke) — see CHANGELOG S3.
+
+**Next:** S4 (money/contracts/requests + back-fill, adversarial review)
 → S5 (My activity card, Guide/FAQ, second deploy). The Maintenance session builds the MENTOR role (7a) on top of
 this — mentor rules for qualifications / address / share-with-students go in THEIR sprint.
 

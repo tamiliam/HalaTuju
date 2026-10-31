@@ -138,6 +138,7 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. Narrowed 2026-10-31: `reissue_credential` now never resets a login that is also a student's or sponsor's. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
 - **TD-441** — An admin role (mentor or staff) on a student's or sponsor's own login has side effects: a student's claimed-profile alias stops working, a sponsor-portal sign-in counts as the mentor accepting, and the `get_admin` link is not a compare-and-set. *(B · M · raised 2026-10-31 by the S7a follow-up review; pre-existing for staff)*
+- **TD-444** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7114,6 +7115,15 @@ OLD web saves the phone there during the rollout; the view refuses a blank phone
 read-only on that serializer (serializers_admin.py is at its 1026-line allowance — add them to a
 `read_only_fields` on the existing Meta line, never grow the file), and keep the GET serving them. *(B · S)*
 
+### [TD-444] Staff invitations never record who sent them (`invited_by` is always NULL) - low
+
+**Found 2026-10-31 by the common profile S3 build.** `courses/views_admin._record_invitation` sets
+`Invitation.invited_by=getattr(request, '_inviting_admin', None)`, and nothing ever sets
+`request._inviting_admin` — so every staff invitation row has `invited_by` NULL. The new activity list is
+not affected (its `invitation_sent` row takes the actor passed explicitly to `invitations.record_send`).
+**Fix:** pass the inviting admin into `_record_invitation` the same way, and add a test that a staff invite
+stores `invited_by`. S4's back-fill cannot rebuild `invitation_sent` rows for old staff invites until then
+(no actor to write them under). *(B · S)*
 ### [TD-440] Staff Resend can reset the password of a login the person brought with them - high
 
 **Raised 2026-10-31 by the student maintenance S7a adversarial review (pre-existing, staff path).**

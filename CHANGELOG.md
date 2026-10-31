@@ -76,6 +76,10 @@ visible yet: no endpoint, no screen — S4 adds the reader and the back-fill, S5
   failing (a real database error, or the writer's own code raising) leaves the action and its transaction intact;
   a rollback leaves no row; free text dropped; no actor, no row; and a drift test that reads the source and
   requires the writers of each verb to be exactly the `S3_WIRED` registry.
+- Doors found but left unwired on purpose (not on the S3 list): interview reopen, cancel reopen, cancel a pending
+  decline, the witness-organisation override, a role change that resets no custom set, the first-login temp
+  password, cancelling an invitation or revoking a source, and a source re-invite that reactivates a user. Found on
+  the way: staff invitations never store `invited_by` (TD-441).
 
 ## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
