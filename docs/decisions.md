@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M1a: Tamil in Mukta Malar; text fields 16 px by ONE rule; hover stays global (2026-10-31)
+
+**Tamil face (owner: "the font we use in SJKT Connect").** Mukta Malar's Tamil-only subset is self-hosted
+(byte-identical to SJKT Connect's, SHA-256 pinned) and declared with a Tamil-only `unicode-range`, `preload: false`
+and NO fallback face. That combination is what lets it sit FIRST in every stack — `font-sans`, `font-plex`,
+`--figures-face`, the sponsor portal's Inter stack — without changing a single Latin letter or digit, and without
+an English page downloading it. Measured in Chromium (CDP platform fonts): Tamil glyphs in Mukta Malar, Latin in
+Lexend; an English page fetched Lexend only, a Tamil page the three Mukta files (99 KB). Rejected: a Tamil-only class
+on `<html lang="ta">` (the lang flips after hydration, so the first paint would be the system font, and every
+stack would still need it).
+
+**16 px fields: one CSS rule, not ~200 edits.** iPhone zooms on a field under 16 px. A rule at the END of
+`globals.css`, outside `@layer`, sets 16 px on text-entry controls below `md`; outside a layer it comes after the
+utilities, and `:not(:is(...))` gives it specificity (0,2,1) over a utility's (0,1,0), so it beats `text-sm`,
+`text-[13px]` and `max-md:` sizes. It only RAISES: a control with a whole `text-base`…`text-6xl` class keeps its size
+(a 24 px OTP box must not shrink). Desktop (md and up) is untouched. The static ratchet that counted 208 small-text
+fields is replaced by a positive guard (the rule exists, top level, with its exclusions) and a zero ratchet on the one
+thing the rule cannot beat — an `!important` small size. Rejected: per-field `text-base md:text-sm` edits (decays with
+every new form) and `maximum-scale=1` (blocks pinch-zoom for people who need it).
+
+**`future.hoverOnlyWhenSupported` NOT adopted.** It would end sticky hover everywhere, but the student header's
+"B40" menu (`AppHeader.tsx`) opens with `group-hover:block` / `group-focus-within:block` at `lg` — on an iPad a
+tap does not focus a button in Safari, so sticky hover is the only thing that opens it there. Turning the flag on
+would silently close that menu to iPad users. The real defect (the course page's Save label flipping on a tap) was a
+JS `onMouseEnter`; it now listens to `pointerType === 'mouse'` only, the same rule InfoTip uses. Revisit the flag
+once that menu opens on tap (M2, the student header).
+
+**Hover-only explanations become taps.** InfoTip opens on tap and stays (iOS sent mouseenter then click, which
+toggled it shut), closes on a second tap / outside tap / Escape, keeps the mouse hover, clamps into the viewport, and
+takes a 44 px target with negative margins so no layout moves. `VerifiedTick` reuses it (its seal is the mark); its
+`title` stays for desktop, so InfoTip's hover bubble is off there. Toggle gets the same 44 px treatment.
+
 ## A student's or sponsor's login may be a mentor: one admin sign-in per email, not one sign-in — 2026-10-31 (owner ruling, student maintenance S7a follow-up)
 
 **Context:** the 7a review refused a mentor invitation to ANY address that already had a HalaTuju login (a

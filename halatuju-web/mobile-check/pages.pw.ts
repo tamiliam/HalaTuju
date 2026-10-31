@@ -111,6 +111,8 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
   }, [LOCALE_KEY, locale])
 
   await page.goto(target.url, { waitUntil: 'networkidle', timeout: 90_000 })
+  // A redirect-only route is measured where it lands (targets.ts `finalPath`), never mid-redirect.
+  await page.waitForURL((u) => u.pathname === target.finalPath, { timeout: 60_000 })
   // ⚠ WAIT FOR THE WORDS, NOT THE LOAD EVENT. The server always sends English (it cannot read
   // localStorage); the chosen catalogue arrives after hydration and only then does `<html lang>`
   // change. A snapshot before that measures the English page in every column — the lesson from

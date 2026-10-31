@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M1a: global foundations — Tamil face, 16 px fields, safe areas, taps that work (2026-10-31)
+
+- **Tamil paints in Mukta Malar** (owner) — the Tamil-only subset from SJKT Connect, byte-identical, first in every
+  stack (`font-sans`, `font-plex`, `--figures-face`, the sponsor portal). Measured (CDP): Tamil glyphs in Mukta
+  Malar, Latin in Lexend; an English page downloads Lexend only, a Tamil page adds the three Mukta files (99 KB).
+- **Text fields are 16 px on phones** — one rule at the end of `globals.css` (below `md`, outside `@layer`, beats
+  `text-sm`; only ever raises). `/contact` measured 14 → 16 px at 390, still 14 px at 1024. The small-text ratchet
+  (208) became a positive guard plus a zero ratchet on `!important` small sizes.
+- **TD-311 closed** — the Home hero is `text-4xl` below `sm` in every language (desktop unchanged): `/` in Tamil was
+  458 px wide at 360 and 390, now 360 and 390. The closing call-to-action wraps inside its button.
+- **Taps:** InfoTip opens on a tap and stays open (iOS sent mouseenter then click, which shut it), closes on a second
+  tap / outside tap / Escape, stays on screen, 44 px target. VerifiedTick's "Matches MyKad" is reachable by tap
+  (InfoTip). Toggle has a 44 px target. The course page's Save label no longer flips to "Remove" on a tap.
+- **Safe areas:** one pattern, `max(<own padding>, env(safe-area-inset-*))` — the apply and next-steps bottom tab
+  bars, Toast, SaveBar, the admin drawer, the student and sponsor headers; landscape side insets on `body`.
+- **Toast** is full width less 16 px gutters on phones, bottom-right on desktop as before. **Menus:** the admin
+  `Menu` clamps both edges; `FilterPill` opens leftwards near the right edge.
+- **Files:** all six `hidden` file inputs are `sr-only` (floor 6 → 0). **Keyboards:** OTP `one-time-code` + numeric,
+  phone `tel-national`, postcode `postal-code` + numeric, CoQ decimal, household size numeric, search `type=search`,
+  contact `name`/`email`.
+- **Favicon:** `src/app/icon.png` 5.7 MB (2048 px, with a generator mark) → 5.9 KB (64 px, artwork only).
+- **mobile-check baseline** (210 cells): sideways-scroll cells 30 → 22, small text fields 120 (in 30 cells) → 0,
+  small tap targets 1,779 → 1,639, cells clean on all three 18 → 42; 60 cells improved. Four cells ROSE by one
+  target, recorded under `MOBILE_ALLOW_WORSE=1`: `/search` and `/stpm/search` in Tamil at 360 and 390, 27 → 28 —
+  in the narrower Mukta Malar the search eligibility row (277 × 36) no longer wraps to two lines, so it is now as
+  small as it always was in English (en: 28, element for element the same list). A font effect, not a new control;
+  the row itself is M3's. Left for later sprints: 22 overflow cells, all sandbox surfaces — the officer cockpit
+  (an anomaly line that renders as its raw key `admin.scholarship.anomaly.income_documen…`, unbreakable; M6), the
+  action centre in ms/ta (M4) and 8 px on the application step wizard (M4). No public page scrolls sideways.
+- **mobile-check fix:** a redirect-only route is measured where it LANDS (`finalPath`): under load one run caught
+  `/login` mid-redirect, recorded 0 targets, and the ratchet then demanded 0 of the real page; that cell was
+  re-measured and restored to its true 14 (`MOBILE_ALLOW_WORSE=1`, one cell). Measured from a dev server on port 3110
+  (`MOBILE_BASE`): another session's server held 3100, and the check no longer reuses a server it did not start.
+- Floors: hidden file inputs 6 → 0, icon-only `title=` 7 → 0 (the contracts clause editor is exempt as a desktop-only
+  route), small-text fields 208 → replaced (0 `!important`). `future.hoverOnlyWhenSupported` NOT adopted — it would
+  shut the student header's B40 menu on iPads (decisions.md).
+
 ## Mobile M0 review fixes (2026-10-31, ships with M1)
 
 - The source reader behind `mobileStandard.test.ts` (`src/test/mobileScan.ts`) now resolves an aliased import by its

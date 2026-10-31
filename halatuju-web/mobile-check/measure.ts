@@ -81,7 +81,7 @@ export function measurePage(scopeSelector: string): Measurement {
     let best: { el: Element; right: number; width: number } | null = null
     for (const el of Array.from(document.body.querySelectorAll('*'))) {
       const r = el.getBoundingClientRect()
-      if (r.width < 1 || r.height < 1) continue
+      if (r.width < 2 || r.height < 2) continue   // an sr-only control (1 × 1) is never "the widest"
       const reach = Math.max(r.right, r.left + el.scrollWidth)
       if (reach <= vw + 0.5) continue
       if (getComputedStyle(el).position === 'fixed' || insideSideScroller(el)) continue

@@ -44,11 +44,13 @@ Three kinds of check, from cheapest to most human:
 
 ### 2. Text fields are 16 px or more on phones
 - **Why:** iPhone Safari zooms the whole page when you tap a field under 16 px, and it stays zoomed.
-- **Checked by:** static guard (`text-sm` / `text-xs` / `text-[<16px]` on an input, select or textarea,
-  bare or behind any variant that still applies on a phone — `max-md:`, `focus:`, `!` — but not behind
-  `sm:`/`md:` and up) and mobile-check (the computed font size, which also catches inherited sizes).
-- **Copy this:** the `.input` class in `src/app/globals.css` (16 px). Smaller text is allowed from
-  tablet up: `text-base md:text-sm`.
+- **Done for you (M1a):** one rule at the end of `src/app/globals.css` sets every text-entry
+  input, select and textarea to 16 px below `md` — outside `@layer`, with enough specificity to beat
+  `text-sm`, `text-xs`, `text-[13px]` and `max-md:` sizes. It only ever raises: a field that asks for
+  `text-base` or larger keeps its size. From `md` up every field keeps its own class size. You do
+  not need to do anything — just never write `!text-sm` (an `!important` size beats the rule).
+- **Checked by:** static guard (the rule exists, below `md`, outside every `@layer`; no field carries
+  an `!important` small size) and mobile-check (the computed size of every visible field: 0 under 16).
 
 ### 3. Tap targets are at least 44 × 44 px
 - **Why:** a thumb is not a mouse pointer; small targets cause mis-taps, worst for buttons side by side.
@@ -56,12 +58,18 @@ Three kinds of check, from cheapest to most human:
   checkbox/radio). Inline text links inside a sentence are excepted.
 - **Copy this:** `h-11` buttons (`src/components/bursary/BursaryLetters.tsx`). Make the hit area big
   with padding — the look can stay small. (A pseudo-element hit area is invisible to the check, so use padding.)
+  For a small control in a line of text, pad it to 44 and cancel the padding with negative margins
+  so nothing around it moves: `src/components/Toggle.tsx` (44 × 44 button, 44 × 24 track inside),
+  `src/components/InfoTip.tsx` (44 px around an 18 px mark).
 
 ### 4. No hover-only information or actions
 - **Why:** a phone has no hover. A tooltip or a hover-revealed button simply does not exist there.
 - **Checked by:** static guard (`title=` as the only explanation on an icon-only button or link) and review.
-- **Copy this:** visible text, or a tap `InfoTip` (`src/components/InfoTip.tsx` — its tap behaviour
-  is fixed in M1). Never `title=` alone.
+- **Copy this:** visible text, or a tap `InfoTip` (`src/components/InfoTip.tsx`): a tap opens it and
+  it stays open until a second tap, a tap elsewhere or Escape; a mouse still opens it on hover; the
+  bubble is kept on screen. Any small mark can become a tap target the same way — `VerifiedTick`
+  passes its seal as InfoTip's `mark`. A JS hover handler listens to `pointerType === 'mouse'` only
+  (a tap fires a compatibility mouseenter — `CourseDetailShared.tsx`'s save button). Never `title=` alone.
 
 ### 5. One shared Sheet for every overlay
 - **Why:** each hand-rolled overlay re-decides height, scrolling and the close button, and several
@@ -76,8 +84,15 @@ Three kinds of check, from cheapest to most human:
   bars sit under the home indicator unless they pad for it.
 - **Checked by:** static guard (`vh` heights, `h-screen`; `min-h-screen` on its own floor) and review.
   The root layout sets `viewportFit: 'cover'` so `env(safe-area-inset-*)` works (also guarded).
-- **Copy this:** `dvh` units (`max-h-[90dvh]`, `min-h-dvh`); sticky bars add
-  `pb-[env(safe-area-inset-bottom)]`. Sticky bar pattern: `src/components/admin/SaveBar.tsx`.
+- **Copy this (ONE pattern, M1a):** a bar that touches a screen edge pads that edge with
+  `max(<its own padding>, env(safe-area-inset-<edge>))` as a Tailwind arbitrary value — the bar keeps
+  its look on every phone without a notch and clears the home bar on one that has it:
+  `pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]` (the apply and next-steps bottom tab bars),
+  `bottom-[max(1rem,env(safe-area-inset-bottom))]` (`Toast.tsx`). A bar with no padding of its own on
+  that edge just adds the inset: `pt-[env(safe-area-inset-top)]` (`AppHeader.tsx`, the sponsor portal
+  header), `bottom-[env(safe-area-inset-bottom)]` (`admin/SaveBar.tsx`), the admin drawer
+  (`AppShell.tsx`). The LEFT and RIGHT insets (landscape) are on `body` once, in `globals.css`.
+  Heights: `dvh` units (`max-h-[90dvh]`, `min-h-dvh`), never `vh`.
 
 ### 7. Tables become cards on phones
 - **Why:** a seven-column table dragged sideways is the wrong shape for the screen people check things on.
@@ -130,12 +145,14 @@ Three kinds of check, from cheapest to most human:
 
 ## Tamil type
 
-Tamil will use **Mukta Malar** (owner, 2026-10-31), adopted in **M1** from SJKT Connect:
-`C:\Users\tamil\Python\Production\SJKTConnect\frontend\lib\fonts.ts` loads a Tamil-only subset
-(`frontend/app/fonts/mukta-malar/MuktaMalar-Tamil-{400,600,700}.woff2`) with `next/font/local`, a
-Tamil-only `unicode-range`, `preload: false` and no fallback faces — so it sits first in the body
-stack yet never touches English, and only Tamil pages download it. Today every phone draws Tamil in
-its own system font, so widths differ by device; Tamil widths are re-measured after M1.
+Tamil paints in **Mukta Malar** (owner, 2026-10-31; live from Mobile M1a), copied byte for byte from
+SJKT Connect: `src/fonts/mukta-malar/MuktaMalar-Tamil-{400,600,700}.woff2`, declared in
+`src/app/layout.tsx` with `next/font/local`, a Tamil-only `unicode-range`, `preload: false` and no
+fallback faces. It sits FIRST in every stack (`font-sans`, `font-plex`, `--figures-face`, the sponsor
+portal's Inter stack) yet never touches a Latin letter or a digit, and only a page that shows Tamil
+downloads it (measured: an English page fetches Lexend only; a Tamil page adds the three Mukta files,
+99 KB). Before M1a every phone drew Tamil in its own system font, so widths differed by device.
+`fontSources.test.ts` pins the files (SHA-256) and every option.
 
 ## Running the checks
 

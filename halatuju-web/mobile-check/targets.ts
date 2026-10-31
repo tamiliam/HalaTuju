@@ -97,13 +97,23 @@ export interface Target {
   id: string
   url: string
   kind: 'public' | 'sandbox'
+  /**
+   * The path the page must END on before it is measured. For a redirect-only route (mobileClass
+   * `redirect`) that is where it sends the visitor: `/login` is measured as `/`, never as the empty
+   * page it draws for a moment first (Mobile M1a — under load one run measured `/login` mid-redirect,
+   * recorded 0 targets, and the ratchet then demanded 0 of the real page).
+   */
+  finalPath: string
 }
 
 /** Every route with a `visit` URL in mobileClass.ts — the pages a stranger can open. */
 export function publicTargets(): Target[] {
   return Object.entries(MOBILE_CLASS)
     .filter(([, e]) => e.visit)
-    .map(([route, e]) => ({ id: route, url: `${PUBLIC_BASE}${e.visit}`, kind: 'public' as const }))
+    .map(([route, e]) => ({
+      id: route, url: `${PUBLIC_BASE}${e.visit}`, kind: 'public' as const,
+      finalPath: (e.redirect ?? e.visit ?? route).split('?')[0],
+    }))
 }
 
 /**
@@ -131,7 +141,9 @@ export function sandboxSlugs(): string[] {
 
 export function sandboxTargets(): Target[] {
   if (!SANDBOX_ON) return []
-  return sandboxSlugs().map((slug) => ({ id: `sandbox:${slug}`, url: `${BASE}/sandbox/${slug}`, kind: 'sandbox' as const }))
+  return sandboxSlugs().map((slug) => ({
+    id: `sandbox:${slug}`, url: `${BASE}/sandbox/${slug}`, kind: 'sandbox' as const, finalPath: `/sandbox/${slug}`,
+  }))
 }
 
 export const cellKey = (id: string, width: number, locale: Locale) => `${id} @${width} ${locale}`
