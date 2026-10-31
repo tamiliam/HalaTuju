@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31)
+## Student maintenance Sprint 7a follow-up — a student's or sponsor's login may be a mentor (2026-10-31) — LIVE 2026-10-31 (main b714a74c; api-01219-xt2, web-01043-49w)
 
 Owner ruling 2026-10-31 (decisions.md, same date). API and web text only; no migration.
 
