@@ -54,8 +54,13 @@ class Command(BaseCommand):
                          and ((chk.get('programme') or '').strip() or (chk.get('institution') or '').strip())
                          and chk.get('pathway') != 'mismatch'
                          and not (cp.get('course_id') and app.pathway_certainty == 'sure'))
-                # The Bumi-only realignment (2026-10-31) writes past the mismatch and lock guards.
-                would = would or (offer is not None and not plan_bumi_realign(app, offer, chk)[0])
+                # The Bumi-only realignment (2026-10-31) writes past the mismatch and lock guards. It
+                # reads the LIVE (non-superseded) offer, exactly as the autofill does.
+                live = (ApplicantDocument.objects
+                        .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
+                        .order_by(*SNAPSHOT_ORDER).first())
+                would = would or (live is not None
+                                  and not plan_bumi_realign(app, live, student_offer_check(live))[0])
                 if would:
                     changed += 1
                     self.stdout.write(

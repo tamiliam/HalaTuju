@@ -27,6 +27,18 @@ INSTITUTIONS = (
     ('RA-UNIMAS', UNIMAS, 'UNIMAS', 'IPTA'), ('RA-UPM', UPM, 'UPM', 'IPTA'),
     ('RA-UMS', UMS, 'UMS', 'IPTA'), ('RA-UTHM', UTHM, 'UTHM', 'IPTA'),
     ('RA-UIAM', UIAM, 'UIAM', 'IPTA'), ('RA-PUO', PUO, 'PUO', 'Politeknik'),
+    # Review 2026-10-31 — the rows a looser institution test named wrongly:
+    ('RA-MARA-BPT', 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi', 'MARA', 'MARA'),
+    ('RA-UTM', 'Universiti Teknologi Malaysia', 'UTM', 'IPTA'),
+    ('RA-UMK', 'Universiti Malaysia Kelantan', 'UMK', 'IPTA'),
+    ('RA-UMT', 'Universiti Malaysia Terengganu', 'UMT', 'IPTA'),
+    ('RA-UNIMAP', 'Universiti Malaysia Perlis', 'UniMAP', 'IPTA'),
+    ('RA-PMK', 'Politeknik Melaka', 'PMK', 'Politeknik'),
+    ('RA-IKM-LUMUT', 'Institut Kemahiran MARA Lumut', 'IKM', 'ILKA'),
+    ('RA-IKM-BESERI', 'Institut Kemahiran MARA Beseri', 'IKM', 'ILKA'),
+    ('RA-GM-1', 'GIATMARA Arau', 'GIATMARA', 'ILKA'), ('RA-GM-2', 'GIATMARA Kangar', 'GIATMARA', 'ILKA'),
+    ('RA-KK-ARAU', 'Kolej Komuniti Arau', '', 'Kolej Komuniti'),
+    ('RA-KK-KANGAR', 'Kolej Komuniti Kangar', '', 'Kolej Komuniti'),
 )
 #: (course_id, name, institution id, Bumiputera-only)
 DEGREES = (
@@ -43,6 +55,15 @@ DEGREES = (
     ('UW6762002', 'Sarjana Muda Kaunseling dengan Kepujian #', 'RA-UNIMAS', False),
     ('UB6523001', 'Sarjana Muda Kejuruteraan Elektronik dengan Kepujian', 'RA-UTHM', False),
     ('UB6523002', 'Sarjana Muda Kejuruteraan Elektrik dengan Kepujian', 'RA-UTHM', False),
+    ('UW6526002', 'Sarjana Muda Kejuruteraan Awam dengan Kepujian', 'RA-UNIMAS', False),
+    ('UT6481003', 'Sarjana Muda Sains Komputer dengan Kepujian', 'RA-UTM', False),
+    ('UE6481001', 'Sarjana Muda Sains Komputer (Kepujian)', 'RA-UITM', True),
+    # One computer-engineering degree at each state-named university, none at UiTM (finding 5).
+    ('UR6523002', 'Sarjana Muda Kejuruteraan Komputer dengan Kepujian', 'RA-UNIMAP', False),
+    ('UH6523009', 'Sarjana Muda Kejuruteraan Komputer dengan Kepujian', 'RA-UMS', False),
+    ('UW6523009', 'Sarjana Muda Kejuruteraan Komputer dengan Kepujian', 'RA-UNIMAS', False),
+    ('UL6523009', 'Sarjana Muda Kejuruteraan Komputer dengan Kepujian', 'RA-UMK', False),
+    ('UG6523009', 'Sarjana Muda Kejuruteraan Komputer dengan Kepujian', 'RA-UMT', False),
 )
 #: (course_id, name, level, institution id, source_type, Bumiputera-only)
 SPM_COURSES = (
@@ -52,7 +73,14 @@ SPM_COURSES = (
     ('UH4520001', 'Diploma Kejuruteraan Kimia (Minyak Dan Gas)', 'Diploma', 'RA-UMS', 'ua', False),
     ('UE0380001', 'Asasi Undang-Undang (KPM)', 'Asasi', 'RA-UITM', 'ua', True),          # TD-332
     ('RA-POLY-DPM', 'Diploma Pengurusan Muamalat', 'Diploma', 'RA-PUO', 'poly', False),
+    ('OP4481001', 'Diploma in Computer Science', 'Diploma', 'RA-MARA-BPT', 'ua', True),
+    ('UE4481001', 'Diploma Sains Komputer', 'Diploma', 'RA-UITM', 'ua', True),
+    ('RA-PMK-DKK', 'Diploma Kejuruteraan Komputer', 'Diploma', 'RA-PMK', 'poly', False),
+    ('RA-IKM-DTKM', 'Diploma Teknologi Kejuruteraan Mekanikal', 'Diploma', 'RA-IKM-LUMUT', 'tvet', True),
+    ('RA-KK-DPL', 'Diploma Pelancongan', 'Diploma', 'RA-KK-ARAU', 'kkom', True),
 )
+#: Second campuses of multi-campus courses: (course_id, institution id).
+EXTRA_CAMPUSES = (('RA-IKM-DTKM', 'RA-IKM-BESERI'), ('RA-KK-DPL', 'RA-KK-KANGAR'))
 
 
 def seed_realign_catalogue():
@@ -73,6 +101,8 @@ def seed_realign_catalogue():
             'course': name, 'level': level, 'department': 'x', 'field': 'x', 'field_key': ft})
         CourseInstitution.objects.get_or_create(course=c, institution=inst[iid])
         CourseRequirement.objects.get_or_create(course=c, defaults={'source_type': st, 'req_bumiputera': bumi})
+    for cid, iid in EXTRA_CAMPUSES:
+        CourseInstitution.objects.get_or_create(course_id=cid, institution=inst[iid])
 
 
 def _cid(programme, institution, issuer=''):
@@ -254,3 +284,49 @@ class CourseFlagsTest(TestCase):
         self.assertEqual(course_pathway_type('NOPE'), '')
         self.assertEqual(pathway_for_requirement('ua', 'Asasi'), 'asasi')
         self.assertEqual(pathway_for_requirement('kkom', 'Diploma'), 'kkom')
+
+
+class ReviewFindingsTest(TestCase):
+    """The adversarial review of 851b7cb9 (2026-10-31): each input string is the reviewer's own."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+
+    def test_1_mara_inside_a_uitm_line_never_names_maras_division(self):
+        self.assertNotEqual(_cid('DIPLOMA IN COMPUTER SCIENCE', 'UNIVERSITI TEKNOLOGI MARA'), 'OP4481001')
+        self.assertIsNone(_cid('DIPLOMA IN COMPUTER SCIENCE', 'UNIVERSITI TEKNOLOGI MARA'))
+        # A SHARED acronym names nothing on its own (GIATMARA, IKM: many rows).
+        self.assertIsNone(_cid('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'GIATMARA'))
+
+    def test_2_a_utm_letter_is_utm_never_uitm(self):
+        self.assertEqual(_cid('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN', 'UNIVERSITI TEKNOLOGI MALAYSIA'),
+                         'UT6481003')
+
+    def test_3_a_campus_only_when_the_letter_names_exactly_one(self):
+        m = match_offer_course('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI')
+        self.assertTrue(m is None or m['institution'] in ('', 'Institut Kemahiran MARA Beseri'))
+        self.assertNotEqual((m or {}).get('institution'), 'Institut Kemahiran MARA Lumut')
+        two = match_offer_course('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI')
+        self.assertEqual((two['course_id'], two['institution']), ('RA-KK-DPL', ''))
+        one = match_offer_course('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI KANGAR')
+        self.assertEqual((one['course_id'], one['institution']), ('RA-KK-DPL', 'Kolej Komuniti Kangar'))
+
+    def test_4_a_printed_code_must_agree_with_the_printed_name(self):
+        self.assertIsNone(_cid('Sarjana Muda Ukur Bahan dengan Kepujian - UW6526002', UNIMAS))
+        self.assertEqual(_cid('Sarjana Muda Ukur Bahan dengan Kepujian - UW6526001', UNIMAS), 'UW6526001')
+
+    def test_5_a_state_word_never_names_a_university(self):
+        degree = 'SARJANA MUDA KEJURUTERAAN KOMPUTER'
+        self.assertNotEqual(_cid(degree, 'UiTM CAWANGAN PERLIS, KAMPUS ARAU'), 'UR6523002')
+        for line in ('UiTM CAWANGAN PERLIS, KAMPUS ARAU', 'UiTM CAWANGAN SABAH, KAMPUS KOTA KINABALU',
+                     'UiTM CAWANGAN SARAWAK, KAMPUS SAMARAHAN', 'UiTM CAWANGAN KELANTAN, KAMPUS MACHANG',
+                     'UiTM CAWANGAN TERENGGANU, KAMPUS DUNGUN'):
+            with self.subTest(line=line):
+                self.assertIsNone(_cid(degree, line))
+        self.assertIsNone(_cid('DIPLOMA KEJURUTERAAN KOMPUTER', 'UiTM CAWANGAN MELAKA, KAMPUS JASIN'))
+        # …and with no university named at all, a place word alone names nothing either.
+        self.assertIsNone(_cid(degree, 'KOLEJ KEDIAMAN SABAH'))
+        # The universities themselves are still named by their own names and acronyms.
+        self.assertEqual(_cid(degree, 'Universiti Malaysia Perlis'), 'UR6523002')
+        self.assertEqual(_cid(degree, 'UMS KAMPUS INDUK'), 'UH6523009')

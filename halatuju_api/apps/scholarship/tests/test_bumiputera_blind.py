@@ -132,6 +132,16 @@ class TestNoScholarshipOrReportCodeReadsIt(TestCase):
         self.assertNotIn('.bumiputera', text)
 
 
+    def test_only_the_realignment_asks_whether_a_course_is_bumiputera_only(self):
+        """Review 2026-10-31 (finding 7): `is_bumiputera_only` is called by the realignment planner
+        alone — never a picker, a report or a sponsor surface. Its definition is the one other file."""
+        allowed = {('scholarship', 'offer_course_match.py'), ('scholarship', 'services/offer_sync.py')}
+        found = {(app, path.relative_to(_APPS / app).as_posix())
+                 for app in ('scholarship', 'reports', 'courses') for path in _sources(app)
+                 if 'is_bumiputera_only' in path.read_text(encoding='utf-8')}
+        self.assertEqual(found, allowed)
+
+
 class TestServedPayloadsCarryNoBumiKey(TestCase):
     def setUp(self):
         self.student = make_student(nationality='malaysian', bumiputera=True)

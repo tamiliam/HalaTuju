@@ -19,13 +19,13 @@ a second run lists it as ``same_course``.
 from collections import Counter
 
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import connection
 
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services.offer_sync import (
-    plan_bumi_realign, realign_bumi_only_pick, sync_institution_from_catalogue,
+    institution_fill, plan_bumi_realign, realign_bumi_only_pick, sync_institution_from_catalogue,
 )
 
 
@@ -79,16 +79,9 @@ class Command(BaseCommand):
             + ', '.join(f'{k}={v}' for k, v in sorted(counts.items()))))
 
     def _institution_fill(self, app, offer, chk, apply):
-        """The institution the writer fills (or would fill), or ''. A dry run runs the REAL writer
-        inside a rolled-back transaction, so the report cannot drift from what --apply does."""
-        before = (app.chosen_programme or {}).get('institution') if isinstance(app.chosen_programme, dict) else ''
-        if (before or '').strip():
-            return ''
-        with transaction.atomic():
-            wrote = sync_institution_from_catalogue(app, offer=offer, offer_check=chk)
-            filled = (app.chosen_programme or {}).get('institution', '') if wrote else ''
-            if not apply:
-                transaction.set_rollback(True)
-        if not apply:
-            app.refresh_from_db(fields=['chosen_programme'])
+        """The institution the writer fills (or would fill), or ''. The report reads the writer's own
+        READ-ONLY planner (``institution_fill``) and never runs the writer."""
+        filled = institution_fill(app, offer=offer, offer_check=chk)
+        if filled and apply:
+            sync_institution_from_catalogue(app, offer=offer, offer_check=chk)
         return filled

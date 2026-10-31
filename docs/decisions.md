@@ -31,7 +31,18 @@ drops UiTM's local code, a faculty tail, the catalogue's " #" and campus parenth
 (6) **The Bumi-blind guard gains ONE exception, by path**: `test_bumiputera_blind` (Sprint D1) refused any
 scholarship file naming `req_bumiputera`; the realignment must read the COURSE's flag, so
 `offer_course_match.py` is allowed and a new test pins that it names the flag only inside `is_bumiputera_only`
-and never reads the student's answer. The flag filters nothing any student, reviewer or sponsor is shown.
+and never reads the student's answer. The flag filters nothing any student, reviewer or sponsor is shown;
+only `services/offer_sync.py` calls `is_bumiputera_only` (pinned by a test). (7) **The matcher's institution
+test, tightened at the adversarial review (same day).** A hint names an institution, most specific first: by its
+bracket-stripped name (equal, or whole inside the line) or by an acronym held by ONE row that is no word of another
+row's name — and when any row is named so, only those rows count ("UNIVERSITI TEKNOLOGI MALAYSIA" is UTM, never
+UiTM; "UNIVERSITI TEKNOLOGI MARA" never names MARA's division, acronym MARA; GIATMARA / IKM / KKTM, shared by many
+rows, name nothing alone). Otherwise by distinctive words, never when the words that match are only place words
+(a state or federal territory: "UiTM CAWANGAN PERLIS" never names Universiti Malaysia Perlis). A printed course
+code counts only when its catalogue name agrees with the printed name. A multi-campus course carries a campus
+only when the letter names exactly one; the realignment then skips (`campus_unpinned`) rather than write a campus
+it cannot pin. "Decided" is `querying_locked` (a submitted interview included) or a recorded verdict
+(`verdict_decided_at`). The offer confirm's stale-course check reads the issuer too.
 
 **Why.** Before Sprint D the pickers hid Bumi-only courses, so a student holding a UiTM place could only have picked
 something else; treating that pick as a declaration made a correct offer read as a clash and asked her to confirm.

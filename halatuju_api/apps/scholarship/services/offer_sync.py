@@ -87,13 +87,26 @@ def sync_institution_from_catalogue(application, offer=None, offer_check=None):
     ``course_id``/``course_name``/``source`` are preserved, so nothing is re-attributed to the offer.
     Idempotent. Returns True when it wrote.
     """
+    resolved = institution_fill(application, offer=offer, offer_check=offer_check)
+    if not resolved:
+        return False
+    from .. import card_display
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    application.chosen_programme = card_display.with_institution(cp, resolved)
+    application.save(update_fields=['chosen_programme'])
+    return True
+
+
+def institution_fill(application, offer=None, offer_check=None):
+    """The institution ``sync_institution_from_catalogue`` would write, or '' — READ-ONLY, so the
+    repair command's report and the writer share one answer (review 2026-10-31). See the writer."""
     from ..models import ApplicantDocument
     from ..pathway_engine import student_offer_check
     from .. import offer_pathway as op
 
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     if (cp.get('institution') or '').strip():
-        return False                      # already recorded — never overwrite
+        return ''                         # already recorded — never overwrite
 
     cid = (cp.get('course_id') or '').strip()
 
@@ -141,11 +154,7 @@ def sync_institution_from_catalogue(application, offer=None, offer_check=None):
             hint = offer_inst or (application.pre_u_institution or '').strip()
             resolved = op.catalogue_institution(vc, hint) if (vc and hint) else ''
 
-    if not resolved:
-        return False
-    application.chosen_programme = card_display.with_institution(cp, resolved)
-    application.save(update_fields=['chosen_programme'])
-    return True
+    return resolved or ''
 
 
 def set_reporting_date_by_officer(application, admin, value):
@@ -374,11 +383,14 @@ def plan_bumi_realign(application, offer, chk):
     course — even a locked one — when ALL of these hold, checked in this order (each failure is the
     reason the repair command prints):
 
-    ``decided``          the status is one querying is locked at, or an officer verdict is recorded;
+    ``decided``          querying is locked (``querying_locked``: a locked status, or a submitted
+                         interview) or an officer verdict is recorded (``verdict_decided_at`` / overall);
     ``not_own_letter``   the letter's name or IC is a mismatch;
     ``not_genuine``      the offer is not scored genuine (``offer_band``);
     ``pre_u_offer``      the letter is a Form 6 / matriculation offer (no catalogue course_id shape);
     ``unresolved``       the letter does not name ONE catalogue course;
+    ``campus_unpinned``  the course has several campuses and the letter names none or several — the
+                         realignment never writes a campus it cannot pin (a human does);
     ``same_course``      the stored pick already is that course;
     ``not_bumi_only``    the COURSE's own flag says it is open to all (the student's Bumiputera answer
                          is never read: it is course-guide only, decisions.md 2026-10-28);
@@ -394,9 +406,9 @@ def plan_bumi_realign(application, offer, chk):
     from ..family import CONFIRMED_CP_SOURCES
     from ..offer_course_match import is_bumiputera_only, match_offer_course
     from ..pathway_engine import offer_band
-    from .querying import QUERYING_LOCKED_STATUSES
+    from .querying import querying_locked
     verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
-    if application.status in QUERYING_LOCKED_STATUSES or verdict.get('overall'):
+    if querying_locked(application) or application.verdict_decided_at or verdict.get('overall'):
         return 'decided', None, ''
     if chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch':
         return 'not_own_letter', None, ''
@@ -408,6 +420,8 @@ def plan_bumi_realign(application, offer, chk):
     match = match_offer_course(prog, inst, (chk.get('issuer') or '').strip())
     if not match:
         return 'unresolved', None, ''
+    if not (match.get('institution') or '').strip():
+        return 'campus_unpinned', None, ''
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     if (cp.get('course_id') or '').strip() == match['course_id']:
         return 'same_course', None, ''

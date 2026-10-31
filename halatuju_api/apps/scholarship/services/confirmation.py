@@ -350,21 +350,24 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
         return
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     cid, inst = (cp.get('course_id') or '').strip(), (cp.get('institution') or '').strip()
+    # The letterhead too (2026-10-31): a hostel line yields to it, as in every other reader.
+    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
+    issuer = str(((vf.get('fields') or {}) if isinstance(vf.get('fields'), dict) else {}).get('issuer') or '').strip()
     preu_ids = set(op.PREU_COURSE_SLUG.values())
     level = op.detect_pathway_type(prog, '')
     if not cid or not (cid in preu_ids or (inst and (
-            _names_another_place(op, cid, inst)
-            or (level and op.programme_agreement(cid, prog, inst) == 'clash')))):
+            _names_another_place(op, cid, inst, issuer)
+            or (level and op.programme_agreement(cid, prog, inst, issuer) == 'clash')))):
         return
     cp = dict(cp)
-    match = op.resolve_catalogue_course(prog, inst) or {}
+    match = op.resolve_catalogue_course(prog, inst, issuer) or {}
     pinned = match.get('course_id') or ''
     # Never a pre-U virtual course: the catalogue links them to ~250 schools whose names share a
     # university's tokens ("SMK Bandar Tun Hussein Onn 2"), so a 'Sains' degree at UTHM can
     # "resolve" to stpm-sains. A tertiary confirm re-pins only to a tertiary course of its level.
     if (pinned and pinned not in preu_ids and level
             and level == op.detect_pathway_type(match.get('course_name') or '', '')
-            and not op.offer_contradicts_course_institution(pinned, inst)):
+            and not op.offer_contradicts_course_institution(pinned, inst, issuer)):
         cp['course_id'] = pinned
     else:
         cp.pop('course_id', None)
@@ -374,11 +377,11 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
     application.chosen_programme = cp
 
 
-def _names_another_place(op, cid, inst):
+def _names_another_place(op, cid, inst, issuer=''):
     """TD-145: is ``inst`` demonstrably NOT where course ``cid`` is taught? The verdict's own clash,
     or — multi-campus — no campus named AND the letter exactly names another catalogue institution.
     A place we cannot read is never 'another place' (the id is kept)."""
-    if op.institution_agreement(cid, '', inst) == 'clash':
+    if op.institution_agreement(cid, '', inst, issuer) == 'clash':
         return True
-    return bool(op.offer_contradicts_course_institution(cid, inst)
+    return bool(op.offer_contradicts_course_institution(cid, inst, issuer)
                 and op._names_another_institution('', '', inst))

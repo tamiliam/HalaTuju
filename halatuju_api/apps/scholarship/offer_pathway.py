@@ -318,10 +318,10 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str,
     ``issuer`` that names the university (#175 UPM, #252 UPSI, #354 UNIMAS, #395 UTHM).
     """
     from .offer_course_match import letter_place
-    offer_institution = letter_place(course_id, offer_institution, issuer)
+    rows = _campus_rows(course_id) if (course_id or '').strip() and (offer_institution or issuer or '').strip() else []
+    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return 'unknown'
-    rows = _campus_rows(course_id)
     if not rows:
         return 'unknown'                     # catalogue gap — can't judge
     if len(rows) == 1:
@@ -403,10 +403,10 @@ def offer_contradicts_course_institution(course_id: str, offer_institution: str,
     yields to the ``issuer`` exactly as in ``institution_agreement`` (``letter_place``).
     """
     from .offer_course_match import letter_place
-    offer_institution = letter_place(course_id, offer_institution, issuer)
+    rows = _campus_rows(course_id) if (course_id or '').strip() and (offer_institution or issuer or '').strip() else []
+    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return False
-    rows = _campus_rows(course_id)
     if not rows:
         return False
     # Shares its identity test with institution_agreement — one definition of "this string names

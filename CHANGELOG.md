@@ -28,6 +28,15 @@ genuineness change — stored `vision_fields` are read as they are).
   realign candidates. `backfill_offer_pathways`'s dry run and `backfill_institution`'s report now see the same rules.
 - `apps/courses/course_pathway.py`: `pathway_for_requirement` (now also used by the boot `course_pathway_map`) and
   `course_pathway_type` for one course.
+- **Adversarial review fixes (second commit):** an institution is named by its name or a UNIQUE acronym first
+  (UTM is never UiTM; "UNIVERSITI TEKNOLOGI MARA" never names MARA's division; shared acronyms such as GIATMARA,
+  IKM and KKTM name nothing alone); a state word alone names no institution (UiTM Perlis / Sabah / Sarawak /
+  Kelantan / Terengganu / Melaka are never UniMAP / UMS / UNIMAS / UMK / UMT / Politeknik Melaka); a printed
+  code must agree with the printed name; a multi-campus course carries a campus only when the letter names
+  exactly one, and the realignment skips `campus_unpinned` otherwise; "decided" = `querying_locked` or
+  `verdict_decided_at`; the offer confirm's stale-course check reads the issuer; only `offer_sync` may call
+  `is_bumiputera_only`; `backfill_offer_pathways`' dry run plans on the live offer; the repair command's report
+  reads a new read-only `institution_fill` planner and never runs a writer.
 - Tests: `test_offer_course_match.py`, `test_offer_realign.py`; one patch target in `test_td331_td332_programme.py`
   follows the moved matcher. `test_bumiputera_blind`: the course-flag scan allows `offer_course_match.py` by path,
   and a new test pins that it reads the COURSE flag only inside `is_bumiputera_only` (owner rule, decisions.md).

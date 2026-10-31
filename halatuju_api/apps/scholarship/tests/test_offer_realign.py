@@ -245,3 +245,96 @@ class RepairCommandTest(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['institution'], 'Universiti Putra Malaysia')
 
+
+
+class ReviewFindingsRealignTest(_Base):
+    """The adversarial review of 851b7cb9 (2026-10-31) — the writer's side of each finding."""
+
+    def test_1_a_correct_uitm_pick_survives_a_uitm_letter(self):
+        pick = {'course_id': 'UE4481001', 'course_name': 'Diploma Sains Komputer'}
+        app = self._app(pick=pick)
+        offer = _offer(app, ('DIPLOMA IN COMPUTER SCIENCE', 'UNIVERSITI TEKNOLOGI MARA', 'UNIVERSITI TEKNOLOGI MARA'))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UE4481001')
+
+    def test_2_a_utm_pick_survives_a_utm_letter(self):
+        app = self._app(pick={'course_id': 'UT6481003', 'course_name': 'Sarjana Muda Sains Komputer dengan Kepujian'})
+        offer = _offer(app, ('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN', 'UNIVERSITI TEKNOLOGI MALAYSIA',
+                             'UNIVERSITI TEKNOLOGI MALAYSIA'))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'same_course')
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], 'UT6481003')
+
+    def test_3_a_campus_the_letter_cannot_pin_is_never_written(self):
+        app = self._app()
+        offer = _offer(app, ('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI', ''))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'campus_unpinned')
+        app2 = self._app()
+        offer2 = _offer(app2, ('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI', ''))
+        self.assertNotEqual(plan_bumi_realign(app2, offer2, student_offer_check(offer2))[0], '')
+
+    def test_4_a_contradicting_code_never_realigns(self):
+        app = self._app()
+        offer = _offer(app, ('Sarjana Muda Ukur Bahan dengan Kepujian - UW6526002', 'Universiti Malaysia Sarawak', ''))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+
+    def test_5_a_state_word_never_realigns_to_that_states_university(self):
+        app = self._app(pick={'course_id': 'UE6481001', 'course_name': 'Sarjana Muda Sains Komputer (Kepujian)'})
+        offer = _offer(app, ('SARJANA MUDA KEJURUTERAAN KOMPUTER', 'UiTM CAWANGAN PERLIS, KAMPUS ARAU',
+                             'Bahagian Pengambilan Pelajar'))
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'unresolved')
+
+    def test_6_the_offer_confirm_reads_the_issuer_too(self):
+        from apps.courses.models import Course, CourseInstitution, Institution
+        from apps.scholarship.services.confirmation import _settle_stale_course_id
+        letter = ('DIPLOMA PEMBANGUNAN MANUSIA', 'KOLEJ SRI RAJANG', 'Universiti Putra Malaysia')
+        # A correct pick with the hostel line on file is kept.
+        app = self._app(pick={'course_id': 'UP4310001', 'course_name': 'Diploma Pembangunan Manusia',
+                              'institution': 'KOLEJ SRI RAJANG'})
+        offer = _offer(app, letter)
+        _settle_stale_course_id(app, offer, letter[0], 'diploma')
+        self.assertEqual(app.chosen_programme['course_id'], 'UP4310001')
+        # A stale pick at the same university is re-pinned to the letter's course — which needs the
+        # issuer: without it the hostel line resolves nothing and the stale id was kept.
+        c = Course.objects.create(course_id='RA-UPM-DIP2', course='Diploma Pertanian', level='Diploma',
+                                  department='x', field='x', field_key_id='realign')
+        CourseInstitution.objects.create(course=c, institution=Institution.objects.get(institution_id='RA-UPM'))
+        app = self._app(pick={'course_id': 'RA-UPM-DIP2', 'course_name': 'Diploma Pertanian',
+                              'institution': 'KOLEJ SRI RAJANG'})
+        offer = _offer(app, letter)
+        _settle_stale_course_id(app, offer, letter[0], 'diploma')
+        self.assertEqual(app.chosen_programme['course_id'], 'UP4310001')
+
+    def test_8_decided_reads_querying_locked_and_the_verdict_stamp(self):
+        from apps.scholarship.models import InterviewSession
+        app = self._app(stage='interviewing')
+        InterviewSession.objects.create(application=app, status='submitted')
+        offer = _offer(app, UITM_LETTER)
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'decided')
+        app = self._app(verdict_decided_at=timezone.now())
+        offer = _offer(app, UITM_LETTER)
+        self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'decided')
+
+    def test_10_the_backfill_dry_run_plans_on_the_live_offer(self):
+        app = self._app()
+        _offer(app, UITM_LETTER)                                       # live, Bumi-only
+        newer = _offer(app, UITM_LETTER, nric='990101-01-9999')       # someone else's letter…
+        newer.superseded_at = timezone.now()                          # …newest, but replaced
+        newer.save(update_fields=['superseded_at'])
+        out = StringIO()
+        call_command('backfill_offer_pathways', stdout=out)
+        self.assertIn(f'app #{app.id}: would settle', out.getvalue())
+
+    def test_11_the_report_never_runs_a_writer(self):
+        from unittest import mock
+        app = self._app(pick={'course_id': 'UP4310001', 'course_name': 'Diploma Pembangunan Manusia'})
+        _offer(app, ('DIPLOMA PEMBANGUNAN MANUSIA', 'KOLEJ SRI RAJANG', 'Universiti Putra Malaysia'))
+        target = 'apps.scholarship.management.commands.realign_bumi_offers'
+        with mock.patch(f'{target}.sync_institution_from_catalogue', side_effect=AssertionError('writer ran')), \
+                mock.patch(f'{target}.realign_bumi_only_pick', side_effect=AssertionError('writer ran')):
+            out = StringIO()
+            call_command('realign_bumi_offers', stdout=out)
+        self.assertIn('institution would fill: Universiti Putra Malaysia', out.getvalue())
