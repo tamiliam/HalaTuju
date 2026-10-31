@@ -262,6 +262,49 @@ class TestPathwayProfileLink(TestCase):
         self.assertEqual(app.pre_u_institution, '')
         self.assertEqual(app.chosen_programme['source'], 'offer_letter_confirmed')
 
+    def test_a_profile_save_keeps_the_institution_the_catalogue_filled(self):
+        """Owner 2026-10-31, app #408. The offer upload filled her blank institution from the
+        catalogue (a sole-campus course) — on the APPLICATION only, with no ``source``. Her profile
+        still named the same course with no institution, and the next /profile save copied that
+        over and erased it."""
+        from apps.courses.models import Course, CourseInstitution, FieldTaxonomy, Institution
+        from apps.scholarship.services import autofill_pathway_from_offer
+        ft, _ = FieldTaxonomy.objects.get_or_create(
+            key='multimedia', defaults={'name_en': 'Multimedia', 'name_ms': 'Multimedia',
+                                        'name_ta': 'மல்டிமீடியா', 'image_slug': 'multimedia'})
+        course = Course.objects.create(course_id='TST-USM', course='Sarjana Muda Sains',
+                                       level='Ijazah Sarjana Muda', department='x', field='x',
+                                       field_key=ft)
+        inst = Institution.objects.create(institution_id='tst-usm', type='Universiti',
+                                          institution_name='Universiti Sains Malaysia',
+                                          acronym='USM', state='Pulau Pinang')
+        CourseInstitution.objects.create(course=course, institution=inst)
+        pick = {'course_id': 'TST-USM', 'course_name': 'Sarjana Muda Sains', 'field_key': ''}
+        app = make_application('shortlisted', cohort=self.cohort, student=self.profile,
+                               chosen_pathway='university', pathway_certainty='sure',
+                               pre_u_track='', pre_u_institution='', chosen_programme=dict(pick))
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/usm',
+            vision_fields={'fields': {
+                'candidate_name': self.profile.name,
+                'candidate_nric': self.profile.nric.replace('-', ''),
+                'programme': 'SARJANA MUDA SAINS', 'institution': 'UNIVERSITI SAINS MALAYSIA'},
+                'student_verdict': 'ok', 'warnings': [], 'error': ''},
+            vision_run_at=timezone.now())
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Sains Malaysia')
+        self.assertNotIn('source', app.chosen_programme)     # the guard below would hide the bug
+        # /profile PUTs every plan field back — her own pick, still with no institution.
+        r = self.client.put('/api/v1/profile/', dict(
+            _PATHWAY, chosen_pathway='university', pre_u_track='', pre_u_institution='',
+            chosen_programme=pick, uncertainty_note='an unrelated edit'), format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Sains Malaysia')
+        self.assertEqual(app.chosen_programme['course_id'], 'TST-USM')
+        self.assertEqual(app.uncertainty_note, 'an unrelated edit')    # the rest still syncs
+
     def test_a_blank_profile_still_fills_a_blank_application(self):
         """Nothing to protect → the copy is unchanged (and must not start skipping fields)."""
         prof = make_student(supabase_user_id='pw-blank')

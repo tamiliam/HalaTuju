@@ -55,6 +55,56 @@ class CopyPathwayGuardTests(SimpleTestCase):
         family.copy_pathway(profile, app)
         self.assertEqual(app.chosen_programme['course_name'], 'New Pick')
 
+    # ── the same course keeps a catalogue-filled institution (owner 2026-10-31, app #408) ──
+    # ``sync_institution_from_catalogue`` fills a blank institution on the APPLICATION only (no
+    # ``source``); the profile still names the same course with no institution, and an unrelated
+    # /profile save used to copy that over and erase it.
+
+    _PICK = {'course_id': 'US6525001', 'course_name': 'Sarjana Muda Sains', 'field_key': ''}
+
+    def test_same_course_keeps_the_destinations_institution_and_id(self):
+        profile = self._obj(dict(self._PICK))
+        app = self._obj({**self._PICK, 'institution': 'Universiti Sains Malaysia',
+                         'institution_id': 'USM'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Sains Malaysia')
+        self.assertEqual(app.chosen_programme['institution_id'], 'USM')
+        self.assertEqual(app.chosen_programme['course_id'], 'US6525001')
+        self.assertNotIn('institution', profile.chosen_programme)    # src is never mutated
+
+    def test_same_course_matches_on_a_whitespace_padded_course_id(self):
+        profile = self._obj({**self._PICK, 'course_id': ' US6525001 ', 'institution': '  '})
+        app = self._obj({**self._PICK, 'institution': 'Universiti Sains Malaysia'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Sains Malaysia')
+
+    def test_a_different_course_drops_the_old_institution(self):
+        # The old institution belonged to the old course — keeping it would be a wrong pairing.
+        profile = self._obj({'course_id': 'UM6214001', 'course_name': 'Sarjana Muda Undang-Undang'})
+        app = self._obj({**self._PICK, 'institution': 'Universiti Sains Malaysia',
+                         'institution_id': 'USM'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme, profile.chosen_programme)
+        self.assertNotIn('institution', app.chosen_programme)
+
+    def test_the_sources_own_institution_still_wins_on_the_same_course(self):
+        # She picked a place herself — that is a real edit, not a blank.
+        profile = self._obj({**self._PICK, 'institution': 'Universiti Malaya',
+                             'institution_id': 'UM'})
+        app = self._obj({**self._PICK, 'institution': 'Universiti Sains Malaysia',
+                         'institution_id': 'USM'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Malaya')
+        self.assertEqual(app.chosen_programme['institution_id'], 'UM')
+
+    def test_course_name_alone_is_not_the_same_course(self):
+        # Match on course_id only: two blank ids naming the same course are not a match.
+        profile = self._obj({'course_name': 'Sarjana Muda Sains'})
+        app = self._obj({'course_name': 'Sarjana Muda Sains',
+                         'institution': 'Universiti Sains Malaysia'})
+        family.copy_pathway(profile, app)
+        self.assertNotIn('institution', app.chosen_programme)
+
 
 class FamilyTaxonomyTests(TestCase):
     def test_codes_unique_and_other_present(self):

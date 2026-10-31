@@ -378,6 +378,25 @@ class TestBackfillInstitutionCommand(_Base):
             self.assertIn(f'#{app.pk}', out)
         self.assertIn('need a human', out)
 
+    def test_a_post_stpm_degree_is_fillable_not_a_catalogue_gap(self):
+        """Owner 2026-10-31, app #408. A post-STPM degree lives in ``StpmCourse`` (one programme at
+        ONE university), not ``CourseInstitution``. The writer has read both since 2026-07-26
+        (``op._campus_rows``); the report counted only ``CourseInstitution``, so it listed 45 such
+        rows as CATALOGUE_GAP and ``--apply`` never called the writer for them."""
+        from apps.courses.models import StpmCourse
+        StpmCourse.objects.create(course_id='TST-STPM-USM', course_name='Sarjana Muda Sains',
+                                  university='Universiti Sains Malaysia', stream='science',
+                                  field_key=self.ft)
+        app = self._app(chosen_pathway='university', chosen_programme={
+            'course_id': 'TST-STPM-USM', 'course_name': 'Sarjana Muda Sains'})
+        out = self._run()
+        self.assertIn('FILLED (1)', out)
+        self.assertNotIn('CATALOGUE_GAP', out)
+        self.assertIn(f'#{app.pk}', out)
+        self._run('--apply')
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Sains Malaysia')
+
     def test_already_filled_rows_are_counted_not_relisted(self):
         self._app(chosen_programme={'course_id': 'TST-ANIM', 'institution': 'UTHM'})
         out = self._run()

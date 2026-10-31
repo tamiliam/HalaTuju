@@ -11,7 +11,7 @@ what cannot be filled automatically is visible rather than silently absent:
     filled            → the writer resolves it (this is what --apply persists)
     stpm              → pre-U STPM: deliberately not resolved (see sync_institution_from_catalogue)
     clash             → the offer names an institution that is NOT a campus of the declared course
-    catalogue_gap     → the course has ZERO course_institutions rows — fix the CATALOGUE
+    catalogue_gap     → the course has ZERO campuses in either catalogue — fix the CATALOGUE
     multi_campus      → 2+ campuses and no usable offer to disambiguate
     unresolvable      → no course_id and no pre-U route
 
@@ -27,7 +27,6 @@ from collections import Counter, defaultdict
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-from apps.courses.models import CourseInstitution
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
@@ -91,7 +90,11 @@ class Command(BaseCommand):
         pathway = (app.chosen_pathway or '').strip().lower()
 
         if cid:
-            campuses = CourseInstitution.objects.filter(course_id=cid).count()
+            # The writer's OWN campus list (``op._campus_rows`` — CourseInstitution, falling back to
+            # the post-STPM ``StpmCourse``), counted the way ``sole_catalogue_institution`` counts
+            # it. Its own CourseInstitution count listed every post-STPM degree as a catalogue gap
+            # the writer could in fact fill (owner 2026-10-31, app #408: 45 rows).
+            campuses = len({n.strip() for n, _a in op._campus_rows(cid) if (n or '').strip()})
             if campuses == 0:
                 return 'catalogue_gap', f"course {cid} has no catalogue institution"
             offer_inst, wrong_person = self._offer_institution(app)

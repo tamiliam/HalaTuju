@@ -186,20 +186,47 @@ def _should_overwrite_chosen_programme(src_cp, dst_cp):
     return True
 
 
+def _keep_same_course_institution(src_cp, dst_cp):
+    """The ``chosen_programme`` to write when the copy goes ahead. When both sides name the SAME
+    non-empty ``course_id`` and src carries no institution but dst does, a NEW dict is returned
+    with dst's ``institution`` (and ``institution_id``, when src has none) laid over src — the
+    catalogue fill (``sync_institution_from_catalogue``) writes the APPLICATION only, so a blank on
+    the profile is a gap, not a correction. A different course, or src's own institution, copies
+    src unchanged. Matches on ``course_id`` only, never ``course_name``. src is never mutated."""
+    if not (isinstance(src_cp, dict) and isinstance(dst_cp, dict)):
+        return src_cp
+    src_cid = str(src_cp.get('course_id') or '').strip()
+    if not src_cid or src_cid != str(dst_cp.get('course_id') or '').strip():
+        return src_cp                                  # a new course — its old place goes with it
+    if str(src_cp.get('institution') or '').strip():
+        return src_cp                                  # she named a place herself
+    dst_inst = str(dst_cp.get('institution') or '').strip()
+    if not dst_inst:
+        return src_cp
+    merged = {**src_cp, 'institution': dst_cp['institution']}
+    if (str(dst_cp.get('institution_id') or '').strip()
+            and not str(src_cp.get('institution_id') or '').strip()):
+        merged['institution_id'] = dst_cp['institution_id']
+    return merged
+
+
 def copy_pathway(src, dst):
     """Copy the pathway fields between a StudentProfile and a ScholarshipApplication (they share
     field names). ``chosen_programme`` is copied through a provenance guard so a student profile
     edit can't wipe an offer/officer-confirmed programme (#117), and the three pathway fields the
     offer pipeline also writes are protected from an EMPTY source for the same reason (request #7).
+    A copy of the SAME course keeps dst's institution when src has none (owner 2026-10-31, app
+    #408: the catalogue fill on the application was erased by an unrelated /profile save).
     Pure — the caller saves dst.
 
     Direction-agnostic: it runs profile→application on a /profile edit and application→profile when
     a new application is created, and "a blank never erases a value" is right in both."""
     for field in PROFILE_PATHWAY_FIELDS:
         if field == 'chosen_programme':
-            if _should_overwrite_chosen_programme(getattr(src, 'chosen_programme', None),
-                                                  getattr(dst, 'chosen_programme', None)):
-                dst.chosen_programme = getattr(src, 'chosen_programme', None)
+            src_cp = getattr(src, 'chosen_programme', None)
+            dst_cp = getattr(dst, 'chosen_programme', None)
+            if _should_overwrite_chosen_programme(src_cp, dst_cp):
+                dst.chosen_programme = _keep_same_course_institution(src_cp, dst_cp)
             # else: keep dst's populated/confirmed value untouched
         elif (field in OFFER_WRITTEN_PATHWAY_FIELDS
                 and not (getattr(src, field, '') or '').strip()

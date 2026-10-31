@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
+
+- Fix: a /profile save no longer erases an institution filled from the catalogue — when the profile names the same
+  course with no institution, the application keeps its `institution` and `institution_id`
+  (`family.copy_pathway`). A different course, or an institution she picked herself, still replaces it.
+- Fix: `backfill_institution` reads the writer's own campus list (`offer_pathway._campus_rows`), so a post-STPM
+  degree (`StpmCourse`) is reported as fillable and `--apply` fills it, not listed as a catalogue gap (45 rows).
+
 ## Request #51: People shows Awaiting review and Interviewing instead of Open now (2026-10-31)
 
 - BrightPath could not tell when a reviewer had nothing left to start, because Open now added the cases
