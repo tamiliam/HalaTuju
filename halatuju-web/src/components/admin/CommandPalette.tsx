@@ -55,7 +55,7 @@ export function CommandPalette({ groups, open, onClose }: {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-ground-900/40 px-4 pt-[12vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-ground-900/40 px-4 pt-[max(12dvh,env(safe-area-inset-top))]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div

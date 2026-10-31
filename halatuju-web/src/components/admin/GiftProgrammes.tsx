@@ -18,6 +18,7 @@ import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { withGift } from '@/lib/giftHref'
 import InfoBox from '@/components/InfoBox'
+import Sheet from '@/components/Sheet'
 import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 import {
   getAdminProgrammes, createAdminProgramme, updateAdminProgramme, deleteAdminProgramme,
@@ -445,14 +446,34 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
           that pressed the first button; typing the gift's own code cannot be. The SERVER checks it
           too — this dialog explains the guard, it is not the guard. */}
       {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !busy && setDeleting(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-critical-700">
-              {t('admin.programmes.deleteTitle', { name: deleting.name_en })}
-            </h2>
-            <p className="mt-2 text-sm text-ground-700">{t('admin.programmes.deleteBody')}</p>
+        <Sheet open onClose={() => setDeleting(null)} busy={busy} tone="critical"
+          title={t('admin.programmes.deleteTitle', { name: deleting.name_en })}
+          footer={<>
+            <button type="button" onClick={() => setDeleting(null)} disabled={busy}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+              {t('common.cancel')}
+            </button>
+            <button type="button" data-testid="delete-confirm"
+              // Whitespace-collapsed + lower-cased to match the server's own comparison exactly,
+              // so this button is never asleep on a difference the server would have accepted.
+              disabled={busy || confirmText.trim().replace(/\s+/g, ' ').toLowerCase()
+                !== `delete ${deleting.code}`.toLowerCase()}
+              onClick={async () => {
+                const ok = await run(() => deleteAdminProgramme(
+                  deleting.id, confirmText.trim().replace(/\s+/g, ' ').toLowerCase(),
+                  { token: token! }))
+                if (ok) {
+                  setDeleting(null); setConfirmText('')
+                  // The shell's own list must forget it too, or the breadcrumb keeps offering a
+                  // gift that no longer exists.
+                  await reload()
+                }
+              }}
+              className="rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
+              {t('admin.programmes.deleteCta')}
+            </button>
+          </>}>
+            <p className="text-sm text-ground-700">{t('admin.programmes.deleteBody')}</p>
             {/* ⚠ SAY THAT THE YEARS GO, AND SAY HOW MANY. The years are the one thing being
                 removed that the person cannot see from this dialog, and since 2026-09-07 they no
                 longer block the delete — so silence here would mean somebody presses Delete on a
@@ -476,49 +497,32 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
             <input id="p-confirm" value={confirmText} autoComplete="off"
               onChange={(e) => setConfirmText(e.target.value)}
               className={`mt-1 ${inputCls}`} />
-
-            <div className="mt-5 flex justify-end gap-3">
-              <button type="button" onClick={() => setDeleting(null)} disabled={busy}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-                {t('common.cancel')}
-              </button>
-              <button type="button" data-testid="delete-confirm"
-                // Whitespace-collapsed + lower-cased to match the server's own comparison exactly,
-                // so this button is never asleep on a difference the server would have accepted.
-                disabled={busy || confirmText.trim().replace(/\s+/g, ' ').toLowerCase()
-                  !== `delete ${deleting.code}`.toLowerCase()}
-                onClick={async () => {
-                  const ok = await run(() => deleteAdminProgramme(
-                    deleting.id, confirmText.trim().replace(/\s+/g, ' ').toLowerCase(),
-                    { token: token! }))
-                  if (ok) {
-                    setDeleting(null); setConfirmText('')
-                    // The shell's own list must forget it too, or the breadcrumb keeps offering a
-                    // gift that no longer exists.
-                    await reload()
-                  }
-                }}
-                className="rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
-                {t('admin.programmes.deleteCta')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* ⚠ THE LINK IS SHOWN WHERE THE CODE IS SET (owner's choice, 2026-09-08). A code changed
           without seeing the link it drives is a change made blind — this is the one screen where
           the two facts have to sit together. */}
       {renaming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !busy && setRenaming(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">
-              {t('admin.programmes.renameTitle', { name: renaming.name_en })}
-            </h2>
-
-            <p className="mt-4 text-sm font-medium text-ground-700">
+        <Sheet open onClose={() => setRenaming(null)} busy={busy}
+          title={t('admin.programmes.renameTitle', { name: renaming.name_en })}
+          footer={<>
+            <button type="button" onClick={() => setRenaming(null)} disabled={busy}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+              {t('common.cancel')}
+            </button>
+            <button type="button" data-testid="rename-confirm"
+              // Asleep on an unchanged code as well as a malformed one: the server treats the
+              // same code as a no-op, so offering the press would promise a change that is not
+              // one.
+              disabled={busy || !CODE_OK.test(newCode.trim().toLowerCase())
+                || newCode.trim().toLowerCase() === renaming.code}
+              onClick={() => void rename(renaming)}
+              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('admin.programmes.renameCta')}
+            </button>
+          </>}>
+            <p className="text-sm font-medium text-ground-700">
               {t('admin.programmes.applyLinkLabel')}
             </p>
             <p data-testid="rename-apply-url"
@@ -540,35 +544,23 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               <InfoBox kind="info">{t('admin.programmes.renameKeeps')}</InfoBox>
             </div>
             {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
-
-            <div className="mt-5 flex justify-end gap-3">
-              <button type="button" onClick={() => setRenaming(null)} disabled={busy}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-                {t('common.cancel')}
-              </button>
-              <button type="button" data-testid="rename-confirm"
-                // Asleep on an unchanged code as well as a malformed one: the server treats the
-                // same code as a no-op, so offering the press would promise a change that is not
-                // one.
-                disabled={busy || !CODE_OK.test(newCode.trim().toLowerCase())
-                  || newCode.trim().toLowerCase() === renaming.code}
-                onClick={() => void rename(renaming)}
-                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.programmes.renameCta')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => !busy && setOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.programmes.new')}</h2>
-
-            <label htmlFor="p-name" className="mt-4 block text-sm font-medium text-ground-700">
+        <Sheet open onClose={() => setOpen(false)} busy={busy} title={t('admin.programmes.new')}
+          footer={<>
+            <button type="button" onClick={() => setOpen(false)} disabled={busy}
+              className="text-sm font-medium text-ground-500 hover:text-ground-700">
+              {t('common.cancel')}
+            </button>
+            <button type="button" onClick={create}
+              disabled={busy || !nameEn.trim() || !CODE_OK.test(code.trim().toLowerCase())}
+              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('admin.programmes.create')}
+            </button>
+          </>}>
+            <label htmlFor="p-name" className="block text-sm font-medium text-ground-700">
               {t('admin.programmes.field.name')}
             </label>
             <input id="p-name" value={nameEn} onChange={(e) => setNameEn(e.target.value)}
@@ -585,20 +577,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               <InfoBox kind="warning">{t('admin.programmes.codeWarning')}</InfoBox>
             </div>
             {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={() => setOpen(false)} disabled={busy}
-                className="text-sm font-medium text-ground-500 hover:text-ground-700">
-                {t('common.cancel')}
-              </button>
-              <button type="button" onClick={create}
-                disabled={busy || !nameEn.trim() || !CODE_OK.test(code.trim().toLowerCase())}
-                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.programmes.create')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
     </section>
   )

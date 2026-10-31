@@ -14,6 +14,11 @@ export interface ViewerDoc {
  * reviewer views it in context — never a download, never dependent on the browser's "download
  * PDFs" setting. Images render via <img>, PDFs via <iframe>; HEIC/HEIF (browsers can't render
  * it) falls back to an "open the original" link. Esc / backdrop click closes.
+ *
+ * ⚠ NOT A SHEET, ON PURPOSE (Mobile M1b). A document needs the whole screen, not a bottom sheet
+ * capped at 90 %: on a phone it is FULL SCREEN (no margin, no rounded corners, the header padded
+ * clear of the notch, a 44 px close), on a desktop the framed viewer it always was. It is one of the
+ * named exemptions in `mobileStandard.test.ts`. (Rendering PDFs as page images is M6.)
  */
 export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onClose: () => void }) {
   const { t } = useT()
@@ -31,11 +36,11 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
     </a>
   )
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="flex h-full max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-ground-0 shadow-2xl"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 md:p-4"
+      role="dialog" aria-modal="true" aria-label={doc.label} onClick={onClose}>
+      <div className="flex h-full w-full max-w-4xl flex-col overflow-hidden bg-ground-0 shadow-2xl md:max-h-[92dvh] md:rounded-xl"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-ground-100 px-4 py-2.5">
+        <div className="flex items-center gap-3 border-b border-ground-100 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] md:pt-2.5">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-ground-800">{doc.label}</p>
             {doc.filename && <p className="truncate text-[11px] text-ground-400">{doc.filename}</p>}
@@ -43,7 +48,7 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
           {newTab}
           <button type="button" onClick={onClose}
             aria-label={t('admin.scholarship.docsDrawer.viewer.close')}
-            className="rounded-md px-2 py-1 text-ground-400 hover:bg-ground-100 hover:text-ground-700">✕</button>
+            className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-ground-400 hover:bg-ground-100 hover:text-ground-700">✕</button>
         </div>
         <div className="flex-1 overflow-auto bg-ground-100">
           {doc.kind === 'image' && (

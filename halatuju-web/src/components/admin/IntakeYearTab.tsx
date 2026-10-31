@@ -53,6 +53,7 @@ import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
+import Sheet from '@/components/Sheet'
 import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
 import RequirementFields from '@/components/admin/RequirementFields'
@@ -463,13 +464,21 @@ export default function IntakeYearTab() {
       )}
 
       {open && programme && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onClick={() => !busy && setOpen(false)}>
-          <div className="my-8 w-full max-w-lg rounded-2xl bg-ground-0 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.years.new')}</h2>
-
-            <div className="mt-4 grid grid-cols-2 gap-4">
+        <Sheet open onClose={() => setOpen(false)} busy={busy} size="lg" title={t('admin.years.new')}
+          footer={<>
+            <button type="button" onClick={() => setOpen(false)} disabled={busy}
+              className="text-sm font-medium text-ground-500 hover:text-ground-700">
+              {t('common.cancel')}
+            </button>
+            {/* The label carries the promise: creating never opens. */}
+            <button type="button" onClick={create}
+              disabled={busy || !form.name.trim() || !form.year.trim()
+                || !CODE_OK.test(form.code.trim().toLowerCase())}
+              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('admin.years.createClosed')}
+            </button>
+          </>}>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="y-year" className="block text-sm font-medium text-ground-700">
                   {t('admin.years.field.year')}
@@ -529,22 +538,7 @@ export default function IntakeYearTab() {
             </div>
 
             {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={() => setOpen(false)} disabled={busy}
-                className="text-sm font-medium text-ground-500 hover:text-ground-700">
-                {t('common.cancel')}
-              </button>
-              {/* The label carries the promise: creating never opens. */}
-              <button type="button" onClick={create}
-                disabled={busy || !form.name.trim() || !form.year.trim()
-                  || !CODE_OK.test(form.code.trim().toLowerCase())}
-                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.years.createClosed')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* ── Edit a round ──────────────────────────────────────────────────────────────────────
@@ -553,16 +547,21 @@ export default function IntakeYearTab() {
           offering one. Opening and closing stay on the row — this dialog changes the SCHEDULE,
           never the state. */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onClick={() => !busy && setEditing(null)}>
-          <div className="my-8 w-full max-w-lg rounded-2xl bg-ground-0 p-6 shadow-xl"
-            data-testid="edit-year-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.years.editTitle')}</h2>
-            <p className="mt-1 text-sm text-ground-600">
-              {t('admin.years.editFixed', { year: String(editing.year), code: editing.code })}
-            </p>
-
-            <div className="mt-4">
+        <Sheet open onClose={() => setEditing(null)} busy={busy} size="lg" testId="edit-year-dialog"
+          title={t('admin.years.editTitle')}
+          description={t('admin.years.editFixed', { year: String(editing.year), code: editing.code })}
+          footer={<>
+            <button type="button" onClick={() => setEditing(null)} disabled={busy}
+              className="text-sm font-medium text-ground-500 hover:text-ground-700">
+              {t('common.cancel')}
+            </button>
+            <button type="button" onClick={saveEdit} data-testid="save-edit"
+              disabled={busy || !edit.name.trim() || !editDirty}
+              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('common.save')}
+            </button>
+          </>}>
+            <div>
               <label htmlFor="e-name" className="block text-sm font-medium text-ground-700">
                 {t('admin.years.field.name')}
               </label>
@@ -592,20 +591,7 @@ export default function IntakeYearTab() {
             <p className="mt-1.5 text-xs text-ground-600">{t('admin.years.windowNote')}</p>
 
             {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={() => setEditing(null)} disabled={busy}
-                className="text-sm font-medium text-ground-500 hover:text-ground-700">
-                {t('common.cancel')}
-              </button>
-              <button type="button" onClick={saveEdit} data-testid="save-edit"
-                disabled={busy || !edit.name.trim() || !editDirty}
-                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('common.save')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* ── Closing a round FOR GOOD ─────────────────────────────────────────────────────────
@@ -619,14 +605,21 @@ export default function IntakeYearTab() {
           started submit; finishing ends that. `unsubmitted` is the one fact the reader cannot see
           from here, and silence would mean pressing this and quietly locking someone out. */}
       {finishing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onClick={() => !busy && setFinishing(null)}>
-          <div className="my-8 w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-            data-testid="finish-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">
-              {t('admin.years.finish.title')}
-            </h2>
-            <p className="mt-2 text-sm text-ground-600">{t('admin.years.finish.body')}</p>
+        <Sheet open onClose={() => setFinishing(null)} busy={busy} testId="finish-dialog"
+          title={t('admin.years.finish.title')}
+          footer={<>
+            <button type="button" onClick={() => setFinishing(null)} disabled={busy}
+              className="text-sm font-medium text-ground-500 hover:text-ground-700">
+              {t('common.cancel')}
+            </button>
+            <button type="button" data-testid="finish-confirm-yes"
+              onClick={saveFinish}
+              disabled={busy || finishPhrase.trim().toLowerCase() !== finishing.code.toLowerCase()}
+              className="rounded-lg bg-critical-fill px-5 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
+              {t('admin.years.finish.confirm')}
+            </button>
+          </>}>
+            <p className="text-sm text-ground-600">{t('admin.years.finish.body')}</p>
             {finishing.unsubmitted > 0 && (
               <div className="mt-3">
                 <InfoBox kind="warning" >
@@ -646,21 +639,7 @@ export default function IntakeYearTab() {
               className={`mt-1 ${inputCls}`} />
 
             {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={() => setFinishing(null)} disabled={busy}
-                className="text-sm font-medium text-ground-500 hover:text-ground-700">
-                {t('common.cancel')}
-              </button>
-              <button type="button" data-testid="finish-confirm-yes"
-                onClick={saveFinish}
-                disabled={busy || finishPhrase.trim().toLowerCase() !== finishing.code.toLowerCase()}
-                className="rounded-lg bg-critical-fill px-5 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
-                {t('admin.years.finish.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* ── Opening against the round's own schedule ──────────────────────────────────────────
@@ -669,13 +648,23 @@ export default function IntakeYearTab() {
           would be a client-side rule the server does not hold, which is how a button starts
           lying. It exists because a schedule nobody is reminded of is a schedule nobody keeps. */}
       {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onClick={() => !busy && setConfirmOpen(null)}>
-          <div className="my-8 w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-            data-testid="confirm-open-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-ground-900">
-              {t('admin.years.confirmOpenTitle')}
-            </h2>
+        <Sheet open onClose={() => setConfirmOpen(null)} busy={busy} testId="confirm-open-dialog"
+          title={t('admin.years.confirmOpenTitle')}
+          footer={<>
+            <button type="button" onClick={() => setConfirmOpen(null)} disabled={busy}
+              className="text-sm font-medium text-ground-500 hover:text-ground-700">
+              {t('common.cancel')}
+            </button>
+            <button type="button" data-testid="confirm-open-yes" disabled={busy}
+              onClick={() => {
+                const y = confirmOpen
+                setConfirmOpen(null)
+                void setOpenState(y, true)
+              }}
+              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              {t('admin.years.confirmOpenYes')}
+            </button>
+          </>}>
             {/* ⚠ TENSE FOLLOWS THE DATE (owner, 2026-09-08: it *"is talking about a date that is
                 long past as a 'due to close'"*). A window that ended reads in the past; one that
                 has not started reads in the present. Two short lines, not three long ones — the
@@ -694,24 +683,7 @@ export default function IntakeYearTab() {
               })()}
             </p>
             <p className="mt-1 text-sm text-ground-600">{t('admin.years.confirmOpenNote')}</p>
-
-            <div className="mt-5 flex items-center justify-end gap-3">
-              <button type="button" onClick={() => setConfirmOpen(null)} disabled={busy}
-                className="text-sm font-medium text-ground-500 hover:text-ground-700">
-                {t('common.cancel')}
-              </button>
-              <button type="button" data-testid="confirm-open-yes" disabled={busy}
-                onClick={() => {
-                  const y = confirmOpen
-                  setConfirmOpen(null)
-                  void setOpenState(y, true)
-                }}
-                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.years.confirmOpenYes')}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   )

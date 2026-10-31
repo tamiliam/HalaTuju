@@ -25,6 +25,7 @@ import { formatDateTime } from '@/lib/formatDate'
 import {
   changeMerchantFlag, getMerchantFlag, type MerchantFlagLog, type MerchantFlagNote,
 } from '@/lib/admin-api'
+import Sheet from '@/components/Sheet'
 
 /** The label in front of each entry. ⚠ Literal keys, so the i18n scan can see every one. */
 const KIND: Record<MerchantFlagNote['kind'], string> = {
@@ -50,15 +51,8 @@ export default function MerchantFlagDialog({
   const [busy, setBusy] = useState(false)
   /** An i18n KEY, not text — so nothing that reads the server needs `t`. */
   const [error, setError] = useState('')
+  // The note box takes focus on open; the shared Sheet gives it back to the flag button on close.
   const noteRef = useRef<HTMLTextAreaElement>(null)
-  const restoreTo = useRef<Element | null>(null)
-
-  // Remember where focus was (the flag button) and give it back on close.
-  useEffect(() => {
-    restoreTo.current = document.activeElement
-    noteRef.current?.focus()
-    return () => { (restoreTo.current as HTMLElement | null)?.focus?.() }
-  }, [])
 
   const read = useCallback(() => {
     if (!token) return
@@ -88,18 +82,30 @@ export default function MerchantFlagDialog({
   const button = 'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50'
   const primary = `${button} bg-brand-fill text-brand-fill-ink`
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-ground-900/40 px-4 pt-[12vh]"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${t('admin.spending.flag.col')} — ${merchant}`}
-        className="w-full max-w-lg space-y-3 rounded-2xl border border-ground-200 bg-ground-0 p-4 shadow-2xl"
-        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose() } }}
-      >
-        <h2 className="text-sm font-semibold text-ground-900">{merchant}</h2>
+    <Sheet open onClose={onClose} size="lg" title={merchant} initialFocus={noteRef}
+      label={`${t('admin.spending.flag.col')} — ${merchant}`}
+      footer={<>
+        <button type="button" onClick={onClose}
+          className={`${button} border border-ground-300 text-ground-700`}>
+          {t('common.cancel')}
+        </button>
+        {log?.flagged ? (
+          <>
+            <button type="button" onClick={() => act('close')} disabled={!ready}
+              className={`${button} border border-ground-300 text-ground-700`}>
+              {t('admin.spending.flag.clear')}
+            </button>
+            <button type="button" onClick={() => act('note')} disabled={!ready} className={primary}>
+              {t('common.save')}
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => act('open')} disabled={!ready} className={primary}>
+            {t('admin.spending.flag.col')}
+          </button>
+        )}
+      </>}>
+      <div className="space-y-3">
         {!log && !error && <p className="text-xs text-ground-500">{t('common.loading')}</p>}
         {log && log.notes.length > 0 && (
           <ol className="max-h-64 space-y-2 overflow-y-auto" data-testid="flag-log">
@@ -120,28 +126,7 @@ export default function MerchantFlagDialog({
           className="w-full rounded-md border border-ground-300 px-2 py-1.5 text-sm"
         />
         {error && <p role="alert" className="text-xs text-critical-600">{t(error)}</p>}
-        <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={onClose}
-            className={`${button} border border-ground-300 text-ground-700`}>
-            {t('common.cancel')}
-          </button>
-          {log?.flagged ? (
-            <>
-              <button type="button" onClick={() => act('close')} disabled={!ready}
-                className={`${button} border border-ground-300 text-ground-700`}>
-                {t('admin.spending.flag.clear')}
-              </button>
-              <button type="button" onClick={() => act('note')} disabled={!ready} className={primary}>
-                {t('common.save')}
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => act('open')} disabled={!ready} className={primary}>
-              {t('admin.spending.flag.col')}
-            </button>
-          )}
-        </div>
       </div>
-    </div>
+    </Sheet>
   )
 }

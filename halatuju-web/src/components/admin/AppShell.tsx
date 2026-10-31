@@ -195,6 +195,14 @@ function Chrome(
   // Close the drawer on navigation — a menu that stays open over the page you just chose is
   // the mobile equivalent of not responding.
   useEffect(() => { setMobileNav(false) }, [pathname])
+  // Escape closes the phone drawer too (Mobile M1b) — it is a side panel, not a Sheet, but it must
+  // answer the key every overlay answers.
+  useEffect(() => {
+    if (!mobileNav) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNav(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [mobileNav])
 
   // ⌘K / Ctrl-K. Ignored while typing so it cannot steal a keystroke from a form field.
   useEffect(() => {
@@ -376,7 +384,8 @@ function Chrome(
         </aside>
 
         {mobileNav && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true"
+            aria-label={t('admin.shell.primaryNav')}>
             <div
               className="absolute inset-0 bg-ground-900/40"
               onClick={() => setMobileNav(false)}

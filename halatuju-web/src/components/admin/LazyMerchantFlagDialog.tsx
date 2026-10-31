@@ -16,6 +16,7 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 import type { MerchantFlagDialogProps } from './MerchantFlagDialog'
+import Sheet from '@/components/Sheet'
 
 export default function LazyMerchantFlagDialog(props: MerchantFlagDialogProps) {
   const { t } = useT()
@@ -31,15 +32,14 @@ export default function LazyMerchantFlagDialog(props: MerchantFlagDialogProps) {
   if (Dialog) return <Dialog {...props} />
   if (!failed) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ground-900/40 px-4 pt-[12vh]">
-      <div role="alertdialog" aria-modal="true" aria-label={props.merchant}
-        className="rounded-2xl border border-ground-200 bg-ground-0 p-4 text-sm shadow-2xl">
-        <p className="text-critical-600">{t('errors.somethingWentWrong')}</p>
+    <Sheet open role="alertdialog" size="sm" onClose={props.onClose} title={props.merchant}
+      label={props.merchant} footer={
         <button type="button" onClick={props.onClose}
-          className="mt-3 rounded-md border border-ground-300 px-3 py-1.5 text-xs font-medium text-ground-700">
+          className="rounded-md border border-ground-300 px-3 py-1.5 text-xs font-medium text-ground-700">
           {t('common.cancel')}
         </button>
-      </div>
-    </div>
+      }>
+      <p className="text-sm text-critical-600">{t('errors.somethingWentWrong')}</p>
+    </Sheet>
   )
 }

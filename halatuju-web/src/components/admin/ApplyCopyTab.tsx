@@ -31,6 +31,7 @@ import {
   draftApplyCopy, updateAdminProgramme,
   type AdminApplyCopy, type AdminApplyCopyBlock, type AdminProgramme,
 } from '@/lib/admin-api'
+import Sheet from '@/components/Sheet'
 
 const LOCALES = ['en', 'ms', 'ta'] as const
 type Loc = (typeof LOCALES)[number]
@@ -156,39 +157,33 @@ function ConfirmDialog({ ask, languages, busy, onCancel, onConfirm, t }: {
 }) {
   const clearing = ask === 'clear'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      data-testid={`confirm-${ask}`}
-      onClick={() => !busy && onCancel()}>
-      <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}>
-        <h2 className={`text-lg font-semibold ${clearing ? 'text-critical-700' : 'text-ground-900'}`}>
-          {t(clearing ? 'admin.applyCopy.clearTitle' : 'admin.applyCopy.overwriteTitle')}
-        </h2>
-        <p className="mt-2 text-sm text-ground-700">
-          {t(clearing ? 'admin.applyCopy.clearBody' : 'admin.applyCopy.overwriteBody')}
+    <Sheet open onClose={onCancel} busy={busy} testId={`confirm-${ask}`}
+      tone={clearing ? 'critical' : 'default'}
+      title={t(clearing ? 'admin.applyCopy.clearTitle' : 'admin.applyCopy.overwriteTitle')}
+      footer={<>
+        <button type="button" onClick={onCancel} disabled={busy}
+          className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+          {t('common.cancel')}
+        </button>
+        <button type="button" onClick={onConfirm} disabled={busy}
+          data-testid={`confirm-${ask}-go`}
+          className={clearing
+            ? 'rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50'
+            : SAVE_BAR_PRIMARY}>
+          {t(clearing ? 'admin.applyCopy.clearCta' : 'admin.applyCopy.overwriteCta')}
+        </button>
+      </>}>
+      <p className="text-sm text-ground-700">
+        {t(clearing ? 'admin.applyCopy.clearBody' : 'admin.applyCopy.overwriteBody')}
+      </p>
+      {/* ⚠ NAME THE LANGUAGES. The button lives on ONE language's tab and clears ALL of them —
+          somebody standing on an empty Malay form has no way to know English goes too. */}
+      {clearing && languages && (
+        <p className="mt-2 text-sm text-ground-700" data-testid="clear-languages">
+          {t('admin.applyCopy.clearLanguages', { languages })}
         </p>
-        {/* ⚠ NAME THE LANGUAGES. The button lives on ONE language's tab and clears ALL of them —
-            somebody standing on an empty Malay form has no way to know English goes too. */}
-        {clearing && languages && (
-          <p className="mt-2 text-sm text-ground-700" data-testid="clear-languages">
-            {t('admin.applyCopy.clearLanguages', { languages })}
-          </p>
-        )}
-        <div className="mt-5 flex justify-end gap-3">
-          <button type="button" onClick={onCancel} disabled={busy}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-            {t('common.cancel')}
-          </button>
-          <button type="button" onClick={onConfirm} disabled={busy}
-            data-testid={`confirm-${ask}-go`}
-            className={clearing
-              ? 'rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50'
-              : SAVE_BAR_PRIMARY}>
-            {t(clearing ? 'admin.applyCopy.clearCta' : 'admin.applyCopy.overwriteCta')}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </Sheet>
   )
 }
 
