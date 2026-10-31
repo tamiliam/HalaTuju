@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 7b — mentoring: assignments, meetings and the two Mentoring tabs (not yet live)
+## Student maintenance Sprint 7b — mentoring: assignments, meetings and the two Mentoring tabs — LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq; migration 0196 applied by hand first)
 
 Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 7b); rules `apps/scholarship/mentoring.py`;
 decisions.md 2026-11-01. **Migration scholarship 0196 (`0196_mentoring`) — MIGRATE FIRST, by hand** (DDL, RLS +

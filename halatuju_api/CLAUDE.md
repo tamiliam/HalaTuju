@@ -1135,7 +1135,7 @@ API data; it is read-only) and `npm run mobile-ledger`. Static ratchets in `mobi
 down. A new `page.tsx` must be classified in `src/lib/mobileClass.ts`. M1 starts with the Tamil font (Mukta Malar,
 from SJKTConnect), the 16 px input rule, the shared Sheet, and the 5.7 MB favicon. Owner pick due in M1: TD-311.
 
-### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b BUILT, NOT LIVE (branch maint-s7)
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b LIVE (main 7dc9c15d; api-01224-s6w, web-01047-lvq; 0196 applied by hand, ledger row in)
 
 Mentoring: `MentorAssignment` / `MentoringSession` (scholarship **0196_mentoring — MIGRATE FIRST by hand**, DDL +
 RLS + service_role policies + ledger row + rollback in its docstring, then the Security Advisor), rules in
@@ -1143,7 +1143,7 @@ RLS + service_role policies + ledger row + rollback in its docstring, then the S
 + `assign/`, `end/`, `sessions/`; super / org_admin / admin only), the student's `scholarship/bursary/mentoring/`,
 "You have a mentor" (`student_comms` kind `mentor_assigned`, switchable, Mentoring heading). Deactivate / Revoke
 and closing a file end open assignments. **Next free migration numbers: scholarship 0197, courses 0091.**
-Release order: 0196 by hand, then API, then web. Later: 7c — mentors see their students and log meetings.
+NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings.
 
 ### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT LIVE (main f908d5ba; api-01223-8xk; no migration)
 
