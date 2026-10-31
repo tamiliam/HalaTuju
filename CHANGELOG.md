@@ -106,6 +106,10 @@ All notable changes to this project will be documented in this file.
   own sandbox-slug reader.
 - `manifest.ts` header rewritten to match `display: 'browser'` (a home-screen shortcut; standalone in M8).
 
+## My activity: 6 rows first, 20 more per Show older (owner, 2026-11-01) — BUILT, not deployed
+
+- **The My activity card no longer scrolls by default**: the first load (and each chip change or Try again) asks for `limit=6`; each Show older asks for `limit=20` with the cursor, so the inner scroll appears only after Show older. Named constants `FIRST_PAGE`/`OLDER_PAGE` in `components/adminProfile/ActivityCard.tsx`; `getMyActivity` (`lib/admin-api/profiles.ts`) now sends `?limit=` (API unchanged, 1-100). Race guard, token ref, scroll reset and heights unchanged.
+
 ## Student maintenance Sprint 7b — mentoring: assignments, meetings and the two Mentoring tabs — LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq; migration 0196 applied by hand first)
 
 Roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 7b); rules `apps/scholarship/mentoring.py`;

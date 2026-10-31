@@ -154,11 +154,12 @@ export interface ActivityPage {
   next: string | null
 }
 
-/** Refusals (400) throw with `code`: `bad_kind`, `bad_cursor`, `bad_limit`. */
+/** `limit` is the page size (the server takes 1-100). Refusals (400) throw with `code`:
+ *  `bad_kind`, `bad_cursor`, `bad_limit`. */
 export async function getMyActivity(
-  kind: 'all' | 'students' | 'money' | 'profile', cursor: string | null, options?: ApiOptions,
+  kind: 'all' | 'students' | 'money' | 'profile', cursor: string | null, limit: number, options?: ApiOptions,
 ) {
-  const q = new URLSearchParams({ kind })
+  const q = new URLSearchParams({ kind, limit: String(limit) })
   if (cursor) q.set('cursor', cursor)
   return adminFetch<ActivityPage>(`/api/v1/admin/me/activity/?${q.toString()}`, options)
 }

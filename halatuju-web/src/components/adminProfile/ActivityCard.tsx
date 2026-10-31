@@ -9,6 +9,11 @@ import {
 } from '@/lib/profileActivity'
 import { CardFrame, type CardProps } from './shared'
 
+// Owner ruling 2026-11-01: a few rows first so the box does not scroll by default; the scroll
+// appears only once Show older has added more.
+export const FIRST_PAGE = 6
+export const OLDER_PAGE = 20
+
 /**
  * "My activity" — the person's OWN actions, newest first (common profile S5, 2026-10-31; the
  * owner-approved mock-up). Everyone has it; on a wide screen it is the page's right-hand column.
@@ -54,7 +59,7 @@ export default function ActivityCard({ state }: CardProps) {
     if (!hasToken || !current) return
     const mine = ++view.current
     setRows(null); setNext(null); setFailed(false); setLoadingMore(false); setMoreFailed(false)
-    getMyActivity(kind, null, { token: current })
+    getMyActivity(kind, null, FIRST_PAGE, { token: current })
       .then((p) => { if (view.current === mine) { setRows(p.results); setNext(p.next) } })
       .catch(() => { if (view.current === mine) setFailed(true) })
     return () => { view.current += 1 }
@@ -64,7 +69,7 @@ export default function ActivityCard({ state }: CardProps) {
     if (!token || !next || loadingMore) return
     const mine = view.current
     setLoadingMore(true); setMoreFailed(false)
-    getMyActivity(kind, next, { token })
+    getMyActivity(kind, next, OLDER_PAGE, { token })
       .then((p) => {
         if (view.current !== mine) return
         setRows((prev) => [...(prev ?? []), ...p.results]); setNext(p.next); setLoadingMore(false)

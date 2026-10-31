@@ -55,7 +55,7 @@ it('a reviewer: All / Students / Profile and sign-in, rows by day, links, our ne
   expect(screen.getByRole('region', { name: 'Earlier' })).toBeTruthy()
   expect(screen.getByText(/Only you can see this list/)).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Show older' })).toBeNull()
-  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 6, { token: 'tok' })
 })
 
 it('Show older asks for the next page with the cursor, appends it, and goes when there is no more', async () => {
@@ -65,7 +65,7 @@ it('Show older asks for the next page with the cursor, appends it, and goes when
   render(<ActivityCard state={state('admin', ['see_all', 'spending', 'payments_prepare'])} />)
   fireEvent.click(await screen.findByRole('button', { name: 'Show older' }))
   await waitFor(() => expect(screen.getAllByTestId('activity-row')).toHaveLength(2))
-  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR1', { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR1', 20, { token: 'tok' })
   expect(screen.getByText('Updated your profile')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Show older' })).toBeNull()
 })
@@ -76,7 +76,7 @@ it('a chip asks the server for its kind; an empty list says so in plain words', 
   expect((await screen.findByTestId('activity-empty')).textContent).toContain('Nothing here yet.')
   expect(screen.queryByRole('button', { name: 'Students' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Money' }))
-  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('money', null, { token: 'tok' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('money', null, 6, { token: 'tok' }))
   expect((await screen.findByTestId('activity-empty')).textContent).toContain('Nothing of this kind yet.')
   expect((screen.getByRole('button', { name: 'Money' })).getAttribute('aria-pressed')).toBe('true')
 })
@@ -87,6 +87,25 @@ it('a failed load says so, and Try again asks again', async () => {
   expect((await screen.findByRole('alert')).textContent).toContain('We could not load your activity.')
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
   expect(await screen.findByText('Signed in for the first time')).toBeTruthy()
+  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', null, 6, { token: 'tok' })
+})
+
+// ── Few rows first, so the box does not scroll by default (owner ruling 2026-11-01) ────────────
+it('the first load asks for 6 rows, Show older for 20 more with the cursor, a chip change for 6 again', async () => {
+  mockApi.getMyActivity
+    .mockResolvedValueOnce(page([item({ id: 2, verb: 'first_sign_in' })], 'CUR1'))
+    .mockResolvedValueOnce(page([item({ id: 1, verb: 'profile_updated', created_at: LONG_AGO })], 'CUR2'))
+    .mockResolvedValue(page([]))
+  render(<ActivityCard state={state('reviewer', ['review'])} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Show older' }))
+  await waitFor(() => expect(screen.getAllByTestId('activity-row')).toHaveLength(2))
+  fireEvent.click(screen.getByRole('button', { name: 'Students' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenCalledTimes(3))
+  expect(mockApi.getMyActivity.mock.calls).toEqual([
+    ['all', null, 6, { token: 'tok' }],
+    ['all', 'CUR1', 20, { token: 'tok' }],
+    ['students', null, 6, { token: 'tok' }],
+  ])
 })
 
 it('an answer for a chip the reader has left never lands', async () => {
@@ -119,7 +138,7 @@ it('TD-446: a sign-in token refresh neither reloads the list nor loses the Show 
   // The next page goes out with the NEW token.
   fireEvent.click(screen.getByRole('button', { name: 'Show older' }))
   await waitFor(() => expect(screen.getAllByTestId('activity-row')).toHaveLength(3))
-  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR2', { token: 'tok-refreshed' })
+  expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('all', 'CUR2', 20, { token: 'tok-refreshed' })
 })
 
 // ── A fixed height, the rows scroll inside (owner ruling 2026-11-01, option A) ──────────────────
@@ -151,7 +170,7 @@ it('a chip change puts the rows back at the top', async () => {
   scroll.scrollTop = 240
   expect(scroll.scrollTop).toBe(240)
   fireEvent.click(screen.getByRole('button', { name: 'Students' }))
-  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('students', null, { token: 'tok' }))
+  await waitFor(() => expect(mockApi.getMyActivity).toHaveBeenLastCalledWith('students', null, 6, { token: 'tok' }))
   expect(scroll.scrollTop).toBe(0)
 })
 
@@ -164,5 +183,5 @@ it('TD-446: the first load waits for the token and happens the moment it arrives
   rerender(<ActivityCard state={at('tok')} />)
   expect(await screen.findByText('Signed in for the first time')).toBeTruthy()
   expect(mockApi.getMyActivity).toHaveBeenCalledTimes(1)
-  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, { token: 'tok' })
+  expect(mockApi.getMyActivity).toHaveBeenCalledWith('all', null, 6, { token: 'tok' })
 })
