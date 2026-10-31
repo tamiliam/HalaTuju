@@ -253,6 +253,20 @@ class TestOwnPasswordChange(TestCase):
         self.assertEqual(set(resp.json()), {'error', 'code'})       # nothing said about the account
         self.http.put.assert_not_called()
 
+    def test_newer_gotrue_wrong_password_code_is_also_a_wrong_password(self):
+        self.http.post.return_value = _Resp(400, {'error_code': 'invalid_credentials'})
+        resp = self._post({'current_password': 'guess', 'new_password': 'new-secret-1'})
+        self.assertEqual((resp.status_code, resp.json()['error']), (400, 'wrong_current_password'))
+        self.http.put.assert_not_called()
+
+    def test_a_captcha_refusal_is_503_never_a_wrong_password(self):
+        """Lead check before deploy: if the project's Auth captcha guards the password grant, the
+        check cannot run — the person must not be told their (right) password is wrong."""
+        self.http.post.return_value = _Resp(400, {'error_code': 'captcha_failed'})
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        self.assertEqual((resp.status_code, resp.json()['error']), (503, 'supabase_unavailable'))
+        self.http.put.assert_not_called()
+
     def test_an_email_or_user_id_in_the_body_is_ignored(self):
         make_admin('reviewer', uid='victim-uid', email='victim@example.test')
         self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1',
@@ -307,7 +321,7 @@ class TestOwnPasswordChange(TestCase):
             self.assertNotIn('Traceback', resp.content.decode())
 
     def test_the_sixth_attempt_in_fifteen_minutes_is_429_and_never_reaches_supabase(self):
-        self.http.post.return_value = _Resp(400)
+        self.http.post.return_value = _Resp(400, {'error': 'invalid_grant'})
         body = {'current_password': 'g', 'new_password': 'new-secret-1'}
         for _ in range(5):
             self.assertEqual(self._post(body).status_code, 400)

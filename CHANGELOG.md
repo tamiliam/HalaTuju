@@ -52,6 +52,10 @@ inserting profile rows because every new column has a database default), then AP
 
 ### S2 review fixes (adversarial review, 2026-10-31)
 
+- **Lead fix** — `supabase_admin.verify_password` treats only GoTrue's wrong-credential codes
+  (`invalid_credentials`, `invalid_grant`) as a wrong password; any other 400/401 (e.g. `captcha_failed`, if the
+  project's Auth captcha guards the service-role grant — not verifiable from here before deploy) is 503
+  `supabase_unavailable`, never "wrong password".
 - **H1** — `admin/me/password/` while a temporary password is still owed now clears the flag in the SAME
   Supabase write (`app_metadata` cleared, `user_metadata` scrubbed — `AdminSetPasswordView`'s body), so the
   expiry job can no longer overwrite the chosen password and `admin/set-password/` closes. Nothing owed →

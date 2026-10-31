@@ -236,6 +236,11 @@ def delete_auth_user(uid):
     return 'deleted'
 
 
+#: GoTrue's answers for a wrong password: `invalid_credentials` (error_code, newer GoTrue) and
+#: `invalid_grant` (error, older GoTrue).
+WRONG_PASSWORD_CODES = ('invalid_credentials', 'invalid_grant')
+
+
 def verify_password(email, password):
     """Whether ``password`` is the CURRENT password of the Supabase account ``email``: True, False,
     or `FAILED` (Supabase could not be asked) / `INERT` (no config).
@@ -268,7 +273,18 @@ def verify_password(email, password):
                 logger.warning('password check: could not sign the check session out', exc_info=True)
         return True
     if resp.status_code in (400, 401):
-        return False                    # GoTrue's invalid_grant: wrong password (or no such login)
+        try:
+            body = resp.json() or {}
+        except ValueError:
+            body = {}
+        code = body.get('error_code') or body.get('error') or ''
+        # ⚠ Only GoTrue's own "these credentials are wrong" answers mean a wrong password. Any other
+        # 400 (a captcha the project's Auth settings demand, an unconfirmed email) means Supabase
+        # would not CHECK the password — telling the person it was wrong would send them guessing.
+        if code in WRONG_PASSWORD_CODES:
+            return False
+        logger.warning('password check: Supabase refused the check (%s)', code or resp.status_code)
+        return FAILED
     logger.warning('password check: Supabase answered %s', resp.status_code)
     return FAILED
 
