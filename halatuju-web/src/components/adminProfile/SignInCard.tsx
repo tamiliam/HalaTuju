@@ -58,10 +58,11 @@ export default function SignInCard({ state }: CardProps) {
   const clear = () => { setCurrent(''); setPw(''); setPw2('') }
 
   /** After a change: is this tab's session still good? If not, sign in again with the new one. */
-  const stayIn = async (newPassword: string): Promise<string> => {
+  const stayIn = async (newPassword: string, othersOut: boolean): Promise<string> => {
     try {
       const { error } = await getAdminSupabase().auth.refreshSession()
-      if (!error) return `${P}.passwordChanged`
+      // Review fix M2: the server ends every OTHER session; when it could not, say so.
+      if (!error) return othersOut ? `${P}.passwordChanged` : `${P}.othersStillIn`
     } catch { /* fall through to a fresh sign-in */ }
     try {
       const { error } = await adminSignInWithPassword(email, newPassword)
@@ -79,10 +80,10 @@ export default function SignInCard({ state }: CardProps) {
     if (pw === current) { setMsg({ ok: false, text: t(`${P}.samePassword`) }); return }
     setBusy(true)
     try {
-      await changeOwnPassword(current, pw, { token: token ?? undefined })
+      const done = await changeOwnPassword(current, pw, { token: token ?? undefined })
       const newPassword = pw
       clear(); setOpen(false)
-      setMsg({ ok: true, text: t(await stayIn(newPassword)) })
+      setMsg({ ok: true, text: t(await stayIn(newPassword, done?.others_signed_out !== false)) })
     } catch (err) {
       setMsg({ ok: false, text: t(refusal(err as { code?: string; status?: number })) })
     } finally { setBusy(false) }

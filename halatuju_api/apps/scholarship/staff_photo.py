@@ -36,8 +36,10 @@ MAX_BYTES = 2 * 1024 * 1024
 MAX_SIDE = 512
 #: Pillow's format names for what we accept — read from the bytes, never from the name.
 ACCEPTED_FORMATS = frozenset({'JPEG', 'PNG', 'WEBP'})
-#: A decompression-bomb guard well above any real photo (a 2 MB file of 8000 x 8000 pixels).
-MAX_PIXELS = 64_000_000
+#: A decompression-bomb guard (review fix L1): a phone photo is ~12 MP; 16 MP of RGBA is ~64 MB
+#: decoded, which a 1 GiB, 8-thread instance can afford, and a 2 MB PNG of one colour can claim far more.
+#: Read from the HEADER, before any pixel is decoded.
+MAX_PIXELS = 16_000_000
 PREFIX = 'staff-photos'
 SIGNED_FOR = 3600          # seconds a served photo URL lives (about an hour)
 
@@ -66,18 +68,22 @@ def reencode(data):
     if len(data) > MAX_BYTES:
         raise PhotoError('too_large')
     try:
-        with Image.open(io.BytesIO(data)) as probe:
+        with Image.open(io.BytesIO(data)) as probe:   # reads the HEADER only
             fmt = probe.format
             width, height = probe.size
+            # Type and size come off the header: refused here, nothing has been decoded yet.
+            if fmt not in ACCEPTED_FORMATS:
+                raise PhotoError('unsupported_type')
+            if width * height > MAX_PIXELS:
+                raise PhotoError('too_large')
             probe.verify()                       # a truncated or corrupt file stops here
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError):
         raise PhotoError('not_an_image')
-    if fmt not in ACCEPTED_FORMATS:
-        raise PhotoError('unsupported_type')
-    if width * height > MAX_PIXELS:
-        raise PhotoError('too_large')
     try:
         with Image.open(io.BytesIO(data)) as img:
+            if img.format == 'JPEG':
+                # Let libjpeg decode at a reduced scale (1/2 … 1/8) still at least twice the target.
+                img.draft('RGB', (MAX_SIDE * 2, MAX_SIDE * 2))
             img = ImageOps.exif_transpose(img)   # upright, before the orientation tag is dropped
             img.thumbnail((MAX_SIDE, MAX_SIDE))
             img = img.convert('RGBA' if img.mode in ('RGBA', 'LA', 'P') else 'RGB')

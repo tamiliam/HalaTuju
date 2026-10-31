@@ -5143,7 +5143,9 @@
         "job_title_too_long": "Keep the job title to 120 characters.",
         "about_too_long": "Keep About to 600 characters.",
         "not_editable": "That detail cannot be changed here."
-      }
+      },
+      "assignerSees": "The people who assign your cases can see this number.",
+      "othersStillIn": "Your password is changed, but other devices may still be signed in. Sign out of them from those devices."
     },
     "superAdmin": "Super Admin",
     "loginTitle": "Partner Login",

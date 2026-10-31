@@ -113,7 +113,8 @@ export async function deleteAdminPhoto(options?: ApiOptions) {
  * Opted in for a source user (common profile S1).
  */
 export async function changeOwnPassword(currentPassword: string, newPassword: string, options?: ApiOptions) {
-  return adminMutate<{ ok: true }>('/api/v1/admin/me/password/', 'POST',
+  // `others_signed_out`: false when Supabase could not end the person's OTHER sessions (review M2).
+  return adminMutate<{ ok: true; others_signed_out?: boolean }>('/api/v1/admin/me/password/', 'POST',
     { current_password: currentPassword, new_password: newPassword }, options)
 }
 

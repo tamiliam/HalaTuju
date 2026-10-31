@@ -273,16 +273,26 @@ def verify_password(email, password):
     return FAILED
 
 
-def set_password(uid, password):
+def set_password(uid, password, account=None):
     """Set ``password`` on the Supabase account ``uid`` through the service-role admin API — the
-    call `AdminSetPasswordView` makes, with the password ONLY: no metadata is sent, so a voluntary
-    change leaves `must_change_password` and every other flag exactly as it was. True on 2xx,
-    `WEAK_PASSWORD` when the project's own password policy refuses it (GoTrue 422), else False."""
+    call `AdminSetPasswordView` makes. True on 2xx, `WEAK_PASSWORD` when the project's own password
+    policy refuses it (GoTrue 422), else False.
+
+    ⚠ REVIEW FIX H1. When ``account`` (the caller's own auth user) still OWES a temporary-password
+    change (`password_change_flag.rotation_state`), the SAME write clears the flag in `app_metadata`
+    and scrubs the `user_metadata` copies — exactly `AdminSetPasswordView`'s body. Otherwise the daily
+    `expire_temp_passwords` job would later overwrite the password the person just chose, and
+    `admin/set-password/` (no current password needed) would stay open. When nothing is owed, ONLY the
+    password is sent and every flag stays as it was."""
     cfg = supabase_config()
     if cfg is None:
         return False
+    body = {'password': password}
+    if account is not None and password_change_flag.rotation_state(account)[0] is not None:
+        body['app_metadata'] = password_change_flag.cleared_fields()
+        body['user_metadata'] = password_change_flag.scrubbed_user_metadata(account.get('user_metadata'))
     try:
-        resp = http_requests.put(f'{cfg[0]}/auth/v1/admin/users/{uid}', json={'password': password},
+        resp = http_requests.put(f'{cfg[0]}/auth/v1/admin/users/{uid}', json=body,
                                  headers=_service_headers(cfg[1]), timeout=15)
     except Exception:
         logger.error('password change: Supabase errored for %s', uid, exc_info=True)
@@ -293,3 +303,46 @@ def set_password(uid, password):
         logger.error('password change failed for %s: %s', uid, resp.status_code)
         return False
     return True
+
+
+def sign_out_other_sessions(authorization):
+    """End every session of the caller EXCEPT the one making this request (GoTrue
+    `POST /logout?scope=others`, with the caller's OWN bearer token) — after a password change, a
+    session somebody else holds must not outlive it (review fix M2). True when Supabase confirmed it;
+    False (logged) otherwise, which the caller reports rather than hides."""
+    cfg = supabase_config()
+    token = (authorization or '').split(' ', 1)[1].strip() if ' ' in (authorization or '') else ''
+    if cfg is None or not token:
+        return False
+    try:
+        resp = http_requests.post(f'{cfg[0]}/auth/v1/logout?scope=others', timeout=15,
+                                  headers={'apikey': cfg[1], 'Authorization': f'Bearer {token}'})
+    except Exception:
+        logger.warning('password change: could not sign the other sessions out', exc_info=True)
+        return False
+    if resp.status_code not in (200, 204):
+        logger.warning('password change: signing the other sessions out answered %s', resp.status_code)
+        return False
+    return True
+
+
+#: Review fix M3: how many password checks one person may start in `PASSWORD_ATTEMPT_WINDOW` seconds.
+PASSWORD_ATTEMPTS = 5
+PASSWORD_ATTEMPT_WINDOW = 15 * 60
+
+
+def take_password_attempt(uid):
+    """Take one of the person's `PASSWORD_ATTEMPTS` slots, or answer False when all are taken.
+
+    ⚠ ATOMIC ACROSS WORKERS AND INSTANCES, WHICH `cache.incr` IS NOT HERE. Production's cache is
+    Django's `DatabaseCache`, whose `incr` is the base class's get-then-set — two requests can read
+    the same count. `cache.add` is different: it INSERTs the key, and the cache table's primary key
+    lets exactly ONE concurrent insert win (the loser's IntegrityError makes `add` answer False). So
+    each attempt claims a numbered slot with `add`; a slot frees itself `PASSWORD_ATTEMPT_WINDOW`
+    after it was taken. At most `PASSWORD_ATTEMPTS` checks can be under way or done in any window,
+    however many processes race. No new table, no migration."""
+    from django.core.cache import cache
+    for slot in range(PASSWORD_ATTEMPTS):
+        if cache.add(f'pwchange:{uid}:{slot}', 1, PASSWORD_ATTEMPT_WINDOW):
+            return True
+    return False

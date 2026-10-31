@@ -481,3 +481,25 @@ describe('the optional fourth language (owner, 2026-10-31)', () => {
     expect(screen.getByText('admin.reviewer.onboarding.languages')).toBeTruthy()
   })
 })
+
+describe('S2 review fixes', () => {
+  it('M1: a review holder is told the people who assign their cases see the phone; others are not', async () => {
+    signIn('reviewer')
+    const { unmount } = render(<ProfilePage />)
+    expect((await screen.findByTestId('phone-who-sees')).textContent).toBe('admin.myProfile.assignerSees')
+    unmount()
+    signIn('finance')
+    render(<ProfilePage />)
+    expect((await screen.findByTestId('phone-who-sees')).textContent).toBe('admin.myProfile.contactPrivate')
+  })
+
+  it('M2: when the other sessions could not be ended, the card says so', async () => {
+    signIn('admin')
+    mockApi.changeOwnPassword.mockResolvedValue({ ok: true, others_signed_out: false })
+    refreshSession.mockResolvedValue({ error: null })
+    render(<ProfilePage />)
+    await fillPassword('old-secret', 'longenough1')
+    submitPassword()
+    expect(await screen.findByText('admin.myProfile.othersStillIn')).toBeTruthy()
+  })
+})

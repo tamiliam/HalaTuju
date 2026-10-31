@@ -19,6 +19,7 @@ from ..services import PauseError, is_review_target, set_paused
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
+from ..staff_contact import assigner_sees_phone, new_profile_defaults, phone_refusal
 
 
 # ⚠ THE PACKAGE'S name, spelled out — never `__name__`. A submodule logger reads
@@ -331,7 +332,9 @@ class AdminReviewerDetailView(_ReviewersBase):
             'university': getattr(rp, 'university', '') or '',
             'graduation_year': getattr(rp, 'graduation_year', None),
             'field_of_study': getattr(rp, 'field_of_study', '') or '',
-            'phone': getattr(rp, 'phone', '') or '',
+            # Review fix M1 (common profile S2): the phone only for someone who can be ASSIGNED cases
+            # (the person handing out work must reach them, 2026-08-02) or who shows it to the team.
+            'phone': (getattr(rp, 'phone', '') or '') if assigner_sees_phone(target, rp) else '',
             'share_phone_with_students': bool(getattr(rp, 'share_phone_with_students', False)),
             'reopens': [
                 {'id': r.id,
@@ -501,14 +504,21 @@ class ReviewerProfileView(_AdminBase):
         admin, err = self._require_review_holder(request)
         if err:
             return err
-        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
+        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin,
+                                                           defaults=new_profile_defaults(admin))
         return Response(self._payload(profile, admin))
 
     def patch(self, request):
         admin, err = self._require_review_holder(request)
         if err:
             return err
-        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
+        # Review fix L3: the old web still saves the phone here during the rollout, so the blank-phone
+        # rule `admin/me/` applies holds here too (TD-439 makes these two fields read-only here).
+        refused = phone_refusal(admin, request.data)
+        if refused is not None:
+            return refused
+        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin,
+                                                           defaults=new_profile_defaults(admin))
         # Split off `paused` before the serializer sees it — it belongs to a different model, and
         # an unknown key would otherwise be silently ignored, leaving the reviewer pressing a
         # switch that does nothing.

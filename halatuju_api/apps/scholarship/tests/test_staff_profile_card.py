@@ -360,3 +360,73 @@ class TestTheFourthLanguage(TestCase):
         self.assertEqual(rows['Quiet']['other_language'], '')
         picker = {r['name']: r for r in client.get('/api/v1/admin/scholarship/assignable-admins/').json()['admins']}
         self.assertEqual((picker['Lina']['languages'], picker['Lina']['other_language']), (['en'], 'Kadazandusun'))
+
+
+class ReviewFixL1TheDecodeGuard(TestCase):
+    def test_a_compressible_oversized_png_is_refused_from_its_header_without_a_decode(self):
+        img = Image.new('L', (5000, 4000), 0)                    # 20 MP of one colour: a few KB
+        out = io.BytesIO()
+        img.save(out, format='PNG', optimize=True)
+        data = out.getvalue()
+        self.assertLess(len(data), staff_photo.MAX_BYTES)
+        with mock.patch('PIL.Image.Image.load', side_effect=AssertionError('decoded')):
+            with self.assertRaises(staff_photo.PhotoError) as caught:
+                staff_photo.reencode(data)
+        self.assertEqual(caught.exception.code, 'too_large')
+        self.assertEqual(staff_photo.MAX_PIXELS, 16_000_000)
+
+    def test_a_large_jpeg_is_decoded_at_a_reduced_scale(self):
+        seen = []
+        real = Image.Image.draft
+
+        def spy(self, mode, size):
+            seen.append(size)
+            return real(self, mode, size)
+        with mock.patch('PIL.Image.Image.draft', spy):
+            out = staff_photo.reencode(image_bytes('JPEG', (3000, 2000)))
+        self.assertEqual(seen, [(1024, 1024)])
+        with Image.open(io.BytesIO(out)) as done:
+            self.assertEqual(max(done.size), 512)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class ReviewFixesM1L2L3(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = make_org()
+        cls.lead = make_admin('org_admin', owning_org=cls.org)
+
+    def _detail(self, target):
+        return authed_client(self.lead).get(f'/api/v1/admin/reviewers/{target.id}/').json()
+
+    def test_m1_the_detail_serves_a_phone_only_to_reach_a_reviewer_or_when_shared(self):
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        StaffProfile.objects.create(partner_admin=reviewer, phone='011-1111 1111')
+        qc = make_admin('qc', owning_org=self.org)
+        StaffProfile.objects.create(partner_admin=qc, phone='012-2222 2222')
+        shown_qc = make_admin('qc', owning_org=self.org)
+        StaffProfile.objects.create(partner_admin=shown_qc, phone='013-3333 3333', share_phone_with_team=True)
+        self.assertEqual(self._detail(reviewer)['phone'], '011-1111 1111')      # can be assigned cases
+        self.assertEqual(self._detail(qc)['phone'], '')                          # no review, not shared
+        self.assertEqual(self._detail(shown_qc)['phone'], '013-3333 3333')       # shared with the team
+
+    def test_l2_a_new_row_shares_with_students_only_for_a_review_holder(self):
+        finance = make_admin('finance', owning_org=self.org)
+        authed_client(finance).patch(ME, {'job_title': 'Bursar'}, format='json')
+        self.assertFalse(StaffProfile.objects.get(partner_admin=finance).share_phone_with_students)
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        authed_client(reviewer).patch(ME, {'job_title': 'Volunteer'}, format='json')
+        self.assertTrue(StaffProfile.objects.get(partner_admin=reviewer).share_phone_with_students)
+        sup = make_admin('super', super_admin=True)
+        authed_client(sup).get('/api/v1/admin/reviewer-profile/')
+        self.assertFalse(StaffProfile.objects.get(partner_admin=sup).share_phone_with_students)
+
+    def test_l3_the_old_web_cannot_blank_a_review_holders_phone_through_the_reviewer_profile(self):
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        StaffProfile.objects.create(partner_admin=reviewer, phone='011-1111 1111')
+        resp = authed_client(reviewer).patch('/api/v1/admin/reviewer-profile/', {'phone': '  '}, format='json')
+        self.assertEqual((resp.status_code, resp.json()['error']), (400, 'phone_required'))
+        self.assertEqual(StaffProfile.objects.get(partner_admin=reviewer).phone, '011-1111 1111')
+        # Still accepted there during the rollout (TD-439): a non-blank phone saves.
+        self.assertEqual(authed_client(reviewer).patch('/api/v1/admin/reviewer-profile/',
+                                                       {'phone': '019-999 9999'}, format='json').status_code, 200)

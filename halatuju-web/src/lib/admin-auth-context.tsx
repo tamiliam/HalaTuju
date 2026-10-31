@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import { getAdminSession, getAdminSupabase } from '@/lib/admin-supabase'
@@ -65,20 +66,25 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AdminRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [photoFor, setPhotoFor] = useState<number | null>(null)
+  const photoFor = useRef<number | null>(null)
 
   // The header photo: ONE `admin/me/` read per signed-in person per session (the provider lives in
   // the admin layout, so client navigation does not repeat it). A failure leaves the initials.
   const adminId = role?.is_admin ? role.admin_id ?? null : null
   const accessToken = session?.access_token ?? null
+  // Review fix L6: signed out → no photo; a DIFFERENT person signed in → the last person's photo is
+  // dropped at once, and a late answer for somebody who is no longer signed in is ignored.
   useEffect(() => {
-    if (adminId == null || !accessToken || photoFor === adminId) return
-    setPhotoFor(adminId)
+    if (adminId == null) { photoFor.current = null; setPhotoUrl(null); return }
+    if (!accessToken || photoFor.current === adminId) return
+    photoFor.current = adminId
+    setPhotoUrl(null)
+    const asked = adminId
     fetch(`${API_BASE}/api/v1/admin/me/`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then((res) => (res.ok ? res.json() : null))
-      .then((me) => setPhotoUrl(me?.photo_url ?? null))
+      .then((me) => { if (photoFor.current === asked) setPhotoUrl(me?.photo_url ?? null) })
       .catch(() => {})
-  }, [adminId, accessToken, photoFor])
+  }, [adminId, accessToken])
 
   const checkRole = useCallback(async (token: string) => {
     try {

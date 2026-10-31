@@ -203,17 +203,48 @@ class TestOwnPasswordChange(TestCase):
 
     def test_the_right_current_password_sets_the_new_one_on_the_callers_own_account(self):
         resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
-        self.assertEqual((resp.status_code, resp.json()), (200, {'ok': True}))
+        self.assertEqual((resp.status_code, resp.json()), (200, {'ok': True, 'others_signed_out': True}))
         self.assertEqual(self._grant_calls()[0].kwargs['json'],
                          {'email': 'me@example.test', 'password': 'old-secret'})
         self.assertEqual(self.http.put.call_args.args[0], 'https://supa.test/auth/v1/admin/users/me-uid')
         # The password ONLY: no metadata, so `must_change_password` and its clock are untouched.
         self.assertEqual(self.http.put.call_args.kwargs['json'], {'password': 'new-secret-1'})
         # The check's own session is signed out (scope=local), with the CHECK session's token.
-        logout = [c for c in self.http.post.call_args_list if 'logout' in c.args[0]]
-        self.assertEqual(len(logout), 1)
-        self.assertIn('scope=local', logout[0].args[0])
-        self.assertEqual(logout[0].kwargs['headers']['Authorization'], 'Bearer check-session')
+        local = [c for c in self.http.post.call_args_list if 'logout?scope=local' in c.args[0]]
+        self.assertEqual(len(local), 1)
+        self.assertEqual(local[0].kwargs['headers']['Authorization'], 'Bearer check-session')
+
+    def test_review_m2_every_other_session_ends_with_the_callers_own_token(self):
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        others = [c for c in self.http.post.call_args_list if 'logout?scope=others' in c.args[0]]
+        self.assertEqual(len(others), 1)
+        # The caller's OWN bearer token (this tab keeps its session: scope=others, not global).
+        self.assertEqual(others[0].kwargs['headers']['Authorization'],
+                         authed_client(self.me)._credentials['HTTP_AUTHORIZATION'])
+        self.assertIs(resp.json()['others_signed_out'], True)
+
+    def test_review_m2_a_failed_sign_out_of_the_others_is_said_not_hidden(self):
+        def post(url, **kw):
+            if 'scope=others' in url:
+                return _Resp(500)
+            return _Resp(200, {'access_token': 'check-session'})
+        self.http.post.side_effect = post
+        resp = self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        self.assertEqual(resp.status_code, 200)               # the password IS changed
+        self.assertIs(resp.json()['others_signed_out'], False)
+
+    def test_review_h1_a_temporary_password_still_owed_is_cleared_in_the_same_write(self):
+        from apps.courses import password_change_flag
+        self.account['app_metadata'] = {'providers': ['email'], 'must_change_password': True,
+                                        'temp_password_issued_at': '2026-10-30T00:00:00+00:00'}
+        self.account['user_metadata'] = {'name': 'Me', 'must_change_password': True}
+        self._post({'current_password': 'old-secret', 'new_password': 'new-secret-1'})
+        self.assertEqual(self.http.put.call_count, 1)                         # ONE write
+        body = self.http.put.call_args.kwargs['json']
+        self.assertEqual(body['password'], 'new-secret-1')
+        self.assertEqual(body['app_metadata'], password_change_flag.cleared_fields())
+        self.assertEqual(body['user_metadata'],
+                         password_change_flag.scrubbed_user_metadata(self.account['user_metadata']))
 
     def test_a_wrong_current_password_is_400_and_nothing_is_set(self):
         self.http.post.return_value = _Resp(400, {'error': 'invalid_grant'})
@@ -275,20 +306,30 @@ class TestOwnPasswordChange(TestCase):
                              method)
             self.assertNotIn('Traceback', resp.content.decode())
 
-    def test_the_sixth_attempt_in_fifteen_minutes_is_429(self):
+    def test_the_sixth_attempt_in_fifteen_minutes_is_429_and_never_reaches_supabase(self):
         self.http.post.return_value = _Resp(400)
         body = {'current_password': 'g', 'new_password': 'new-secret-1'}
         for _ in range(5):
             self.assertEqual(self._post(body).status_code, 400)
-        self.assertEqual(self._post(body).status_code, 429)
+        grants = len(self._grant_calls())
+        resp = self._post(body)
+        self.assertEqual((resp.status_code, resp.json()['error']), (429, 'too_many_attempts'))
+        self.assertEqual(len(self._grant_calls()), grants)                  # refused BEFORE the check
         # Per person: somebody else is not held by my attempts.
         other = make_admin('reviewer', uid='other-uid')
         self.assertEqual(self._post(body, admin=other).status_code, 400)
 
-    def test_the_throttle_window_is_fifteen_minutes(self):
-        from halatuju.throttling import PasswordChangeRateThrottle
-        self.assertEqual(PasswordChangeRateThrottle().parse_rate('5/15m'), (5, 900))
-        self.assertEqual(PasswordChangeRateThrottle().parse_rate('40/hour'), (40, 3600))
+    def test_review_m3_the_attempt_slots_are_claimed_with_add_and_free_themselves(self):
+        from django.core.cache import cache
+        from apps.courses import supabase_admin
+        self.assertEqual([supabase_admin.take_password_attempt('edge') for _ in range(6)],
+                         [True] * 5 + [False])
+        cache.delete('pwchange:edge:2')                                    # one slot's window ends
+        self.assertEqual([supabase_admin.take_password_attempt('edge') for _ in range(2)], [True, False])
+        with mock.patch('django.core.cache.cache.add', return_value=False) as add:
+            self.assertFalse(supabase_admin.take_password_attempt('someone'))   # every insert lost
+        self.assertEqual(add.call_count, supabase_admin.PASSWORD_ATTEMPTS)
+        self.assertEqual(add.call_args.args[2], 15 * 60)
 
     def test_a_source_user_may_change_its_own_password(self):
         source_user = make_admin('source_partner', uid='src-uid', email='src@example.test')

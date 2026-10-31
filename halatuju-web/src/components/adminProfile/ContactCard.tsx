@@ -40,7 +40,13 @@ export default function ContactCard({ state }: CardProps) {
           <span>{t('admin.reviewer.sharePhone')}</span>
         </div>
       )}
-      {!outside && <p className="text-xs text-ground-500 italic">{t('admin.myProfile.contactPrivate')}</p>}
+      {/* Review fix M1: whoever can be assigned cases is reachable by the people who assign them
+          (the reviewer detail, 2026-08-02), so "nobody else" would not be true for them. */}
+      {!outside && (
+        <p className="text-xs text-ground-500 italic" data-testid="phone-who-sees">
+          {t(reviews ? 'admin.myProfile.assignerSees' : 'admin.myProfile.contactPrivate')}
+        </p>
+      )}
     </CardFrame>
   )
 }

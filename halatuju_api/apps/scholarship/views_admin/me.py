@@ -32,9 +32,10 @@ from rest_framework.response import Response
 
 from apps.courses import supabase_admin
 from halatuju.middleware.supabase_auth import auth_sub
-from halatuju.throttling import PasswordChangeRateThrottle, UploadRateThrottle
+from halatuju.throttling import UploadRateThrottle
 
 from .. import staff_photo
+from ..staff_contact import new_profile_defaults, phone_refusal, reviews_cases
 from ..models import StaffProfile
 from .base import _AdminBase
 
@@ -66,11 +67,6 @@ def programmes_of(admin, lang='en'):
         return [_named(admin.programme, lang)]
     return 'all'
 
-
-def reviews_cases(admin):
-    """The reviewer cards' rule, on the server (`lib/profileCards.ts` `reviewsCases`): holds `review`
-    and is not a super. Decides who must give a phone and who may set "share with students"."""
-    return not admin.is_super and admin.has_perm('review')
 
 
 def _profile_of(admin):
@@ -142,13 +138,15 @@ class AdminMeView(_AdminBase):
                 clean[key] = data[key]
         if 'name' in clean and not clean['name']:
             return _me_refusal('name_required')
-        if 'phone' in clean and not clean['phone'] and reviewer:
-            return _me_refusal('phone_required')
+        refused = phone_refusal(admin, clean)
+        if refused is not None:
+            return refused
         if 'name' in clean:
             admin.name = clean.pop('name')
             admin.save(update_fields=['name'])
         if clean:
-            profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin)
+            profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin,
+                                                            defaults=new_profile_defaults(admin))
             for key, value in clean.items():
                 setattr(profile, key, value)
             profile.save(update_fields=[*clean, 'updated_at'])
@@ -203,7 +201,8 @@ class AdminMePhotoView(_AdminBase):
         upload = files[0]
         if upload.size > staff_photo.MAX_BYTES:
             return _me_refusal('too_large')
-        profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin)
+        profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin,
+                                                        defaults=new_profile_defaults(admin))
         try:
             key = staff_photo.replace(profile, upload.read())
         except staff_photo.PhotoError as e:
@@ -240,13 +239,14 @@ class AdminMePasswordView(_AdminBase):
     one Supabase holds for that id (read with the service role). Any `email` / `user_id` in the body
     is ignored. Refusals: 400 `current_password_required`, `password_too_short` (the shared
     `MIN_PASSWORD_LENGTH`), `same_password`, `no_password_sign_in` (a Google-only account),
-    `weak_password` (the project's password policy), `wrong_current_password` (nothing more said); 429 after about five attempts in fifteen minutes
-    (`PasswordChangeRateThrottle`); 503 `supabase_unavailable` when Supabase cannot be asked — never
-    a 500. Success sets the password only (no metadata: `must_change_password` is untouched).
+    `weak_password` (the project's password policy), `wrong_current_password` (nothing more said); 429 `too_many_attempts` after five attempts in
+    fifteen minutes (`supabase_admin.take_password_attempt`, atomic across workers and instances); 503 `supabase_unavailable` when Supabase cannot be asked — never
+    a 500. Success sets the password (and, only when a temporary password is still owed, clears
+    that flag in the same write — review H1), then signs every OTHER session out
+    (`others_signed_out`: false when that could not be done — review M2).
     Opted in for a source user, on POST only.
     """
     source_partner_methods = ('post',)
-    throttle_classes = [PasswordChangeRateThrottle]
 
     def post(self, request):
         admin = self.get_admin(request)
@@ -271,14 +271,21 @@ class AdminMePasswordView(_AdminBase):
         providers = (account.get('app_metadata') or {}).get('providers') or []
         if 'email' not in providers:
             return _me_refusal('no_password_sign_in')
+        # Review fix M3: an ATOMIC per-person attempt count, taken before the password is tried.
+        if not supabase_admin.take_password_attempt(uid):
+            return _me_refusal('too_many_attempts', status.HTTP_429_TOO_MANY_REQUESTS)
         checked = supabase_admin.verify_password(account['email'], current)
         if checked is False:
             return _me_refusal('wrong_current_password')
         if checked is not True:
             return unavailable
-        written = supabase_admin.set_password(uid, new)
+        # Review fix H1: when a temporary password is still owed, the SAME write clears the flag, as
+        # `AdminSetPasswordView` does — or the expiry job would later overwrite this password.
+        written = supabase_admin.set_password(uid, new, account=account)
         if written == supabase_admin.WEAK_PASSWORD:
             return _me_refusal('weak_password')
         if written is not True:
             return unavailable
-        return Response({'ok': True})
+        # Review fix M2: every OTHER session ends; this tab keeps its own (`scope=others`).
+        others = supabase_admin.sign_out_other_sessions(request.META.get('HTTP_AUTHORIZATION', ''))
+        return Response({'ok': True, 'others_signed_out': others})

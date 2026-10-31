@@ -5143,7 +5143,9 @@
         "job_title_too_long": "Hadkan jawatan kepada 120 aksara.",
         "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
         "not_editable": "Butiran itu tidak boleh diubah di sini."
-      }
+      },
+      "assignerSees": "Mereka yang menugaskan kes kepada anda boleh melihat nombor ini.",
+      "othersStillIn": "Kata laluan anda telah ditukar, tetapi peranti lain mungkin masih log masuk. Log keluar daripada peranti itu sendiri."
     },
     "superAdmin": "Pentadbir Utama",
     "loginTitle": "Log Masuk Rakan Kongsi",
