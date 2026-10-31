@@ -15,6 +15,8 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
 - 2026-10-31 a0344a35 fix: a profile save keeps the catalogue-filled institution; backfill sees post-STPM degrees (halatuju_api/apps/scholarship/family.py, management/commands/backfill_institution.py + 3 test files; owner-approved backfill --apply on live after deploy: 47 + 45 rows)
 - 2026-11-01 f451a105 fix: My activity is a fixed-height column that scrolls (owner, option A) (halatuju-web/src/app/admin/profile/page.tsx, components/adminProfile/ActivityCard.tsx, shared.tsx + tests)
+- 2026-11-01 9ef402a4 fix: My activity asks for 6 rows first, 20 per Show older (owner) (ActivityCard.tsx, admin-api/profiles.ts + tests)
+- 2026-11-01 8e6773d5 fix: My activity shows 10 rows first and no per-row rebuilt tag (owner) (ActivityCard.tsx, en/ms/ta, manual Guide + FAQ + tests)
 
 ## Sprints since the last review
 
