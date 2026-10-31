@@ -12,6 +12,7 @@
  */
 export { default as YouCard } from './YouCard'
 export { default as ContactCard } from './ContactCard'
+export { default as MentoringCard } from './MentoringCard'   // S7a: a mentor's area
 export { default as AccessCard } from './AccessCard'
 export { default as QualificationsCard } from './QualificationsCard'
 export { default as AddressCard } from './AddressCard'

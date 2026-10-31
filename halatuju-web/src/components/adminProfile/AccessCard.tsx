@@ -15,7 +15,8 @@ export default function AccessCard({ state }: CardProps) {
   if (me?.source) rows.push([t('admin.myProfile.source'), me.source.name])
   if (me?.organisation) rows.push([t('admin.myProfile.organisation'), me.organisation.name])
   if (me?.referral_partner) rows.push([t('admin.myProfile.referralPartner'), me.referral_partner.name])
-  if (me && role !== 'partner') {
+  // No gifts row for a referral partner or a mentor (S7a): neither works within a gift.
+  if (me && role !== 'partner' && role !== 'mentor') {
     const gifts = me.programmes === 'all' ? t('admin.shell.allGifts')
       : me.programmes.length ? me.programmes.map((p) => p.name).join(', ') : t('admin.myProfile.none')
     rows.push([t('admin.myProfile.gifts'), gifts])

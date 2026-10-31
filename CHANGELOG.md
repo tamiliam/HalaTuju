@@ -23,6 +23,54 @@ All notable changes to this project will be documented in this file.
   and home-screen icons (192, 512, maskable 512, Apple 180) — HalaTuju can be added to a phone's home screen. It
   opens in the browser (`display: 'browser'`), not standalone, until M8. No service worker, no offline mode.
 
+## Student maintenance Sprint 7a — mentors log in - 2026-10-31 — LIVE 2026-10-31 (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
+
+Owner rulings 2026-10-31 (decisions.md, same date); roadmap `docs/plans/2026-10-29-student-maintenance-roadmap.md`
+(Sprint 7 split into 7a / 7b). Built on branch `maint-s7`. **Migrate first, by hand: scholarship 0194, then
+courses 0090** (the DDL, pre-checks, ledger rows and rollback are in each migration's docstring), then API,
+then web.
+
+- **Migration `scholarship/0194_mentors`** — new table `mentors` (`Mentor`: organisation, `area`,
+  `deactivated_at` / `_by_email`, `created_at` / `_by_email`) with RLS on and ONE `service_role` policy;
+  `invitations.mentor_id` (nullable, PROTECT); `invitations.audience` gains `mentor` (choices only). Nothing
+  backfilled.
+- **Migration `courses/0090_partneradmin_mentor`** — role `mentor` (choices only), `partner_admins.mentor_id`
+  (nullable, PROTECT) and the check `partner_admin_mentor_iff_mentor` (role `mentor` ⇔ a mentor, never a super).
+- **Deny by default** — `PartnerAdminMixin.mentor_methods`: a mentor reaches only `admin/role/`,
+  `admin/set-password/`, `admin/me/` (GET/PATCH), `admin/me/photo/`, `admin/me/password/` and
+  `admin/reviewer-profile/` (GET/PATCH). Swept over every admin route (`test_mentor_denied_everywhere.py`);
+  not staff anywhere (`test_mentor_is_not_staff.py`: rosters, pickers, permission holders, payment chain,
+  staff writes, role switches, the staff letter).
+- **The mentor's own profile** — `PATCH admin/me/` takes `mentoring_area` (a mentor only; required; 120);
+  `GET` serves it to a mentor. `staff_contact.works_with_students` (a `review` holder or a mentor) decides the
+  required phone, "share my phone with students" and the reviewer-profile cards.
+- **Inviting and the doors** (`apps/scholarship/mentor_invite.py`, `views_admin/mentors.py`) — `POST
+  admin/invitations/` `audience='mentor'` `{name, email}` (super / org_admin; the staff invite's three
+  account branches; `already_staff` for any existing sign-in); `GET admin/mentors/` (super / org_admin /
+  admin, org-fenced: name, email, phone, status, area, languages, invited / signed-in); `PATCH
+  admin/mentors/<id>/` (name / email until the first sign-in, else 409 `managed_by_mentor`); `POST
+  admin/mentors/<id>/resend|revoke|deactivate|reactivate/`. Each writes an AUDIT line; the invitation doors
+  write the `Invitation` record. The mentor letter (`send_mentor_invitation_email`) is the only email a
+  mentor is ever sent. A mentor invitation is not on the Invitations page.
+- **Web** — Organisation → **Mentors** (`/admin/organisation/mentors`, its own lazy chunk): invite form for
+  super / org_admin, Active / Invited / Inactive chips with counts, the table ("Not filled in yet" for an
+  empty area or languages), Deactivate / Reactivate or Resend · Revoke. Navigation: the Mentors row for
+  super / org_admin / admin; a mentor sees Profile only, lands there, and is sent back from any other page
+  (`outsiderMustLeave`, shared with source users). Profile: the Mentoring card, the welcome line, "Show my
+  phone to my students", the reviewer cards without Taking part, Role Mentor. en / ms / ta.
+- **Review fixes (adversarial review, 2026-10-31)** — (1) an address that already has ANY sign-in (a
+  student's, a sponsor's: `already_registered`) is refused 409 `already_staff` at invite and at an email
+  move, never made a mentor; (2) "signed in" is `mentor_invite.has_signed_in`: `first_seen_at`, OR a UID on
+  a login we issued no password for (`get_admin` links a Google invitee by verified email on any route,
+  even a refused one, without stamping `first_seen_at`) — status, Resend, Revoke, the email move and
+  Reactivate's letter read it, and a password is reissued only when the newest mentor invitation issued
+  one; (3) courses 0090 adds the partial unique index `partner_admin_one_login_per_mentor`; (4) the email
+  move is a compare-and-set (no `first_seen_at`, the UID it was read with) — else 409 `managed_by_mentor`,
+  and the new login it made is deleted (best effort, logged `MENTOR_LOGIN_ORPHANED`). Lead check: a
+  GOOGLE address is never provisioned, so Supabase Auth is asked (`supabase_admin.auth_user_exists`, exact
+  address, fail closed) at invite and at an email move — a login already there is 409 `already_staff`, a
+  failed lookup 502 `create_failed`, nothing kept.
+
 ## Institution: a /profile save keeps the catalogue fill; post-STPM degrees are fillable (owner, 2026-10-31, app #408)
 
 - Fix: a /profile save no longer erases an institution filled from the catalogue — when the profile names the same
@@ -118,8 +166,6 @@ field, which shares the picker).
   record is checked against a document (offer letter, school-leaving certificate), only the NAME is compared — the
   new `school_names.school_name_core` drops our town on both sides; screens still show it. Existing records keep
   what they saved. decisions.md: "Same-name schools carry their town".
-
-## Student maintenance Sprint 6b — letters on the scholar file and on My Bursary - 2026-10-31
 
 ## Common profile S2 — photo, job title, About, phone for everyone (migration 0193) - 2026-10-31 — BUILT, not deployed
 

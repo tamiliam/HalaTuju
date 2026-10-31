@@ -204,6 +204,9 @@ class Invitation(models.Model):
         ('staff', 'Staff'),
         ('sponsor', 'Sponsor'),
         ('source_partner', 'Source partner'),
+        # Student maintenance S7a (2026-10-31): a mentor's invitation. Provisions a login up front,
+        # like staff and source; listed on the Mentors page, never on the Invitations page.
+        ('mentor', 'Mentor'),
     ]
 
     audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='staff')
@@ -258,6 +261,13 @@ class Invitation(models.Model):
     referral_source = models.ForeignKey(
         'ReferralSource', on_delete=models.PROTECT, null=True, blank=True, related_name='invitations',
         help_text='Source-partner invitations only: the referral source the invitee signs in for.',
+    )
+    #: WHICH MENTOR a `mentor` invitation signs somebody in as (student maintenance S7a, 2026-10-31) —
+    #: the `referral_source` pattern. NULL for every other audience. PROTECT: a mentor is never
+    #: deleted, and an invitation's history goes on naming the mentor it was for.
+    mentor = models.ForeignKey(
+        'Mentor', on_delete=models.PROTECT, null=True, blank=True, related_name='invitations',
+        help_text='Mentor invitations only: the mentor the invitee signs in as.',
     )
 
     expires_at = models.DateTimeField(null=True, blank=True)

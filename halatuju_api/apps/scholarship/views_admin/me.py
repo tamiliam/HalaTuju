@@ -25,6 +25,11 @@ Common profile S2 (2026-10-31): the GET also serves the person's card — `job_t
 `share_phone_with_team`, `share_phone_with_students`, `photo_url` (signed, ~1 h, only when a photo
 exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admin/me/` writes it
 (`AdminMeView.patch`); `POST / DELETE admin/me/photo/` change the photo (`AdminMePhotoView`).
+
+Student maintenance S7a (2026-10-31): a MENTOR is opted in to all three (`mentor_methods`), and only a
+mentor reads and writes `mentoring_area` — their own `Mentor.area`, required, at most 120 characters.
+"Share my phone with students" and the phone being required follow `works_with_students` (a `review`
+holder or a mentor; `staff_contact.py`).
 """
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
@@ -35,14 +40,18 @@ from halatuju.middleware.supabase_auth import auth_sub
 from halatuju.throttling import UploadRateThrottle
 
 from .. import staff_photo
-from ..staff_contact import new_profile_defaults, phone_refusal, reviews_cases
-from ..models import StaffProfile
+from ..staff_contact import new_profile_defaults, phone_refusal, works_with_students
+from ..models import Mentor, StaffProfile
 from .base import _AdminBase
 
 #: What `PATCH admin/me/` may write, and nothing else (an unknown key is 400 `not_editable`, the
-#: `admin/source/profile/` convention). `share_phone_with_students` only for a holder of `review`.
-ME_FIELDS = ('name', 'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students')
+#: `admin/source/profile/` convention). `share_phone_with_students` only for somebody who works with
+#: students (`works_with_students`); `mentoring_area` only for a mentor (S7a).
+ME_FIELDS = ('name', 'job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students',
+             'mentoring_area')
 ABOUT_MAX = 600
+#: `Mentor.area`'s column width.
+MENTORING_AREA_MAX = 120
 
 
 def _named(p, lang):
@@ -61,8 +70,8 @@ def programmes_of(admin, lang='en'):
     if admin.is_source_user:
         from .. import source_access
         return [_named(p, lang) for p in source_access.programmes_for(admin).order_by('code')]
-    if not admin.is_super and admin.role == 'partner':
-        return []
+    if not admin.is_super and admin.role in ('partner', 'mentor'):
+        return []   # no gift work: a referral partner, or a mentor (S7a — mentoring is per scholar)
     if admin.programme_id and not admin.is_super:
         return [_named(admin.programme, lang)]
     return 'all'
@@ -102,10 +111,13 @@ class AdminMeView(_AdminBase):
     only the keys sent are written. Refusals (400): `not_editable` + `fields` for any other key, or for
     `share_phone_with_students` from someone without `review`; `name_required`; `name_too_long`;
     `job_title_too_long` (120); `about_too_long` (600); `phone_too_long` (30, the column); and
-    `phone_required` — a holder of `review` must keep a phone (the onboarding rule), everybody else
-    may clear theirs. The phone is otherwise stored as typed, exactly as the reviewer profile does.
-    A source user's NAME saves here too (opted in, GET and PATCH). Answers with the GET payload."""
+    `phone_required` — a holder of `review` (or a mentor, S7a) must keep a phone (the onboarding
+    rule), everybody else may clear theirs. The phone is otherwise stored as typed, exactly as the
+    reviewer profile does. A source user's NAME saves here too (opted in, GET and PATCH). A MENTOR's
+    `mentoring_area` too (S7a): `mentoring_area_required`, `mentoring_area_too_long` (120); any other
+    role sending it is `not_editable`. Answers with the GET payload."""
     source_partner_methods = ('get', 'patch')
+    mentor_methods = ('get', 'patch')
 
     def get(self, request):
         admin = self.get_admin(request)
@@ -120,13 +132,15 @@ class AdminMeView(_AdminBase):
         data = request.data if isinstance(request.data, dict) else None
         if data is None:
             return _me_refusal('bad_request')
-        reviewer = reviews_cases(admin)
+        with_students = works_with_students(admin)
         refused = sorted(k for k in data if k not in ME_FIELDS
-                         or (k == 'share_phone_with_students' and not reviewer))
+                         or (k == 'share_phone_with_students' and not with_students)
+                         or (k == 'mentoring_area' and not admin.is_mentor))
         if refused:
             return _me_refusal('not_editable', fields=refused)
         clean = {}
-        for key, limit in (('name', 200), ('job_title', 120), ('about', ABOUT_MAX), ('phone', 30)):
+        for key, limit in (('name', 200), ('job_title', 120), ('about', ABOUT_MAX), ('phone', 30),
+                           ('mentoring_area', MENTORING_AREA_MAX)):
             if key in data:
                 clean[key], bad = _card_text(data[key], limit, f'{key}_too_long')
                 if bad:
@@ -138,12 +152,17 @@ class AdminMeView(_AdminBase):
                 clean[key] = data[key]
         if 'name' in clean and not clean['name']:
             return _me_refusal('name_required')
+        if 'mentoring_area' in clean and not clean['mentoring_area']:
+            return _me_refusal('mentoring_area_required')
         refused = phone_refusal(admin, clean)
         if refused is not None:
             return refused
         if 'name' in clean:
             admin.name = clean.pop('name')
             admin.save(update_fields=['name'])
+        if 'mentoring_area' in clean:
+            # The MENTOR's own record (S7a). Staff never write it; the login row names exactly one.
+            Mentor.objects.filter(pk=admin.mentor_id).update(area=clean.pop('mentoring_area'))
         if clean:
             profile, _ = StaffProfile.objects.get_or_create(partner_admin=admin,
                                                             defaults=new_profile_defaults(admin))
@@ -172,6 +191,10 @@ class AdminMeView(_AdminBase):
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
             **_card(_profile_of(admin)),
+            # S7a: a mentor's own area of mentoring — for a mentor only (fresh read: a PATCH just
+            # wrote it with an UPDATE).
+            **({'mentoring_area': Mentor.objects.filter(pk=admin.mentor_id)
+                .values_list('area', flat=True).first() or ''} if admin.is_mentor else {}),
         }
 
 
@@ -184,8 +207,9 @@ class AdminMePhotoView(_AdminBase):
     `unsupported_type`; 503 `storage_unavailable` when the bucket cannot take it (nothing changes).
     Throttled like a document upload (`UploadRateThrottle`). DELETE removes the object, then the
     path (503 and nothing changes if the object cannot be deleted). Both answer `{photo_url}`.
-    Opted in for a source user."""
+    Opted in for a source user, and for a mentor (S7a)."""
     source_partner_methods = ('post', 'delete')
+    mentor_methods = ('post', 'delete')
     parser_classes = [MultiPartParser]
     throttle_classes = [UploadRateThrottle]
 
@@ -244,9 +268,10 @@ class AdminMePasswordView(_AdminBase):
     a 500. Success sets the password (and, only when a temporary password is still owed, clears
     that flag in the same write — review H1), then signs every OTHER session out
     (`others_signed_out`: false when that could not be done — review M2).
-    Opted in for a source user, on POST only.
+    Opted in for a source user, and for a mentor (S7a), on POST only.
     """
     source_partner_methods = ('post',)
+    mentor_methods = ('post',)
 
     def post(self, request):
         admin = self.get_admin(request)

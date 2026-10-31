@@ -39,6 +39,7 @@ const PRESET: Record<string, string[]> = {
   qc: ['see_all', 'qc'],
   partner: [],
   source_partner: [],
+  mentor: [],
 }
 
 const STAFF_PROFILE = { id: 7, name: 'Priya', email: 'priya@example.org', is_super_admin: false,
@@ -89,6 +90,7 @@ describe.each([
   ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin']],
   ['partner', ['you', 'contact', 'access', 'organisation', 'signin']],
   ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin']],
+  ['mentor', ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin']],
 ] as const)('%s', (role, cards) => {
   it('renders exactly its cards, in order', async () => {
     signIn(role)
@@ -514,5 +516,64 @@ describe('S2 review fixes', () => {
     await fillPassword('old-secret', 'longenough1')
     submitPassword()
     expect(await screen.findByText('admin.myProfile.othersStillIn')).toBeTruthy()
+  })
+})
+
+// ── Student maintenance S7a (2026-10-31): a mentor's own profile (the MentorProfile board) ────────
+describe('a mentor', () => {
+  const MENTOR_ME: api.AdminMe = { ...STAFF_ME, role: 'mentor', permissions: [], programmes: [],
+    organisation: { id: 3, name: 'BrightPath Test' }, mentoring_area: '' }
+  beforeEach(() => {
+    signIn('mentor')
+    mockApi.getAdminMe.mockResolvedValue(MENTOR_ME)
+    mockApi.updateAdminMe.mockImplementation((data) => Promise.resolve({ ...MENTOR_ME, ...data }))
+  })
+
+  it('is welcomed while no area is named, and Save sleeps until there is one', async () => {
+    render(<ProfilePage />)
+    expect(await screen.findByTestId('mentor-welcome')).toBeTruthy()
+    const area = await screen.findByLabelText(/admin\.mentors\.profile\.area/)
+    await screen.findByTestId('profile-card-qualifications')
+    fireEvent.change(await screen.findByDisplayValue('Priya'), { target: { value: 'Priya D' } })
+    await waitFor(() => expect(save().disabled).toBe(true))       // the area is required
+    fireEvent.change(area, { target: { value: 'Accounting, finance ' } })
+    await waitFor(() => expect(save().disabled).toBe(false))
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminMe).toHaveBeenCalledWith(
+      { name: 'Priya D', mentoring_area: 'Accounting, finance' }, { token: 'tok' }))
+    await waitFor(() => expect(screen.queryByTestId('mentor-welcome')).toBeNull())
+  })
+
+  it('shows its phone to its students with its own switch, and has no team', async () => {
+    mockApi.getAdminMe.mockResolvedValue({ ...MENTOR_ME, mentoring_area: 'Engineering' })
+    render(<ProfilePage />)
+    const contact = await screen.findByTestId('profile-card-contact')
+    expect(within(contact).getAllByText('admin.mentors.profile.showToStudents').length).toBeGreaterThan(0)
+    expect(within(contact).queryByText('admin.reviewer.sharePhone')).toBeNull()
+    expect(within(contact).queryByText('admin.myProfile.showToTeam')).toBeNull()
+    expect(within(contact).getByTestId('phone-seen-by-inviter')).toBeTruthy()
+    expect(screen.queryByTestId('mentor-welcome')).toBeNull()
+  })
+
+  it('is told its students see its languages, never its qualifications; no gifts, no pause', async () => {
+    mockApi.getAdminMe.mockResolvedValue({ ...MENTOR_ME, mentoring_area: 'Engineering' })
+    render(<ProfilePage />)
+    const quals = await screen.findByTestId('profile-card-qualifications')
+    expect(within(quals).getByText('admin.mentors.profile.whoSees')).toBeTruthy()
+    const access = await screen.findByTestId('profile-card-access')
+    expect(within(access).getByText('admin.role.mentor')).toBeTruthy()
+    expect(within(access).getByText('admin.myProfile.can.mentor')).toBeTruthy()
+    expect(within(access).queryByText('admin.myProfile.gifts')).toBeNull()
+    expect(screen.queryByTestId('profile-card-takingPart')).toBeNull()
+  })
+
+  it('a refused blank phone reads as a mentor’s, not a reviewer’s', async () => {
+    mockApi.getAdminMe.mockResolvedValue({ ...MENTOR_ME, mentoring_area: 'Engineering' })
+    mockApi.updateAdminMe.mockRejectedValue(Object.assign(new Error('x'), { code: 'phone_required' }))
+    render(<ProfilePage />)
+    fireEvent.change(await screen.findByDisplayValue('Priya'), { target: { value: 'Priya D' } })
+    await screen.findByTestId('profile-card-qualifications')
+    fireEvent.click(save())
+    expect(await screen.findByText('admin.mentors.profile.phoneRequired')).toBeTruthy()
   })
 })

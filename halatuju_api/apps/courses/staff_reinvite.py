@@ -107,7 +107,7 @@ def _new_login(email, name, temp_password):
 Provisioned = namedtuple('Provisioned', 'account google already_registered temp_password error')
 
 
-def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=None):
+def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=None, mentor=None):
     """THE THREE ACCOUNT BRANCHES OF AN INVITE, in one place — the staff invite
     (`views_staff.AdminInviteView`) and, since source sign-in S2 (2026-10-30), the source invite
     (`apps.scholarship.source_invite`) both land here, so the two cannot drift apart:
@@ -121,17 +121,40 @@ def provision_for_invite(reuse, *, email, name, role, org, owning_org, source=No
     ``reuse`` set → that switched-off row is brought back (`bring_back`). ``error`` is
     ``'not_reusable'`` (the caller's 409) or ``'create_failed'`` (its 502). ``temp_password`` is
     None unless one was really issued.
+
+    Since student maintenance S7a (2026-10-31) the MENTOR invite (`apps.scholarship.mentor_invite`)
+    lands here too, with ``mentor`` — the `scholarship.Mentor` a NEW `mentor` row signs in as.
     """
     from .views_admin import generate_temp_password, is_google_email
     if is_google_email(email):
         account, _, err = provision(reuse, email=email, name=name, role=role, org=org,
-                                    owning_org=owning_org, source=source)
+                                    owning_org=owning_org, source=source, mentor=mentor)
         return Provisioned(account, True, False, None, err)
     temp_password = generate_temp_password()
     account, already, err = provision(reuse, email=email, name=name, role=role, org=org,
                                       owning_org=owning_org, temp_password=temp_password,
-                                      source=source)
+                                      source=source, mentor=mentor)
     return Provisioned(account, False, already, None if (already or err) else temp_password, err)
+
+
+#: What `provision_login` did for an address: the UID (None for Google or an address that already
+#: had a login), which branch it took, the temporary password really issued (or None), and ``error``.
+Login = namedtuple('Login', 'uid google already_registered temp_password error')
+
+
+def provision_login(email, name):
+    """THE THREE ACCOUNT BRANCHES for an EXISTING row moving to a new address (S7a: a mentor's email
+    corrected by staff before the first sign-in) — the same branches as `provision_for_invite`,
+    without writing a row: Google → no login and no password; otherwise a login we create with a
+    fresh temporary password (or adopt, `_new_login`), or the address's own existing login."""
+    from .views_admin import generate_temp_password, is_google_email
+    if is_google_email(email):
+        return Login(None, True, False, None, None)
+    temp_password = generate_temp_password()
+    uid, already, err = _new_login(email, name, temp_password)
+    if err:
+        return Login(None, False, False, None, err)
+    return Login(uid, False, already, None if already else temp_password, None)
 
 
 def reissue_credential(target):
@@ -154,7 +177,8 @@ def reissue_credential(target):
     return temp_password, None
 
 
-def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, source=None):
+def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, source=None,
+              mentor=None):
     """The account a staff invite lands on. Returns ``(account, already_registered, error)``.
 
     ``reuse`` set → that switched-off row is brought back (`bring_back`). Otherwise a NEW row,
@@ -168,6 +192,7 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
     ``source`` (source sign-in S2) is the referral source a NEW `source_partner` row signs in for;
     None for every staff role. A brought-back row keeps the source it already has (the source
     invite reuses only a row of the SAME source; `PartnerAdmin.save` refuses any other binding).
+    ``mentor`` (S7a) is the same for a NEW `mentor` row; the mentor invite never reuses a row.
     """
     if reuse is not None:
         return bring_back(reuse, name=name, role=role, org=org, owning_org=owning_org,
@@ -179,7 +204,7 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
             return None, False, err
     created = PartnerAdmin.objects.create(
         email=email, name=name, org=org, role=role, owning_organisation=owning_org,
-        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source)
+        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source, mentor=mentor)
     return created, already, None
 
 

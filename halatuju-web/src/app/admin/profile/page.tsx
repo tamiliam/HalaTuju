@@ -10,7 +10,7 @@ import {
   type AdminMe, type AdminMeCard, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
 import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
-import { cardsFor, profileContext, reviewsCases, type ProfileCardId } from '@/lib/profileCards'
+import { cardsFor, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
 import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
 import { lazySource } from '@/components/source/LazySource'
@@ -27,6 +27,7 @@ const loadCards = () => import('@/components/adminProfile/cards')
 const CARDS: Record<ProfileCardId, ComponentType<CardProps>> = {
   you: lazySource(() => loadCards().then((m) => m.YouCard)),
   contact: lazySource(() => loadCards().then((m) => m.ContactCard)),
+  mentoring: lazySource(() => loadCards().then((m) => m.MentoringCard)),
   access: lazySource(() => loadCards().then((m) => m.AccessCard)),
   qualifications: lazySource(() => loadCards().then((m) => m.QualificationsCard)),
   address: lazySource(() => loadCards().then((m) => m.AddressCard)),
@@ -51,7 +52,8 @@ const withPhone = (r: ReviewerProfile | null, phone: string): ReviewerProfile =>
 
 /** An `admin/me/` refusal, in the reader's words (`views_admin/me.py`). */
 const ME_REFUSALS = ['name_required', 'name_too_long', 'phone_required', 'phone_too_long',
-  'job_title_too_long', 'about_too_long', 'not_editable']
+  'job_title_too_long', 'about_too_long', 'not_editable', 'mentoring_area_required',
+  'mentoring_area_too_long']
 
 /**
  * THE PROFILE PAGE — ONE shell for every admin-platform person, a source user included (common
@@ -83,6 +85,10 @@ export default function AdminProfilePage() {
   const isSource = ctx.role === 'source_partner'
   const isPartner = ctx.role === 'partner'
   const reviews = reviewsCases(ctx)
+  // S7a: a mentor fills in the reviewer cards too (qualifications, languages, address) and may show
+  // the phone to students — `worksWithStudents`; the pause and the onboarding hold stay `reviews`.
+  const withStudents = worksWithStudents(ctx)
+  const isMentor = ctx.role === 'mentor'
   const isReviewerRole = ctx.role === 'reviewer'
 
   const [me, setMe] = useState<AdminMe | null>(null)
@@ -123,13 +129,13 @@ export default function AdminProfilePage() {
       getAdminMe(lang, { token }),
       isSource ? getSourceProfile({ token }) : Promise.resolve(null),
       isPartner ? getAdminProfile({ token }) : Promise.resolve(null),
-      reviews ? getReviewerProfile({ token }).catch(() => null) : Promise.resolve(null),
+      withStudents ? getReviewerProfile({ token }).catch(() => null) : Promise.resolve(null),
     ]).then(([m, src, prof, rev]) => {
       if (!live) return
       const base: ProfileDraft = {
         name: m.name, card: cardOf(m),
         orgContact: prof?.org_contact_person || '', orgPhone: prof?.org_phone || '',
-        reviewer: rev, source: src ? sourceFormOf(src) : null,
+        reviewer: rev, source: src ? sourceFormOf(src) : null, mentoringArea: m.mentoring_area ?? '',
       }
       meLocale.current = lang
       setMe(m); setPhotoUrl(m.photo_url); setEmail(m.email)
@@ -137,7 +143,7 @@ export default function AdminProfilePage() {
       setDraft(base); setSaved(base)
     }).catch(() => { if (live) setFailed(true) })
     return () => { live = false }
-  }, [token, known, isSource, isPartner, reviews])
+  }, [token, known, isSource, isPartner, withStudents])
 
   const set = useCallback((patch: Partial<ProfileDraft>) =>
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev)), [])
@@ -163,12 +169,14 @@ export default function AdminProfilePage() {
   const nameDirty = draft.name !== saved.name
   const cardChanges: AdminMeCard = {}
   for (const k of CARD_KEYS) {
-    if (k === 'share_phone_with_students' && !reviews) continue
+    if (k === 'share_phone_with_students' && !withStudents) continue
     if (draft.card[k] !== saved.card[k]) (cardChanges as Record<string, unknown>)[k] = draft.card[k]
   }
+  const areaDirty = isMentor && draft.mentoringArea !== saved.mentoringArea
+  if (areaDirty) cardChanges.mentoring_area = draft.mentoringArea.trim()
   const cardDirty = Object.keys(cardChanges).length > 0
   const orgDirty = isPartner && (draft.orgContact !== saved.orgContact || draft.orgPhone !== saved.orgPhone)
-  const revDirty = reviews && JSON.stringify(draft.reviewer) !== JSON.stringify(saved.reviewer)
+  const revDirty = withStudents && JSON.stringify(draft.reviewer) !== JSON.stringify(saved.reviewer)
   const srcDirty = isSource && JSON.stringify(draft.source) !== JSON.stringify(saved.source)
   const dirty = nameDirty || cardDirty || orgDirty || revDirty || srcDirty
   const blocked = Object.values(invalid).some(Boolean)
@@ -199,7 +207,7 @@ export default function AdminProfilePage() {
       if (nameDirty || cardDirty) {
         const m = await updateAdminMe({ ...(nameDirty ? { name: draft.name.trim() } : {}), ...cardChanges }, { token })
         setMe(m)
-        next = { ...next, name: m.name, card: cardOf(m) }
+        next = { ...next, name: m.name, card: cardOf(m), mentoringArea: m.mentoring_area ?? next.mentoringArea }
       }
       step = 'source'
       if (isSource && srcDirty && draft.source) {
@@ -234,7 +242,10 @@ export default function AdminProfilePage() {
       if (nameDirty || (isSource && next.source?.source_name !== saved.source?.source_name)) void refreshRole()
     } catch (err) {
       const code = (err as { code?: string })?.code ?? ''
-      setMessage({ ok: false, text: step === 'me' && ME_REFUSALS.includes(code) ? t(`admin.myProfile.error.${code}`)
+      // A mentor's blank phone is not "a reviewer's" (S7a): its own words.
+      const meKey = isMentor && code === 'phone_required' ? 'admin.mentors.profile.phoneRequired'
+        : `admin.myProfile.error.${code}`
+      setMessage({ ok: false, text: step === 'me' && ME_REFUSALS.includes(code) ? t(meKey)
         : step === 'source' ? t(refusalKey('profile', code))
           : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
     }
@@ -245,7 +256,8 @@ export default function AdminProfilePage() {
   const providers = meta.providers ?? (meta.provider ? [meta.provider] : [])
   const state: ProfileState = {
     t, token, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
-    draft, saved, set, setRev, setCard, report, orgName, providers, reviews, photoUrl, onPhoto,
+    draft, saved, set, setRev, setCard, report, orgName, providers, reviews, withStudents, photoUrl,
+    onPhoto,
   }
 
   return (
@@ -265,6 +277,13 @@ export default function AdminProfilePage() {
               </ul>
             </>
           )}
+        </div>
+      )}
+
+      {/* S7a: a mentor who has not yet named an area is welcomed, never held (the MentorProfile board). */}
+      {isMentor && !saved.mentoringArea && (
+        <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="mentor-welcome">
+          <p className="text-sm text-info-900">{t('admin.mentors.profile.welcome')}</p>
         </div>
       )}
 

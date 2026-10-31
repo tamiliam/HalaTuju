@@ -50,6 +50,12 @@ export {
 } from './admin-api/profiles'
 export type { AdminMe, AdminMeCard, AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
 
+// Organisation → Mentors (student maintenance S7a).
+export { getMentors, inviteMentor, mentorAction } from './admin-api/mentors'
+export type {
+  MentorAction, MentorFluency, MentorRow, MentorStatus, MentorsPayload,
+} from './admin-api/mentors'
+
 // The referral organisations a student arrives through, and witness assignment.
 export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'
 export type { OrgItem, SourceItem } from './admin-api/sources'

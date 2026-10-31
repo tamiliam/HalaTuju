@@ -463,3 +463,16 @@ page renders `components/source/*` for the role) and Profile; no Guide / FAQ yet
 and Remove: `super` and `org_admin` only — Admin and finance see the tab read-only. Sources page: Edit
 locks once the source has joined (409 `managed_by_source`); the Active toggle stays the organisation's.
 The super's witness button stays as the fallback for a source with no sign-in.
+
+## Mentors (`mentor`, student maintenance S7a, 2026-10-31) — access
+
+A mentor's own sign-in (`PartnerAdmin.mentor` → `scholarship.Mentor`). Not staff: every existing view
+denies the role (`mentor_methods`, deny by default), and it reaches only its OWN account — `admin/role/`,
+`admin/me/` (GET/PATCH, incl. its `mentoring_area`), `admin/me/photo/`, `admin/me/password/`,
+`admin/set-password/` and `admin/reviewer-profile/` (qualifications, languages, address; never a pause).
+**Menu:** Profile only; lands on Profile. **The Mentors page** (Organisation → Mentors,
+`GET admin/mentors/`): super, org_admin and admin read their own organisation's mentors (name, email, the
+mentor's own phone, area, languages, status); **invite / resend / revoke / deactivate / reactivate and the
+name/email correction before the first sign-in: `super` and `org_admin` only**. Staff never edit a
+mentor's profile. A mentor's home address is serialised nowhere but the mentor's own reviewer profile.
+Mentors and their meetings never reach sponsors or partners.

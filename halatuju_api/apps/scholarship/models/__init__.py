@@ -105,3 +105,6 @@ from .system_health import SystemHealthStatus
 # Student maintenance Sprint 1 (2026-10-29) — model 70, NEW: the student file's activity log.
 # Points at ScholarshipApplication by string.
 from .activity import StudentActivity
+# Student maintenance S7a (2026-10-31) — model 71, NEW: a mentor with their own sign-in. Points at
+# `courses.PartnerOrganisation` by string; `PartnerAdmin.mentor` and `Invitation.mentor` point here.
+from .mentors import Mentor

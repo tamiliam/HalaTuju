@@ -68,11 +68,14 @@ export interface AdminMe {
   share_phone_with_students: boolean
   /** A ~1-hour signed URL of their photo, or null. */
   photo_url: string | null
+  /** S7a: a MENTOR's own area of mentoring — served (and writable) for a mentor only. */
+  mentoring_area?: string
 }
 
 /** What `PATCH admin/me/` may write (only the keys sent are written). */
 export type AdminMeCard = Partial<Pick<AdminMe,
-  'name' | 'job_title' | 'about' | 'phone' | 'share_phone_with_team' | 'share_phone_with_students'>>
+  'name' | 'job_title' | 'about' | 'phone' | 'share_phone_with_team' | 'share_phone_with_students'
+  | 'mentoring_area'>>
 
 export async function getAdminMe(lang: string, options?: ApiOptions) {
   return adminFetch<AdminMe>(`/api/v1/admin/me/?lang=${encodeURIComponent(lang)}`, options)

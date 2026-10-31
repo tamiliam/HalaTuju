@@ -82,8 +82,13 @@ KIND_ROLES = {
 
 #: The audiences whose invitation PROVISIONS an account up front, so accepting means signing in for
 #: the first time (`accept_for_admin`) and the address sits on a `PartnerAdmin` row anyway
-#: (`purge_expired` leaves it alone). Staff since the start; source users since source sign-in S2.
-ACCOUNT_AUDIENCES = ('staff', 'source_partner')
+#: (`purge_expired` leaves it alone). Staff since the start; source users since source sign-in S2;
+#: mentors since student maintenance S7a (2026-10-31).
+ACCOUNT_AUDIENCES = ('staff', 'source_partner', 'mentor')
+
+#: ⚠ A MENTOR INVITATION IS NOT ON THE INVITATIONS PAGE (S7a). The Mentors page is its roster
+#: (`mentor_invite`), so `kind_of` answers None for it and the counts below skip it.
+MENTOR_AUDIENCE = 'mentor'
 
 #: kind → the roles INVITABLE from this page. Note `org_admin`'s absence; see above.
 KIND_INVITABLE_ROLES = {
@@ -96,8 +101,11 @@ KIND_INVITABLE_ROLES = {
 
 
 def kind_of(inv):
-    """Which of the four tables this invitation belongs on."""
+    """Which of the four tables this invitation belongs on — None for a MENTOR invitation (S7a),
+    which belongs on none of them."""
     audience = inv.audience
+    if audience == MENTOR_AUDIENCE:
+        return None
     if audience == 'sponsor':
         return KIND_SPONSORS
     if audience == 'source_partner':
@@ -137,7 +145,9 @@ def waiting_counts(qs, now=None):
     now = now or timezone.now()
     out = {k: 0 for k in KINDS}
     for inv in open_only(qs):
-        out[kind_of(inv)] += 1
+        kind = kind_of(inv)
+        if kind is not None:
+            out[kind] += 1
     return out
 
 
@@ -152,7 +162,9 @@ def kind_totals(qs):
     """
     out = {k: 0 for k in KINDS}
     for inv in qs:
-        out[kind_of(inv)] += 1
+        kind = kind_of(inv)
+        if kind is not None:
+            out[kind] += 1
     return out
 
 
@@ -197,7 +209,7 @@ def open_invitation(audience, email):
 
 def create_or_refresh(*, audience, email, name='', role='', organisation=None, invited_by=None,
                       partner_admin=None, credential_issued=False, programme=None,
-                      referral_source=None, ttl_days=None, now=None):
+                      referral_source=None, mentor=None, ttl_days=None, now=None):
     """The one way an invitation comes into being, and the one way a re-invite is handled.
 
     Idempotent on an OPEN invitation to the same address: a second invite finds the existing row and
@@ -213,7 +225,8 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
     one alone. Re-inviting somebody into a DIFFERENT gift is a real correction and must land; a
     re-send that names no gift must not silently erase the one already stated.
 
-    `referral_source` (source invitations only, source sign-in S2) follows the same rule.
+    `referral_source` (source invitations only, source sign-in S2) follows the same rule, and so
+    does `mentor` (mentor invitations only, S7a).
     """
     now = now or timezone.now()
     from datetime import timedelta
@@ -232,17 +245,18 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
         inv.credential_issued = credential_issued or inv.credential_issued
         inv.programme = programme or inv.programme
         inv.referral_source = referral_source or inv.referral_source
+        inv.mentor = mentor or inv.mentor
         inv.expires_at = expires
         inv.save(update_fields=['name', 'role', 'organisation', 'partner_admin',
-                                'credential_issued', 'programme', 'referral_source', 'expires_at',
-                                'updated_at'])
+                                'credential_issued', 'programme', 'referral_source', 'mentor',
+                                'expires_at', 'updated_at'])
         return inv
 
     return Invitation.objects.create(
         audience=audience, email=email, name=name, role=role, organisation=organisation,
         invited_by=invited_by, partner_admin=partner_admin, code=_new_code(),
         credential_issued=credential_issued, programme=programme,
-        referral_source=referral_source, expires_at=expires)
+        referral_source=referral_source, mentor=mentor, expires_at=expires)
 
 
 def record_send(inv, ok, error=''):

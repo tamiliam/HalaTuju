@@ -454,6 +454,14 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SourceUserBase': 'base — super/org_admin gate + source_invite.manageable',
         'AdminSourceUserResendView': 'source-user-fenced (source_invite.manageable)',
         'AdminSourceUserRevokeView': 'source-user-fenced (source_invite.manageable)',
+        # Student maintenance S7a (2026-10-31): the Mentors page. Each reads `_MentorsBase._in_scope`
+        # (the caller's own organisation's mentors; a super's narrowed by ?org=), and every action
+        # also needs `mentor_invite.manageable` — another organisation's mentor is 404
+        # (`test_mentors.TestTheMentorsPage.test_another_organisation_sees_none_and_cannot_act`).
+        '_MentorsBase': 'base — mentor scope by organisation + mentor_invite.manageable',
+        'AdminMentorsView': 'mentor-scope-org-fenced (_in_scope)',
+        'AdminMentorView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
+        'AdminMentorActionView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
         # Source sign-in S3 (2026-10-30): the source console. A SOURCE USER only (staff, a super
         # included, 403); rows only through `source_access` (`listed_applications_for` /
         # `applications_for`), which cut to the source's own organisation before the source narrows

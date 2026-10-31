@@ -1,4 +1,4 @@
-import { adminLanding, mustCompleteProfile } from '@/lib/adminLanding'
+import { adminLanding, mustCompleteProfile, outsiderMustLeave } from '@/lib/adminLanding'
 import { defaultRoute, ROLE_NAMES } from '@/lib/navigation'
 import { missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import type { ReviewerProfile } from '@/lib/admin-api'
@@ -45,6 +45,15 @@ describe('adminLanding', () => {
       .toBe('/admin/programme/overview')
     expect(mustCompleteProfile({ role: 'source_partner', reviewer_profile_complete: false },
       '/admin/scholarship')).toBe(false)
+  })
+
+  // Student maintenance S7a (2026-10-31): a mentor's only page is Profile, so it lands there — and
+  // never through the reviewer hold, which is not theirs.
+  it('sends a mentor to its Profile, and never holds it as a reviewer', () => {
+    expect(adminLanding({ role: 'mentor' })).toBe('/admin/profile')
+    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: true })).toBe('/admin/profile')
+    expect(mustCompleteProfile({ role: 'mentor', reviewer_profile_complete: false }, '/admin/scholarship'))
+      .toBe(false)
   })
 
   // ⚠ THE DOCSTRING CLAIMED THIS FOR MONTHS AND IT WAS NOT TRUE — `adminLanding` held its own
@@ -105,5 +114,23 @@ describe('missingReviewerFields (client mirror)', () => {
   })
   it('a null profile is entirely incomplete', () => {
     expect(reviewerProfileComplete('Kanes', null)).toBe(false)
+  })
+})
+
+describe('outsiderMustLeave (source users and mentors, S7a)', () => {
+  it('sends a mentor away from every page but its Profile', () => {
+    for (const p of ['/admin', '/admin/organisation', '/admin/organisation/mentors', '/admin/scholarship',
+      '/admin/scholars/4', '/admin/programme/overview', '/admin/guide']) {
+      expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, p)).toBe(true)
+    }
+    expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/profile')).toBe(false)
+  })
+  it('still holds a source user to its own pages, and never touches staff', () => {
+    expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/sources')).toBe(true)
+    expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/scholarship')).toBe(false)
+    for (const role of ['super', 'org_admin', 'admin', 'reviewer']) {
+      expect(outsiderMustLeave({ role, permissions: ['review'] }, '/admin/organisation/mentors')).toBe(false)
+    }
+    expect(outsiderMustLeave(null, '/admin')).toBe(false)
   })
 })

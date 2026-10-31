@@ -19,7 +19,9 @@ from ..services import PauseError, is_review_target, set_paused
 
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
-from ..staff_contact import assigner_sees_phone, new_profile_defaults, phone_refusal
+from ..staff_contact import (
+    assigner_sees_phone, new_profile_defaults, phone_refusal, works_with_students,
+)
 
 
 # ⚠ THE PACKAGE'S name, spelled out — never `__name__`. A submodule logger reads
@@ -484,13 +486,19 @@ class ReviewerProfileView(_AdminBase):
     2026-10-31). An admin given `review` gets the reviewer cards and may save them; a reviewer
     whose `review` was taken away gets 403 here (the row is kept, never deleted). A super holds
     every key, so a super still passes, as it did under the role check. A source user is refused
-    by `get_admin` (deny by default). `_require_reviewer` is NOT used: other writes rely on it."""
+    by `get_admin` (deny by default). `_require_reviewer` is NOT used: other writes rely on it.
+
+    ⚠ AND A MENTOR (student maintenance S7a, 2026-10-31): a mentor fills in the same qualification,
+    language and address cards, so the role is opted in here (`mentor_methods`) and passes the gate
+    (`staff_contact.works_with_students`). A mentor holds no `review`, so `paused` is refused for them
+    by `set_paused` (pausing is about NEW cases, which a mentor is never handed)."""
+    mentor_methods = ('get', 'patch')
 
     def _require_review_holder(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not admin.has_perm('review'):
+        if not (admin.has_perm('review') or (admin.is_mentor and works_with_students(admin))):
             return None, self._deny_role()
         return admin, None
 
@@ -524,6 +532,10 @@ class ReviewerProfileView(_AdminBase):
         refused = phone_refusal(admin, request.data)
         if refused is not None:
             return refused
+        if admin.is_mentor and 'paused' in request.data:
+            # S7a: refused BEFORE anything is written — a mentor is never handed cases to pause.
+            return Response({'error': 'not_reviewable', 'code': 'not_reviewable'},
+                            status=status.HTTP_400_BAD_REQUEST)
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin,
                                                            defaults=new_profile_defaults(admin))
         # Split off `paused` before the serializer sees it — it belongs to a different model, and

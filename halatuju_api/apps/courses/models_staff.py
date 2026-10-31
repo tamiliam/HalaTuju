@@ -17,6 +17,11 @@ from . import staff_permissions
 
 #: Source sign-in S1 (2026-10-30): the role of a referral SOURCE's own login. See `PartnerAdmin.source`.
 SOURCE_ROLE = 'source_partner'
+#: Student maintenance S7a (2026-10-31): the role of a MENTOR's own login. See `PartnerAdmin.mentor`.
+MENTOR_ROLE = 'mentor'
+#: The roles that sign in to the console and are NOT staff: no permission, deny by default on every
+#: view that has not opted in, never on a staff list. One tuple, so a reader cannot forget one.
+NOT_STAFF_ROLES = (SOURCE_ROLE, MENTOR_ROLE)
 
 
 class PartnerAdmin(models.Model):
@@ -56,6 +61,9 @@ class PartnerAdmin(models.Model):
     #              permission (`staff_permissions.resolve` → ()), and `PartnerAdminMixin.get_admin`
     #              answers None for it on every view that has not opted in — DENY BY DEFAULT. Bound
     #              to one `source` and to that source's organisation (see `source` below).
+    #   mentor   — a MENTOR's own login (student maintenance S7a, 2026-10-31). NOT STAFF, exactly
+    #              like a source user: no permission, deny by default (`mentor_methods`), on no
+    #              staff list. Bound to one `scholarship.Mentor` and to its organisation (`mentor`).
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
@@ -66,8 +74,11 @@ class PartnerAdmin(models.Model):
         ('qc', 'Quality control'),
         ('finance', 'Finance admin'),
         ('source_partner', 'Source partner'),   # a literal: the web's drift test parses this list
+        ('mentor', 'Mentor'),
     ]
     SOURCE_ROLE = SOURCE_ROLE
+    MENTOR_ROLE = MENTOR_ROLE
+    NOT_STAFF_ROLES = NOT_STAFF_ROLES
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,
         help_text='Set on first login via UID or email match',
@@ -123,6 +134,16 @@ class PartnerAdmin(models.Model):
         'scholarship.ReferralSource', on_delete=models.PROTECT,
         null=True, blank=True, related_name='users', db_column='source_id',
         help_text='The referral source a source_partner signs in for. NULL for every other role.',
+    )
+    # ⚠ THE MENTOR A `mentor` LOGIN IS, AND NO OTHER ROW CARRIES ONE (student maintenance S7a,
+    # 2026-10-31). The source pattern exactly: "role `mentor` ⇔ mentor set, and never a super" is a
+    # DATABASE check (Meta); `save` adds that `owning_organisation` IS the mentor's organisation.
+    # PROTECT: a mentor is never deleted, only deactivated (`Mentor.deactivated_at`). A string
+    # reference: no `courses → scholarship` import.
+    mentor = models.ForeignKey(
+        'scholarship.Mentor', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='users', db_column='mentor_id',
+        help_text='The mentor a mentor login signs in as. NULL for every other role.',
     )
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
@@ -200,22 +221,46 @@ class PartnerAdmin(models.Model):
                 condition=(Q(role=SOURCE_ROLE, source__isnull=False, is_super_admin=False)
                            | (~Q(role=SOURCE_ROLE) & Q(source__isnull=True))),
                 name='partner_admin_source_iff_source_partner'),
+            # Student maintenance S7a: the same shape for a mentor (courses 0090). Every row alive
+            # on 2026-10-31 has `mentor_id` NULL (the column is new) and another role.
+            models.CheckConstraint(
+                condition=(Q(role=MENTOR_ROLE, mentor__isnull=False, is_super_admin=False)
+                           | (~Q(role=MENTOR_ROLE) & Q(mentor__isnull=True))),
+                name='partner_admin_mentor_iff_mentor'),
+            # S7a review fix: ONE login per mentor, in the database too (courses 0090).
+            models.UniqueConstraint(fields=['mentor'], condition=Q(mentor__isnull=False),
+                                    name='partner_admin_one_login_per_mentor'),
         ]
 
-    #: The columns a change to which can break the source binding; a `save(update_fields=…)` that
-    #: names none of them (a sign-in stamp, a name edit) is not re-checked.
+    #: The columns a change to which can break the source or mentor binding; a
+    #: `save(update_fields=…)` that names none of them (a sign-in stamp, a name edit) is not re-checked.
     _SOURCE_BINDING_FIELDS = frozenset({'role', 'source', 'source_id', 'owning_organisation',
-                                        'owning_organisation_id', 'is_super_admin'})
+                                        'owning_organisation_id', 'is_super_admin',
+                                        'mentor', 'mentor_id'})
 
     @property
     def is_source_user(self):
         """True for a referral source's own login (source sign-in S1). Never staff."""
         return self.role == SOURCE_ROLE
 
+    @property
+    def is_mentor(self):
+        """True for a mentor's own login (student maintenance S7a). Never staff."""
+        return self.role == MENTOR_ROLE
+
     def source_binding_problem(self):
-        """Why this row breaks the source binding, or None. Reads the source only for a source user."""
+        """Why this row breaks the source or mentor binding, or None. Reads the source (or mentor)
+        only for a source user (or a mentor)."""
         if self.is_source_user != (self.source_id is not None):
             return 'A source user needs its source, and no other account may have one.'
+        if self.is_mentor != (self.mentor_id is not None):
+            return 'A mentor login needs its mentor, and no other account may have one.'
+        if self.is_mentor:
+            if self.is_super_admin:
+                return 'A mentor is never a super admin.'
+            if self.owning_organisation_id != self.mentor.organisation_id:
+                return "A mentor belongs to its mentor record's organisation."
+            return None
         if not self.is_source_user:
             return None
         if self.is_super_admin:

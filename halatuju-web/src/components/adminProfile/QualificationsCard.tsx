@@ -57,7 +57,10 @@ export default function QualificationsCard({ state }: CardProps) {
   const fieldOpts = FIELD_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.fieldOpts.${key}`) }))
   return (
     <CardFrame title={t('admin.myProfile.qualifications')} testId="qualifications">
-      <p className="text-sm text-ground-500 -mt-2">{t('admin.reviewer.subtitle')}</p>
+      {/* S7a: a mentor's students see the languages, never the qualifications (the board's line). */}
+      <p className="text-sm text-ground-500 -mt-2">
+        {t(state.role === 'mentor' ? 'admin.mentors.profile.whoSees' : 'admin.reviewer.subtitle')}
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <span className={labelCls}>{t('admin.reviewer.highestQualification')}<Req /></span>

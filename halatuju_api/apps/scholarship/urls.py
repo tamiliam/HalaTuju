@@ -219,6 +219,7 @@ from .views_admin import (
 
 from .urls_source import urlpatterns as SOURCE_CONSOLE_URLS   # admin/source/… (source sign-in)
 from .urls_letters import urlpatterns as LETTERS_URLS   # letters (maintenance S6b)
+from .urls_mentors import urlpatterns as MENTORS_URLS   # mentors (maintenance S7a)
 
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
@@ -596,4 +597,4 @@ urlpatterns = [
     # F9a — graduation thank-you moderation queue
     path('admin/graduation-messages/', AdminGraduationMessageListView.as_view()),
     path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),
-] + SOURCE_CONSOLE_URLS + LETTERS_URLS
+] + SOURCE_CONSOLE_URLS + LETTERS_URLS + MENTORS_URLS

@@ -40,6 +40,8 @@ export interface ProfileDraft {
   orgPhone: string
   reviewer: ReviewerProfile | null
   source: SourceForm | null
+  /** A mentor's own area of mentoring (`admin/me/` `mentoring_area`, S7a); '' for everybody else. */
+  mentoringArea: string
 }
 
 export type T = (k: string, vars?: Record<string, string>) => string
@@ -61,6 +63,9 @@ export interface ProfileState {
   setCard: (patch: Partial<MeCard>) => void
   /** Holds the `review` permission and is not a super (the reviewer cards' rule). */
   reviews: boolean
+  /** A `review` holder or a mentor (S7a): the qualification / address cards and "share my phone
+   *  with students" (`lib/profileCards.ts` `worksWithStudents`). */
+  withStudents: boolean
   /** The photo now on the profile (a signed URL), and how a card changes it — straight away,
    *  not through Save (`admin/me/photo/`). */
   photoUrl: string | null
