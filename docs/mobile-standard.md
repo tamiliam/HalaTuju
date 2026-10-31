@@ -75,10 +75,18 @@ Three kinds of check, from cheapest to most human:
 ### 5. One shared Sheet for every overlay
 - **Why:** each hand-rolled overlay re-decides height, scrolling and the close button, and several
   decided wrong — buttons hidden behind the iPhone keyboard.
-- **Checked by:** static guard (`fixed inset-0` outside the shared Sheet).
-- **Copy this:** until the shared `Sheet` lands in M1, the scrolling modal in
-  `src/components/admin/IntakeYearTab.tsx`. The Sheet will be: a bottom sheet on phones, centred on
-  desktop, `max-h-[90dvh]`, inner scroll, 44 px close, safe-area padding.
+- **The rule (M1b): every NEW overlay uses `src/components/Sheet.tsx`** — never a hand-written
+  `fixed inset-0`. The 18 existing ones move to it in M1b part 2, once the owner has approved its look.
+- **Checked by:** static guard (`fixed inset-0` anywhere but `Sheet.tsx` is a floor that may only go
+  down) and `Sheet.test.tsx` (focus, Tab, Escape, backdrop, `dismissible`, scroll lock).
+- **Copy this:** `<Sheet open title onClose footer={…}>body</Sheet>` — a bottom sheet on a phone (grab
+  bar, 90 % of the visible height, only the body scrolls, title row and footer stay put, footer
+  clears the home bar, rises above the keyboard and keeps the focused field in view), a centred
+  dialog from `md`. `onSubmit` makes body + footer one form; `busy` blocks closing during an action;
+  `dismissible={false}` (consent, sign-in) removes the × and makes Escape and the backdrop do
+  nothing. It is portalled to `<body>`: put a menu inside it with the portalled `admin/Menu`, never
+  an `absolute` dropdown (the body scrolls, and would clip it). Sandbox: `sheet-short`,
+  `sheet-long-form`, `sheet-locked-confirm`.
 
 ### 6. Safe areas and dvh
 - **Why:** `100vh` on iPhone is taller than the visible screen while the address bar shows; fixed

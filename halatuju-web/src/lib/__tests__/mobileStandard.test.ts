@@ -184,13 +184,22 @@ describe('rule 9 — file inputs are sr-only, never hidden', () => {
 // ── Rule 5: one shared Sheet, no hand-rolled overlays ─────────────────────────────────────────
 /**
  * Every hand-rolled `fixed inset-0` overlay re-decides max height, inner scroll, the close target and
- * the safe area — and several decided wrong (buttons hidden behind the iPhone keyboard). M1 builds
- * the shared `Sheet`; it will be the one allowed home and goes in `OVERLAY_HOMES`. Counted per class
- * string holding both tokens, in `.ts` and `.tsx`.
+ * the safe area — and several decided wrong (buttons hidden behind the iPhone keyboard). Since M1b
+ * the shared `Sheet` (src/components/Sheet.tsx) is the one allowed home; the 18 below move to it in
+ * M1b part 2, after the owner approves its look. Counted per class string holding both tokens, in
+ * `.ts` and `.tsx`.
  */
-const OVERLAY_HOMES: string[] = []
+const OVERLAY_HOMES: string[] = ['src/components/Sheet.tsx']
 
 describe('rule 5 — overlays come from the shared Sheet', () => {
+  test('the home is real, and really is an overlay', () => {
+    // An exemption for a file that no longer holds the overlay would excuse nothing and hide a move.
+    for (const home of OVERLAY_HOMES) {
+      const f = FILES.find((x) => x.rel === home)
+      expect(`${home}: ${!!f && /fixed inset-0/.test(f.code)}`).toBe(`${home}: true`)
+    }
+  })
+
   test('hand-rolled fixed inset-0 overlays: at or under the floor', () => {
     const offenders = FILES.filter((f) => !OVERLAY_HOMES.includes(f.rel))
       .flatMap((f) => literalsWithIndex(f.code)

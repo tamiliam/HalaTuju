@@ -104,29 +104,46 @@ function apiErrorStatus(status: number): boolean {
   return status >= 400
 }
 
+/**
+ * One step of a measurement, named: a timeout or failure says WHICH wait gave up (Mobile M1b — a
+ * starved page used to fail with only "Timeout 30000ms exceeded" and no hint of the step).
+ */
+async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run()
+  } catch (err) {
+    throw new Error(`mobile-check step "${name}" failed: ${String((err as Error).message).split(/\r?\n/)[0]}`)
+  }
+}
+
 async function measureCell(page: Page, target: Target, locale: Locale): Promise<Measurement> {
   const apiFailures = await readOnly(page)
   await page.addInitScript(([key, value]) => {
     try { window.localStorage.setItem(key, value) } catch { /* storage blocked: the lang wait fails loudly */ }
   }, [LOCALE_KEY, locale])
 
-  await page.goto(target.url, { waitUntil: 'networkidle', timeout: 90_000 })
+  await step('load the page', () => page.goto(target.url, { waitUntil: 'networkidle', timeout: 90_000 }))
   // A redirect-only route is measured where it lands (targets.ts `finalPath`), never mid-redirect.
-  await page.waitForURL((u) => u.pathname === target.finalPath, { timeout: 60_000 })
+  await step(`land on ${target.finalPath}`,
+    () => page.waitForURL((u) => u.pathname === target.finalPath, { timeout: 60_000 }))
   // ⚠ WAIT FOR THE WORDS, NOT THE LOAD EVENT. The server always sends English (it cannot read
   // localStorage); the chosen catalogue arrives after hydration and only then does `<html lang>`
   // change. A snapshot before that measures the English page in every column — the lesson from
   // the first live probe, where pre-hydration numbers looked fine and were not.
-  await page.waitForFunction((lang) => document.documentElement.lang === lang, EXPECTED_LANG[locale],
-    { timeout: 30_000 })
+  // ⚠ `polling: 200` on EVERY wait, never the default: the default polls on requestAnimationFrame,
+  // and a page whose main thread is starved (cold compiles, three workers) runs no frames — the
+  // wait then times out without ever having looked.
+  await step(`wait for <html lang="${EXPECTED_LANG[locale]}">`, () => page.waitForFunction(
+    (lang) => document.documentElement.lang === lang, EXPECTED_LANG[locale], { timeout: 30_000, polling: 200 }))
   // ⚠ …AND FOR THE DATA. For English the wait above is VACUOUS — the server's HTML is already
   // `lang="en"` — and `networkidle` can fire before a client fetch has even started, so one run
   // measured /course/[id] as its "Loading course details…" spinner (0 targets instead of 32). So:
   // the app must have booted (`window.next` is set by Next's client at hydration), no spinner or
   // `aria-busy` box may be showing, and the DOM must have stopped changing for 800 ms.
-  await page.waitForFunction(() => 'next' in window, null, { timeout: 30_000 })
-  await page.waitForLoadState('networkidle')
-  await page.waitForFunction(() => {
+  await step('wait for the app to boot', () =>
+    page.waitForFunction(() => 'next' in window, null, { timeout: 30_000, polling: 200 }))
+  await step('wait for the network to go quiet', () => page.waitForLoadState('networkidle'))
+  await step('wait for the page to settle', () => page.waitForFunction(() => {
     const w = window as unknown as { __mcSig?: string; __mcAt?: number }
     // Mid-navigation (a redirect such as /stpm/search → /search) there can be no <body> for a
     // moment; that is "not settled", never an error — a throw here ends the wait and fails the cell.
@@ -139,7 +156,7 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
     const now = Date.now()
     if (busy || w.__mcSig !== sig) { w.__mcSig = sig; w.__mcAt = now; return false }
     return now - (w.__mcAt ?? now) > 800
-  }, null, { timeout: 30_000, polling: 200 })
+  }, null, { timeout: 30_000, polling: 200 }))
   await page.evaluate(() => document.fonts.ready.then(() => undefined))
   await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))))
 
@@ -150,8 +167,9 @@ async function measureCell(page: Page, target: Target, locale: Locale): Promise<
       + 'would record a different screen. Is the live API reachable from this machine? (Locally its '
       + `reads are proxied there — see mobile-check/targets.ts.)\n  ${failures.slice(0, 3).join('\n  ')}`)
   }
-  // On a sandbox surface, measure the surface (inside <main>), not the sandbox's own picker chrome.
-  return page.evaluate(measurePage, target.kind === 'sandbox' ? 'main' : 'body')
+  // On a sandbox surface, measure the surface (inside <main>) and any open dialog (a Sheet is
+  // portalled to <body>, outside <main>) — never the sandbox's own picker chrome.
+  return page.evaluate(measurePage, target.kind === 'sandbox' ? 'main, [role="dialog"]' : 'body')
 }
 
 const targets = [...publicTargets(), ...sandboxTargets()]
@@ -179,7 +197,9 @@ for (const target of targets) {
           // A public page: what the first screen shows. A sandbox surface: the whole surface — its
           // first screen is the sandbox's own picker, which tells the owner nothing.
           const shot = path.join(SHOTS_DIR, `${file}.png`)
-          if (target.kind === 'sandbox') await page.locator('main').first().screenshot({ path: shot })
+          // An open dialog is shown as the phone shows it: the screen, not the surface beneath.
+          const dialog = (await page.locator('[role="dialog"]').count()) > 0
+          if (target.kind === 'sandbox' && !dialog) await page.locator('main').first().screenshot({ path: shot })
           else await page.screenshot({ path: shot })
           fs.writeFileSync(path.join(RESULTS_DIR, `${file}.json`), JSON.stringify({ key, ...m }, null, 2))
 

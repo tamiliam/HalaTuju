@@ -22,6 +22,9 @@ const port = new URL(BASE).port || '80'
 export default defineConfig({
   testDir: __dirname,
   testMatch: /.*\.pw\.ts$/,
+  // Every page visited once, serially, before measuring: cold `next dev` compiles happen there,
+  // not inside a measured cell's timeouts (warmup.ts).
+  globalSetup: path.join(__dirname, 'warmup.ts'),
   outputDir: path.join(OUTPUT_DIR, 'test-results'),
   // The first visit to each route makes `next dev` compile it, which can take a while.
   timeout: 180_000,

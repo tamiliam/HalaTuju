@@ -40,7 +40,11 @@ export function measurePage(scopeSelector: string): Measurement {
   const doc = document.documentElement
   const vw = doc.clientWidth
   const overflow = Math.max(0, Math.round(doc.scrollWidth - vw))
-  const scope = document.querySelector(scopeSelector) ?? document.body
+  // The parts of the page that are measured: every element the selector matches (a sandbox surface
+  // is its <main> AND any open dialog, which is portalled outside it), else the whole body.
+  const roots = Array.from(document.querySelectorAll(scopeSelector))
+  if (roots.length === 0) roots.push(document.body)
+  const within = (sel: string): Element[] => roots.flatMap((r) => Array.from(r.querySelectorAll(sel)))
 
   const describe = (el: Element): string => {
     const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).slice(0, 4).join('.') : ''
@@ -94,7 +98,7 @@ export function measurePage(scopeSelector: string): Measurement {
 
   // 2. Text fields under 16 px.
   const NOT_TEXT = ['checkbox', 'radio', 'hidden', 'file', 'range', 'color', 'submit', 'button', 'reset', 'image']
-  const fields = Array.from(scope.querySelectorAll('input, select, textarea')).filter((el) => {
+  const fields = within('input, select, textarea').filter((el) => {
     if (el instanceof HTMLInputElement && NOT_TEXT.includes(el.type)) return false
     return visible(el)
   })
@@ -102,8 +106,8 @@ export function measurePage(scopeSelector: string): Measurement {
 
   // 3. Tap targets under 44 × 44.
   const targets = new Set<Element>()
-  for (const el of Array.from(scope.querySelectorAll(
-    'a[href], button, [role="button"], select, summary, input[type="checkbox"], input[type="radio"]'))) {
+  for (const el of within(
+    'a[href], button, [role="button"], select, summary, input[type="checkbox"], input[type="radio"]')) {
     if (el instanceof HTMLInputElement) {
       const label = el.closest('label') ?? (el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null)
       targets.add(label ?? el)

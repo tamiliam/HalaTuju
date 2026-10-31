@@ -1,5 +1,15 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M1b: one Sheet — a bottom sheet on phones, portalled, with dismissible={false} for flows that must not vanish (2026-10-31)
+
+**Decision.** One overlay component, `Sheet.tsx`, for every dialog: a bottom sheet below `md`, a centred dialog above.
+It is portalled to `<body>` (no ancestor can clip it — the round-menu lesson). Closing has two brakes with different
+meanings: `busy` (an action is in flight) and `dismissible={false}` (consent, sign-in, a guardian's form — no ×, and
+neither Escape nor the backdrop closes it). The keyboard is handled with `visualViewport`, because iOS does not shrink
+the layout viewport for it and a `dvh` bottom sheet would sit behind it. Rejected: the native `<dialog>` element — its
+top-layer behaviour and `::backdrop` differ across the iOS versions students still use, and it gives no bottom-sheet
+layout or keyboard lift for free. No existing overlay moves until the owner approves the look (M1b part 2).
+
 ## Mobile M1a: Tamil in Mukta Malar; text fields 16 px by ONE rule; hover stays global (2026-10-31)
 
 **Tamil face (owner: "the font we use in SJKT Connect").** Mukta Malar's Tamil-only subset is self-hosted

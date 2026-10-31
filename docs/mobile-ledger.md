@@ -122,3 +122,6 @@ Component galleries — measured, but no single route is "them".
 | `category-colours` | 6 | 0 | 0 | 0 | ✅ |
 | `course-guide` | 6 | 0 | 0 | 0 | ✅ |
 | `pieces` | 6 | 0 | 0 | 3 | ❌ |
+| `sheet-locked-confirm` | 6 | 0 | 0 | 0 | ✅ |
+| `sheet-long-form` | 6 | 0 | 0 | 0 | ✅ |
+| `sheet-short` | 6 | 0 | 0 | 0 | ✅ |

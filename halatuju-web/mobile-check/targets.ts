@@ -117,24 +117,34 @@ export function publicTargets(): Target[] {
 }
 
 /**
- * The sandbox slugs, read from `src/sandbox/surfaces.tsx` itself so the list is never copied by
+ * The sandbox slugs, read from `src/sandbox/surfaces.tsx` (and the lists it spreads in) so they are never copied by
  * hand. That module mounts real React screens and cannot be imported into Node, so its source is
  * read instead: every `slug: '…'` at the indentation of a SURFACES entry. Two cross-checks keep
  * the reading honest — one `render:` per slug in the array, and (in the spec) the sandbox index
  * page linking exactly these slugs.
  */
+/**
+ * The modules holding surface lists: `SURFACES` itself and the lists it spreads in (kept apart
+ * because surfaces.tsx is on the oversize ledger). Each is read the same way — every
+ * `export const …SURFACES: Surface[] = [` block, up to its closing `]` at column 0.
+ */
+const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx']
+
 export function sandboxSlugs(): string[] {
-  const src = fs.readFileSync(path.join(WEB_ROOT, 'src', 'sandbox', 'surfaces.tsx'), 'utf8')
-    .replace(/\r\n?/g, '\n')
-  const start = src.indexOf('export const SURFACES')
-  const end = src.indexOf('\n]\n', start)
-  if (start === -1 || end === -1) throw new Error('mobile-check: SURFACES array not found in surfaces.tsx')
-  const block = src.slice(start, end)
-  const slugs = Array.from(block.matchAll(/^ {4}slug: '([^']+)'/gm), (m) => m[1])
-  const renders = (block.match(/^ {4}render: /gm) ?? []).length
+  const slugs: string[] = []
+  let renders = 0
+  for (const file of SURFACE_FILES) {
+    const src = fs.readFileSync(path.join(WEB_ROOT, 'src', 'sandbox', file), 'utf8').replace(/\r\n?/g, '\n')
+    const start = src.search(/export const [A-Z_]*SURFACES: Surface\[\] = \[/)
+    const end = src.indexOf('\n]\n', start)
+    if (start === -1 || end === -1) throw new Error(`mobile-check: no surface list found in ${file}`)
+    const block = src.slice(start, end)
+    slugs.push(...Array.from(block.matchAll(/^ {4}slug: '([^']+)'/gm), (m) => m[1]))
+    renders += (block.match(/^ {4}render: /gm) ?? []).length
+  }
   if (slugs.length < 15 || slugs.length !== renders) {
-    throw new Error(`mobile-check: read ${slugs.length} slugs and ${renders} renders from SURFACES; `
-      + 'the reader no longer matches how surfaces.tsx is written — fix sandboxSlugs()')
+    throw new Error(`mobile-check: read ${slugs.length} slugs and ${renders} renders from the surface `
+      + 'lists; the reader no longer matches how they are written — fix sandboxSlugs()')
   }
   return slugs
 }

@@ -43,9 +43,8 @@ import {
   sandboxResolutionItems, sandboxResolutionItemsClear,
 } from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
-import {
-  sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview,
-} from './fixtures/cockpit'
+import { SHEET_SURFACES } from './sheetSurfaces'
+import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
 
@@ -420,6 +419,7 @@ export const SURFACES: Surface[] = [
       </WithAdminAuth>
     ),
   },
+  ...SHEET_SURFACES,
 ]
 
 /**

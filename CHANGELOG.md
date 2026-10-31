@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M1b (part 1): the shared Sheet, in the sandbox only (2026-10-31)
+
+- New `src/components/Sheet.tsx` — THE overlay. Phone: a bottom sheet (grab bar, max 90 % of the visible height,
+  only the body scrolls, sticky title row with a 44 px ×, sticky footer padded clear of the home bar; rises above the
+  on-screen keyboard via `visualViewport` and scrolls the focused field into view). Desktop: a centred dialog.
+  `role="dialog"`, `aria-modal`, named by its title; focus in, Tab trapped, focus restored; Escape / backdrop / ×
+  close unless `busy` or `dismissible={false}`; the page is held still (counted, so stacked sheets free it only when
+  the last closes). Portalled to `<body>`. `onSubmit` turns body + footer into one form.
+- Measured at 390 (en and ta): the short sheet sits at the bottom (220 px tall), the long form fills to 90 % with its
+  footer pinned, every field 16 px, no sideways scroll; with the visible height cut to 508 px the focused last field
+  stays in view above the footer. At 1280 it is a 512 px centred dialog.
+- `Sheet.test.tsx` (10): focus in/out, Tab/Shift+Tab wrap, Escape, backdrop, ×, `dismissible={false}`, `busy`,
+  scroll lock and stacked sheets, form submit. Bite check: five injected faults, each turned it red.
+- Three sandbox surfaces (`sheet-short`, `sheet-long-form`, `sheet-locked-confirm`, in `src/sandbox/sheetSurfaces.tsx`;
+  `surfaces.tsx` kept at its line count) — now in mobile-check, which measures an open dialog with the surface.
+- **No existing overlay migrated** — the owner approves the look first. The overlay guard now names `Sheet.tsx` as
+  the one allowed home (floor stays 18).
+- mobile-check, for busy machines: every page is visited once, serially, before measuring (`warmup.ts`, so cold
+  `next dev` compiles are not paid inside a measured cell); every wait polls on a 200 ms timer, never on animation
+  frames a starved page does not run; a failure names the step that gave up.
+
 ## Mobile M1a: global foundations — Tamil face, 16 px fields, safe areas, taps that work (2026-10-31)
 
 - **Tamil paints in Mukta Malar** (owner) — the Tamil-only subset from SJKT Connect, byte-identical, first in every
