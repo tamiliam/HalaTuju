@@ -46,9 +46,9 @@ export type {
 
 // An admin's own profile, and a reviewer's own credentials.
 export {
-  changeOwnPassword, getAdminMe, getAdminProfile, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
+  changeOwnPassword, deleteAdminPhoto, getAdminMe, getAdminProfile, updateAdminMe, uploadAdminPhoto, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
 } from './admin-api/profiles'
-export type { AdminMe, AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
+export type { AdminMe, AdminMeCard, AdminProfile, ReviewerProfile, LangFluency } from './admin-api/profiles'
 
 // The referral organisations a student arrives through, and witness assignment.
 export { getOrgs, getSources, getSourceNames, updateSource, assignWitness } from './admin-api/sources'

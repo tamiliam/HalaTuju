@@ -48,6 +48,8 @@ const SOURCE_CALLS = new Set([
   'getSourceProfile', 'updateSourceProfile', 'getSourceOverview', 'getSourceApplications',
   'getSourceApplication', 'getSourceAgreement', 'witnessAsSource', 'getSourceScholars', 'getSourceScholar',
   'getAdminMe', 'changeOwnPassword',
+  // Common profile S2: the card's own writes, opted in for a source user too.
+  'updateAdminMe', 'uploadAdminPhoto', 'deleteAdminPhoto',
 ])
 
 beforeEach(() => {

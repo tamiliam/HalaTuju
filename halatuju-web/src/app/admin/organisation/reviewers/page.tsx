@@ -28,6 +28,7 @@ import { switchableTo } from '@/lib/staffRole'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 import PermissionChips from '@/components/admin/PermissionChips'
+import StaffAvatar from '@/components/admin/StaffAvatar'
 import { TEAM_ROLES } from '@/lib/staffPermissions'
 
 // Organisation → **People**: the directory of everybody who is already in.
@@ -265,12 +266,16 @@ export default function AdminReviewersList() {
               <div key={r.id}
                 className="rounded-xl border border-ground-200 border-l-[3px] border-l-blue-500 bg-ground-0 p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Link href={`/admin/organisation/reviewers/${r.id}`}
-                      className="text-sm font-semibold text-primary-600 hover:text-primary-800">
-                      {r.name || '—'}
-                    </Link>
-                    <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
+                  <div className="flex min-w-0 items-start gap-2">
+                    <StaffAvatar name={r.name} photoUrl={r.photo_url} size={32} />
+                    <div className="min-w-0">
+                      <Link href={`/admin/organisation/reviewers/${r.id}`}
+                        className="text-sm font-semibold text-primary-600 hover:text-primary-800">
+                        {r.name || '—'}
+                      </Link>
+                      <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
+                      {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
+                    </div>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                     STAFF_STATUS_TONE[staffStatusKey(r)]}`}>
@@ -306,6 +311,10 @@ export default function AdminReviewersList() {
                       {t(`admin.reviewers.lang.${code}`)}
                     </span>
                   ))}
+                  {r.other_language && (
+                    <span className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600"
+                      data-testid={`other-language-${r.id}`}>{r.other_language}</span>
+                  )}
                   {giftCount > 1 && (
                     <span className="text-[11px] text-ground-400">
                       {r.programme_name || t('admin.reviewers.detail.giftEvery')}
@@ -349,11 +358,17 @@ export default function AdminReviewersList() {
                   <tr key={r.id} className="hover:bg-info-50/40 transition-colors align-top">
                     <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
                       {/* The name opens the whole record — credentials, outcomes, reopens. */}
-                      <Link href={`/admin/organisation/reviewers/${r.id}`}
-                        className="font-medium text-primary-600 hover:text-primary-800">
-                        {r.name || '—'}
-                      </Link>
-                      <div className="text-xs text-ground-500 mt-0.5">{r.email || '—'}</div>
+                      <div className="flex items-start gap-2">
+                        <StaffAvatar name={r.name} photoUrl={r.photo_url} size={28} />
+                        <div className="min-w-0">
+                          <Link href={`/admin/organisation/reviewers/${r.id}`}
+                            className="font-medium text-primary-600 hover:text-primary-800">
+                            {r.name || '—'}
+                          </Link>
+                          <div className="text-xs text-ground-500 mt-0.5">{r.email || '—'}</div>
+                          {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
+                        </div>
+                      </div>
                       {/* Which gift they cover (S-ASSIGN). Under the name rather than as a
                           column, so no sort key or header has to be invented for a fact that
                           most organisations will never see; and shown only when there is more
@@ -374,7 +389,7 @@ export default function AdminReviewersList() {
                       {r.custom && <div className="mt-1"><PermissionChips row={r} /></div>}
                     </td>
                     <td className="px-4 py-3 text-ground-700">
-                      {orderedLanguages(r).length === 0
+                      {orderedLanguages(r).length === 0 && !r.other_language
                         ? <span className="text-ground-400">—</span>
                         : (
                           <span className="flex flex-wrap gap-1">
@@ -384,6 +399,10 @@ export default function AdminReviewersList() {
                                 {t(`admin.reviewers.lang.${code}`)}
                               </span>
                             ))}
+                            {r.other_language && (
+                              <span className="px-1.5 py-0.5 rounded bg-ground-100 text-ground-600 text-xs"
+                                data-testid={`other-language-${r.id}`}>{r.other_language}</span>
+                            )}
                           </span>
                         )}
                     </td>

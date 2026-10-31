@@ -262,7 +262,9 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
                   <td className="px-4 py-3 font-medium text-ground-900">{u.source_name}
                     <span className="ml-2"><SignInBadge state="joined" t={t} /></span></td>
                   <td className="px-4 py-3">{u.name || '—'}</td>
-                  <td className="px-4 py-3 text-ground-500">{u.email}</td>
+                  <td className="px-4 py-3 text-ground-500">{u.email}
+                    {u.phone && <span className="block text-xs text-ground-600" data-testid={`source-user-phone-${u.id}`}>
+                      <span className="sr-only">{t('admin.reviewer.phone')}: </span>{u.phone}</span>}</td>
                   <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{formatDate(u.last_seen_at ?? u.first_seen_at)}</td>
                   <td className="px-4 py-3">
                     {mayAct(u.id) && (

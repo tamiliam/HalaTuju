@@ -205,3 +205,12 @@ describe('the Source roster', () => {
     expect(screen.queryByText('admin.invitations.source.remove')).toBeNull()
   })
 })
+
+describe('common profile S2: a source person\'s own phone', () => {
+  it('is shown to the organisation that invited them, beside the email', () => {
+    const data = { ...PAYLOAD, source_users: PAYLOAD.source_users!.map((u) =>
+      u.id === 42 ? { ...u, phone: '016-845 1270' } : u) }
+    render(<SourceRoster data={data} token="tok" t={t} canManage onCancel={jest.fn()} onDone={onDone} />)
+    expect(screen.getByTestId('source-user-phone-42').textContent).toContain('016-845 1270')
+  })
+})

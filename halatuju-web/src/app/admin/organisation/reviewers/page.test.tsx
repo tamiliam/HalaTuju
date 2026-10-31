@@ -489,3 +489,30 @@ describe('the staff lifecycle (2026-10-09)', () => {
     expect(ui().queryByText('admin.changeRole')).toBeNull()
   })
 })
+
+describe('common profile S2: photo and a phone shown to the team', () => {
+  it('shows the photo, and the phone only when the server sent it (its owner shares it)', async () => {
+    mockApi.listReviewers.mockResolvedValue({ programmes: giftChoices, reviewers: [
+      { ...REVIEWERS[0], photo_url: 'https://signed/k.webp', phone: '011-1111 1111' },
+      { ...REVIEWERS[1], photo_url: null, phone: null },
+    ] as unknown as api.AdminReviewer[] })
+    await loaded()
+    expect(ui().getByTestId('team-phone-5').textContent).toContain('011-1111 1111')
+    expect(ui().queryByTestId('team-phone-6')).toBeNull()
+    const photos = ui().getAllByTestId('staff-avatar-photo') as HTMLImageElement[]
+    expect(photos.map((p) => p.src)).toEqual(['https://signed/k.webp'])
+    expect(ui().getAllByTestId('staff-avatar-initials').length).toBe(1)
+  })
+})
+
+describe('common profile S2: the optional fourth language', () => {
+  it('shows as an extra chip by name, beside the en/ms/ta chips', async () => {
+    mockApi.listReviewers.mockResolvedValue({ programmes: giftChoices, reviewers: [
+      { ...REVIEWERS[0], other_language: 'Kadazandusun' }, { ...REVIEWERS[1], other_language: '' },
+    ] as unknown as api.AdminReviewer[] })
+    await loaded()
+    expect(ui().getByTestId('other-language-5').textContent).toBe('Kadazandusun')
+    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
+    expect(ui().queryByTestId('other-language-6')).toBeNull()
+  })
+})

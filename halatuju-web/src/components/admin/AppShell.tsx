@@ -124,7 +124,7 @@ function Chrome(
   { scopes, scopesLoaded, children }:
   { scopes: AdminScopes; scopesLoaded: boolean; children: ReactNode },
 ) {
-  const { role, token } = useAdminAuth()
+  const { role, token, photoUrl } = useAdminAuth()
   const { t } = useT()
   const pathname = usePathname()
   const router = useRouter()
@@ -320,6 +320,7 @@ function Chrome(
         orgName={role?.owning_org_name ?? role?.org_name}
         programmeName={undefined}
         adminName={role?.admin_name}
+        photoUrl={photoUrl}
         roleLabel={roleLabel}
         attention={attention}
         onOpenSearch={() => setPaletteOpen(true)}

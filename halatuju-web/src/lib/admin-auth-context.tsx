@@ -47,6 +47,11 @@ interface AdminAuthContextValue {
   isAdminAuthenticated: boolean
   role: AdminRole | null
   refreshRole: () => Promise<void>
+  /** Common profile S2: the signed-in person's photo (a ~1-hour signed URL) for the header, or null.
+   *  Read from `admin/me/` ONCE per session — never from `admin/role/`, which signs nothing. */
+  photoUrl: string | null
+  /** The Profile page sets it after an upload or a removal, so the header follows at once. */
+  setPhotoUrl: (url: string | null) => void
 }
 
 // Exported for the sandbox harness ONLY (src/sandbox), which supplies a canned admin session to
@@ -59,6 +64,21 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<AdminRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [photoFor, setPhotoFor] = useState<number | null>(null)
+
+  // The header photo: ONE `admin/me/` read per signed-in person per session (the provider lives in
+  // the admin layout, so client navigation does not repeat it). A failure leaves the initials.
+  const adminId = role?.is_admin ? role.admin_id ?? null : null
+  const accessToken = session?.access_token ?? null
+  useEffect(() => {
+    if (adminId == null || !accessToken || photoFor === adminId) return
+    setPhotoFor(adminId)
+    fetch(`${API_BASE}/api/v1/admin/me/`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me) => setPhotoUrl(me?.photo_url ?? null))
+      .catch(() => {})
+  }, [adminId, accessToken, photoFor])
 
   const checkRole = useCallback(async (token: string) => {
     try {
@@ -119,6 +139,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     isAdminAuthenticated: !!session && !!role?.is_admin,
     role,
     refreshRole,
+    photoUrl,
+    setPhotoUrl,
   }
 
   return (

@@ -464,6 +464,7 @@ function WithAdminAuth({ children }: { children: ReactNode }) {
           admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
         },
         refreshRole: async () => {},
+        photoUrl: null, setPhotoUrl: () => {},
       }}
     >
       {children}

@@ -60,10 +60,49 @@ export interface AdminMe {
   permissions: string[]
   first_seen_at: string | null
   last_seen_at: string | null
+  /** Common profile S2 — the person's own card. */
+  job_title: string
+  about: string
+  phone: string
+  share_phone_with_team: boolean
+  share_phone_with_students: boolean
+  /** A ~1-hour signed URL of their photo, or null. */
+  photo_url: string | null
 }
+
+/** What `PATCH admin/me/` may write (only the keys sent are written). */
+export type AdminMeCard = Partial<Pick<AdminMe,
+  'name' | 'job_title' | 'about' | 'phone' | 'share_phone_with_team' | 'share_phone_with_students'>>
 
 export async function getAdminMe(lang: string, options?: ApiOptions) {
   return adminFetch<AdminMe>(`/api/v1/admin/me/?lang=${encodeURIComponent(lang)}`, options)
+}
+
+/** `PATCH admin/me/` — opted in for a source user. A refusal throws with `code` (and `body.fields`
+ *  for `not_editable`): `name_required`, `phone_required`, `about_too_long`, … */
+export async function updateAdminMe(data: AdminMeCard, options?: ApiOptions) {
+  return adminMutate<AdminMe>('/api/v1/admin/me/', 'PATCH', data, options)
+}
+
+/** `POST admin/me/photo/` — one image, multipart. Refusals throw with `code`: `too_large`,
+ *  `not_an_image`, `unsupported_type`, `storage_unavailable` (503), … Opted in for a source user. */
+export async function uploadAdminPhoto(file: File, options?: ApiOptions) {
+  const body = new FormData()
+  body.append('photo', file)
+  const headers: Record<string, string> = {}
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/me/photo/`, { method: 'POST', headers, body })
+  const b = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw Object.assign(new Error(b.error || `Upload failed: ${res.status}`),
+      { status: res.status, code: b.code || b.error || '' })
+  }
+  return b as { photo_url: string | null }
+}
+
+/** `DELETE admin/me/photo/` — the object, then the path. */
+export async function deleteAdminPhoto(options?: ApiOptions) {
+  return adminMutate<{ photo_url: null }>('/api/v1/admin/me/photo/', 'DELETE', null, options)
 }
 
 /**
@@ -97,6 +136,11 @@ export interface ReviewerProfile {
   english_fluency: LangFluency
   bm_fluency: LangFluency
   tamil_fluency: LangFluency
+  /** Common profile S2 (owner, 2026-10-31): ONE optional fourth language, by NAME (Mandarin,
+   *  Kadazandusun, Bajau…), and its fluency — both or neither (the server refuses half). It does not
+   *  count for the onboarding hold, which still needs English, BM or Tamil. */
+  other_language: string
+  other_language_fluency: LangFluency
   share_phone_with_students: boolean
   /**
    * Whether this reviewer has stepped back from NEW work.

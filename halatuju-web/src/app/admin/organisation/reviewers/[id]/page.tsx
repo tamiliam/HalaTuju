@@ -384,9 +384,10 @@ export default function AdminReviewerDetailPage() {
 
             <dt className="text-sm text-ground-500">{t('admin.reviewers.colLanguages')}</dt>
             <dd className="m-0 text-sm text-ground-900">
-              {languages.length === 0
+              {languages.length === 0 && !detail.other_language
                 ? <span className="text-ground-400">—</span>
-                : languages.map((c) => t(`admin.reviewers.lang.${c}`)).join(', ')}
+                : [...languages.map((c) => t(`admin.reviewers.lang.${c}`)),
+                  ...(detail.other_language ? [detail.other_language] : [])].join(', ')}
             </dd>
           </dl>
         </Block>

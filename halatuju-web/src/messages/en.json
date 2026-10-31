@@ -5113,7 +5113,37 @@
       "unavailable": "We could not reach the sign-in service. Try again in a few minutes.",
       "noPasswordSignIn": "This account signs in with Google, so it has no password to change.",
       "signedInAgain": "Your password has been changed. You are signed in again with it.",
-      "signInAgainNeeded": "Your password has been changed. Sign in again with your new password."
+      "signInAgainNeeded": "Your password has been changed. Sign in again with your new password.",
+      "photo": {
+        "alt": "Your photo",
+        "add": "Add photo",
+        "change": "Change photo",
+        "remove": "Remove photo",
+        "hint": "JPG, PNG or WebP, up to 2 MB. Only staff see it.",
+        "saved": "Photo saved.",
+        "removed": "Photo removed.",
+        "tooLarge": "That photo is larger than 2 MB.",
+        "wrongType": "That file is not a JPG, PNG or WebP photo.",
+        "unavailable": "We could not store the photo just now. Try again in a few minutes.",
+        "failed": "We could not change the photo. Try again."
+      },
+      "jobTitle": "Job title",
+      "jobTitleHint": "For example, Programme officer",
+      "about": "About",
+      "aboutHint": "A few lines your team will see",
+      "aboutCount": "{n} of {max} characters",
+      "showToTeam": "Show my phone to my team (Team page)",
+      "inviterSees": "The organisation that invited you can see this number.",
+      "contactPrivate": "Apart from what you switch on here, nobody sees your phone.",
+      "error": {
+        "name_required": "Type your name.",
+        "name_too_long": "That name is too long.",
+        "phone_required": "A reviewer needs a phone number. Type yours.",
+        "phone_too_long": "That phone number is too long.",
+        "job_title_too_long": "Keep the job title to 120 characters.",
+        "about_too_long": "Keep About to 600 characters.",
+        "not_editable": "That detail cannot be changed here."
+      }
     },
     "superAdmin": "Super Admin",
     "loginTitle": "Partner Login",
@@ -5336,7 +5366,27 @@
       "takingPartTitle": "Taking part",
       "takingPartSubtitle": "Step back for a while without giving up your place.",
       "pauseLabel": "Pause new cases for now — don't assign me anyone new.",
-      "pausedNote": "You are paused. You keep your account and any interviews already yours; you simply won't be given anyone new until you untick this."
+      "pausedNote": "You are paused. You keep your account and any interviews already yours; you simply won't be given anyone new until you untick this.",
+      "otherLang": {
+        "title": "Other language (optional)",
+        "select": "Choose a language",
+        "fluency": "How well you speak it",
+        "incomplete": "Give both the language and how well you speak it, or leave both empty."
+      },
+      "otherLangOpts": {
+        "mandarin": "Mandarin",
+        "cantonese": "Cantonese",
+        "hokkien": "Hokkien",
+        "kadazandusun": "Kadazandusun",
+        "bajau": "Bajau",
+        "murut": "Murut",
+        "iban": "Iban",
+        "bidayuh": "Bidayuh",
+        "telugu": "Telugu",
+        "malayalam": "Malayalam",
+        "punjabi": "Punjabi",
+        "arabic": "Arabic"
+      }
     },
     "inviteAs": "Invite as",
     "inviteHeading": {

@@ -3,26 +3,44 @@
 import Toggle from '@/components/Toggle'
 import { CardFrame, labelCls, PhoneField, Req, type CardProps } from './shared'
 
-/** "Contact details" — the phone (required, as it always was for a reviewer) and whether students
- *  the person interviews may see it. S1: holders of `review` only (S2 widens it to everyone). */
+/**
+ * "Contact details" — everyone (common profile S2): the phone (+60), required only for a holder of
+ * `review` (the onboarding rule), and who may see it:
+ *  - staff: "Show my phone to my team" (the Team / People page), off by default;
+ *  - a referral partner or a source user has no team: a note that the organisation that invited
+ *    them can see the number instead;
+ *  - a holder of `review` also: "Share my phone with students I interview" (unchanged behaviour).
+ * Saved with the page's Save, through `admin/me/`.
+ */
 export default function ContactCard({ state }: CardProps) {
-  const { t, draft, setRev } = state
-  const rev = draft.reviewer
-  const share = rev?.share_phone_with_students ?? true
+  const { t, draft, setCard, reviews, role } = state
+  const card = draft.card
+  const outside = role === 'source_partner' || role === 'partner'
   return (
-    <CardFrame title={t('admin.reviewer.contactTitle')} subtitle={t('admin.reviewer.contactSubtitle')}
-      icon="🔒" testId="contact">
+    <CardFrame title={t('admin.reviewer.contactTitle')} icon="🔒" testId="contact">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="profile-phone" className={labelCls}>{t('admin.reviewer.phone')}<Req /></label>
-          <PhoneField id="profile-phone" value={rev?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
+          <label htmlFor="profile-phone" className={labelCls}>{t('admin.reviewer.phone')}{reviews && <Req />}</label>
+          <PhoneField id="profile-phone" value={card.phone} onChange={(v) => setCard({ phone: v })} />
         </div>
       </div>
-      <div className="flex items-start gap-3 text-sm text-ground-700">
-        <Toggle on={share} label={t('admin.reviewer.sharePhone')}
-          onChange={(v) => setRev({ share_phone_with_students: v })} />
-        <span>{t('admin.reviewer.sharePhone')}</span>
-      </div>
+      {outside ? (
+        <p className="text-sm text-ground-600" data-testid="phone-seen-by-inviter">{t('admin.myProfile.inviterSees')}</p>
+      ) : (
+        <div className="flex items-start gap-3 text-sm text-ground-700">
+          <Toggle on={card.share_phone_with_team} label={t('admin.myProfile.showToTeam')}
+            onChange={(v) => setCard({ share_phone_with_team: v })} />
+          <span>{t('admin.myProfile.showToTeam')}</span>
+        </div>
+      )}
+      {reviews && (
+        <div className="flex items-start gap-3 text-sm text-ground-700">
+          <Toggle on={card.share_phone_with_students} label={t('admin.reviewer.sharePhone')}
+            onChange={(v) => setCard({ share_phone_with_students: v })} />
+          <span>{t('admin.reviewer.sharePhone')}</span>
+        </div>
+      )}
+      {!outside && <p className="text-xs text-ground-500 italic">{t('admin.myProfile.contactPrivate')}</p>}
     </CardFrame>
   )
 }

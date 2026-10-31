@@ -32,6 +32,10 @@ export interface AdminItem {
    *  revoked — an org_admin sees their fellow organisation admins and may not touch them. Served
    *  by the same check the write endpoints enforce, so the screen cannot draw a refused button. */
   manageable?: boolean
+  /** Common profile S2: a ~1-hour signed URL of their photo, or null. Staff screens only. */
+  photo_url?: string | null
+  /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
+  phone?: string | null
   /** Whether this account may be DELETED outright rather than only revoked: an admin-shaped role
    *  with NO recorded work. Reviewers are never deletable (owner, 2026-09-09). */
   deletable?: boolean

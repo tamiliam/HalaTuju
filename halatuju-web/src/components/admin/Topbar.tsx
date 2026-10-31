@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n'
 import { Menu, MenuHeading, MenuItem, MenuSeparator } from '@/components/admin/Menu'
 import { Icon } from '@/components/admin/icons'
 import ThemeSelector from '@/components/ThemeSelector'
+import StaffAvatar from '@/components/admin/StaffAvatar'
 
 /**
  * The top bar: where you ARE on the left, what is YOURS on the right.
@@ -45,13 +46,15 @@ function Breadcrumb({ orgName, programmeName, scopes }: {
 }
 
 export function Topbar({
-  orgName, programmeName, adminName, roleLabel, attention,
+  orgName, programmeName, adminName, photoUrl, roleLabel, attention,
   onOpenSearch, onOpenMobileNav, onSignOut, guideHref, faqHref, profileHref,
   navPinned, onTogglePin, scopes, healthLight,
 }: {
   orgName?: string | null
   programmeName?: string
   adminName?: string
+  /** Common profile S2: the person's photo (signed URL), else the initials. */
+  photoUrl?: string | null
   roleLabel: string
   attention: Attention[]
   onOpenSearch: () => void
@@ -72,7 +75,6 @@ export function Topbar({
 }) {
   const { t } = useT()
   const router = useRouter()
-  const initials = (adminName ?? '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   const toneBar = (tone: Attention['tone']) =>
     tone === 'crit' ? 'bg-critical-500' : tone === 'warn' ? 'bg-caution-500' : 'bg-brand-shape'
@@ -182,9 +184,7 @@ export function Topbar({
         label={t('admin.shell.account')}
         trigger={
           <>
-            <span aria-hidden className="grid h-6 w-6 place-items-center rounded-full bg-brand-fill text-[10px] font-bold text-brand-fill-ink">
-              {initials}
-            </span>
+            <StaffAvatar name={adminName} photoUrl={photoUrl} size={24} />
             <span className="hidden text-left leading-tight md:block">
               <span className="block text-[12px] font-semibold text-ground-800">{adminName}</span>
               <span className="block text-[10.5px] text-ground-400">{roleLabel}</span>

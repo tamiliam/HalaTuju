@@ -39,8 +39,9 @@ export const reviewsCases = (ctx: ProfileCardContext): boolean =>
 
 export const PROFILE_CARDS: readonly ProfileCard[] = [
   { id: 'you', order: 10, show: everyone },
-  // S1: phone + "share with students I interview" — review holders only. S2 widens it to everyone.
-  { id: 'contact', order: 20, show: reviewsCases },
+  // S2 (2026-10-31): everyone — the phone and "show my phone to my team"; the "share with students
+  // I interview" switch inside it stays a `review` holder's (`ContactCard`).
+  { id: 'contact', order: 20, show: everyone },
   { id: 'access', order: 30, show: everyone },
   { id: 'qualifications', order: 40, show: reviewsCases },
   { id: 'address', order: 50, show: reviewsCases },

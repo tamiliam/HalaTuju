@@ -39,6 +39,8 @@ export interface AdminReviewer {
   role: string
   /** Fluency codes the reviewer can actually interview in — 'conversational' or better. */
   languages: string[]
+  /** Common profile S2: the optional fourth language by NAME, '' when none (beside the codes). */
+  other_language?: string
   open_now: number
   completed: number
   /** MEDIAN days from assignment to verdict. `null` = no completed review, NOT zero. */
@@ -55,6 +57,10 @@ export interface AdminReviewer {
    *  render it as "every gift", never as a blank cell that reads as missing data. */
   programme_id: number | null
   programme_name: string
+  /** Common profile S2: a ~1-hour signed URL of their photo, or null. Staff screens only. */
+  photo_url?: string | null
+  /** Their phone ONLY when they show it to the team ("Show my phone to my team"), else null. */
+  phone?: string | null
   /** Request #39 Sprint 4 — the permission chips, the same three fields as `AdminItem`. */
   custom?: boolean
   permissions_added?: string[]

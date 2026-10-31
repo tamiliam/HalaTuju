@@ -5113,7 +5113,37 @@
       "unavailable": "Kami tidak dapat menghubungi perkhidmatan log masuk. Cuba lagi dalam beberapa minit.",
       "noPasswordSignIn": "Akaun ini log masuk dengan Google, jadi tiada kata laluan untuk ditukar.",
       "signedInAgain": "Kata laluan anda telah ditukar. Anda telah log masuk semula dengannya.",
-      "signInAgainNeeded": "Kata laluan anda telah ditukar. Log masuk semula dengan kata laluan baharu anda."
+      "signInAgainNeeded": "Kata laluan anda telah ditukar. Log masuk semula dengan kata laluan baharu anda.",
+      "photo": {
+        "alt": "Foto anda",
+        "add": "Tambah foto",
+        "change": "Tukar foto",
+        "remove": "Buang foto",
+        "hint": "JPG, PNG atau WebP, sehingga 2 MB. Hanya kakitangan yang melihatnya.",
+        "saved": "Foto disimpan.",
+        "removed": "Foto dibuang.",
+        "tooLarge": "Foto itu melebihi 2 MB.",
+        "wrongType": "Fail itu bukan foto JPG, PNG atau WebP.",
+        "unavailable": "Kami tidak dapat menyimpan foto sekarang. Cuba lagi dalam beberapa minit.",
+        "failed": "Kami tidak dapat menukar foto. Cuba lagi."
+      },
+      "jobTitle": "Jawatan",
+      "jobTitleHint": "Contohnya, Pegawai program",
+      "about": "Tentang saya",
+      "aboutHint": "Beberapa baris yang akan dilihat oleh pasukan anda",
+      "aboutCount": "{n} daripada {max} aksara",
+      "showToTeam": "Tunjukkan telefon saya kepada pasukan saya (halaman Pasukan)",
+      "inviterSees": "Organisasi yang menjemput anda boleh melihat nombor ini.",
+      "contactPrivate": "Selain yang anda hidupkan di sini, tiada sesiapa melihat telefon anda.",
+      "error": {
+        "name_required": "Taip nama anda.",
+        "name_too_long": "Nama itu terlalu panjang.",
+        "phone_required": "Penilai perlu ada nombor telefon. Taip nombor anda.",
+        "phone_too_long": "Nombor telefon itu terlalu panjang.",
+        "job_title_too_long": "Hadkan jawatan kepada 120 aksara.",
+        "about_too_long": "Hadkan Tentang saya kepada 600 aksara.",
+        "not_editable": "Butiran itu tidak boleh diubah di sini."
+      }
     },
     "superAdmin": "Pentadbir Utama",
     "loginTitle": "Log Masuk Rakan Kongsi",
@@ -5336,7 +5366,27 @@
       "takingPartTitle": "Penyertaan",
       "takingPartSubtitle": "Berehat seketika tanpa melepaskan tempat anda.",
       "pauseLabel": "Jeda kes baharu buat masa ini — jangan tugaskan sesiapa yang baharu kepada saya.",
-      "pausedNote": "Anda sedang dijeda. Akaun anda kekal, begitu juga temu duga yang sudah menjadi tanggungjawab anda; anda cuma tidak akan diberi kes baharu sehingga anda menyahtanda ini."
+      "pausedNote": "Anda sedang dijeda. Akaun anda kekal, begitu juga temu duga yang sudah menjadi tanggungjawab anda; anda cuma tidak akan diberi kes baharu sehingga anda menyahtanda ini.",
+      "otherLang": {
+        "title": "Bahasa lain (pilihan)",
+        "select": "Pilih bahasa",
+        "fluency": "Tahap kefasihan anda",
+        "incomplete": "Berikan kedua-dua bahasa dan tahap kefasihan anda, atau biarkan kedua-duanya kosong."
+      },
+      "otherLangOpts": {
+        "mandarin": "Bahasa Mandarin",
+        "cantonese": "Bahasa Kantonis",
+        "hokkien": "Bahasa Hokkien",
+        "kadazandusun": "Bahasa Kadazandusun",
+        "bajau": "Bahasa Bajau",
+        "murut": "Bahasa Murut",
+        "iban": "Bahasa Iban",
+        "bidayuh": "Bahasa Bidayuh",
+        "telugu": "Bahasa Telugu",
+        "malayalam": "Bahasa Malayalam",
+        "punjabi": "Bahasa Punjabi",
+        "arabic": "Bahasa Arab"
+      }
     },
     "inviteAs": "Jemput sebagai",
     "inviteHeading": {

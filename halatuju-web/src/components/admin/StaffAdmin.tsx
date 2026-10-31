@@ -10,6 +10,7 @@ import {
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PermissionChips from '@/components/admin/PermissionChips'
+import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo, workSummary } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
@@ -169,10 +170,14 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
         return (
           <div key={a.id} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-start gap-2">
+                <StaffAvatar name={a.name} photoUrl={a.photo_url} size={32} />
+                <div className="min-w-0">
                 {nameOf(a, 'block text-sm font-semibold',
                   <span className="block text-sm font-semibold text-ground-900">{a.name}</span>)}
                 <span className="block truncate text-[11px] text-ground-500">{a.email}</span>
+                {a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}
+                </div>
                 {showOrg && (
                   <span className="block text-[11px] text-ground-400">{a.owning_org_name || '—'}</span>
                 )}
@@ -215,7 +220,12 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
         <tbody className="divide-y">
           {rows.map((a) => (
             <tr key={a.id}>
-              <td className="px-4 py-3">{nameOf(a, 'font-medium', a.name)}</td>
+              <td className="px-4 py-3">
+                <span className="flex items-start gap-2">
+                  <StaffAvatar name={a.name} photoUrl={a.photo_url} size={28} />
+                  <span className="min-w-0">{nameOf(a, 'font-medium', a.name)}{a.phone && <span className="block text-xs text-ground-600" data-testid={`team-phone-${a.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{a.phone}</span>}</span>
+                </span>
+              </td>
               <td className="px-4 py-3 text-ground-500">{a.email}</td>
               {showOrg && <td className="px-4 py-3 text-ground-500">{a.owning_org_name || '—'}</td>}
               <td className="px-4 py-3">

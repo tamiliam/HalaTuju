@@ -31,18 +31,19 @@ const PRESET: Record<string, string[]> = {
 const ctx = (role: string, permissions = PRESET[role]): ProfileCardContext =>
   ({ role, permissions, isSuper: role === 'super' })
 
-const REVIEWER_CARDS = ['contact', 'qualifications', 'address', 'takingPart']
+// `contact` is everyone's since S2; the share-with-students switch inside it stays `review`'s.
+const REVIEWER_CARDS = ['qualifications', 'address', 'takingPart']
 
 describe('each role sees exactly its cards, in page order', () => {
   it.each([
-    ['super', ['you', 'access', 'signin']],
-    ['org_admin', ['you', 'access', 'signin']],
-    ['admin', ['you', 'access', 'signin']],
-    ['finance', ['you', 'access', 'signin']],
-    ['qc', ['you', 'access', 'signin']],
+    ['super', ['you', 'contact', 'access', 'signin']],
+    ['org_admin', ['you', 'contact', 'access', 'signin']],
+    ['admin', ['you', 'contact', 'access', 'signin']],
+    ['finance', ['you', 'contact', 'access', 'signin']],
+    ['qc', ['you', 'contact', 'access', 'signin']],
     ['reviewer', ['you', 'contact', 'access', 'qualifications', 'address', 'takingPart', 'signin']],
-    ['partner', ['you', 'access', 'organisation', 'signin']],
-    ['source_partner', ['you', 'access', 'organisation', 'signin']],
+    ['partner', ['you', 'contact', 'access', 'organisation', 'signin']],
+    ['source_partner', ['you', 'contact', 'access', 'organisation', 'signin']],
   ])('%s', (role, cards) => {
     expect(cardsFor(ctx(role))).toEqual(cards)
   })
@@ -57,20 +58,20 @@ describe('the reviewer cards follow the `review` PERMISSION, not the Reviewer ro
   it('a reviewer whose permissions lost `review` loses them', () => {
     const got = cardsFor(ctx('reviewer', []))
     for (const id of REVIEWER_CARDS) expect(got).not.toContain(id)
-    expect(got).toEqual(['you', 'access', 'signin'])
+    expect(got).toEqual(['you', 'contact', 'access', 'signin'])
   })
 
   it('a super — who holds every key — never gets them', () => {
     expect(reviewsCases(ctx('super'))).toBe(false)
     // Whatever the payload says, and whatever role column a legacy super row carries.
-    expect(cardsFor({ role: 'super', permissions: ['review'], isSuper: true })).toEqual(['you', 'access', 'signin'])
+    expect(cardsFor({ role: 'super', permissions: ['review'], isSuper: true })).toEqual(['you', 'contact', 'access', 'signin'])
     const legacy = profileContext({ role: 'reviewer', is_super_admin: true, permissions: ['review'] })
     expect(legacy).toEqual({ role: 'super', permissions: ['review'], isSuper: true })
-    expect(cardsFor(legacy)).toEqual(['you', 'access', 'signin'])
+    expect(cardsFor(legacy)).toEqual(['you', 'contact', 'access', 'signin'])
   })
 
   it('a payload with no permissions shows no reviewer card (never invents one)', () => {
-    expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toEqual(['you', 'access', 'signin'])
+    expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toEqual(['you', 'contact', 'access', 'signin'])
   })
 })
 

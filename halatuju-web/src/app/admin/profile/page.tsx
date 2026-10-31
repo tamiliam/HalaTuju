@@ -5,16 +5,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
-  getAdminMe, getAdminProfile, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
+  getAdminMe, getAdminProfile, updateAdminMe, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
   getSourceProfile, updateSourceProfile,
-  type AdminMe, type ReviewerProfile, type SourceProfile,
+  type AdminMe, type AdminMeCard, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
 import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import { cardsFor, profileContext, reviewsCases, type ProfileCardId } from '@/lib/profileCards'
 import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
 import { lazySource } from '@/components/source/LazySource'
-import type { CardProps, ProfileDraft, ProfileState, SourceForm } from '@/components/adminProfile/shared'
+import type { CardProps, MeCard, ProfileDraft, ProfileState, SourceForm } from '@/components/adminProfile/shared'
 import type { ComponentType } from 'react'
 
 // ⚠ THE CARDS ARE LAZY, IN ONE CHUNK (common profile S1, 2026-10-31): `adminProfile/cards`, one
@@ -40,26 +40,42 @@ const sourceFormOf = (d: SourceProfile): SourceForm => ({
   contact_email: d.source.contact_email, phone: d.source.phone,
 })
 
+const CARD_KEYS = ['job_title', 'about', 'phone', 'share_phone_with_team', 'share_phone_with_students'] as const
+const cardOf = (m: AdminMe): MeCard => ({
+  job_title: m.job_title ?? '', about: m.about ?? '', phone: m.phone ?? '',
+  share_phone_with_team: !!m.share_phone_with_team, share_phone_with_students: m.share_phone_with_students ?? true,
+})
+/** The reviewer profile as the onboarding rule reads it: its phone is the card's (`admin/me/`). */
+const withPhone = (r: ReviewerProfile | null, phone: string): ReviewerProfile =>
+  ({ ...(r ?? blankReviewer()), phone })
+
+/** An `admin/me/` refusal, in the reader's words (`views_admin/me.py`). */
+const ME_REFUSALS = ['name_required', 'name_too_long', 'phone_required', 'phone_too_long',
+  'job_title_too_long', 'about_too_long', 'not_editable']
+
 /**
  * THE PROFILE PAGE — ONE shell for every admin-platform person, a source user included (common
  * profile S1, owner ruling 2026-10-31; roadmap docs/plans/2026-10-31-common-profile-roadmap.md).
  *
  * It renders exactly `cardsFor(...)` (`lib/profileCards.ts`, the ONE list with ONE rule per card)
  * and owns the data and the ONE Save, which writes every changed part to its own endpoint:
- *   the name — `admin/profile/` PUT (staff) or `admin/source/profile/` PATCH (a source);
- *   a partner's organisation contact — `admin/profile/` PUT; a source's organisation —
- *   `admin/source/profile/` PATCH; the reviewer cards — `admin/reviewer-profile/` PATCH.
+ *   the name and the person's card (job title, About, phone, who sees the phone) — `admin/me/`
+ *   PATCH, for every role (common profile S2); a partner's organisation contact — `admin/profile/`
+ *   PUT; a source's organisation — `admin/source/profile/` PATCH; the reviewer cards (qualifications,
+ *   languages, address, pause) — `admin/reviewer-profile/` PATCH, WITHOUT the phone, which is the
+ *   card's. The photo and a password change are their own actions (`admin/me/photo/`,
+ *   `admin/me/password/`), not part of Save.
  *
  * ⚠ A SOURCE USER IS REFUSED EVERY STAFF ENDPOINT (deny by default), so its page calls only
- * `admin/me/` GET, `admin/source/profile/` GET/PATCH and `admin/me/password/` POST (a password
- * change) — `components/source/noStaffCalls.test.tsx` holds it to that.
+ * `admin/me/` GET/PATCH, `admin/me/photo/`, `admin/me/password/` and `admin/source/profile/`
+ * GET/PATCH — `components/source/noStaffCalls.test.tsx` holds it to that.
  *
  * ⚠ THE FIRST-SIGN-IN HOLD STAYS REVIEWER-ROLE ONLY. A Reviewer whose compulsory fields are missing
  * is held here (the layout guard) and sent on to Applications by the save that completes them; a
  * holder of `review` in any other role sees a reminder, never a block.
  */
 export default function AdminProfilePage() {
-  const { token, role, session, refreshRole } = useAdminAuth()
+  const { token, role, session, refreshRole, setPhotoUrl: setHeaderPhoto } = useAdminAuth()
   const router = useRouter()
   const { t, locale } = useT()
   const ctx = profileContext(role)
@@ -70,6 +86,7 @@ export default function AdminProfilePage() {
   const isReviewerRole = ctx.role === 'reviewer'
 
   const [me, setMe] = useState<AdminMe | null>(null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [orgName, setOrgName] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [draft, setDraft] = useState<ProfileDraft | null>(null)
@@ -85,10 +102,14 @@ export default function AdminProfilePage() {
   const messageRef = useRef<HTMLParagraphElement>(null)
   useEffect(() => { if (message && !message.ok) messageRef.current?.focus() }, [message])
 
-  // Own account (Your access, Sign-in) — refetched in the reader's language for the gift names,
-  // never touching the drafts.
+  // Own account (Your access, Sign-in) — fetched with the drafts below, and refetched ONLY when the
+  // reader changes language (the gift names), never touching the drafts.
+  const localeRef = useRef(locale)
+  localeRef.current = locale
+  const meLocale = useRef<string | null>(null)
   useEffect(() => {
-    if (!token) return
+    if (!token || meLocale.current === null || meLocale.current === locale) return
+    meLocale.current = locale
     getAdminMe(locale, { token }).then(setMe).catch(() => {})
   }, [token, locale])
 
@@ -97,30 +118,37 @@ export default function AdminProfilePage() {
   useEffect(() => {
     if (!token || !known) return
     let live = true
-    const load = async (): Promise<[ProfileDraft, string, string | null]> => {
-      if (isSource) {
-        const d = await getSourceProfile({ token })
-        return [{ name: d.user.name, orgContact: '', orgPhone: '', reviewer: null, source: sourceFormOf(d) },
-                d.user.email, d.source.organisation || null]
-      }
-      const [p, rev] = await Promise.all([
-        getAdminProfile({ token }),
-        reviews ? getReviewerProfile({ token }).catch(() => null) : Promise.resolve(null),
-      ])
-      return [{ name: p.name, orgContact: p.org_contact_person || '', orgPhone: p.org_phone || '',
-                reviewer: rev, source: null }, p.email, p.org_name]
-    }
-    load().then(([base, mail, org]) => {
+    const lang = localeRef.current
+    Promise.all([
+      getAdminMe(lang, { token }),
+      isSource ? getSourceProfile({ token }) : Promise.resolve(null),
+      isPartner ? getAdminProfile({ token }) : Promise.resolve(null),
+      reviews ? getReviewerProfile({ token }).catch(() => null) : Promise.resolve(null),
+    ]).then(([m, src, prof, rev]) => {
       if (!live) return
-      setDraft(base); setSaved(base); setEmail(mail); setOrgName(org)
+      const base: ProfileDraft = {
+        name: m.name, card: cardOf(m),
+        orgContact: prof?.org_contact_person || '', orgPhone: prof?.org_phone || '',
+        reviewer: rev, source: src ? sourceFormOf(src) : null,
+      }
+      meLocale.current = lang
+      setMe(m); setPhotoUrl(m.photo_url); setEmail(m.email)
+      setOrgName(prof?.org_name ?? (src?.source.organisation || null))
+      setDraft(base); setSaved(base)
     }).catch(() => { if (live) setFailed(true) })
     return () => { live = false }
-  }, [token, known, isSource, reviews])
+  }, [token, known, isSource, isPartner, reviews])
 
   const set = useCallback((patch: Partial<ProfileDraft>) =>
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev)), [])
   const setRev = useCallback((patch: Partial<ReviewerProfile>) =>
     setDraft((prev) => (prev ? { ...prev, reviewer: { ...(prev.reviewer ?? blankReviewer()), ...patch } } : prev)), [])
+  const setCard = useCallback((patch: Partial<MeCard>) =>
+    setDraft((prev) => (prev ? { ...prev, card: { ...prev.card, ...patch } } : prev)), [])
+  const onPhoto = useCallback((url: string | null) => {
+    setPhotoUrl(url)
+    setHeaderPhoto?.(url)                 // the header's avatar follows at once
+  }, [setHeaderPhoto])
   const report = useCallback((key: string, bad: boolean) =>
     setInvalid((prev) => (!!prev[key] === bad ? prev : { ...prev, [key]: bad })), [])
 
@@ -133,16 +161,22 @@ export default function AdminProfilePage() {
   // strands real work with no way to keep it — so every field this page can write is compared,
   // the reviewer cards and a source's organisation included, and the baseline is refreshed on save.
   const nameDirty = draft.name !== saved.name
+  const cardChanges: AdminMeCard = {}
+  for (const k of CARD_KEYS) {
+    if (k === 'share_phone_with_students' && !reviews) continue
+    if (draft.card[k] !== saved.card[k]) (cardChanges as Record<string, unknown>)[k] = draft.card[k]
+  }
+  const cardDirty = Object.keys(cardChanges).length > 0
   const orgDirty = isPartner && (draft.orgContact !== saved.orgContact || draft.orgPhone !== saved.orgPhone)
   const revDirty = reviews && JSON.stringify(draft.reviewer) !== JSON.stringify(saved.reviewer)
   const srcDirty = isSource && JSON.stringify(draft.source) !== JSON.stringify(saved.source)
-  const dirty = nameDirty || orgDirty || revDirty || srcDirty
+  const dirty = nameDirty || cardDirty || orgDirty || revDirty || srcDirty
   const blocked = Object.values(invalid).some(Boolean)
 
   // Onboarding: a Reviewer whose backend flag is false is held here until the compulsory fields are
   // filled. `missing` is a live client mirror (updates as they type) that drives the banner.
   const gated = isReviewerRole && role?.reviewer_profile_complete === false
-  const missing = reviews ? missingReviewerFields(draft.name, draft.reviewer) : []
+  const missing = reviews ? missingReviewerFields(draft.name, withPhone(draft.reviewer, draft.card.phone)) : []
   const remind = reviews && !isReviewerRole && missing.length > 0
   const MISSING_LABEL: Record<string, string> = {
     name: t('admin.name'),
@@ -158,32 +192,40 @@ export default function AdminProfilePage() {
     e.preventDefault()
     if (!token || !dirty || blocked) return
     setSaving(true); setMessage(null)
+    // Which endpoint refused, so the message is that endpoint's words.
+    let step: 'me' | 'source' | 'other' = 'me'
     try {
       let next: ProfileDraft = draft
-      if (isSource && draft.source) {
+      if (nameDirty || cardDirty) {
+        const m = await updateAdminMe({ ...(nameDirty ? { name: draft.name.trim() } : {}), ...cardChanges }, { token })
+        setMe(m)
+        next = { ...next, name: m.name, card: cardOf(m) }
+      }
+      step = 'source'
+      if (isSource && srcDirty && draft.source) {
         const s = draft.source
+        // The organisation only: the source's own name goes through `admin/me/` since S2.
         const d = await updateSourceProfile({
-          ...(nameDirty ? { user: { name: draft.name.trim() } } : {}),
           source: { name: s.source_name.trim(), contact_person: s.contact_person.trim(),
                     contact_email: s.contact_email.trim(), phone: s.phone.trim() },
         }, { token })
-        next = { ...draft, name: d.user.name, source: sourceFormOf(d) }
-      } else {
-        if (nameDirty || orgDirty) {
-          const data: Record<string, string> = { name: draft.name }
-          if (isPartner && orgName) {
-            data.org_contact_person = draft.orgContact
-            data.org_phone = draft.orgPhone
-          }
-          await updateAdminProfile(data, { token })
-        }
-        if (revDirty && draft.reviewer) await updateReviewerProfile(draft.reviewer, { token })
+        next = { ...next, source: sourceFormOf(d) }
+      }
+      step = 'other'
+      if (orgDirty && orgName) {
+        await updateAdminProfile({ org_contact_person: draft.orgContact, org_phone: draft.orgPhone }, { token })
+      }
+      if (revDirty && draft.reviewer) {
+        // ⚠ Without the phone and "share with students": they are the card's, saved above.
+        const { phone: _p, share_phone_with_students: _s, ...rest } = draft.reviewer
+        void _p; void _s
+        await updateReviewerProfile(rest, { token })
       }
       setDraft(next); setSaved(next)
       setMessage({ ok: true, text: t('admin.profileUpdated') })
       // Onboarding: this save completed a held Reviewer's profile — refresh the role flag and send
       // them on to their workspace (the layout guard releases once the flag flips).
-      if (gated && reviewerProfileComplete(next.name, next.reviewer)) {
+      if (gated && reviewerProfileComplete(next.name, withPhone(next.reviewer, next.card.phone))) {
         await refreshRole()
         router.push('/admin/scholarship')
         return
@@ -191,9 +233,10 @@ export default function AdminProfilePage() {
       // The header shows the person's name (and a source's "<source> · Source").
       if (nameDirty || (isSource && next.source?.source_name !== saved.source?.source_name)) void refreshRole()
     } catch (err) {
-      setMessage({ ok: false, text: isSource
-        ? t(refusalKey('profile', (err as { code?: string })?.code))
-        : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
+      const code = (err as { code?: string })?.code ?? ''
+      setMessage({ ok: false, text: step === 'me' && ME_REFUSALS.includes(code) ? t(`admin.myProfile.error.${code}`)
+        : step === 'source' ? t(refusalKey('profile', code))
+          : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
     }
     setSaving(false)
   }
@@ -202,7 +245,7 @@ export default function AdminProfilePage() {
   const providers = meta.providers ?? (meta.provider ? [meta.provider] : [])
   const state: ProfileState = {
     t, token, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
-    draft, saved, set, setRev, report, orgName, providers,
+    draft, saved, set, setRev, setCard, report, orgName, providers, reviews, photoUrl, onPhoto,
   }
 
   return (

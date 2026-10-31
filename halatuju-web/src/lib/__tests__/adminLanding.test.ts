@@ -8,6 +8,7 @@ const full: ReviewerProfile = {
   field_of_study: 'Engineering', phone: '+60123', address: '',
   street_address: '', postcode: '', city: '', state: '',
   english_fluency: 'fluent', bm_fluency: '', tamil_fluency: '',
+  other_language: '', other_language_fluency: '',
   share_phone_with_students: true,
   paused: false,
 }

@@ -57,6 +57,8 @@ export interface SourceUserRow {
   last_seen_at: string | null
   /** May THIS caller Resend / Remove — the server's own rule, so no button is offered it refuses. */
   manageable: boolean
+  /** Common profile S2: the source person's own phone (their Profile's Contact card), or null. */
+  phone?: string | null
   invitation: { status: string; sent_at: string | null; send_count: number
                 last_send_ok: boolean | null; last_send_error: string } | null
 }

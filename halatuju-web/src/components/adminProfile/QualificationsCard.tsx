@@ -3,6 +3,7 @@
 import InstitutionPicker from '@/components/InstitutionPicker'
 import SelectWithOther from '@/components/SelectWithOther'
 import { COMMON_UNIVERSITIES } from '@/data/publicUniversities'
+import { useEffect } from 'react'
 import type { LangFluency } from '@/lib/admin-api'
 import { CardFrame, inputCls, labelCls, Req, type CardProps } from './shared'
 
@@ -21,6 +22,16 @@ const UNI_OPTIONS = COMMON_UNIVERSITIES.map((u) => ({
   name: u.name, hint: u.hint, keywords: (u.aliases ?? []).join(' '),
 }))
 
+/** The fourth language's suggestions (owner, 2026-10-31: students from Sabah and beyond). The VALUE
+ *  stored is the English proper name; the label is the reader's language. Anything else is typed. */
+const OTHER_LANGS = [
+  ['Mandarin', 'mandarin'], ['Cantonese', 'cantonese'], ['Hokkien', 'hokkien'],
+  ['Kadazandusun', 'kadazandusun'], ['Bajau', 'bajau'], ['Murut', 'murut'], ['Iban', 'iban'],
+  ['Bidayuh', 'bidayuh'], ['Telugu', 'telugu'], ['Malayalam', 'malayalam'], ['Punjabi', 'punjabi'],
+  ['Arabic', 'arabic'],
+] as const
+const OTHER_MAX = 60
+
 const LANGS = [
   ['english_fluency', 'admin.reviewer.langEnglish'],
   ['bm_fluency', 'admin.reviewer.langBm'],
@@ -34,8 +45,14 @@ const LANGS = [
  * why the cards are loaded lazily, off the route's first load; see `cards.tsx`.)
  */
 export default function QualificationsCard({ state }: CardProps) {
-  const { t, draft, setRev } = state
+  const { t, draft, setRev, report } = state
   const rev = draft.reviewer
+  const otherName = (rev?.other_language ?? '').trim()
+  const otherFluency = rev?.other_language_fluency ?? ''
+  // Both or neither (the server refuses half). Save sleeps while it is half.
+  const otherHalf = !!otherName !== !!otherFluency
+  useEffect(() => { report('otherLanguage', otherHalf) }, [otherHalf, report])
+  const otherOpts = OTHER_LANGS.map(([value, key]) => ({ value, label: t(`admin.reviewer.otherLangOpts.${key}`) }))
   const qualOpts = QUAL_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.qualOpts.${key}`) }))
   const fieldOpts = FIELD_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.fieldOpts.${key}`) }))
   return (
@@ -102,6 +119,33 @@ export default function QualificationsCard({ state }: CardProps) {
           </div>
         ))}
       </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="sm:col-span-2">
+          <span className={labelCls}>{t('admin.reviewer.otherLang.title')}</span>
+          <SelectWithOther
+            value={rev?.other_language ?? ''}
+            onChange={(v) => setRev({ other_language: v.slice(0, OTHER_MAX) })}
+            options={otherOpts}
+            placeholder={t('admin.reviewer.otherLang.select')}
+            otherText={t('admin.reviewer.other')}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label htmlFor="profile-other-fluency" className={labelCls}>{t('admin.reviewer.otherLang.fluency')}</label>
+          <select id="profile-other-fluency" value={otherFluency} aria-invalid={otherHalf || undefined}
+            onChange={(e) => setRev({ other_language_fluency: e.target.value as LangFluency })} className={inputCls}>
+            <option value="">{t('admin.reviewer.fluencyNone')}</option>
+            <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
+            <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
+          </select>
+        </div>
+      </div>
+      {otherHalf && (
+        <p className="text-sm text-critical-600" data-testid="other-language-incomplete">
+          {t('admin.reviewer.otherLang.incomplete')}
+        </p>
+      )}
     </CardFrame>
   )
 }

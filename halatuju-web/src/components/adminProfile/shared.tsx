@@ -21,9 +21,21 @@ export interface SourceForm {
   phone: string
 }
 
-/** Everything the page can save, as one value: compared with the last saved copy for "dirty". */
+/** The person's own card — what `PATCH admin/me/` writes (common profile S2). */
+export interface MeCard {
+  job_title: string
+  about: string
+  phone: string
+  share_phone_with_team: boolean
+  share_phone_with_students: boolean
+}
+
+/** Everything the page can save, as one value: compared with the last saved copy for "dirty".
+ *  ⚠ The phone and "share with students" live in `card` ONLY (`admin/me/`), never in `reviewer`:
+ *  one field, one writer. The reviewer save leaves both out. */
 export interface ProfileDraft {
   name: string
+  card: MeCard
   orgContact: string
   orgPhone: string
   reviewer: ReviewerProfile | null
@@ -46,6 +58,13 @@ export interface ProfileState {
   saved: ProfileDraft
   set: (patch: Partial<ProfileDraft>) => void
   setRev: (patch: Partial<ReviewerProfile>) => void
+  setCard: (patch: Partial<MeCard>) => void
+  /** Holds the `review` permission and is not a super (the reviewer cards' rule). */
+  reviews: boolean
+  /** The photo now on the profile (a signed URL), and how a card changes it — straight away,
+   *  not through Save (`admin/me/photo/`). */
+  photoUrl: string | null
+  onPhoto: (url: string | null) => void
   /** A card says one of its fields would be refused (Save sleeps while any is). */
   report: (key: string, bad: boolean) => void
   /** A referral partner's organisation name (from `admin/profile/`), or the source's organisation. */

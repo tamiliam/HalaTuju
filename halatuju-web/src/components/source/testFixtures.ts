@@ -25,6 +25,8 @@ export const ME: AdminMe = {
   organisation: { id: 2, name: 'Harapan' }, source: { id: 3, name: 'MUETMyWay' }, referral_partner: null,
   programmes: [{ id: 5, code: 'flag', name: 'Flagship' }], permissions: [],
   first_seen_at: '2026-10-30T09:00:00Z', last_seen_at: '2026-10-31T08:00:00Z',
+  job_title: '', about: '', phone: '016-845 1270', share_phone_with_team: false,
+  share_phone_with_students: true, photo_url: null,
 }
 
 export const OVERVIEW: SourceOverview = {
