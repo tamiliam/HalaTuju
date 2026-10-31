@@ -10,6 +10,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-10-29 a75d80ff fix: STPM results page streams follow the MPM grouping - Sains Sukan under Arts only, Matematik (M) and ICT under both (halatuju-web/src/lib/stpmResultsSubjects.ts, halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts)
 - 2026-10-30 1a6f8cd1 feat: request 50 - sort the applications list by Assigned, unassigned last (halatuju_api/apps/scholarship/views_admin/applications.py, halatuju-web/src/app/admin/scholarship/page.tsx, test_admin_scholarship.py)
 - 2026-10-30 bf79bea6 refactor: move the reviewer FAQ out of faq.tsx (moves only) (halatuju-web/src/content/manual/faq.tsx, faq-reviewer.tsx, types.ts — the 600-line standard)
+- 2026-10-31 18192946 fix: profile password change saves under the sign-in email, not the phone (halatuju-web/src/components/adminProfile/SignInCard.tsx, shared.tsx, app/admin/profile/page.test.tsx)
 - 2026-10-30 827c8b05 fix: cockpit ticks mean a document backs the value (halatuju-web/src/lib/fieldVerification.ts, ApplicantCards.tsx, faq-reviewer.tsx, role-reviewer.tsx; owner ruling, display only)
 - 2026-10-30 8aaee890 fix: request 50 follow-up - ready-to-assign unassigned before not-ready in the Assigned sort (halatuju_api/apps/scholarship/views_admin/applications.py, test_admin_scholarship.py, docs/lessons.md)
 
