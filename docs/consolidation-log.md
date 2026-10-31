@@ -54,6 +54,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-30 source sign-in S1–S4 (+2 review rounds; migrations courses 0089, scholarship 0190, 0191) — 89714e00 e88810ac 17b51f6a bc9c050b e9bc334d bd22bfd7 f45bc558
 - 2026-10-30 Scholarship My Plans redesign (offer question, institution first, unfiltered; + adversarial review round; no migration) — ceb547fc c34519cb 53706f21
 - 2026-10-31 School search + same-name towns + MARA division in the picker (owner follow-ups to My Plans; two adversarial review rounds, money guarded; no migration) — 78348694 4a9777a5 30105247 fadedfc1 9282305d 820c1412
+- 2026-10-31 Mobile-native Sprint M0 (Mobile Standard, ratchet guards, mobile-check + ledger, viewport/manifest) — 9691f9a7 b38e6b67 c4f7d9d6 308ef3b5
 
 ## Reviews
 

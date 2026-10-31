@@ -29,10 +29,11 @@ from .sources import _SourcesBase, text_of
 # ⚠ THE PACKAGE'S name, never `__name__` — an audit line must stay on the scrape metric (H11).
 logger = logging.getLogger('apps.scholarship.views_admin')
 
-#: 409 for an address that already has any sign-in here. One sentence for every case, so it confirms
-#: nothing about the other account.
-ALREADY_STAFF = ("This email address already has a HalaTuju sign-in, so it can't be invited as a "
-                 "mentor. Ask HalaTuju support.")
+#: 409 for an address that already has an ADMIN sign-in (staff, source or another mentor). One
+#: sentence for every case, so it confirms nothing about the other account. A student's or sponsor's
+#: login is not refused (owner ruling 2026-10-31; `mentor_invite`).
+ALREADY_STAFF = ("This email address already has a HalaTuju admin sign-in, so it can't be invited as "
+                 "a mentor. Ask HalaTuju support.")
 
 _FLUENT = ('conversational', 'fluent')
 

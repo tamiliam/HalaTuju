@@ -8146,7 +8146,7 @@
         "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi."
       },
       "error": {
-        "already_staff": "Alamat e-mel ini sudah mempunyai log masuk HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
+        "already_staff": "Alamat e-mel ini sudah mempunyai log masuk pentadbir HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
         "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
         "name_required": "Taip nama mentor.",
         "organisation_required": "Pilih organisasi dahulu.",
