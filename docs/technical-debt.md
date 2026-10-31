@@ -138,6 +138,8 @@ Class A at any size, and class B that is small or medium. Schedule these first.
 
 - **TD-440** — Staff Resend can write a temporary password onto a login the invitee brought with them (linked by verified email before `admin/role/` stamps the first sign-in). The mentor path is fixed in S7a; do the staff path the same way. *(A · S · raised 2026-10-31 by the S7a review; pre-existing)*
 - **TD-441** — Staff invitations never store `invited_by` (`request._inviting_admin` is never set). The activity list is unaffected; S4's back-fill cannot rebuild old staff `invitation_sent` rows. *(B · S · raised 2026-10-31 by the common profile S3 build; pre-existing)*
+- **TD-442** — A QC reject runs `reopen_decision` (its own atomic block) and then `admin_reject`; if the decline raises, the case stays reopened with a 400 and no activity row. *(B · S · raised 2026-10-31 by the common profile S4 review, L3; pre-existing)*
+- **TD-443** — `staff_footprint` ignores most email stamps (assigner, closer, recommender, resolution, permission changer, reopener, credit signers, invoices, receipts, templates, vetting, merchant notes, tranches), so a staff row with real history can be deleted. *(B · M · raised 2026-10-31 by the common profile S4 review, M1; pre-existing)*
 
 - **TD-394** — A deferred EPF statement or support letter is not income evidence, so our outage can hold the salary route's `income_evidence_missing` submission blocker until the sweep re-reads it; a decision about letting an unread document satisfy a money gate. *(B · S · raised 2026-10-24 by the AI-outage sprint; pre-existing)*
 
@@ -7136,3 +7138,23 @@ not yet reached `admin/role/` can have their own password replaced by a Resend. 
 the same rule on the staff path — reissue only when the newest staff invitation has `credential_issued`, and
 treat a UID with no issued credential as signed in for Resend; regression test with the attach-then-Resend
 chain. *(A · S)*
+
+### [TD-442] A QC reject can leave a case reopened with no decline - medium
+
+**Raised 2026-10-31 by the common profile S4 adversarial review (L3); pre-existing.** In
+`views_admin/verdict.py` `AdminQcDecisionView` the reject branch calls `reopen_service.reopen_decision` (which commits
+in its own `transaction.atomic()`), then `admin_reject`. If `admin_reject` raises `ValueError` the view answers 400,
+but the reopen has already committed: the case sits reopened, nobody declined it, and no `qc_decision` row is written.
+The QC-accept branch saves before `publish_profile_to_pool`, with the same shape. **Fix:** wrap the reject branch in
+one `transaction.atomic()` (the decline email must then go `on_commit`), and test that a failing decline leaves the
+case exactly as it was. *(B · S)*
+
+### [TD-443] `staff_footprint` misses most of a staff member's history - medium
+
+**Raised 2026-10-31 by the common profile S4 adversarial review (M1); pre-existing.** `staff_footprint.footprint`
+decides whether a staff row may be deleted, but it ignores most email stamps: assigner `by_email`, `closed_by`,
+`recommended_by`, resolution `created_by` / `resolved_by`, permission `changed_by_email`, `reopened_by`, credit
+signers, invoice / receipt / declaration stamps, template stamps, membership `vetted_by`, merchant notes and tranche
+`actioned_by`. An admin, finance or org_admin whose work is only of those kinds can be deleted, and a new row on the
+same address (a shared mailbox) then looks like the author. The S4 back-fill is already safe (it maps an email only
+to a row created before the event). **Fix:** widen `footprint` to these stamps and test each one. *(B · M)*
