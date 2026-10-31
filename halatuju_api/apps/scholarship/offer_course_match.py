@@ -138,16 +138,51 @@ def pinned_match(programme, institution, issuer=''):
     level word on the letter or a course of another level) or ``'campus_unpinned'``. The one test the
     realignment, the offer link and the offer confirm share (round-3 review, 2026-11-01: an old pick
     with a letter reading only "SAINS" at a school had realigned to ``stpm-sains``, and "SAINS SUKAN"
-    with no level word to a diploma)."""
+    with no level word to a diploma). Round 4: the level is EXACT — the letter's own level words against
+    the course's own ``level`` field — never a family: "SIJIL KEJURUTERAAN MEKANIKAL" is not the
+    Diploma, and "DIPLOMA LANJUTAN …" is no catalogue level at all."""
     match = match_offer_course(programme, institution, issuer)
     if not match or match['course_id'] in set(PREU_COURSE_SLUG.values()):
         return 'unresolved', None
-    level = detect_pathway_type(programme, '')
-    if not level or level != detect_pathway_type(match['course_name'], ''):
+    level = letter_level(programme)
+    if not level or level != course_level(match['course_id']):
         return 'unresolved', None
     if not (match.get('institution') or '').strip():
         return 'campus_unpinned', None
     return '', match
+
+
+#: The letter's level words, most specific first, as the catalogue's own ``Course.level`` values
+#: (lower-cased): Sijil, Sijil Lanjutan, Diploma, Asasi, Ijazah Sarjana Muda, Pra-U. "Diploma Lanjutan"
+#: and a PISMP letter's "Perguruan" are levels no catalogue course carries, so they pin nothing.
+_LETTER_LEVELS = (
+    ('pismp', ('perguruan', 'pismp')),
+    ('pra-u', ('tingkatan enam', 'tingkatan 6', 'stpm', 'matrikulasi', 'matriculation')),
+    ('diploma lanjutan', ('diploma lanjutan',)),
+    ('sijil lanjutan', ('sijil lanjutan',)),
+    ('asasi', ('asasi', 'asasipintar', 'foundation')),
+    ('diploma', ('diploma',)),
+    ('sijil', ('sijil', 'certificate')),
+    ('ijazah sarjana muda', ('ijazah', 'sarjana muda', 'bachelor', 'bacelor', 'degree')),
+)
+
+
+def letter_level(programme):
+    """The level the letter STATES, exactly (``_LETTER_LEVELS``), or '' when it states none."""
+    text = f' {_plain_words(programme)} '
+    for level, words in _LETTER_LEVELS:
+        if any(f' {w} ' in text for w in words):
+            return level
+    return ''
+
+
+def course_level(course_id):
+    """The course's OWN level: its ``Course.level`` lower-cased; an STPM degree is "ijazah sarjana muda"."""
+    from apps.courses.models import Course, StpmCourse
+    if StpmCourse.objects.filter(course_id=course_id).exists():
+        return 'ijazah sarjana muda'
+    level = Course.objects.filter(course_id=course_id).values_list('level', flat=True).first()
+    return ' '.join((level or '').lower().split())
 
 
 def _printed_course(programme, institution, issuer, index=None):
@@ -211,6 +246,16 @@ _TOWN_WORDS = frozenset({
     'kajang', 'klang', 'gombak', 'rawang', 'sepang', 'cyberjaya', 'petaling', 'jaya', 'subang', 'puchong',
     'seri', 'sri', 'bandar', 'teluk', 'sungai', 'parit', 'kampus', 'cawangan'})
 
+#: Words that name a TYPE of institution, shared by every campus of that type: they never make a
+#: campus "named" (round-4 review: "KOLEJ KOMUNITI", the ministry issuer "JABATAN PENDIDIKAN POLITEKNIK
+#: DAN KOLEJ KOMUNITI", "INSTITUT PENDIDIKAN GURU" and "POLITEKNIK METRO KL" each named every campus of
+#: their type). The generic list in ``pathway_engine`` already drops kolej / politeknik / institut /
+#: universiti / pendidikan / jabatan; these are the type words it keeps.
+_TYPE_WORDS = frozenset({
+    'komuniti', 'metro', 'guru', 'pendidikan', 'jabatan', 'kemahiran', 'belia', 'negara', 'latihan',
+    'perindustrian', 'vokasional', 'premier', 'mara', 'giatmara', 'adtec', 'ikbn', 'ikm', 'kktm', 'ilp',
+    'ipg', 'kkom', 'profesional'})
+
 #: Former names and common short forms of catalogue institutions whose own distinctive words are only
 #: place words once the town is dropped — the one case the word tier cannot see. Keyed by the
 #: catalogue's bracket-stripped, lower-cased name. Explicit on purpose: an alias is a fact, not a guess.
@@ -265,9 +310,10 @@ class CampusReader:
                     or (len(nw.split()) > 1 and f' {nw} ' in self.hw) or unique_acr)
 
     def _contained(self, name):
-        """The matcher's word tier: two or more of the institution's own words, all in the line."""
+        """The matcher's word tier: two or more of the institution's own words, all in the line, one
+        of them neither a place nor a type word."""
         nt = distinctive_tokens(school_name_core(name or ''))
-        return len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place)
+        return len(nt) > 1 and nt <= self.ht and bool(nt - self.index.place - _TYPE_WORDS)
 
     def _aliased(self, name):
         for alias in _ALIASES.get(_norm_inst_name(name), ()):
@@ -288,9 +334,9 @@ class CampusReader:
             return any(_norm_inst_name(n) == nn or (acr and (a or '').strip().lower() == acr)
                        for _i, n, a in self._named)
         nt = distinctive_tokens(school_name_core(name))
-        if not _name_aligns(self.ht, nt):
-            return False
-        return bool((nt if nt <= self.ht else self.ht) - self.index.place)   # not only place words
+        if not (self.ht - self.index.place - _TYPE_WORDS) or not _name_aligns(self.ht, nt):
+            return False                              # a line of only place / type words names no campus
+        return bool((nt if nt <= self.ht else self.ht) - self.index.place - _TYPE_WORDS)
 
 
 class _Index:

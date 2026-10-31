@@ -302,3 +302,80 @@ class Round3RealignLevelTest(TestCase):
         self.assertFalse(realign_bumi_only_pick(app, offer, student_offer_check(offer)))
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['course_id'], 'POLY-DIP-019')
+
+
+class Round4LevelAndTypeWordsTest(TestCase):
+    """Round-4 review (2026-11-01): the level is EXACT (the course's own level field), and a line of
+    shared type words names no campus."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_168()
+        ft = FieldTaxonomy.objects.get(key='realign')
+
+        def inst(iid, name, acr, typ='x'):
+            return Institution.objects.create(institution_id=iid, institution_name=name, acronym=acr, type=typ,
+                                              state='x')
+
+        def course(cid, name, level, *campuses, st='poly'):
+            c = Course.objects.create(course_id=cid, course=name, level=level, department='x', field='x',
+                                      field_key=ft)
+            for campus in campuses:
+                CourseInstitution.objects.create(course=c, institution=campus)
+            CourseRequirement.objects.create(course=c, source_type=st)
+
+        mukah = inst('RA-PMU', 'Politeknik Mukah Sarawak', 'PMU')
+        course('RA-SIJIL-MEK', 'Sijil Kejuruteraan Mekanikal', 'Sijil', mukah)
+        ikbn = inst('RA-IKBN-MIRI', 'Institut Kemahiran Belia Negara Miri', 'IKBN')
+        inst('RA-IKBN-X', 'Institut Kemahiran Belia Negara Dusun Tua', 'IKBN')
+        course('IKBN-CET-015', 'Sijil Lanjutan Teknologi Hospitaliti (Penyediaan Pastri)', 'Sijil Lanjutan', ikbn,
+               st='tvet')
+        course('RA-SIJIL-KUL', 'Sijil Kulinari', 'Sijil', ikbn, st='tvet')
+        kangar = Institution.objects.get(institution_id='RA-KK-KANGAR')
+        course('RA-KK-SOLO', 'Diploma Kulinari', 'Diploma', kangar, st='kkom')
+        inst('RA-IPG-IPOH', 'Institut Pendidikan Guru Kampus Ipoh', '')
+        inst('RA-IPG-KB', 'Institut Pendidikan Guru Kampus Kota Bharu', '')
+        inst('RA-MET-JB', 'Politeknik METrO Johor Bahru', 'PMJB')
+        inst('RA-MET-KL', 'Politeknik METrO Kuala Lumpur', 'PMKL')
+
+    # ── 1. the exact level ────────────────────────────────────────────────────────────────────
+    def test_a_certificate_letter_never_pins_the_diploma(self):
+        from apps.scholarship.offer_course_match import pinned_match
+        self.assertEqual(pinned_match('SIJIL KEJURUTERAAN MEKANIKAL', 'POLITEKNIK KOTA KINABALU'),
+                         ('unresolved', None))
+        self.assertEqual(pinned_match('DIPLOMA LANJUTAN KEJURUTERAAN MEKANIKAL', 'POLITEKNIK KOTA KINABALU'),
+                         ('unresolved', None))
+        reason, match = pinned_match('DIPLOMA KEJURUTERAAN MEKANIKAL', 'POLITEKNIK KOTA KINABALU')
+        self.assertEqual((reason, match['course_id']), ('', 'POLY-DIP-019'))
+
+    def test_a_sijil_lanjutan_pins_only_its_own_level(self):
+        from apps.scholarship.offer_course_match import letter_level, pinned_match
+        self.assertEqual(letter_level('SIJIL LANJUTAN TEKNOLOGI HOSPITALITI (PENYEDIAAN PASTRI)'), 'sijil lanjutan')
+        reason, match = pinned_match('SIJIL LANJUTAN TEKNOLOGI HOSPITALITI (PENYEDIAAN PASTRI)',
+                                     'INSTITUT KEMAHIRAN BELIA NEGARA MIRI')
+        self.assertEqual((reason, match['course_id']), ('', 'IKBN-CET-015'))
+        self.assertEqual(pinned_match('SIJIL TEKNOLOGI HOSPITALITI (PENYEDIAAN PASTRI)',
+                                      'INSTITUT KEMAHIRAN BELIA NEGARA MIRI'), ('unresolved', None))
+        # A Sijil Lanjutan letter where the campus holds only the Sijil: another level, so no pin.
+        self.assertEqual(pinned_match('SIJIL LANJUTAN KULINARI', 'INSTITUT KEMAHIRAN BELIA NEGARA MIRI'),
+                         ('unresolved', None))
+        # #228's own line: "IKBN" is shared by every IKBN and "Miri" is a town, so it names no campus.
+        self.assertEqual(pinned_match('SIJIL LANJUTAN TEKNOLOGI HOSPITALITI (PENYEDIAAN PASTRI)', 'IKBN MIRI')[0],
+                         'unresolved')
+
+    # ── 2. type words ─────────────────────────────────────────────────────────────────────────
+    def test_a_line_of_type_words_names_no_campus(self):
+        for line, campus in (('KOLEJ KOMUNITI', 'Kolej Komuniti Arau'),
+                             ('JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI', 'Kolej Komuniti Kangar'),
+                             ('INSTITUT PENDIDIKAN GURU', 'Institut Pendidikan Guru Kampus Ipoh'),
+                             ('POLITEKNIK METRO KL', 'Politeknik METrO Johor Bahru')):
+            with self.subTest(line=line):
+                self.assertFalse(CampusReader(line).names(campus, ''))
+
+    def test_the_ministry_letterhead_never_ticks_a_single_campus_kk_course(self):
+        issuer = 'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI'
+        self.assertEqual(letter_place('RA-KK-SOLO', '', issuer), '')
+        self.assertEqual(op.institution_agreement('RA-KK-SOLO', '', '', issuer), 'unknown')
+        self.assertEqual(op.institution_agreement('RA-KK-SOLO', '', 'KOLEJ KEDIAMAN', issuer), 'unknown')
+        # The campus's own name still names it.
+        self.assertEqual(op.institution_agreement('RA-KK-SOLO', '', 'KOLEJ KOMUNITI KANGAR'), 'match')

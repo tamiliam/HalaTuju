@@ -31,6 +31,13 @@ Owner rulings 2026-11-01 (decisions.md). Not deployed; no migration; no MODEL_VE
   (`place_disagrees`), sets `pathway_certainty='sure'`, gives the realignment's pathway when the realignment would
   take the record too, and its command runs the realignment first — so the order of the two never changes a row.
   One read of the institution table per check (#168's shape: 8 queries / 4 full reads → 6 / 2).
+- **Round-4 review fixes (fourth commit):** `pinned_match` compares the letter's level words with the course's
+  OWN `level` field, exactly (`letter_level` / `course_level`) — "SIJIL …" never pins a Diploma, "SIJIL LANJUTAN …"
+  only a Sijil Lanjutan, "DIPLOMA LANJUTAN …" nothing (no catalogue course has that level). Type words
+  (`_TYPE_WORDS`: komuniti, metro, guru, pendidikan, jabatan, kemahiran, mara, …) never make a campus named, and a
+  line of only place and type words names no campus — "KOLEJ KOMUNITI", the ministry issuer "JABATAN PENDIDIKAN
+  POLITEKNIK DAN KOLEJ KOMUNITI", "INSTITUT PENDIDIKAN GURU" and "POLITEKNIK METRO KL" no longer name every campus
+  of their type. Live dry run: no change to the 27 realigns, the 27 links or any tick.
 - Tests: `test_offer_date_rule.py`. Amended with the reason written in: a UKM letter holding UKM's full name now
   reads `match` (was `unknown`) in `test_td145_wrong_university.py`; `TestCatalogueHint` is a `TestCase` (the test
   reads the catalogue); the multi-campus tests name both campuses by name.

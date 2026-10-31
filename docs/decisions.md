@@ -22,7 +22,9 @@ unique acronym, a listed alias, else its own words either way round with at leas
 code, `_TOWN_WORDS`); the "names another institution outright" guard reads only exact names and acronyms one row holds,
 so a new school row cannot change it unless its whole name is in the line. The realignment, the link and the confirm
 share one "pinned" test (no pre-U virtual course, a level the letter states, one campus); the link also checks the
-place and gives the same row whichever of the two runs first.
+place and gives the same row whichever of the two runs first. **Round 4:** the level is the course's OWN `level`
+field, exactly (a Sijil letter never pins a Diploma); words naming a TYPE of institution (komuniti, metro, guru,
+kemahiran, mara, …) never name a campus, so a type-only line or the ministry letterhead names none.
 
 **Revisit if:** a pick turns out to have been made after the cut-off on a profile saved before it (the rule would then
 realign a real choice), or a campus is named on letters only by place words (it then reads `unknown` — add an alias).
