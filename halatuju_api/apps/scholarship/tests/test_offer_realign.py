@@ -270,7 +270,7 @@ class ReviewFindingsRealignTest(_Base):
 
     def test_3_a_campus_the_letter_cannot_pin_is_never_written(self):
         app = self._app()
-        offer = _offer(app, ('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI', ''))
+        offer = _offer(app, ('DIPLOMA PELANCONGAN', 'KOMUNITI ARAU KANGAR', ''))   # names both campuses
         self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'campus_unpinned')
         app2 = self._app()
         offer2 = _offer(app2, ('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI', ''))
@@ -338,3 +338,26 @@ class ReviewFindingsRealignTest(_Base):
             out = StringIO()
             call_command('realign_bumi_offers', stdout=out)
         self.assertIn('institution would fill: Universiti Putra Malaysia', out.getvalue())
+
+
+class ConfirmStoresTheCampusNotTheHostelTest(_Base):
+    """Round-2 review (2026-10-31): the offer confirm stored the raw line, so a hostel became the
+    sponsor-facing institution and the blank-only fill never corrected it."""
+
+    def test_confirm_with_a_hostel_line_stores_the_catalogue_campus(self):
+        from apps.scholarship.services.confirmation import confirm_pathway
+        app = self._app(pick={'course_id': 'UP4310001', 'course_name': 'Diploma Pembangunan Manusia'})
+        offer = _offer(app, ('DIPLOMA PEMBANGUNAN MANUSIA', 'KOLEJ SRI RAJANG', 'Universiti Putra Malaysia'))
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Putra Malaysia')
+        self.assertEqual(app.chosen_programme['course_id'], 'UP4310001')
+        self.assertEqual(student_offer_check(offer)['pathway'], 'match')
+
+    def test_a_line_naming_the_campus_is_stored_as_before(self):
+        from apps.scholarship.services.confirmation import confirm_pathway
+        app = self._app(pick={'course_id': 'UP4310001', 'course_name': 'Diploma Pembangunan Manusia'})
+        _offer(app, ('DIPLOMA PEMBANGUNAN MANUSIA', 'Universiti Putra Malaysia', 'Universiti Putra Malaysia'))
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Universiti Putra Malaysia')

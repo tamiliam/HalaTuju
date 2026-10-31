@@ -37,6 +37,10 @@ genuineness change — stored `vision_fields` are read as they are).
   `verdict_decided_at`; the offer confirm's stale-course check reads the issuer; only `offer_sync` may call
   `is_bumiputera_only`; `backfill_offer_pathways`' dry run plans on the live offer; the repair command's report
   reads a new read-only `institution_fill` planner and never runs a writer.
+- **Round-2 review fixes (third commit):** the word tier needs the institution's own words (two or more) inside the
+  line; the issuer named by name or acronym outranks the line's word tier (#349 "Pusat Persediaan Sains dan
+  Teknologi" + UMS → UH0010001, #322 "Pusat Asasi Sains" + UM → UM0421001, never USM / USIM / UTM); the offer
+  confirm stores the catalogue campus, never a hostel line ("KOLEJ SRI RAJANG" + UPM → "Universiti Putra Malaysia").
 - Tests: `test_offer_course_match.py`, `test_offer_realign.py`; one patch target in `test_td331_td332_programme.py`
   follows the moved matcher. `test_bumiputera_blind`: the course-flag scan allows `offer_course_match.py` by path,
   and a new test pins that it reads the COURSE flag only inside `is_bumiputera_only` (owner rule, decisions.md).

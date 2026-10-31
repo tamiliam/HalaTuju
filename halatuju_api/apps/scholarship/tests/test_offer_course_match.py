@@ -307,7 +307,7 @@ class ReviewFindingsTest(TestCase):
         m = match_offer_course('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI')
         self.assertTrue(m is None or m['institution'] in ('', 'Institut Kemahiran MARA Beseri'))
         self.assertNotEqual((m or {}).get('institution'), 'Institut Kemahiran MARA Lumut')
-        two = match_offer_course('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI')
+        two = match_offer_course('DIPLOMA PELANCONGAN', 'KOMUNITI ARAU KANGAR')       # names both campuses
         self.assertEqual((two['course_id'], two['institution']), ('RA-KK-DPL', ''))
         one = match_offer_course('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI KANGAR')
         self.assertEqual((one['course_id'], one['institution']), ('RA-KK-DPL', 'Kolej Komuniti Kangar'))
@@ -330,3 +330,46 @@ class ReviewFindingsTest(TestCase):
         # The universities themselves are still named by their own names and acronyms.
         self.assertEqual(_cid(degree, 'Universiti Malaysia Perlis'), 'UR6523002')
         self.assertEqual(_cid(degree, 'UMS KAMPUS INDUK'), 'UH6523009')
+
+
+class CentreLinesDoNotOutrankTheLetterheadTest(TestCase):
+    """Round-2 review (2026-10-31): a centre line's words sit inside some university's name ("Sains"
+    is in Universiti Sains Malaysia, "Teknologi" in Universiti Teknologi Malaysia). Such a line must
+    not name those universities ahead of the letterhead that names the real one. The COUNTERFACTUAL
+    rows below are the trap: with them in the catalogue the old fallback resolved #349 to UTM."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+        ft = FieldTaxonomy.objects.get(key='realign')
+        usm = Institution.objects.create(institution_id='RA-USM', institution_name='Universiti Sains Malaysia',
+                                         acronym='USM', type='IPTA', state='Pulau Pinang')
+        usim = Institution.objects.create(institution_id='RA-USIM', institution_name='Universiti Sains Islam Malaysia',
+                                          acronym='USIM', type='IPTA', state='Negeri Sembilan')
+        um = Institution.objects.get(institution_id='RA-UM')
+        utm = Institution.objects.get(institution_id='RA-UTM')
+        # Two distinctive words, both inside the #349 centre line: the word tier DOES name it, so only
+        # the letterhead-first order keeps #349 at UMS (the ordering's own bite).
+        akst = Institution.objects.create(institution_id='RA-AKST', institution_name='Akademi Sains Teknologi',
+                                          acronym='', type='IPTS', state='Selangor')
+        for cid, name, inst, bumi in (('UM0421001', 'Asasi Sains Hayat', um, True),
+                                      ('RA-UTM-ASASI', 'Asasi Sains', utm, False),          # counterfactual
+                                      ('RA-USM-ASH', 'Asasi Sains Hayat', usm, False),      # counterfactual
+                                      ('RA-USIM-ASH', 'Asasi Sains Hayat', usim, False),    # counterfactual
+                                      ('RA-AKST-AS', 'Asasi Sains', akst, False)):          # counterfactual
+            c = Course.objects.create(course_id=cid, course=name, level='Asasi', department='x', field='x',
+                                      field_key=ft)
+            CourseInstitution.objects.create(course=c, institution=inst)
+            CourseRequirement.objects.create(course=c, source_type='ua', req_bumiputera=bumi)
+
+    def test_349_shape_resolves_through_the_issuer_never_utm(self):
+        self.assertEqual(_cid('Asasi Sains', 'Pusat Persediaan Sains dan Teknologi (PPST)',
+                              'Universiti Malaysia Sabah'), 'UH0010001')
+
+    def test_322_shape_resolves_through_the_issuer_never_usm_or_usim(self):
+        self.assertEqual(_cid('ASASI SAINS HAYAT', 'Pusat Asasi Sains', 'Universiti Malaya'), 'UM0421001')
+
+    def test_without_a_letterhead_a_centre_line_names_no_university_by_a_shared_word(self):
+        # One distinctive word ("Sains", "Teknologi") never names Universiti Sains / Teknologi Malaysia.
+        self.assertIsNone(_cid('ASASI SAINS HAYAT', 'Pusat Asasi Sains'))
+        self.assertNotEqual(_cid('Asasi Sains', 'Pusat Persediaan Sains dan Teknologi (PPST)'), 'RA-UTM-ASASI')

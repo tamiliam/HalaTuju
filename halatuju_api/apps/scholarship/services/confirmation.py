@@ -133,6 +133,7 @@ def confirm_pathway(application):
     # is the one path that writes raw offer text). Already-cased names pass through untouched.
     # The offer's institution may be ANOTHER campus than the one she picked: `with_institution`
     # keeps `institution_id` true to the name (2026-10-30 review), never the old campus's id.
+    inst = _confirmed_place(op, application, prog, inst, (chk.get('issuer') or '').strip())
     cp = card_display.with_institution(application.chosen_programme, inst)
     cp.update({'course_name': op.title_case_programme(prog), 'source': 'offer_letter_confirmed'})
     application.chosen_programme = cp
@@ -375,6 +376,21 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
         logger.warning('pathway confirm dropped a stale course_id (doc %s, application %s)',
                        offer.id, application.id)
     application.chosen_programme = cp
+
+
+def _confirmed_place(op, application, prog, inst, issuer):
+    """The institution the confirm stores: the letter's line, unless it is a hostel / centre line that
+    yields to the letterhead (``letter_place``, round-2 review 2026-10-31) — then the CATALOGUE's
+    spelling of that campus, never the hostel ("KOLEJ SRI RAJANG" + UPM → "Universiti Putra
+    Malaysia"). The course is the stored pick, else the one the letter resolves to."""
+    from ..offer_course_match import letter_place
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    cid = (cp.get('course_id') or '').strip() or (
+        op.resolve_catalogue_course(prog, inst, issuer) or {}).get('course_id') or ''
+    place = letter_place(cid, inst, issuer) if cid else inst
+    if place == inst:
+        return inst
+    return op.catalogue_institution(cid, place) or op.sole_catalogue_institution(cid) or place
 
 
 def _names_another_place(op, cid, inst, issuer=''):

@@ -42,7 +42,13 @@ rows, name nothing alone). Otherwise by distinctive words, never when the words 
 code counts only when its catalogue name agrees with the printed name. A multi-campus course carries a campus
 only when the letter names exactly one; the realignment then skips (`campus_unpinned`) rather than write a campus
 it cannot pin. "Decided" is `querying_locked` (a submitted interview included) or a recorded verdict
-(`verdict_decided_at`). The offer confirm's stale-course check reads the issuer too.
+(`verdict_decided_at`). The offer confirm's stale-course check reads the issuer too. (8) **Round-2 review (same
+day).** The word tier counts an institution only when ITS words all sit inside the line (never the line's words
+inside a longer name) and the name has two or more distinctive words — Universiti Sains / Teknologi Malaysia are
+named only by name or acronym. The letterhead named by name or acronym outranks the line's word tier, so a centre
+line ("Pusat Persediaan Sains dan Teknologi", "Pusat Asasi Sains") never decides ahead of the issuer (#349, #322).
+The offer confirm stores the catalogue campus when a hostel line yields to the letterhead (`letter_place`), never
+the hostel.
 
 **Why.** Before Sprint D the pickers hid Bumi-only courses, so a student holding a UiTM place could only have picked
 something else; treating that pick as a declaration made a correct offer read as a clash and asked her to confirm.

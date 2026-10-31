@@ -103,9 +103,12 @@ def is_bumiputera_only(course_id: str) -> bool:
 
 def match_offer_course(programme: str, institution: str, issuer: str = ''):
     """``{course_id, course_name, institution}`` for the ONE catalogue course the letter names, else
-    None. A printed course code first; then the name, at the institutions the institution line
-    names, or — when that finds no course and the line names no catalogue institution — at the
-    institutions the issuer names. ``institution`` is the catalogue's own spelling."""
+    None. A printed course code first; then the name, at the first of these that holds the course:
+    the institutions the LINE names by name or unique acronym; the issuer's, so named (only when the
+    line names none so and exactly names no other catalogue institution); the line's by words; the
+    issuer's by words. So an explicit letterhead outranks a centre or hostel line whose words merely
+    sit inside a university's ("Pusat Persediaan Sains dan Teknologi" is not USM or UTM — round-2
+    review 2026-10-31, #349 / #322). ``institution`` is the catalogue's own spelling."""
     if private_arm_letter(programme, f'{institution or ""} {issuer or ""}'):
         return None                                 # the issuer may be the only line naming SATU
     coded = _printed_course(programme, institution, issuer)
@@ -116,10 +119,14 @@ def match_offer_course(programme: str, institution: str, issuer: str = ''):
     if not pj:
         return None
     ltype = detect_pathway_type(name, '') or detect_pathway_type(name, institution)
-    hits = _named_courses(pj, ltype, _institutions(institution, contained=False))
-    if not hits and (issuer or '').strip() and not _names_another_institution('', '', institution):
-        hits = _named_courses(pj, ltype, _institutions(issuer, contained=True))
-    return next(iter(hits.values())) if len(hits) == 1 else None
+    line = _institutions(institution)
+    borrow = bool((issuer or '').strip()) and not line[0] and not _names_another_institution('', '', institution)
+    issued = _institutions(issuer) if borrow else ([], [])
+    for insts in (line[0], issued[0], line[1], issued[1]):
+        hits = _named_courses(pj, ltype, insts)
+        if hits:
+            return next(iter(hits.values())) if len(hits) == 1 else None
+    return None
 
 
 def _printed_course(programme, institution, issuer):
@@ -172,8 +179,8 @@ def _plain_words(s: str) -> str:
     return ' '.join(re.findall(r'[a-z0-9]+', re.sub(r'\([^)]*\)', ' ', (s or '').lower())))
 
 
-def _institutions(hint, *, contained):
-    """[(institution_id, name)] the hint names, most specific tier first (review 2026-10-31):
+def _institutions(hint):
+    """``(named, worded)`` — the [(institution_id, name)] the hint names, by tier (review 2026-10-31):
 
     1. **By name or unique acronym** — the bracket-stripped name equals the hint or sits whole inside
        it ("KOLEJ PERINDU, UNIVERSITI TEKNOLOGI MARA, …"), or an acronym held by ONE row and not a
@@ -181,13 +188,16 @@ def _institutions(hint, *, contained):
        word of "Universiti Teknologi MARA", and never GIATMARA / IKM / KKTM, which many rows share).
        When any row is named this way, ONLY those rows count: "UNIVERSITI TEKNOLOGI MALAYSIA" is UTM,
        never UiTM by the shared word {teknologi}.
-    2. **By distinctive words** — either way round (``contained``: the institution's own words inside
-       the hint, for an issuer line), never when the words that match are only PLACE words."""
+    2. **By distinctive words** — the INSTITUTION's own words all inside the hint (never the hint's
+       words inside a longer name: a centre line "Pusat Asasi Sains" names no university whose name
+       holds "Sains"), never when those words are only PLACE words, and never for a name of ONE
+       distinctive word (Universiti Sains Malaysia, Universiti Teknologi Malaysia): one shared field
+       word is no evidence, so such a university is named only by its name or acronym (tier 1)."""
     from apps.courses.models import Institution
     hint = school_name_core(hint or '')
     ht, hn, hw = distinctive_tokens(hint), _norm_inst_name(hint), f' {_plain_words(hint)} '
     if not ht and not hn:
-        return []
+        return [], []
     rows = list(Institution.objects.values_list('institution_id', 'institution_name', 'acronym', 'state'))
     place = _PLACE_WORDS | {w for *_x, st in rows for w in _plain_words(st).split()}
     acr_rows, word_rows = Counter(), Counter()
@@ -203,10 +213,9 @@ def _institutions(hint, *, contained):
             named.append((iid, name))
             continue
         nt = distinctive_tokens(name)
-        matched = nt if nt <= ht else ht              # the words that did the naming
-        if nt and (nt <= ht if contained else _name_aligns(ht, nt)) and matched - place:
+        if len(nt) > 1 and nt <= ht and nt - place:
             worded.append((iid, name))
-    return named or worded
+    return named, worded
 
 
 def _named_courses(pj, ltype, institutions):
