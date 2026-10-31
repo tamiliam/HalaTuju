@@ -36,9 +36,20 @@ org_admin and admin; put to the lead at build time): mentors are the Mentors ros
 mentor refused until signed in (the Mentors board's footnote) — rejected by the owner's ruling; the picker says
 "invited, not signed in yet" and the Mentors page note was reworded.
 
+**Review fixes (adversarial review, same day; lead rulings):** (11) **The mentor may turn out to be the
+student after the assign** — the student's own sign-in email is not stored. `get_admin` linking a UID onto a
+mentor row and a successful email move end every assignment that is now the mentor's own ("Mentor is the
+student", no email, a line on the file); any other way it becomes true (an alias claimed, an email changed) is
+caught when READ: the student sees no mentor, staff see "This mentor is the student. End this mentoring.", and
+"You have a mentor" never goes. Reads never write. (12) **The activity timeline** leaves the four mentoring
+events out for a role outside the Mentoring tab (a reviewer, QC): they name the mentor. (13) **Assign re-reads
+the mentor under a lock** inside its transaction, so a Deactivate that lands between the check and the write is
+refused (`mentor_inactive`). (14) **An award reverted to the pool** ends the open assignment ("Award reverted",
+`maintenance.reset_on_leaving`, no email).
+
 **Trade-offs:** `MentorAssignment.application` is CASCADE in Django, like `letters` and `student_activity` (file
-records), not PROTECT. An award that falls back to the pool from a live wallet (`award_revert`) leaves its open
-assignment in place, unreachable on any screen until the file returns (not one of the owner's ending doors).
+records), not PROTECT. The self-mentor end on sign-in is best effort: if it fails, the sign-in still succeeds and
+the read-time guard keeps the mentor off the student's screens until staff end it.
 
 **Revisit if:** mentors log their own meetings (7c), or a scholar may have more than one mentor.
 

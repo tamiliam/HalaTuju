@@ -6450,7 +6450,9 @@
         "mentor_ended": {
           "staff": "Mentoring with {mentor} ended",
           "mentor_deactivated": "Mentoring with {mentor} ended: the mentor was deactivated",
-          "file_closed": "Mentoring with {mentor} ended: the file was closed"
+          "file_closed": "Mentoring with {mentor} ended: the file was closed",
+          "mentor_is_student": "Mentoring with {mentor} ended: the mentor is the student",
+          "award_reverted": "Mentoring with {mentor} ended: the award was reverted"
         },
         "session_logged": "Mentoring meeting logged: {mode}, {minutes} min",
         "session_logged_no_minutes": "Mentoring meeting logged: {mode}"
@@ -6647,7 +6649,8 @@
           "last": "last {date}",
           "emailed": "\"You have a mentor\" emailed {date}",
           "invited": "Invited, not signed in yet.",
-          "fromProfile": "Details come from the mentor's own profile."
+          "fromProfile": "Details come from the mentor's own profile.",
+          "isStudent": "This mentor is the student. End this mentoring."
         },
         "end": {
           "open": "End mentoring",

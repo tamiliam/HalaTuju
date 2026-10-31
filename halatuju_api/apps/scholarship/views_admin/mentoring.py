@@ -16,7 +16,7 @@ refuses every write (409 `file_closed`). One class per url shape (lessons, Billi
 from rest_framework import status
 from rest_framework.response import Response
 
-from .. import mentoring
+from .. import mentoring, mentoring_read
 from ..models import Mentor
 from .scholars import _ScholarsBase
 
@@ -53,13 +53,13 @@ class _MentoringBase(_ScholarsBase):
 
 class AdminScholarMentoringView(_MentoringBase):
     """GET — the tab: `{current, history, meetings, asked_for_help, assignable, can_act, file_closed,
-    email_switch_on}` (`mentoring.file_payload`)."""
+    email_switch_on}` (`mentoring_read.file_payload`)."""
 
     def get(self, request, pk):
         app, admin, err = self._mentoring_file(request, pk)
         if err:
             return err
-        return Response(mentoring.file_payload(admin, app))
+        return Response(mentoring_read.file_payload(admin, app))
 
 
 class AdminScholarMentoringActionView(_MentoringBase):
@@ -91,7 +91,7 @@ class AdminScholarMentoringActionView(_MentoringBase):
                 mentoring.end(admin, app, reason=reason)
         except mentoring.MentoringError as e:
             return _mentoring_refusal(e.code)
-        payload = mentoring.file_payload(admin, app)
+        payload = mentoring_read.file_payload(admin, app)
         if action == 'assign':
             payload['emailed'] = emailed
         return Response(payload)
@@ -113,4 +113,4 @@ class AdminScholarMentoringSessionsView(_MentoringBase):
                                   next_step=data.get('next_step', ''))
         except mentoring.MentoringError as e:
             return _mentoring_refusal(e.code)
-        return Response(mentoring.file_payload(admin, app), status=status.HTTP_201_CREATED)
+        return Response(mentoring_read.file_payload(admin, app), status=status.HTTP_201_CREATED)

@@ -55,7 +55,7 @@ export function activityText(
     case 'mentor_changed':
       return t('admin.scholars.event.mentor_changed', { mentor: str(m.mentor) || '—', was: str(m.was) || '—' })
     case 'mentor_ended':
-      return t(`admin.scholars.event.mentor_ended.${['mentor_deactivated', 'file_closed'].includes(str(m.cause))
+      return t(`admin.scholars.event.mentor_ended.${['mentor_deactivated', 'file_closed', 'mentor_is_student', 'award_reverted'].includes(str(m.cause))
         ? str(m.cause) : 'staff'}`, { mentor: str(m.mentor) || '—' })
     case 'session_logged':
       return t(m.minutes ? 'admin.scholars.event.session_logged' : 'admin.scholars.event.session_logged_no_minutes', {

@@ -17,7 +17,7 @@ it('reads assigned, changed, ended (each cause) and a logged meeting', () => {
     .toBe('admin.scholars.event.mentor_assigned|{"mentor":"Kavitha Raman"}')
   expect(activityText(row('mentor_changed', { mentor: 'Kavitha Raman', was: 'Faizal Hamid' }), t))
     .toBe('admin.scholars.event.mentor_changed|{"mentor":"Kavitha Raman","was":"Faizal Hamid"}')
-  for (const cause of ['staff', 'mentor_deactivated', 'file_closed']) {
+  for (const cause of ['staff', 'mentor_deactivated', 'file_closed', 'mentor_is_student', 'award_reverted']) {
     expect(activityText(row('mentor_ended', { mentor: 'K', cause }), t))
       .toBe(`admin.scholars.event.mentor_ended.${cause}|{"mentor":"K"}`)
   }

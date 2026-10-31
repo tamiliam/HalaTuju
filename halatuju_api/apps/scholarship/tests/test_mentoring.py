@@ -502,3 +502,142 @@ class TestNeverASponsorOrPartnerReader(_Base):
                 for needle in ('MentorAssignment', 'MentoringSession', 'mentor_assignments', 'mentoring_sessions',
                                'import mentoring', 'from .mentoring', 'from ..mentoring'):
                     self.assertNotIn(needle, text)
+
+
+# ── Adversarial review of 7b (2026-11-01) ─────────────────────────────────────────────────────────
+def _verified_client(sub, email):
+    """A client whose token carries a VERIFIED email — what `get_admin` links a row with no UID to."""
+    import jwt
+    from rest_framework.test import APIClient
+    token = jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email,
+                        'email_verified': True}, TEST_JWT_SECRET, algorithm='HS256')
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+    return client
+
+
+SUPABASE = dict(SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co')
+
+
+class TestReviewFix1TheMentorTurnsOutToBeTheStudent(_Base):
+    """The student's own SIGN-IN email is not stored, so a mentor invited at it passes the assign-time
+    check with no UID. Every later door that makes it true ends the assignment; every reader guards."""
+
+    def _invited_at(self, email):
+        from apps.courses.models import PartnerAdmin
+        mentor = make_mentor(self.org, 'Self Login', email=email)
+        PartnerAdmin.objects.filter(mentor=mentor).update(supabase_user_id=None, first_seen_at=None)
+        return mentor
+
+    def test_signing_in_at_the_students_own_address_ends_the_assignment(self):
+        mentor = self._invited_at('aisyah.signin@example.test')
+        self.assertEqual(self.assign(mentor, email_student=False).status_code, 200)   # nothing matched yet
+        mail.outbox.clear()
+        _verified_client(self.app.profile.supabase_user_id, 'aisyah.signin@example.test').get('/api/v1/admin/role/')
+        login = mentoring._login(mentor)
+        self.assertEqual(login.supabase_user_id, self.app.profile.supabase_user_id)   # get_admin linked it
+        self.assertEqual(self.open_rows(), [])
+        row = MentorAssignment.objects.get(application=self.app)
+        self.assertEqual(row.end_reason, mentoring.REASON_IS_STUDENT)
+        self.assertEqual(self.events()[-1][1]['cause'], 'mentor_is_student')
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_link_for_another_scholars_mentor_ends_nothing(self):
+        mentor = self._invited_at('kavitha.other@example.test')
+        self.assign(mentor, email_student=False)
+        _verified_client('some-other-uid', 'kavitha.other@example.test').get('/api/v1/admin/role/')
+        self.assertEqual([a.mentor_id for a in self.open_rows()], [mentor.pk])
+
+    @override_settings(**SUPABASE)
+    def test_moving_an_assigned_invited_mentor_onto_the_students_address_ends_it(self):
+        with patch('apps.courses.staff_reinvite._new_login', return_value=('uid-new', False, None)):
+            r = authed_client(self.org_admin).post('/api/v1/admin/invitations/', {
+                'audience': 'mentor', 'name': 'Priya Devi', 'email': 'priya@example.org'}, format='json')
+        self.assertEqual(r.status_code, 201, r.content)
+        mentor_id = r.json()['mentor']['id']
+        from apps.scholarship.models import Mentor
+        self.assertEqual(self.assign(Mentor.objects.get(pk=mentor_id), email_student=False).status_code, 200)
+        account = {'id': 'uid-new', 'email': 'priya@example.org', 'last_sign_in_at': None,
+                   'app_metadata': {'providers': ['email']}, 'identities': []}
+        with patch('apps.courses.supabase_admin.read_auth_user', return_value=account), \
+                patch('apps.courses.supabase_admin.delete_auth_user', return_value='deleted'), \
+                patch('apps.courses.staff_reinvite._new_login', return_value=(None, True, None)), \
+                patch('apps.scholarship.staff_lifecycle.login_used_elsewhere', return_value=False):
+            r = authed_client(self.org_admin).patch(f'/api/v1/admin/mentors/{mentor_id}/',
+                                                    {'email': self.app.notify_email}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self.open_rows(), [])
+        self.assertEqual(MentorAssignment.objects.get(application=self.app).end_reason, mentoring.REASON_IS_STUDENT)
+
+    def test_a_later_alias_claim_hides_the_mentor_from_every_reader_and_writes_nothing(self):
+        self.assign(self.kavitha, email_student=False)
+        ProfileLoginAlias.objects.create(alias_uid=mentoring._login(self.kavitha).supabase_user_id,
+                                         profile=self.app.profile)
+        before = self.events()
+        body = authed_client(self.app.profile.supabase_user_id).get('/api/v1/scholarship/bursary/mentoring/').json()
+        self.assertEqual(body, {'mentor': None, 'meetings': []})
+        cur = authed_client(self.org_admin).get(tab(self.app.id)).json()['current']
+        self.assertTrue(cur['is_the_student'])
+        self.assertEqual(len(self.open_rows()), 1)          # a read never writes
+        self.assertEqual(self.events(), before)
+        row = self.open_rows()[0]
+        self.assertFalse(mentoring._send_you_have_a_mentor(self.app, row, self.kavitha))
+        self.assertEqual(mail.outbox, [])
+
+    def test_an_ordinary_current_mentor_is_not_flagged(self):
+        self.assign(self.kavitha, email_student=False)
+        self.assertFalse(authed_client(self.org_admin).get(tab(self.app.id)).json()['current']['is_the_student'])
+
+
+class TestReviewFix2TheTimelineKeepsMentorsFromOtherRoles(_Base):
+    def test_reviewer_and_qc_get_no_mentoring_lines_and_org_admin_does(self):
+        self.assign(self.kavitha, email_student=False)
+        self.meet()
+        self.assign(self.faizal, email_student=False)
+        self.end()
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        self.app.assigned_to = reviewer
+        self.app.save(update_fields=['assigned_to'])
+        url = f'{SCHOLARS}{self.app.id}/activity/'
+        for who in (reviewer, make_admin('qc', owning_org=self.org)):
+            with self.subTest(role=who.role):
+                body = authed_client(who).get(url).json()
+                self.assertEqual([r['event'] for r in body['results'] if r['event'] in mentoring.EVENTS], [])
+                self.assertEqual(body['count'], len(body['results']))
+                self.assertNotIn('Kavitha', json.dumps(body))
+        own = authed_client(self.org_admin).get(url).json()
+        self.assertEqual(sorted({r['event'] for r in own['results']} & set(mentoring.EVENTS)),
+                         sorted(mentoring.EVENTS))
+
+
+class TestReviewFix3AssignRacesDeactivate(_Base):
+    def test_a_mentor_deactivated_after_the_check_is_refused_inside_the_transaction(self):
+        from apps.scholarship.models import Mentor
+        real = mentoring._locked_open
+
+        def deactivated_meanwhile(app):
+            Mentor.objects.filter(pk=self.kavitha.pk).update(deactivated_at=timezone.now())
+            return real(app)
+        with patch.object(mentoring, '_locked_open', deactivated_meanwhile):
+            r = self.assign(self.kavitha)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'mentor_inactive'))
+        self.assertEqual(MentorAssignment.objects.count(), 0)
+        self.assertEqual(self.events(), [])
+        self.assertEqual(mail.outbox, [])
+
+
+class TestReviewFix4AnAwardRevertedToThePool(_Base):
+    def test_the_revert_ends_the_assignment_with_no_email(self):
+        from apps.scholarship.award_revert import revert_to_pool
+        app = make_application('awarded', cohort=self.app.cohort, vircle_activated_at=timezone.now())
+        mentoring.assign(self.org_admin, app, self.kavitha, email_student=False)
+        mail.outbox.clear()
+        with transaction.atomic():
+            revert_to_pool(app)
+        app.refresh_from_db()
+        self.assertNotEqual(app.status, 'awarded')
+        self.assertEqual(self.open_rows(app), [])
+        row = MentorAssignment.objects.get(application=app)
+        self.assertEqual(row.end_reason, mentoring.REASON_REVERTED)
+        self.assertEqual(self.events(app)[-1][1]['cause'], 'award_reverted')
+        self.assertEqual(mail.outbox, [])

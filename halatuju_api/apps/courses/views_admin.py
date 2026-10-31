@@ -119,6 +119,8 @@ class PartnerAdminMixin:
             if admin:
                 admin.supabase_user_id = user_id
                 admin.save(update_fields=['supabase_user_id'])
+                if admin.is_mentor:
+                    _mentor_linked(admin)
                 return admin
 
         return None
@@ -588,10 +590,28 @@ PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
 _DELETABLE_ROLES = {'admin', 'finance', 'org_admin'}
 
 
+def _scholarship_staff_modules():
+    """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
+    from apps.scholarship import mentoring, staff_footprint, staff_lifecycle
+    return staff_footprint, staff_lifecycle, mentoring
+
+
 def scholarship_staff():
     """`(staff_footprint, staff_lifecycle)`: the ONE courses door to scholarship's staff rules."""
-    from apps.scholarship import staff_footprint, staff_lifecycle
+    staff_footprint, staff_lifecycle, _ = _scholarship_staff_modules()
     return staff_footprint, staff_lifecycle
+
+
+def _mentor_linked(admin):
+    """S7b review fix 1: a verified-email sign-in has just linked a UID onto a MENTOR row. If that
+    login is a scholar's own (the student invited at their sign-in address), every assignment of the
+    mentor to that scholar ends now (`mentoring.end_if_self`). Best effort: it never fails a sign-in
+    (the read-time guard keeps the mentor off the student's screens meanwhile)."""
+    try:
+        _, _, mentoring = _scholarship_staff_modules()
+        mentoring.end_if_self(admin.mentor, by='')
+    except Exception:   # a sign-in must never fail on this
+        logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)
 
 
 def _deletable_now(caller, target):

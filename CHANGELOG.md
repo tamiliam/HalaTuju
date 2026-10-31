@@ -23,7 +23,14 @@ one service_role policy per table, ledger row and rollback in its docstring), th
   started. Every write is a line on the file's activity log (`mentor_assigned`, `mentor_changed`,
   `mentor_ended`, `session_logged`).
 - **Ended by other doors, no email:** Deactivate (and Revoke) of a mentor ends all their open assignments
-  ("Mentor deactivated"); closing a file ends its assignment ("File closed"). Reactivate restores none.
+  ("Mentor deactivated"); closing a file ends its assignment ("File closed"); an award reverted to the pool
+  ends it ("Award reverted"). Reactivate restores none.
+- **Review fixes (adversarial review):** (1) a mentor who turns out to be the student AFTER the assign (invited
+  at the student's own sign-in address) — the sign-in that links their UID, and an email move onto the
+  student's address, end the assignment ("Mentor is the student"); any other route is caught when read (no
+  mentor for the student, "This mentor is the student" for staff, no email). (2) The file's activity list
+  leaves the mentoring lines out for a reviewer or QC. (3) Assign re-reads the mentor under a lock, so a
+  Deactivate racing it is refused. (4) An award reverted to the pool ends the assignment.
 - **"You have a mentor"** goes to the STUDENT only (never the mentor), after the transaction, when staff leave
   "Email the student" on (a site Toggle, offered only when the organisation sends it). Switchable and worded
   per organisation on Organisation → Settings → Student communications under a new **Mentoring** heading (en /

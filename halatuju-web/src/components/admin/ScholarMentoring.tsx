@@ -256,6 +256,11 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
               </span>
             )}
             {cur.status === 'invited' && <span className="text-xs text-caution-700">{t(`${K}.current.invited`)}</span>}
+            {cur.is_the_student && (
+              <span role="alert" className="text-sm font-medium text-critical-700" data-testid="mentoring-is-student">
+                {t(`${K}.current.isStudent`)}
+              </span>
+            )}
             <span className="text-xs text-ground-600">{t(`${K}.current.fromProfile`)}</span>
           </div>
           {data.can_act && mode === 'view' && (

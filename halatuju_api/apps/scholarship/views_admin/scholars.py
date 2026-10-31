@@ -216,10 +216,14 @@ class AdminScholarActivityView(_ScholarsBase):
     a closed file — closed is READ-ONLY (owner ruling 2026-10-29), for staff as for the student."""
 
     def get(self, request, pk):
-        app, _admin, err = self._file_for(request, pk)
+        app, admin, err = self._file_for(request, pk)
         if err:
             return err
         qs = StudentActivity.objects.filter(application=app).order_by('-created_at', '-id')
+        if not mentoring.may_act(admin):
+            # S7b review fix 2: the mentoring lines name the mentor; a role outside the Mentoring
+            # tab (a reviewer, QC) never receives them — the compact Overview list reads this too.
+            qs = qs.exclude(event__in=mentoring.EVENTS)
         count = qs.count()
         size = _int(request.query_params.get('page_size'), 50, 1, scholars.MAX_PAGE_SIZE)
         page = _int(request.query_params.get('page'), 1, 1, max(1, -(-count // size)))

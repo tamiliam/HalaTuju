@@ -338,6 +338,9 @@ def _move_address(caller, mentor, login, name, email):
         staff_lifecycle.retire_login(old_uid, plan, account)
     emailed = send(inv, login, mentor.organisation, new_login.temp_password, new_login.google,
                    actor=caller)
+    # S7b review fix 1: the new address may be a scholar's own — an assignment to that scholar ends.
+    from . import mentoring
+    mentoring.end_if_self(mentor, by=caller.email or '')
     return True, emailed, None
 
 

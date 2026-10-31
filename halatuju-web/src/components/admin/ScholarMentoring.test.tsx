@@ -141,3 +141,10 @@ it('a closed file (can_act false) reads the same with no buttons', async () => {
   expect(screen.getByTestId('mentoring-current').textContent).toContain('Kavitha Raman')
   for (const k of [`${K}.change`, `${K}.end.open`, `${K}.meetings.log`]) expect(screen.queryByText(k)).toBeNull()
 })
+
+it('review fix: a current mentor who turns out to be the student is flagged for staff to end', async () => {
+  mockApi.getScholarMentoring.mockResolvedValue({ ...WITH, current: { ...WITH.current!, is_the_student: true } })
+  render(<ScholarMentoring id={104} token="tok" />)
+  expect((await screen.findByTestId('mentoring-is-student')).textContent).toBe(`${K}.current.isStudent`)
+  expect(within(screen.getByTestId('mentoring-current')).getByText(`${K}.end.open`)).toBeTruthy()
+})

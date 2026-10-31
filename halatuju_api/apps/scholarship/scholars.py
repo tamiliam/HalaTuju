@@ -65,7 +65,7 @@ def _latest(field):
 
 
 #: S7b: "Asked for help" — yes or not sure to help with university or scholarship applications when
-#: applying, or flagged by staff for mentoring (`mentoring.help_asked` is the one-record twin).
+#: applying, or flagged by staff for mentoring (`mentoring_read.help_asked` is the one-record twin).
 ASKED_FOR_HELP_Q = (Q(help_university__in=('yes', 'unsure')) | Q(help_scholarship__in=('yes', 'unsure'))
                     | Q(mentoring_candidate=True))
 #: `?mentoring=` filters (S7b).
@@ -292,7 +292,7 @@ def rows(apps):
 
 
 def _asked(app):
-    from .mentoring import help_asked
+    from .mentoring_read import help_asked
     h = help_asked(app)
     return h['university'] or h['scholarship'] or h['flagged']
 
@@ -412,7 +412,7 @@ def _mentor_summary(app):
 
 
 def _help(app):
-    from .mentoring import help_asked
+    from .mentoring_read import help_asked
     return help_asked(app)
 
 

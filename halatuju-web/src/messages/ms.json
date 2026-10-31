@@ -6450,7 +6450,9 @@
         "mentor_ended": {
           "staff": "Bimbingan oleh {mentor} ditamatkan",
           "mentor_deactivated": "Bimbingan oleh {mentor} ditamatkan: mentor telah dinyahaktifkan",
-          "file_closed": "Bimbingan oleh {mentor} ditamatkan: fail telah ditutup"
+          "file_closed": "Bimbingan oleh {mentor} ditamatkan: fail telah ditutup",
+          "mentor_is_student": "Bimbingan oleh {mentor} ditamatkan: mentor ialah pelajar itu sendiri",
+          "award_reverted": "Bimbingan oleh {mentor} ditamatkan: anugerah telah dibatalkan"
         },
         "session_logged": "Pertemuan mentor direkodkan: {mode}, {minutes} min",
         "session_logged_no_minutes": "Pertemuan mentor direkodkan: {mode}"
@@ -6647,7 +6649,8 @@
           "last": "terakhir {date}",
           "emailed": "E-mel \"Anda mempunyai mentor\" dihantar {date}",
           "invited": "Telah dijemput, belum log masuk.",
-          "fromProfile": "Butiran ini daripada profil mentor sendiri."
+          "fromProfile": "Butiran ini daripada profil mentor sendiri.",
+          "isStudent": "Mentor ini ialah pelajar itu sendiri. Tamatkan bimbingan ini."
         },
         "end": {
           "open": "Tamatkan bimbingan",

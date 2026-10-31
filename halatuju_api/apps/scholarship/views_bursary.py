@@ -68,13 +68,13 @@ def summary_payload(app):
         # S6b: her letters — whether the tab shows, and how many still wait for her acknowledgement.
         'has_letters': app.letters.exists(),
         'letters_to_acknowledge': _letters_to_acknowledge(app),
-        # S7b: whether the Mentoring tab shows (`mentoring.tab_shown`); its body is read lazily.
+        # S7b: whether the Mentoring tab shows (`mentoring_read.tab_shown`); its body is read lazily.
         'mentoring_tab': _mentoring_tab(app),
     }
 
 
 def _mentoring_tab(app):
-    from .mentoring import tab_shown
+    from .mentoring_read import tab_shown
     return tab_shown(app)
 
 
@@ -201,7 +201,7 @@ class BursaryLetterPdfView(APIView):
 class BursaryMentoringView(APIView):
     """GET scholarship/bursary/mentoring/ — the student's Mentoring tab, read when opened: the CURRENT
     mentor (name, area, languages, About, email, the phone only when the mentor shares it, since) and
-    the meetings with them as date + how (`mentoring.student_payload`, an allowlist). Never a note, a
+    the meetings with them as date + how (`mentoring_read.student_payload`, an allowlist). Never a note, a
     next step, a reason, a past mentor or a photo. The student's OWN file only; a closed file reads the same."""
     permission_classes = [SupabaseIsAuthenticated]
 
@@ -209,5 +209,5 @@ class BursaryMentoringView(APIView):
         app = _own_file(request)
         if app is None:
             return _no_file()
-        from .mentoring import student_payload
+        from .mentoring_read import student_payload
         return Response(student_payload(app))

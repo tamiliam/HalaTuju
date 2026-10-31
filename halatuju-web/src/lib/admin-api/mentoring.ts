@@ -32,6 +32,8 @@ export interface CurrentMentor extends MentorBits {
   last_meeting: string | null
   /** "You have a mentor" went to the student. */
   emailed: boolean
+  /** Review fix: the mentor's login is, by now, the student's own — the tab says "end it". */
+  is_the_student?: boolean
 }
 
 export interface PastMentor {

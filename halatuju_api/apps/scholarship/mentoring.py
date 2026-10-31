@@ -1,8 +1,8 @@
 """Mentoring — who mentors a scholar now, the change, the end, and the meetings staff log (student
 maintenance Sprint 7b, 2026-11-01; owner rulings in docs/decisions.md the same day).
 
-EVERY RULE IS HERE; the HTTP shapes are `views_admin/mentoring.py` (staff) and `views_bursary.py`
-(the student's own tab).
+EVERY RULE AND EVERY WRITE IS HERE; the readers (the two tabs' payloads) are `mentoring_read.py`; the
+HTTP shapes are `views_admin/mentoring.py` (staff) and `views_bursary.py` (the student's own tab).
 
 - WHO ACTS (`may_act`): the roles that may read the Mentors roster — a super, an organisation admin, an
   admin — inside the organisation fence (`views_admin/mentoring.py` 404s another organisation's file).
@@ -23,10 +23,24 @@ EVERY RULE IS HERE; the HTTP shapes are `views_admin/mentoring.py` (staff) and `
   transaction commits, only when staff left "Email the student" on. Its phone line only when the
   mentor shares their phone with students.
 - ENDED BY OTHER DOORS, with no email: Deactivate / Revoke of a mentor (`end_for_mentor`, reason
-  "Mentor deactivated", from `mentor_invite._switch_off`) and closing the file (`end_for_closure`,
-  "File closed", from `closure.close_application`). Reactivating a mentor restores nothing.
+  "Mentor deactivated", from `mentor_invite._switch_off`), closing the file (`end_for_closure`,
+  "File closed", from `closure.close_application`) and an award reverted to the pool
+  (`end_for_award_revert`, "Award reverted", from `maintenance.reset_on_leaving`). Reactivating a
+  mentor restores nothing.
+- THE MENTOR TURNS OUT TO BE THE STUDENT (adversarial review, 2026-11-01). The student's own SIGN-IN
+  email is not stored, so a mentor invited at it passes the assign-time check with no UID. Two doors
+  that can make it true END the assignment (`end_if_self`, "Mentor is the student"): `get_admin`
+  linking a UID onto a mentor row (`courses.views_admin._mentor_linked`) and a successful
+  `mentor_invite._move_address`. Anything else (an alias claimed later, an email changed) is caught
+  at READ time (`current_is_the_student`): the student is shown no mentor, staff see
+  `current.is_the_student` ("end it"), and the email never goes. Reads never write.
+- RACES: `assign` re-reads the mentor UNDER A LOCK inside its transaction and judges it again
+  (Deactivate updates the Mentor row first, so the two serialise); every `select_for_update` here locks
+  `of=('self',)` so a join never takes a second table's lock.
+- WHO READS THE LINES: the four mentoring activity events (`EVENTS`) are left out of the file's activity
+  list for a role outside `may_act` (a reviewer, QC) — they name the mentor.
 - STAFF ONLY: meeting notes, next step, the end / change reason, the history. The student's payload
-  (`student_payload`) is an ALLOWLIST. Mentors and meetings never reach sponsors or partners.
+  (`mentoring_read.student_payload`) is an ALLOWLIST. Mentors and meetings never reach sponsors or partners.
 
 Every write logs to the student's file (`activity.log_event`: `mentor_assigned`, `mentor_changed`,
 `mentor_ended`, `session_logged`) in the same transaction.
@@ -51,8 +65,13 @@ EMAIL_KEY = 'mentor_assigned'
 #: What an end by another door records as the (staff-only) reason.
 REASON_DEACTIVATED = 'Mentor deactivated'
 REASON_CLOSED = 'File closed'
+REASON_IS_STUDENT = 'Mentor is the student'
+REASON_REVERTED = 'Award reverted'
 #: The `cause` on a `mentor_ended` activity row.
 CAUSE_STAFF, CAUSE_DEACTIVATED, CAUSE_CLOSED = 'staff', 'mentor_deactivated', 'file_closed'
+CAUSE_IS_STUDENT, CAUSE_REVERTED = 'mentor_is_student', 'award_reverted'
+#: The activity events a role outside `may_act` is never served (they name the mentor; review fix 2).
+EVENTS = (EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED)
 
 MODES = tuple(code for code, _ in MentoringSession.MODE_CHOICES)
 NOTES_MAX = 5000
@@ -219,7 +238,9 @@ def _locked_open(application):
     row = ScholarshipApplication.objects.select_for_update().filter(pk=application.pk).first()
     if row is None:
         raise MentoringError('not_found')
-    current = (MentorAssignment.objects.select_for_update().select_related('mentor')
+    # `of=('self',)`: lock the assignment row only, never the joined mentor (review fix 3 — a
+    # Deactivate locks the MENTOR first, so a join lock here could cross it).
+    current = (MentorAssignment.objects.select_for_update(of=('self',)).select_related('mentor')
                .filter(application_id=row.pk, ended_at__isnull=True).first())
     return row, current
 
@@ -258,6 +279,13 @@ def assign(caller, application, mentor, *, reason='', email_student=True):
                 raise MentoringError('file_closed')
             if current is not None and current.mentor_id == mentor.pk:
                 raise MentoringError('already_assigned')
+            # Review fix 3: the mentor is re-read UNDER A LOCK and judged again, so a Deactivate
+            # committed since the check above (`mentor_invite._switch_off` updates the Mentor row
+            # first, under the same row lock) can never be assigned past.
+            mentor = Mentor.objects.select_for_update().filter(pk=mentor.pk).first()
+            refusal = refusal_for_mentor(row, mentor)
+            if refusal:
+                raise MentoringError(refusal)
             now = timezone.now()
             if current is not None:
                 MentorAssignment.objects.filter(pk=current.pk, ended_at__isnull=True).update(
@@ -311,25 +339,68 @@ def _end_row(application, assignment, *, by, reason, cause):
     return bool(done)
 
 
+def _open_of_mentor(mentor):
+    return (MentorAssignment.objects.select_for_update(of=('self',))
+            .select_related('application__profile', 'mentor')
+            .filter(mentor=mentor, ended_at__isnull=True))
+
+
 def end_for_mentor(mentor, by=''):
     """Deactivate / Revoke of ``mentor`` (`mentor_invite._switch_off`, inside its transaction): every
     open assignment of theirs ends — reason "Mentor deactivated", an activity line on each file, no
     email. Returns how many ended. Reactivating restores none of them."""
     n = 0
-    for a in (MentorAssignment.objects.select_for_update().select_related('application', 'mentor')
-              .filter(mentor=mentor, ended_at__isnull=True)):
+    for a in _open_of_mentor(mentor):
         n += _end_row(a.application, a, by=by, reason=REASON_DEACTIVATED, cause=CAUSE_DEACTIVATED)
     return n
+
+
+def end_if_self(mentor, by=''):
+    """Review fix 1: end every open assignment of ``mentor`` whose application is now the MENTOR'S
+    OWN (`is_the_student`: `get_admin` just linked the student's own UID onto a mentor row invited at
+    the student's sign-in address, or `mentor_invite._move_address` moved an assigned mentor onto
+    it). Reason "Mentor is the student", no email, an activity line on each file, in a transaction of
+    its own (a savepoint inside the caller's). Returns how many ended."""
+    if mentor is None:
+        return 0
+    login = _login(mentor)
+    n = 0
+    with transaction.atomic():
+        for a in _open_of_mentor(mentor):
+            if is_the_student(login, a.application):
+                n += _end_row(a.application, a, by=by, reason=REASON_IS_STUDENT, cause=CAUSE_IS_STUDENT)
+    if n:
+        logger.warning('AUDIT mentor_is_student mentor=%s ended=%s', mentor.pk, n)
+    return n
+
+
+def _end_open_of_application(application, *, by, reason, cause):
+    with transaction.atomic():   # a savepoint inside the caller's transaction; a lock needs one
+        a = (MentorAssignment.objects.select_for_update(of=('self',)).select_related('mentor')
+             .filter(application_id=application.pk, ended_at__isnull=True).first())
+        if a is None:
+            return False
+        return _end_row(application, a, by=by, reason=reason, cause=cause)
 
 
 def end_for_closure(application, by=''):
     """Closing the file (`closure.close_application`, inside its transaction): the open assignment
     ends — reason "File closed", no email. Returns True when one ended."""
-    a = (MentorAssignment.objects.select_for_update().select_related('mentor')
-         .filter(application_id=application.pk, ended_at__isnull=True).first())
-    if a is None:
-        return False
-    return _end_row(application, a, by=by, reason=REASON_CLOSED, cause=CAUSE_CLOSED)
+    return _end_open_of_application(application, by=by, reason=REASON_CLOSED, cause=CAUSE_CLOSED)
+
+
+def end_for_award_revert(application, by=''):
+    """Review fix 4: an award that falls back to the pool (`maintenance.reset_on_leaving`, whose one
+    caller is `award_revert.revert_to_pool`) ends the open assignment — reason "Award reverted", no
+    email. Returns True when one ended."""
+    return _end_open_of_application(application, by=by, reason=REASON_REVERTED, cause=CAUSE_REVERTED)
+
+
+def current_is_the_student(assignment, application):
+    """READ-TIME GUARD (review fix 1b): True when this open assignment's mentor is, by now, the
+    student (an alias claimed, an email changed since the assign). Reads never write: the readers
+    treat it as no mentor for the student, flag it for staff, and never send the email."""
+    return assignment is not None and is_the_student(_login(assignment.mentor), application)
 
 
 def _parse_day(value):
@@ -402,7 +473,7 @@ def _send_you_have_a_mentor(application, assignment, mentor):
     """To the STUDENT only (`application.notify_email`), never the mentor. Best-effort: a failure
     logs and answers False. Marks `emailed_student` when it went."""
     from . import student_comms
-    if not email_switch_on(application):
+    if not email_switch_on(application) or current_is_the_student(assignment, application):
         return False
     f = mentor_facts([mentor]).get(mentor.pk) or {}
     lang = student_comms.language_of(application)
@@ -434,108 +505,3 @@ def languages_words(codes, other, lang):
     if other:
         words.append(other)
     return ', '.join(words)
-
-
-# ── the readers ──────────────────────────────────────────────────────────────────────────────
-def _people(emails):
-    """``{email: {name, role}}`` for the staff who assigned or logged — ONE query."""
-    from apps.courses.models import PartnerAdmin
-    emails = {e for e in emails if e}
-    if not emails:
-        return {}
-    return {a.email.lower(): {'name': a.name or '', 'role': a.role or ''}
-            for a in PartnerAdmin.objects.filter(email__in=list(emails))}
-
-
-def _who(people, email):
-    p = people.get((email or '').lower())
-    return {'email': email or '', 'name': (p or {}).get('name', ''), 'role': (p or {}).get('role', '')}
-
-
-def help_asked(application):
-    """What the scholar asked for when applying (`help_university` / `help_scholarship` yes or not
-    sure) and whether staff flagged them for mentoring — the Scholars list's "Asked for help"."""
-    yes = ('yes', 'unsure')
-    return {'university': application.help_university in yes,
-            'scholarship': application.help_scholarship in yes,
-            'flagged': bool(application.mentoring_candidate)}
-
-
-def file_payload(caller, application):
-    """The staff Mentoring tab for ONE application the view has fenced: the current mentor (staff
-    always see the phone), the history (ended, with reasons), every meeting with its notes, what the
-    scholar asked for, the mentors the picker may offer, `can_act` and the email switch."""
-    rows = list(MentorAssignment.objects.filter(application_id=application.pk)
-                .select_related('mentor').order_by('-started_at', '-id'))
-    sessions = list(MentoringSession.objects.filter(application_id=application.pk)
-                    .select_related('mentor').order_by('-met_on', '-id'))
-    mentors = {r.mentor_id: r.mentor for r in rows}
-    mentors.update({s.mentor_id: s.mentor for s in sessions})
-    facts = mentor_facts(mentors.values())
-    people = _people([r.started_by_email for r in rows] + [r.ended_by_email for r in rows]
-                     + [s.logged_by_email for s in sessions])
-    counts, last = {}, {}
-    for s in sessions:
-        if s.assignment_id:
-            counts[s.assignment_id] = counts.get(s.assignment_id, 0) + 1
-            last.setdefault(s.assignment_id, s.met_on)
-
-    def mentor_bits(mid):
-        f = facts.get(mid) or {}
-        return {'mentor_id': mid, 'name': f.get('name', ''), 'email': f.get('email', ''),
-                'phone': f.get('phone', ''), 'area': mentors[mid].area, 'languages': f.get('languages', []),
-                'other_language': f.get('other_language', ''), 'status': f.get('status', '')}
-
-    current = next((r for r in rows if r.ended_at is None), None)
-    can_act = may_assign(caller, application)
-    return {
-        'current': ({**mentor_bits(current.mentor_id), 'id': current.pk, 'since': current.started_at,
-                     'assigned_by': _who(people, current.started_by_email),
-                     'meetings': counts.get(current.pk, 0), 'last_meeting': last.get(current.pk),
-                     'emailed': current.emailed_student} if current else None),
-        'history': [{'id': r.pk, 'mentor_id': r.mentor_id, 'name': (facts.get(r.mentor_id) or {}).get('name', ''),
-                     'started_at': r.started_at, 'ended_at': r.ended_at, 'end_reason': r.end_reason,
-                     'ended_by': _who(people, r.ended_by_email), 'meetings': counts.get(r.pk, 0)}
-                    for r in rows if r.ended_at is not None],
-        'meetings': [{'id': s.pk, 'met_on': s.met_on, 'mode': s.mode, 'minutes': s.minutes,
-                      'notes': s.notes, 'next_step': s.next_step,
-                      'mentor_name': (facts.get(s.mentor_id) or {}).get('name', ''),
-                      'logged_by': _who(people, s.logged_by_email), 'created_at': s.created_at}
-                     for s in sessions],
-        'asked_for_help': help_asked(application),
-        'assignable': assignable_mentors(application) if can_act else [],
-        'can_act': can_act,
-        'file_closed': not is_in_maintenance(application),
-        'email_switch_on': email_switch_on(application),
-    }
-
-
-def tab_shown(application):
-    """The student's Mentoring tab appears when they have (or had) an assignment, or their
-    organisation has at least one mentor who is not deactivated ("a tab appears only when its
-    module is switched on")."""
-    if MentorAssignment.objects.filter(application_id=application.pk).exists():
-        return True
-    return Mentor.objects.filter(organisation_id=application.owning_organisation_id,
-                                 deactivated_at__isnull=True).exists()
-
-
-def student_payload(application):
-    """The STUDENT's Mentoring tab — an ALLOWLIST: the CURRENT mentor's name, area, languages, About, email, the
-    phone ONLY when the mentor shares it with students, since when, and the meetings with this mentor
-    as date + how. Never notes, next step, minutes, history, a reason, who logged it, or a photo."""
-    current = (MentorAssignment.objects.filter(application_id=application.pk, ended_at__isnull=True)
-               .select_related('mentor').first())
-    if current is None:
-        return {'mentor': None, 'meetings': []}
-    f = mentor_facts([current.mentor]).get(current.mentor_id) or {}
-    meetings = (MentoringSession.objects.filter(assignment_id=current.pk)
-                .order_by('-met_on', '-id').values('met_on', 'mode'))
-    return {
-        'mentor': {'name': f.get('name', ''), 'area': current.mentor.area,
-                   'languages': f.get('languages', []), 'other_language': f.get('other_language', ''),
-                   'about': f.get('about', ''), 'email': f.get('email', ''),
-                   'phone': f.get('phone', '') if f.get('share_phone') else '',
-                   'since': timezone.localdate(current.started_at)},
-        'meetings': [{'met_on': m['met_on'], 'mode': m['mode']} for m in meetings],
-    }
