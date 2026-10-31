@@ -17,6 +17,9 @@ export interface OfferingInstitution {
   name: string
   state: string
   course_ids: string[]
+  /** MARA's education division under `mara` only: no single campus, so the picker offers it before
+   *  the state step (owner, 2026-10-31; `views_offerings.MARA_DIVISION`). */
+  no_campus?: boolean
 }
 
 export interface OfferingCourse {

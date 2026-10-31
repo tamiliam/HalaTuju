@@ -48,6 +48,20 @@ const CATALOGUE: Record<string, PathwayOfferings> = {
     institutions: [{ id: 'UITM', institution_id: 'UITM', name: 'Universiti Teknologi MARA', state: 'Selangor', course_ids: ['DSAINS'] }],
     courses: [{ course_id: 'DSAINS', course_name: 'Diploma Sains', field_key: 'sains', aliran: null }],
   },
+  // MARA: a skills campus by state, and MARA's education division (no single campus, owner 2026-10-31).
+  mara: {
+    pathway: 'mara',
+    institutions: [
+      { id: 'MARA-001', institution_id: 'MARA-001', name: 'KKTM Kemaman', state: 'Terengganu', course_ids: ['TVET-1'] },
+      { id: 'MARA-BPT', institution_id: 'MARA-BPT', name: 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi',
+        state: 'WP Kuala Lumpur', course_ids: ['OP4-AKAUN', 'OP4-KEJ'], no_campus: true },
+    ],
+    courses: [
+      { course_id: 'TVET-1', course_name: 'Diploma Teknologi Automotif', field_key: 'auto', aliran: null },
+      { course_id: 'OP4-AKAUN', course_name: 'Diploma Perakaunan', field_key: 'akaun', aliran: null },
+      { course_id: 'OP4-KEJ', course_name: 'Diploma Kejuruteraan', field_key: 'kej', aliran: null },
+    ],
+  },
   degree: {
     pathway: 'degree',
     institutions: [{ id: 'UM', institution_id: 'UM', name: 'Universiti Malaya', state: 'Kuala Lumpur', course_ids: ['LAW', 'MED'] }],
@@ -162,6 +176,28 @@ it('changing the institution clears the course below it', async () => {
   expect(latest.chosenProgramme).toBeNull()
 })
 
+it('MARA: its education division comes before the states and goes straight to its courses', async () => {
+  mount(SPM)
+  click('scholarship.apply.plan.sure')
+  choose('scholarship.apply.plan.pathwayLabel', 'mara')
+  await waitFor(() => expect(screen.getByLabelText('scholarship.apply.plan.stateLabel')).toBeTruthy())
+  // The division first, in plain words; its own state ("WP Kuala Lumpur") is not a state step.
+  expect(options('scholarship.apply.plan.stateLabel')).toEqual(['@MARA-BPT', 'Terengganu'])
+  expect(screen.getByText('scholarship.apply.plan.maraDivision')).toBeTruthy()
+  choose('scholarship.apply.plan.stateLabel', '@MARA-BPT')
+  expect(screen.queryByLabelText('scholarship.apply.plan.institutionLabel.campus')).toBeNull()
+  fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+  expect(screen.queryByText('Diploma Teknologi Automotif')).toBeNull()
+  fireEvent.click(screen.getByText('Diploma Perakaunan'))
+  expect(latest.chosenProgramme).toEqual({
+    courseId: 'OP4-AKAUN', courseName: 'Diploma Perakaunan', fieldKey: 'akaun',
+    institution: 'Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi', institutionId: 'MARA-BPT' })
+  // A real state still lists only its campuses.
+  choose('scholarship.apply.plan.stateLabel', 'Terengganu')
+  expect(latest.chosenProgramme).toBeNull()
+  expect(options('scholarship.apply.plan.institutionLabel.campus')).toEqual(['MARA-001'])
+})
+
 it('matriculation: all four tracks, unfiltered', () => {
   mount(SPM)
   click('scholarship.apply.plan.sure')
@@ -188,6 +224,21 @@ describe('"Eligible only" — off by default, narrows when switched on', () => {
     fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
     expect(screen.getByText('Diploma Kejuruteraan Elektrik')).toBeTruthy()
     expect(screen.queryByText('Diploma Kejuruteraan Mekanikal')).toBeNull()
+  })
+
+  it('offers MARA when she qualifies for one of its division diplomas (counted under university)', async () => {
+    ;(checkEligibility as jest.Mock).mockResolvedValueOnce({
+      pathway_stats: { university: 1 }, eligible_courses: [{ course_id: 'OP4-KEJ', course_name: 'Diploma Kejuruteraan' }] })
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['university', 'mara']))
+    choose('scholarship.apply.plan.pathwayLabel', 'mara')
+    await waitFor(() => expect(options('scholarship.apply.plan.stateLabel')).toEqual(['@MARA-BPT']))
+    choose('scholarship.apply.plan.stateLabel', '@MARA-BPT')
+    fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+    expect(screen.getByText('Diploma Kejuruteraan')).toBeTruthy()
+    expect(screen.queryByText('Diploma Perakaunan')).toBeNull()
   })
 
   it('narrows the matriculation tracks', async () => {

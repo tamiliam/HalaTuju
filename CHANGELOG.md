@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## MARA's own diplomas sit under MARA in the scholarship picker (owner, 2026-10-31)
+
+- The 13 diplomas of MARA's education division ("Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi",
+  `MARA-BPT`) now appear under the **MARA** pathway of the scholarship "My Plans" picker, not under University. Its
+  two Asasi courses stay under Asasi. Scholarship picker only: the course guide and eligibility are unchanged
+  (`views_offerings.MARA_DIVISION`).
+- Under MARA the division is the first choice in the State list, in plain words — "MARA college (Bahagian
+  Pendidikan Tinggi)" — and goes straight to its courses (it has no single campus).
+- With "Eligible only" on, MARA is offered when she qualifies for any course it lists (eligibility counts the
+  division's diplomas under University).
+- Plan labels: "University" (was "Public university") and "MARA college or institute" (was "MARA skills
+  institute"); ms and ta carry the English until reviewed in Sol.
+- A student who picks one of these under MARA keeps today's funding estimate (the diploma decides it), and a UPU
+  diploma offer is the same pathway family as MARA, so no false pathway switch. decisions.md: "MARA's own diplomas
+  sit under MARA in the scholarship picker".
+
 ## My Plans asks "Which institution?" for Asasi and university (owner, 2026-10-31)
 
 The Asasi list holds ten polytechnics and MARA's education division, and the university list holds MARA too, so

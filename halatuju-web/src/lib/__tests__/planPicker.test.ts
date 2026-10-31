@@ -5,9 +5,10 @@
 import type { PathwayOfferings } from '@/lib/api'
 import {
   DEGREE_PATHWAY, MATRIC_TRACKS, aliranOfCourse, applyPlanPatch, asksStateFirst, coursesAt,
-  degreeChoices, institutionKind, institutionOf, isOfferingPathway, offeringInstitutions,
-  offeringStates, pickProgramme, pismpAliransOf, pismpBidang,
+  degreeChoices, institutionKind, institutionOf, isOfferingPathway, noCampusInstitutions,
+  offeringInstitutions, offeringStates, pickProgramme, pismpAliransOf, pismpBidang,
 } from '@/lib/planPicker'
+import en from '@/messages/en.json'
 import {
   PATHWAY_ORDER, chosenProgrammeFromApi, chosenProgrammeToApi, profileToApplyDefaults,
 } from '@/lib/scholarship'
@@ -38,6 +39,29 @@ describe('the steps each pathway asks for', () => {
     expect(institutionKind('university')).toBe('institution')
     expect(institutionKind('asasi')).toBe('institution')
     expect(institutionKind(DEGREE_PATHWAY)).toBe('university')
+  })
+  it('MARA\'s education division is offered before the states, never inside one (owner, 2026-10-31)', () => {
+    const o: PathwayOfferings = {
+      pathway: 'mara',
+      institutions: [
+        { id: 'K', institution_id: 'K', name: 'KKTM Kemaman', state: 'Terengganu', course_ids: ['T1'] },
+        { id: 'BPT', institution_id: 'MARA-BPT', name: 'MARA BPT', state: 'WP Kuala Lumpur',
+          course_ids: ['OP1', 'OP2'], no_campus: true },
+      ],
+      courses: [],
+    }
+    expect(offeringStates(o, null)).toEqual(['Terengganu'])
+    expect(offeringInstitutions(o, 'WP Kuala Lumpur', null)).toEqual([])
+    expect(noCampusInstitutions(o, null).map((i) => i.id)).toEqual(['BPT'])
+    expect(noCampusInstitutions(o, new Set(['OP2'])).map((i) => i.id)).toEqual(['BPT'])   // by course id
+    expect(noCampusInstitutions(o, new Set(['T1']))).toEqual([])
+  })
+  it('the plan\'s pathway labels: "University" and "MARA college or institute"', () => {
+    const plan = (en as { scholarship: { apply: { plan: { pathway: Record<string, string>; maraDivision: string } } } })
+      .scholarship.apply.plan
+    expect(plan.pathway.university).toBe('University')
+    expect(plan.pathway.mara).toBe('MARA college or institute')
+    expect(plan.maraDivision).toBe('MARA college (Bahagian Pendidikan Tinggi)')
   })
   it('every programme pathway in PATHWAY_ORDER is served by the catalogue; the pre-U two are not', () => {
     for (const p of PATHWAY_ORDER) expect(isOfferingPathway(p)).toBe(p !== 'matric' && p !== 'stpm')

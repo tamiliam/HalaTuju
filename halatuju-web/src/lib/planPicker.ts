@@ -57,21 +57,28 @@ const byCourse = (a: OfferingCourse, b: OfferingCourse) => a.course_name.localeC
 const offersAny = (i: OfferingInstitution, allowed: Allowed) =>
   !allowed || i.course_ids.some((id) => allowed.has(id))
 
-/** The states that hold at least one institution of the pathway (with an allowed course). */
+/** The states that hold at least one campus of the pathway (with an allowed course). */
 export function offeringStates(o: PathwayOfferings | null, allowed: Allowed): string[] {
   if (!o) return []
-  const states = new Set(o.institutions.filter((i) => i.state && offersAny(i, allowed)).map((i) => i.state))
+  const states = new Set(o.institutions.filter((i) => i.state && !i.no_campus && offersAny(i, allowed))
+    .map((i) => i.state))
   return Array.from(states).sort((a, b) => a.localeCompare(b))
 }
 
-/** The institutions to choose from — in `state` when one is given — A–Z. */
+/** The institutions to choose from — the campuses in `state` when one is given — A–Z. */
 export function offeringInstitutions(
   o: PathwayOfferings | null, state: string | null, allowed: Allowed,
 ): OfferingInstitution[] {
   if (!o) return []
   return o.institutions
-    .filter((i) => (state === null || i.state === state) && offersAny(i, allowed))
+    .filter((i) => (state === null || (i.state === state && !i.no_campus)) && offersAny(i, allowed))
     .sort(byName)
+}
+
+/** Institutions with no single campus (MARA's education division under `mara`, owner 2026-10-31):
+ *  offered BEFORE the state step, since no state would find them. With an allowed course only. */
+export function noCampusInstitutions(o: PathwayOfferings | null, allowed: Allowed): OfferingInstitution[] {
+  return o ? o.institutions.filter((i) => i.no_campus && offersAny(i, allowed)) : []
 }
 
 /** The courses one institution offers, A–Z. */

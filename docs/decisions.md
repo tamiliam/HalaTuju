@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## MARA's own diplomas sit under MARA in the scholarship picker (owner, 2026-10-31)
+
+**Context.** `MARA-BPT`, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi" (WP Kuala Lumpur), offers two
+OM Asasi courses (held at UMPSA and UTM) and 13 OP diplomas (the Kolej Profesional MARA). `course_pathway_map` files
+the OP diplomas under `university`, so the scholarship picker showed MARA's division among the universities and a
+student holding a MARA offer did not find it under MARA.
+
+**Decision.** (1) **Offerings endpoint, scholarship side only** (`views_offerings.MARA_DIVISION`): `pathway=university`
+leaves out the division's university-pathway courses (and so the division); `pathway=mara` adds them, at the
+division only, with the row marked `no_campus: true`. The two Asasi courses stay under `asasi`. `course_pathway_map`,
+eligibility and the course guide are unchanged. (2) **The picker** (State → Campus → Course for MARA) offers the
+division as the FIRST choice in the State list, "MARA college (Bahagian Pendidikan Tinggi)", which goes straight to
+its courses; a real state lists only campuses (`planPicker.noCampusInstitutions`). (3) **"Eligible only"** filters by
+course id, so the division's eligible diplomas show under MARA; and because eligibility counts them under
+`university`, `planEligibility` adds MARA to the pathway list when any course MARA lists is eligible. (4) **Plan
+labels** `scholarship.apply.plan.pathway.university` "University" and `.mara` "MARA college or institute". These keys
+are read only by scholarship surfaces: the picker, /profile's plan summary, the student's next steps, and the
+officer's Academic card, which shows the pathway's label as the programme title when no course is named. The course
+guide's `pathways.types.*` labels are untouched.
+
+**Readers of `chosen_pathway='mara'` with an OP course, walked:** `funding_estimate.classify_pathway` — `mara` has no
+category, the programme decides (an OP id, a "Diploma" name) → `university`, exactly today's estimate (tested).
+`offer_pathway.pathway_family` — `mara` and a UPU letter's `diploma` are both `tertiary`, so neither the verdict
+engine's `pathway_type_switch` nor `confirmation`'s type adoption fires (tested); `is_pre_u('mara')` is false, so the
+pre-U fields are not read; `_declared_pathway` reads the course and institution, not the pathway code, and the
+institution verdict comes from the catalogue course (`institution_agreement`), as before. `results_route` — `mara` is
+a post-SPM code and a course id decides first → post-SPM. `card_display` — names come from the catalogue course; no
+pre-U label for `mara`. `family.copy_pathway` / `profile_sync` copy `chosen_pathway` verbatim. The cockpit names the catalogue course
+(the pathway label only when there is none, see (4)); its Pathway chip reads the verdicts above. The bursary amount
+does not depend on the pathway (STPM aside).
+
 ## Same-name schools carry their town (owner, 2026-10-31)
 
 **Context.** 68 names are used by more than one school in the MOE's national secondary list (173 rows; "SMK CONVENT"

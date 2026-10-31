@@ -15,7 +15,9 @@
  * Bumiputera-only course is never hidden by the student's answer — that answer is course-guide
  * only and is not read here.
  */
-import { calculatePathways, checkEligibility, checkStpmEligibility, type StudentProfile } from '@/lib/api'
+import {
+  calculatePathways, checkEligibility, checkStpmEligibility, getPathwayOfferings, type StudentProfile,
+} from '@/lib/api'
 import type { Qualification } from '@/lib/qualification'
 import { PATHWAY_ORDER } from '@/lib/scholarship'
 
@@ -46,9 +48,17 @@ export async function loadPlanEligibility(
     calculatePathways(profile.grades || {}, profile.coq_score ?? 0, null, { token }),
   ])
   const stats = elig.pathway_stats || {}
+  const courseIds = new Set((elig.eligible_courses || []).map((c) => c.course_id))
+  const pathways = new Set(PATHWAY_ORDER.filter((k) => (stats[k] || 0) > 0))
+  // MARA's own diplomas are counted under `university` by eligibility, but the picker lists them
+  // under `mara` (owner, 2026-10-31): offer MARA when any course it lists is one she qualifies for.
+  if (!pathways.has('mara')) {
+    const mara = await getPathwayOfferings('mara').catch(() => null)
+    if (mara?.courses.some((c) => courseIds.has(c.course_id))) pathways.add('mara')
+  }
   return {
-    courseIds: new Set((elig.eligible_courses || []).map((c) => c.course_id)),
-    pathways: new Set(PATHWAY_ORDER.filter((k) => (stats[k] || 0) > 0)),
+    courseIds,
+    pathways,
     matricTracks: (paths.pathways || []).filter((p) => p.pathway === 'matric' && p.eligible).map((p) => p.trackId),
   }
 }

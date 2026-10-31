@@ -9,6 +9,9 @@
  *   MARA, ILJTM, ILKBS, other public
  *   skills training                 State → Polytechnic or campus → Course
  *
+ * MARA also offers its education division (Bahagian Pendidikan Tinggi), whose diplomas have no single
+ * campus: it is the first choice in the State list and goes straight to its courses (owner, 2026-10-31).
+ *
  * The student names the place she holds (or awaits) an offer for, so the box she types into holds
  * one institution's courses, never a whole pathway's. The lists are the catalogue, unfiltered,
  * unless "Eligible only" passes an `allowed` set (`lib/planPicker.ts`). The pick carries the
@@ -22,10 +25,13 @@ import ProgrammePicker from '@/components/ProgrammePicker'
 import type { PathwayOfferings } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import {
-  DEGREE_PATHWAY, asksStateFirst, coursesAt, institutionKind, institutionOf, offeringInstitutions,
-  offeringStates, type Allowed,
+  DEGREE_PATHWAY, asksStateFirst, coursesAt, institutionKind, institutionOf, noCampusInstitutions,
+  offeringInstitutions, offeringStates, type Allowed,
 } from '@/lib/planPicker'
 import type { ChosenProgramme } from '@/lib/scholarship'
+
+/** A State-list value that names a no-campus institution rather than a state. */
+const NO_CAMPUS = '@'
 
 export default function InstitutionCoursePicker({
   pathway, offerings, loading, allowed, value, onChange, apply = false,
@@ -47,7 +53,7 @@ export default function InstitutionCoursePicker({
   // Re-open on the saved pick (editing on /profile, or coming back to the step).
   useEffect(() => {
     const inst = institutionOf(offerings, value)
-    if (inst) { setInstId(inst.id); setState(inst.state) }
+    if (inst) { setInstId(inst.id); setState(inst.no_campus ? NO_CAMPUS + inst.id : inst.state) }
   }, [offerings, value])
 
   if (loading || !offerings) {
@@ -56,13 +62,16 @@ export default function InstitutionCoursePicker({
 
   const kind = institutionKind(pathway)
   const states = stateFirst ? offeringStates(offerings, allowed) : []
-  const institutions = stateFirst && !state ? [] : offeringInstitutions(offerings, stateFirst ? state : null, allowed)
-  const inst = institutions.find((i) => i.id === instId) ?? null
+  const divisions = stateFirst ? noCampusInstitutions(offerings, allowed) : []
+  const division = divisions.find((i) => NO_CAMPUS + i.id === state) ?? null
+  const institutions = division ? [division]
+    : stateFirst && !state ? [] : offeringInstitutions(offerings, stateFirst ? state : null, allowed)
+  const inst = division ?? institutions.find((i) => i.id === instId) ?? null
   const courses = inst ? coursesAt(offerings, inst.id, allowed) : []
   const instLabel = t(`scholarship.apply.plan.institutionLabel.${kind}`)
   const courseLabel = t(pathway === DEGREE_PATHWAY ? 'scholarship.apply.plan.degreeLabel' : 'scholarship.apply.plan.programmeLabel')
 
-  if ((stateFirst ? states : institutions).length === 0) {
+  if ((stateFirst ? states.length + divisions.length : institutions.length) === 0) {
     return (
       <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">
         {t('scholarship.apply.plan.noProgrammes')}
@@ -82,11 +91,15 @@ export default function InstitutionCoursePicker({
             <select className="input" aria-label={t('scholarship.apply.plan.stateLabel')} value={state}
               onChange={(e) => chooseState(e.target.value)}>
               <option value="">{t('scholarship.apply.plan.statePlaceholder')}</option>
+              {divisions.map((d) => (
+                // Only MARA's division is ever `no_campus` (views_offerings.MARA_DIVISION).
+                <option key={d.id} value={NO_CAMPUS + d.id}>{t('scholarship.apply.plan.maraDivision')}</option>
+              ))}
               {states.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
         )}
-        {(!stateFirst || state) && (
+        {(!stateFirst || state) && !division && (
           <div>
             <FieldLabel required={apply} tip={apply ? t('scholarship.apply.plan.institutionTip') : undefined}>{instLabel}</FieldLabel>
             <select className="input" aria-label={instLabel} value={inst ? inst.id : ''}

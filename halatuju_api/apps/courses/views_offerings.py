@@ -23,7 +23,8 @@ Shape (one pathway per call, so a picker downloads only what it draws):
 an STPM degree whose university is not linked). `name` is the CATALOGUE spelling — exactly what
 `offer_pathway._campus_rows` compares an offer letter against (`Institution.institution_name` for
 the SPM catalogue, `StpmCourse.university` for degrees, e.g. "Universiti Teknologi MARA").
-`aliran` is set for PISMP rows only (school type, `pismp_taxonomy`).
+`aliran` is set for PISMP rows only (school type, `pismp_taxonomy`). `no_campus` is set only on
+MARA's education division under `mara` (see `MARA_DIVISION`).
 """
 from django.apps import apps
 from django.utils.cache import patch_cache_control
@@ -41,6 +42,14 @@ SPM_PATHWAYS = ('asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs'
 DEGREE = 'degree'
 OFFERING_PATHWAYS = SPM_PATHWAYS + (DEGREE,)
 
+#: MARA's education division, "Majlis Amanah Rakyat (MARA) - Bahagian Pendidikan Tinggi" (owner,
+#: 2026-10-31). Its DIPLOMAS (the OP… Kolej Profesional MARA courses, which `course_pathway_map` files
+#: under `university`) are served under `mara` here, not `university`: MARA's own colleges are where a
+#: student holding a MARA offer looks for her course. Its Asasi courses stay under `asasi`. The SCHOLARSHIP
+#: picker only — `course_pathway_map`, eligibility and the course guide are unchanged. The division has
+#: no single campus, so its row carries `no_campus: true` and the picker offers it before the state step.
+MARA_DIVISION = 'MARA-BPT'
+
 #: Catalogue data changes only on an ingest; a browser may keep an answer for an hour.
 MAX_AGE_SECONDS = 3600
 
@@ -52,6 +61,8 @@ def _spm_offerings(pathway):
     config.ensure_data()   # TD-047: a failed boot load leaves the pathway map empty; retry it once
     pathway_map = getattr(config, 'course_pathway_map', {}) or {}
     ids = [cid for cid, pt in pathway_map.items() if pt == pathway]
+    moved = _division_diplomas(pathway_map) if pathway in ('university', 'mara') else set()
+    ids = [cid for cid in ids if cid not in moved] + (sorted(moved) if pathway == 'mara' else [])
     courses = []
     for cid, name, field_key in (Course.objects.filter(course_id__in=ids)
                                  .order_by('course').values_list('course_id', 'course', 'field_key')):
@@ -65,10 +76,21 @@ def _spm_offerings(pathway):
             .values_list('institution_id', 'institution__institution_name', 'institution__state',
                          'course_id'))
     for iid, name, state, cid in rows:
+        if cid in moved and iid != MARA_DIVISION:
+            continue                       # under `mara` a division diploma is the division's alone
         inst = by_inst.setdefault(iid, {'id': iid, 'institution_id': iid, 'name': (name or '').strip(),
                                         'state': state or '', 'course_ids': []})
+        if iid == MARA_DIVISION and pathway == 'mara':
+            inst['no_campus'] = True
         inst['course_ids'].append(cid)
     return list(by_inst.values()), courses
+
+
+def _division_diplomas(pathway_map):
+    """The `university`-pathway courses MARA's education division offers (see `MARA_DIVISION`)."""
+    from .models import CourseInstitution
+    return {cid for cid in CourseInstitution.objects.filter(institution_id=MARA_DIVISION)
+            .values_list('course_id', flat=True) if pathway_map.get(cid) == 'university'}
 
 
 def _degree_offerings():
