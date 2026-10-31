@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
+
+Owner rulings 2026-11-01 (decisions.md, the 7b entry). **Migration scholarship 0197
+(`0197_invite_mentor_template`) — choices only, NO SQL: the ledger row by hand before the push**; after the
+deploy, run the template seed (`POST internal/cron/seed-partner-emails/`, creates missing kinds only) so the
+editable mentor letter has its row.
+
+- **Invitations → Mentor**, a fifth kind after Source, for super and org admin only (with its waiting count):
+  the mentor invite form (name + email, the 7a refusals in plain words, `POST admin/invitations/` `audience=mentor`)
+  and the mentors who have not signed in yet, with **Resend** and **Revoke** — the mentor actions
+  (`admin/mentors/<id>/resend|revoke/`), never the generic Cancel. `?kind=mentor` opens it. Server: the
+  Invitations payload lists mentor invitations under `mentor` only (with `mentor_id` and the Mentors page's
+  own rows for the roster), org-fenced like every kind.
+- **The Mentors page manages ARRIVED mentors, like People:** chips Active and Inactive only; Deactivate and
+  Reactivate; "Scholars now"; "n waiting to accept — see Invitations" from the Invitations payload's own
+  count. **"Invite a mentor →" is a link** to Invitations → Mentor; the in-page invite form is deleted.
+- **The People tab bar:** Mentors · Emails · Terms (disabled). **Emails** (super, org admin) is the mentor's
+  invitation — now an **editable template** (`invite_mentor`, the invitation family), the same card and editor
+  as Invitations → Emails — and says "Mentors receive no other email from HalaTuju". `send_mentor_invitation_email`
+  sends the stored wording; the sign-in paragraph stays ours, and a stored body without it falls back to the
+  built-in letter (reworded "The students you mentor see…", since "your students" is refused in this family).
+
 ## Mobile M1 close-review fixes (2026-11-01)
 
 - **iPhones held sideways no longer zoom into fields:** the 16 px rule now applies below `md` OR on any touch-first

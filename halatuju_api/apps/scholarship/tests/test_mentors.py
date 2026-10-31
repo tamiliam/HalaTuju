@@ -257,10 +257,13 @@ class TestTheMentorsPage(_Base):
         self.assertEqual((row['status'], row['signed_in']), ('active', True))
         self.assertIsNotNone(Invitation.objects.get(audience='mentor').accepted_at)
 
-    def test_a_mentor_invitation_is_not_on_the_invitations_page(self):
+    def test_a_mentor_invitation_is_only_under_its_own_kind_and_cancel_still_refuses_it(self):
+        """S7b follow-up (owner, 2026-11-01) supersedes S7a's "not on the Invitations page": a mentor
+        invitation is listed under the Mentor kind ONLY; the generic Cancel still 404s it (Revoke is
+        the mentor action)."""
         body = authed_client(self.lead).get(INVITE + '?kind=admins').json()
         self.assertEqual(body['invitations'], [])
-        self.assertEqual(body['waiting'], {'admins': 0, 'reviewers': 0, 'source': 0, 'sponsors': 0})
+        self.assertEqual(body['waiting'], {'admins': 0, 'reviewers': 0, 'source': 0, 'mentor': 1, 'sponsors': 0})
         inv = Invitation.objects.get(audience='mentor')
         r = authed_client(self.lead).post(f'{INVITE}{inv.pk}/cancel/', {}, format='json')
         self.assertEqual(r.status_code, 404)
@@ -615,3 +618,95 @@ class TestNoResendResetsAStudentsOrSponsorsLogin(_Base):
         self.assertIsNone(err)
         self.assertTrue(temp)
         issued.assert_called_once()
+
+
+class TestTheMentorKindOnInvitations(_Base):
+    """S7b follow-up (owner, 2026-11-01): mentors are invited from Invitations, like sources. The
+    Mentor kind lists the WAITING mentor invitations of the caller's organisation, with the Mentors
+    page's own rows (`manageable`) for the roster's Resend / Revoke; never under another kind."""
+
+    def test_the_mentor_kind_lists_the_waiting_ones_with_their_mentor_rows(self):
+        self.invite()
+        mentor = Mentor.objects.get()
+        body = authed_client(self.lead).get(INVITE + '?kind=mentor').json()
+        self.assertEqual(body['kind'], 'mentor')
+        self.assertEqual([(r['email'], r['mentor_id']) for r in body['invitations']],
+                         [('priya@example.org', mentor.pk)])
+        self.assertEqual(body['waiting']['mentor'], 1)
+        self.assertEqual([(m['id'], m['manageable'], m['status']) for m in body['mentors']],
+                         [(mentor.pk, True, 'invited')])
+        for kind in ('admins', 'reviewers', 'source', 'sponsors'):
+            with self.subTest(kind=kind):
+                rows = authed_client(self.lead).get(INVITE + f'?kind={kind}').json()['invitations']
+                self.assertNotIn('priya@example.org', [r['email'] for r in rows])
+
+    def test_another_organisation_sees_none_of_it(self):
+        self.invite()
+        body = authed_client(self.other_lead).get(INVITE + '?kind=mentor').json()
+        self.assertEqual((body['invitations'], body['waiting']['mentor'], body['mentors']), ([], 0, []))
+
+    def test_a_signed_in_or_revoked_mentor_is_no_longer_waiting(self):
+        self.invite()
+        mentor = Mentor.objects.get()
+        with patch(KILL, return_value='killed'):
+            self.assertEqual(authed_client(self.lead).post(f'{MENTORS}{mentor.pk}/revoke/', {},
+                                                           format='json').status_code, 200)
+        body = authed_client(self.lead).get(INVITE + '?kind=mentor').json()
+        self.assertEqual((body['invitations'], body['waiting']['mentor']), ([], 0))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheMentorInvitationIsEditable(TestCase):
+    """S7b follow-up (owner, 2026-11-01): the mentor's invitation — the only email a mentor is ever
+    sent — is the stored `invite_mentor` template; the sign-in paragraph stays ours."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        import io as _io
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+
+    def _build(self):
+        from apps.scholarship import emails
+        return emails.build_mentor_invitation_email(
+            org_name='BrightPath', name='Priya Devi', login_link='https://example.org/admin/login',
+            access='ACCESS PARAGRAPH')
+
+    def test_the_seed_is_byte_identical_to_the_built_in_letter(self):
+        from apps.scholarship.models import PartnerEmailTemplate
+        stored = self._build()
+        PartnerEmailTemplate.objects.filter(kind='invite_mentor').delete()
+        self.assertEqual(stored, self._build())
+
+    def test_the_edited_wording_is_what_the_mentor_is_sent(self):
+        from apps.scholarship.emails import send_mentor_invitation_email
+        from apps.scholarship.models import PartnerEmailTemplate
+        PartnerEmailTemplate.objects.filter(kind='invite_mentor').update(
+            subject='Mentor with {org_name}?',
+            body='Hello {name},\n\nWe would love your help.\n\n{login_link}\n\n{access}\n\n{team_signoff}')
+        ok, _err = send_mentor_invitation_email('priya@example.org', name='Priya Devi', org_name='BrightPath',
+                                                temp_password='Kx7m-Pq4t-Rd92')
+        self.assertTrue(ok)
+        letter = mail.outbox[-1]
+        self.assertEqual((letter.subject, letter.to), ('Mentor with BrightPath?', ['priya@example.org']))
+        self.assertIn('We would love your help.', letter.body)
+        self.assertIn('Kx7m-Pq4t-Rd92', letter.body)             # the access paragraph is ours, always
+        self.assertIn('/admin/login', letter.body)
+
+    def test_a_stored_body_without_the_way_in_falls_back_and_the_editor_refuses_it(self):
+        from apps.scholarship import partner_comms
+        from apps.scholarship.models import PartnerEmailTemplate
+        PartnerEmailTemplate.objects.filter(kind='invite_mentor').update(body='Hello {name}. {team_signoff}')
+        _s, body = self._build()
+        self.assertIn('ACCESS PARAGRAPH', body)
+        self.assertIn('fill in your profile', body)              # the built-in letter
+        self.assertEqual(set(partner_comms.missing_required_placeholders(
+            'invite_mentor', 'S', 'Hello {name}. {team_signoff}')), {'access', 'login_link'})
+
+    def test_it_is_listed_with_the_invitation_emails(self):
+        sup = make_admin('super', super_admin=True)
+        kinds = [t['kind'] for t in authed_client(sup).get(
+            '/api/v1/admin/scholarship/partner-emails/?family=invite').json()['templates']]
+        self.assertIn('invite_mentor', kinds)
+        others = [t['kind'] for t in authed_client(sup).get(
+            '/api/v1/admin/scholarship/partner-emails/').json()['templates']]
+        self.assertNotIn('invite_mentor', others)

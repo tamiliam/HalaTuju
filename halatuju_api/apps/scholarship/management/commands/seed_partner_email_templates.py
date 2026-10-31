@@ -436,6 +436,33 @@ SEEDS = {
     },
 }
 
+SEEDS['invite_mentor'] = {
+    # S7b follow-up (owner, 2026-11-01): the mentor's invitation, word for word the built-in
+    # `emails.invitation_mail.build_mentor_invitation_email` (a test holds the two together).
+    'subject': 'An invitation to mentor with {org_name}',
+    'body': (
+        'Dear {name},\n'
+        '\n'
+        '{org_name} would like you to join the {programme_name} as a mentor: someone a funded '
+        'student can turn to for guidance during their studies.\n'
+        '\n'
+        'Sign in here:\n'
+        '{login_link}\n'
+        '\n'
+        '{access}\n'
+        '\n'
+        'Once you are in, please fill in your profile: your area of mentoring, the languages you '
+        'speak, a few lines about yourself and your phone number. The team uses it to match you '
+        'with students. The students you mentor see your name, area, languages, About and email, and your '
+        'phone only if you choose to share it.\n'
+        '\n'
+        'Any trouble at all, just reply to this email.\n'
+        '\n'
+        'Warm regards,\n'
+        '{team_signoff}'
+    ),
+}
+
 #: Kinds seeded switched ON. Everything else arrives OFF so wording can be agreed while the
 #: feature is dark — but this one was requested, quoted and paid for (request #3), and a paid
 #: notification that arrives switched off is a non-delivery. Seeding it ON also makes the screen

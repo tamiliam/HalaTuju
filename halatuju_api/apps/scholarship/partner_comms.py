@@ -136,6 +136,8 @@ PLACEHOLDERS = {
     # `qc_comments` is: a note containing `{link}` must arrive verbatim, not be substituted.
     'invite_sponsor': {'name', 'org_name', 'programme_name', 'invited_by', 'note', 'link',
                        'team_signoff'},
+    # S7b follow-up: the mentor's own invitation. `org_name` is the organisation that invites them.
+    'invite_mentor': {'name', 'org_name', 'programme_name', 'login_link', 'access', 'team_signoff'},
 }
 
 #: Tokens a kind CANNOT be saved without.
@@ -150,6 +152,7 @@ REQUIRED_PLACEHOLDERS = {
     'invite_reviewer': {'access', 'login_link'},
     'invite_source': {'access', 'login_link'},
     'invite_sponsor': {'link'},
+    'invite_mentor': {'access', 'login_link'},
 }
 
 KINDS = tuple(k for k, _ in PartnerEmailTemplate.KIND_CHOICES)

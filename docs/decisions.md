@@ -145,6 +145,15 @@ the mentor under a lock** inside its transaction, so a Deactivate that lands bet
 refused (`mentor_inactive`). (14) **An award reverted to the pool** ends the open assignment ("Award reverted",
 `maintenance.reset_on_leaving`, no email).
 
+**Follow-up, same day (owner rulings):** (15) **mentors are invited from Organisation → Invitations, like
+sources** — a Mentor kind (super, org_admin) with the invite form and the waiting mentors' Resend / Revoke (the
+mentor actions, never the generic Cancel). This SUPERSEDES 7a's "a mentor invitation is not on the Invitations
+page". (16) **The Mentors page manages arrived mentors, like People**: Active and Inactive only, Deactivate /
+Reactivate; invitations live on Invitations; "Invite a mentor →" is a link there. (17) The Mentors page wears
+People's tab bar (Mentors · Emails · Terms disabled); **the mentor's invitation is an editable template**
+(`invite_mentor`, scholarship 0197, choices only), shown on both Emails tabs through one card; it remains the
+only email a mentor receives.
+
 **Trade-offs:** `MentorAssignment.application` is CASCADE in Django, like `letters` and `student_activity` (file
 records), not PROTECT. The self-mentor end on sign-in is best effort: if it fails, the sign-in still succeeds and
 the read-time guard keeps the mentor off the student's screens until staff end it.
@@ -345,7 +354,9 @@ sponsors or partners. (7) One rule for "works with students" (`staff_contact.wor
 cards; the web twin is `profileCards.worksWithStudents`.
 
 **Trade-offs:** a mentor invitation is not on the Invitations page (the Mentors page is its roster), so the
-generic Cancel refuses it (404) and Revoke on the Mentors page is the one door. The board's copy describes
+generic Cancel refuses it (404) and Revoke on the Mentors page is the one door. *(Superseded 2026-11-01, S7b
+follow-up: mentor invitations are on Invitations → Mentor; Revoke is still the mentor action, and Cancel still
+refuses them.)* The board's copy describes
 assignment and meetings (7b) before they exist. The phone appears on the Mentors list, as the Contact card
 tells the mentor ("the organisation that invited you can see this number").
 

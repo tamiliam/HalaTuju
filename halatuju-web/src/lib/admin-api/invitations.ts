@@ -4,11 +4,13 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { MentorRow } from './mentors'
 
 // ── Invitations (Organisation → Invitations) ─────────────────────────────────
 
-/** The four kinds the page is organised by. `source` invites a source's person (source sign-in S2). */
-export type InvitationKind = 'admins' | 'reviewers' | 'source' | 'sponsors'
+/** The five kinds the page is organised by. `source` invites a source's person (source sign-in S2);
+ *  `mentor` a mentor (student maintenance S7b follow-up). */
+export type InvitationKind = 'admins' | 'reviewers' | 'source' | 'mentor' | 'sponsors'
 
 export interface InvitationRow {
   id: number
@@ -36,6 +38,8 @@ export interface InvitationRow {
   source_id?: number | null
   source_name?: string | null
   source_code?: string | null
+  /** Which MENTOR a mentor invitation signs somebody in as (S7b follow-up); null otherwise. */
+  mentor_id?: number | null
 }
 
 /** A source's sign-in state on the Sources list and the invite form (`source_invite.sign_in_states`):
@@ -90,6 +94,9 @@ export interface InvitationsPayload {
   /** `?kind=source` only (source sign-in S2): every source user, and the sources to pick from. */
   source_users?: SourceUserRow[]
   sources?: InvitableSource[]
+  /** `?kind=mentor` only (S7b follow-up): the Mentors page's own rows for the waiting invitations'
+   *  mentors — `manageable` decides which Resend / Revoke the roster offers. */
+  mentors?: MentorRow[]
 }
 
 export async function getInvitations(kind: InvitationKind, options?: ApiOptions) {

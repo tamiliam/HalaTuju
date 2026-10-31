@@ -7143,13 +7143,15 @@
         "admins": "Admins",
         "reviewers": "Reviewers",
         "source": "Source",
-        "sponsors": "Sponsors"
+        "sponsors": "Sponsors",
+        "mentor": "Mentors"
       },
       "kindOne": {
         "admins": "Admin",
         "reviewers": "Reviewer",
         "source": "Source",
-        "sponsors": "Sponsor"
+        "sponsors": "Sponsor",
+        "mentor": "Mentor"
       },
       "noneInKind": "Nobody has been invited in this group yet.",
       "giftLabel": "Which gift is this invitation for?",
@@ -7157,7 +7159,7 @@
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
-        "subtitle": "The wording of the four invitation emails. Edit them freely.",
+        "subtitle": "The wording of the invitation emails. Edit them freely.",
         "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
         "accessLocked": "Where a letter hands somebody an account, the sign-in paragraph — including any temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
         "loadError": "These emails could not be loaded.",
@@ -7165,13 +7167,15 @@
           "invite_admin": "Joining the team — admin",
           "invite_reviewer": "Joining the team — reviewer",
           "invite_source": "Inviting a source organisation",
-          "invite_sponsor": "Inviting a donor"
+          "invite_sponsor": "Inviting a donor",
+          "invite_mentor": "Inviting a mentor"
         },
         "when": {
           "invite_admin": "Sent when you add somebody as an admin or finance — and again whenever you press Resend.",
           "invite_reviewer": "Sent when you add somebody as a reviewer or QC — and again whenever you press Resend.",
           "invite_source": "Sent when you invite somebody for a source — and again whenever you press Resend. They sign in to follow their own students and witness contracts.",
-          "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
+          "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted.",
+          "invite_mentor": "Sent when you invite a mentor — and again whenever you press Resend. It is the only email a mentor receives."
         }
       },
       "resent": "Invitation sent again.",
@@ -7234,7 +7238,15 @@
           "not_active": "{name} is switched off. To bring them back, invite them again."
         }
       },
-      "loadFailed": "We could not load the invitations. Reload the page to try again."
+      "loadFailed": "We could not load the invitations. Reload the page to try again.",
+      "mentor": {
+        "noneWaiting": "No mentor is waiting to accept.",
+        "col": {
+          "name": "Mentor",
+          "email": "Email",
+          "sent": "Invited"
+        }
+      }
     },
     "soon": "Soon",
     "programmes": {
@@ -8370,16 +8382,11 @@
     "mentors": {
       "nav": "Mentors",
       "title": "Mentors",
-      "intro": "Invite a mentor by email. The mentor signs in and fills in their own profile.",
+      "intro": "The mentors who have signed in. Invite a mentor from Invitations; each mentor fills in their own profile.",
       "inviteOpen": "Invite a mentor",
       "invite": {
-        "title": "Invite a mentor",
         "name": "Name",
-        "email": "Email",
         "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
-        "send": "Send invitation",
-        "sending": "Sending…",
-        "cancel": "Cancel",
         "sent": "{name} invited. Sign-in details emailed to {email}.",
         "notEmailed": "{name} was added, but the email could not be sent. Use Resend to try again."
       },
@@ -8410,7 +8417,6 @@
       },
       "notFilled": "Not filled in yet",
       "activeSeen": "Active · last signed in {date}",
-      "invitedOn": "Invited {date} · not signed in",
       "inactiveOn": "Inactive since {date}",
       "action": {
         "deactivate": "Deactivate",
@@ -8430,7 +8436,7 @@
         "reactivateInvited": "{name} can sign in again. The invitation was sent again.",
         "notEmailed": "The email could not be sent. Try Resend."
       },
-      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
+      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. Mentors waiting to accept are on Invitations → Mentor. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
       "empty": "No mentors in this list.",
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8442,7 +8448,16 @@
         "showToStudents": "Show my phone to my students",
         "welcome": "Welcome. Please fill in your profile. Your students see your name, area, languages, About and email, and your phone only if you switch it on.",
         "phoneRequired": "A mentor needs a phone number. Type yours."
-      }
+      },
+      "tabsAria": "Mentors sections",
+      "tab": {
+        "mentors": "Mentors"
+      },
+      "emailsNote": "Mentors receive no other email from HalaTuju.",
+      "waiting": "{count} waiting to accept —",
+      "seeInvitations": "see Invitations",
+      "emptyNone": "No mentors yet. Invite one with \"Invite a mentor\".",
+      "emptyNoneRead": "No mentors yet."
     }
   },
   "documentsTab": {

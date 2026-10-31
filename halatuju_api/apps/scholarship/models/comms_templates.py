@@ -69,6 +69,9 @@ class PartnerEmailTemplate(models.Model):
         # built — but do not read its existence as a working invitation route.
         ('invite_source', 'Inviting a source organisation'),
         ('invite_sponsor', 'Inviting a sponsor'),
+        # Student maintenance S7b follow-up (owner, 2026-11-01): the mentor's invitation — the ONLY
+        # email a mentor is ever sent — editable like the others; sent by `send_mentor_invitation_email`.
+        ('invite_mentor', 'Inviting a mentor'),
     ]
 
     #: Kinds whose recipient is the STUDENT. Everything else on this screen goes to the partner
@@ -83,12 +86,12 @@ class PartnerEmailTemplate(models.Model):
         'reviewer_assigned', 'qc_returned', 'qc_rejected',
         'verdict_due_soon', 'verdict_overdue',
     })
-    #: The four invitation kinds, one per group on Organisation → Invitations. Exempt from
+    #: The invitation kinds, one per group on Organisation → Invitations (five since S7b follow-up). Exempt from
     #: `PARTNER_COMMS_ENABLED` for the same reason as the reviewer kinds, and additionally exempt
     #: from their OWN `enabled` flag — see the note in KIND_CHOICES. `emails._invite_render` never
     #: asks whether they are switched on.
     INVITE_KINDS = frozenset({
-        'invite_admin', 'invite_reviewer', 'invite_source', 'invite_sponsor',
+        'invite_admin', 'invite_reviewer', 'invite_source', 'invite_sponsor', 'invite_mentor',
     })
 
     kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)

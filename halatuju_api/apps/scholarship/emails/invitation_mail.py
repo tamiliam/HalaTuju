@@ -148,13 +148,21 @@ def build_mentor_invitation_email(*, org_name='', name='', login_link='', access
     ``(subject, body)``.
 
     ⚠ THE ONLY EMAIL A MENTOR IS EVER SENT, with its resend (owner ruling 2026-10-31): the system
-    never emails a mentor anything else. Built-in wording only — no stored template, no switch: an
-    invitation is not a notification (`_invite_render`'s reason), and nothing else may grow out of
-    it. The sign-in paragraph is the staff letters' own (`_welcome_access_block`), so a mentor is
-    told how to get in in exactly the words a colleague is. English, like every staff letter.
+    never emails a mentor anything else. Since the S7b follow-up (owner, 2026-11-01) its WORDING is
+    editable — the stored `invite_mentor` template, on Invitations → Emails and Mentors → Emails —
+    with this body as the default; no switch (an invitation is not a notification, `_invite_render`'s
+    reason). The sign-in paragraph `{access}` stays OURS (`_welcome_access_block`) and a stored body
+    that renders without it, or without the link, falls back to this one. English, like every staff
+    letter.
     """
     org = org_name or 'the organisation'
     who = name or 'there'
+    stored = _invite_render('invite_mentor', {
+        'name': who, 'org_name': org, 'programme_name': _PROG_EN, 'login_link': login_link,
+        'access': access, 'team_signoff': _P.team_signoff('en'),
+    }, must_contain=(access, login_link))
+    if stored:
+        return stored
     body = (
         f'Dear {who},\n\n'
         f'{org} would like you to join the {_PROG_EN} as a mentor: someone a funded student can '
@@ -163,7 +171,7 @@ def build_mentor_invitation_email(*, org_name='', name='', login_link='', access
         f'{access}\n\n'
         f'Once you are in, please fill in your profile: your area of mentoring, the languages you '
         f'speak, a few lines about yourself and your phone number. The team uses it to match you '
-        f'with students. Your students see your name, area, languages, About and email, and your '
+        f'with students. The students you mentor see your name, area, languages, About and email, and your '
         f'phone only if you choose to share it.\n\n'
         f'Any trouble at all, just reply to this email.\n\n'
         f'Warm regards,\n{_P.team_signoff("en")}'

@@ -23,8 +23,13 @@ const SourceInviteForm = lazySource(
   () => import('@/components/sources/SourceInvite').then((m) => m.SourceInviteForm))
 const SourceRoster = lazySource(
   () => import('@/components/sources/SourceInvite').then((m) => m.SourceRoster))
+// S7b follow-up: the Mentor tab's form and roster, likewise their own chunk.
+const MentorInviteForm = lazySource(
+  () => import('@/components/mentors/MentorInvite').then((m) => m.MentorInviteForm))
+const MentorRoster = lazySource(
+  () => import('@/components/mentors/MentorInvite').then((m) => m.MentorRoster))
 
-const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'sponsors']
+const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'mentor', 'sponsors']
 
 /** The staff roles this page can grant. The SERVER decides which apply to the selected kind
  *  (`invitable_roles`); this type only keeps the invite client honest. */
@@ -68,6 +73,11 @@ const asStaffRow = (row: InvitationRow) =>
  * (`components/sources/SourceInvite`): pick a source or add a new one, name its person; then who
  * has not replied and who has signed in (Resend / Cancel / Remove). Super and org_admin invite;
  * the Sources page's "Invite a source" lands here with `?kind=source`.
+ *
+ * ⚠ **MENTOR (student maintenance S7b follow-up, 2026-11-01)** follows the source pattern exactly
+ * (`components/mentors/MentorInvite`): name + email, then the mentors who have not signed in yet with
+ * the Mentors page's own Resend / Revoke. Shown to super and org_admin only (`mentor_invite.may_invite`);
+ * the Mentors page's "Invite a mentor" lands here with `?kind=mentor`.
  */
 export default function OrganisationInvitationsPage() {
   const { token, role } = useAdminAuth()
@@ -75,6 +85,8 @@ export default function OrganisationInvitationsPage() {
   const r = effectiveRole(role)
   const canManage = r === 'super' || r === 'org_admin'
   const mayView = canAccess('/admin/organisation/staff', r)
+  // The Mentor chip only for the roles that may invite a mentor (super, org_admin).
+  const kinds = canManage ? KINDS : KINDS.filter((k) => k !== 'mentor')
 
   const { message, setMessage, busy, busyId, invite, resend } = useStaffAdmin(token)
   // Which SPONSOR row is mid-resend. The staff actions carry their own `busyId` from the hook;
@@ -123,11 +135,14 @@ export default function OrganisationInvitationsPage() {
   // `window.location` — `useSearchParams` would need a Suspense boundary in a page file.
   useEffect(() => {
     const asked = new URLSearchParams(window.location.search).get('kind')
-    if (asked && (KINDS as string[]).includes(asked)) setKind(asked as InvitationKind)
-  }, [])
+    // `?kind=mentor` only for the roles that see the Mentor chip; re-read once the role arrives.
+    const open = canManage ? KINDS : KINDS.filter((k) => k !== 'mentor')
+    if (asked && (open as string[]).includes(asked)) setKind(asked as InvitationKind)
+  }, [canManage])
 
   // The Source tab draws only a Source payload — never the previous tab's rows while its own load.
   const sourceData = data?.kind === 'source' ? data : null
+  const mentorData = data?.kind === 'mentor' ? data : null
   /** A Source-tab action finished: say so, and read the tab again. */
   const sourceDone = (banner: Parameters<typeof setMessage>[0]) => { setMessage(banner); void load() }
 
@@ -254,8 +269,8 @@ export default function OrganisationInvitationsPage() {
       {panel === 'invitations' && (<>
         <div className="mb-6 rounded-xl border bg-ground-0 p-6 shadow-sm">
           <p className="mb-2 text-sm font-semibold text-ground-900">{t('admin.inviteAs')}</p>
-          <div className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
-            {KINDS.map((k) => {
+          <div className={`grid grid-cols-2 gap-2 ${kinds.length > 4 ? 'max-w-2xl sm:grid-cols-5' : 'max-w-xl sm:grid-cols-4'}`}>
+            {kinds.map((k) => {
               const n = waiting?.[k] ?? 0
               return (
                 <button key={k} type="button" onClick={() => setKind(k)}
@@ -281,6 +296,8 @@ export default function OrganisationInvitationsPage() {
           {kind === 'source' ? (
             // Source sign-in S2: inviting a source's person IS how a source is added now.
             canManage && <SourceInviteForm data={sourceData} token={token} t={t} onDone={sourceDone} />
+          ) : kind === 'mentor' ? (
+            canManage && <MentorInviteForm token={token} t={t} onDone={sourceDone} />
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {invitable.length > 1 && (
@@ -353,6 +370,8 @@ export default function OrganisationInvitationsPage() {
         ) : kind === 'source' ? (
           <SourceRoster data={sourceData} token={token} t={t} canManage={canManage}
             onCancel={(row) => { void cancel(row) }} onDone={sourceDone} />
+        ) : kind === 'mentor' ? (
+          <MentorRoster data={mentorData} token={token} t={t} canManage={canManage} onDone={sourceDone} />
         ) : (<>
         <h2 className="mb-2 text-sm font-semibold text-ground-900">
           {t('admin.invitations.waitingHeading')}{' '}

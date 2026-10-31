@@ -61,13 +61,17 @@ KIND_ADMINS = 'admins'
 KIND_REVIEWERS = 'reviewers'
 KIND_SOURCE = 'source'
 KIND_SPONSORS = 'sponsors'
-KINDS = (KIND_ADMINS, KIND_REVIEWERS, KIND_SOURCE, KIND_SPONSORS)
+#: Student maintenance S7b follow-up (owner, 2026-11-01): mentors are invited from this page, like
+#: sources — their own form and roster, the actions the Mentors page's own (`mentor_invite`).
+KIND_MENTOR = 'mentor'
+KINDS = (KIND_ADMINS, KIND_REVIEWERS, KIND_SOURCE, KIND_MENTOR, KIND_SPONSORS)
 
 #: kind → the audience its invitations carry.
 KIND_AUDIENCE = {
     KIND_ADMINS: 'staff',
     KIND_REVIEWERS: 'staff',
     KIND_SOURCE: 'source_partner',
+    KIND_MENTOR: 'mentor',
     KIND_SPONSORS: 'sponsor',
 }
 
@@ -87,8 +91,9 @@ KIND_ROLES = {
 #: mentors since student maintenance S7a (2026-10-31).
 ACCOUNT_AUDIENCES = ('staff', 'source_partner', 'mentor')
 
-#: ⚠ A MENTOR INVITATION IS NOT ON THE INVITATIONS PAGE (S7a). The Mentors page is its roster
-#: (`mentor_invite`), so `kind_of` answers None for it and the counts below skip it.
+#: A MENTOR invitation is listed under its OWN kind, `mentor` (S7b follow-up, superseding S7a's "not on
+#: the Invitations page"), and never under any other. Its Resend and Revoke are the Mentors page's own
+#: actions (`mentor_invite`); the generic Cancel still refuses it.
 MENTOR_AUDIENCE = 'mentor'
 
 #: kind → the roles INVITABLE from this page. Note `org_admin`'s absence; see above.
@@ -102,11 +107,11 @@ KIND_INVITABLE_ROLES = {
 
 
 def kind_of(inv):
-    """Which of the four tables this invitation belongs on — None for a MENTOR invitation (S7a),
-    which belongs on none of them."""
+    """Which of the five tables this invitation belongs on (a MENTOR invitation: `mentor`, S7b
+    follow-up)."""
     audience = inv.audience
     if audience == MENTOR_AUDIENCE:
-        return None
+        return KIND_MENTOR
     if audience == 'sponsor':
         return KIND_SPONSORS
     if audience == 'source_partner':

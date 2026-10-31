@@ -145,6 +145,18 @@ def mentor_rows(caller, mentors):
     return rows
 
 
+def mentor_kind_extras(caller, mentor_ids):
+    """The Invitations page's Mentor tab (S7b follow-up): `{mentors: [...]}` — the Mentors page's own
+    rows (`mentor_rows`, with `manageable`) for the mentors behind the waiting invitations. The ids
+    come from invitations already fenced to the caller's organisation; the mentors are fenced again
+    here (a super: any organisation)."""
+    from ..models import Mentor
+    qs = Mentor.objects.filter(pk__in=list(mentor_ids))
+    if not getattr(caller, 'is_super', False):
+        qs = qs.filter(organisation_id=caller.owning_organisation_id)
+    return {'mentors': mentor_rows(caller, list(qs.order_by('id')))}
+
+
 class _MentorsBase(_AdminBase):
     """The fence every Mentors endpoint shares."""
 

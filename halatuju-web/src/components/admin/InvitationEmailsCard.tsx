@@ -25,10 +25,17 @@ import PartnerTemplateEditor from '@/components/sources/PartnerTemplateEditor'
  * structural block carrying the temporary password and its three shapes (a fresh password / sign in
  * with Google / you already have an account). The editor refuses a save that has dropped it, and
  * the sender falls back to the built-in letter if a stored body somehow renders without it.
+ *
+ * ⚠ ONE CARD, TWO PLACES (S7b follow-up, 2026-11-01): Organisation → Mentors → Emails mounts this same
+ * card with `only={['invite_mentor']}` and a closing `note` — one template, one editor, no copy.
  */
-export default function InvitationEmailsCard({ token, t }: {
+export default function InvitationEmailsCard({ token, t, only, note }: {
   token: string | null
   t: (key: string, params?: Record<string, string>) => string
+  /** Show only these kinds (the Mentors page's Emails tab: the mentor's invitation). */
+  only?: readonly string[]
+  /** A closing line under the list (the Mentors page: "Mentors receive no other email"). */
+  note?: string
 }) {
   const [data, setData] = useState<PartnerEmailsPayload | null>(null)
   const [openKind, setOpenKind] = useState<string | null>(null)
@@ -69,7 +76,7 @@ export default function InvitationEmailsCard({ token, t }: {
       </div>
 
       <ul className="divide-y divide-ground-100">
-        {data.templates.map((tpl) => (
+        {data.templates.filter((tpl) => !only || only.includes(tpl.kind)).map((tpl) => (
           <li key={tpl.kind} className="px-4 py-4 sm:px-5">
             <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
               <div className="min-w-0 flex-1">
@@ -103,6 +110,7 @@ export default function InvitationEmailsCard({ token, t }: {
           </li>
         ))}
       </ul>
+      {note && <p className="border-t px-4 py-4 text-sm text-ground-600 sm:px-5" data-testid="invitation-emails-note">{note}</p>}
     </div>
   )
 }

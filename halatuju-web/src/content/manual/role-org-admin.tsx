@@ -73,8 +73,10 @@ export const roleOrgAdmin: ManualChapter = {
         <p className="mt-2">The file&rsquo;s <strong>Mentoring</strong> tab is where you give a student a
         mentor from <strong>Organisation &rarr; Mentors</strong> &mdash; one at a time. <strong>Change
         mentor</strong> ends the current one (with a reason only staff see; it stays in the history) and starts the
-        new one; <strong>End mentoring</strong> ends it. A mentor who is invited but has not signed in yet can be
-        assigned; a deactivated one cannot, and nobody can be mentor to their own application. Leave
+        new one; <strong>End mentoring</strong> ends it. You invite a mentor from <strong>Invitations &rarr;
+        Mentor</strong>, like a source; Organisation &rarr; Mentors lists the mentors who have signed in, and its
+        <strong> Emails</strong> tab is the wording of their invitation &mdash; the only email a mentor receives.
+        A mentor who is invited but has not signed in yet can be assigned; a deactivated one cannot, and nobody can be mentor to their own application. Leave
         <strong> Email the student</strong> on and the student is sent &ldquo;You have a mentor&rdquo; with the
         mentor&rsquo;s name and contact (the phone only if the mentor shares it) &mdash; the system never emails
         the mentor. <strong>Log a meeting</strong> records the date, how you met and notes; notes and next steps

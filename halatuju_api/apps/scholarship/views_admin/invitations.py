@@ -22,9 +22,9 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 class AdminInvitationsView(_ReviewersBase):
     """GET admin/invitations/[?kind=][&all=1] — who has been asked and **has not answered yet**.
 
-    The Invitations page (owner's shape, 2026-08-03) is organised into FOUR kinds — admins,
-    reviewers, source, sponsors — with one table on screen at a time, so this serves one kind plus
-    the waiting counts for all four (the badge on each button; without it an invitation waiting
+    The Invitations page (owner's shape, 2026-08-03) is organised into FIVE kinds — admins,
+    reviewers, source, mentor (S7b follow-up), sponsors — with one table on screen at a time, so this
+    serves one kind plus the waiting counts for all five (the badge on each button; without it an invitation waiting
     under an unselected kind is invisible, which is what the page exists to prevent).
 
     ⚠ **IT LISTS THE WAITING ONES ONLY (2026-09-09).** `invitations.open_only` is the single
@@ -102,6 +102,9 @@ class AdminInvitationsView(_ReviewersBase):
                 'source_id': i.referral_source_id,
                 'source_name': i.referral_source.name if i.referral_source_id else None,
                 'source_code': i.referral_source.code if i.referral_source_id else None,
+                # Which MENTOR a mentor invitation signs somebody in as (S7b follow-up): the Mentor
+                # tab's Resend / Revoke act on the mentor (`admin/mentors/<id>/<action>/`).
+                'mentor_id': i.mentor_id,
             })
 
         extras = {}
@@ -109,6 +112,11 @@ class AdminInvitationsView(_ReviewersBase):
             # The Source tab's roster and the invite form's choices (source sign-in S2).
             from .source_users import source_kind_extras
             extras = source_kind_extras(admin, org_id)
+        elif kind == inv_service.KIND_MENTOR:
+            # The Mentor tab's roster (S7b follow-up): the Mentors page's own rows for the waiting
+            # invitations' mentors, so the tab offers exactly the actions those endpoints take.
+            from .mentors import mentor_kind_extras
+            extras = mentor_kind_extras(admin, [r['mentor_id'] for r in rows if r['mentor_id']])
 
         return Response({
             'kind': kind,

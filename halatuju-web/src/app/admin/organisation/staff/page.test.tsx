@@ -28,11 +28,11 @@ const row = (over: Partial<api.InvitationRow>): api.InvitationRow => ({
   programme: '', programme_name: '', ...over,
 })
 
-const WAITING = { admins: 1, reviewers: 0, source: 0, sponsors: 2 }
+const WAITING = { admins: 1, reviewers: 0, source: 0, mentor: 0, sponsors: 2 }
 // EVERY invitation ever sent, per kind. ⚠ Bigger than WAITING on purpose: the accepted ones are no
 // longer listed (2026-09-09), and `totals` is the only thing that lets the empty state tell
 // "nobody asked yet" apart from "everybody asked has arrived".
-const TOTALS = { admins: 2, reviewers: 13, source: 0, sponsors: 2 }
+const TOTALS = { admins: 2, reviewers: 13, source: 0, mentor: 0, sponsors: 2 }
 
 /** The organisation's ACTIVE gifts. Default one — today's BrightPath shape, where the invite
  *  form asks nothing. Tests that need the picker pass two. */
@@ -534,5 +534,39 @@ describe('inviting an address that already has an account', () => {
     await send('someone@elsewhere.org')
     const banner = await screen.findByText(said)
     expect(banner.className).toContain('bg-critical-50')
+  })
+})
+
+describe('S7b follow-up: the Mentor kind, like Source', () => {
+  afterEach(() => { window.history.replaceState({}, '', '/') })
+
+  it('shows the Mentor chip, with its waiting count, to super and org_admin only', async () => {
+    mockApi.getInvitations.mockImplementation(async (kind) => ({ ...payloadFor(kind), waiting: { ...WAITING, mentor: 3 } }))
+    for (const [who, shown] of [[{ role: 'org_admin' }, true], [{ role: 'super', is_super_admin: true }, true],
+      [{ role: 'admin' }, false], [{ role: 'finance' }, false]] as const) {
+      viewerRole = who
+      const { unmount } = render(<OrganisationInvitationsPage />)
+      await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
+      const chip = screen.queryByText('admin.invitations.kindOne.mentor')
+      expect([who.role, !!chip]).toEqual([who.role, shown])
+      if (chip) expect(chip.closest('button')!.textContent).toContain('3')
+      unmount()
+    }
+  })
+
+  it('?kind=mentor opens the Mentor tab with its form and its roster', async () => {
+    window.history.replaceState({}, '', '/admin/organisation/staff?kind=mentor')
+    render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(mockApi.getInvitations).toHaveBeenCalledWith('mentor', expect.anything()))
+    expect(await screen.findByTestId('mentor-invite-form')).toBeTruthy()
+    expect(await screen.findByTestId('mentor-roster')).toBeTruthy()
+  })
+
+  it('an admin asking for ?kind=mentor stays on Admins', async () => {
+    viewerRole = { role: 'admin' }
+    window.history.replaceState({}, '', '/admin/organisation/staff?kind=mentor')
+    render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
+    expect(mockApi.getInvitations).not.toHaveBeenCalledWith('mentor', expect.anything())
   })
 })

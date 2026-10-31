@@ -7143,13 +7143,15 @@
         "admins": "Pentadbir",
         "reviewers": "Penilai",
         "source": "Sumber",
-        "sponsors": "Penaja"
+        "sponsors": "Penaja",
+        "mentor": "Mentor"
       },
       "kindOne": {
         "admins": "Pentadbir",
         "reviewers": "Penilai",
         "source": "Sumber",
-        "sponsors": "Penaja"
+        "sponsors": "Penaja",
+        "mentor": "Mentor"
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "giftLabel": "Jemputan ini untuk pemberian yang mana?",
@@ -7157,7 +7159,7 @@
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",
-        "subtitle": "Teks empat e-mel jemputan. Suntinglah dengan bebas.",
+        "subtitle": "Teks e-mel jemputan. Suntinglah dengan bebas.",
         "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
         "accessLocked": "Apabila sesuatu surat memberikan akaun kepada seseorang, perenggan log masuk — termasuk sebarang kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
         "loadError": "E-mel ini tidak dapat dimuatkan.",
@@ -7165,13 +7167,15 @@
           "invite_admin": "Menyertai pasukan — pentadbir",
           "invite_reviewer": "Menyertai pasukan — penilai",
           "invite_source": "Menjemput organisasi sumber",
-          "invite_sponsor": "Menjemput penderma"
+          "invite_sponsor": "Menjemput penderma",
+          "invite_mentor": "Menjemput mentor"
         },
         "when": {
           "invite_admin": "Dihantar apabila anda menambah seseorang sebagai pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
           "invite_reviewer": "Dihantar apabila anda menambah seseorang sebagai penilai atau QC — dan setiap kali anda menekan Hantar Semula.",
           "invite_source": "Dihantar apabila anda menjemput seseorang bagi sesuatu sumber — dan sekali lagi setiap kali anda menekan Hantar semula. Mereka log masuk untuk mengikuti pelajar mereka sendiri dan menjadi saksi kontrak.",
-          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
+          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring.",
+          "invite_mentor": "Dihantar apabila anda menjemput mentor — dan sekali lagi setiap kali anda menekan Hantar semula. Ini satu-satunya e-mel yang diterima oleh mentor."
         }
       },
       "resent": "Jemputan dihantar semula.",
@@ -7234,7 +7238,15 @@
           "not_active": "{name} telah dimatikan. Untuk mengembalikannya, jemput semula."
         }
       },
-      "loadFailed": "Jemputan tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi."
+      "loadFailed": "Jemputan tidak dapat dimuatkan. Muat semula halaman untuk mencuba lagi.",
+      "mentor": {
+        "noneWaiting": "Tiada mentor yang menunggu untuk menerima.",
+        "col": {
+          "name": "Mentor",
+          "email": "E-mel",
+          "sent": "Dijemput"
+        }
+      }
     },
     "soon": "Akan datang",
     "programmes": {
@@ -8370,16 +8382,11 @@
     "mentors": {
       "nav": "Mentor",
       "title": "Mentor",
-      "intro": "Jemput mentor melalui e-mel. Mentor log masuk dan mengisi profil mereka sendiri.",
+      "intro": "Mentor yang telah log masuk. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
       "inviteOpen": "Jemput mentor",
       "invite": {
-        "title": "Jemput mentor",
         "name": "Nama",
-        "email": "E-mel",
         "note": "Mentor akan menerima e-mel jemputan. Selepas log masuk, mereka mengisi bidang, bahasa, Tentang saya dan nombor telefon. Anda tidak boleh mengubah butiran itu; mentor sendiri yang mengemas kininya.",
-        "send": "Hantar jemputan",
-        "sending": "Menghantar…",
-        "cancel": "Batal",
         "sent": "{name} telah dijemput. Butiran log masuk dihantar ke {email}.",
         "notEmailed": "{name} telah ditambah, tetapi e-mel tidak dapat dihantar. Gunakan Hantar semula untuk mencuba lagi."
       },
@@ -8410,7 +8417,6 @@
       },
       "notFilled": "Belum diisi",
       "activeSeen": "Aktif · log masuk terakhir {date}",
-      "invitedOn": "Dijemput {date} · belum log masuk",
       "inactiveOn": "Tidak aktif sejak {date}",
       "action": {
         "deactivate": "Nyahaktifkan",
@@ -8430,7 +8436,7 @@
         "reactivateInvited": "{name} boleh log masuk semula. Jemputan telah dihantar semula.",
         "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula."
       },
-      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
+      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Mentor yang menunggu untuk menerima ada di Jemputan → Mentor. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
       "empty": "Tiada mentor dalam senarai ini.",
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8442,7 +8448,16 @@
         "showToStudents": "Tunjukkan nombor telefon saya kepada pelajar saya",
         "welcome": "Selamat datang. Sila isi profil anda. Pelajar anda melihat nama, bidang, bahasa, Tentang saya dan e-mel anda, dan nombor telefon anda hanya jika anda menghidupkannya.",
         "phoneRequired": "Mentor perlu ada nombor telefon. Taip nombor anda."
-      }
+      },
+      "tabsAria": "Bahagian mentor",
+      "tab": {
+        "mentors": "Mentor"
+      },
+      "emailsNote": "Mentor tidak menerima e-mel lain daripada HalaTuju.",
+      "waiting": "{count} menunggu untuk menerima —",
+      "seeInvitations": "lihat Jemputan",
+      "emptyNone": "Belum ada mentor. Jemput seorang dengan \"Jemput mentor\".",
+      "emptyNoneRead": "Belum ada mentor."
     }
   },
   "documentsTab": {

@@ -47,7 +47,7 @@ const sponsorKinds = kindChoicesContaining('credit_confirmed')
 
 describe('parse sanity — the api kind tables were really found', () => {
   test('both lists parsed, and the two are different tables', () => {
-    expect(partnerKinds.length).toBe(15)
+    expect(partnerKinds.length).toBe(16)   // S7b follow-up: + invite_mentor
     expect(sponsorKinds.length).toBe(9)
     expect(partnerKinds.filter((k) => sponsorKinds.includes(k))).toEqual([])
   })
@@ -62,8 +62,8 @@ describe('parse sanity — the api kind tables were really found', () => {
 /**
  * ⚠ THREE SURFACES, NOT TWO — and the comment used to say otherwise.
  *
- * `partner_comms.KINDS` is FIFTEEN kinds. Characterising it found that the two hard-coded web
- * lists name eleven of them; the other four (`INVITE_KINDS`) are drawn by
+ * `partner_comms.KINDS` is SIXTEEN kinds (S7b follow-up added `invite_mentor`). Characterising it found that
+ * the two hard-coded web lists name eleven of them; the other five (`INVITE_KINDS`) are drawn by
  * `InvitationEmailsCard.tsx`, which carries **no list at all** and renders whatever the endpoint
  * sends. That card is the GOOD pattern — the very thing this arc converts the others into — so
  * the four are deliberately absent here, and this suite asserts that they stay absent rather than
@@ -79,7 +79,7 @@ describe('partner_comms.KINDS reaches a screen — across THREE surfaces', () =>
   const studentKinds = pySeq(modelsSrc, 'STUDENT_KINDS', true)
 
   test('parse sanity: the api\'s own groupings were found', () => {
-    expect(inviteKinds.length).toBe(4)
+    expect(inviteKinds.length).toBe(5)    // S7b follow-up: + invite_mentor (the card draws it, no list)
     expect(reviewerKinds.length).toBe(5)
     expect(studentKinds).toEqual(['student_assigned'])
   })
@@ -103,7 +103,7 @@ describe('partner_comms.KINDS reaches a screen — across THREE surfaces', () =>
     expect(listed.length).toBe(partnerKinds.length - inviteKinds.length)
   })
 
-  test('the four invitation kinds stay OFF both lists — that card needs no list', () => {
+  test('the invitation kinds stay OFF both lists — that card needs no list', () => {
     expect(listed.filter((k) => inviteKinds.includes(k))).toEqual([])
   })
 
