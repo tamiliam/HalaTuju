@@ -6,7 +6,6 @@ Part of the `views_admin` package. Every name below is re-exported from
 """
 import logging
 
-from django.conf import settings
 from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.response import Response
@@ -51,7 +50,8 @@ class _OrgRequestsBase(_AdminBase):
 
     def _flag(self):
         """Returns an error Response (404) when the feature is dark, else None."""
-        if not getattr(settings, 'REQUESTS_ENABLED', False):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.requests_live():
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return None
 
@@ -74,10 +74,11 @@ class _OrgRequestsBase(_AdminBase):
     # ── role prologues (flag already assumed checked by the caller) ──────────────
     def _org_side(self, request):
         """Caller must be an org_admin or super (the roles that OPEN the Requests area)."""
+        from .. import surface_gates
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.is_super or admin.role == 'org_admin'):
+        if not surface_gates.requests_role(admin):
             return None, self._deny_role()
         return admin, None
 

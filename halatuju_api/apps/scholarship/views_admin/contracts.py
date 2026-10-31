@@ -125,7 +125,8 @@ class _ContractsBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
+        if not surface_gates.may_open_contracts(admin):
             return None, self._deny_role()
         return admin, None
 

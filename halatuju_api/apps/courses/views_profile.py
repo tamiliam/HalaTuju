@@ -36,24 +36,26 @@ class AdminProfileView(PartnerAdminMixin, APIView):
         if not admin:
             return Response({'error': 'Not an admin'}, status=403)
 
-        changed = []
+        changed = []    # S4 review L4: only what CHANGED is named
         name = request.data.get('name', '').strip()
         if name:
+            changed += ['name'] if name != admin.name else []
             admin.name = name
             admin.save(update_fields=['name'])
-            changed.append('name')
 
         # Org admins can edit their org's contact info
         if admin.org:
             contact = request.data.get('org_contact_person')
             phone = request.data.get('org_phone')
+            before = (admin.org.contact_person, admin.org.phone)
             if contact is not None:
                 admin.org.contact_person = contact.strip()
             if phone is not None:
                 admin.org.phone = phone.strip()
             if contact is not None or phone is not None:
                 admin.org.save(update_fields=['contact_person', 'phone'])
-                changed.append('organisation')
+                if (admin.org.contact_person, admin.org.phone) != before:
+                    changed.append('organisation')
 
         # Common profile S3: on the person's own activity list (best-effort; never raises).
         if changed:

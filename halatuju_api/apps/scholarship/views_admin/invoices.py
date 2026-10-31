@@ -6,7 +6,6 @@ Build hours left for `build_hours.py` on 2026-10-28, moves only: this file had r
 Part of the `views_admin` package. Every name below is re-exported from
 `views_admin/__init__.py`, so `urls.py` and every importer are unchanged.
 """
-from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -140,12 +139,13 @@ class _InvoiceBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, False, self._deny()
+        from .. import surface_gates     # the activity list asks the same rule (S4 review M3)
         is_super = self.has_role(admin, 'super')
         # Same 404-first gate as the usage screen: every non-super keeps getting the dark 404
         # while `BILLING_USAGE_ENABLED` is off, so the invoices route adds no existence signal.
-        if not is_super and not getattr(settings, 'BILLING_USAGE_ENABLED', False):
+        if not is_super and not surface_gates.billing_live():
             return None, False, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        if not (is_super or admin.role == 'org_admin'):
+        if not surface_gates.may_read_invoices(admin):
             return None, False, self._deny_role()
         return admin, is_super, None
 

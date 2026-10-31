@@ -65,21 +65,36 @@ def encode_cursor(row):
     return base64.urlsafe_b64encode(raw).decode().rstrip('=')
 
 
+#: The largest id a cursor may carry (a Postgres bigint); anything beyond is `bad_cursor`, never a 500.
+MAX_ID = 2 ** 63 - 1
+
+
 def decode_cursor(cursor):
+    """``(created_at, id)`` from a cursor, or `BadQuery('bad_cursor')` — never another exception:
+    the id is bounded to a bigint and the moment must carry its time zone (review L5)."""
     try:
         raw = base64.urlsafe_b64decode(cursor + '=' * (-len(cursor) % 4)).decode()
         stamp, pk = raw.rsplit('|', 1)
-        return datetime.fromisoformat(stamp), int(pk)
-    except (ValueError, TypeError, UnicodeDecodeError):
+        stamp, pk = datetime.fromisoformat(stamp), int(pk)
+    except (ValueError, TypeError, UnicodeDecodeError, OverflowError):
         raise BadQuery('bad_cursor')
+    if stamp.tzinfo is None or not 0 < pk <= MAX_ID:
+        raise BadQuery('bad_cursor')
+    return stamp, pk
 
 
 def parse_limit(value):
+    """1..PAGE_MAX in ASCII digits only — '²' and '٣' satisfy `isdigit()` but not `int()` (review L5)."""
     if value in (None, ''):
         return PAGE_DEFAULT
-    if not str(value).isdigit() or not 1 <= int(value) <= PAGE_MAX:
+    text = str(value)
+    try:
+        limit = int(text) if text.isascii() and text.isdigit() else None
+    except (ValueError, OverflowError):
+        limit = None
+    if limit is None or not 1 <= limit <= PAGE_MAX:
         raise BadQuery('bad_limit')
-    return int(value)
+    return limit
 
 
 def page(viewer, *, kind='all', cursor=None, limit=PAGE_DEFAULT):
@@ -154,9 +169,12 @@ def _attr(obj, dotted):
 
 
 def _sponsors(viewer, ids):
+    from . import surface_gates
     from .models import Sponsor, SponsorProgrammeMembership
     found = list(Sponsor.objects.filter(pk__in=ids)) if ids else []   # org-fence: judged below
-    if viewer.is_super:
+    if not surface_gates.may_read_sponsors(viewer):     # review M3: the Sponsors list's own gate
+        member = set()
+    elif viewer.is_super:
         member = {s.pk for s in found}
     elif _outsider(viewer) or not found or viewer.owning_organisation_id is None:
         member = set()
@@ -168,6 +186,22 @@ def _sponsors(viewer, ids):
     return {s.pk: (s.name if s.pk in member else False) for s in found}
 
 
+def _invoices(viewer, ids):
+    """Through the invoice screen's OWN gate and fence (review M3): a tenant sees its own SENT
+    invoices only; anyone the screen refuses sees the neutral word."""
+    from . import surface_gates
+    from .models import Invoice
+    if not ids:
+        return {}
+    found = set(Invoice.objects.filter(pk__in=ids).values_list('pk', flat=True))  # org-fence: below
+    shown = {}
+    if surface_gates.may_read_invoices(viewer) and not _outsider(viewer):
+        from .views_admin.invoices import _InvoiceBase
+        shown = dict(_InvoiceBase()._visible_invoices(viewer, viewer.is_super)
+                     .filter(pk__in=found).values_list('pk', 'number'))
+    return {pk: shown.get(pk, False) for pk in found}
+
+
 def _neutral_only(model, ids):
     return {pk: False for pk in model.objects.filter(pk__in=ids).values_list('pk', flat=True)} \
         if ids else {}     # org-fence: existence only, no label is ever served
@@ -175,21 +209,25 @@ def _neutral_only(model, ids):
 
 def _labels(viewer, rows, view):
     """``{(subject_type, id): name | False}`` — False = exists but hidden; absent = removed."""
-    from . import payments_chain
-    from .models import (ContractTemplate, Donation, Invitation, Invoice, MerchantFlag,
-                         OrgRequest, PaymentRun)
+    from . import payments_chain, surface_gates
+    from .models import (ContractTemplate, Donation, Invitation, MerchantFlag, OrgRequest,
+                         PaymentRun)
+    # Review M3: each label is gated by the SAME predicate the subject's own screen asks today, so a
+    # viewer demoted since sees the neutral word the moment the screen answers 403.
     tables = {
         'application': _applications(viewer, _subject_ids(rows, 'application'), view),
         'staff': _staff(viewer, _subject_ids(rows, 'staff')),
         'invitation': _by_org(Invitation, _subject_ids(rows, 'invitation'), viewer,
-                              lambda i: i.name or None),
+                              lambda i: i.name or None, allowed=surface_gates.may_read_team(viewer)),
         'payment_run': _by_org(PaymentRun, _subject_ids(rows, 'payment_run'), viewer,
                                lambda r: r.reference, allowed=payments_chain.may_read(viewer)),
         'contract_template': _by_org(ContractTemplate, _subject_ids(rows, 'contract_template'), viewer,
-                                     lambda t: t.version),
-        'invoice': _by_org(Invoice, _subject_ids(rows, 'invoice'), viewer, lambda i: i.number),
+                                     lambda t: t.version,
+                                     allowed=surface_gates.may_open_contracts(viewer)),
+        'invoice': _invoices(viewer, _subject_ids(rows, 'invoice')),
         'org_request': _by_org(OrgRequest, _subject_ids(rows, 'org_request'), viewer,
-                               lambda r: f'#{r.pk}'),
+                               lambda r: f'#{r.pk}', allowed=(surface_gates.requests_live()
+                                                              and surface_gates.requests_role(viewer))),
         'sponsor': _sponsors(viewer, _subject_ids(rows, 'sponsor')),
         'credit': _neutral_only(Donation, _subject_ids(rows, 'credit')),
         'merchant_flag': _neutral_only(MerchantFlag, _subject_ids(rows, 'merchant_flag')),

@@ -124,6 +124,7 @@ class TestDecidedNow(_World):
         self.assertEqual(self.results(self.superadmin)['results'][0]['subject']['label'],
                          'Kala Colleague')
 
+    @override_settings(REQUESTS_ENABLED=True)
     def test_references_never_typed_text(self):
         run = PaymentRun.objects.create(organisation=self.org, programme=self.cohort.programme,
                                         payment_date=timezone.localdate(),
@@ -131,10 +132,11 @@ class TestDecidedNow(_World):
                                         reference='PR-2026-0001')
         req = OrgRequest.objects.create(organisation=self.org, submitted_by=self.reviewer, kind='bug',
                                         title='Secret title text', description='Secret body text')
-        finance = make_admin('finance', owning_org=self.org)
-        _row(finance, V.PAYMENT_RUN_SIGNED, run, meta={'role': 'approver'}, ago=1)
-        _row(finance, V.ORG_REQUEST_RAISED, req)
-        body = self.results(finance)
+        # An org_admin opens both Payments (the lead tier) and Requests: both references are named.
+        lead = make_admin('org_admin', owning_org=self.org)
+        _row(lead, V.PAYMENT_RUN_SIGNED, run, meta={'role': 'approver'}, ago=1)
+        _row(lead, V.ORG_REQUEST_RAISED, req)
+        body = self.results(lead)
         self.assertEqual([i['subject']['label'] for i in body['results']],
                          [f'#{req.pk}', 'PR-2026-0001'])
         self.assertNotIn('Secret', json.dumps(body))
