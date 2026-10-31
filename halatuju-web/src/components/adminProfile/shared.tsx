@@ -90,11 +90,12 @@ export const readOnlyCls = `${inputCls} bg-ground-50 text-ground-500`
 /** The compulsory-field marker. */
 export const Req = () => <span className="text-critical-600" aria-hidden> *</span>
 
-export function CardFrame({ title, subtitle, icon, children, testId }: {
-  title: string; subtitle?: string; icon?: string; children: ReactNode; testId: string
+/** `className` is added to the frame's own classes (My activity's fixed-height column uses it). */
+export function CardFrame({ title, subtitle, icon, children, testId, className }: {
+  title: string; subtitle?: string; icon?: string; children: ReactNode; testId: string; className?: string
 }) {
   return (
-    <section className={CARD} data-testid={`profile-card-${testId}`} aria-label={title}>
+    <section className={className ? `${CARD} ${className}` : CARD} data-testid={`profile-card-${testId}`} aria-label={title}>
       <h2 className="font-semibold flex items-center gap-2">
         {icon && <span aria-hidden>{icon}</span>}{title}
       </h2>

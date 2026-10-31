@@ -107,6 +107,22 @@ describe.each([
   })
 })
 
+it('My activity sits in the right-hand cell, which adds no height of its own (owner, 2026-11-01)', async () => {
+  signIn('reviewer')
+  render(<ProfilePage />)
+  const card = await screen.findByTestId('profile-card-activity')
+  const side = screen.getByTestId('profile-side')
+  const fill = screen.getByTestId('profile-side-fill')
+  expect(side.tagName).toBe('ASIDE')
+  expect(side.className.split(' ')).toEqual(expect.arrayContaining(['relative', 'min-w-0', 'xl:min-h-[24rem]']))
+  expect(fill.parentElement).toBe(side)
+  expect(fill.className.split(' ')).toEqual(expect.arrayContaining(['xl:absolute', 'xl:inset-0', 'xl:flex', 'xl:flex-col']))
+  expect(fill.contains(card)).toBe(true)
+  expect(screen.getByTestId('admin-profile').contains(card)).toBe(false)
+  // The grid row stretches both cells to the left column's height: no `items-start` on it.
+  expect(side.parentElement?.className).not.toMatch(/items-start/)
+})
+
 it('an admin given `review` gets the reviewer cards and a reminder — never the hold', async () => {
   signIn('admin', { permissions: ['review', 'see_all'] })
   mockApi.getReviewerProfile.mockResolvedValue(EMPTY_REVIEWER)

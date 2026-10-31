@@ -268,10 +268,15 @@ export default function AdminProfilePage() {
   // S5: two columns from `xl` up — the cards and Save on the left, My activity at 380 px on the
   // right; below that ONE column, My activity last. `min-w-0` on both, so a long name wraps inside
   // its card instead of pushing the page sideways at 360 px.
+  // ⚠ THE RIGHT COLUMN NEVER MAKES THE PAGE TALLER (owner ruling 2026-11-01, option A). The grid
+  // row stretches both cells to the LEFT column's height; the right cell is `relative` and its
+  // content `xl:absolute xl:inset-0`, so it adds no height of its own and My activity scrolls
+  // inside (`ActivityCard`). The one exception is the floor, `xl:min-h-[24rem]`: a very short left
+  // column still leaves room for a few rows. Below `xl` the card is last, capped by its own max-height.
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ground-900">{t('admin.profile')}</h1>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <form onSubmit={save} className="min-w-0 space-y-6" data-testid="admin-profile">
           {gated && (
             <div className={`rounded-lg p-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
@@ -325,11 +330,13 @@ export default function AdminProfilePage() {
           </div>
         </form>
         {side.length > 0 && (
-          <aside className="min-w-0 space-y-6">
-            {side.map((id) => {
-              const Card = CARDS[id]
-              return <Card key={id} state={state} />
-            })}
+          <aside className="relative min-w-0 xl:min-h-[24rem]" data-testid="profile-side">
+            <div className="space-y-6 xl:absolute xl:inset-0 xl:flex xl:flex-col" data-testid="profile-side-fill">
+              {side.map((id) => {
+                const Card = CARDS[id]
+                return <Card key={id} state={state} />
+              })}
+            </div>
           </aside>
         )}
       </div>
