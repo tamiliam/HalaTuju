@@ -35,3 +35,15 @@ export function missingReviewerFields(name: string, rp: ReviewerProfile | null):
 
 export const reviewerProfileComplete = (name: string, rp: ReviewerProfile | null): boolean =>
   missingReviewerFields(name, rp).length === 0
+
+/** An empty reviewer profile — the working copy before the server's arrives (or when it has none). */
+export function blankReviewer(): ReviewerProfile {
+  return {
+    highest_qualification: '', university: '', graduation_year: null,
+    field_of_study: '', phone: '', address: '',
+    street_address: '', postcode: '', city: '', state: '',
+    english_fluency: '', bm_fluency: '', tamil_fluency: '',
+    share_phone_with_students: true,
+    paused: false,
+  }
+}

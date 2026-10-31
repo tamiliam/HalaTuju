@@ -12,7 +12,7 @@
  */
 import { render, waitFor } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
-import { AGREEMENT, APPLICATIONS, LISTED, OVERVIEW, PROFILE, SCHOLAR, SCHOLARS } from './testFixtures'
+import { AGREEMENT, APPLICATIONS, LISTED, ME, OVERVIEW, PROFILE, SCHOLAR, SCHOLARS } from './testFixtures'
 import OverviewPage from '@/app/admin/programme/overview/page'
 import ApplicationsPage from '@/app/admin/scholarship/page'
 import StudentPage from '@/app/admin/scholarship/[id]/page'
@@ -41,10 +41,12 @@ jest.mock('@/lib/programmeScope', () => ({
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
-/** The ONLY calls a source page may make: `lib/admin-api/sourceConsole`. */
+/** The ONLY calls a source page may make: `lib/admin-api/sourceConsole`, plus `getAdminMe`
+ *  (`admin/me/`, opted in for a source user — common profile S1, the shared Profile page). */
 const SOURCE_CALLS = new Set([
   'getSourceProfile', 'updateSourceProfile', 'getSourceOverview', 'getSourceApplications',
   'getSourceApplication', 'getSourceAgreement', 'witnessAsSource', 'getSourceScholars', 'getSourceScholar',
+  'getAdminMe',
 ])
 
 beforeEach(() => {
@@ -57,6 +59,7 @@ beforeEach(() => {
   mockApi.getSourceScholars.mockResolvedValue(SCHOLARS)
   mockApi.getSourceScholar.mockResolvedValue(SCHOLAR)
   mockApi.getSourceProfile.mockResolvedValue(PROFILE)
+  mockApi.getAdminMe.mockResolvedValue(ME)
 })
 
 const staffCalls = () => Object.entries(mockApi)
@@ -74,6 +77,17 @@ it.each([
   render(<Page />)
   await waitFor(() => expect(mockApi[own]).toHaveBeenCalled())
   // Let any late effect run before judging.
+  await new Promise((r) => setTimeout(r, 50))
+  expect(staffCalls()).toEqual([])
+  expect(global.fetch).not.toHaveBeenCalled()
+})
+
+it('the shared Profile shell renders every card a source is shown, and still calls only its allowlist', async () => {
+  const { findByTestId } = render(<ProfilePage />)
+  // Every card of the source's matrix has MOUNTED (each is a lazy chunk), so a staff call placed in
+  // any of them would have run before this is judged.
+  for (const id of ['you', 'access', 'organisation', 'signin']) await findByTestId(`profile-card-${id}`)
+  await waitFor(() => expect(mockApi.getAdminMe).toHaveBeenCalled())
   await new Promise((r) => setTimeout(r, 50))
   expect(staffCalls()).toEqual([])
   expect(global.fetch).not.toHaveBeenCalled()

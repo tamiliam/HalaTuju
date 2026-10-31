@@ -38,6 +38,34 @@ export async function updateAdminProfile(
   return res.json()
 }
 
+// ── Own account, every role (common profile S1, 2026-10-31) ──────────
+// `GET admin/me/` — opted in for a SOURCE user too (deny by default), so the shared Profile page
+// may call it for every role. Read only; each card saves through its own endpoint.
+
+export interface AdminMe {
+  id: number
+  name: string
+  email: string
+  role: string
+  is_super: boolean
+  /** The B40 tenant this person works within (null for a super or a referral partner). */
+  organisation: { id: number; name: string } | null
+  /** The referral source a source user signs in for; null for staff. */
+  source: { id: number; name: string } | null
+  /** A referral partner's own organisation (`PartnerAdmin.org`); null for everyone else. */
+  referral_partner: { name: string } | null
+  /** `'all'` = every gift the organisation runs; a list = narrowed to these. */
+  programmes: { id: number; code: string; name: string }[] | 'all'
+  /** The RESOLVED permission keys — the same list `admin/role/` serves. */
+  permissions: string[]
+  first_seen_at: string | null
+  last_seen_at: string | null
+}
+
+export async function getAdminMe(lang: string, options?: ApiOptions) {
+  return adminFetch<AdminMe>(`/api/v1/admin/me/?lang=${encodeURIComponent(lang)}`, options)
+}
+
 // ── Reviewer profile (F6) ───────────────────────────────────────────
 // A reviewer's own credentials + contact details. Self-scoped endpoint
 // (always the calling admin's own row). phone/address are private staff

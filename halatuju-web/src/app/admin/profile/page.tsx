@@ -1,109 +1,149 @@
 'use client'
 
-import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import { useState, useEffect } from 'react'
+import '@/lib/messagesScholarship'   // TD-416: the university picker's scholarship.* words (their own slice)
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
-  getAdminProfile, updateAdminProfile, type AdminProfile,
-  getReviewerProfile, updateReviewerProfile, type ReviewerProfile, type LangFluency,
+  getAdminMe, getAdminProfile, updateAdminProfile, getReviewerProfile, updateReviewerProfile,
+  getSourceProfile, updateSourceProfile,
+  type AdminMe, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
-import { missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
+import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
+import { cardsFor, profileContext, reviewsCases, type ProfileCardId } from '@/lib/profileCards'
+import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
-import { MALAYSIAN_STATES } from '@/lib/scholarship'
-import { formatMyMobile } from '@/lib/sponsorAuth'
-import InstitutionPicker from '@/components/InstitutionPicker'
 import { lazySource } from '@/components/source/LazySource'
-import SelectWithOther from '@/components/SelectWithOther'
-import { COMMON_UNIVERSITIES } from '@/data/publicUniversities'
+import type { CardProps, ProfileDraft, ProfileState, SourceForm } from '@/components/adminProfile/shared'
+import type { ComponentType } from 'react'
 
-const SourceProfile = lazySource(() => import('@/components/source/SourceProfile').then((m) => m.default))
-
-const QUAL_OPTS = [
-  ['SPM', 'spm'], ['STPM', 'stpm'], ['Matriculation', 'matriculation'], ['Diploma', 'diploma'],
-  ["Bachelor's Degree", 'bachelor'], ["Master's Degree", 'master'], ['PhD', 'phd'],
-  ['Professional Qualification', 'professional'],
-] as const
-const FIELD_OPTS = [
-  ['Engineering', 'engineering'], ['Computer Science / IT', 'it'], ['Medicine & Health Sciences', 'medicine'],
-  ['Science', 'science'], ['Business & Economics', 'business'], ['Accounting & Finance', 'accounting'],
-  ['Law', 'law'], ['Education', 'education'], ['Arts & Humanities', 'arts'], ['Social Sciences', 'social'],
-] as const
-
-const UNI_OPTIONS = COMMON_UNIVERSITIES.map((u) => ({
-  name: u.name, hint: u.hint, keywords: (u.aliases ?? []).join(' '),
-}))
-
-const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
-
-// ⚠ A SOURCE USER GETS ITS OWN SCREEN (source sign-in, 2026-10-30), chosen BEFORE any staff hook
-// runs: the staff body calls staff endpoints, which refuse the role. The source component calls
-// `admin/source/` only (`components/source/noStaffCalls.test.tsx`).
-export default function AdminProfilePage() {
-  const { role } = useAdminAuth()
-  return role?.role === 'source_partner' ? <SourceProfile /> : <StaffProfilePage />
+// ⚠ THE CARDS ARE LAZY, IN ONE CHUNK (common profile S1, 2026-10-31): `adminProfile/cards`, one
+// LITERAL specifier, so the bundler emits ONE chunk however many loaders name it (`lazySource`, the
+// house pattern — see its docstring). The route used to import the university list and its picker
+// statically for everybody; now they are off its first load. ⚠ NOT ONE CHUNK PER CARD, and not a
+// second chunk for the heavy card: each chunk is an entry in the webpack runtime EVERY route
+// downloads — eight put the median 0.127 kB under its line, two still cost 0.04 kB (see `cards.tsx`).
+const loadCards = () => import('@/components/adminProfile/cards')
+const CARDS: Record<ProfileCardId, ComponentType<CardProps>> = {
+  you: lazySource(() => loadCards().then((m) => m.YouCard)),
+  contact: lazySource(() => loadCards().then((m) => m.ContactCard)),
+  access: lazySource(() => loadCards().then((m) => m.AccessCard)),
+  qualifications: lazySource(() => loadCards().then((m) => m.QualificationsCard)),
+  address: lazySource(() => loadCards().then((m) => m.AddressCard)),
+  takingPart: lazySource(() => loadCards().then((m) => m.TakingPartCard)),
+  organisation: lazySource(() => loadCards().then((m) => m.OrganisationCard)),
+  signin: lazySource(() => loadCards().then((m) => m.SignInCard)),
 }
 
-function StaffProfilePage() {
-  const { token, role, refreshRole } = useAdminAuth()
+const sourceFormOf = (d: SourceProfile): SourceForm => ({
+  source_name: d.source.name, contact_person: d.source.contact_person,
+  contact_email: d.source.contact_email, phone: d.source.phone,
+})
+
+/**
+ * THE PROFILE PAGE — ONE shell for every admin-platform person, a source user included (common
+ * profile S1, owner ruling 2026-10-31; roadmap docs/plans/2026-10-31-common-profile-roadmap.md).
+ *
+ * It renders exactly `cardsFor(...)` (`lib/profileCards.ts`, the ONE list with ONE rule per card)
+ * and owns the data and the ONE Save, which writes every changed part to its own endpoint:
+ *   the name — `admin/profile/` PUT (staff) or `admin/source/profile/` PATCH (a source);
+ *   a partner's organisation contact — `admin/profile/` PUT; a source's organisation —
+ *   `admin/source/profile/` PATCH; the reviewer cards — `admin/reviewer-profile/` PATCH.
+ *
+ * ⚠ A SOURCE USER IS REFUSED EVERY STAFF ENDPOINT (deny by default), so its page calls only
+ * `admin/me/` GET and `admin/source/profile/` GET/PATCH (and Supabase itself for a password
+ * change) — `components/source/noStaffCalls.test.tsx` holds it to that.
+ *
+ * ⚠ THE FIRST-SIGN-IN HOLD STAYS REVIEWER-ROLE ONLY. A Reviewer whose compulsory fields are missing
+ * is held here (the layout guard) and sent on to Applications by the save that completes them; a
+ * holder of `review` in any other role sees a reminder, never a block.
+ */
+export default function AdminProfilePage() {
+  const { token, role, session, refreshRole } = useAdminAuth()
   const router = useRouter()
-  const { t } = useT()
-  const [profile, setProfile] = useState<AdminProfile | null>(null)
-  const [name, setName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
-  const [orgPhone, setOrgPhone] = useState('')
+  const { t, locale } = useT()
+  const ctx = profileContext(role)
+  const cards = cardsFor(ctx)
+  const isSource = ctx.role === 'source_partner'
+  const isPartner = ctx.role === 'partner'
+  const reviews = reviewsCases(ctx)
+  const isReviewerRole = ctx.role === 'reviewer'
+
+  const [me, setMe] = useState<AdminMe | null>(null)
+  const [orgName, setOrgName] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [draft, setDraft] = useState<ProfileDraft | null>(null)
+  // The last SAVED copy, kept beside the working one so "is there anything to save?" has something
+  // to compare against (request #6), and refreshed on every save.
+  const [saved, setSaved] = useState<ProfileDraft | null>(null)
+  const [failed, setFailed] = useState(false)
+  const [invalid, setInvalid] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // A refusal takes the focus (source review L10): it sits beside Save, and a keyboard or
+  // screen-reader user must land on it rather than wonder why nothing happened.
+  const messageRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => { if (message && !message.ok) messageRef.current?.focus() }, [message])
 
-  // BUG FIX (2026-06): reviewer credentials belong to REVIEWERS ONLY. A super admin
-  // is not a reviewer and must not see (or be asked for) reviewer credentials.
-  const isReviewer = role?.role === 'reviewer'
-  const [reviewer, setReviewer] = useState<ReviewerProfile | null>(null)
-  // The last SAVED reviewer profile, kept beside the working copy so "is there anything to save?"
-  // has something to compare against (request #6). Without it, `reviewer` is both the baseline and
-  // the draft, and the question cannot be asked at all.
-  const [savedReviewer, setSavedReviewer] = useState<ReviewerProfile | null>(null)
-
+  // Own account (Your access, Sign-in) — refetched in the reader's language for the gift names,
+  // never touching the drafts.
   useEffect(() => {
     if (!token) return
-    getAdminProfile({ token }).then((data) => {
-      setProfile(data)
-      setName(data.name)
-      setContactPerson(data.org_contact_person || '')
-      setOrgPhone(data.org_phone || '')
-    }).catch(() => {})
-  }, [token])
+    getAdminMe(locale, { token }).then(setMe).catch(() => {})
+  }, [token, locale])
 
+  // Waits for the role: which endpoints may be called depends on it (a source user's would refuse).
+  const known = !!role
   useEffect(() => {
-    if (!token || !isReviewer) return
-    getReviewerProfile({ token }).then((d) => { setReviewer(d); setSavedReviewer(d) }).catch(() => {})
-  }, [token, isReviewer])
+    if (!token || !known) return
+    let live = true
+    const load = async (): Promise<[ProfileDraft, string, string | null]> => {
+      if (isSource) {
+        const d = await getSourceProfile({ token })
+        return [{ name: d.user.name, orgContact: '', orgPhone: '', reviewer: null, source: sourceFormOf(d) },
+                d.user.email, d.source.organisation || null]
+      }
+      const [p, rev] = await Promise.all([
+        getAdminProfile({ token }),
+        reviews ? getReviewerProfile({ token }).catch(() => null) : Promise.resolve(null),
+      ])
+      return [{ name: p.name, orgContact: p.org_contact_person || '', orgPhone: p.org_phone || '',
+                reviewer: rev, source: null }, p.email, p.org_name]
+    }
+    load().then(([base, mail, org]) => {
+      if (!live) return
+      setDraft(base); setSaved(base); setEmail(mail); setOrgName(org)
+    }).catch(() => { if (live) setFailed(true) })
+    return () => { live = false }
+  }, [token, known, isSource, reviews])
 
-  if (!profile) {
-    return <div className="mt-8 text-center text-ground-500">{t('common.loading')}</div>
+  const set = useCallback((patch: Partial<ProfileDraft>) =>
+    setDraft((prev) => (prev ? { ...prev, ...patch } : prev)), [])
+  const setRev = useCallback((patch: Partial<ReviewerProfile>) =>
+    setDraft((prev) => (prev ? { ...prev, reviewer: { ...(prev.reviewer ?? blankReviewer()), ...patch } } : prev)), [])
+  const report = useCallback((key: string, bad: boolean) =>
+    setInvalid((prev) => (!!prev[key] === bad ? prev : { ...prev, [key]: bad })), [])
+
+  if (!draft || !saved) {
+    return <p className="mt-8 text-center text-ground-500">{t(failed ? 'admin.myProfile.loadError' : 'common.loading')}</p>
   }
 
   // Request #6, applied across the console: a Save that would write nothing stays inactive.
   // ⚠ The dangerous direction is the OPPOSITE of the reported one — a button wrongly disabled
-  // strands real work with no way to keep it — so every field this form can write is compared,
-  // including the reviewer half, and the baseline is refreshed on save.
-  const dirty =
-    name !== (profile.name || '')
-    || contactPerson !== (profile.org_contact_person || '')
-    || orgPhone !== (profile.org_phone || '')
-    || (isReviewer && JSON.stringify(reviewer) !== JSON.stringify(savedReviewer))
+  // strands real work with no way to keep it — so every field this page can write is compared,
+  // the reviewer cards and a source's organisation included, and the baseline is refreshed on save.
+  const nameDirty = draft.name !== saved.name
+  const orgDirty = isPartner && (draft.orgContact !== saved.orgContact || draft.orgPhone !== saved.orgPhone)
+  const revDirty = reviews && JSON.stringify(draft.reviewer) !== JSON.stringify(saved.reviewer)
+  const srcDirty = isSource && JSON.stringify(draft.source) !== JSON.stringify(saved.source)
+  const dirty = nameDirty || orgDirty || revDirty || srcDirty
+  const blocked = Object.values(invalid).some(Boolean)
 
-  const setRev = (patch: Partial<ReviewerProfile>) =>
-    setReviewer((prev) => ({ ...(prev ?? blankReviewer()), ...patch }))
-
-  const qualOpts = QUAL_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.qualOpts.${key}`) }))
-  const fieldOpts = FIELD_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.fieldOpts.${key}`) }))
-
-  // Onboarding gate: a reviewer whose backend profile flag is false is held here until the
-  // compulsory fields are filled. `missing` is a live client mirror (updates as they type) that
-  // drives the banner; the labels reuse existing i18n. `gated` = still in first-login onboarding.
-  const gated = isReviewer && role?.reviewer_profile_complete === false
-  const missing = isReviewer ? missingReviewerFields(name, reviewer) : []
+  // Onboarding: a Reviewer whose backend flag is false is held here until the compulsory fields are
+  // filled. `missing` is a live client mirror (updates as they type) that drives the banner.
+  const gated = isReviewerRole && role?.reviewer_profile_complete === false
+  const missing = reviews ? missingReviewerFields(draft.name, draft.reviewer) : []
+  const remind = reviews && !isReviewerRole && missing.length > 0
   const MISSING_LABEL: Record<string, string> = {
     name: t('admin.name'),
     highest_qualification: t('admin.reviewer.highestQualification'),
@@ -114,46 +154,63 @@ function StaffProfilePage() {
     phone: t('admin.reviewer.phone'),
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
-    setMessage(null)
+    if (!token || !dirty || blocked) return
+    setSaving(true); setMessage(null)
     try {
-      const data: Record<string, string> = { name }
-      if (profile.org_name) {
-        data.org_contact_person = contactPerson
-        data.org_phone = orgPhone
+      let next: ProfileDraft = draft
+      if (isSource && draft.source) {
+        const s = draft.source
+        const d = await updateSourceProfile({
+          ...(nameDirty ? { user: { name: draft.name.trim() } } : {}),
+          source: { name: s.source_name.trim(), contact_person: s.contact_person.trim(),
+                    contact_email: s.contact_email.trim(), phone: s.phone.trim() },
+        }, { token })
+        next = { ...draft, name: d.user.name, source: sourceFormOf(d) }
+      } else {
+        if (nameDirty || orgDirty) {
+          const data: Record<string, string> = { name: draft.name }
+          if (isPartner && orgName) {
+            data.org_contact_person = draft.orgContact
+            data.org_phone = draft.orgPhone
+          }
+          await updateAdminProfile(data, { token })
+        }
+        if (revDirty && draft.reviewer) await updateReviewerProfile(draft.reviewer, { token })
       }
-      await updateAdminProfile(data, { token: token! })
-      if (isReviewer && reviewer) {
-        await updateReviewerProfile(reviewer, { token: token! })
-      }
-      setProfile({ ...profile, name, org_contact_person: contactPerson, org_phone: orgPhone })
-      setSavedReviewer(reviewer)
-      setMessage({ type: 'success', text: t('admin.profileUpdated') })
-      // Onboarding: if this save just completed a gated reviewer's profile, refresh the role flag
-      // and send them on to their workspace (the layout guard releases once the flag flips).
-      if (isReviewer && role?.reviewer_profile_complete === false && reviewerProfileComplete(name, reviewer)) {
+      setDraft(next); setSaved(next)
+      setMessage({ ok: true, text: t('admin.profileUpdated') })
+      // Onboarding: this save completed a held Reviewer's profile — refresh the role flag and send
+      // them on to their workspace (the layout guard releases once the flag flips).
+      if (gated && reviewerProfileComplete(next.name, next.reviewer)) {
         await refreshRole()
         router.push('/admin/scholarship')
         return
       }
+      // The header shows the person's name (and a source's "<source> · Source").
+      if (nameDirty || (isSource && next.source?.source_name !== saved.source?.source_name)) void refreshRole()
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.profileUpdateFailed') })
+      setMessage({ ok: false, text: isSource
+        ? t(refusalKey('profile', (err as { code?: string })?.code))
+        : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
     }
     setSaving(false)
   }
 
-  const card = 'bg-ground-0 rounded-xl p-6 shadow-sm border space-y-4'
-  const labelCls = 'block text-sm text-ground-600 mb-1'
-  const req = <span className="text-critical-600" aria-hidden> *</span>  // compulsory-field marker
+  const meta = (session?.user?.app_metadata ?? {}) as { providers?: string[]; provider?: string }
+  const providers = meta.providers ?? (meta.provider ? [meta.provider] : [])
+  const state: ProfileState = {
+    t, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
+    draft, saved, set, setRev, report, orgName, providers,
+  }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-ground-900 mb-1">{t('admin.profileTitle')}</h1>
+    <form onSubmit={save} className="space-y-6" data-testid="admin-profile">
+      <h1 className="text-2xl font-bold text-ground-900">{t('admin.profile')}</h1>
 
       {gated && (
-        <div className={`rounded-lg p-4 mt-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
+        <div className={`rounded-lg p-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
           <p className={`text-sm font-medium ${missing.length ? 'text-caution-900' : 'text-positive-800'}`}>
             {missing.length ? t('admin.reviewer.onboarding.title') : t('admin.reviewer.onboarding.allSet')}
           </p>
@@ -168,229 +225,33 @@ function StaffProfilePage() {
         </div>
       )}
 
-      {message && (
-        <div className={`rounded-lg p-4 my-6 ${message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700' : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>
-          {message.text}
+      {/* Anyone else holding `review`: a reminder, never a block (owner ruling 2026-10-31). */}
+      {remind && (
+        <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="reviewer-reminder">
+          <p className="text-sm font-medium text-info-900">{t('admin.myProfile.reminderTitle')}</p>
+          <p className="text-sm text-info-800 mt-1">{t('admin.myProfile.reminderIntro')}</p>
+          <ul className="mt-1 list-disc ml-5 text-sm text-info-800">
+            {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
+          </ul>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-        {/* Your information */}
-        <div className={card}>
-          <h2 className="font-semibold">{t('admin.yourInfo')}</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelCls}>{t('admin.name')}{req}</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
-            </div>
-            <div>
-              <label className={labelCls}>{t('admin.emailLabel')}</label>
-              <p className="text-sm text-ground-800 px-3 py-2 bg-ground-50 rounded-lg truncate">{profile.email}</p>
-            </div>
-          </div>
-        </div>
+      {cards.map((id) => {
+        const Card = CARDS[id]
+        return <Card key={id} state={state} />
+      })}
 
-        {/* Organisation — partner only */}
-        {profile.org_name && (
-          <div className={card}>
-            <h2 className="font-semibold">{t('admin.orgInfo', { org: profile.org_name })}</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>{t('admin.contactPersonLabel')}</label>
-                <input type="text" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>{t('admin.orgPhone')}</label>
-                <PhoneField value={orgPhone} onChange={setOrgPhone} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Reviewer credentials + contact — reviewer only */}
-        {isReviewer && (
-          <>
-            <div className={card}>
-              <h2 className="font-semibold">{t('admin.reviewer.title')}</h2>
-              <p className="text-sm text-ground-500 -mt-2">{t('admin.reviewer.subtitle')}</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.highestQualification')}{req}</label>
-                  <SelectWithOther
-                    value={reviewer?.highest_qualification ?? ''}
-                    onChange={(v) => setRev({ highest_qualification: v })}
-                    options={qualOpts}
-                    placeholder={t('admin.reviewer.selectQualification')}
-                    otherText={t('admin.reviewer.other')}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.fieldOfStudy')}{req}</label>
-                  <SelectWithOther
-                    value={reviewer?.field_of_study ?? ''}
-                    onChange={(v) => setRev({ field_of_study: v })}
-                    options={fieldOpts}
-                    placeholder={t('admin.reviewer.selectField')}
-                    otherText={t('admin.reviewer.other')}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.university')}{req}</label>
-                  <InstitutionPicker
-                    options={UNI_OPTIONS}
-                    value={reviewer?.university ?? ''}
-                    onChange={(v) => setRev({ university: v })}
-                    placeholder={t('admin.reviewer.universityHint')}
-                    allowCustom
-                    minChars={2}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.graduationYear')}{req}</label>
-                  <input
-                    type="number" inputMode="numeric" min={1950} max={2100}
-                    value={reviewer?.graduation_year ?? ''}
-                    onChange={(e) => setRev({ graduation_year: e.target.value === '' ? null : Number(e.target.value) })}
-                    className={inputCls}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={card}>
-              <h2 className="font-semibold">{t('admin.reviewer.langTitle')}{req}</h2>
-              <p className="text-sm text-ground-500 -mt-2">{t('admin.reviewer.langSubtitle')} {t('admin.reviewer.onboarding.langHint')}</p>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.langEnglish')}</label>
-                  <select value={reviewer?.english_fluency ?? ''}
-                    onChange={(e) => setRev({ english_fluency: e.target.value as LangFluency })} className={inputCls}>
-                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
-                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
-                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.langBm')}</label>
-                  <select value={reviewer?.bm_fluency ?? ''}
-                    onChange={(e) => setRev({ bm_fluency: e.target.value as LangFluency })} className={inputCls}>
-                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
-                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
-                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.langTamil')}</label>
-                  <select value={reviewer?.tamil_fluency ?? ''}
-                    onChange={(e) => setRev({ tamil_fluency: e.target.value as LangFluency })} className={inputCls}>
-                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
-                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
-                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className={card}>
-              <h2 className="font-semibold flex items-center gap-2">
-                <span aria-hidden>🔒</span>{t('admin.reviewer.contactTitle')}
-              </h2>
-              <p className="text-sm text-ground-500 -mt-2 italic">{t('admin.reviewer.contactSubtitle')}</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.phone')}{req}</label>
-                  <PhoneField value={reviewer?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
-                </div>
-              </div>
-              <label className="flex items-start gap-2 text-sm text-ground-700">
-                <input type="checkbox" className="mt-0.5"
-                  checked={reviewer?.share_phone_with_students ?? true}
-                  onChange={(e) => setRev({ share_phone_with_students: e.target.checked })} />
-                <span>{t('admin.reviewer.sharePhone')}</span>
-              </label>
-              <div>
-                <label className={labelCls}>{t('admin.reviewer.street')}</label>
-                <input type="text" value={reviewer?.street_address ?? ''} onChange={(e) => setRev({ street_address: e.target.value })} className={inputCls} />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.postcode')}</label>
-                  <input type="text" inputMode="numeric" value={reviewer?.postcode ?? ''}
-                    onChange={(e) => setRev({ postcode: e.target.value.replace(/[^0-9]/g, '').slice(0, 5) })} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.city')}</label>
-                  <input type="text" value={reviewer?.city ?? ''} onChange={(e) => setRev({ city: e.target.value })} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>{t('admin.reviewer.state')}</label>
-                  <select value={reviewer?.state ?? ''} onChange={(e) => setRev({ state: e.target.value })} className={inputCls}>
-                    <option value="">{t('admin.reviewer.selectState')}</option>
-                    {MALAYSIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Taking part — the reviewer's own pause switch.
-                ⚠ It is deliberately NOT phrased as leaving, and it is not a revoke: the account,
-                the cases already theirs, and the sign-in all stay exactly as they are. A volunteer
-                who has to justify stepping back tends to disappear instead, which is worse for
-                everyone; this is the non-pejorative way out and back. Request #10, 2026-08-02. */}
-            <div className={card}>
-              <h2 className="font-semibold flex items-center gap-2">
-                <span aria-hidden>⏸</span>{t('admin.reviewer.takingPartTitle')}
-              </h2>
-              <p className="text-sm text-ground-500 -mt-2 italic">
-                {t('admin.reviewer.takingPartSubtitle')}
-              </p>
-              <label className="flex items-start gap-2 text-sm text-ground-700">
-                <input type="checkbox" className="mt-0.5" checked={reviewer?.paused ?? false}
-                  onChange={(e) => setRev({ paused: e.target.checked })} />
-                <span>{t('admin.reviewer.pauseLabel')}</span>
-              </label>
-              {reviewer?.paused && (
-                <p className="text-sm text-caution-700">{t('admin.reviewer.pausedNote')}</p>
-              )}
-            </div>
-          </>
-        )}
-
-        <button type="submit" disabled={saving || !name || !dirty}
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={saving || !draft.name.trim() || !dirty || blocked}
           title={dirty ? undefined : t('common.nothingToSave')}
           className="w-full sm:w-auto px-8 bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
           {saving ? t('admin.saving') : t('common.save')}
         </button>
-      </form>
-    </div>
+        {message && (
+          <p ref={messageRef} tabIndex={-1} role={message.ok ? 'status' : 'alert'}
+            className={`text-sm outline-none ${message.ok ? 'text-positive-700' : 'text-critical-600'}`}>{message.text}</p>
+        )}
+      </div>
+    </form>
   )
-}
-
-/** Malaysian phone input: a fixed +60 prefix + a masked local part (12-345 6789). */
-function PhoneField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-stretch">
-      <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-ground-300 bg-ground-50 text-sm text-ground-500">+60</span>
-      <input
-        type="tel" inputMode="numeric"
-        value={formatMyMobile(value)}
-        onChange={(e) => onChange(formatMyMobile(e.target.value))}
-        placeholder="12-345 6789"
-        className="w-full px-3 py-2 border border-ground-300 rounded-r-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
-      />
-    </div>
-  )
-}
-
-function blankReviewer(): ReviewerProfile {
-  return {
-    highest_qualification: '', university: '', graduation_year: null,
-    field_of_study: '', phone: '', address: '',
-    street_address: '', postcode: '', city: '', state: '',
-    english_fluency: '', bm_fluency: '', tamil_fluency: '',
-    share_phone_with_students: true,
-    paused: false,
-  }
 }

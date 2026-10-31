@@ -7,7 +7,7 @@
  * fails its test. Imported by the `*.test.tsx` files beside it only.
  */
 import type {
-  SourceAgreement, SourceApplication, SourceApplicationList, SourceContract, SourceOverview,
+  AdminMe, SourceAgreement, SourceApplication, SourceApplicationList, SourceContract, SourceOverview,
   SourceProfile, SourceScholar, SourceScholarList,
 } from '@/lib/admin-api'
 
@@ -17,6 +17,14 @@ export const PROFILE: SourceProfile = {
   user: { name: 'Audrey Koh Sui Ean', email: 'muetmyway@example.org' },
   source: { name: 'MUETMyWay', code: 'muet', contact_person: 'Audrey Koh Sui Ean',
             contact_email: 'muetmyway@example.org', phone: '016-845 1270', organisation: 'Harapan' },
+}
+
+/** `admin/me/` for the same source user (common profile S1). */
+export const ME: AdminMe = {
+  id: 9, name: 'Audrey Koh Sui Ean', email: 'muetmyway@example.org', role: 'source_partner', is_super: false,
+  organisation: { id: 2, name: 'Harapan' }, source: { id: 3, name: 'MUETMyWay' }, referral_partner: null,
+  programmes: [{ id: 5, code: 'flag', name: 'Flagship' }], permissions: [],
+  first_seen_at: '2026-10-30T09:00:00Z', last_seen_at: '2026-10-31T08:00:00Z',
 }
 
 export const OVERVIEW: SourceOverview = {
