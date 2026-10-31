@@ -1126,6 +1126,14 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### Mobile-native arc (separate stream) — M0 DONE 2026-10-31, NEXT = M1 global foundations
+
+Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
+`docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
+API data; it is read-only) and `npm run mobile-ledger`. Static ratchets in `mobileStandard.test.ts` may only go
+down. A new `page.tsx` must be classified in `src/lib/mobileClass.ts`. M1 starts with the Tamil font (Mukta Malar,
+from SJKTConnect), the 16 px input rule, the shared Sheet, and the 5.7 MB favicon. Owner pick due in M1: TD-311.
+
 ### ⚠ STATE AT 2026-10-31 — STUDENT MAINTENANCE SPRINT 7a LIVE (main f0bcc0f0; api-01218-7sr, web-01041-xhh)
 
 Migrations scholarship 0194 and courses 0090 APPLIED BY HAND 2026-10-31 and recorded — never re-apply that DDL.
