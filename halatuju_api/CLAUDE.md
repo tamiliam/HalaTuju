@@ -1107,6 +1107,26 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### ⚠ STATE AT 2026-10-31 — COMMON PROFILE S1+S2 LIVE (main `3ad1f387`; api-01214-hhw, web-01037-j7p; migration scholarship 0193 applied by hand + recorded)
+
+**What it is.** One `/admin/profile` page for EVERY role (source users included), built from the card registry
+`halatuju-web/src/lib/profileCards.ts` (`PROFILE_CARDS`, `cardsFor`); cards in `src/components/adminProfile/`
+(one lazy chunk). Reviewer cards follow the `review` PERMISSION; the first-sign-in hold stays Reviewer-ROLE only.
+API: `GET/PATCH admin/me/`, `POST admin/me/password/` (current password checked by a Supabase grant, flag-owed
+temp password cleared in the same write, other sessions signed out, atomic 5/15 min attempt slots),
+`POST/DELETE admin/me/photo/` (Pillow re-encode, no metadata, `staff-photos/<id>/…` in the private bucket).
+`StaffProfile` = alias of `ReviewerProfile` (table `reviewer_profiles`, +6 columns in 0193 incl. `other_language`).
+Roadmap `docs/plans/2026-10-31-common-profile-roadmap.md`; retro `retrospective-2026-10-31-common-profile-s1-s2.md`.
+
+**Next:** S3 (StaffActivity list + case actions) → S4 (money/contracts/requests + back-fill, adversarial review)
+→ S5 (My activity card, Guide/FAQ, second deploy). The Maintenance session builds the MENTOR role (7a) on top of
+this — mentor rules for qualifications / address / share-with-students go in THEIR sprint.
+
+**Gotchas.** Never run `cleanup_orphan_blobs --apply` from a pre-S2 checkout (it would delete staff photos).
+The live sign-in captcha against the service-role password grant is UNVERIFIED: if it blocks, the change answers
+503 `supabase_unavailable` (never "wrong password") — read the auth logs after the first real password change.
+TD-439: make `phone` / `share_phone_with_students` read-only on reviewer-profile now the new web is live.
+
 ### ⚠ STATE AT 2026-10-30 — SCHOLARSHIP "MY PLANS" REDESIGN LIVE (main `53706f21`; api-01212-lr2, web-01035-m7b)
 
 **What it is.** The apply form's and /profile's Plans step asks "Have you received an offer…?" (labels only:

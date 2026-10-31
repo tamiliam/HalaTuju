@@ -1,7 +1,8 @@
 # Common profile page + My activity — roadmap (2026-10-31)
 
-**Status:** DRAFT, waiting for the owner's approval of this roadmap and the mock-ups
-(https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582).
+**Status:** APPROVED 2026-10-31 (roadmap + mock-ups https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582).
+**S1 + S2 LIVE 2026-10-31** (main `3ad1f387`, migration scholarship 0193; retro
+`docs/retrospectives/retrospective-2026-10-31-common-profile-s1-s2.md`). Next: S3.
 
 ## Why
 

@@ -1754,3 +1754,15 @@ is prefetched — weight moved off a route's first load can still travel in the 
   in a module behind a barrel, create caches and maps on first use (a function-scoped `let`), never at module
   level; run `npm run bundle-budget` on the first build of any new `lib/api/*` module. (My Plans redesign,
   2026-10-30)
+- **An auth write lists every reader of the account's metadata, cron jobs included.** Common profile S1 changed
+  a password through the admin API and pinned "metadata untouched", while `expire_temp_passwords` reads
+  `app_metadata.must_change_password` nightly: a new reviewer who changed their temp password on the Profile page
+  would have had it overwritten with a random one, and the no-current-password `admin/set-password/` door stayed
+  open. **Rule:** before writing to a Supabase auth user, grep every reader of its `app_metadata` /
+  `user_metadata` keys (views, management commands, Cloud Scheduler jobs) and read the sibling flow that already
+  writes there (`AdminSetPasswordView`); the door list carries each one. (Common profile S1+S2, 2026-10-31)
+- **A refusal from an identity provider is "wrong credentials" only on its wrong-credential CODE.** Treating every
+  400 from GoTrue's password grant as a wrong password would have told people their right password was wrong the
+  moment the project's captcha (or any other policy) refused the check. **Rule:** match the provider's documented
+  codes (`invalid_credentials`, `invalid_grant`); every other refusal is "could not check" (503). (Common profile
+  S1+S2, 2026-10-31)
