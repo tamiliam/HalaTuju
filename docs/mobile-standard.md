@@ -65,10 +65,11 @@ Three kinds of check, from cheapest to most human:
 ### 4. No hover-only information or actions
 - **Why:** a phone has no hover. A tooltip or a hover-revealed button simply does not exist there.
 - **Checked by:** static guard (`title=` as the only explanation on an icon-only button or link) and review.
-- **Copy this:** visible text, or a tap `InfoTip` (`src/components/InfoTip.tsx`): a tap opens it and
+- **Copy this:** visible text, or a tap `InfoTip` (`src/components/InfoTip.tsx`, its bubble lazily from
+  `InfoTipBubble.tsx`): a tap opens it and
   it stays open until a second tap, a tap elsewhere or Escape; a mouse still opens it on hover; the
-  bubble is kept on screen. Any small mark can become a tap target the same way — `VerifiedTick`
-  passes its seal as InfoTip's `mark`. A JS hover handler listens to `pointerType === 'mouse'` only
+  bubble is kept on screen. `VerifiedTick` does the same for its 14 px seal (tap bubble, 44 px
+  target, no hover handler). A JS hover handler listens to `pointerType === 'mouse'` only
   (a tap fires a compatibility mouseenter — `CourseDetailShared.tsx`'s save button). Never `title=` alone.
 
 ### 5. One shared Sheet for every overlay

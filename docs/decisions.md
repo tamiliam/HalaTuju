@@ -29,8 +29,16 @@ once that menu opens on tap (M2, the student header).
 
 **Hover-only explanations become taps.** InfoTip opens on tap and stays (iOS sent mouseenter then click, which
 toggled it shut), closes on a second tap / outside tap / Escape, keeps the mouse hover, clamps into the viewport, and
-takes a 44 px target with negative margins so no layout moves. `VerifiedTick` reuses it (its seal is the mark); its
-`title` stays for desktop, so InfoTip's hover bubble is off there. Toggle gets the same 44 px treatment.
+takes a 44 px target with negative margins so no layout moves. `VerifiedTick` has its own tap bubble (no hover
+handler, `title` kept for desktop) rather than reusing InfoTip.
+
+**The first-load budget decided InfoTip's shape.** `/scholarship/application` sat 0.305 kB under its 212 kB line
+before M1a (exact reading of the merge base). The new InfoTip — clamp, outside-tap and Escape handling — added ~0.47 kB
+to it and to `/profile`, so the bubble is now its own chunk (`InfoTipBubble.tsx`), imported the first time any InfoTip
+opens (owned `import()`, the LazyPostAwardTask pattern; a failed load leaves the `i` shut, its text still its accessible
+name). Result, exact: /scholarship/application 211.695 → 211.693 kB, /profile 198.310 → 198.302, /scholarship/apply
+186.200 → 186.187; median 147.069 → 147.084; worst route 221.596 → 221.887 (/admin/scholarship/[id], VerifiedTick;
+no line there). Nothing raised. Cost: the first opening of any InfoTip waits for one small file. Toggle gets the same 44 px treatment.
 
 ## A student's or sponsor's login may be a mentor: one admin sign-in per email, not one sign-in — 2026-10-31 (owner ruling, student maintenance S7a follow-up)
 

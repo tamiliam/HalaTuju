@@ -13,8 +13,11 @@ All notable changes to this project will be documented in this file.
 - **TD-311 closed** — the Home hero is `text-4xl` below `sm` in every language (desktop unchanged): `/` in Tamil was
   458 px wide at 360 and 390, now 360 and 390. The closing call-to-action wraps inside its button.
 - **Taps:** InfoTip opens on a tap and stays open (iOS sent mouseenter then click, which shut it), closes on a second
-  tap / outside tap / Escape, stays on screen, 44 px target. VerifiedTick's "Matches MyKad" is reachable by tap
-  (InfoTip). Toggle has a 44 px target. The course page's Save label no longer flips to "Remove" on a tap.
+  tap / outside tap / Escape, stays on screen, 44 px target. Its bubble is a lazy chunk (`InfoTipBubble.tsx`) so the
+  student routes stay inside their first-load lines — exact, before → after: /scholarship/application 211.695 →
+  211.693 kB (line 212), /profile 198.310 → 198.302 (199), /scholarship/apply 186.200 → 186.187; median 147.069 →
+  147.084; worst 221.596 → 221.887 (/admin/scholarship/[id]). `npm run bundle-budget`: ok, nothing raised. VerifiedTick's "Matches MyKad" is reachable by tap
+  (its own small bubble — it is not built on InfoTip, so InfoTip stays lean on the budgeted student routes). Toggle has a 44 px target. The course page's Save label no longer flips to "Remove" on a tap.
 - **Safe areas:** one pattern, `max(<own padding>, env(safe-area-inset-*))` — the apply and next-steps bottom tab
   bars, Toast, SaveBar, the admin drawer, the student and sponsor headers; landscape side insets on `body`.
 - **Toast** is full width less 16 px gutters on phones, bottom-right on desktop as before. **Menus:** the admin

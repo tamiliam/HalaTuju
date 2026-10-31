@@ -22,10 +22,10 @@ export default function Toggle({
     <button
       type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
       onClick={() => { if (!disabled) onChange(!on) }}
-      className={`relative -my-[10px] inline-flex h-11 w-11 shrink-0 items-center ${
+      className={`-my-[10px] inline-flex h-11 w-11 shrink-0 items-center ${
         disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+      <span className={`inline-flex h-6 w-11 items-center rounded-full transition-colors ${
         on ? 'bg-brand-shape' : 'bg-ground-300'
       }`}>
         <span className={`inline-block h-5 w-5 transform rounded-full bg-ground-0 shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
