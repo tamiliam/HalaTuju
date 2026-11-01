@@ -406,7 +406,8 @@ def student_offer_check(doc) -> dict:
     cn = (f.get('candidate_name') or '').strip()
     cnric = (f.get('candidate_nric') or '').strip()
     programme = (f.get('programme') or '').strip()
-    institution = (f.get('institution') or '').strip()
+    from .offer_course_match import letter_institution as _letter_institution   # S4 split, rejoined
+    institution = _letter_institution(f.get('institution'), f.get('campus'))
     stream = (f.get('stream') or '').strip()          # #117 (b) — the offer's Bidang / stream
     # PISMP: the letter RELIABLY states the BIDANG PENGKHUSUSAN (major); the aliran is NOT printed on
     # the letter (Gemini infers it — a soft hint only). We key PISMP resolution on the bidang.

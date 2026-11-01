@@ -59,6 +59,25 @@ def letter_programme(programme: str) -> str:
     return re.sub(r'[\s\-–—]+$', '', s).strip()
 
 
+def letter_institution(institution: str, campus: str = '') -> str:
+    """The letter's institution LINE as every matcher reads it: ``institution`` with ``campus`` joined on.
+
+    Offer reader S4 (2026-11-02) splits what one field used to hold: ``institution`` = the name only,
+    ``campus`` = the campus / branch as printed ("KOLEJ KOMUNITI" + "KANGAR"). The catalogue keeps a
+    row PER CAMPUS for polytechnics, KK, IPG, IKBN / IKM / KKTM, so the matcher must see both again or
+    a multi-campus pin drops. THE one join, read by ``pathway_engine.student_offer_check`` (which feeds
+    ``match_offer_course``, ``letter_place`` and ``CampusReader``) and by any raw reader of the stored
+    fields. A campus already inside the name (or the reverse) is not repeated; a pre-S4 read has no
+    ``campus`` key, so its line is returned unchanged."""
+    inst, camp = ' '.join((institution or '').split()), ' '.join((campus or '').split())
+    pi, pc = f' {_plain_words(inst)} ', f' {_plain_words(camp)} '
+    if not pc.strip() or pc in pi:
+        return inst
+    if not pi.strip() or pi in pc:
+        return camp
+    return f'{inst}, {camp}'
+
+
 def catalogue_name(name: str) -> str:
     """A catalogue course name without its campus parenthetical."""
     return ' '.join(_CAMPUS_PAREN_RE.sub(' ', name or '').split())

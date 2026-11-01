@@ -21,7 +21,10 @@ def _offer_institution(app):
     if not o or not isinstance(o.vision_fields, dict):
         return ''
     f = o.vision_fields.get('fields', {})
-    return (f.get('institution') or '').strip() if isinstance(f, dict) else ''
+    if not isinstance(f, dict):
+        return ''
+    from apps.scholarship.offer_course_match import letter_institution   # the S4 campus, rejoined
+    return letter_institution(f.get('institution'), f.get('campus'))
 
 
 class Command(BaseCommand):
