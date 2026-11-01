@@ -47,11 +47,13 @@ describe('adminLanding', () => {
       '/admin/scholarship')).toBe(false)
   })
 
-  // Student maintenance S7a (2026-10-31): a mentor's only page is Profile, so it lands there — and
-  // never through the reviewer hold, which is not theirs.
-  it('sends a mentor to its Profile, and never holds it as a reviewer', () => {
-    expect(adminLanding({ role: 'mentor' })).toBe('/admin/profile')
-    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: true })).toBe('/admin/profile')
+  // Student maintenance S7a (2026-10-31) gave a mentor Profile; S7c gives My students, and it lands
+  // there — never through the reviewer hold, which is not theirs (no hold for an incomplete mentor
+  // profile exists today, so none is invented).
+  it('sends a mentor to My students, and never holds it as a reviewer', () => {
+    expect(adminLanding({ role: 'mentor' })).toBe('/admin/my-students')
+    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: true })).toBe('/admin/my-students')
+    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: false })).toBe('/admin/my-students')
     expect(mustCompleteProfile({ role: 'mentor', reviewer_profile_complete: false }, '/admin/scholarship'))
       .toBe(false)
   })
@@ -118,12 +120,14 @@ describe('missingReviewerFields (client mirror)', () => {
 })
 
 describe('outsiderMustLeave (source users and mentors, S7a)', () => {
-  it('sends a mentor away from every page but its Profile', () => {
+  it('sends a mentor away from every page but My students and its Profile', () => {
     for (const p of ['/admin', '/admin/organisation', '/admin/organisation/mentors', '/admin/scholarship',
       '/admin/scholars/4', '/admin/programme/overview', '/admin/guide']) {
       expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, p)).toBe(true)
     }
     expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/profile')).toBe(false)
+    expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students')).toBe(false)
+    expect(outsiderMustLeave({ role: 'mentor', permissions: [] }, '/admin/my-students/104')).toBe(false)
   })
   it('still holds a source user to its own pages, and never touches staff', () => {
     expect(outsiderMustLeave({ role: 'source_partner', permissions: [] }, '/admin/sources')).toBe(true)

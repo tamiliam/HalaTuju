@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 7c — mentors see their students and log meetings (not yet live)
+
+Owner rulings 2026-11-01 (decisions.md, the 7c entry). **Migration scholarship 0198
+(`0198_mentor_logs_meetings`) — MIGRATE FIRST, BY HAND: four additive columns on `mentoring_sessions`
+with their defaults kept in the database, the ledger row in the same transaction (DDL, pre-check and
+rollback in its docstring).** No new table. Release order: 0198 by hand, then API, then web.
+
+- **A mentor signs in to My students** (`/admin/my-students`, the mentor's landing; a new Mentoring group
+  in the menu, mentor only). One card per CURRENT student — an open assignment of the mentor's own, on a
+  file of the mentor's organisation in maintenance, never the mentor's own application: name, programme
+  and institution, the latest accepted result (CGPA and term) with its standing or "No result yet", what
+  they asked for help with, "your student since", the meetings. Server: `apps/scholarship/mentor_desk.py`
+  (rules and readers), `views_admin/mentor_students.py` (`GET admin/mentor/students/`,
+  `GET admin/mentor/students/<id>/`, `POST admin/mentor/students/<id>/sessions/`) — the only additions to
+  `mentor_methods`. Anyone else's student, an ended assignment, another organisation's file and an unknown
+  id are one answer: 404. Staff are 403.
+- **One student** (`/admin/my-students/<id>`): email and phone (Email / Call), the result with its term,
+  what they asked for help with, and the meetings of THIS mentoring, newest first — the mentor's own in full
+  (notes, next step, minutes), the team's as date + how only ("Logged by the <organisation> team · their
+  notes are not shown to you"). An allowlist: never money, documents, family, letters, the contract, other
+  mentors, history, staff notes, the activity log or a photo.
+- **Log a meeting** — the shared Sheet (a bottom sheet on a phone): date, how (three 44 px pill buttons),
+  minutes, notes (required), next step (optional) and the site Toggle **"Tell the team I am worried about
+  this student"**. 7b's validation (`mentoring.clean_meeting`, now shared) and 7b's row lock with the
+  assignment re-checked inside the transaction: a staff End, a change or a Deactivate that lands first
+  refuses the log (404) and writes nothing. Saved meetings are never edited. No email to anyone.
+  `session_logged` (with `by_mentor`) and, with a concern, `mentor_concern_raised` on the file.
+- **Staff:** the Mentoring tab reads a mentor's meeting "logged by <name> (mentor)" with its notes; a
+  concern shows **Mentor concerned** on that meeting and at the top, where **Mark as handled**
+  (`POST .../mentoring/handle-concern/`, super / org_admin / admin of the organisation) stamps every open
+  one (who, when, a `mentor_concern_handled` line); twice is a no-op, and a later concern raises it again.
+  The Scholars list gains a **Mentor concerned** chip on the row and a **Mentor concerned · n** pill
+  (`?mentoring=mentor_concerned`). Reviewer and QC see none of it (7b's rule: the two concern events join
+  `mentoring.EVENTS`; the chip, pill and count are stripped with the other mentoring keys).
+- **The student's own Mentoring tab is unchanged**: a mentor's meeting appears as date + how only.
+- Guide (org admin, general admin) and FAQ updated for mentors. Mobile: both pages classed **must**
+  (`mobileClass.ts`, M6).
+
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 
 Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,

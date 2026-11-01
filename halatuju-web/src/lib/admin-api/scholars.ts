@@ -36,6 +36,8 @@ export interface ScholarRow {
   mentor?: string | null
   /** S7b: asked for help with university or scholarship applications, or flagged by staff. */
   asked_for_help?: boolean
+  /** S7c: the mentor raised a concern staff have not marked handled (absent without the Mentoring tab). */
+  mentor_concerned?: boolean
   last_activity_at: string | null
 }
 
@@ -53,6 +55,8 @@ export interface ScholarSummary {
   no_mentor?: number
   /** S7b: in maintenance and asked for help (absent for a role without the Mentoring tab). */
   asked_for_help?: number
+  /** S7c: in maintenance with a concern not yet handled (absent for a role without the Mentoring tab). */
+  mentor_concerned?: number
 }
 
 export interface ScholarList {
@@ -72,12 +76,12 @@ export interface ScholarListQuery {
   /** S4a: 'below_minimum' narrows to the Underperforming filter. */
   standing?: 'below_minimum' | 'results_overdue' | ''
   /** S7b: the two Mentoring pills (ignored by the server for a role without the tab). */
-  mentoring?: 'no_mentor' | 'asked_for_help' | ''
+  mentoring?: 'no_mentor' | 'asked_for_help' | 'mentor_concerned' | ''
   page?: number
   page_size?: number
 }
 
-export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'asked_for_help' | 'last_activity_at'> {
+export interface ScholarFile extends Omit<ScholarRow, 'mentor' | 'asked_for_help' | 'mentor_concerned' | 'last_activity_at'> {
   in_maintenance: boolean
   has_file: boolean
   closure_reason: string

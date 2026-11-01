@@ -13,7 +13,9 @@ thresholds; a result awaiting review never moves it (it reads `awaiting_review`)
 
 MENTOR (S7b): the current mentor's name (one subquery on the list query), whether the student asked
 for help (`ASKED_FOR_HELP_Q`), and the No mentor / Asked for help counts. The VIEW strips all of it for a
-role that may not see the Mentoring tab (`mentoring.may_act`).
+role that may not see the Mentoring tab (`mentoring.may_act`). S7c: "Mentor concerned" — a meeting the
+mentor logged with a concern staff have not marked handled (`MENTOR_CONCERNED_Q`), its row chip, its filter
+and its count, stripped the same way.
 """
 from decimal import Decimal
 
@@ -26,8 +28,8 @@ from apps.courses.search import _digits_expr
 from . import card_display, maintenance_scope, standing
 from .results_review import PENDING, accepted, latest_accepted
 from .models import (
-    BursaryAgreement, Disbursement, MentorAssignment, ResultsExpectation, ScholarshipApplication,
-    SemesterResult, StudentActivity,
+    BursaryAgreement, Disbursement, MentorAssignment, MentoringSession, ResultsExpectation,
+    ScholarshipApplication, SemesterResult, StudentActivity,
 )
 
 #: The sub-states an officer may filter on (the model's choices).
@@ -68,8 +70,13 @@ def _latest(field):
 #: applying, or flagged by staff for mentoring (`mentoring_read.help_asked` is the one-record twin).
 ASKED_FOR_HELP_Q = (Q(help_university__in=('yes', 'unsure')) | Q(help_scholarship__in=('yes', 'unsure'))
                     | Q(mentoring_candidate=True))
-#: `?mentoring=` filters (S7b).
-MENTORING_FILTERS = ('no_mentor', 'asked_for_help')
+#: `?mentoring=` filters (S7b; `mentor_concerned` S7c).
+MENTORING_FILTERS = ('no_mentor', 'asked_for_help', 'mentor_concerned')
+
+
+def _open_concern(app_ref):
+    """S7c: a concern the mentor raised that staff have not marked handled."""
+    return MentoringSession.objects.filter(application=app_ref, concern=True, concern_handled_at__isnull=True)
 
 
 def _open_assignment(app_ref):
@@ -105,7 +112,8 @@ def annotate(qs):
                       next_due_starts=Subquery(_open_term(OuterRef('pk')).values('term_starts_on')[:1]),
                       # S7b: the current mentor (their login's name) — one subquery, no per-row read.
                       has_mentor=Exists(_open_assignment(OuterRef('pk'))),
-                      mentor_name=Subquery(_mentor_name(OuterRef('pk'))))
+                      mentor_name=Subquery(_mentor_name(OuterRef('pk'))),
+                      has_open_concern=Exists(_open_concern(OuterRef('pk'))))
             # Something she sent THIS term is waiting for the officer: not her lateness (review M3).
             .annotate(pending_for_due=Exists(SemesterResult.objects.filter(
                 application=OuterRef('pk'), review_status=PENDING,
@@ -177,6 +185,8 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdu
         qs = qs.filter(has_mentor=False)
     elif mentoring == 'asked_for_help':
         qs = qs.filter(ASKED_FOR_HELP_Q)
+    elif mentoring == 'mentor_concerned':
+        qs = qs.filter(has_open_concern=True)
     if below is not None:
         qs = qs.filter(below)
     if overdue is not None:
@@ -207,9 +217,11 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdu
 
 
 SUMMARY_KEYS = ('in_programme', 'on_hold', 'probation', 'ready_to_close', 'closed', 'below_minimum',
-                'results_overdue', 'no_mentor', 'asked_for_help')
+                'results_overdue', 'no_mentor', 'asked_for_help', 'mentor_concerned')
 #: The keys only a Mentoring-tab role is served (S7b; the view strips them for the rest).
-MENTORING_KEYS = ('no_mentor', 'asked_for_help')
+MENTORING_KEYS = ('no_mentor', 'asked_for_help', 'mentor_concerned')
+#: The ROW keys only a Mentoring-tab role is served (S7b; S7c `mentor_concerned`).
+MENTORING_ROW_KEYS = ('mentor', 'asked_for_help', 'mentor_concerned')
 
 
 def summary(qs, below, overdue):
@@ -226,7 +238,9 @@ def summary(qs, below, overdue):
         results_overdue=Count('id', filter=live & overdue),
         # S7b: the pills' counts, over the students in maintenance (closed files have no mentor).
         no_mentor=Count('id', filter=live & Q(has_mentor=False)),
-        asked_for_help=Count('id', filter=live & ASKED_FOR_HELP_Q))
+        asked_for_help=Count('id', filter=live & ASKED_FOR_HELP_Q),
+        # S7c: the "Mentor concerned · n" pill, over the same population as its filter's list.
+        mentor_concerned=Count('id', filter=live & Q(has_open_concern=True)))
     return {k: row[k] or 0 for k in SUMMARY_KEYS}
 
 
@@ -286,6 +300,7 @@ def rows(apps):
             'next_due': app.next_due if live else None,
             'mentor': app.mentor_name or None,
             'asked_for_help': _asked(app),
+            'mentor_concerned': bool(app.has_open_concern),
             'last_activity_at': app.last_activity_at,
         })
     return out

@@ -313,6 +313,14 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarMentoringActionView': 'scholars-org-fenced',
         'AdminScholarMentoringSessionsView': 'scholars-org-fenced',
         'AdminScholarResultReviewView': 'scholars-org-fenced',
+        # S7c: a MENTOR's own students. Not the file's door — a mentor has no `_b40_scope` — but a
+        # narrower one: `mentor_desk.current_assignments` reads only the caller's OWN open assignments,
+        # on applications of the MENTOR's organisation (`owning_organisation_id=mentor.organisation_id`)
+        # in maintenance; anything else (another organisation's file included) is 404. Staff are 403.
+        '_MentorBase': 'mentor-own-students-org-fenced',
+        'AdminMentorStudentsView': 'mentor-own-students-org-fenced',
+        'AdminMentorStudentView': 'mentor-own-students-org-fenced',
+        'AdminMentorStudentSessionsView': 'mentor-own-students-org-fenced',
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only

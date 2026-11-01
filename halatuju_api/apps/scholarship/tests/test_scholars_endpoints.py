@@ -76,7 +76,8 @@ class TestWhoIsListed(_Scholars):
         self.assertEqual(r.json()['summary'], {
             'in_programme': 3, 'on_hold': 1, 'probation': 1, 'ready_to_close': 0, 'closed': 1,
             'below_minimum': 1, 'results_overdue': 0,                       # S4a: Chen's accepted 2.10 is under 3.00
-            'no_mentor': 3, 'asked_for_help': 0})                           # S7b: nobody has a mentor yet
+            'no_mentor': 3, 'asked_for_help': 0,                            # S7b: nobody has a mentor yet
+            'mentor_concerned': 0})                                         # S7c: and no concern
 
     def test_closed_lists_only_the_closed_files(self):
         self.assertEqual(self._names(self._get(self.org_admin, closed='1')), ['EZRA'])

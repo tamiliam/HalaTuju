@@ -78,10 +78,17 @@ class MentorAssignment(models.Model):
 
 
 class MentoringSession(models.Model):
-    """One meeting between a scholar and their mentor, logged by STAFF (S7b; mentors log their own
-    from 7c). Logged only while an assignment is open, with that assignment's mentor.
+    """One meeting between a scholar and their mentor, logged by STAFF (S7b) or by the MENTOR
+    (S7c, `mentor_desk.log_own_session`). Logged only while an assignment is open, with that
+    assignment's mentor. Never edited once saved, by anyone.
 
-    ⚠ `notes` and `next_step` are STAFF ONLY: the student sees the date and how, nothing else.
+    ⚠ `notes` and `next_step` are never the STUDENT's: the student sees the date and how, nothing
+    else. Staff read every note; the mentor reads the notes of the meetings THEY logged only.
+
+    ⚠ S7c: `logged_by_mentor` is SET by the mentor's own write, never inferred from an email.
+    `concern` is the mentor's "Tell the team I am worried about this student"; staff clear it with
+    "Mark as handled" (`concern_handled_at` / `_by_email`). All four keep a DATABASE default
+    (`db_default`) so the image still serving inserts rows between the migrate and the deploy.
     """
     MODE_IN_PERSON, MODE_VIDEO, MODE_PHONE = 'in_person', 'video', 'phone'
     MODE_CHOICES = [(MODE_IN_PERSON, 'In person'), (MODE_VIDEO, 'Video call'), (MODE_PHONE, 'Phone call')]
@@ -99,6 +106,12 @@ class MentoringSession(models.Model):
     next_step = models.TextField(blank=True, default='')
     logged_by_email = models.CharField(max_length=254, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
+    #: S7c: True when the MENTOR logged it (their own write sets it; every 7b row is staff-logged).
+    logged_by_mentor = models.BooleanField(default=False, db_default=False)
+    #: S7c: the mentor raised a concern with this meeting; open until staff mark it handled.
+    concern = models.BooleanField(default=False, db_default=False)
+    concern_handled_at = models.DateTimeField(null=True, blank=True)
+    concern_handled_by_email = models.CharField(max_length=254, blank=True, default='', db_default='')
 
     class Meta:
         db_table = 'mentoring_sessions'

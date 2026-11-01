@@ -13,7 +13,7 @@ import { formatDate } from '@/lib/formatDate'
 export function activityDot(a: ScholarActivity): string {
   if (a.kind !== 'system') return 'bg-info-500'
   if (a.event === 'payment_released') return 'bg-positive-500'
-  if (a.event === 'substate_changed') return 'bg-caution-500'
+  if (a.event === 'substate_changed' || a.event === 'mentor_concern_raised') return 'bg-caution-500'
   return 'bg-ground-400'
 }
 
@@ -58,9 +58,14 @@ export function activityText(
       return t(`admin.scholars.event.mentor_ended.${['mentor_deactivated', 'file_closed', 'mentor_is_student', 'award_reverted'].includes(str(m.cause))
         ? str(m.cause) : 'staff'}`, { mentor: str(m.mentor) || '—' })
     case 'session_logged':
-      return t(m.minutes ? 'admin.scholars.event.session_logged' : 'admin.scholars.event.session_logged_no_minutes', {
+      return t(`admin.scholars.event.${m.by_mentor ? 'session_logged_by_mentor' : 'session_logged'}${m.minutes ? '' : '_no_minutes'}`, {
         mode: t(`admin.scholars.mentoring.mode.${['in_person', 'video', 'phone'].includes(str(m.mode)) ? str(m.mode) : 'in_person'}`).toLowerCase(),
         minutes: str(m.minutes) })
+    // S7c: the mentor's concern, raised with a meeting they logged and marked handled by staff.
+    case 'mentor_concern_raised':
+      return t('admin.scholars.event.mentor_concern_raised', { mentor: str(m.mentor) || '—' })
+    case 'mentor_concern_handled':
+      return t('admin.scholars.event.mentor_concern_handled')
     default:
       return t('admin.scholars.event.other')
   }

@@ -135,6 +135,9 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/administration': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
   '/admin/organisation/programmes': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
   '/admin/[...notFound]': { cls: 'must', sprint: 'M6' },
+  // Student maintenance S7c: a MENTOR's own pages — used on a phone (the approved MentorPhone board).
+  '/admin/my-students': { cls: 'must', sprint: 'M6' },
+  '/admin/my-students/[id]': { cls: 'must', sprint: 'M6' },
 
   // ── The rest of the admin console: lists and detail pages ─────────────────────────────────────
   '/admin': { cls: 'can', sprint: 'M7' },

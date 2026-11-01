@@ -28,3 +28,14 @@ it('reads assigned, changed, ended (each cause) and a logged meeting', () => {
   expect(activityText(row('session_logged', { mode: 'phone', minutes: null }), t))
     .toBe('admin.scholars.event.session_logged_no_minutes|{"mode":"admin.scholars.mentoring.mode.phone","minutes":""}')
 })
+
+it('S7c: a meeting the mentor logged, and the concern raised and handled', () => {
+  expect(activityText(row('session_logged', { mode: 'video', minutes: 30, by_mentor: true }), t))
+    .toBe('admin.scholars.event.session_logged_by_mentor|{"mode":"admin.scholars.mentoring.mode.video","minutes":"30"}')
+  expect(activityText(row('session_logged', { mode: 'phone', minutes: null, by_mentor: true }), t))
+    .toBe('admin.scholars.event.session_logged_by_mentor_no_minutes|{"mode":"admin.scholars.mentoring.mode.phone","minutes":""}')
+  expect(activityText(row('mentor_concern_raised', { mentor: 'Kavitha Raman', session_id: 9 }), t))
+    .toBe('admin.scholars.event.mentor_concern_raised|{"mentor":"Kavitha Raman"}')
+  expect(activityText(row('mentor_concern_handled', { count: 2 }), t))
+    .toBe('admin.scholars.event.mentor_concern_handled')
+})

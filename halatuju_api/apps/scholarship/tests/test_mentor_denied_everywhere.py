@@ -24,7 +24,7 @@ from apps.scholarship.tests.test_source_user_denied_everywhere import (
     DARK_FLAGS_ON, MIN_ROUTES, REFUSED, admin_routes, methods_of,
 )
 
-#: (route, method) pairs a mentor may receive data from in S7a. Each is about the caller's OWN
+#: (route, method) pairs a mentor may receive data from (S7a; S7c adds My students). Each is about the caller's OWN
 #: account: the sign-in record, the common Profile page (`admin/me/`), the reviewer cards a mentor also
 #: fills in (`admin/reviewer-profile/`), removing its own photo (none here, so nothing to remove), and
 #: its own activity list (common profile S4: own rows only, every other subject a neutral word).
@@ -36,6 +36,9 @@ ALLOWED = {
     ('api/v1/admin/me/photo/', 'delete'),
     ('api/v1/admin/reviewer-profile/', 'get'),
     ('api/v1/admin/reviewer-profile/', 'patch'),
+    # S7c: the mentor's own students — the list (this mentor has none, so it is empty). The per-student
+    # page and the log are opted in too, and answer 404 here: the sweep's id is no student of theirs.
+    ('api/v1/admin/mentor/students/', 'get'),
 }
 
 #: (route, method) pairs a mentor's call REACHES, which serve no data. With the sweep's empty body:

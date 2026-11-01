@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/formatDate'
 import { dayFirstFromIso, isoFromDayFirst, todayIso } from '@/lib/invoices'
 import Toggle from '@/components/Toggle'
 import {
-  assignMentor, endMentoring, getScholarMentoring, logMentoringMeeting,
+  assignMentor, endMentoring, getScholarMentoring, handleMentorConcern, logMentoringMeeting,
   type AssignableMentor, type MeetingMode, type ScholarMentoring as Payload, type StaffRef,
 } from '@/lib/admin-api'
 
@@ -189,6 +189,8 @@ function MeetingForm({ t, busy, onSubmit, onCancel }: {
  * offered only when the organisation sends "You have a mentor" (`email_switch_on`), and the system never
  * emails a mentor. Notes, next steps and reasons are STAFF ONLY — the student's own tab never shows them.
  * `can_act` false (a closed file) reads the same, with no buttons.
+ * S7c: a meeting the MENTOR logged reads "logged by <name> (mentor)"; a concern they raised shows a
+ * "Mentor concerned" chip on that meeting and at the top, where "Mark as handled" clears every open one.
  */
 export default function ScholarMentoring({ id, token }: { id: number; token: string | null }) {
   const { t } = useT()
@@ -230,6 +232,24 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
         </p>
       )}
       {data.file_closed && <p className="text-sm text-ground-600" data-testid="mentoring-read-only">{t(`${K}.readOnly`)}</p>}
+
+      {data.concern && (
+        <section role="status" data-testid="mentoring-concern"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-critical-200 bg-critical-50 p-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <ConcernChip t={t} />
+            <span className="text-sm text-ground-800">
+              {t(`${K}.concern.open`, { count: String(data.concern.count), date: formatDate(data.concern.raised_at) })}
+            </span>
+          </div>
+          {data.can_act && token && (
+            <button type="button" className={SECONDARY} disabled={busy} data-testid="mentoring-handle-concern"
+              onClick={() => run(() => handleMentorConcern(id, { token }), () => t(`${K}.done.handled`))}>
+              {t(`${K}.concern.handle`)}
+            </button>
+          )}
+        </section>
+      )}
 
       {cur ? (
         <section aria-label={t(`${K}.current.label`)} data-testid="mentoring-current"
@@ -325,8 +345,18 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
                 m.minutes ? t(`${K}.meetings.minutesShort`, { count: String(m.minutes) }) : ''].filter(Boolean).join(' · ')}
             </strong>
             <span className="text-xs text-ground-600">
-              {t(`${K}.meetings.withBy`, { mentor: m.mentor_name || '—', name: who(t, m.logged_by) })}
+              {m.logged_by_mentor
+                ? t(`${K}.meetings.withByMentor`, { mentor: m.mentor_name || '—' })
+                : t(`${K}.meetings.withBy`, { mentor: m.mentor_name || '—', name: who(t, m.logged_by) })}
             </span>
+            {m.concern && (
+              <span className="flex flex-wrap items-center gap-2 text-xs text-ground-600" data-testid={`mentoring-meeting-concern-${m.id}`}>
+                {m.concern_handled_at
+                  ? t(`${K}.concern.handled`, { name: m.concern_handled_by ? who(t, m.concern_handled_by) : t(`${K}.someone`),
+                    date: formatDate(m.concern_handled_at) })
+                  : <ConcernChip t={t} />}
+              </span>
+            )}
             <p className="whitespace-pre-line break-words text-sm text-ground-700">{m.notes}</p>
             {m.next_step && (
               <p className="break-words text-sm text-ground-700">{t(`${K}.meetings.nextStepLine`, { step: m.next_step })}</p>
@@ -342,5 +372,15 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
         ))}
       </section>
     </div>
+  )
+}
+
+/** S7c: the mentor is worried about this scholar (not yet handled by staff). */
+function ConcernChip({ t }: { t: T }) {
+  return (
+    <span className="self-start whitespace-nowrap rounded-full bg-critical-50 px-2 py-0.5 text-xs font-medium text-critical-700"
+      data-testid="mentor-concerned-chip">
+      {t('admin.scholars.mentorConcerned')}
+    </span>
   )
 }

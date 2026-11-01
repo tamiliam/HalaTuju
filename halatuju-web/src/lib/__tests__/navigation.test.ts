@@ -134,9 +134,9 @@ describe('visibleNav per role', () => {
     // source console (`components/source/*`, `admin/source/` only) — and Profile. NO Guide / FAQ:
     // both are written for staff, and there is no source section in either yet.
     source_partner: ['programmeOverview', 'applications', 'scholars', 'profile'],
-    // Student maintenance S7a (2026-10-31): a mentor has their Profile and nothing else (the
-    // MentorProfile board). NO Guide / FAQ: both are written for staff.
-    mentor: ['profile'],
+    // Student maintenance S7a (2026-10-31): a mentor has their Profile (the MentorProfile board); S7c
+    // adds My students, their landing. Nothing else. NO Guide / FAQ: both are written for staff.
+    mentor: ['myStudents', 'profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -218,16 +218,24 @@ describe('visibleNav per role', () => {
     }
   })
 
-  it('a mentor is its own role, never folded into reviewer, and lands on its Profile', () => {
+  it('a mentor is its own role, never folded into reviewer, and lands on My students (S7c)', () => {
     expect(effectiveRole({ role: 'mentor' })).toBe('mentor')
-    expect(defaultRoute({ role: 'mentor', permissions: [] })).toBe('/admin/profile')
-    expect(defaultRoute({ role: 'mentor' }, false)).toBe('/admin/profile')
+    // S7c: My students is the landing. A mentor is never held on Profile (the hold is reviewer-only;
+    // the server's `reviewer_profile_complete` is true for every non-reviewer).
+    expect(defaultRoute({ role: 'mentor', permissions: [] })).toBe('/admin/my-students')
+    expect(defaultRoute({ role: 'mentor' }, false)).toBe('/admin/my-students')
     expect(canAccess('/admin/profile', 'mentor', [])).toBe(true)
+    expect(canAccess('/admin/my-students', 'mentor', [])).toBe(true)
+    expect(canAccess('/admin/my-students/104', 'mentor', [])).toBe(true)
+    // No staff role sees or opens it (the server refuses them too).
+    for (const role of ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner'] as const) {
+      expect(canAccess('/admin/my-students', role, [])).toBe(false)
+    }
     for (const href of ['/admin', '/admin/organisation', '/admin/organisation/mentors',
       '/admin/programme/overview', '/admin/scholarship', '/admin/scholars', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'mentor', [])).toBe(false)
     }
-    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['utility'])
+    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['mentoring', 'utility'])
   })
 
   it('the Programme group of a source user never folds away — it has no door into a gift', () => {
@@ -518,8 +526,8 @@ describe('visibleNav groups', () => {
     expect(visibleNav(ctx('partner')).map((g) => g.scope)).toEqual(['platform', 'utility'])
   })
 
-  it('the sidebar renders three scopes; utility belongs to the account and help menus', () => {
-    expect(SIDEBAR_SCOPES).toEqual(['platform', 'organisation', 'programme'])
+  it('the sidebar renders four scopes (S7c: a mentor group); utility belongs to the account and help menus', () => {
+    expect(SIDEBAR_SCOPES).toEqual(['platform', 'organisation', 'programme', 'mentoring'])
     expect(SIDEBAR_SCOPES).not.toContain('utility')
   })
 

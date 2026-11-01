@@ -65,7 +65,8 @@ class _ScholarsBase(_AdminBase):
 
 class AdminScholarListView(_ScholarsBase):
     """GET admin/scholarship/scholars/ — `?programme=` `?closed=1` `?substate=` `?on_hold=1`
-    `?search=` `?sort=` `?page=` `?page_size=` `?mentoring=no_mentor|asked_for_help` (S7b).
+    `?search=` `?sort=` `?page=` `?page_size=` `?mentoring=no_mentor|asked_for_help` (S7b)
+    `|mentor_concerned` (S7c).
     Returns `{summary, count, page, page_size, results}`.
     `summary` counts the scoped in-maintenance population (closed or not, it is what the tiles say)."""
 
@@ -110,7 +111,7 @@ class AdminScholarListView(_ScholarsBase):
         results = scholars.rows(page_rows)
         if not sees_mentors:
             summary = {k: v for k, v in summary.items() if k not in scholars.MENTORING_KEYS}
-            results = [{k: v for k, v in r.items() if k not in ('mentor', 'asked_for_help')} for r in results]
+            results = [{k: v for k, v in r.items() if k not in scholars.MENTORING_ROW_KEYS} for r in results]
         return Response({'summary': summary, 'count': count, 'page': page, 'page_size': size,
                          'results': results})
 

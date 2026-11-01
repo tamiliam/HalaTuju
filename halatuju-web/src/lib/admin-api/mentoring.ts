@@ -60,6 +60,12 @@ export interface MentoringMeeting {
   mentor_name: string
   logged_by: StaffRef
   created_at: string
+  /** S7c: the MENTOR logged it ("logged by <name> (mentor)"). */
+  logged_by_mentor?: boolean
+  /** S7c: the mentor raised a concern with this meeting. */
+  concern?: boolean
+  concern_handled_at?: string | null
+  concern_handled_by?: StaffRef | null
 }
 
 export interface AssignableMentor {
@@ -81,6 +87,8 @@ export interface ScholarMentoring {
   can_act: boolean
   file_closed: boolean
   email_switch_on: boolean
+  /** S7c: the concerns not yet handled ("Mentor concerned"), or null. */
+  concern?: { count: number; raised_at: string } | null
   /** Only on an assign's answer: whether "You have a mentor" went. */
   emailed?: boolean | null
 }
@@ -97,6 +105,11 @@ export async function assignMentor(
   id: number, body: { mentor_id: number; reason: string; email_student: boolean }, options?: ApiOptions,
 ) {
   return adminMutate<ScholarMentoring>(`${base(id)}assign/`, 'POST', body, options)
+}
+
+/** S7c — "Mark as handled": every open concern on this file. Idempotent. Refusals: file_closed. */
+export async function handleMentorConcern(id: number, options?: ApiOptions) {
+  return adminMutate<ScholarMentoring>(`${base(id)}handle-concern/`, 'POST', {}, options)
 }
 
 export async function endMentoring(id: number, body: { reason: string }, options?: ApiOptions) {

@@ -293,8 +293,11 @@ export const FAQ: Record<Audience, QA[]> = {
       q: <>Who can give a student a mentor, and does the mentor see the student&rsquo;s file?</>,
       a: <>An organisation admin or an admin assigns, changes and ends a mentor on the scholar file&rsquo;s
         <strong> Mentoring</strong> tab, and logs the meetings there. Reviewers and QC do not see that tab. The
-        mentor sees nothing of the file: their sign-in reaches only their own profile for now. A mentor can never
-        be assigned to their own application, and a deactivated mentor&rsquo;s students lose them at once.</>,
+        mentor never sees the file. On <strong>My students</strong> they see only their current students: name,
+        programme, email and phone, what the student asked for help with, and the latest result. They log their
+        own meetings there, and can tell the team they are worried. They never see money, documents, family
+        details, letters or staff notes. A mentor can never be assigned to their own application, and a
+        deactivated mentor&rsquo;s students lose them at once.</>,
     },
   ],
   admin: [

@@ -147,3 +147,24 @@ it('finance cannot open the page', () => {
   expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy()
   expect(mockApi.getScholars).not.toHaveBeenCalled()
 })
+
+it('S7c: "Mentor concerned" — the row chip, and the pill with the server\'s count asking `mentoring=mentor_concerned`', async () => {
+  mockApi.getScholars.mockResolvedValue({
+    ...LIST, summary: { ...LIST.summary, mentor_concerned: 1 }, results: [{ ...ROW, mentor_concerned: true }],
+  })
+  render(<ScholarsPage />)
+  await screen.findAllByText(/NUR AISYAH/)
+  expect(screen.getAllByTestId('mentor-concerned')).toHaveLength(2)          // phone card + desktop row
+  const pill = screen.getByRole('tab', { name: /admin\.scholars\.filter\.mentorConcerned/ })
+  expect(pill.textContent).toContain('1')
+  fireEvent.click(pill)
+  await waitFor(() => expect(mockApi.getScholars).toHaveBeenLastCalledWith(
+    expect.objectContaining({ mentoring: 'mentor_concerned' }), { token: 'tok' }))
+})
+
+it('S7c: a role that does not see mentors gets no Mentor concerned pill', async () => {
+  mockRole = { role: 'qc', owning_org_id: 11, permissions: ['see_all'] }
+  render(<ScholarsPage />)
+  await screen.findAllByText(/NUR AISYAH/)
+  expect(screen.queryByRole('tab', { name: /admin\.scholars\.filter\.mentorConcerned/ })).toBeNull()
+})

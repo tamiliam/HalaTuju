@@ -31,18 +31,20 @@ import { isSuperRole } from './superRole'
 
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
  *  (`apps/scholarship/models.py` Programme docstring); `utility` is "yours, not any scope's". */
-export type NavScope = 'platform' | 'organisation' | 'programme' | 'utility'
+export type NavScope = 'platform' | 'organisation' | 'programme' | 'mentoring' | 'utility'
 
-/** Scopes the sidebar renders as groups (N2). `utility` lives in the help/account menus. */
-export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 'programme']
+/** Scopes the sidebar renders as groups (N2). `utility` lives in the help/account menus.
+ *  `mentoring` (student maintenance S7c) is the MENTOR's own group: My students, nobody else's. */
+export const SIDEBAR_SCOPES: readonly NavScope[] = ['platform', 'organisation', 'programme', 'mentoring']
 
 /** Mirrors PartnerAdmin.ROLE_CHOICES (halatuju_api/apps/courses/models_staff.py) — same nine,
  *  same order, asserted on every run.
  *  ⚠ `source_partner` (source sign-in, 2026-10-30) is named here so `effectiveRole` never folds
  *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
  *  `components/source/*`, which call `admin/source/` only) and Profile; it lands on Overview.
- *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its ONLY row is Profile, so it lands
- *  there (`defaultRoute`), and the layout sends it back from any other page (`outsiderMustLeave`).
+ *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its rows are My students (S7c, its
+ *  landing — `defaultRoute`) and Profile, and the layout sends it back from any other page
+ *  (`outsiderMustLeave`).
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
@@ -392,6 +394,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
+    ],
+  },
+  {
+    // ⚠ A MENTOR's OWN GROUP (student maintenance S7c, 2026-11-01). A mentor is not staff: its rows
+    // are My students and Profile, and nothing else (`outsiderMustLeave` sends it back from any other
+    // page). The server is the fence — `admin/mentor/students/` serves the caller's CURRENT students
+    // only and refuses every other role. Listed AFTER Programme so a mentor lands here
+    // (`defaultRoute`: the first row they may open) and no staff role ever sees it.
+    scope: 'mentoring',
+    headingKey: 'admin.nav.group.mentoring',
+    items: [
+      { id: 'myStudents', href: '/admin/my-students', labelKey: 'admin.nav.myStudents',
+        scope: 'mentoring', roles: ['mentor'], gate: { mode: 'always' } },
     ],
   },
   {
