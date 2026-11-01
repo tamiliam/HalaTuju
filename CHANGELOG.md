@@ -32,8 +32,6 @@ Measurement tooling only; no production code, no migration, no paid call
   94.4 %, NRIC 98.9 %, institution 51.1 %, programme 73.3 %, intake 81.1 %, reporting date 96.7 %. Recorded in
   the roadmap's S1 section with the owner's notes for S2, S4 and S6.
 
-## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
-
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 
 Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,
