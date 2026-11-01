@@ -286,6 +286,17 @@ def _compare_stpm(profile, fields):
     return missing, mismatched
 
 
+def _stpm_exam_year(fields) -> str:
+    """The STPM sitting year off a read: the exact read's ``exam_year``, else a year in an STPM title."""
+    import re
+    year = str(fields.get('exam_year') or '').strip()
+    if re.fullmatch(r'20\d{2}', year):
+        return year
+    exam = str(fields.get('exam') or '').upper()
+    m = re.search(r'\b(20\d{2})\b', exam) if ('TINGGI PERSEKOLAHAN' in exam or 'STPM' in exam) else None
+    return m.group(1) if m else ''
+
+
 def student_higher_check(doc) -> dict:
     """The facts of ONE higher-results document against the student's own profile — the single
     source the Documents card, the gates and the Academic card read, so none can disagree.
@@ -339,7 +350,14 @@ def student_higher_check(doc) -> dict:
         note, note_kind = 'grades_differ', kind_held
     else:
         note, note_kind = '', ''
+    # The exam YEAR, route-aware (owner 2026-11-01, `exam_years`): only STPM results carry a readable
+    # year (the exact read's `exam_year`, else the year in "SIJIL TINGGI PERSEKOLAHAN MALAYSIA 2025");
+    # a matriculation, asasi or diploma transcript stores none, so it stays uncoloured.
+    exam_year = _stpm_exam_year(f) if (detected or kind_held) == 'stpm' else ''
+    from .exam_years import year_status
     return {
+        'exam_year': exam_year,
+        'exam_year_status': year_status(getattr(doc, 'application', None), 'stpm', exam_year),
         'name': _slip_name_status(doc), 'candidate_name': f.get('candidate_name') or '',
         'exam': (f.get('exam') or '').strip(), 'kind_held': kind_held, 'kind_detected': detected,
         'kind_status': kind_status, 'cgpa_slip': slip_cgpa, 'cgpa_entered': entered,

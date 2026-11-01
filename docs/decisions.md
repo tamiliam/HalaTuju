@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## Exam-year colours follow the route the student holds (owner, 2026-11-01)
+
+**Decision.** The cockpit colours an exam year green when it is the year this route expects for the cohort year C,
+amber otherwise; the route is the results the student holds (`results_route.held`). ONE server rule,
+`exam_years.expected_years`, serves every year chip:
+
+| Route (results held) | Green — anything else amber |
+|---|---|
+| none / SPM only (straight from SPM) | SPM C−1 |
+| STPM | STPM C−1; SPM C−3 |
+| Matriculation | Matriculation C; SPM C−2 |
+| Asasi (as matriculation) | Asasi C; SPM C−2 |
+| Diploma (polytechnic / diploma) | Diploma C−1 or C; SPM C−4 |
+
+For C = 2026: SPM 2025; STPM 2025 + SPM 2023; Matriculation 2026 + SPM 2024; Asasi 2026 + SPM 2024; Diploma 2025 or
+2026 + SPM 2022. An unknown route keeps the old SPM C−1 rule. A kind with no readable year (matriculation, asasi,
+diploma transcripts today) gets no colour. The offer letter's intake rule (intake = C) is unchanged.
+
+**Why.** A student who did STPM sat SPM three years before her cohort; amber on her correct slip was noise the
+officer learned to ignore. Display only: no verdict, query or money reader consumes the status.
+
+**Revisit if:** a transcript starts carrying a readable year (colour it by the same table), or a route's timing changes.
+
 ## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
 
 **Context:** 7a made mentors their own login and refused any address that already had an admin sign-in

@@ -218,7 +218,7 @@ export interface AcademicCheck {
   candidate_name: string
   exam: string
   exam_year: string
-  exam_year_status?: '' | 'current' | 'off'   // vs cohort year−1: current→green, off→amber
+  exam_year_status?: '' | 'current' | 'off'   // route-aware (`exam_years`, 2026-11-01): current→green, off→amber
   missing: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
   uncertain: { subject: string; typed: string; slip: string; band: string }[]
@@ -252,6 +252,10 @@ export interface HigherCheck {
   note_path: string
   /** The note's actions (move it / SPM only) — open only before the Step-4 Submit (review fix 1+2). */
   actions_open?: boolean
+  /** The STPM sitting year ('' for a transcript that prints none) and its route-aware currency
+   *  (`exam_years`, owner 2026-11-01): 'current' → green, 'off' → amber, '' → no colour. */
+  exam_year?: string
+  exam_year_status?: '' | 'current' | 'off'
 }
 
 export interface SemesterCheck {

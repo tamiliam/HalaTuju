@@ -4949,6 +4949,7 @@
         "view": "பார்க்கவும்",
         "rerun": "மீண்டும் இயக்கு",
         "examYear": "SPM {year}",
+        "stpmExamYear": "STPM {year}",
         "intakeYear": "சேர்க்கை {year}",
         "sgdConverted": "S${sgd}, {rate} என்ற விகிதத்தில் RM {myr} ஆக மாற்றப்பட்டது",
         "viewer": {

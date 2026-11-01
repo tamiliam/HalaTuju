@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Route-aware exam-year colours in the cockpit (2026-11-01)
+
+Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not deployed; no migration.
+
+- New `apps/scholarship/exam_years.py`: ONE function for the expected exam year(s) per document kind, by the route
+  the student holds (`results_route.held`). The SPM slip check (`academic_engine.student_slip_check`) and the
+  higher-results check (`higher_results.student_higher_check`, new `exam_year` / `exam_year_status`) both read it.
+  An unknown route keeps the old SPM C−1 rule.
+- Only STPM results carry a readable year (the exact read's `exam_year`, else the year in "SIJIL TINGGI
+  PERSEKOLAHAN MALAYSIA 2025"); matriculation, asasi and diploma transcripts store none, so they stay uncoloured.
+- Web: the Documents drawer shows a coloured "STPM {year}" chip on a higher-results document, read from the served
+  status, as it does "SPM {year}" (new string `admin.scholarship.docsDrawer.stpmExamYear` in en / ms / ta — the
+  Malay and Tamil are the same "STPM {year}", for Sol).
+- Nothing that decides, queries or pays reads `exam_year_status` (the Check-2 "exam year unknown" ask reads
+  `exam_year` only).
+- Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
+
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 
 - **The bug:** the apply form stashes the WHOLE form (IC, household income, parent name and phone, the typed
