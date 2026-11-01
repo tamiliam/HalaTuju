@@ -162,7 +162,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `253  halatuju_api/apps/courses/views.py:126 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `215  halatuju_api/apps/scholarship/verdict_engine.py:499 _verdict_income`
-- `190  halatuju_api/apps/scholarship/services/offer_sync.py:183 autofill_pathway_from_offer`
+- `190  halatuju_api/apps/scholarship/services/offer_sync.py:184 autofill_pathway_from_offer`
 - `186  halatuju_api/apps/scholarship/resolution.py:282 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `165  halatuju_api/apps/courses/views.py:1017 get`
@@ -242,6 +242,13 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-01 (9969c1f, offer date rule + offer link close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs.** The window since f908d5b holds Maintenance 7b, Mobile M1, the My activity fixes and
+this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
+the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
+offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
 
 ### 2026-11-01 (49ec378, Mobile-native M1 close) — 0 FAIL
 

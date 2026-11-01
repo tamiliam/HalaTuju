@@ -14,9 +14,14 @@ All notable changes to this project will be documented in this file.
 - Tests: `Sheet.test.tsx` (pixel cap, no `dvh`), `InfoTip.test.tsx` (a tap on the bubble), `mobileStandard.test.ts`
   (the rule's media query). Bite-checked: reverting each fix turns its test red. Minor findings left: TD-450.
 
-## Offer realignment: the date rule, and one campus test (#168's false Institution tick) (2026-11-01)
+## Offer realignment: the date rule, and one campus test (#168's false Institution tick) (2026-11-01) — LIVE 2026-11-01 (main 9969c1f3; api-01225-fxd)
 
-Owner rulings 2026-11-01 (decisions.md). Not deployed; no migration; no MODEL_VERSION bump.
+Owner rulings 2026-11-01 (decisions.md). No migration; no MODEL_VERSION bump. **Applied on live 2026-11-01 (owner
+yes):** `realign_bumi_offers --apply` realigned 27 old picks (#154, 168, 184, 188, 189, 199, 204, 207, 217, 242, 247,
+258, 264, 266, 277, 282, 312, 317, 342, 344, 345, 359, 360, 370, 374, 381, 423), then `link_offer_courses --apply`
+linked 9 (#158, 159, 243, 262, 284, 340, 347, 397, 434). Skipped as may_have_repicked: #202, #262, #284, #434 (the
+last three still linked: their labels already were their letter). Two adversarial review rounds after round 2
+(rounds 3–5).
 
 - **The date rule.** `services/offer_sync.PICKER_COMPLETE_AT` = 2026-10-31 05:10:21 UTC (13:10:21 MYT): the
   deploy of 1f91f495, the first build carrying fadedfc1 (MARA under MARA), Cloud Build 92af6beb (api) finished
@@ -56,7 +61,8 @@ Owner rulings 2026-11-01 (decisions.md). Not deployed; no migration; no MODEL_VE
 
 ## Offer link: an offer-sourced, labels-only pick is linked to its catalogue course (2026-11-01)
 
-Owner, 2026-11-01 (#243). Not deployed; no migration; no MODEL_VERSION bump (no reading change).
+Owner, 2026-11-01 (#243). LIVE 2026-11-01 (main 9969c1f3; api-01225-fxd); applied — see the entry above. No
+migration; no MODEL_VERSION bump (no reading change).
 
 - New `services/offer_link.py`: `pinned_course` (the letter names ONE catalogue course at ONE campus, at the
   letter's own level) and `plan_offer_link` / `link_offer_course`. A pick whose `source` is `offer_letter_auto`

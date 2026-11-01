@@ -1149,7 +1149,17 @@ RLS + service_role policies + ledger row + rollback in its docstring, then the S
 and closing a file end open assignments. **Next free migration numbers: scholarship 0197, courses 0091.**
 NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings.
 
-### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT LIVE (main f908d5ba; api-01223-8xk; no migration)
+### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT + DATE RULE + OFFER LINK LIVE (main 9969c1f3; api-01225-fxd; no migration)
+
+**Follow-up live 2026-11-01:** owner DATE rule — a pick on an application submitted before
+`services/offer_sync.PICKER_COMPLETE_AT` (2026-10-31 13:10:21 MYT, the complete picker) whose profile was not saved
+since is not a real selection; the student's own genuine offer replaces it (any course). `link_offer_courses` links
+an offer-sourced labels-only pick to its catalogue course (`services/offer_link.py`, source kept). Campus naming is
+ONE shared test, `offer_course_match.CampusReader` (own name / unique acronym / `_ALIASES`; else own words with a
+non-place, non-`_TYPE_WORDS` word; a line naming another institution outright never names the campus); the level
+check is exact (`letter_level` vs `course_level`). Both commands applied on live (27 realigned, 9 linked). Open:
+TD-451, TD-452. Retro: `docs/retrospectives/retrospective-2026-11-01-offer-date-rule-and-link.md`.
+
 
 The offer → course matcher is `apps/scholarship/offer_course_match.py` (`match_offer_course`, `letter_place`,
 `is_bumiputera_only`); `offer_pathway.resolve_catalogue_course` is a thin caller with an optional `issuer`. It reads

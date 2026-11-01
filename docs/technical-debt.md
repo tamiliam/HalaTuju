@@ -7263,3 +7263,20 @@ renamed target silently stops being checked). (5) **Guards:** rule 10 reads only
 `autoComplete="tel"`; the overlay exemption is per file, not one overlay per file; the 16 px guard reads the
 rule's text, not that its selector is valid. (6) The 16 px rule's `:is()` drops on Safari < 14 / Chrome < 88.
 **Trigger:** the first stacked overlay, M6 (admin shell), or the next mobile-check change. *(B · S)*
+
+### [TD-451] A short campus line can name a campus of another institution type - low
+
+**Raised 2026-11-01 by the offer date-rule review (round 4), pre-existing.** Word matching either way round lets a
+short form cross institution types: "KK BAGAN DATUK" names Politeknik Bagan Datuk, "KK BETONG" names Politeknik
+METrO Betong, "KK TASEK GELUGOR" names Politeknik METrO Tasek Gelugor, "POLY SULTAN ABDUL HALIM MUADZAM SHAH" names
+Politeknik Muadzam Shah. Full names are safe (the "names another institution outright" rule blocks them). **Fix:**
+treat a leading type prefix ("KK", "POLY", "POLITEKNIK", "KOLEJ KOMUNITI") as a filter on the campus type in
+`offer_course_match.CampusReader`, with tests for the four lines. *(B · S)*
+
+### [TD-452] The town-word list decides whether a short campus form counts - low
+
+**Raised 2026-11-01 by the offer date-rule review (round 4).** `offer_course_match._TOWN_WORDS` is hand-written, so
+"KK KLANG" names nothing while "KK AMPANG" and "KK SELAYANG" still match, and the METrO short forms ("METRO
+KUANTAN") name nothing once "metro" is a type word. Every such miss is safe (no tick, no fill, nothing pinned) but
+inconsistent. **Fix:** derive the town words from the catalogue (institution towns/states) or add an alias per
+campus that letters name only by town; test each campus's short form. *(B · S)*

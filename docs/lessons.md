@@ -1789,3 +1789,9 @@ is prefetched — weight moved off a route's first load can still travel in the 
   plausible row. **Rule:** when a matcher reads a bigger table, name the institution in tiers (exact name or a
   unique acronym first; words only when the INSTITUTION's words sit inside the line), and have the reviewer seed
   trap rows next to every live string. (Offer realignment, 2026-11-01)
+- **Judge whether a line names a place against THAT place, never against the whole table.** A first fix for
+  #168 required "a word no other institution has", computed over all 1,076 institution rows (about 800 schools): it
+  lost true matches ("UNIVERSITI TUN HUSSEIN ONN", a university's former name) and one unrelated new school row
+  flipped a polytechnic's tick. **Rule:** a membership test reads the candidate's own name, its unique acronym and
+  an explicit alias list, plus a STABLE exclusion (the line names another institution outright); anything that
+  depends on the count of unrelated rows is a test that changes when the catalogue does. (Offer date rule, 2026-11-01)

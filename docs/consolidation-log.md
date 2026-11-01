@@ -62,6 +62,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-10-31 Common profile Sprints S3-S5 (My activity: staff_activity + writer, reader, back-fill, the card; adversarial review round; migration scholarship 0195) — b269a631 d3e472c7 151de0f2 de573eb1 54e6cf3d 51bf847d
 - 2026-11-01 Common profile follow-up sprint (TD-439 owner ruling: phone written by admin/me only; TD-445, TD-446; no migration) — 83571471
 - 2026-11-01 Offer realignment (degree catalogue in the matcher, issuer for a hostel line, Bumi-only offers realign the pick; two adversarial review rounds; no migration; realign_bumi_offers --apply on live) — a8c763f8 333e7a96 1d849065
+- 2026-11-01 Offer date rule + offer link + one campus test (#243 link, owner date rule, #168 false tick; review rounds 3–5; no migration; both commands --apply on live) — 3aa80e5a 170db26f bc440b88 9969c1f3
 
 ## Reviews
 
