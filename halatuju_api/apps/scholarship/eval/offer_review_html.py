@@ -47,6 +47,9 @@ input[type=text], textarea { width:100%; font:inherit; padding:6px 8px; border:1
 #save { font:inherit; font-size:24px; font-weight:bold; padding:16px 40px; color:#fff;
         background:var(--accent); border:0; cursor:pointer; }
 #saved { font-size:20px; }
+.readonly { border:1px dashed var(--line); margin:0 0 12px; padding:8px 12px; background:var(--soft); }
+.ro-label { font-weight:bold; margin:0; }
+.card-end { height:1px; }
 '''
 
 _JS = r'''
@@ -75,7 +78,7 @@ _JS = r'''
           correction: line.querySelector(".correction").value
         };
       });
-      var noteBox = card.querySelector(".note-box");   /* a page may have no note box */
+      var noteBox = card.querySelector(".note-box");   /* the S2 page has no note box */
       out[card.getAttribute("data-key")] = {fields: fields,
                                             note: noteBox ? noteBox.value : "",
                                             looked_at: !!seen[card.getAttribute("data-key")]};
