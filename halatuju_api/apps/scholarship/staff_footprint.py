@@ -27,8 +27,8 @@ def footprint(admin):
     """`{what: count}` of everything this staff account has done, empty keys omitted.
 
     Two kinds of trace, and both count:
-      * FOREIGN KEYS — assignments, interview slots, org requests. Deleting would cascade or be
-        refused outright.
+      * FOREIGN KEYS — assignments, interview slots, org requests, and (S7d) the scholars they mentored.
+        Deleting would cascade or be refused outright.
       * EMAIL STRINGS — payment runs (made, and each of the three signatures), verdicts, vetting,
         verify-and-accept. Deleting breaks
         nothing and erases nobody, which is exactly what makes them dangerous: the row keeps an
@@ -45,6 +45,12 @@ def footprint(admin):
         'requests_raised': OrgRequest.objects.filter(submitted_by=admin).count(),
         'request_files': OrgRequestAttachment.objects.filter(uploaded_by=admin).count(),
     }
+    if getattr(admin, 'mentor_id', None):
+        # S7d (lead ruling 2026-11-01): a staff member who has MENTORED anybody has done work. Their
+        # name lives on this login and every scholar's mentoring history reads it, so they are revoked,
+        # never deleted. A mentor record that never had a scholar is no footprint.
+        from .models import MentorAssignment
+        counts['scholars_mentored'] = MentorAssignment.objects.filter(mentor_id=admin.mentor_id).count()
     if email:
         # By recorded email. These survive a delete and stop naming anybody — the quiet damage.
         counts.update({

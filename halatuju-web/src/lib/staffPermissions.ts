@@ -49,12 +49,17 @@ export const TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer'] as const
  * `permissions` (an old payload, or a caller that passes none) — is answered by the row's `roles`,
  * exactly as before. So a missing field never invents a block, and for every preset the two
  * answers are the same (the rows' `perms` are the keys those roles' presets hold).
+ *
+ * S7d (2026-11-01): a row marked `staffMentors` also admits a STAFF member who mentors now
+ * (`mentoring`, the served `/admin/role/` `mentoring`) — My students joins their own menu.
  */
 export function admitsRow(
-  row: { roles: readonly string[]; perms?: readonly StaffPermission[] },
+  row: { roles: readonly string[]; perms?: readonly StaffPermission[]; staffMentors?: boolean },
   role: string,
   permissions?: readonly string[] | null,
+  mentoring?: boolean,
 ): boolean {
+  if (row.staffMentors && mentoring === true) return true
   if (row.perms && permissions && (TEAM_ROLES as readonly string[]).includes(role)) {
     return row.perms.some((k) => permissions.includes(k))
   }

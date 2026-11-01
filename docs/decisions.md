@@ -1,5 +1,62 @@
 # Architectural Decisions — HalaTuju
 
+## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
+
+**Context:** 7a made mentors their own login and refused any address that already had an admin sign-in
+(`already_staff`) — so an organisation admin or a reviewer who also mentors had no way to. **This SUPERSEDES the
+part of 7a's "one email, one admin sign-in" entry that said a staff address is refused as a mentor**: a staff
+member is now ADDED as a mentor, never invited (the mentor invite still refuses a staff address).
+
+**Decision:** (1) **Who:** an ACTIVE staff member of the organisation in role `org_admin`, `admin`, `reviewer` or
+`qc` (`PartnerAdmin.STAFF_MENTOR_ROLES`) may also be a mentor on the SAME login. Never finance, a super, a
+partner, a source user; a pure `mentor` login already is one. (2) **Added from the Mentors page** ("Add a staff
+member as mentor", the shared Sheet with a search box over the eligible staff not yet mentors — name, email,
+role chip) by a super or the organisation admin (7a's `may_invite`), org-fenced (`admin/mentors/staff/`). **No
+email.** Adding makes a `scholarship.Mentor` for the staff member's organisation and links `PartnerAdmin.mentor`.
+They keep role, permissions and every page; they gain My students (the 7c desk) and the profile's mentoring
+bits, and are assigned, log meetings and raise concerns exactly like any mentor. "Staff mentor" is DERIVED
+(`role != mentor` and a mentor record) — no new column. (3) **"Mentors now" is ONE predicate,
+`PartnerAdmin.mentors_now`**: a mentor record not deactivated, an eligible role, an active login — read by the
+desk (`mentor_desk.mentor_of`), the profile rule, `admin/role/` `mentoring` and (belt and braces) the assign
+refusal and the picker. (4) **Mentors list:** "Staff · <role>"; **Stop mentoring** ends every open assignment with
+a NEW reason, **"Mentor stopped mentoring"** (cause `mentor_stopped`, en/ms/ta activity words) — not 7a's "Mentor
+deactivated", because the person was not switched off — stamps the mentor deactivated and NEVER touches the
+staff login (no `is_active`, no password, no invitation). Under Inactive, **Mentor again** (no email; no
+assignment comes back; refused for a revoked login or a role that may not mentor). 7a's Deactivate /
+Reactivate / Resend / Revoke / name-email edit refuse a staff mentor (`staff_mentor`), and 7a's `_switch_off`
+refuses one at its own door. (5) **Doors out**, each ending the open assignments with no email and a line on
+each file: Stop mentoring; People → Revoke; a staff invitation's Cancel (it switches the account off); People →
+Delete; Admin → Finance (the dry run's `stops_mentoring` says so before the click). Reviewer ↔ QC and a pause
+keep it. A Restore or a role change back does NOT bring mentoring back — Mentor again does, by hand.
+(6) **Profile:** `works_with_students` = reviews cases OR mentors now (server `staff_contact.py`, web
+`profileCards.worksWithStudents`, one rule each side): the Mentoring card (area, required), qualifications /
+languages / address, the phone required; Your access reads "<Role> · Mentor"; a blue note until the area is
+filled; "Your students see your About" under About. **`share_phone_with_students` starts OFF** for a staff member
+who mentors (they gave the number for staff use): an existing profile is set off at Add unless they hold
+`review` (whose switch they were shown and set); a new profile row starts off; a pure mentor keeps 7a's ON.
+(7) **Navigation:** a staff member who mentors now gets a Mentoring group with My students (`staffMentors` on the
+row); their landing does not change; a stopped staff mentor loses it. (8) Everything the student sees is 7b's
+allowlist, unchanged; the self-mentor rule applies to staff mentors too.
+
+**Lead data rulings (2026-11-01, asked at build time):** (A) **Admin → Finance keeps the link and deactivates the
+mentor** rather than unlinking: a mentor's name lives only on the login, and every scholar's mentoring history
+and the Mentors list read it — an unlinked mentor would show a blank name everywhere. So courses 0091's CHECK
+allows `finance` in the link set (role `mentor` ⇒ `mentor_id`; `mentor_id` ⇒ mentor / org_admin / admin /
+reviewer / qc / finance, never a super), and "a finance row is never an ACTIVE mentor" is held in code: Add and
+Mentor again refuse it, the switch deactivates in the same write, and every reader asks `mentors_now` (which is
+false for finance even if the mentor record were active — tested). (B) **Mentoring is recorded work**
+(`staff_footprint` `scholars_mentored`, any assignment of their mentor): a staff member who has mentored anybody
+is revoke-only, never deleted — the existing "work done means revoke" doctrine. One who never had a scholar may
+be deleted; the delete stamps their mentor deactivated first, and a mentor record left with no login is not
+listed on the Mentors page.
+
+**Alternatives considered:** a `Mentor.is_staff` flag (rejected: derived from the role, one fact); unlinking on
+Admin → Finance (rejected, ruling A); refusing the role change while they mentor (rejected: the owner named the
+switch as a way out); reusing "Mentor deactivated" as the reason (rejected: the staff member was not deactivated).
+
+**Revisit if:** a finance admin should mentor, a staff member needs two mentor records, or a stopped staff
+mentor's scholars should be handed to someone automatically.
+
 ## Mobile M3: search filters in a sheet; course pages reorder on a phone and save from a sticky bar; compare on phones is layout B (2026-11-01)
 
 **Owner (2026-11-01):** the Stitch filter sheet, course page and compare are APPROVED — build only data we hold,

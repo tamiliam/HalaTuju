@@ -8,7 +8,8 @@ The HTTP shapes are `views_admin/mentor_students.py`; the meeting validation and
   caller's own (`PartnerAdmin.mentor`), on an application of the MENTOR'S OWN organisation that is in
   maintenance, and NEVER the mentor's own application (`mentoring.is_the_student`, read at every read
   — treated as no access). A deactivated mentor reads nothing (their login is off too, so `get_admin`
-  already refuses them). When mentoring ends, the student leaves the list and every per-student door
+  already refuses them). S7d: a STAFF member who also mentors uses this same desk (`mentor_of`); once
+  they stop mentoring (their mentor record deactivated, their staff login untouched) they read nothing. When mentoring ends, the student leaves the list and every per-student door
   answers 404 — ONE answer for another mentor's student, an ended assignment, another organisation's
   file and an id that does not exist.
 - WHAT THE MENTOR SEES (`student_payload`) IS AN ALLOWLIST: the student's name; programme and
@@ -39,11 +40,12 @@ from .results_review import latest_accepted
 
 
 def mentor_of(login):
-    """The caller's own `Mentor`, or None (not a mentor login, or deactivated)."""
-    if login is None or not login.is_mentor or login.mentor_id is None:
+    """The caller's own `Mentor`, or None: not a mentor, or not mentoring now. S7d: a STAFF member with
+    an active mentor record is one too (`PartnerAdmin.mentors_now` — never a finance row, a revoked
+    login or a stopped mentor), and keeps every staff page of their role besides."""
+    if login is None or not login.mentors_now:
         return None
-    mentor = login.mentor
-    return mentor if mentor.deactivated_at is None else None
+    return login.mentor
 
 
 def current_assignments(login):

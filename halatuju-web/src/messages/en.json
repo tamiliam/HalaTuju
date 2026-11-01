@@ -5130,7 +5130,8 @@
         "partner": "See the students your organisation referred.",
         "source_partner": "Follow the students who named you when they applied, and witness their agreements.",
         "profileOnly": "Keep your own profile up to date.",
-        "mentor": "Keep your profile up to date. Staff assign students to you and record your meetings."
+        "mentor": "Keep your profile up to date. Staff assign students to you and record your meetings.",
+        "staffMentor": "Mentor the scholars assigned to you: see them on My students and log your meetings."
       },
       "qualifications": "Qualifications and languages",
       "noOrganisation": "No organisation is linked to your account.",
@@ -6490,7 +6491,8 @@
           "mentor_deactivated": "Mentoring with {mentor} ended: the mentor was deactivated",
           "file_closed": "Mentoring with {mentor} ended: the file was closed",
           "mentor_is_student": "Mentoring with {mentor} ended: the mentor is the student",
-          "award_reverted": "Mentoring with {mentor} ended: the award was reverted"
+          "award_reverted": "Mentoring with {mentor} ended: the award was reverted",
+          "mentor_stopped": "Mentoring with {mentor} ended: the mentor stopped mentoring"
         },
         "session_logged": "Mentoring meeting logged: {mode}, {minutes} min",
         "session_logged_no_minutes": "Mentoring meeting logged: {mode}",
@@ -8433,7 +8435,7 @@
     "mentors": {
       "nav": "Mentors",
       "title": "Mentors",
-      "intro": "The mentors who have signed in. Invite a mentor from Invitations; each mentor fills in their own profile.",
+      "intro": "The people who mentor your scholars — invited mentors who have signed in, and staff who also mentor. Invite a mentor from Invitations; each mentor fills in their own profile.",
       "inviteOpen": "Invite a mentor",
       "invite": {
         "name": "Name",
@@ -8452,7 +8454,12 @@
         "not_active": "This mentor is already inactive.",
         "active": "This mentor is already active.",
         "generic": "That did not work. Try again.",
-        "not_arrived": "This mentor never signed in. Invite them again from Invitations → Mentor."
+        "not_arrived": "This mentor never signed in. Invite them again from Invitations → Mentor.",
+        "not_eligible": "This staff member cannot mentor (finance, revoked, or not a staff role).",
+        "already_mentor": "This staff member is already a mentor. If they stopped, use Mentor again.",
+        "staff_mentor": "This mentor is a staff member: use Stop mentoring or Mentor again.",
+        "not_staff": "Only a staff member's mentoring can be stopped this way.",
+        "not_found": "That staff member was not found."
       },
       "status": {
         "active": "Active",
@@ -8474,18 +8481,24 @@
         "deactivate": "Deactivate",
         "reactivate": "Reactivate",
         "resend": "Resend",
-        "revoke": "Revoke"
+        "revoke": "Revoke",
+        "stop": "Stop mentoring",
+        "resume": "Mentor again"
       },
       "confirm": {
         "deactivate": "Deactivate {name}? They can no longer sign in. You can reactivate them later.",
-        "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later."
+        "revoke": "Withdraw {name}'s invitation? The sign-in details in the email stop working. You can reactivate them later.",
+        "stop": "Stop {name} mentoring? Their scholars are left without a mentor, and it shows on each file. Their staff sign-in is not touched."
       },
       "done": {
         "resend": "Invitation re-sent to {email}.",
         "revoke": "{name}'s invitation is withdrawn.",
         "deactivate": "{name} can no longer sign in.",
         "reactivate": "{name} can sign in again.",
-        "notEmailed": "The email could not be sent. Try Resend."
+        "notEmailed": "The email could not be sent. Try Resend.",
+        "stop": "{name} no longer mentors. Their staff sign-in is unchanged.",
+        "resume": "{name} mentors again. Assign them to scholars on each file.",
+        "added": "{name} is now a mentor too. No email was sent — tell them yourself."
       },
       "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. This page lists the mentors who have signed in; mentors waiting to accept are on Invitations → Mentor, and one switched off before signing in comes back by inviting the same address there again. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
       "empty": "No mentors in this list.",
@@ -8498,7 +8511,10 @@
         "whoSees": "Your students see your languages. Your qualifications are seen by staff only.",
         "showToStudents": "Show my phone to my students",
         "welcome": "Welcome. Please fill in your profile. Your students see your name, area, languages, About and email, and your phone only if you switch it on.",
-        "phoneRequired": "A mentor needs a phone number. Type yours."
+        "phoneRequired": "A mentor needs a phone number. Type yours.",
+        "staffWelcome": "You now also mentor scholars. Please fill in your area of mentoring and check what your students will see: your name, area, languages, About and email — and your phone only if you switch it on below.",
+        "aboutSeen": "Your students see your About. Written for colleagues? Check it reads well for a student.",
+        "accessMentor": "{role} · Mentor"
       },
       "tabsAria": "Mentors sections",
       "tab": {
@@ -8508,7 +8524,21 @@
       "waiting": "{count} waiting to accept —",
       "seeInvitations": "see Invitations",
       "emptyNone": "No mentors yet. Invite one with \"Invite a mentor\".",
-      "emptyNoneRead": "No mentors yet."
+      "emptyNoneRead": "No mentors yet.",
+      "addStaff": "Add a staff member as mentor",
+      "staffSheet": {
+        "title": "Add a staff member as mentor",
+        "intro": "They keep their role and everything they can do now. They gain \"My students\" and a Mentoring card on their profile. No email is sent — tell them yourself.",
+        "search": "Find a staff member",
+        "shown": "Shown: organisation admins, admins, reviewers and QC of this organisation who are not mentors yet. Finance and super admins cannot mentor.",
+        "none": "No staff member to add.",
+        "noMatch": "Nobody matches that.",
+        "add": "Add {name} as mentor",
+        "choose": "Add as mentor",
+        "loadError": "We could not load the staff list."
+      },
+      "staffTag": "Staff · {role}",
+      "staffNote": "\"Stop mentoring\" ends a staff member's mentoring (their scholars are left without a mentor, and it shows on each file); their staff sign-in is not touched. If a staff member's account is revoked, their mentoring ends too. A staff mentor appears under Inactive after Stop mentoring, with \"Mentor again\"."
     },
     "myStudents": {
       "title": "My students",
@@ -8553,7 +8583,8 @@
         "worried": "Tell the team I am worried about this student (they get a flag on the file)",
         "noEdit": "A saved meeting cannot be edited."
       }
-    }
+    },
+    "stopsMentoring": "Their mentoring ends: their scholars are left without a mentor."
   },
   "documentsTab": {
     "higher": {

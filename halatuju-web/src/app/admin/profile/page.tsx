@@ -10,7 +10,7 @@ import {
   type AdminMe, type AdminMeCard, type ReviewerProfile, type SourceProfile,
 } from '@/lib/admin-api'
 import { blankReviewer, missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
-import { SIDE_CARDS, cardsFor, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
+import { SIDE_CARDS, cardsFor, mentorsNow, profileContext, reviewsCases, worksWithStudents, type ProfileCardId } from '@/lib/profileCards'
 import { refusalKey } from '@/lib/sourceConsole'
 import { useT } from '@/lib/i18n'
 import { lazySource } from '@/components/source/LazySource'
@@ -90,7 +90,9 @@ export default function AdminProfilePage() {
   // S7a: a mentor fills in the reviewer cards too (qualifications, languages, address) and may show
   // the phone to students — `worksWithStudents`; the pause and the onboarding hold stay `reviews`.
   const withStudents = worksWithStudents(ctx)
-  const isMentor = ctx.role === 'mentor'
+  // S7d: a STAFF member who also mentors now fills in the same mentoring bits (`mentorsNow`).
+  const isMentor = mentorsNow(ctx)
+  const staffMentor = isMentor && ctx.role !== 'mentor'
   const isReviewerRole = ctx.role === 'reviewer'
 
   const [me, setMe] = useState<AdminMe | null>(null)
@@ -259,7 +261,7 @@ export default function AdminProfilePage() {
   const state: ProfileState = {
     t, token, me, role: ctx.role, isSuper: ctx.isSuper, permissions: ctx.permissions ?? [], email,
     draft, saved, set, setRev, setCard, report, orgName, providers, reviews, withStudents, photoUrl,
-    onPhoto,
+    onPhoto, mentoring: isMentor, staffMentor,
   }
 
   const main = cards.filter((id) => !SIDE_CARDS.has(id))
@@ -297,7 +299,9 @@ export default function AdminProfilePage() {
           {/* S7a: a mentor who has not yet named an area is welcomed, never held (the MentorProfile board). */}
           {isMentor && !saved.mentoringArea && (
             <div className="rounded-lg p-4 border bg-info-50 border-info-200" data-testid="mentor-welcome">
-              <p className="text-sm text-info-900">{t('admin.mentors.profile.welcome')}</p>
+              <p className="text-sm text-info-900">
+                {t(staffMentor ? 'admin.mentors.profile.staffWelcome' : 'admin.mentors.profile.welcome')}
+              </p>
             </div>
           )}
 

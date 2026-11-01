@@ -53,9 +53,11 @@ export type {
 } from './admin-api/profiles'
 
 // Organisation → Mentors (student maintenance S7a).
-export { getMentors, inviteMentor, mentorAction } from './admin-api/mentors'
+export {
+  addStaffMentor, getMentors, getStaffMentorCandidates, inviteMentor, mentorAction,   // + S7d
+} from './admin-api/mentors'
 export type {
-  MentorAction, MentorFluency, MentorRow, MentorStatus, MentorsPayload,
+  MentorAction, MentorFluency, MentorRow, MentorStatus, MentorsPayload, StaffCandidate,
 } from './admin-api/mentors'
 
 // A scholar's Mentoring tab (student maintenance S7b).

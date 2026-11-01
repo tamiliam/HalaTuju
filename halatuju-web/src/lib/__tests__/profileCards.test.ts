@@ -70,12 +70,45 @@ describe('the reviewer cards follow the `review` PERMISSION, not the Reviewer ro
     // Whatever the payload says, and whatever role column a legacy super row carries.
     expect(cardsFor({ role: 'super', permissions: ['review'], isSuper: true })).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
     const legacy = profileContext({ role: 'reviewer', is_super_admin: true, permissions: ['review'] })
-    expect(legacy).toEqual({ role: 'super', permissions: ['review'], isSuper: true })
+    expect(legacy).toEqual({ role: 'super', permissions: ['review'], isSuper: true, mentoring: false })
     expect(cardsFor(legacy)).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
   })
 
   it('a payload with no permissions shows no reviewer card (never invents one)', () => {
     expect(cardsFor({ role: 'reviewer', permissions: undefined, isSuper: false })).toEqual(['you', 'contact', 'access', 'signin', 'activity'])
+  })
+})
+
+describe('S7d: a staff member who mentors now gains the mentoring bits', () => {
+  const staffMentor = (role: string): ProfileCardContext => ({ ...ctx(role), mentoring: true })
+
+  it('gains Mentoring and the students\u2019 cards; a reviewer (who has the rest) gains only Mentoring', () => {
+    expect(cardsFor(staffMentor('admin'))).toEqual(
+      ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity'])
+    expect(cardsFor(staffMentor('org_admin'))).toEqual(
+      ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity'])
+    expect(cardsFor(staffMentor('reviewer')).filter((c) => c !== 'mentoring')).toEqual(cardsFor(ctx('reviewer')))
+    expect(cardsFor(staffMentor('reviewer'))).toContain('mentoring')
+    // QC's preset holds no `review`, so a QC who mentors gains the students' cards too — never the pause.
+    expect(cardsFor(staffMentor('qc'))).toEqual(
+      ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity'])
+    for (const role of ['admin', 'org_admin', 'reviewer', 'qc']) {
+      expect(worksWithStudents(staffMentor(role))).toBe(true)
+    }
+    // Stopped mentoring: back to the staff rule.
+    expect(cardsFor({ ...ctx('admin'), mentoring: false })).toEqual(cardsFor(ctx('admin')))
+    expect(worksWithStudents({ ...ctx('admin'), mentoring: false })).toBe(false)
+  })
+
+  it('"Mentor" in Your access, and never for a super', () => {
+    expect(accessLines(staffMentor('admin'))).toContain('admin.myProfile.can.staffMentor')
+    expect(accessLines(ctx('admin'))).not.toContain('admin.myProfile.can.staffMentor')
+    expect(accessLines(ctx('mentor'))).toEqual(['admin.myProfile.can.mentor'])
+    const sup = profileContext({ role: 'super', is_super_admin: true, permissions: PRESET.super, mentoring: true })
+    expect(sup.mentoring).toBe(false)
+    expect(cardsFor(sup)).not.toContain('mentoring')
+    expect(profileContext({ role: 'admin', permissions: PRESET.admin, mentoring: true }).mentoring).toBe(true)
+    expect(profileContext({ role: 'admin', permissions: PRESET.admin }).mentoring).toBe(false)
   })
 })
 

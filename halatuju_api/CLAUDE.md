@@ -1146,9 +1146,23 @@ rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare
 in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
 apply-form draft storage (rec. tab-only sessionStorage).
 
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7d BUILT, NOT LIVE (branch `maint-s7`) — staff can also be mentors
+
+**Next free migration numbers: courses 0092, scholarship 0199** (7d adds NO scholarship migration). **courses
+0091_partneradmin_staff_mentor — MIGRATE FIRST by hand** (drop + add the relaxed CHECK
+`partner_admin_mentor_iff_mentor`: role `mentor` ⇒ `mentor_id`; `mentor_id` ⇒ mentor / org_admin / admin / reviewer
+/ qc / finance, never a super; DDL, pre-check, ledger row and rollback in its docstring), then API, then web. Rules:
+`apps/scholarship/staff_mentor.py` (add, Stop mentoring, Mentor again, `leave` — called by People → Revoke and
+Delete, a staff invitation's Cancel and Admin → Finance); "mentors now" is ONE predicate,
+`PartnerAdmin.mentors_now` (desk `mentor_desk.mentor_of`, `staff_contact.works_with_students`, `admin/role/`
+`mentoring`, the web's `navigation` `staffMentors` row and `profileCards.mentorsNow`). 7a's mentor doors refuse a
+staff mentor (`mentor_invite.is_staff_login`, 400 `staff_mentor`); `_switch_off` is never reached for one. New
+route `admin/mentors/staff/` (GET candidates, POST add; super / org_admin). Mentoring counts as staff WORK
+(`staff_footprint` `scholars_mentored`): a staff member who has mentored is revoke-only.
+
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7c LIVE (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first) — mentors see their students and log meetings
 
-**Next free migration numbers: scholarship 0199, courses 0091.** 0198 = `0198_mentor_logs_meetings` (four
+**Next free migration numbers: scholarship 0199, courses 0091** *(superseded by 7d above — courses 0092)*. 0198 = `0198_mentor_logs_meetings` (four
 additive columns on `mentoring_sessions`, defaults kept in the database): **MIGRATE FIRST by hand** (DDL, pre-check,
 ledger row and rollback in its docstring), then API, then web. A mentor's own door is `apps/scholarship/mentor_desk.py`
 + `views_admin/mentor_students.py` (`admin/mentor/students/`, `<id>/`, `<id>/sessions/` — the only 7c additions to

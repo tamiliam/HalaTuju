@@ -500,7 +500,9 @@ class ReviewerProfileView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.has_perm('review') or (admin.is_mentor and works_with_students(admin))):
+        # S7d: `works_with_students` also admits a staff member who mentors now (an admin with no
+        # `review` fills in the same qualification, language and address cards).
+        if not (admin.has_perm('review') or works_with_students(admin)):
             return None, self._deny_role()
         return admin, None
 
@@ -531,8 +533,9 @@ class ReviewerProfileView(_AdminBase):
             return err
         # TD-439 (owner 2026-10-31): the phone and "share with students" are read-only here (the
         # serializer drops them), so no blank-phone refusal: `admin/me/` is their one writer.
-        if admin.is_mentor and 'paused' in request.data:
-            # S7a: refused BEFORE anything is written — a mentor is never handed cases to pause.
+        if not admin.has_perm('review') and 'paused' in request.data:
+            # S7a: refused BEFORE anything is written — a mentor is never handed cases to pause (S7d:
+            # nor a staff mentor without `review`).
             return Response({'error': 'not_reviewable', 'code': 'not_reviewable'},
                             status=status.HTTP_400_BAD_REQUEST)
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin,

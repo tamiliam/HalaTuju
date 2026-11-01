@@ -324,6 +324,10 @@ class AdminInvitationCancelView(_ReviewersBase):
                     pk=account.pk, first_seen_at__isnull=True).update(is_active=False):
                 transaction.set_rollback(True)
                 return not_open
+            if account is not None and account.is_staff_mentor:
+                # S7d: a switched-off staff member who was also added as a mentor stops mentoring.
+                from .. import staff_mentor
+                staff_mentor.leave(account, by=admin.email or '')
         inv.revoked_at = now
         # ⚠ AND THE PASSWORD IN THE LETTER STOPS WORKING AT SUPABASE TOO (staff lifecycle,
         # 2026-10-09). Switching the account off closed the console, but the emailed temporary

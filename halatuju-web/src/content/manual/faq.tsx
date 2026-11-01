@@ -297,7 +297,11 @@ export const FAQ: Record<Audience, QA[]> = {
         programme, email and phone, what the student asked for help with, and the latest result. They log their
         own meetings there, and can tell the team they are worried. They never see money, documents, family
         details, letters or staff notes. A mentor can never be assigned to their own application, and a
-        deactivated mentor&rsquo;s students lose them at once.</>,
+        deactivated mentor&rsquo;s students lose them at once. A member of staff (an organisation admin,
+        admin, reviewer or QC &mdash; never finance) can also be a mentor on their own sign-in: an organisation
+        admin adds them with <strong>Add a staff member as mentor</strong> on Organisation &rarr; Mentors (no
+        email is sent). <strong>Stop mentoring</strong>, a revoke, or a switch to Finance ends their mentoring;
+        their staff sign-in is never touched.</>,
     },
   ],
   admin: [

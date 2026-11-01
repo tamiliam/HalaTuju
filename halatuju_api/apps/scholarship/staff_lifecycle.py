@@ -22,6 +22,11 @@ the finance-ROLE rule (`payments.credit_check_required`), so the same appointmen
 check. Moving the last one reverses both. The plan names that consequence (`finance_check_on` /
 `finance_check_off`, codes kept for the screen) so it is said BEFORE the click.
 
+⚠ **A SWITCH TO A ROLE THAT MAY NOT MENTOR ENDS MENTORING** (S7d, 2026-11-01): a staff member who also
+mentors and is switched Admin → Finance stops mentoring in the same transaction (`staff_mentor.leave`:
+the mentor stamped deactivated, every open assignment ended, the link kept); the dry run says so first
+(`stops_mentoring`). Reviewer ↔ QC keeps it. Switching back never brings it back (Mentor again does).
+
 ⚠ **A SWITCH RESETS A CUSTOM SET OF PERMISSIONS** (#39 Sprint 4): `change_role` writes `permissions`
 back to NULL, the new role's preset, and the dry run says so first (`permissions_reset`).
 
@@ -134,7 +139,10 @@ def plan_role_change(target, new_role):
     # fallback and the check step are said from the same rule. `consequence` above is now the WALLET
     # CREDIT check only (a finance-ROLE rule), and is worded so.
     from . import staff_permissions_admin
+    from apps.courses.models import PartnerAdmin
     return {'from': old, 'to': new_role, 'consequence': consequence,
+            # S7d: the switch ends this person's mentoring (a role that may not mentor).
+            'stops_mentoring': bool(target.mentors_now and new_role not in PartnerAdmin.STAFF_MENTOR_ROLES),
             'permissions_reset': staff_permissions.is_custom(target),
             'consequences': staff_permissions_admin.consequences(
                 target, staff_permissions.resolve(target), staff_permissions.preset_for(new_role))}
@@ -178,6 +186,9 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
             audience='staff', partner_admin=target)).update(role=new_role)
         for k, v in fields.items():
             setattr(target, k, v)
+        if target.is_staff_mentor and new_role not in PartnerAdmin.STAFF_MENTOR_ROLES:
+            from . import staff_mentor
+            staff_mentor.leave(target, by=getattr(by, 'email', '') or '')
         if plan['permissions_reset']:
             staff_permissions_admin.record(target, before, staff_permissions.resolve(target),
                                            by=by, kind='role_change')

@@ -12,6 +12,7 @@ import {
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
+import StaffMentorSheet from './StaffMentorSheet'
 /** The Emails tab's card — the Invitations page's own `InvitationEmailsCard` (one template, one editor).
  *  ⚠ HANDED IN BY THE ROUTE (`app/admin/organisation/mentors/page.tsx`), never imported here: this
  *  screen is a lazy chunk, and a lazy chunk that needs the shared template editor puts that editor's
@@ -37,6 +38,11 @@ export type EmailsCard = ComponentType<{
  * look alike). Emails (super / org_admin) is the mentor's invitation, the only email a mentor gets.
  * ⚠ STAFF NEVER EDIT A MENTOR'S PROFILE. Area and languages are the mentor's own; blank shows
  * "Not filled in yet". ⚠ A MENTOR IS NEVER DELETED: Deactivate, and Reactivate.
+ * ⚠ S7d (2026-11-01, the MentorsAddStaff board): "Add a staff member as mentor" (super / org_admin) opens
+ * the shared Sheet (`StaffMentorSheet`) — no email. A STAFF mentor's row carries "Staff · <role>" and
+ * its own two actions, Stop mentoring and (under Inactive) Mentor again; their staff sign-in is never
+ * touched here (Deactivate / Reactivate stay the pure mentor's). A staff mentor is listed whether or
+ * not they have signed in — their sign-in is People's.
  */
 
 type T = (k: string, vars?: Record<string, string>) => string
@@ -46,7 +52,8 @@ type Panel = 'mentors' | 'emails' | 'terms'
 const K = 'admin.mentors'
 const STATUSES = ['active', 'inactive'] as const
 type Arrived = typeof STATUSES[number]
-const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived']
+const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived', 'not_eligible', 'staff_mentor',
+  'not_staff']
 const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
 const CHIP_TONE: Record<MentorStatus, string> = {
   active: 'bg-positive-50 text-positive-800',
@@ -87,6 +94,7 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
   const [filter, setFilter] = useState<Arrived>('active')
   const [banner, setBanner] = useState<Banner>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const load = useCallback(async () => {
     if (!token) return
@@ -104,6 +112,7 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
   const act = async (m: MentorRow, action: MentorAction) => {
     if (!token) return
     if (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name }))) return
+    if (action === 'stop' && !window.confirm(t(`${K}.confirm.stop`, { name: m.name }))) return
     setBusyId(m.id); setBanner(null)
     try {
       await mentorAction(m.id, action, { token })
@@ -119,7 +128,8 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
 
   // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor
   // switched off before arriving is not listed here: a re-invite on Invitations brings them back.
-  const arrived = (data?.mentors ?? []).filter((m) => m.signed_in && m.status !== 'invited')
+  // S7d: a staff mentor is listed either way (their sign-in is People's business).
+  const arrived = (data?.mentors ?? []).filter((m) => (m.staff_role || m.signed_in) && m.status !== 'invited')
   const rows = arrived.filter((m) => m.status === filter)
   const counts: Record<Arrived, number> = {
     active: arrived.filter((m) => m.status === 'active').length,
@@ -134,10 +144,16 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
           <p className="text-sm text-ground-600">{t(`${K}.intro`)}</p>
         </div>
         {panel === 'mentors' && mayInvite && (
-          <Link href="/admin/organisation/staff?kind=mentor" data-testid="mentor-invite-link"
-            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
-            {t(`${K}.inviteOpen`)} →
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setAdding(true)} data-testid="staff-mentor-open"
+              className="min-h-11 shrink-0 rounded-lg border border-ground-300 bg-ground-0 px-4 font-medium text-ground-800 hover:bg-ground-50">
+              {t(`${K}.addStaff`)}
+            </button>
+            <Link href="/admin/organisation/staff?kind=mentor" data-testid="mentor-invite-link"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg bg-brand-fill px-4 font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
+              {t(`${K}.inviteOpen`)} →
+            </Link>
+          </div>
         )}
       </div>
 
@@ -148,6 +164,15 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
           // Mentors sign nothing today. Shown disabled so the surfaces look alike (People, Sources).
           { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
         ]} />
+
+      {mayInvite && (
+        <StaffMentorSheet open={adding} token={token} t={t} onClose={() => setAdding(false)}
+          onAdded={(row) => {
+            setAdding(false); setFilter('active')
+            setBanner({ ok: true, text: t(`${K}.done.added`, { name: row.name }) })
+            void load()
+          }} />
+      )}
 
       {/* Mounted only while selected: each reveal re-reads the template. */}
       {panel === 'emails' && mayEditEmails && (
@@ -204,10 +229,20 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
                   <tbody className="divide-y">
                     {rows.map((m) => {
                       const langs = languagesLine(m)
+                      // S7d: a staff mentor's two actions; a mentor login keeps Deactivate / Reactivate.
+                      const action: MentorAction = m.staff_role
+                        ? (m.status === 'active' ? 'stop' : 'resume')
+                        : (m.status === 'active' ? 'deactivate' : 'reactivate')
                       return (
                         <tr key={m.id} data-testid={`mentor-row-${m.id}`}>
                           <td className="px-4 py-3">
                             <span className="font-medium text-ground-900">{m.name}</span>
+                            {m.staff_role && (
+                              <span className="ml-2 rounded-full bg-info-50 px-2 py-0.5 text-xs text-info-800"
+                                data-testid={`mentor-staff-${m.id}`}>
+                                {t(`${K}.staffTag`, { role: t(`admin.role.${m.staff_role}`) })}
+                              </span>
+                            )}
                             <span className="block text-xs text-ground-500">
                               {m.email}{m.phone ? ` · ${m.phone}` : ''}
                             </span>
@@ -221,8 +256,8 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
                           <td className="whitespace-nowrap px-4 py-3">
                             {m.manageable && (
                               <button type="button" className={LINK} disabled={busyId === m.id}
-                                onClick={() => act(m, m.status === 'active' ? 'deactivate' : 'reactivate')}>
-                                {t(`${K}.action.${m.status === 'active' ? 'deactivate' : 'reactivate'}`)}
+                                data-testid={`mentor-action-${m.id}`} onClick={() => act(m, action)}>
+                                {t(`${K}.action.${action}`)}
                               </button>
                             )}
                           </td>
@@ -234,6 +269,7 @@ export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard })
               </TableFrame>
             )}
             <p className="text-xs text-ground-500">{t(`${K}.note`)}</p>
+            <p className="text-xs text-ground-500">{t(`${K}.staffNote`)}</p>
           </>
         )}
       </>)}

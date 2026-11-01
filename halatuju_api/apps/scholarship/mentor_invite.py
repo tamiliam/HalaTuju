@@ -37,6 +37,12 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
 STATUS IS DERIVED (`status_of`), never stored: `inactive` when deactivated; `invited` until the login's
 first sign-in (`has_signed_in`); else `active`.
 
+⚠ S7d (2026-11-01): A STAFF MEMBER MAY ALSO BE A MENTOR (`staff_mentor.py`) — their mentor record's login
+is their STAFF login. NOTHING HERE MAY TOUCH IT: Resend, Revoke, Deactivate, Reactivate and the name /
+email edit refuse a staff mentor (`staff_mentor`, via `is_staff_login`), and `_switch_off` (which switches
+the login off and kills a password) refuses one again at its own door. A staff mentor's status is
+`inactive` (stopped) or `active` — their sign-in is People's business.
+
 ⚠ REVIEW FIX (2026-10-31, adversarial review of 7a):
 - "SIGNED IN" IS NOT ONLY `first_seen_at`. `get_admin` links a row with no UID to a caller's VERIFIED
   email on ANY admin request — a refused one too — without stamping `first_seen_at` (only
@@ -124,10 +130,17 @@ def has_signed_in(login, credential_issued=None):
     return not credential_issued
 
 
+def is_staff_login(login):
+    """S7d: True when ``login`` is a STAFF member's (who also mentors) — never this module's to touch."""
+    return login is not None and login.is_staff_mentor
+
+
 def status_of(mentor, login, credential_issued=None):
     """`inactive` / `invited` / `active` — see the module docstring."""
     if mentor.deactivated_at is not None:
         return INACTIVE
+    if is_staff_login(login):
+        return ACTIVE
     if not has_signed_in(login, credential_issued):
         return INVITED
     return ACTIVE
@@ -234,7 +247,10 @@ def _send_again(caller, mentor, login):
 
 def resend_invite(caller, mentor, login):
     """Re-send an INVITED mentor's invitation: ``(emailed, error)``. Refused once they have signed in
-    (`already_joined` — their password is their own) or while deactivated (`not_active`)."""
+    (`already_joined` — their password is their own) or while deactivated (`not_active`); a staff
+    mentor (S7d) is `staff_mentor`."""
+    if is_staff_login(login):
+        return False, 'staff_mentor'
     state = status_of(mentor, login)
     if state == INACTIVE or login is None or not login.is_active:
         return False, 'not_active'
@@ -246,7 +262,10 @@ def resend_invite(caller, mentor, login):
 # ── switching off and on ─────────────────────────────────────────────────────────
 def _switch_off(caller, mentor, login):
     """Login off, waiting invitation withdrawn, mentor stamped — in ONE transaction, each write
-    conditional so a concurrent change wins. Then the emailed password is killed. ``(done, error)``."""
+    conditional so a concurrent change wins. Then the emailed password is killed. ``(done, error)``.
+    ⚠ NEVER FOR A STAFF MENTOR (S7d): it would switch their STAFF login off — refused `staff_mentor`."""
+    if is_staff_login(login):
+        return False, 'staff_mentor'
     now = timezone.now()
     with transaction.atomic():
         if not Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=True).update(
@@ -275,7 +294,9 @@ def _switch_off(caller, mentor, login):
 def revoke_invite(caller, mentor, login):
     """Withdraw an INVITED mentor's invitation: the login off and its emailed password killed, the
     mentor stamped inactive. ``(done, error)``: `already_joined` once they have signed in (use
-    Deactivate), `not_active` when already off."""
+    Deactivate), `not_active` when already off, `staff_mentor` for a staff member (S7d)."""
+    if is_staff_login(login):
+        return False, 'staff_mentor'
     state = status_of(mentor, login)
     if state == INACTIVE:
         return False, 'not_active'
@@ -285,7 +306,10 @@ def revoke_invite(caller, mentor, login):
 
 
 def deactivate(caller, mentor, login):
-    """Switch a mentor OFF — never a delete. ``(done, error)``; `not_active` when already off."""
+    """Switch a mentor OFF — never a delete. ``(done, error)``; `not_active` when already off;
+    `staff_mentor` for a staff member (S7d: Stop mentoring is theirs, `staff_mentor.stop`)."""
+    if is_staff_login(login):
+        return False, 'staff_mentor'
     if status_of(mentor, login) == INACTIVE:
         return False, 'not_active'
     return _switch_off(caller, mentor, login)
@@ -296,7 +320,10 @@ def reactivate(caller, mentor, login):
     the stamp cleared; nothing is sent — their login is theirs. ONLY for a mentor who has signed in
     (S7b follow-up review: the Mentors page never invites): one who never did is refused
     `not_arrived` and comes back by a re-invite on Invitations → Mentor (`reusable_row`).
-    `active` when not deactivated."""
+    `active` when not deactivated; `staff_mentor` for a staff member (S7d: Mentor again,
+    `staff_mentor.resume`)."""
+    if is_staff_login(login):
+        return False, False, 'staff_mentor'
     if status_of(mentor, login) != INACTIVE:
         return False, False, 'active'
     if login is None:
@@ -324,7 +351,9 @@ def edit(caller, mentor, login, *, name=None, email=None):
     login is provisioned for the new address by the invite's own branches, and the invitation is sent
     there. `already_staff` when the new address already has an admin sign-in (a student's or sponsor's
     login is kept, as at invite); `create_failed` / `retire_failed` when Supabase could not be asked
-    (nothing changes)."""
+    (nothing changes). A staff mentor (S7d) is `staff_mentor`: their details are their staff account's."""
+    if is_staff_login(login):
+        return False, False, 'staff_mentor'
     if login is None or has_signed_in(login):
         return False, False, 'managed_by_mentor'
     if status_of(mentor, login) == INACTIVE:

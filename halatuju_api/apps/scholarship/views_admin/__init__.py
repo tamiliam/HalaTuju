@@ -140,7 +140,9 @@ from .resolution import (
 # Common profile S1 (2026-10-31) — the signed-in person's own account, every role and a source.
 from .me import (AdminMeActivityView, AdminMePasswordView, AdminMePhotoView, AdminMeView,
                  programmes_of)
-from .mentors import AdminMentorActionView, AdminMentorView, AdminMentorsView   # S7a
+from .mentors import (   # S7a; S7d the staff-mentor door
+    AdminMentorActionView, AdminMentorView, AdminMentorsView, AdminStaffMentorsView,
+)
 from .mentoring import (   # S7b: the scholar file's Mentoring tab
     AdminScholarMentoringActionView, AdminScholarMentoringSessionsView, AdminScholarMentoringView,
 )

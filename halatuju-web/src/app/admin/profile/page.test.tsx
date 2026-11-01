@@ -595,3 +595,50 @@ describe('a mentor', () => {
     expect(await screen.findByText('admin.mentors.profile.phoneRequired')).toBeTruthy()
   })
 })
+
+// ── Student maintenance S7d (2026-11-01): a STAFF member who also mentors (the StaffMentorProfile board) ──
+describe('a staff member who also mentors', () => {
+  const ADMIN_ME: api.AdminMe = { ...STAFF_ME, role: 'admin', permissions: PRESET.admin, programmes: 'all',
+    organisation: { id: 3, name: 'BrightPath Test' }, mentoring_area: '', share_phone_with_students: false,
+    about: 'Programme lead.' }
+  beforeEach(() => {
+    signIn('admin', { mentoring: true })
+    mockApi.getAdminMe.mockResolvedValue(ADMIN_ME)
+    mockApi.updateAdminMe.mockImplementation((data) => Promise.resolve({ ...ADMIN_ME, ...data }))
+  })
+
+  it('gets the Mentoring card and the students’ cards, a staff welcome, and "<Role> · Mentor"', async () => {
+    render(<ProfilePage />)
+    expect((await screen.findByTestId('mentor-welcome')).textContent).toBe('admin.mentors.profile.staffWelcome')
+    await screen.findByTestId('profile-card-mentoring')
+    await waitFor(() => expect(shownCards()).toEqual(
+      ['you', 'contact', 'mentoring', 'access', 'qualifications', 'address', 'signin', 'activity']))
+    const access = screen.getByTestId('profile-card-access')
+    expect(within(access).getByText('admin.mentors.profile.accessMentor')).toBeTruthy()
+    expect(within(access).getByText('admin.myProfile.can.staffMentor')).toBeTruthy()
+    expect(screen.getByTestId('about-seen-by-students')).toBeTruthy()
+    const contact = screen.getByTestId('profile-card-contact')
+    // Their team switch stays; the students' switch is the mentor's, and it starts OFF.
+    expect(within(contact).getAllByText('admin.myProfile.showToTeam').length).toBeGreaterThan(0)
+    expect(within(contact).getAllByText('admin.mentors.profile.showToStudents').length).toBeGreaterThan(0)
+    expect(mockApi.getReviewerProfile).toHaveBeenCalled()
+  })
+
+  it('saves the area through admin/me', async () => {
+    render(<ProfilePage />)
+    fireEvent.change(await screen.findByLabelText(/admin\.mentors\.profile\.area/), { target: { value: 'Finance' } })
+    await waitFor(() => expect(save().disabled).toBe(false))
+    fireEvent.click(save())
+    await waitFor(() => expect(mockApi.updateAdminMe).toHaveBeenCalledWith(
+      { mentoring_area: 'Finance' }, { token: 'tok' }))
+  })
+
+  it('once they stop mentoring, they read as staff again', async () => {
+    signIn('admin', { mentoring: false })
+    render(<ProfilePage />)
+    await screen.findByTestId('profile-card-access')
+    expect(screen.queryByTestId('profile-card-mentoring')).toBeNull()
+    expect(screen.queryByTestId('mentor-welcome')).toBeNull()
+    expect(screen.queryByTestId('about-seen-by-students')).toBeNull()
+  })
+})

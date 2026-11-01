@@ -15,7 +15,7 @@ export default function MyStudentPage() {
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
   if (!role) return null
-  if (!canAccess('/admin/my-students', effectiveRole(role), role.permissions)) {
+  if (!canAccess('/admin/my-students', effectiveRole(role), role.permissions, role.mentoring)) {
     return <p className="text-critical-600">{t('admin.myStudents.mentorsOnly')}</p>
   }
   if (!Number.isInteger(id) || id <= 0) return <p className="text-sm text-ground-700">{t('admin.myStudents.notYours')}</p>

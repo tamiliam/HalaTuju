@@ -158,6 +158,9 @@ export interface NavItem {
    * where it goes". `navigation.test.ts` pins the behaviour and the current population.
    */
   placeholder?: boolean
+  /** S7d: a staff member who mentors NOW (`NavContext.mentoring`) sees this row too; their landing never
+   *  changes (`defaultRoute` ignores it). Visibility only — `mentor_desk.mentor_of` decides. */
+  staffMentors?: boolean
 }
 
 export interface NavGroup {
@@ -406,7 +409,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     headingKey: 'admin.nav.group.mentoring',
     items: [
       { id: 'myStudents', href: '/admin/my-students', labelKey: 'admin.nav.myStudents',
-        scope: 'mentoring', roles: ['mentor'], gate: { mode: 'always' } },
+        scope: 'mentoring', roles: ['mentor'], staffMentors: true, gate: { mode: 'always' } },
     ],
   },
   {
@@ -468,6 +471,7 @@ export interface NavContext {
    * page you are on, and only the path knows that.
    */
   pathname?: string
+  mentoring?: boolean   // S7d: `/admin/role/` `mentoring` (a staff member who mentors now); absent = no
 }
 
 /** A context with nothing probed yet — the safe default (see `canSee`). */
@@ -499,7 +503,7 @@ export function effectiveRole(
  * loaded". Treating 'unknown' as live would flash a dark feature in during the round trip.
  */
 export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide' {
-  if (!admitsRow(item, ctx.role, ctx.permissions)) return 'hide'
+  if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
   if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
@@ -602,9 +606,9 @@ export function activeItem(pathname: string): NavItem | undefined {
  * An unknown route returns true: absence from the registry must never invent a new block.
  */
 export function canAccess(href: string, role: AdminRoleName,
-                          permissions?: readonly string[] | null): boolean {
+                          permissions?: readonly string[] | null, mentoring?: boolean): boolean {
   const item = activeItem(href)
-  return item ? admitsRow(item, role, permissions) : true
+  return item ? admitsRow(item, role, permissions, mentoring) : true
 }
 
 /** An item paired with its already-translated label, which is all the palette needs. */

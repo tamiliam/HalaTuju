@@ -15,7 +15,8 @@ export default function MyStudentsPage() {
   const { role } = useAdminAuth()
   const { t } = useT()
   if (!role) return null
-  if (!canAccess('/admin/my-students', effectiveRole(role), role.permissions)) {
+  // S7d: a staff member who also mentors now (`role.mentoring`) opens it too, keeping their own menu.
+  if (!canAccess('/admin/my-students', effectiveRole(role), role.permissions, role.mentoring)) {
     return <p className="text-critical-600">{t('admin.myStudents.mentorsOnly')}</p>
   }
   return <MyStudents />

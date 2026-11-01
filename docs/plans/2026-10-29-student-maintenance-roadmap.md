@@ -144,7 +144,9 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    refuse assigning a mentor to their OWN application. **7b LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq;
    migration scholarship 0196_mentoring applied by hand first).** **7c** — mentors see their students and log meetings
    themselves, with a "worried about this student" flag staff mark as handled. **7c LIVE 2026-11-01**
-   (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first). Sprint 7 (mentors) is complete.
+   (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first). **7d** — staff can also be mentors
+   on the same login (added from the Mentors page, Stop mentoring / Mentor again, every staff way out ends the
+   mentoring; courses 0091). **7d BUILT, NOT LIVE** (branch `maint-s7`).
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
 9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).

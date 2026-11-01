@@ -10,8 +10,11 @@ import { CardFrame, type CardProps } from './shared'
  * super is told who can.
  */
 export default function AccessCard({ state }: CardProps) {
-  const { t, me, role, isSuper, permissions } = state
-  const rows: [string, string][] = [[t('admin.roleLabel'), role ? t(`admin.role.${role}`) : '']]
+  const { t, me, role, isSuper, permissions, staffMentor } = state
+  // S7d: a staff member who also mentors reads "<Role> · Mentor" (the StaffMentorProfile board).
+  const roleWord = role ? t(`admin.role.${role}`) : ''
+  const rows: [string, string][] = [[t('admin.roleLabel'),
+    staffMentor ? t('admin.mentors.profile.accessMentor', { role: roleWord }) : roleWord]]
   if (me?.source) rows.push([t('admin.myProfile.source'), me.source.name])
   if (me?.organisation) rows.push([t('admin.myProfile.organisation'), me.organisation.name])
   if (me?.referral_partner) rows.push([t('admin.myProfile.referralPartner'), me.referral_partner.name])
@@ -21,7 +24,7 @@ export default function AccessCard({ state }: CardProps) {
       : me.programmes.length ? me.programmes.map((p) => p.name).join(', ') : t('admin.myProfile.none')
     rows.push([t('admin.myProfile.gifts'), gifts])
   }
-  const lines = accessLines({ role, permissions, isSuper })
+  const lines = accessLines({ role, permissions, isSuper, mentoring: staffMentor })
   return (
     <CardFrame title={t('admin.myProfile.access')} testId="access">
       <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">

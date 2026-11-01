@@ -68,7 +68,9 @@ class AdminStaffRoleView(_AdminBase):
                          'consequence': plan['consequence'],
                          # #39 S4: a saved custom set goes back to the NEW role's preset.
                          'permissions_reset': plan['permissions_reset'],
-                         'consequences': plan['consequences'], 'dry_run': dry_run})
+                         'consequences': plan['consequences'], 'dry_run': dry_run,
+                         # S7d: the switch ends their mentoring (Admin → Finance of a staff mentor).
+                         'stops_mentoring': plan['stops_mentoring']})
 
 
 class AdminStaffPermissionsView(_AdminBase):

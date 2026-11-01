@@ -5130,7 +5130,8 @@
         "partner": "Melihat pelajar yang dirujuk oleh organisasi anda.",
         "source_partner": "Mengikuti pelajar yang menamakan anda semasa memohon, dan menjadi saksi perjanjian mereka.",
         "profileOnly": "Mengemas kini profil anda sendiri.",
-        "mentor": "Mengemas kini profil anda. Kakitangan menugaskan pelajar kepada anda dan merekodkan pertemuan anda."
+        "mentor": "Mengemas kini profil anda. Kakitangan menugaskan pelajar kepada anda dan merekodkan pertemuan anda.",
+        "staffMentor": "Bimbing penerima biasiswa yang ditugaskan kepada anda: lihat mereka di Pelajar saya dan rekodkan pertemuan anda."
       },
       "qualifications": "Kelayakan dan bahasa",
       "noOrganisation": "Tiada organisasi dipautkan pada akaun anda.",
@@ -6490,7 +6491,8 @@
           "mentor_deactivated": "Bimbingan oleh {mentor} ditamatkan: mentor telah dinyahaktifkan",
           "file_closed": "Bimbingan oleh {mentor} ditamatkan: fail telah ditutup",
           "mentor_is_student": "Bimbingan oleh {mentor} ditamatkan: mentor ialah pelajar itu sendiri",
-          "award_reverted": "Bimbingan oleh {mentor} ditamatkan: anugerah telah dibatalkan"
+          "award_reverted": "Bimbingan oleh {mentor} ditamatkan: anugerah telah dibatalkan",
+          "mentor_stopped": "Bimbingan oleh {mentor} ditamatkan: mentor berhenti membimbing"
         },
         "session_logged": "Pertemuan mentor direkodkan: {mode}, {minutes} min",
         "session_logged_no_minutes": "Pertemuan mentor direkodkan: {mode}",
@@ -8433,7 +8435,7 @@
     "mentors": {
       "nav": "Mentor",
       "title": "Mentor",
-      "intro": "Mentor yang telah log masuk. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
+      "intro": "Orang yang membimbing penerima biasiswa anda — mentor jemputan yang telah log masuk, dan kakitangan yang juga membimbing. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
       "inviteOpen": "Jemput mentor",
       "invite": {
         "name": "Nama",
@@ -8452,7 +8454,12 @@
         "not_active": "Mentor ini sudah tidak aktif.",
         "active": "Mentor ini sudah aktif.",
         "generic": "Tindakan itu tidak berjaya. Cuba lagi.",
-        "not_arrived": "Mentor ini tidak pernah log masuk. Jemput mereka sekali lagi dari Jemputan → Mentor."
+        "not_arrived": "Mentor ini tidak pernah log masuk. Jemput mereka sekali lagi dari Jemputan → Mentor.",
+        "not_eligible": "Kakitangan ini tidak boleh menjadi mentor (kewangan, telah ditarik balik, atau bukan peranan kakitangan).",
+        "already_mentor": "Kakitangan ini sudah menjadi mentor. Jika mereka telah berhenti, gunakan Jadi mentor semula.",
+        "staff_mentor": "Mentor ini ialah kakitangan: gunakan Hentikan bimbingan atau Jadi mentor semula.",
+        "not_staff": "Hanya bimbingan kakitangan boleh dihentikan dengan cara ini.",
+        "not_found": "Kakitangan itu tidak ditemui."
       },
       "status": {
         "active": "Aktif",
@@ -8474,18 +8481,24 @@
         "deactivate": "Nyahaktifkan",
         "reactivate": "Aktifkan semula",
         "resend": "Hantar semula",
-        "revoke": "Tarik balik"
+        "revoke": "Tarik balik",
+        "stop": "Hentikan bimbingan",
+        "resume": "Jadi mentor semula"
       },
       "confirm": {
         "deactivate": "Nyahaktifkan {name}? Mereka tidak lagi boleh log masuk. Anda boleh mengaktifkan mereka semula kemudian.",
-        "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian."
+        "revoke": "Tarik balik jemputan {name}? Butiran log masuk dalam e-mel tidak lagi berfungsi. Anda boleh mengaktifkan mereka semula kemudian.",
+        "stop": "Hentikan bimbingan oleh {name}? Penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail. Log masuk kakitangan mereka tidak disentuh."
       },
       "done": {
         "resend": "Jemputan dihantar semula ke {email}.",
         "revoke": "Jemputan {name} telah ditarik balik.",
         "deactivate": "{name} tidak lagi boleh log masuk.",
         "reactivate": "{name} boleh log masuk semula.",
-        "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula."
+        "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula.",
+        "stop": "{name} tidak lagi membimbing. Log masuk kakitangan mereka tidak berubah.",
+        "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
+        "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri."
       },
       "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Halaman ini menyenaraikan mentor yang telah log masuk; mentor yang menunggu untuk menerima ada di Jemputan → Mentor, dan mentor yang dimatikan sebelum log masuk kembali dengan menjemput alamat yang sama di sana sekali lagi. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
       "empty": "Tiada mentor dalam senarai ini.",
@@ -8498,7 +8511,10 @@
         "whoSees": "Pelajar anda melihat bahasa anda. Kelayakan anda hanya dilihat oleh kakitangan.",
         "showToStudents": "Tunjukkan nombor telefon saya kepada pelajar saya",
         "welcome": "Selamat datang. Sila isi profil anda. Pelajar anda melihat nama, bidang, bahasa, Tentang saya dan e-mel anda, dan nombor telefon anda hanya jika anda menghidupkannya.",
-        "phoneRequired": "Mentor perlu ada nombor telefon. Taip nombor anda."
+        "phoneRequired": "Mentor perlu ada nombor telefon. Taip nombor anda.",
+        "staffWelcome": "Anda kini juga membimbing penerima biasiswa. Sila isi bidang bimbingan anda dan semak apa yang akan dilihat oleh pelajar anda: nama, bidang, bahasa, Tentang saya dan e-mel anda — dan nombor telefon anda hanya jika anda menghidupkannya di bawah.",
+        "aboutSeen": "Pelajar anda melihat Tentang saya anda. Ditulis untuk rakan sekerja? Pastikan ia sesuai dibaca oleh pelajar.",
+        "accessMentor": "{role} · Mentor"
       },
       "tabsAria": "Bahagian mentor",
       "tab": {
@@ -8508,7 +8524,21 @@
       "waiting": "{count} menunggu untuk menerima —",
       "seeInvitations": "lihat Jemputan",
       "emptyNone": "Belum ada mentor. Jemput seorang dengan \"Jemput mentor\".",
-      "emptyNoneRead": "Belum ada mentor."
+      "emptyNoneRead": "Belum ada mentor.",
+      "addStaff": "Tambah kakitangan sebagai mentor",
+      "staffSheet": {
+        "title": "Tambah kakitangan sebagai mentor",
+        "intro": "Mereka mengekalkan peranan dan semua yang boleh mereka lakukan sekarang. Mereka mendapat \"Pelajar saya\" dan kad Bimbingan pada profil mereka. Tiada e-mel dihantar — beritahu mereka sendiri.",
+        "search": "Cari kakitangan",
+        "shown": "Ditunjukkan: pentadbir organisasi, pentadbir, penilai dan kawalan mutu organisasi ini yang belum menjadi mentor. Pentadbir kewangan dan pentadbir utama tidak boleh menjadi mentor.",
+        "none": "Tiada kakitangan untuk ditambah.",
+        "noMatch": "Tiada yang sepadan.",
+        "add": "Tambah {name} sebagai mentor",
+        "choose": "Tambah sebagai mentor",
+        "loadError": "Senarai kakitangan tidak dapat dimuatkan."
+      },
+      "staffTag": "Kakitangan · {role}",
+      "staffNote": "\"Hentikan bimbingan\" menamatkan bimbingan seorang kakitangan (penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail); log masuk kakitangan mereka tidak disentuh. Jika akaun kakitangan ditarik balik, bimbingan mereka turut tamat. Mentor kakitangan dipaparkan di bawah Tidak aktif selepas Hentikan bimbingan, dengan \"Jadi mentor semula\"."
     },
     "myStudents": {
       "title": "Pelajar saya",
@@ -8553,7 +8583,8 @@
         "worried": "Beritahu pasukan bahawa saya bimbang tentang pelajar ini (fail pelajar akan ditandakan)",
         "noEdit": "Pertemuan yang disimpan tidak boleh diubah."
       }
-    }
+    },
+    "stopsMentoring": "Bimbingan mereka tamat: penerima biasiswa mereka tidak lagi mempunyai mentor."
   },
   "documentsTab": {
     "higher": {

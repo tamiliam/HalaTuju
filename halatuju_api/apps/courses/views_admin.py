@@ -119,7 +119,7 @@ class PartnerAdminMixin:
             if admin:
                 admin.supabase_user_id = user_id
                 admin.save(update_fields=['supabase_user_id'])
-                if admin.is_mentor:
+                if admin.mentor_id is not None:   # a mentor login, or (S7d) a staff mentor
                     _mentor_linked(admin)
                 return admin
 
@@ -337,6 +337,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             # Source sign-in S1: the source a `source_partner` signs in for; None for staff.
             'source_id': admin.source_id,
             'source_name': admin.source.name if admin.source_id else None,
+            # S7d: a staff member who also mentors NOW (an active mentor record) gets My students in
+            # their menu; their landing does not change. A mentor login reads its role instead.
+            'mentoring': admin.mentors_now,
         })
 
 
@@ -592,14 +595,24 @@ _DELETABLE_ROLES = {'admin', 'finance', 'org_admin'}
 
 def _scholarship_staff_modules():
     """The ONE courses → scholarship import for the staff rules (code standards count the statement)."""
-    from apps.scholarship import mentoring, staff_footprint, staff_lifecycle
-    return staff_footprint, staff_lifecycle, mentoring
+    from apps.scholarship import mentoring, staff_footprint, staff_lifecycle, staff_mentor
+    return staff_footprint, staff_lifecycle, mentoring, staff_mentor
 
 
 def scholarship_staff():
     """`(staff_footprint, staff_lifecycle)`: the ONE courses door to scholarship's staff rules."""
-    staff_footprint, staff_lifecycle, _ = _scholarship_staff_modules()
+    staff_footprint, staff_lifecycle, _, _ = _scholarship_staff_modules()
     return staff_footprint, staff_lifecycle
+
+
+def staff_mentor_leaves(target, by=''):
+    """S7d: a staff door (Revoke, Delete) has taken ``target`` out of mentoring — `staff_mentor.leave`
+    (the mentor stamped deactivated, open assignments ended, no email). Inside the caller's transaction;
+    0 and nothing written for anybody who is not a staff mentor."""
+    if target is None or not target.is_staff_mentor:
+        return 0
+    _, _, _, staff_mentor = _scholarship_staff_modules()
+    return staff_mentor.leave(target, by=by)
 
 
 def _mentor_linked(admin):
@@ -608,7 +621,7 @@ def _mentor_linked(admin):
     mentor to that scholar ends now (`mentoring.end_if_self`). Best effort: it never fails a sign-in
     (the read-time guard keeps the mentor off the student's screens meanwhile)."""
     try:
-        _, _, mentoring = _scholarship_staff_modules()
+        _, _, mentoring, _ = _scholarship_staff_modules()
         mentoring.end_if_self(admin.mentor, by='')
     except Exception:   # a sign-in must never fail on this
         logging.getLogger('apps.courses.views_admin').exception('end_if_self failed (admin %s)', admin.pk)

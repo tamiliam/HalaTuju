@@ -20,6 +20,11 @@
  * pause) stays on `reviewsCases`: a mentor is never handed cases. The `mentoring` card is a mentor's
  * alone. Photo is staff-only, as for everybody (the You card says so).
  *
+ * ⚠ S7d (owner, 2026-11-01): a STAFF member who also mentors NOW (`/admin/role/` `mentoring`) gets the
+ * mentoring card and counts as working with students (`worksWithStudents` — the server's
+ * `works_with_students`: reviews cases OR mentors now). A reviewer or QC already has the other cards;
+ * they gain only Mentoring and "Mentor" in Your access. A staff member who stopped mentoring loses both.
+ *
  * Visibility, never the fence: every card's endpoint re-checks on the server.
  */
 
@@ -31,6 +36,8 @@ export interface ProfileCardContext {
   role: string | undefined
   permissions: readonly string[] | null | undefined
   isSuper: boolean
+  /** S7d: a staff member who also mentors now (`/admin/role/` `mentoring`). Absent = no. */
+  mentoring?: boolean
 }
 
 export interface ProfileCard {
@@ -43,10 +50,12 @@ const everyone = () => true
 /** The reviewer cards' rule: holds `review`, and is not a super (who holds every key). */
 export const reviewsCases = (ctx: ProfileCardContext): boolean =>
   !ctx.isSuper && !!ctx.permissions?.includes('review')
-/** Somebody students meet: a `review` holder or a mentor (S7a); the server decides the same way. */
-export const worksWithStudents = (ctx: ProfileCardContext): boolean =>
-  reviewsCases(ctx) || (!ctx.isSuper && ctx.role === 'mentor')
-const isMentor = (ctx: ProfileCardContext): boolean => !ctx.isSuper && ctx.role === 'mentor'
+/** A mentor login, or (S7d) a staff member who mentors now. */
+export const mentorsNow = (ctx: ProfileCardContext): boolean =>
+  !ctx.isSuper && (ctx.role === 'mentor' || ctx.mentoring === true)
+/** Somebody students meet: a `review` holder or somebody who mentors (S7a, S7d); the server decides the
+ *  same way (`staff_contact.works_with_students`). */
+export const worksWithStudents = (ctx: ProfileCardContext): boolean => reviewsCases(ctx) || mentorsNow(ctx)
 
 export const PROFILE_CARDS: readonly ProfileCard[] = [
   { id: 'you', order: 10, show: everyone },
@@ -54,7 +63,7 @@ export const PROFILE_CARDS: readonly ProfileCard[] = [
   // I interview" switch inside it stays a `review` holder's (`ContactCard`).
   { id: 'contact', order: 20, show: everyone },
   // S7a: the mentor's own area of mentoring, under Contact (the MentorProfile board's order).
-  { id: 'mentoring', order: 25, show: isMentor },
+  { id: 'mentoring', order: 25, show: mentorsNow },
   { id: 'access', order: 30, show: everyone },
   { id: 'qualifications', order: 40, show: worksWithStudents },
   { id: 'address', order: 50, show: worksWithStudents },
@@ -106,10 +115,11 @@ export function activityFilters(ctx: ProfileCardContext): ActivityFilter[] {
 
 /** The context for the signed-in person, from what `/admin/role/` served. */
 export function profileContext(role: {
-  role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null
+  role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null; mentoring?: boolean
 } | null | undefined): ProfileCardContext {
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
-  return { role: isSuper ? 'super' : role?.role, permissions: role?.permissions, isSuper }
+  return { role: isSuper ? 'super' : role?.role, permissions: role?.permissions, isSuper,
+           mentoring: !isSuper && role?.mentoring === true }
 }
 
 /** The permission keys that have a plain-word name (`admin.perm.<key>.name`). `manage_team` has
@@ -129,6 +139,7 @@ export function accessLines(ctx: ProfileCardContext): string[] {
   if (ctx.role === 'partner') lines.push('admin.myProfile.can.partner')
   if (ctx.role === 'source_partner') lines.push('admin.myProfile.can.source_partner')
   if (ctx.role === 'mentor') lines.push('admin.myProfile.can.mentor')
+  if (ctx.role !== 'mentor' && mentorsNow(ctx)) lines.push('admin.myProfile.can.staffMentor')   // S7d
   for (const key of NAMED_PERMS) {
     if (ctx.permissions?.includes(key)) lines.push(`admin.perm.${key}.name`)
   }

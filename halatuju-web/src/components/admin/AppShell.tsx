@@ -184,10 +184,10 @@ function Chrome(
     // selects (review F2), and a rail link naming it would select it one click later, narrowing a
     // reviewer's all-gifts Applications list to the applicant they just opened.
     () => withGiftHrefs(visibleNav({
-      role: r, probes, pathname, permissions: role?.permissions,
+      role: r, probes, pathname, permissions: role?.permissions, mentoring: role?.mentoring,
       programmeChosen: scopesLoaded ? chosen !== '' : undefined,
     }), onRecord ? '' : chosen),
-    [r, role?.permissions, probes, chosen, scopesLoaded, pathname, onRecord],
+    [r, role?.permissions, role?.mentoring, probes, chosen, scopesLoaded, pathname, onRecord],
   )
   const active = activeItem(pathname)
   const activeId = active?.id

@@ -2,6 +2,7 @@
 invite itself is `POST admin/invitations/` with `audience='mentor'` (`views_admin/mentors.py`).
 S7b (2026-11-01): the scholar file's Mentoring tab and the student's own (`scholarship/bursary/mentoring/`).
 S7c (2026-11-01): a mentor's own students (`admin/mentor/students/`).
+S7d (2026-11-01): a staff member added as a mentor (`admin/mentors/staff/`).
 
 Kept apart from `urls.py`, which sits at the 600-line standard. Like `urls_letters.py`, NOT an
 `include()`: `urls.py` ADDS this list to its own `urlpatterns`, so every route is a top-level route
@@ -12,12 +13,13 @@ from django.urls import path
 from .views_admin import (
     AdminMentorActionView, AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
     AdminMentorView, AdminMentorsView, AdminScholarMentoringActionView, AdminScholarMentoringSessionsView,
-    AdminScholarMentoringView,
+    AdminScholarMentoringView, AdminStaffMentorsView,
 )
 from .views_bursary import BursaryMentoringView
 
 urlpatterns = [
     path('admin/mentors/', AdminMentorsView.as_view()),
+    path('admin/mentors/staff/', AdminStaffMentorsView.as_view()),
     path('admin/mentors/<int:pk>/', AdminMentorView.as_view()),
     path('admin/mentors/<int:pk>/<str:action>/', AdminMentorActionView.as_view()),
     path('admin/scholarship/scholars/<int:pk>/mentoring/', AdminScholarMentoringView.as_view()),

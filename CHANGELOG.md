@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 7d — staff can also be mentors (not yet live)
+
+Owner rulings and the approved MentorsAddStaff / StaffMentorProfile boards, 2026-11-01; the lead's two data
+rulings the same day (decisions.md, the 7d entry). **courses 0091 — migrate first, by hand** (DDL in its docstring).
+
+- **Add a staff member as mentor** (Organisation → Mentors, super and organisation admin): the shared Sheet lists
+  the organisation's organisation admins, admins, reviewers and QC who are not mentors yet (name, email, role
+  chip, a search box); adding makes a mentor record linked to the SAME login. No email ("tell them yourself").
+  Finance, a super, a source, a mentor login, a revoked row, another organisation's staff → refused
+  (`admin/mentors/staff/`, `apps/scholarship/staff_mentor.py`).
+- The staff member keeps role, permissions and every page; they gain **My students** (the 7c desk, a Mentoring
+  group in their menu — their landing does not change) and can be assigned to scholars, log meetings and raise
+  concerns like any mentor.
+- **Mentors list**: staff mentors carry "Staff · <role>"; **Stop mentoring** ends every open assignment (reason
+  "Mentor stopped mentoring", a line on each file, no email) and stamps the mentor inactive — never the staff
+  login; under Inactive, **Mentor again** (no email, no assignment comes back). Deactivate / Reactivate, Resend,
+  Revoke and the name/email edit refuse a staff mentor (400 `staff_mentor`).
+- **Other ways out**, each the same end: People → Revoke; a staff invitation's Cancel; People → Delete (only for a
+  staff mentor who never had a scholar — mentoring is now recorded work, `scholars_mentored`); Admin → Finance
+  (the confirm says so first; the link is kept with the mentor inactive so every history keeps the name). A
+  Restore, or a role change back, brings nothing back; Reviewer ↔ QC and a pause keep it.
+- **Profile**: a staff member who mentors gets the Mentoring card (area, required), the qualification / language
+  / address cards and a required phone (`works_with_students` = reviews cases OR mentors now, server and web),
+  "Show my phone to my students" **off** (an existing profile is switched off at Add unless they review; a pure
+  mentor keeps 7a's on), "<Role> · Mentor" in Your access, a blue note until the area is filled, and "Your
+  students see your About" under About.
+- Students see exactly what 7b serves; the staff member's phone only once they switch it on.
+- Tests: `test_staff_mentor.py` (29: every door in and out, the staff login unchanged, `_switch_off` never
+  reached, finance never an active mentor through any door), `StaffMentors.test.tsx`, navigation / profile cards /
+  profile page cases.
+
 ## Mobile M3 — student discovery: search filters in a sheet, course pages without the scroll trap, compare on phones (not yet live)
 
 Owner approved the Stitch filter sheet, course page and compare (layout B) on 2026-11-01; the `/search` phone bar

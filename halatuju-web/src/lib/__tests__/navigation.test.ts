@@ -238,6 +238,25 @@ describe('visibleNav per role', () => {
     expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['mentoring', 'utility'])
   })
 
+  it('S7d: a staff member who mentors now gains My students and keeps their own menu and landing', () => {
+    for (const role of ['org_admin', 'admin', 'reviewer', 'qc'] as const) {
+      const plain = visibleNav({ ...ctx(role), permissions: null })
+      const mentoring = visibleNav({ ...ctx(role), permissions: null, mentoring: true })
+      const ids = (gs: typeof plain) => gs.flatMap((g) => g.items.map((i) => i.id))
+      expect(ids(mentoring)).toEqual([...ids(plain).filter((id) => !['profile', 'guide', 'faq'].includes(id)),
+        'myStudents', ...ids(plain).filter((id) => ['profile', 'guide', 'faq'].includes(id))])
+      expect(mentoring.find((g) => g.scope === 'mentoring')?.items.map((i) => i.id)).toEqual(['myStudents'])
+      expect(canAccess('/admin/my-students', role, null, true)).toBe(true)
+      expect(canAccess('/admin/my-students/7', role, null, true)).toBe(true)
+      expect(canAccess('/admin/my-students', role, null, false)).toBe(false)
+      expect(canAccess('/admin/my-students', role, null)).toBe(false)
+      // The landing does not change (defaultRoute never reads `mentoring`).
+      expect(defaultRoute({ role, mentoring: true } as { role: string })).toBe(defaultRoute({ role }))
+    }
+    // Stopped (or never added): the row is gone.
+    expect(visibleNav({ ...ctx('admin'), mentoring: false }).some((g) => g.scope === 'mentoring')).toBe(false)
+  })
+
   it('the Programme group of a source user never folds away — it has no door into a gift', () => {
     const groups = visibleNav({ ...ctx('source_partner'), pathname: '/admin/profile', programmeChosen: false })
     expect(groups.map((g) => g.scope)).toEqual(['programme', 'utility'])

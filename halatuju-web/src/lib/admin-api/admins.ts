@@ -109,7 +109,9 @@ export async function changeAdminRole(adminId: number, role: string, dryRun: boo
                    /** #39 S4: a saved custom set of permissions goes back to the new preset. */
                    permissions_reset?: boolean
                    /** #39 S4 review fix 4: the editor's consequence codes for this switch. */
-                   consequences?: string[] }
+                   consequences?: string[]
+                   /** S7d: the switch ends this staff member's mentoring (Admin → Finance). */
+                   stops_mentoring?: boolean }
 }
 
 /** What one person may do, as the editor reads it (request #39 Sprint 4). `keys` are the switches

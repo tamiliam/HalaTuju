@@ -8,7 +8,14 @@ HTTP shapes:
   every organisation's, narrowed by `?org=`), with the status counts;
 - `AdminMentorView` — `PATCH admin/mentors/<id>/` `{name?, email?}`: staff correct a name or an
   address until the first sign-in (409 `managed_by_mentor` after it);
-- `AdminMentorActionView` — `POST admin/mentors/<id>/<resend|revoke|deactivate|reactivate>/`.
+- `AdminMentorActionView` — `POST admin/mentors/<id>/<resend|revoke|deactivate|reactivate|stop|resume>/`;
+- `AdminStaffMentorsView` — S7d (2026-11-01): `GET admin/mentors/staff/` the staff the "Add a staff member
+  as mentor" sheet may offer; `POST admin/mentors/staff/` `{admin_id}` adds one (`staff_mentor.py`).
+
+⚠ S7d: A STAFF MENTOR's login is their STAFF login. Their row carries `staff_role`; only `stop` ("Stop
+mentoring") and `resume` ("Mentor again") act on it — Resend, Revoke, Deactivate, Reactivate and the
+name / email edit answer 400 `staff_mentor` (their sign-in is People's). `stop` / `resume` on a pure
+mentor answer 400 `not_staff`.
 
 ⚠ WHO: reading — super, org_admin, admin (read-only); acting — super, org_admin. Anyone else 403;
 another organisation's mentor 404, never 403. ⚠ MENTORS NEVER REACH SPONSORS OR PARTNERS: nothing
@@ -123,8 +130,12 @@ def mentor_rows(caller, mentors):
         # Review fix: "signed in" is `mentor_invite.has_signed_in`, fed the newest invitation's
         # `credential_issued` so the list reads it without a query per row.
         issued = bool(inv and inv.credential_issued)
+        staff = login is not None and login.is_staff_mentor
         rows.append({
             'id': m.pk,
+            # S7d: the staff role of a staff member who also mentors ("Staff · <role>"); None for a
+            # mentor login. Their status is active / inactive only — their sign-in is People's.
+            'staff_role': login.role if staff else None,
             'name': login.name if login else '',
             'email': login.email if login else '',
             'phone': (rp.phone or '') if rp else '',
@@ -216,7 +227,10 @@ class AdminMentorsView(_MentorsBase):
         scope, err = self._in_scope(request, admin)
         if err:
             return err
-        rows = mentor_rows(admin, list(scope.select_related('organisation').order_by('id')))
+        # S7d: a mentor record with no login (a staff member who never mentored, then deleted) is
+        # nobody's row any more: it is not listed.
+        rows = mentor_rows(admin, list(scope.filter(users__isnull=False).select_related('organisation')
+                                       .order_by('id')))
         rows.sort(key=lambda r: (r['name'] or '').lower())
         counts = {s: 0 for s in mentor_invite.STATUSES}
         for r in rows:
@@ -237,6 +251,8 @@ class AdminMentorView(_MentorsBase):
         admin, mentor, login, err = self._target(request, pk)
         if err:
             return err
+        if login is not None and login.is_staff_mentor:   # S7d: their details are their staff account's
+            return _error('staff_mentor', status.HTTP_400_BAD_REQUEST)
         data = request.data if isinstance(request.data, dict) else None
         if data is None or set(data) - {'name', 'email'}:
             return _error('bad_request', status.HTTP_400_BAD_REQUEST)
@@ -268,7 +284,8 @@ class AdminMentorActionView(_MentorsBase):
     delete) and `reactivate` (inactive only: 400 `active`; a never-signed-in mentor is sent the
     invitation again). 200 the row + `emailed`; 404 an unknown action or another organisation's
     mentor; 500 `not_configured`; 502 `reset_failed` / `send_failed`."""
-    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate')
+    ACTIONS = ('resend', 'revoke', 'deactivate', 'reactivate', 'stop', 'resume')
+    STAFF_ACTIONS = ('stop', 'resume')   # S7d: the only two that act on a staff mentor
 
     def post(self, request, pk, action):
         from .. import mentor_invite
@@ -277,6 +294,11 @@ class AdminMentorActionView(_MentorsBase):
         admin, mentor, login, err = self._target(request, pk)
         if err:
             return err
+        staff = login is not None and login.is_staff_mentor
+        if staff != (action in self.STAFF_ACTIONS):
+            return _error('staff_mentor' if staff else 'not_staff', status.HTTP_400_BAD_REQUEST)
+        if staff:
+            return self._staff_action(admin, mentor, login, action)
         emailed = None
         if action == 'resend':
             emailed, refusal = mentor_invite.resend_invite(admin, mentor, login)
@@ -300,3 +322,76 @@ class AdminMentorActionView(_MentorsBase):
             return Response({**row, 'emailed': False, 'error': 'Failed to send the email',
                              'code': 'send_failed'}, status=status.HTTP_502_BAD_GATEWAY)
         return Response({**row, 'emailed': emailed})
+
+    def _staff_action(self, admin, mentor, login, action):
+        """S7d: "Stop mentoring" / "Mentor again" for a staff member — no email, their login untouched.
+        400 `not_active` (already stopped), `active` (not stopped), `not_eligible` (Mentor again for a
+        revoked login or a role that may not mentor)."""
+        from .. import staff_mentor
+        if action == 'stop':
+            ended, refusal = staff_mentor.stop(admin, mentor, login)
+        else:
+            ended, refusal = 0, staff_mentor.resume(admin, mentor, login)
+        if refusal:
+            return _error(refusal, status.HTTP_400_BAD_REQUEST)
+        return Response({**mentor_rows(admin, [mentor])[0], 'emailed': None, 'ended': ended})
+
+
+class AdminStaffMentorsView(_MentorsBase):
+    """S7d — "Add a staff member as mentor" (super / org_admin; an organisation admin within its OWN
+    organisation, a super any, narrowed by `?org=`). No email is sent.
+
+    GET admin/mentors/staff/ → `{staff: [{id, name, email, role, organisation}]}`: the eligible staff
+    (`staff_mentor.candidates` — org_admin, admin, reviewer, qc; active; not a mentor yet).
+    POST admin/mentors/staff/ `{admin_id}` → 201 the new Mentors row. Refusals: 403 another role;
+    400 `bad_request`; 404 not a staff member this caller may see (another organisation's, unknown —
+    one answer); 400 `not_eligible` (finance, a super, a source, a mentor login, a revoked row);
+    409 `already_mentor`."""
+
+    def _actor(self, request):
+        from .. import mentor_invite
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        if not mentor_invite.may_invite(admin):
+            return None, None, self._deny_role()
+        if not admin.is_super:
+            org_id = admin.owning_organisation_id
+            return admin, ([org_id] if org_id else []), None
+        org, err = self._org_narrowing(request, admin)
+        if err:
+            return None, None, err
+        return admin, ([org.pk] if org is not None else None), None
+
+    def get(self, request):
+        from .. import staff_mentor
+        admin, orgs, err = self._actor(request)
+        if err:
+            return err
+        return Response({'staff': [
+            {'id': a.pk, 'name': a.name, 'email': a.email, 'role': a.role,
+             'organisation': a.owning_organisation.name if a.owning_organisation_id else ''}
+            for a in staff_mentor.candidates(orgs)]})
+
+    def post(self, request):
+        from .. import staff_mentor
+        admin, orgs, err = self._actor(request)
+        if err:
+            return err
+        data = request.data if isinstance(request.data, dict) else {}
+        target_id = data.get('admin_id')
+        if isinstance(target_id, bool) or not isinstance(target_id, int):
+            return _error('bad_request', status.HTTP_400_BAD_REQUEST)
+        # org-fence: only a staff member of the caller's own organisation (a super: any, or `?org=`).
+        qs = PartnerAdmin.objects.filter(pk=target_id, owning_organisation__isnull=False)
+        if orgs is not None:
+            qs = qs.filter(owning_organisation_id__in=orgs)
+        target = qs.first()
+        if target is None:
+            return _error('not_found', status.HTTP_404_NOT_FOUND)
+        mentor, refusal = staff_mentor.add(admin, target)
+        if refusal == 'already_mentor':
+            return _error(refusal, status.HTTP_409_CONFLICT)
+        if refusal:
+            return _error(refusal, status.HTTP_400_BAD_REQUEST)
+        return Response({**mentor_rows(admin, [mentor])[0]}, status=status.HTTP_201_CREATED)

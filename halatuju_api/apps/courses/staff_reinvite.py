@@ -268,6 +268,13 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
             uid, already, err = _login_for(row, name, temp_password)
             if err:
                 return None, False, err
+        # S7d: a switched-off staff member who had been added as a mentor comes back as a NEW start —
+        # never a mentor again by a re-invite. Their mentor record was stamped inactive when they were
+        # switched off, and `may_reuse` admits only a row with no footprint, so it never had a
+        # scholar: the link goes (else a new role or organisation could break the binding).
+        fields = ['mentor'] if row.mentor_id is not None and row.role != PartnerAdmin.MENTOR_ROLE else []
+        if fields:
+            row.mentor = None
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
         row.email = email
         row.is_super_admin = (role == 'super')
@@ -281,5 +288,5 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         row.supabase_user_id = uid
         row.save(update_fields=['name', 'email', 'role', 'org', 'owning_organisation',
                                 'is_super_admin', 'is_active', 'paused_at', 'programme', 'permissions',
-                                'supabase_user_id'])
+                                'supabase_user_id', *fields])
     return row, already, None

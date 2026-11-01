@@ -22,6 +22,14 @@ MENTOR_ROLE = 'mentor'
 #: The roles that sign in to the console and are NOT staff: no permission, deny by default on every
 #: view that has not opted in, never on a staff list. One tuple, so a reader cannot forget one.
 NOT_STAFF_ROLES = (SOURCE_ROLE, MENTOR_ROLE)
+#: Student maintenance S7d (owner, 2026-11-01): the STAFF roles that may ALSO mentor, on the same login
+#: (`scholarship/staff_mentor.py`). Never finance, never a super, a partner or a source user.
+STAFF_MENTOR_ROLES = ('org_admin', 'admin', 'reviewer', 'qc')
+#: The roles a row carrying `mentor_id` may hold (the database check). `finance` is here ONLY so an
+#: Admin -> Finance switch can KEEP the link with the mentor DEACTIVATED (lead ruling 2026-11-01): the
+#: mentor's name lives on this login, and every scholar's mentoring history reads it. A finance row is
+#: never an ACTIVE mentor — `mentors_now` says so and every door refuses it (`staff_mentor.py`).
+MENTOR_LINK_ROLES = (MENTOR_ROLE, *STAFF_MENTOR_ROLES, 'finance')
 
 
 class PartnerAdmin(models.Model):
@@ -79,6 +87,8 @@ class PartnerAdmin(models.Model):
     SOURCE_ROLE = SOURCE_ROLE
     MENTOR_ROLE = MENTOR_ROLE
     NOT_STAFF_ROLES = NOT_STAFF_ROLES
+    STAFF_MENTOR_ROLES = STAFF_MENTOR_ROLES
+    MENTOR_LINK_ROLES = MENTOR_LINK_ROLES
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,
         help_text='Set on first login via UID or email match',
@@ -135,15 +145,19 @@ class PartnerAdmin(models.Model):
         null=True, blank=True, related_name='users', db_column='source_id',
         help_text='The referral source a source_partner signs in for. NULL for every other role.',
     )
-    # ⚠ THE MENTOR A `mentor` LOGIN IS, AND NO OTHER ROW CARRIES ONE (student maintenance S7a,
-    # 2026-10-31). The source pattern exactly: "role `mentor` ⇔ mentor set, and never a super" is a
-    # DATABASE check (Meta); `save` adds that `owning_organisation` IS the mentor's organisation.
+    # ⚠ THE MENTOR A `mentor` LOGIN IS (student maintenance S7a, 2026-10-31) — AND, SINCE S7d
+    # (2026-11-01), THE MENTOR A STAFF MEMBER ALSO IS, on the same login (`STAFF_MENTOR_ROLES`; added
+    # from the Mentors page, `scholarship/staff_mentor.py`). "role `mentor` ⇒ mentor set; mentor set ⇒
+    # a `MENTOR_LINK_ROLES` role, never a super" is a DATABASE check (Meta); `save` adds that
+    # `owning_organisation` IS the mentor's organisation. Whether the person mentors NOW is
+    # `mentors_now` (an eligible role and the mentor not deactivated), never "mentor_id is set".
     # PROTECT: a mentor is never deleted, only deactivated (`Mentor.deactivated_at`). A string
     # reference: no `courses → scholarship` import.
     mentor = models.ForeignKey(
         'scholarship.Mentor', on_delete=models.PROTECT,
         null=True, blank=True, related_name='users', db_column='mentor_id',
-        help_text='The mentor a mentor login signs in as. NULL for every other role.',
+        help_text='The mentor this login is: a mentor login, or a staff member who also mentors (S7d). '
+                  'NULL for everybody else.',
     )
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
@@ -221,11 +235,12 @@ class PartnerAdmin(models.Model):
                 condition=(Q(role=SOURCE_ROLE, source__isnull=False, is_super_admin=False)
                            | (~Q(role=SOURCE_ROLE) & Q(source__isnull=True))),
                 name='partner_admin_source_iff_source_partner'),
-            # Student maintenance S7a: the same shape for a mentor (courses 0090). Every row alive
-            # on 2026-10-31 has `mentor_id` NULL (the column is new) and another role.
+            # Student maintenance S7a: the same shape for a mentor (courses 0090). RELAXED by S7d
+            # (courses 0091; the name is kept): role `mentor` ⇒ `mentor_id` set; `mentor_id` set ⇒ a
+            # role in `MENTOR_LINK_ROLES` and never a super. A staff member may now ALSO be a mentor.
             models.CheckConstraint(
-                condition=(Q(role=MENTOR_ROLE, mentor__isnull=False, is_super_admin=False)
-                           | (~Q(role=MENTOR_ROLE) & Q(mentor__isnull=True))),
+                condition=((~Q(role=MENTOR_ROLE) & Q(mentor__isnull=True))
+                           | Q(mentor__isnull=False, is_super_admin=False, role__in=MENTOR_LINK_ROLES)),
                 name='partner_admin_mentor_iff_mentor'),
             # S7a review fix: ONE login per mentor, in the database too (courses 0090).
             models.UniqueConstraint(fields=['mentor'], condition=Q(mentor__isnull=False),
@@ -245,17 +260,37 @@ class PartnerAdmin(models.Model):
 
     @property
     def is_mentor(self):
-        """True for a mentor's own login (student maintenance S7a). Never staff."""
+        """True for a mentor's own login (student maintenance S7a). Never staff. ⚠ NOT "mentors":
+        a staff member who also mentors (S7d) is `is_staff_mentor`; who mentors NOW is `mentors_now`."""
         return self.role == MENTOR_ROLE
+
+    @property
+    def is_staff_mentor(self):
+        """S7d: a STAFF login that carries a mentor record (active or not) — staff first, mentor too."""
+        return self.mentor_id is not None and self.role != MENTOR_ROLE
+
+    @property
+    def mentors_now(self):
+        """S7d: does this login mentor students NOW? A mentor record that is not deactivated, on a role
+        that may mentor (a mentor login, or `STAFF_MENTOR_ROLES` — never finance, never a super) and
+        an active login. THE rule for the mentor's desk, the menu's My students and the profile's
+        Mentoring card (`scholarship.mentor_desk.mentor_of`, `staff_contact.works_with_students`)."""
+        if self.mentor_id is None or not self.is_active or self.is_super:
+            return False
+        if self.role != MENTOR_ROLE and self.role not in STAFF_MENTOR_ROLES:
+            return False
+        return self.mentor.deactivated_at is None
 
     def source_binding_problem(self):
         """Why this row breaks the source or mentor binding, or None. Reads the source (or mentor)
-        only for a source user (or a mentor)."""
+        only for a source user (or a row carrying a mentor)."""
         if self.is_source_user != (self.source_id is not None):
             return 'A source user needs its source, and no other account may have one.'
-        if self.is_mentor != (self.mentor_id is not None):
-            return 'A mentor login needs its mentor, and no other account may have one.'
-        if self.is_mentor:
+        if self.is_mentor and self.mentor_id is None:
+            return 'A mentor login needs its mentor.'
+        if self.mentor_id is not None:
+            if self.role not in MENTOR_LINK_ROLES:
+                return 'Only a mentor login or a staff member who may mentor can have a mentor record.'
             if self.is_super_admin:
                 return 'A mentor is never a super admin.'
             if self.owning_organisation_id != self.mentor.organisation_id:

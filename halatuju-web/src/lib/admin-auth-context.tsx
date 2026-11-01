@@ -39,6 +39,10 @@ interface AdminRole {
    *  other role (absent on a payload from before S1). */
   source_id?: number | null
   source_name?: string | null
+  /** S7d: a STAFF member who also mentors NOW (an active mentor record) — My students joins their
+   *  menu and the profile gains the mentoring bits. False / absent for everybody else (a mentor login
+   *  reads its `role`). */
+  mentoring?: boolean
 }
 
 interface AdminAuthContextValue {

@@ -26,7 +26,8 @@ HTTP shapes are `views_admin/mentoring.py` (staff) and `views_bursary.py` (the s
   transaction commits, only when staff left "Email the student" on. Its phone line only when the
   mentor shares their phone with students.
 - ENDED BY OTHER DOORS, with no email: Deactivate / Revoke of a mentor (`end_for_mentor`, reason
-  "Mentor deactivated", from `mentor_invite._switch_off`), closing the file (`end_for_closure`,
+  "Mentor deactivated", from `mentor_invite._switch_off`), every way OUT of a STAFF member's mentoring
+  (S7d, `staff_mentor.py`: reason "Mentor stopped mentoring"), closing the file (`end_for_closure`,
   "File closed", from `closure.close_application`) and an award reverted to the pool
   (`end_for_award_revert`, "Award reverted", from `maintenance.reset_on_leaving`). Reactivating a
   mentor restores nothing.
@@ -71,9 +72,13 @@ REASON_DEACTIVATED = 'Mentor deactivated'
 REASON_CLOSED = 'File closed'
 REASON_IS_STUDENT = 'Mentor is the student'
 REASON_REVERTED = 'Award reverted'
+#: S7d: a STAFF member's mentoring ended — Stop mentoring, or their staff account revoked, switched off,
+#: deleted or moved to a role that may not mentor (`staff_mentor.py`). Never their staff login's doing.
+REASON_STOPPED = 'Mentor stopped mentoring'
 #: The `cause` on a `mentor_ended` activity row.
 CAUSE_STAFF, CAUSE_DEACTIVATED, CAUSE_CLOSED = 'staff', 'mentor_deactivated', 'file_closed'
 CAUSE_IS_STUDENT, CAUSE_REVERTED = 'mentor_is_student', 'award_reverted'
+CAUSE_STOPPED = 'mentor_stopped'   # S7d
 #: The activity events a role outside `may_act` is never served (they name the mentor; review fix 2) —
 #: S7c adds the concern raised / handled lines.
 EVENTS = (EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED,
@@ -160,9 +165,18 @@ def refusal_for_mentor(application, mentor):
         return 'mentor_not_found'
     if mentor.deactivated_at is not None:
         return 'mentor_inactive'
-    if is_the_student(_login(mentor), application):
+    login = _login(mentor)
+    if _staff_not_mentoring(login):
+        return 'mentor_inactive'
+    if is_the_student(login, application):
         return 'own_application'
     return None
+
+
+def _staff_not_mentoring(login):
+    """S7d, belt and braces: a STAFF member's mentor record whose login may not mentor now (revoked, or
+    a role that may not mentor) is never assignable, even if a door out missed stamping the mentor."""
+    return login is not None and login.is_staff_mentor and not login.mentors_now
 
 
 def assignable_mentors(application):
@@ -176,7 +190,7 @@ def assignable_mentors(application):
     out = []
     for m in mentors:
         f = facts.get(m.pk) or {}
-        if is_the_student(f.get('login'), application):
+        if is_the_student(f.get('login'), application) or _staff_not_mentoring(f.get('login')):
             continue
         out.append({'id': m.pk, 'name': f.get('name', ''), 'area': m.area,
                     'languages': f.get('languages', []), 'other_language': f.get('other_language', ''),
@@ -351,13 +365,14 @@ def _open_of_mentor(mentor):
             .filter(mentor=mentor, ended_at__isnull=True))
 
 
-def end_for_mentor(mentor, by=''):
+def end_for_mentor(mentor, by='', *, reason=REASON_DEACTIVATED, cause=CAUSE_DEACTIVATED):
     """Deactivate / Revoke of ``mentor`` (`mentor_invite._switch_off`, inside its transaction): every
     open assignment of theirs ends — reason "Mentor deactivated", an activity line on each file, no
-    email. Returns how many ended. Reactivating restores none of them."""
+    email. Returns how many ended. Reactivating restores none of them. S7d: a staff member's way out
+    (`staff_mentor.py`) passes "Mentor stopped mentoring" / `mentor_stopped`."""
     n = 0
     for a in _open_of_mentor(mentor):
-        n += _end_row(a.application, a, by=by, reason=REASON_DEACTIVATED, cause=CAUSE_DEACTIVATED)
+        n += _end_row(a.application, a, by=by, reason=reason, cause=cause)
     return n
 
 

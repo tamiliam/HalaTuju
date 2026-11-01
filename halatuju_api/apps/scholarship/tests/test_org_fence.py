@@ -476,6 +476,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMentorsView': 'mentor-scope-org-fenced (_in_scope)',
         'AdminMentorView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
         'AdminMentorActionView': 'mentor-fenced (_in_scope + mentor_invite.manageable)',
+        # S7d (2026-11-01): "Add a staff member as mentor". The candidates and the target are cut to the
+        # caller's own organisation (a super: any, narrowed by ?org=); another organisation's staff is
+        # 404 (`test_staff_mentor.TestAdding.test_who_may_add`).
+        'AdminStaffMentorsView': 'staff-org-fenced (owning_organisation of the caller; super ?org=)',
         # Source sign-in S3 (2026-10-30): the source console. A SOURCE USER only (staff, a super
         # included, 403); rows only through `source_access` (`listed_applications_for` /
         # `applications_for`), which cut to the source's own organisation before the source narrows

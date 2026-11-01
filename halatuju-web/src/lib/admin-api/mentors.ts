@@ -29,6 +29,9 @@ export interface MentorRow {
   manageable: boolean
   /** S7b: how many scholars this mentor has now (open assignments). */
   scholars_now?: number
+  /** S7d: the STAFF role of a staff member who also mentors ("Staff · <role>"); null for a mentor
+   *  login. Only Stop mentoring / Mentor again act on such a row; their sign-in is People's. */
+  staff_role?: string | null
 }
 
 export interface MentorsPayload {
@@ -37,7 +40,7 @@ export interface MentorsPayload {
   can_invite: boolean
 }
 
-export type MentorAction = 'resend' | 'revoke' | 'deactivate' | 'reactivate'
+export type MentorAction = 'resend' | 'revoke' | 'deactivate' | 'reactivate' | 'stop' | 'resume'
 
 export async function getMentors(options?: ApiOptions) {
   return adminFetch<MentorsPayload>('/api/v1/admin/mentors/', options)
@@ -50,7 +53,29 @@ export async function inviteMentor(data: { name: string; email: string }, option
     '/api/v1/admin/invitations/', 'POST', { audience: 'mentor', ...data }, options)
 }
 
-/** Resend / Revoke (invited only), Deactivate, Reactivate. Answers the row and `emailed`. */
+/** Resend / Revoke (invited only), Deactivate, Reactivate; S7d — for a STAFF mentor only — Stop
+ *  (`stop`, "Stop mentoring") and Mentor again (`resume`). Answers the row and `emailed`. */
+/** S7d: a staff member the "Add a staff member as mentor" sheet may offer. */
+export interface StaffCandidate {
+  id: number
+  name: string
+  email: string
+  role: string
+  organisation: string
+}
+
+/** S7d: the eligible staff (super / org_admin; org_admin, admin, reviewer, qc of the organisation, not
+ *  mentors yet). */
+export async function getStaffMentorCandidates(options?: ApiOptions) {
+  return adminFetch<{ staff: StaffCandidate[] }>('/api/v1/admin/mentors/staff/', options)
+}
+
+/** S7d: add a staff member as a mentor — no email. Refusals arrive as `code`: `not_eligible`,
+ *  `already_mentor`, `not_found`. */
+export async function addStaffMentor(adminId: number, options?: ApiOptions) {
+  return adminMutate<MentorRow>('/api/v1/admin/mentors/staff/', 'POST', { admin_id: adminId }, options)
+}
+
 export async function mentorAction(id: number, action: MentorAction, options?: ApiOptions) {
   return adminMutate<MentorRow & { emailed: boolean | null }>(
     `/api/v1/admin/mentors/${id}/${action}/`, 'POST', {}, options)

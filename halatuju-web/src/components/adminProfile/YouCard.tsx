@@ -27,7 +27,7 @@ function photoRefusal(err: { code?: string; status?: number }): string {
  * with a counter) and the sign-in email, shown, never edited. Common profile S2.
  */
 export default function YouCard({ state }: CardProps) {
-  const { t, draft, set, setCard, email, token, photoUrl, onPhoto } = state
+  const { t, draft, set, setCard, email, token, photoUrl, onPhoto, staffMentor } = state
   const file = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -104,6 +104,12 @@ export default function YouCard({ state }: CardProps) {
           <p id="profile-about-count" className="mt-1 text-right text-xs text-ground-500">
             {t(`${P}.aboutCount`, { n: String(draft.card.about.length), max: String(ABOUT_MAX) })}
           </p>
+          {/* S7d: a staff member's About was written for colleagues; their students now read it too. */}
+          {staffMentor && (
+            <p className="mt-1 text-xs text-ground-500" data-testid="about-seen-by-students">
+              {t('admin.mentors.profile.aboutSeen')}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor="profile-email" className={labelCls}>{t(`${P}.signInEmail`)}</label>

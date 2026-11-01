@@ -68,6 +68,10 @@ export interface ProfileState {
   /** A `review` holder or a mentor (S7a): the qualification / address cards and "share my phone
    *  with students" (`lib/profileCards.ts` `worksWithStudents`). */
   withStudents: boolean
+  /** A mentor login, or (S7d) a staff member who mentors now (`lib/profileCards.ts` `mentorsNow`). */
+  mentoring: boolean
+  /** S7d: a STAFF member who also mentors now (not a mentor login) — the staff-mentor wording. */
+  staffMentor: boolean
   /** The photo now on the profile (a signed URL), and how a card changes it — straight away,
    *  not through Save (`admin/me/photo/`). */
   photoUrl: string | null

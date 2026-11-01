@@ -92,7 +92,15 @@ export const roleOrgAdmin: ManualChapter = {
         the meeting says &ldquo;logged by &hellip; (mentor)&rdquo;. If the mentor says they are worried, the
         scholar shows <strong>Mentor concerned</strong> on the tab and on the Scholars list, which has a filter of
         that name. <strong>Mark as handled</strong> clears it, and a new concern raises it again. Nobody is
-        emailed when a mentor logs a meeting.</p></>
+        emailed when a mentor logs a meeting.</p>
+        <p className="mt-2"><strong>Staff who also mentor:</strong> on Organisation &rarr; Mentors, <strong>Add a
+        staff member as mentor</strong> lists your organisation admins, admins, reviewers and QC who are not
+        mentors yet (never finance). They keep their role and every page, and gain My students and a Mentoring
+        card on their profile; no email is sent, so tell them yourself. Their row says &ldquo;Staff &middot;
+        &lt;role&gt;&rdquo;. <strong>Stop mentoring</strong> ends their mentoring and leaves their staff sign-in
+        alone; <strong>Mentor again</strong> (under Inactive) brings it back, with no students. Revoking them,
+        cancelling their invitation or switching them to Finance also ends it, and restoring them does not bring
+        it back. Once they have mentored anybody they can be revoked, never deleted.</p></>
       ),
     },
     {

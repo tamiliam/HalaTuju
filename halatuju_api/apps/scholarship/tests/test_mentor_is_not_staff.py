@@ -155,12 +155,14 @@ class TestNoStaffPathReachesAMentor(TestCase):
     def test_the_database_holds_the_binding(self):
         from django.core.exceptions import ValidationError
         from django.db import IntegrityError, transaction
-        # A mentor login with no mentor, or a staff row with one, is refused by `save` …
+        # A mentor login with no mentor, or a row whose role may never carry one, is refused by
+        # `save` … (S7d: a STAFF row may now carry one — `test_staff_mentor.py` — but never a
+        # partner, a source user or a super.)
         with self.assertRaises(ValidationError):
             PartnerAdmin(email='a@example.test', name='A', role='mentor',
                          owning_organisation=self.org).save()
         with self.assertRaises(ValidationError):
-            PartnerAdmin(email='b@example.test', name='B', role='reviewer',
+            PartnerAdmin(email='b@example.test', name='B', role='partner',
                          owning_organisation=self.org, mentor=self.user.mentor).save()
         # … another organisation's mentor too …
         with self.assertRaises(ValidationError):
@@ -168,4 +170,8 @@ class TestNoStaffPathReachesAMentor(TestCase):
                          owning_organisation=make_org(), mentor=self.user.mentor).save()
         # … and by the database check, which an `.update()` cannot step round.
         with self.assertRaises(IntegrityError), transaction.atomic():
-            PartnerAdmin.objects.filter(pk=self.user.pk).update(role='reviewer')
+            PartnerAdmin.objects.filter(pk=self.user.pk).update(role='partner')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PartnerAdmin.objects.filter(pk=self.user.pk).update(role='super', is_super_admin=True)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PartnerAdmin.objects.filter(pk=self.user.pk).update(mentor=None)

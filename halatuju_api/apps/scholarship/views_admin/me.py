@@ -28,6 +28,7 @@ exists; NEVER on `admin/role/`, which every page load reads) — and `PATCH admi
 
 Student maintenance S7a (2026-10-31): a MENTOR is opted in to all three (`mentor_methods`), and only a
 mentor reads and writes `mentoring_area` — their own `Mentor.area`, required, at most 120 characters.
+S7d (2026-11-01): so does a STAFF member who mentors now (`_mentors`, `PartnerAdmin.mentors_now`).
 "Share my phone with students" and the phone being required follow `works_with_students` (a `review`
 holder or a mentor; `staff_contact.py`).
 """
@@ -78,18 +79,25 @@ def programmes_of(admin, lang='en'):
 
 
 
+def _mentors(admin):
+    """A mentor login, or (S7d) a staff member who mentors now: reads and writes `mentoring_area`."""
+    return admin.is_mentor or admin.mentors_now
+
+
 def _profile_of(admin):
     return StaffProfile.objects.filter(partner_admin=admin).first()
 
 
-def _card(profile):
-    """The person's own card fields, blank when no profile row exists yet."""
+def _card(profile, admin):
+    """The person's own card fields, blank when no profile row exists yet (then "share with students"
+    reads what a new row WOULD start with — S7d: off for a staff member who mentors)."""
     return {
         'job_title': getattr(profile, 'job_title', '') or '',
         'about': getattr(profile, 'about', '') or '',
         'phone': getattr(profile, 'phone', '') or '',
         'share_phone_with_team': bool(getattr(profile, 'share_phone_with_team', False)),
-        'share_phone_with_students': bool(getattr(profile, 'share_phone_with_students', True)),
+        'share_phone_with_students': bool(getattr(profile, 'share_phone_with_students',
+                                                  new_profile_defaults(admin)['share_phone_with_students'])),
         'photo_url': staff_photo.signed_url(getattr(profile, 'photo_path', '')),
     }
 
@@ -135,7 +143,7 @@ class AdminMeView(_AdminBase):
         with_students = works_with_students(admin)
         refused = sorted(k for k in data if k not in ME_FIELDS
                          or (k == 'share_phone_with_students' and not with_students)
-                         or (k == 'mentoring_area' and not admin.is_mentor))
+                         or (k == 'mentoring_area' and not _mentors(admin)))
         if refused:
             return _me_refusal('not_editable', fields=refused)
         clean = {}
@@ -200,11 +208,11 @@ class AdminMeView(_AdminBase):
             'permissions': list(admin.permission_set),
             'first_seen_at': admin.first_seen_at,
             'last_seen_at': admin.last_seen_at,
-            **_card(_profile_of(admin)),
+            **_card(_profile_of(admin), admin),
             # S7a: a mentor's own area of mentoring — for a mentor only (fresh read: a PATCH just
-            # wrote it with an UPDATE).
+            # wrote it with an UPDATE). S7d: a staff member who mentors now too.
             **({'mentoring_area': Mentor.objects.filter(pk=admin.mentor_id)
-                .values_list('area', flat=True).first() or ''} if admin.is_mentor else {}),
+                .values_list('area', flat=True).first() or ''} if _mentors(admin) else {}),
         }
 
 

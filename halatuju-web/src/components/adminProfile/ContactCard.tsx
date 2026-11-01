@@ -14,11 +14,14 @@ import { CardFrame, labelCls, PhoneField, Req, type CardProps } from './shared'
  * Saved with the page's Save, through `admin/me/`.
  */
 export default function ContactCard({ state }: CardProps) {
-  const { t, draft, setCard, reviews, withStudents, role } = state
+  const { t, draft, setCard, reviews, withStudents, role, staffMentor } = state
   const card = draft.card
   const mentor = role === 'mentor'
   const outside = role === 'source_partner' || role === 'partner' || mentor
-  const shareLabel = t(mentor ? 'admin.mentors.profile.showToStudents' : 'admin.reviewer.sharePhone')
+  // S7d: a staff member who mentors and reviews keeps the reviewer's switch (one flag, already theirs);
+  // one who mentors without reviewing is shown the mentor's — OFF until they switch it on.
+  const shareLabel = t(mentor || (staffMentor && !reviews) ? 'admin.mentors.profile.showToStudents'
+    : 'admin.reviewer.sharePhone')
   return (
     <CardFrame title={t('admin.reviewer.contactTitle')} icon="🔒" testId="contact">
       <div className="grid gap-4 sm:grid-cols-2">

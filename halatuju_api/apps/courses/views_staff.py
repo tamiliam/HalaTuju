@@ -30,7 +30,7 @@ from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES,
                           PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
                           _record_invitation, _record_invitation_send, _staff_target_manageable,
-                          scholarship_staff, send_partner_welcome_email)
+                          scholarship_staff, send_partner_welcome_email, staff_mentor_leaves)
 
 logger = logging.getLogger('apps.courses.views_admin')
 
@@ -172,6 +172,9 @@ class AdminDeleteView(PartnerAdminMixin, APIView):
                 return Response({'error': 'Could not check their sign-in. Nothing was deleted; '
                                  'try again.', 'code': 'login_cleanup_failed'}, status=502)
             name, email, uid = target.name, target.email, target.supabase_user_id
+            # S7d: a staff member who also mentors but never had a scholar (one who did has
+            # `scholars_mentored` work above) — their mentor record is stamped deactivated first.
+            staff_mentor_leaves(target, by=admin.email or '')
             target.delete()
         login = staff_lifecycle.retire_login(uid, plan, account)
         logger.info('AUDIT staff_deleted by=%s target=%s email=%s login=%s',
@@ -531,8 +534,12 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             if not has_other:
                 return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
-            target.is_active = False
-            target.save(update_fields=['is_active'])
+            with transaction.atomic():
+                target.is_active = False
+                target.save(update_fields=['is_active'])
+                # S7d: a staff member who also mentors stops mentoring with the revoke (their scholars'
+                # assignments end, no email). A later Restore does NOT bring mentoring back.
+                staff_mentor_leaves(target, by=admin.email or '')
             return Response({'message': f'{target.name} access revoked'})
         elif action == 'restore':
             # Sources Sprint D review: a `partner` login comes back only onto an ACTIVE referral

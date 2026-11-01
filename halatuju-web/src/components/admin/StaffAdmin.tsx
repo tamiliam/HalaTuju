@@ -339,6 +339,8 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
         // #39 S4 review fix 4: what the switch does to the payment chain and to files, from the
         // editor's own rule (the approval fallback, the check step) — worded as the editor words it.
         ...(plan.consequences ?? []).map((c) => t(`admin.permEditor.effect.${c}`, { name: a.name })),
+        // S7d: a staff member who also mentors stops mentoring with a switch to Finance.
+        plan.stops_mentoring ? t('admin.stopsMentoring') : '',
       ].filter(Boolean).join(' ')
       const ask = t('admin.roleChangeConfirm', { name: a.name, role: t(`admin.role.${to}`) })
       if (!window.confirm(note ? `${ask} ${note}` : ask)) return false

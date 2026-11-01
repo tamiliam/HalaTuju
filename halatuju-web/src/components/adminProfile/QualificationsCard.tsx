@@ -59,7 +59,7 @@ export default function QualificationsCard({ state }: CardProps) {
     <CardFrame title={t('admin.myProfile.qualifications')} testId="qualifications">
       {/* S7a: a mentor's students see the languages, never the qualifications (the board's line). */}
       <p className="text-sm text-ground-500 -mt-2">
-        {t(state.role === 'mentor' ? 'admin.mentors.profile.whoSees' : 'admin.reviewer.subtitle')}
+        {t(state.mentoring ? 'admin.mentors.profile.whoSees' : 'admin.reviewer.subtitle')}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

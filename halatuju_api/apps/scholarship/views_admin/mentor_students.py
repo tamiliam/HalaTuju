@@ -8,6 +8,8 @@
 
 ⚠ WHO: a MENTOR, and nobody else. These three views are the ONLY additions to `mentor_methods` in 7c
 (`test_mentor_denied_everywhere.py` pins the full list); staff, sources and students are refused (403).
+S7d: a STAFF member with an active mentor record (`mentor_desk.mentor_of`) is a mentor here too — staff
+pass `get_admin` on every method, so `mentor_methods` is untouched; staff WITHOUT one are still 403.
 A student who is not the caller's CURRENT student — another mentor's, an ended assignment, another
 organisation's, the mentor's own application, an unknown id — is 404, one answer for all.
 """
