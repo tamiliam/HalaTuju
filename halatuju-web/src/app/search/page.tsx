@@ -512,7 +512,9 @@ function SearchPageInner() {
           groups={facets}
           resultCount={isLoading ? null : displayedCourses.length}
           // The sheet's Clear clears what the sheet holds — not the search words or the switch.
-          onClear={() => picked.forEach(p => p.clear())}
+          // aliran too: a hand-typed `?aliran=` without `type=pismp` filters the results while its group is
+          // hidden, so it has no chip and no count — Clear must still remove it (M3 review).
+          onClear={() => { picked.forEach(p => p.clear()); setAliran('') }}
           canClear={picked.length > 0}
         />
 

@@ -122,9 +122,13 @@ describe('saved courses on a phone (Mobile M3)', () => {
     expect(card).toMatch(/const pill = 'inline-flex min-h-11 /)
   })
 
-  it('no compare word is hard-coded Malay any more', () => {
+  it('no compare word is hard-coded Malay any more — on the page or in the compare component', () => {
+    // The compare words moved into SavedCompare.tsx; a guard that read only the page could never see
+    // them come back (M3 review).
+    const compare = readWeb('src/components/saved/SavedCompare.tsx', 'the saved-course compare')
     for (const malay of ['Bandingkan', 'Batal', 'Perbandingan Kursus', 'Kembali ke senarai', 'kursus dipilih', '/bln', 'Temuduga']) {
       expect(page).not.toContain(malay)
+      expect(compare).not.toContain(malay)
     }
   })
 })

@@ -69,7 +69,7 @@ export default function SearchFilterSheet({ open, onClose, groups, resultCount, 
           </button>
           <button type="button" onClick={onClose}
             className="min-h-12 flex-[1.4] rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
-            {resultCount === null ? t('common.loading') : t('discovery.showCourses', { count: String(resultCount) })}
+            {resultCount === null ? t('common.loading') : t(resultCount === 1 ? 'discovery.showCourse' : 'discovery.showCourses', { count: String(resultCount) })}
           </button>
         </>
       )}

@@ -64,6 +64,11 @@ describe('SearchFilterSheet', () => {
     expect(screen.getByRole('button', { name: 'discovery.showAll 8' })).toBeTruthy()
   })
 
+  it('one result says "course", not "courses" (M3 review)', () => {
+    setup({ resultCount: 1 })
+    expect(screen.getByRole('button', { name: 'discovery.showCourse 1' })).toBeTruthy()
+  })
+
   it('"Show N courses" only closes; Clear clears; Clear is off when nothing is picked', () => {
     const { onClose, onClear, onQual } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'discovery.showCourses 128' }))

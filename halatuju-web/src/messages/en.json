@@ -851,6 +851,7 @@
   "discovery": {
     "filters": "Filters",
     "showCourses": "Show {count} courses",
+    "showCourse": "Show {count} course",
     "showAll": "Show all ({count})",
     "removeFilter": "Remove filter: {name}",
     "activeFilters": "Filters in use",

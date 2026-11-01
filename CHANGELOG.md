@@ -46,6 +46,12 @@ is approved from the build (decisions.md, the Mobile M3 entry). No migration, no
   152.489 → 154.216, `/report/[id]` 182.328 → 182.509; budgeted `/profile` 196.088 → 196.145,
   `/scholarship/application` 210.050 → 210.139, `/scholarship/apply` 186.291 → 186.348. Nothing raised.
 
+- **Review fixes (before the push):** the phone filter sheet's Clear also removes a hand-typed `?aliran=` (its group is
+  hidden without `type=pismp`, so it had no chip and no count); one result reads "Show 1 course" (`discovery.showCourse`,
+  en/ms/ta); the no-hard-coded-Malay guard now reads `SavedCompare.tsx` too; `theme.test.ts` keeps the course page under
+  the no-copy rule. Bite-checked (3 of 3 red). Accepted: the sandbox filter surface's English group titles; a 12 px gap
+  above "Back to recommendations" on phones.
+
 ## Student maintenance Sprint 7c — mentors see their students and log meetings — LIVE 2026-11-01 (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first)
 
 Owner rulings 2026-11-01 (decisions.md, the 7c entry). **Migration scholarship 0198

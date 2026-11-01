@@ -851,6 +851,7 @@
   "discovery": {
     "filters": "வடிப்பான்கள்",
     "showCourses": "{count} படிப்புகளைக் காட்டு",
+    "showCourse": "{count} படிப்பைக் காட்டு",
     "showAll": "அனைத்தையும் காட்டு ({count})",
     "removeFilter": "வடிப்பானை நீக்கு: {name}",
     "activeFilters": "பயன்பாட்டில் உள்ள வடிப்பான்கள்",

@@ -851,6 +851,7 @@
   "discovery": {
     "filters": "Penapis",
     "showCourses": "Papar {count} kursus",
+    "showCourse": "Papar {count} kursus",
     "showAll": "Papar semua ({count})",
     "removeFilter": "Buang penapis: {name}",
     "activeFilters": "Penapis yang digunakan",
