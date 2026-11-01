@@ -302,8 +302,6 @@ Measurement tooling only; no production code, no migration, no paid call
   94.4 %, NRIC 98.9 %, institution 51.1 %, programme 73.3 %, intake 81.1 %, reporting date 96.7 %. Recorded in
   the roadmap's S1 section with the owner's notes for S2, S4 and S6.
 
-## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
-
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 
 - **The bug:** the apply form stashes the WHOLE form (IC, household income, parent name and phone, the typed
@@ -445,6 +443,7 @@ rollback in its docstring).** No new table. Release order: 0198 by hand, then AP
   (`mobileClass.ts`, M6).
 - Review fixes: the mentor sees the student's CURRENT contact email (the copy taken at submit only as a fallback);
   a concern on a closed file shows no chip and is not in the "Mentor concerned" filter (it can no longer be handled).
+
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 
 Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,
