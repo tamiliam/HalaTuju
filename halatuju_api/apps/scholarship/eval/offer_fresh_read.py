@@ -60,11 +60,22 @@ THE LIVE METER (measured on the pilot): `usage.gemini_tokens` stores `prompt_tok
 `candidates_token_count` only; `thoughts_token_count` (thinking, billed at the output rate) is NOT
 recorded — each cache's `meter` beside its `usage` shows the gap.
 
+THE NEW READER (offer exact-read S4). Since S4 `extract_document_fields` hands an offer to
+`offer_reader.read_offer`: up to 3 pages, one image each at high media resolution, plus a digital
+PDF's text layer, a new schema (`campus`, `reporting_venue`, `programme_code`) and the version stamp.
+`--reader new` (the default) runs it and caches `<key>.fresh_s4.json`; `--reader current` names
+S3's caches `<key>.fresh.json` (the page-1 reader, which this checkout no longer holds), so it is
+read-only: `--compare` / `--costs` / `--dry-run`, never a paid read. `--compare --reader new`
+scores stored, current and new on the letters holding both caches; `--costs` prints per letter the
+tokens (input / output / thinking) and cost of current beside new. Same guards as above.
+
 Usage (from halatuju_api/):
   python -I apps/scholarship/eval/offer_fresh_read.py --split all --dry-run
   python -I apps/scholarship/eval/offer_fresh_read.py --keys K1,K2 [--force]
   python -I apps/scholarship/eval/offer_fresh_read.py --split dev [--limit N]
   python -I apps/scholarship/eval/offer_fresh_read.py --compare [--split all]   # fresh vs stored
+  python -I apps/scholarship/eval/offer_fresh_read.py --keys K1,K2 --reader new   # S4, paid
+  python -I apps/scholarship/eval/offer_fresh_read.py --compare --reader new [--costs]
   add --eval-dir DIR for a checkout without the corpus; --env-file for the key's .env
 """
 import argparse
@@ -86,16 +97,19 @@ if _API_ROOT not in sys.path:                  # run as a script with -I: reach 
 from apps.scholarship.eval import offer_read_check as orc
 # The guarded client and the cost live in offer_fresh_gemini (split for size); re-exported here.
 from apps.scholarship.eval.offer_fresh_gemini import (
-    IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
+    IMAGE_TOKENS_HIGH_A4, IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
     StopRun, _refuse_db, call_cost_usd, error_code, guarded_production_read,
-    image_tokens_estimate, price_for, prompt_of, sha256_text, usage_of, usd_to_myr)
+    image_tokens_estimate, price_for, print_costs, prompt_of, sha256_text, usage_of, usd_to_myr)
 
-__all__ = ['IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
+__all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
            'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code',
            'guarded_production_read', 'image_tokens_estimate', 'price_for', 'usage_of',
            'usd_to_myr', 'read_letters', 'estimate', 'compare', 'main']
 
 FRESH_SUFFIX = '.fresh.json'
+#: The readers this tool knows: `current` = S3's page-1 reader (caches only), `new` = S4's reader.
+READERS = {'current': FRESH_SUFFIX, 'new': '.fresh_s4.json'}
+PAID_READERS = ('new',)
 LOG_NAME = 'offer_fresh_read.log'
 DOC_TYPE = 'offer_letter'
 #: Exit codes: 0 done, 2 no corpus / bad arguments, 3 stopped on a 402/429, 4 calls failed.
@@ -138,8 +152,8 @@ def select_keys(eval_dir, *, split='all', keys=None, limit=None, split_file=orc.
     return out[:limit] if limit else out
 
 
-def fresh_path(eval_dir, key):
-    return os.path.join(eval_dir, 'snapshots', key + FRESH_SUFFIX)
+def fresh_path(eval_dir, key, suffix=FRESH_SUFFIX):
+    return os.path.join(eval_dir, 'snapshots', key + suffix)
 
 
 def _git_head():
@@ -156,8 +170,8 @@ def _file_sha(path):
 
 
 def code_versions():
-    """What identifies today's reader (there is no offer reader version yet — S4 adds one)."""
-    from apps.scholarship import vision
+    """What identifies the reader run: git, file and schema hashes, and (S4) the offer reader version."""
+    from apps.scholarship import offer_reader, vision
     try:
         from google import genai
         sdk = getattr(genai, '__version__', None)
@@ -166,15 +180,11 @@ def code_versions():
     schema = vision._FIELD_SCHEMAS.get(DOC_TYPE)
     return {'git_head': _git_head(), 'vision_py_sha256': _file_sha(vision.__file__),
             'schema_sha256': sha256_text(json.dumps(schema, sort_keys=True, default=str)),
-            'genai_sdk': sdk}
+            'genai_sdk': sdk, 'offer_reader_version': offer_reader.OFFER_READER_VERSION,
+            'offer_reader_py_sha256': _file_sha(offer_reader.__file__)}
 
 
-def image_facts(data, content_type):
-    """{mime, width, height, bytes} of what Gemini is shown (production's own image preparation)."""
-    from apps.scholarship import vision
-    img, mime = vision._as_image_for_gemini(data, content_type)
-    if img is None:
-        return None
+def _one_image(img, mime):
     facts = {'mime': mime, 'bytes': len(img), 'width': None, 'height': None}
     try:
         from PIL import Image
@@ -183,6 +193,18 @@ def image_facts(data, content_type):
     except (OSError, ValueError):   # a size is a nicety for the estimate
         pass
     return facts
+
+
+def image_facts(data, content_type):
+    """{mime, width, height, bytes} of the FIRST image Gemini is shown, plus (S4) `pages` — one such
+    dict per image — and `text_layer_chars`: production's own input assembly
+    (`offer_reader.offer_inputs`). None when nothing can be shown."""
+    from apps.scholarship import offer_reader
+    shown = offer_reader.offer_inputs(data, content_type)
+    if not shown['images']:
+        return None
+    pages = [_one_image(img, mime) for img, mime in shown['images']]
+    return {**pages[0], 'pages': pages, 'text_layer_chars': len(shown['text_layer'])}
 
 
 # ── One letter, the run ──────────────────────────────────────────────────────────────────────
@@ -217,6 +239,8 @@ def read_one(eval_dir, key, extract, calls, meter, versions):
         'calls': mine, 'usage': _totals(mine), 'meter': metered,
         'image': image_facts(data, ct), 'input_file_ext': os.path.splitext(path)[1].lstrip('.').lower(),
         'versions': {**versions, 'prompt_sha256': (mine[0]['prompt_sha256'] if mine else None)},
+        'offer_reader_version': ex.get('offer_reader_version'),
+        'offer_reader_inputs': ex.get('offer_reader_inputs'),
         'prices_usd_per_million': PRICES, 'price_source': PRICE_SOURCE, 'usd_to_myr': USD_TO_MYR,
         'read_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
     }
@@ -254,11 +278,13 @@ def _log_entry(rec, outcome):
             'meter': rec.get('meter'), 'cost_usd': (rec.get('usage') or {}).get('cost_usd')}
 
 
-def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, versions=None):
-    """Read each key not yet cached (all with `force`). Returns (exit code, records read now)."""
+def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, versions=None,
+                 suffix=READERS['new']):
+    """Read each key not yet cached under `suffix` (all with `force`) with this checkout's reader.
+    Returns (exit code, records read now)."""
     log_path = os.path.join(eval_dir, LOG_NAME)
     versions = versions if versions is not None else code_versions()
-    todo = [k for k in keys if force or not os.path.exists(fresh_path(eval_dir, k))]
+    todo = [k for k in keys if force or not os.path.exists(fresh_path(eval_dir, k, suffix))]
     out(f'offer fresh read | letters: {len(keys)} | cached already (skipped): '
         f'{len(keys) - len(todo)} | to read now: {len(todo)}')
     calls, meter, done, failed = [], [], [], 0
@@ -274,7 +300,7 @@ def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, vers
                 _print_calls(done, out)
                 return EXIT_STOPPED, done
             if _should_cache(rec):
-                _write_json(fresh_path(eval_dir, key), rec)
+                _write_json(fresh_path(eval_dir, key, suffix), rec)
                 outcome = 'cached_error' if rec['error'] else 'cached'
                 done.append(rec)
             else:
@@ -338,13 +364,16 @@ def _tiny_png():
     return buf.getvalue()
 
 
-def estimate(eval_dir, keys):
-    """Counts and an estimated cost for `keys` — no Gemini call, nothing written."""
+def estimate(eval_dir, keys, suffix=READERS['new']):
+    """Counts and an estimated cost for `keys` read by this checkout's reader — no Gemini call,
+    nothing written. Per letter: prompt + schema + its text layer at ~4 characters a token, and
+    `image_tokens_estimate` per page image shown (high media resolution: the measured A4 page)."""
+    from apps.scholarship import offer_reader
     prompt, schema = capture_prompt()
     text_tokens = math.ceil((len(prompt) + len(json.dumps(schema, default=str))) / 4)
     kinds, no_image, img_tokens, cached = Counter(), 0, [], 0
     for key in keys:
-        if os.path.exists(fresh_path(eval_dir, key)):
+        if os.path.exists(fresh_path(eval_dir, key, suffix)):
             cached += 1
         path = letter_file(eval_dir, key)
         kinds[orc.input_kind(eval_dir, key) if path else 'no_file'] += 1
@@ -356,15 +385,16 @@ def estimate(eval_dir, keys):
         if not facts or not facts.get('width'):
             no_image += 1
             continue
-        img_tokens.append(image_tokens_estimate(facts['width'], facts['height']))
+        img_tokens.append(sum(image_tokens_estimate(p['width'], p['height'], offer_reader.MEDIA_RESOLUTION)
+                              for p in facts['pages']) + math.ceil(facts['text_layer_chars'] / 4))
     n = len(img_tokens)
     est = {}
     for band, think in EST_THINKING.items():
         cost = sum(call_cost_usd(EST_MODEL, text_tokens + t, EST_OUTPUT, think)['total']
                    for t in img_tokens)
         est[band] = {'thinking_per_letter': think, 'usd': cost, 'myr': usd_to_myr(cost)}
-    measured = [orc.read_json_file(fresh_path(eval_dir, k)) for k in orc.offer_keys(eval_dir)
-                if os.path.exists(fresh_path(eval_dir, k))]
+    measured = [orc.read_json_file(fresh_path(eval_dir, k, suffix)) for k in orc.offer_keys(eval_dir)
+                if os.path.exists(fresh_path(eval_dir, k, suffix))]
     per = [((m or {}).get('usage') or {}).get('cost_usd') or 0.0 for m in measured]
     return {
         'letters': len(keys), 'cached_already': cached, 'to_read': len(keys) - cached,
@@ -383,8 +413,8 @@ def print_estimate(e, out=print):
         f"{e['cached_already']} | to read: {e['to_read']}")
     out('  by input kind: ' + '  '.join(f'{k} {v}' for k, v in e['by_input_kind'].items())
         + f"  | no image to show: {e['no_image']}")
-    out(f"  per call (estimate): prompt+schema ~{e['prompt_text_tokens_est']} tokens, image "
-        f"~{e['image_tokens_est_mean']:.0f} tokens (max {e['image_tokens_est_max']}), output "
+    out(f"  per call (estimate): prompt+schema ~{e['prompt_text_tokens_est']} tokens, images + text "
+        f"layer ~{e['image_tokens_est_mean']:.0f} tokens (max {e['image_tokens_est_max']}), output "
         f"{e['output_per_letter']}, model {e['model']}")
     for band, b in e['estimate'].items():
         out(f"  {band:<5} thinking {b['thinking_per_letter']:>5}/letter: US${b['usd']:.3f} = "
@@ -398,16 +428,20 @@ def print_estimate(e, out=print):
 
 
 # ── Fresh vs stored, per field (counts only) ─────────────────────────────────────────────────
-def compare(eval_dir, split='all', split_file=orc.SPLIT_PATH):
-    """Per scored field: outcome counts of the STORED read and the FRESH read, over the answered
-    letters of the split that have a fresh cache — the same letters for both."""
+def compare(eval_dir, split='all', split_file=orc.SPLIT_PATH, reader='current'):
+    """Per scored field: outcome counts of the STORED read and the fresh read(s), over the answered
+    letters of the split that hold every compared cache — the same letters for all. `reader`
+    'current': stored vs `fresh` (S3); 'new': stored vs `fresh` (S3) vs `s4`. fixed / broke count
+    each read against the one before it."""
+    names = {'current': ('stored', 'fresh'), 'new': ('stored', 'fresh', 's4')}[reader]
+    suffixes = {'fresh': READERS['current'], 's4': READERS['new']}
     keys = [k for k in select_keys(eval_dir, split=split, split_file=split_file)
-            if os.path.exists(fresh_path(eval_dir, k))]
+            if all(os.path.exists(fresh_path(eval_dir, k, suffixes[n])) for n in names[1:])]
     heldout = orc.load_heldout(split_file)
-    reads = {'stored': orc.letter_rows(eval_dir, keys, orc.stored_read, heldout),
-             'fresh': orc.letter_rows(eval_dir, keys, orc.file_read(FRESH_SUFFIX), heldout)}
+    reads = {n: orc.letter_rows(eval_dir, keys, orc.stored_read if n == 'stored'
+                                else orc.file_read(suffixes[n]), heldout) for n in names}
     fields = (*orc.CORE, *orc.NOT_CORE)
-    result = {'split': split, 'letters': len(keys), 'fields': {}, 'fully_exact': {},
+    result = {'split': split, 'letters': len(keys), 'fields': {}, 'fully_exact': {}, 'reads': names,
               'by_split': Counter(r['split'] for r in reads['stored'])}
     changed = Counter()
     per_key = {}
@@ -424,14 +458,17 @@ def compare(eval_dir, split='all', split_file=orc.SPLIT_PATH):
                 tally[f][v] += 1
         result['fields'][name] = {f: {o: c[o] for o in orc.OUTCOMES} for f, c in tally.items()}
         result['fully_exact'][name] = fe
-    for key, both in per_key.items():
-        for f in fields:
-            s, fr = both.get('stored', {}).get(f), both.get('fresh', {}).get(f)
-            if s is None and fr is None:
-                continue
-            sr, frr = s in orc.RIGHT, fr in orc.RIGHT
-            changed[(f, 'fixed' if frr and not sr else 'broke' if sr and not frr else 'same')] += 1
-    result['changed'] = {f: {k: changed[(f, k)] for k in ('fixed', 'broke', 'same')} for f in fields}
+    for by_read in per_key.values():
+        for before, after in zip(names, names[1:]):
+            for f in fields:
+                s, fr = by_read.get(before, {}).get(f), by_read.get(after, {}).get(f)
+                if s is None and fr is None:
+                    continue
+                sr, frr = s in orc.RIGHT, fr in orc.RIGHT
+                changed[(after, f, 'fixed' if frr and not sr else 'broke' if sr and not frr else 'same')] += 1
+    result['changed_by_read'] = {a: {f: {k: changed[(a, f, k)] for k in ('fixed', 'broke', 'same')}
+                                     for f in fields} for a in names[1:]}
+    result['changed'] = result['changed_by_read'][names[-1]]
     result['by_split'] = dict(result['by_split'])
     return result
 
@@ -441,17 +478,30 @@ def print_compare(c, out=print):
         f"{c['letters']} " + ' '.join(f'({k} {v})' for k, v in sorted(c['by_split'].items())))
     if not c['letters']:
         return
-    out(f"fully exact: stored {c['fully_exact']['stored']}  fresh {c['fully_exact']['fresh']}")
+    names = c.get('reads') or ('stored', 'fresh')
+    out('fully exact: ' + '  '.join(f"{n} {c['fully_exact'][n]}" for n in names))
     out(f"  {'field':<15}{'read':<8}" + ''.join(f'{o:>14}' for o in orc.OUTCOMES)
         + f"{'right':>7}{'fixed':>7}{'broke':>7}")
     for f in (*orc.CORE, *orc.NOT_CORE):
-        for name in ('stored', 'fresh'):
+        for name in names:
             t = c['fields'][name][f]
             right = t['exact'] + t['blank_correct']
-            tail = (f"{c['changed'][f]['fixed']:>7}{c['changed'][f]['broke']:>7}"
-                    if name == 'fresh' else '')
+            ch = (c.get('changed_by_read') or {}).get(name, {}).get(f)
+            tail = f"{ch['fixed']:>7}{ch['broke']:>7}" if ch else ''
             out(f'  {f:<15}{name:<8}' + ''.join(f'{t[o]:>14}' for o in orc.OUTCOMES)
                 + f'{right:>7}' + tail)
+
+
+def costs(eval_dir, keys):
+    """Per letter holding both caches: (key, current usage, new usage, pages, text-layer chars)."""
+    rows = []
+    for k in keys:
+        pair = [orc.read_json_file(fresh_path(eval_dir, k, READERS[r])) for r in ('current', 'new')]
+        if all(pair):
+            shown = pair[1].get('offer_reader_inputs') or {}
+            rows.append((k, pair[0].get('usage') or {}, pair[1].get('usage') or {},
+                         shown.get('pages'), shown.get('text_layer_chars')))
+    return rows
 
 
 # ── Bootstrap (the script only — tests never call this) ─────────────────────────────────────
@@ -493,6 +543,9 @@ def main(argv=None, *, client_factory=None, out=print):
     ap.add_argument('--force', action='store_true', help='re-read letters already cached (PAID)')
     ap.add_argument('--dry-run', action='store_true', help='counts + estimated cost, no call')
     ap.add_argument('--compare', action='store_true', help='fresh vs stored per field (free)')
+    ap.add_argument('--reader', choices=tuple(READERS), default='new',
+                    help="new = this checkout's reader (S4, paid); current = S3's caches (read-only)")
+    ap.add_argument('--costs', action='store_true', help='per-letter tokens + cost, current vs new')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--env-file', default=DEFAULT_ENV_FILE)
     args = ap.parse_args(argv)
@@ -500,16 +553,22 @@ def main(argv=None, *, client_factory=None, out=print):
         out(f'No offer letters in {args.eval_dir} - this measurement needs the local corpus.')
         return 2
     if args.compare:
-        c = compare(args.eval_dir, args.split, args.split_file)
+        c = compare(args.eval_dir, args.split, args.split_file, args.reader)
         out(json.dumps(c, indent=1, sort_keys=True)) if args.json else print_compare(c, out)
         return 0
     keys = select_keys(args.eval_dir, split=args.split,
                        keys=[k.strip() for k in args.keys.split(',') if k.strip()],
                        limit=args.limit, split_file=args.split_file)
+    if args.costs:
+        print_costs(costs(args.eval_dir, keys), out)
+        return 0
     if args.dry_run:
-        e = estimate(args.eval_dir, keys)
+        e = estimate(args.eval_dir, keys, READERS[args.reader])
         out(json.dumps(e, indent=1, sort_keys=True)) if args.json else print_estimate(e, out)
         return 0
+    if args.reader not in PAID_READERS:
+        out(f"--reader {args.reader} is S3's cache only: this checkout cannot run that reader.")
+        return 2
     if client_factory is None:
         from google import genai
         client_factory = genai.Client
@@ -517,13 +576,14 @@ def main(argv=None, *, client_factory=None, out=print):
     if not getattr(settings, 'GEMINI_API_KEY', ''):
         out('GEMINI_API_KEY is not set - nothing read.')
         return 2
-    code, _ = read_letters(args.eval_dir, keys, client_factory=client_factory, force=args.force, out=out)
+    code, _ = read_letters(args.eval_dir, keys, client_factory=client_factory, force=args.force, out=out,
+                           suffix=READERS[args.reader])
     return code
 
 
 if __name__ == '__main__':
     _argv = sys.argv[1:]
-    if not any(a in _argv for a in ('--compare',)):
+    if not any(a in _argv for a in ('--compare', '--costs', '--dry-run')):
         load_gemini_key(next((_argv[i + 1] for i, a in enumerate(_argv[:-1]) if a == '--env-file'),
                              DEFAULT_ENV_FILE))
     bootstrap_django()

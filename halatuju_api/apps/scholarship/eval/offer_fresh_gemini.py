@@ -14,6 +14,7 @@ import contextlib
 import hashlib
 import json
 import re
+from collections import Counter
 from unittest import mock
 
 USD_TO_MYR = 4.4
@@ -29,6 +30,10 @@ STOP_CODES = (402, 429)
 #: tile, whatever the size (the documented tiling rule does not apply to this call's default
 #: media resolution). The estimate uses the measurement, not the documented rule.
 IMAGE_TOKENS_MEASURED = 258
+#: MEASURED 2026-11-01 (S4 probe, one SYNTHETIC 1654x2339 A4 page, gemini-2.5-flash): IMAGE = 258
+#: tokens at the default and at MEDIA_RESOLUTION_MEDIUM, 3,354 at MEDIA_RESOLUTION_HIGH (the S4
+#: reader's setting — "pan and scan"). The S4 estimate uses this per page image shown.
+IMAGE_TOKENS_HIGH_A4 = 3354
 
 
 class StopRun(BaseException):
@@ -71,9 +76,28 @@ def usd_to_myr(usd):
     return usd * USD_TO_MYR
 
 
-def image_tokens_estimate(width, height):
-    """Image prompt tokens for --dry-run: the measured 258 per image (see above)."""
-    return IMAGE_TOKENS_MEASURED
+def print_costs(rows, out=print):
+    t = ('input_tokens', 'output_tokens', 'thinking_tokens')
+    out(f"{'key':<30}{'pages':>6}{'text':>6} | current in/out/think US$  | new in/out/think US$")
+    tot = [Counter(), Counter()]
+    for k, cur, new, pages, text in rows:
+        cells = []
+        for i, u in enumerate((cur, new)):
+            cells.append('/'.join(str(u.get(x) or 0) for x in t) + f" {u.get('cost_usd') or 0:.5f}")
+            for x in (*t, 'cost_usd'):
+                tot[i][x] += u.get(x) or 0
+        out(f'{k:<30}{pages or 0:>6}{text or 0:>6} | {cells[0]:<26}| {cells[1]}')
+    n = len(rows)
+    for name, c in zip(('current', 'new'), tot if n else ()):
+        out(f"{name}: {n} letters, mean in {c['input_tokens'] / n:.0f} out {c['output_tokens'] / n:.0f} "
+            f"think {c['thinking_tokens'] / n:.0f}, US${c['cost_usd'] / n:.5f}/letter "
+            f"(RM{usd_to_myr(c['cost_usd'] / n):.4f}); total US${c['cost_usd']:.4f}")
+
+
+def image_tokens_estimate(width, height, media_resolution=None):
+    """Image prompt tokens for --dry-run, per image: the measured 258 (see above), or the measured
+    A4 page at high media resolution when the read asks for it (S4)."""
+    return IMAGE_TOKENS_HIGH_A4 if media_resolution == 'MEDIA_RESOLUTION_HIGH' else IMAGE_TOKENS_MEASURED
 
 
 # ── The recording Gemini client ──────────────────────────────────────────────────────────────
@@ -131,7 +155,10 @@ class _RecordingModels:
 
     def generate_content(self, *, model, contents, config=None, **kw):
         prompt = prompt_of(contents)
-        rec = {'model': model, 'prompt_sha256': sha256_text(prompt), 'prompt_chars': len(prompt)}
+        res = getattr(config, 'media_resolution', None)
+        rec = {'model': model, 'prompt_sha256': sha256_text(prompt), 'prompt_chars': len(prompt),
+               'images': 0 if isinstance(contents, str) else sum(not isinstance(c, str) for c in contents or []),
+               'media_resolution': (str(getattr(res, 'value', res)) if res is not None else None)}
         try:
             resp = self._inner.generate_content(model=model, contents=contents, config=config, **kw)
         except Exception as e:   # any provider error: recorded, then re-raised to the cascade

@@ -478,6 +478,7 @@ def student_offer_check(doc) -> dict:
         'candidate_nric': cnric,
         'programme': programme,
         'institution': institution,
+        'campus': (f.get('campus') or '').strip(), 'programme_code': (f.get('programme_code') or '').strip(),  # S4
         'stream': stream,                         # #117 (b) — the offer's Bidang, for the track compare
         'bidang': bidang,                         # PISMP BIDANG PENGKHUSUSAN (major) — literally on the letter
         'issuer': issuer,

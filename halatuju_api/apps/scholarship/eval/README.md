@@ -218,6 +218,26 @@ python -I apps/scholarship/eval/offer_fresh_read.py --split dev --eval-dir <corp
 python -I apps/scholarship/eval/offer_fresh_read.py --compare --split dev --eval-dir <corpus>
 ```
 
+**The new reader (S4) — PAID.** Since S4 the production offer read is `offer_reader.read_offer` (reached
+through the same `extract_document_fields` call): up to 3 pages, one image each at high media resolution,
+a digital PDF's text layer beside them, the `campus` / `reporting_venue` / `programme_code` fields and the
+`offer_reader_version` stamp. `offer_fresh_read.py --reader new` (the default) runs it and caches
+`<key>.fresh_s4.json`; `--reader current` names S3's `<key>.fresh.json` caches, which this checkout can no
+longer produce, so it only compares (`--compare`, `--dry-run`) and never reads. `--compare --reader new`
+scores stored / current (`fresh`) / new (`s4`) on the letters holding both caches, each with fixed / broke
+against the read before it; `--costs` prints per letter the input / output / thinking tokens and cost of
+current beside new, and the means. The dry run prices every page shown at the measured 3,354 tokens of
+an A4 page at high resolution (a synthetic page, 2026-11-01; 258 at the default) plus the text layer.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_fresh_read.py --split dev --dry-run --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --keys K1,K2 --eval-dir <corpus> --env-file <repo>/.env
+python -I apps/scholarship/eval/offer_fresh_read.py --compare --reader new --split all --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --costs --keys K1,K2 --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_read_check.py --read file:.fresh_s4.json --split dev --eval-dir <corpus>
+```
+
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.

@@ -25,6 +25,7 @@ FIELDS = {'candidate_name': SECRET_NAME, 'candidate_nric': SECRET_NRIC,
           'reporting_date': '17 Ogos 2031', 'offer_date': '3 Mac 2031', 'issuer': SECRET_INST,
           'warnings': []}
 VERSIONS = {'git_head': 'test', 'vision_py_sha256': 'x', 'schema_sha256': 'y', 'genai_sdk': 't'}
+NEW = fr.READERS['new']          # S4: this checkout's reader caches <key>.fresh_s4.json
 
 
 def _png(size=(900, 1200)):
@@ -138,13 +139,17 @@ class TestFreshRead(SimpleTestCase):
         code, done = self._run(fake)
         self.assertEqual((code, len(done)), (0, 2))
         self.assertEqual(fake.log, ['gemini-2.5-flash', 'gemini-2.5-flash'])
-        rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a2__d12'))
+        rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a2__d12', NEW))
         self.assertEqual(rec['model'], 'gemini-2.5-flash')
-        self.assertEqual(rec['image']['mime'], 'image/png')          # a PDF is shown as page 1 PNG
+        self.assertEqual(rec['image']['mime'], 'image/png')          # a PDF is shown as page PNGs
+        self.assertEqual(len(rec['image']['pages']), 1)
+        self.assertEqual(rec['offer_reader_version'], '2.0.0')
+        self.assertEqual((rec['calls'][0]['images'], rec['calls'][0]['media_resolution']),
+                         (1, 'MEDIA_RESOLUTION_HIGH'))
         self.assertEqual(rec['calls'][0]['thinking_tokens'], 900)
         self.assertEqual(rec['calls'][0]['input_by_modality'], {'TEXT': 1200, 'IMAGE': 300})
         self.assertEqual(rec['calls'][0]['model_version'], 'gemini-2.5-flash-001')
-        fields, capture = orc.read_source('file:' + fr.FRESH_SUFFIX)(self.c.dir, 'offer_letter__a1__d11')
+        fields, capture = orc.read_source('file:' + NEW)(self.c.dir, 'offer_letter__a1__d11')
         self.assertEqual((fields['institution'], capture), (SECRET_INST, 'ai_fresh'))
         # production's clean-up ran: the reporting date is normalised to D Mon YYYY
         self.assertEqual(fields['reporting_date'], '17 Aug 2031')
@@ -168,14 +173,14 @@ class TestFreshRead(SimpleTestCase):
         storage.assert_not_called()
         added = sorted(set(self.c.listing()) - set(before))
         self.assertEqual(added, sorted([fr.LOG_NAME,
-                                        os.path.join('snapshots', 'offer_letter__a1__d11.fresh.json'),
-                                        os.path.join('snapshots', 'offer_letter__a2__d12.fresh.json')]))
+                                        os.path.join('snapshots', 'offer_letter__a1__d11' + NEW),
+                                        os.path.join('snapshots', 'offer_letter__a2__d12' + NEW)]))
         self.assertEqual((usage.record_usage.__module__, usage.record_usage.__name__),
                          ('apps.scholarship.usage', 'record_usage'))           # patch undone
 
     def test_the_meter_figures_are_kept_and_leave_out_thinking(self):
         self._run(FakeGemini([_resp(prompt=1500, out=250, think=900)]), keys=['offer_letter__a1__d11'])
-        rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11'))
+        rec = orc.read_json_file(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11', NEW))
         self.assertEqual(rec['meter'], [{'service': 'gemini', 'model': 'gemini-2.5-flash',
                                          'input_tokens': 1500, 'output_tokens': 250}])
         self.assertEqual(rec['usage']['thinking_tokens'], 900)        # billed, not metered
@@ -195,7 +200,7 @@ class TestFreshRead(SimpleTestCase):
         code, done = self._run(fake)
         self.assertEqual((code, done), (fr.EXIT_STOPPED, []))
         self.assertEqual(fake.log, ['gemini-2.5-flash'])             # no flash-lite, no 2nd letter
-        self.assertFalse([n for n in os.listdir(self.c.snap) if n.endswith(fr.FRESH_SUFFIX)])
+        self.assertFalse([n for n in os.listdir(self.c.snap) if '.fresh' in n])
         with open(os.path.join(self.c.dir, fr.LOG_NAME), encoding='utf-8') as fh:
             entry = json.loads(fh.readline())
         self.assertEqual((entry['outcome'], entry['code']), ('STOPPED', 402))
@@ -240,7 +245,7 @@ class TestFreshRead(SimpleTestCase):
         code, done = self._run(FakeGemini([FakeError(503), FakeError(500)]),
                                keys=['offer_letter__a1__d11'])
         self.assertEqual((code, done), (fr.EXIT_FAILED, []))
-        self.assertFalse(os.path.exists(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11')))
+        self.assertFalse(os.path.exists(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11', NEW)))
 
     def test_no_value_is_ever_printed_or_logged(self):
         self._run(FakeGemini([_resp(), _resp()]))
@@ -308,7 +313,7 @@ class TestDryRunAndCompare(SimpleTestCase):
     @override_settings(GEMINI_API_KEY='fake-key-for-tests')
     def test_compare_scores_stored_and_fresh_on_the_same_letters(self):
         fr.read_letters(self.c.dir, ['offer_letter__a1__d11'], client_factory=FakeGemini([_resp()]),
-               out=lambda *_: None, versions=VERSIONS)
+               out=lambda *_: None, versions=VERSIONS, suffix=fr.READERS['current'])
         c = fr.compare(self.c.dir, 'all', self.split)
         self.assertEqual(c['letters'], 1)
         self.assertEqual(c['fields']['stored']['nric']['missing'], 1)
@@ -326,3 +331,53 @@ class TestDryRunAndCompare(SimpleTestCase):
         text = out.getvalue()
         self.assertIn('answered letters with no read file (not scored): 1', text)
         self.assertIn('FULLY EXACT (every core field exact or blank_correct): 1 of 1', text)
+
+
+@override_settings(GEMINI_API_KEY='fake-key-for-tests')
+class TestNewReader(SimpleTestCase):
+    """S4: the new reader is run beside S3's caches, never over them."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.c = _Corpus(self._tmp.name)
+        self.c.letter('offer_letter__a1__d11', ext='png', stored={**FIELDS, 'candidate_nric': ''})
+        self.split = self.c.split()
+        with open(fr.fresh_path(self.c.dir, 'offer_letter__a1__d11', fr.READERS['current']), 'w',
+                  encoding='utf-8') as fh:     # an S3 cache: page 1 only, no campus
+            json.dump({'fields': {**FIELDS, 'institution': SECRET_INST + ' KAMPUS X'}, 'capture': 'ai_fresh',
+                       'usage': {'input_tokens': 1500, 'output_tokens': 250, 'thinking_tokens': 900,
+                                 'cost_usd': 0.003}}, fh)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_the_current_reader_is_never_run_and_its_cache_never_touched(self):
+        fake, lines = FakeGemini([_resp()]), []
+        rc = fr.main(['--eval-dir', self.c.dir, '--split-file', self.split, '--reader', 'current'],
+                     client_factory=fake, out=lines.append)
+        self.assertEqual((rc, fake.log), (2, []))
+        self.assertIn("S3's cache only", lines[-1])
+
+    def test_compare_and_costs_put_current_beside_new(self):
+        rc = fr.main(['--eval-dir', self.c.dir, '--split-file', self.split, '--keys', 'offer_letter__a1__d11'],
+                     client_factory=FakeGemini([_resp(prompt=9000, out=300, think=1200)]), out=lambda *_: None)
+        self.assertEqual(rc, 0)
+        c = fr.compare(self.c.dir, 'all', self.split, reader='new')
+        self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4')))
+        self.assertEqual(c['fields']['fresh']['institution']['wrong'], 1)
+        self.assertEqual(c['fields']['s4']['institution']['exact'], 1)
+        self.assertEqual(c['changed_by_read']['s4']['institution'], {'fixed': 1, 'broke': 0, 'same': 0})
+        self.assertEqual(c['changed_by_read']['fresh']['nric'], {'fixed': 1, 'broke': 0, 'same': 0})
+        rows = fr.costs(self.c.dir, ['offer_letter__a1__d11'])
+        self.assertEqual((rows[0][1]['input_tokens'], rows[0][2]['input_tokens'], rows[0][3]), (1500, 9000, 1))
+        lines = []
+        fr.print_costs(rows, lines.append)
+        self.assertTrue(any(line.startswith('new: 1 letters, mean in 9000') for line in lines))
+        text = '\n'.join(lines).upper()
+        for token in ('ZORBEX', 'QORVANE', '010203'):
+            self.assertNotIn(token, text)
+
+    def test_the_estimate_counts_every_page_at_high_resolution(self):
+        e = fr.estimate(self.c.dir, ['offer_letter__a1__d11'])
+        self.assertGreaterEqual(e['image_tokens_est_mean'], fr.IMAGE_TOKENS_HIGH_A4)
+        self.assertEqual(fr.image_tokens_estimate(1, 1, 'MEDIA_RESOLUTION_HIGH'), fr.IMAGE_TOKENS_HIGH_A4)
