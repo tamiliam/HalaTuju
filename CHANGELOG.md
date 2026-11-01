@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 7c — mentors see their students and log meetings (not yet live)
+## Student maintenance Sprint 7c — mentors see their students and log meetings — LIVE 2026-11-01 (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first)
 
 Owner rulings 2026-11-01 (decisions.md, the 7c entry). **Migration scholarship 0198
 (`0198_mentor_logs_meetings`) — MIGRATE FIRST, BY HAND: four additive columns on `mentoring_sessions`

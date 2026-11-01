@@ -143,8 +143,8 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    column and the "Asked for help" filter. ⚠ A student's login may be a mentor (owner, 2026-10-31): 7b must
    refuse assigning a mentor to their OWN application. **7b LIVE 2026-11-01 (main 7dc9c15d; api-01224-s6w, web-01047-lvq;
    migration scholarship 0196_mentoring applied by hand first).** **7c** — mentors see their students and log meetings
-   themselves, with a "worried about this student" flag staff mark as handled. **7c BUILT, NOT LIVE 2026-11-01**
-   (branch maint-s7; migration scholarship 0198_mentor_logs_meetings, to apply by hand first).
+   themselves, with a "worried about this student" flag staff mark as handled. **7c LIVE 2026-11-01**
+   (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first). Sprint 7 (mentors) is complete.
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
 9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).

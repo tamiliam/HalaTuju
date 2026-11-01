@@ -1143,7 +1143,7 @@ on every student page incl. Home; its menus, desktop row, nav lists and theme/la
 (forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. M3 is
 Stitch-first (search filters in a sheet, course page scroll trap, saved compare on phones).
 
-### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7c BUILT, NOT LIVE (branch maint-s7) — mentors see their students and log meetings
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7c LIVE (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first) — mentors see their students and log meetings
 
 **Next free migration numbers: scholarship 0199, courses 0091.** 0198 = `0198_mentor_logs_meetings` (four
 additive columns on `mentoring_sessions`, defaults kept in the database): **MIGRATE FIRST by hand** (DDL, pre-check,
