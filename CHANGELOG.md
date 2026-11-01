@@ -236,6 +236,33 @@ Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not dep
   `exam_year` only).
 - Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
 ## Offer letters read exactly — Sprint 2 (tooling half) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 4 (reader round 1) — 2026-11-01 — BUILT, not deployed
+
+Production code (the AI offer read); no migration; not pushed. Ships only after the matcher session reads
+`campus` / `programme_code` (roadmap S4 door list). Paid: a 10-letter pilot, US$0.0615 (RM0.27), plus a
+US$0.001 synthetic-image probe.
+
+- **`apps/scholarship/offer_reader.py`** — the AI offer reader, reached through the same
+  `vision.extract_document_fields(…, 'offer_letter', …)` call. `OFFER_READER_VERSION` 2.0.0 is stored on every AI
+  offer read (`vision_fields.offer_reader_version`, with `offer_reader_inputs`: pages, text-layer characters,
+  media resolution). Gemini now sees up to 3 pages, one image each (`pdf_pages.pdf_page_pngs`), at
+  `MEDIA_RESOLUTION_HIGH`, and a digital PDF's text layer for those pages (`pdf_page_text`).
+- **Schema + prompt (owner rulings):** `institution` = the name only; new `campus`, `reporting_venue`,
+  `programme_code`; hostels / venues never in institution or campus; PISMP programme = the degree title; intake
+  with its label; dates without weekday or time; a reporting date is never a commencement date; the IC also from
+  the reference line, never invented; read exactly as printed. Clean-up: a code left in `programme` moves to
+  `programme_code`; an IC read that cannot be an IC (not 11–13 digits) is blanked.
+- `vision._call_gemini_json` takes `images=[…]` and `media_resolution=` (other callers unchanged);
+  `student_offer_check` also returns `campus` and `programme_code`.
+- **Finding:** the 258-token image was the default media resolution (a synthetic A4 page: 258 default / medium,
+  3,354 high). High resolution applies only to a ONE-image call: a 2-page letter came back as 2 × 258.
+- **Pilot (S3's 10 letters, 5 dev + 5 held-out):** fully exact 9/10 new vs 1/10 current (S3); institution 9 vs 4,
+  programme 10 vs 6, intake 10 vs 8, name / NRIC / reporting date 10 each, no core field down. US$0.00615 a letter
+  vs US$0.00344 (×1.79).
+- `eval/offer_fresh_read.py --reader new|current`, `--costs`; three-way `--compare`. Tests:
+  `tests/test_offer_reader.py`, `tests/test_offer_reader_doors.py` (every reader of the fields),
+  `tests/test_offer_fresh_read.py` (synthetic twins).
+
 ## Offer letters read exactly — Sprint 3 (today's AI reader measured) — 2026-11-01 — BUILT, not deployed
 
 Measurement only; no production code. Paid: RM3.72 of Gemini (owner yes, RM3–9).

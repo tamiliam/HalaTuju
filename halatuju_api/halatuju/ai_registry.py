@@ -58,6 +58,10 @@ JOBS = [
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
      'module': 'apps/scholarship/vision.py'},
+    {'key': 'offer_read', 'label': 'Reading an offer letter',      # offer exact-read S4: its own reader
+     'seam': SEAM_JSON, 'provider': GEMINI,
+     'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',
+     'module': 'apps/scholarship/offer_reader.py'},
     {'key': 'ic_genuine', 'label': 'Is this MyKad genuine',
      'seam': SEAM_JSON, 'provider': GEMINI,
      'source': BY_CASCADE, 'from': 'profile_engine.MODEL_CASCADE',

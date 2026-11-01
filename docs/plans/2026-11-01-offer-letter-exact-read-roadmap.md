@@ -304,6 +304,47 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   rise and no family may fall; cost per letter within the S3 figure × 2.
 - **Owner:** yes to the paid dev and held-out runs (≈ RM5–15 in all); adversarial review; deploy go. No live
   re-read yet (S7).
+- **Built (phase A, 2026-11-01, branch `offer-read-s1`, not pushed):** `apps/scholarship/offer_reader.py`
+  (`OFFER_READER_VERSION` 2.0.0, stored as `vision_fields.offer_reader_version` + `offer_reader_inputs` on
+  every AI offer read); `extract_document_fields(…, 'offer_letter', …)` routes there, so every caller and
+  test patch is unchanged. Gemini sees up to 3 pages, one PNG each (`pdf_pages.pdf_page_pngs`), at
+  `MEDIA_RESOLUTION_HIGH`, plus the PDF text layer of those pages (`pdf_page_text`, TD-411's
+  `usable_text_layer`). **The 258-token image was `media_resolution`:** a synthetic A4 page measured 258 tokens
+  at the default and at medium, 3,354 at high. Schema: `campus`, `reporting_venue`, `programme_code` added;
+  `institution` = the name only; `issuer` unchanged. Clean-up: a code left in `programme` moves to
+  `programme_code`; an IC read whose digits are not 11–13 is blanked (soft "unread", never a wrong-person red).
+  Genuineness (`MODEL_VERSION`) untouched — it reads the OCR text, not these fields.
+- **Pilot (2026-11-01, S3's same 10 letters — 5 dev, 5 held-out; US$0.0615 = RM0.27, gemini-2.5-flash, no
+  402/429).** Fully exact **9/10** new vs 1/10 current (S3) vs 1/10 stored. Right: institution 9 vs 4, programme
+  10 vs 6, intake 10 vs 8; name, NRIC, reporting date 10 each (unchanged); campus 9 vs 6; offer date 9 vs 9;
+  issuer 4 vs 4 (one fixed, one broke; not core). No core field down. **Cost** US$0.00615 a letter vs US$0.00344
+  (×1.79, inside the ×2 bar): input 3,935 vs 1,053, output 281 vs 218, thinking 1,707 vs 1,033. Projected:
+  dev 126 ≈ US$0.78 (RM3.4), held-out 90 ≈ US$0.55 (RM2.4). **Finding:** high media resolution
+  ("pan and scan") applies only to a one-image call — both 2-page PDFs came back as 2 × 258 image tokens, so a
+  multi-page letter is still seen at low detail per page (the text layer carried them here). Options for the
+  lead: tile each page into crops, or page 1 alone at high + pages 2–3 in a second call. The 5 held-out pilot
+  letters must not be used to tune the prompt.
+- **Every reader of the offer fields (sprint-start 3b), and what the new shape does to it.** Tests:
+  `tests/test_offer_reader_doors.py` (one per door; the "loses" tests pin today's matcher and show the join).
+
+  | Door | Reads | Effect of S4's shape |
+  |---|---|---|
+  | `pathway_engine.student_offer_check` (feeds every door below) | all fields | unchanged; now also returns `campus`, `programme_code` |
+  | Name / IC statuses → `verdict_engine`, `verdict_ladder`, `doc_red_keys.person_red` (gate), `resolution` (Action Centre), `help_engine` (Cikgu Gopal), `offer_sync`, `offer_link`, the confirm, `backfill_*`, `audit_pathway_ticks` | `candidate_name`, `candidate_nric` | same field names and rules; a reference-line IC now reads `match` where it read `unreadable`; a non-IC number is blanked → `unreadable`, not `mismatch` (safer); another person's IC still `mismatch` |
+  | `vision.doc_student_verdict` (extraction-time name verdict) | `candidate_name` | unchanged |
+  | Matcher `offer_course_match.match_offer_course` / `pinned_match` (realign, link, confirm) | programme, institution, issuer | one-row universities (UiTM / UM / UMS degrees) still resolve from the name; a hostel line no longer needs the issuer. **LOSES (a)** the campus of a multi-campus course (IPG, KKTM, multi-campus diplomas): `campus_unpinned` / no match where the old line pinned it; **(b)** the printed-code tier — the code is now in `programme_code` (e.g. a letter with no institution line resolved only by its code). Joining `institution + campus` and `programme + code` restores both (tests). |
+  | `letter_place` / `CampusReader` → `institution_agreement`, `offer_contradicts_course_institution`, ticks | institution, issuer | better for hostel lines (the university name agrees); multi-campus loss as above |
+  | `offer_sync.institution_fill` / `sync_institution_from_catalogue` (sponsor-facing must-fill) | institution, issuer | **LOSES** the multi-campus fill (returns '' → the line vanishes from the sponsor card) until it reads `campus` |
+  | `services/confirmation` (offer confirm label, `_confirmed_place`) | programme, institution, issuer | the stored label is the name without the campus when the catalogue cannot pin it — same loss |
+  | `offer_reporting_bonus`, `private_arm_letter` (genuineness gates on the fields) | issuer + institution | unchanged while the private-arm tell is in the issuer; a tell printed only in the campus line would be missed → add `campus` to the haystack (matcher session) |
+  | `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`, `promotion` | programme / institution | polytechnic / KK / matric / Form-Six names keep their town, so no loss; programme without a code is the same name |
+  | Check 2 `offer_reporting_date_unknown`; `sync_reporting_date_from_offer` | reporting_date | a commencement-only letter now reads no reporting date → Check 2 asks the student (correct, owner a405); a blank never clears a stored date |
+  | Cockpit display (`checklistsPathway.tsx`: `chk.institution`, `chk.issuer`) | institution, issuer | shows the name without the campus until the web renders `chk.campus` (web change, three languages) |
+  | Student-facing text (`help_engine`, the Documents card) | name / IC statuses only | unchanged |
+- **Before the push (unchanged rule, now concrete):** the matcher session makes `match_offer_course` /
+  `letter_place` / `institution_fill` / the confirm read `campus` (multi-campus) and `programme_code` (code tier),
+  adds `campus` to the private-arm haystack, and the web shows `campus`; then the dry-run of realign / link /
+  ticks on the new reads goes to that session (rule 5).
 
 ### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.
