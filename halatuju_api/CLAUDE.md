@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0 + M1 + M2 DONE (M2 live 2026-11-01, main ab1aebc0), NEXT = M3 student discovery
+### Mobile-native arc (separate stream) — M0–M3 DONE (M3 live 2026-11-01, main 56173595), NEXT = M4 scholarship apply / documents / award
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1140,8 +1140,11 @@ fields autofill `tel-national` (never `tel`). `/scholarship/application` sits ~0
 (TD-433) and the median 0.44 kB — lazy-load before adding weight. **Since M2:** one student header (`AppHeader.tsx`)
 on every student page incl. Home; its menus, desktop row, nav lists and theme/language live in the lazy
 `StudentMenus.tsx` with an eager Log in / Log out fallback; student sign-out is ONLY `src/lib/studentSignOut.ts`
-(forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. M3 is
-Stitch-first (search filters in a sheet, course page scroll trap, saved compare on phones).
+(forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. **Since M3:** search
+filters are `SearchFilterSheet.tsx` (Sheet) on phones; course pages save from a sticky `CourseSaveBar` (the toast
+rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare.tsx`); new words for these pages go
+in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
+apply-form draft storage (rec. tab-only sessionStorage).
 
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7c LIVE (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first) — mentors see their students and log meetings
 

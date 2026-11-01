@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-01 | 5617359 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 170 | 0 | 0 | ok | ok |
 | 2026-11-01 | ab1aebc | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 167 | 0 | 0 | ok | ok |
 | 2026-11-01 | 49ec378 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 80 | 92 | 0 | 3 | 12 | 163 | 0 | 0 | ok | ok |
 | 2026-11-01 | f908d5b | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 79 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
@@ -118,7 +119,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-01, ab1aebc, window 2026-08-03 onward)
+## Latest run (2026-11-01, 5617359, window 2026-08-03 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -130,12 +131,12 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
-| `halatuju_api/apps/courses/views_admin.py` | 10 | 794 | 7.9 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
+| `halatuju_api/apps/courses/views_admin.py` | 9 | 794 | 7.1 |
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 265 fix / 251 feat commits since 2026-08-03
+- 266 fix / 255 feat commits since 2026-08-03
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -200,10 +201,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 41 of 340 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
+- 41 of 346 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 451 entries have a defining line; 167 carry no resolution marker on it
+- 454 entries have a defining line; 170 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -230,7 +231,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 49ec378
+- budgets no looser than at ab1aebc
 
 ### tsc
 - 0 errors in 0 files
@@ -238,7 +239,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6908
+- Total keys per locale: 6993
 
 ## Reviews
 
@@ -250,6 +251,17 @@ _Decisions per run, newest first. Written by a person or the agent — never by 
 this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
 the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
 offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
+
+### 2026-11-01 (5617359, Mobile-native M3 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since ab1aebc holds Mobile M3 (web only) and
+Sprint 7c. Unchanged: `fix%` 51, `hot#1` officerCockpit.ts 28.2, `big` 15, `long` 15, `dup` 4, `xapp` 81, `supp` 92,
+`skip` 0, `mirror` 3, `guard%` 12, `unused` 0, `tsc` 0. Moved:
+
+- **`td_open` 167 -> 170.** TD-455, TD-456, TD-457 (M3 leftovers: saved-page toasts and course-page labels still
+  English; the compare's sticky row assumes a 68 px header). All low. **Accepted.** M3 kept `course/[id]/page.tsx` and
+  `search/page.tsx` under 600 lines by moving code out (`components/course/PreUInstitutions.tsx`,
+  `lib/searchEligibility.ts`) rather than growing the oversize list.
 
 ### 2026-11-01 (ab1aebc, Mobile-native M2 close) — 0 FAIL
 

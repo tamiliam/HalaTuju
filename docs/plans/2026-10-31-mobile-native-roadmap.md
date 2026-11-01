@@ -83,8 +83,7 @@ Each sprint: tests + `mobile-check` green, owner sees phone screenshots, **owner
 
 **M2 — Student shell + onboarding** — DONE, live 2026-11-01 (main ab1aebc0; retrospective `docs/retrospectives/retrospective-2026-11-01-mobile-m2.md`). One student header everywhere incl. Home, phone menu in `Sheet`, onboarding `FlowHeader`, STPM rows restacked, 44 px targets, safe student sign-out.
 
-**M3 — Student discovery** (medium; Stitch first for filters + compare)
-Search filters in a bottom sheet ("Filters · 3"); course page without inner scroll traps; saved-course compare on phones (card-swipe compare); status pills wrap; course card save target; report page width.
+**M3 — Student discovery** — DONE, live 2026-11-01 (main 56173595; retrospective `docs/retrospectives/retrospective-2026-11-01-mobile-m3.md`). Filters in a sheet, course pages reordered with a sticky Save bar and no inner scroll box, saved compare on phones (two columns), report width, 44 px footer.
 
 **M4 — Scholarship apply, documents, award** (high; consent/PII → adversarial review)
 Apply form keeps a draft through an iOS tab kill (owner decision below); bottom tab bar fits + safe area; document cards get full-size action buttons; income wizard text sizes; award: contract readable at phone width, guardian form in `Sheet`, PIN keyboard.
