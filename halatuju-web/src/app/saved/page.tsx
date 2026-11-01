@@ -10,7 +10,6 @@ import {
   getCourse,
   getStpmCourseDetail,
   type SavedCourseWithStatus,
-  type Institution,
   type CourseRequirements,
   type StpmRequirements,
 } from '@/lib/api'
@@ -21,24 +20,12 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
+import SavedCourseCard from '@/components/saved/SavedCourseCard'
+import SavedCompareView, { CompareBar, type CompareData } from '@/components/saved/SavedCompare'
+// Mobile M3: the compare words (the `discovery` slice), loaded by this PAGE.
+import '@/lib/messagesDiscovery'
 
 type QualificationTab = 'SPM' | 'STPM'
-
-interface CompareData {
-  course_id: string
-  name: string
-  level: string
-  field: string
-  institution: string
-  state: string
-  type: string
-  fees: string
-  allowance: string
-  merit: string
-  requirements: string[]
-  semesters: string
-  courseType: 'spm' | 'stpm'
-}
 
 export default function SavedPage() {
   const { t, locale } = useT()
@@ -52,7 +39,7 @@ export default function SavedPage() {
   const [activeTab, setActiveTab] = useState<QualificationTab>('SPM')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
-  // Compare state (desktop only)
+  // Compare state — phones too since Mobile M3 (layout B, `components/saved/SavedCompare.tsx`)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [comparing, setComparing] = useState(false)
   const [compareData, setCompareData] = useState<CompareData[]>([])
@@ -130,7 +117,7 @@ export default function SavedPage() {
       } else if (next.size < 3) {
         next.add(courseId)
       } else {
-        showToast('Maximum 3 courses to compare', 'error')
+        showToast(t('discovery.maxThree'), 'error')
       }
       return next
     })
@@ -154,14 +141,14 @@ export default function SavedPage() {
     if (reqs.min_muet_band) items.push(`MUET Band ≥ ${reqs.min_muet_band}`)
     if (reqs.stpm_subjects?.length) items.push(`STPM: ${reqs.stpm_subjects.join(', ')}`)
     if (reqs.spm_prerequisites?.length) items.push(`SPM: ${reqs.spm_prerequisites.join(', ')}`)
-    if (reqs.req_interview) items.push('Temuduga')
-    if (reqs.no_colorblind) items.push('Tiada buta warna')
+    if (reqs.req_interview) items.push(t('discovery.reqInterview'))
+    if (reqs.no_colorblind) items.push(t('discovery.reqNoColourBlind'))
     return items.length > 0 ? items : ['—']
   }
 
   const handleCompare = async () => {
     if (selected.size < 2) {
-      showToast('Select at least 2 courses', 'error')
+      showToast(t('discovery.minTwo'), 'error')
       return
     }
     setCompareLoading(true)
@@ -203,7 +190,7 @@ export default function SavedPage() {
             state: inst?.state || '—',
             type: inst?.type || '—',
             fees: inst?.tuition_fee_semester || '—',
-            allowance: inst?.monthly_allowance ? `RM${inst.monthly_allowance}/bln` : '—',
+            allowance: inst?.monthly_allowance ? t('discovery.perMonth', { amount: String(inst.monthly_allowance) }) : '—',
             merit: merit_cutoff ? String(merit_cutoff) : '—',
             requirements: requirements ? formatSpmReqs(requirements) : ['—'],
             semesters: course.semesters ? String(course.semesters) : '—',
@@ -214,7 +201,7 @@ export default function SavedPage() {
 
       setCompareData(results)
     } catch {
-      showToast('Failed to load course details', 'error')
+      showToast(t('discovery.loadFailed'), 'error')
       setComparing(false)
     }
     setCompareLoading(false)
@@ -225,17 +212,6 @@ export default function SavedPage() {
       ? `/stpm/${course.course_id}`
       : `/course/${course.course_id}`
 
-  const rows: { label: string; key: keyof CompareData }[] = [
-    { label: 'Institusi', key: 'institution' },
-    { label: 'Negeri', key: 'state' },
-    { label: 'Jenis', key: 'type' },
-    { label: 'Tahap', key: 'level' },
-    { label: 'Bidang', key: 'field' },
-    { label: 'Semester', key: 'semesters' },
-    { label: 'Yuran/sem', key: 'fees' },
-    { label: 'Elaun', key: 'allowance' },
-    { label: 'Merit', key: 'merit' },
-  ]
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
@@ -251,7 +227,7 @@ export default function SavedPage() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
         {(loading || guardLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
@@ -274,11 +250,12 @@ export default function SavedPage() {
 
         {!loading && isAuthenticated && courses.length > 0 && !comparing && (
           <>
+            <h1 className="mb-4 text-2xl font-bold text-ground-900">{t('saved.title')}</h1>
             {/* SPM / STPM tabs */}
             <div className="flex gap-1 mb-6 bg-ground-100 rounded-lg p-1 w-fit">
               <button
                 onClick={() => setActiveTab('SPM')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'SPM'
                     ? 'bg-ground-0 text-ground-900 shadow-sm'
                     : 'text-ground-500 hover:text-ground-700'
@@ -288,7 +265,7 @@ export default function SavedPage() {
               </button>
               <button
                 onClick={() => setActiveTab('STPM')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`min-h-11 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'STPM'
                     ? 'bg-ground-0 text-ground-900 shadow-sm'
                     : 'text-ground-500 hover:text-ground-700'
@@ -308,190 +285,40 @@ export default function SavedPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {filteredCourses.map(course => {
-                  const isApplied = course.interest_status === 'applied' || course.interest_status === 'got_offer'
-                  const hasOffer = course.interest_status === 'got_offer'
-                  const isSelected = selected.has(course.course_id)
-
-                  return (
-                    <div
+              <>
+                {filteredCourses.length > 1 && (
+                  <p className="mb-3 text-sm text-ground-500">{t('discovery.compareHint')}</p>
+                )}
+                <div className="grid gap-4">
+                  {filteredCourses.map(course => (
+                    <SavedCourseCard
                       key={course.course_id}
-                      className={`bg-ground-0 rounded-xl border p-5 transition-colors ${
-                        isSelected ? 'border-primary-400 ring-1 ring-primary-200' : 'border-ground-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        {/* Desktop-only checkbox */}
-                        <label
-                          className="hidden md:flex items-center mr-3 mt-1 cursor-pointer"
-                          title="Select to compare"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelect(course.course_id)}
-                            className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
-                          />
-                        </label>
-
-                        <Link href={detailHref(course)} className="flex-1">
-                          <h3 className="font-semibold text-ground-900">{course.course || course.course_id}</h3>
-                          <p className="text-sm text-ground-500 mt-0.5">
-                            {course.institution_name && (
-                              <>{course.institution_name} &middot; </>
-                            )}
-                            {course.level} &middot; {getFieldName(course.field_key)}
-                          </p>
-                          <p className="text-xs text-ground-400 mt-0.5 font-mono">{course.course_id}</p>
-                        </Link>
-                        <button
-                          onClick={() => handleRemove(course.course_id)}
-                          className="ml-4 p-2 text-ground-400 hover:text-critical-600 transition-colors"
-                          aria-label={t('saved.remove')}
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {/* Status buttons */}
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          onClick={() => handleStatusUpdate(course.course_id, 'applied')}
-                          disabled={updatingId === course.course_id}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
-                            isApplied
-                              ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                              : 'border border-ground-300 text-ground-600 hover:bg-ground-50'
-                          }`}
-                        >
-                          {isApplied && (
-                            <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {t('outcomes.iApplied')}
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate(course.course_id, 'got_offer')}
-                          disabled={updatingId === course.course_id}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
-                            hasOffer
-                              ? 'bg-positive-100 text-positive-700 border border-positive-300'
-                              : 'border border-ground-300 text-ground-600 hover:bg-ground-50'
-                          }`}
-                        >
-                          {hasOffer && (
-                            <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {t('outcomes.iGotOffer')}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Floating compare bar — desktop only */}
-            {selected.size >= 2 && (
-              <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-                <div className="bg-ground-900 text-white rounded-full px-6 py-3 shadow-lg flex items-center gap-4">
-                  <span className="text-sm">{selected.size} kursus dipilih</span>
-                  <button
-                    onClick={handleCompare}
-                    className="bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-ink px-5 py-1.5 rounded-full text-sm font-medium transition-colors"
-                  >
-                    Bandingkan
-                  </button>
-                  <button
-                    onClick={() => setSelected(new Set())}
-                    className="text-ground-400 hover:text-white text-sm"
-                  >
-                    Batal
-                  </button>
+                      course={course}
+                      subtitle={[course.institution_name, course.level, getFieldName(course.field_key)]
+                        .filter(Boolean).join(' · ')}
+                      href={detailHref(course)}
+                      selected={selected.has(course.course_id)}
+                      updating={updatingId === course.course_id}
+                      onToggleSelect={() => toggleSelect(course.course_id)}
+                      onRemove={() => handleRemove(course.course_id)}
+                      onStatus={(status) => handleStatusUpdate(course.course_id, status)}
+                    />
+                  ))}
                 </div>
-              </div>
+              </>
             )}
+
+            <CompareBar count={selected.size} onCancel={() => setSelected(new Set())} onCompare={handleCompare} />
           </>
         )}
 
         {/* Compare view */}
         {comparing && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-ground-900">Perbandingan Kursus</h2>
-              <button
-                onClick={() => { setComparing(false); setSelected(new Set()) }}
-                className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-              >
-                Kembali ke senarai
-              </button>
-            </div>
-
-            {compareLoading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
-                <p className="text-ground-500 mt-3">Memuatkan maklumat kursus...</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  {/* Course name header */}
-                  <thead>
-                    <tr>
-                      <th className="text-left p-3 bg-ground-50 border border-ground-200 w-32 text-sm font-medium text-ground-500">
-                        Kursus
-                      </th>
-                      {compareData.map(c => (
-                        <th key={c.course_id} className="p-3 bg-primary-50 border border-ground-200 text-left min-w-[220px]">
-                          <Link
-                            href={c.courseType === 'stpm' ? `/stpm/${c.course_id}` : `/course/${c.course_id}`}
-                            className="text-sm font-semibold text-primary-700 hover:underline block"
-                          >
-                            {c.name}
-                          </Link>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map(row => (
-                      <tr key={row.key}>
-                        <td className="p-3 bg-ground-50 border border-ground-200 text-sm font-medium text-ground-500">
-                          {row.label}
-                        </td>
-                        {compareData.map(c => (
-                          <td key={c.course_id} className="p-3 border border-ground-200 text-sm text-ground-900">
-                            {String(c[row.key])}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                    {/* Requirements row (list) */}
-                    <tr>
-                      <td className="p-3 bg-ground-50 border border-ground-200 text-sm font-medium text-ground-500">
-                        Syarat
-                      </td>
-                      {compareData.map(c => (
-                        <td key={c.course_id} className="p-3 border border-ground-200 text-sm text-ground-900">
-                          <ul className="list-disc list-inside space-y-0.5">
-                            {c.requirements.map((r, i) => (
-                              <li key={i} className="text-xs">{r}</li>
-                            ))}
-                          </ul>
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <SavedCompareView
+            data={compareData}
+            loading={compareLoading}
+            onBack={() => { setComparing(false); setSelected(new Set()) }}
+          />
         )}
       </div>
 

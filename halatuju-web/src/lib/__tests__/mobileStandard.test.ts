@@ -284,7 +284,8 @@ describe('rule 6 — heights use dvh, never vh', () => {
   test('min-h-screen: at or under its own floor', () => {
     const offenders = FILES.flatMap((f) => literalsWithIndex(f.code).flatMap(({ text, index }) =>
       tokens(text).filter((t) => MIN_SCREEN.test(t)).map((t) => where(f, index, t))))
-    ratchet('min-h-screen', offenders, 71)
+    // 71 → 69 (Mobile M3): the report page's loading and error states became `min-h-[60dvh]` under its header.
+    ratchet('min-h-screen', offenders, 69)
   })
 })
 
