@@ -235,6 +235,8 @@ campus; and the genuineness check called real public-institute offers "not an of
    `not_offer_letter`. An admission printout / portal page is `suspect`. A confirmation-of-studies letter from a
    public institution with no private wing is an acceptable alternative to an offer (with a private wing:
    confirm the government programme). Public skills institutes (IKBN, IKM) are public offers.
+   **`suspect` is not a blocker:** the student is told the document is not an offer letter and urged to upload the
+   offer letter if they have it; Check 2 or a reviewer can ask for more.
 4. The offer letter's NRIC belongs to this arc (owner, via the matcher's session): a blank is correct where the
    issuer prints none (UNIMAS, UPSI, UUM, UTHM...); UPM and one private college print it only inside the reference.
 

@@ -321,6 +321,13 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   5. Real offers from public skills institutes (IKBN, IKM) were called `not_offer_letter` - WRONG today (2 letters).
   6. A TVET slip that is not an offer letter is `suspect`, not a fail.
   7. A private-college conditional offer (e.g. Kolej UNITAR) is `not_offer_letter`, not `suspect`.
+  8. **What `suspect` does (owner, 2026-11-01):** the student is told the document is not an offer letter and is
+     urged to upload the offer letter if they have it - but it is NOT a blocker. Check 2 or a reviewer can get
+     more details or ask the student for the offer letter. (`not_offer_letter` is the fail.)
+  **S6 must first verify today's behaviour against rules 1-8.** Today `pathway_engine.offer_official_status`
+  folds `suspect` into 'not_genuine' for gating, and its docstring says a private/IPTS offer is stored as
+  `suspect` - both may disagree with rules 2 and 8. List every reader of the status (gates, student messages,
+  Check 2, the cockpit) before changing anything (sprint-start 3b: every door).
   S6 is therefore confirmed in scope: rules 3-7 are the proven wrong calls to fix. The reading label
   (`is_offer_letter` in the answers) stays a DOCUMENT label (offer / portal page / not an offer); the bursary
   decision above is a separate layer.
