@@ -241,8 +241,9 @@ def autofill_pathway_from_offer(application):
         inst = ''
     if not prog and not inst:
         return wrote_early  # nothing readable to SETTLE — but date/institution may have landed
-    if realign_bumi_only_pick(application, offer, chk):
-        return True         # owner 2026-10-31: a Bumi-only offer replaces a pre-fix student pick
+    from .offer_link import fill_empty_pick  # owner 2026-10-31 / 2026-11-01: realign, else fill an empty pick
+    if realign_bumi_only_pick(application, offer, chk) or fill_empty_pick(application, offer, chk):
+        return True
     # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
     # silent overwrite.
     if chk['pathway'] == 'mismatch':

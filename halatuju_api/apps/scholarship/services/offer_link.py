@@ -59,7 +59,9 @@ def plan_offer_link(application, offer, chk):
     Checked in this order (each failure is what ``link_offer_courses`` prints):
 
     ``not_offer_sourced``  the pick is not the letter's own reading (a student's pick, a repair, an
-                           interview — never touched);
+                           interview — never touched) — unless it is EMPTY (no course id, no course
+                           name): an empty pick is FILLED from the letter (``fill_empty_pick``, owner
+                           2026-11-01), source ``offer_letter_auto``, without the label checks;
     ``has_course_id``      it is already linked;
     ``decided``            the realignment's own test (``querying_locked`` — a submitted interview
                            included; an interview still open is not decided — or a recorded verdict);
@@ -68,7 +70,8 @@ def plan_offer_link(application, offer, chk):
                            is NOT required — suspect and unscored letters link; a fake never does;
     ``pre_u_offer`` / ``pre_u``  a Form 6 / matriculation letter or stored pathway (no course_id shape);
     ``unresolved``         the letter names no ONE catalogue course at one campus, at its own level;
-    ``no_course_name`` / ``labels_disagree``  the stored labels name nothing, or another course;
+    ``labels_disagree``    the stored labels name another course (labels that name NO course are an
+                           empty pick, filled — 2026-11-01);
     ``place_disagrees``    the stored institution label names another place than the matched campus
                            (when it is a hostel line, the letter's issuer must name the campus — the
                            shared ``letter_place``). Round-3 review: labels "Seni Halus" at "UNIVERSITI
@@ -83,7 +86,8 @@ def plan_offer_link(application, offer, chk):
     from ..pathway_engine import offer_band
     from .querying import querying_locked
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
-    if (cp.get('source') or '') not in OFFER_SOURCES:
+    empty = is_empty_pick(cp)
+    if not empty and (cp.get('source') or '') not in OFFER_SOURCES:
         return 'not_offer_sourced', None, ''
     if (cp.get('course_id') or '').strip():
         return 'has_course_id', None, ''
@@ -103,18 +107,44 @@ def plan_offer_link(application, offer, chk):
     new_cp = pinned_course(cp, prog, inst, (chk.get('issuer') or '').strip())
     if new_cp is None:
         return 'unresolved', None, ''
-    if not (cp.get('course_name') or '').strip():
-        return 'no_course_name', None, ''
+    if empty:                                         # nothing stored to agree with: the letter's fact
+        new_cp['source'] = cp.get('source') if cp.get('source') in OFFER_SOURCES else 'offer_letter_auto'
+        return '', new_cp, _link_pathway(application, offer, chk, new_cp, pathway)
     if not labels_describe(cp['course_name'], new_cp['course_name']):
         return 'labels_disagree', None, ''
     if not _label_names_campus(cp.get('institution') or '', new_cp, (chk.get('issuer') or '').strip()):
         return 'place_disagrees', None, ''
+    return '', new_cp, _link_pathway(application, offer, chk, new_cp, pathway)
+
+
+def _link_pathway(application, offer, chk, new_cp, pathway):
+    """The pathway a link writes: the realignment's own answer when the realignment would take the
+    record too (one row whichever runs first), else the course's picker pathway only over a blank or a
+    non-picker value (``degree``)."""
+    from apps.courses.course_pathway import course_pathway_type
     from .offer_sync import plan_bumi_realign
     realign = plan_bumi_realign(application, offer, chk)
     if not realign[0]:
-        return '', new_cp, realign[2]                  # the realignment's own pathway answer
-    new_pathway = '' if pathway in picker_pathways() else course_pathway_type(new_cp['course_id'])
-    return '', new_cp, new_pathway
+        return realign[2]
+    return '' if pathway in picker_pathways() else course_pathway_type(new_cp['course_id'])
+
+
+def is_empty_pick(cp):
+    """No course at all — no ``course_id`` and no ``course_name`` (owner, 2026-11-01, #202)."""
+    cp = cp if isinstance(cp, dict) else {}
+    return not (cp.get('course_id') or '').strip() and not (cp.get('course_name') or '').strip()
+
+
+def fill_empty_pick(application, offer, chk):
+    """Owner, 2026-11-01: *"That's not a decision at check 1. Its role is to get the facts as they
+    are. The only restrictions are imposed in the gift rules."* An EMPTY pick has nothing to protect,
+    so the offer letter's course is recorded as a fact — no date cut-off, no "may have re-picked", and
+    a pre-U college on file (where she studied before) does not block it. Everything else is
+    ``plan_offer_link``'s (decided, own letter, not a fake, not pre-U, ONE course at ONE campus at the
+    letter's level). Called from ``autofill_pathway_from_offer`` before its mismatch exit, and by
+    ``link_offer_courses``. Returns True when it wrote."""
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    return is_empty_pick(cp) and link_offer_course(application, offer, chk)
 
 
 def _label_names_campus(label, new_cp, issuer):

@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## An empty pick records the offer letter's course; eligibility is never a reason to leave a fact out (owner, 2026-11-01)
+
+**Owner, verbatim:** *"That's not a decision at check 1. Its role is to get the facts as they are. The only
+restrictions are imposed in the gift rules."*
+
+**Decision.** When an application holds no course at all (no `course_id`, no `course_name`) and the student's own,
+non-fake offer letter names ONE catalogue course at ONE campus at its own level, that course is written as a fact
+(`offer_link.fill_empty_pick`, source `offer_letter_auto`). An empty pick has nothing to protect, so neither the
+2026-10-31 cut-off nor "may have re-picked" applies, an old intake (#202: 2023/2024) is no reason to leave it out,
+and a pre-U college on file — where she studied before — does not block it. Decided cases and Form 6 / matriculation
+pathways are still skipped (four live STPM-pathway records with an empty pick wait for a human).
+
+**Revisit if:** a gift rule needs to know the intake; it reads the letter's own intake, never the absence of a course.
+
 ## The date rule: a pick made before the picker was complete is not a real selection; one campus test (owner, 2026-11-01)
 
 **Decision (date rule).** The scholarship course picker was complete only from `PICKER_COMPLETE_AT`, 2026-10-31
