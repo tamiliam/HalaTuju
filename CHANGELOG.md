@@ -36,7 +36,7 @@ no API change.
   the one-row header, the onboarding header and the grade rows; `theme.test.ts` and `AppHeader.bursary.test.tsx`
   follow the header's new shape.
 
-## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
+## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources — LIVE 2026-11-01 (main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded)
 
 Owner rulings 2026-11-01 (decisions.md, the 7b entry). **Migration scholarship 0197
 (`0197_invite_mentor_template`) — choices only, NO SQL: the ledger row by hand before the push**; after the

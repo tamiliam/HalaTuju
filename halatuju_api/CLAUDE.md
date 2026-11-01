@@ -1148,7 +1148,8 @@ RLS + service_role policies + ledger row + rollback in its docstring, then the S
 "You have a mentor" (`student_comms` kind `mentor_assigned`, switchable, Mentoring heading). Deactivate / Revoke
 and closing a file end open assignments. **Next free migration numbers: scholarship 0198, courses 0091**
 (0197 = the S7b follow-up's `0197_invite_mentor_template`, choices only: the ledger row by hand before the push,
-then `seed-partner-emails` after the deploy so the editable mentor letter has its row).
+then `seed-partner-emails` after the deploy so the editable mentor letter has its row) — LIVE 2026-11-01 (main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded):
+mentors are invited on Invitations → Mentor; the Mentors page manages arrived mentors (Mentors · Emails · Terms).
 NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings.
 
 ### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT + DATE RULE + OFFER LINK LIVE (main 9969c1f3; api-01225-fxd; no migration)
