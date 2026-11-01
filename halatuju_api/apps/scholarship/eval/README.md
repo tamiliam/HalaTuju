@@ -194,6 +194,30 @@ python -I apps/scholarship/eval/offer_failure_map.py --split dev
 python -I apps/scholarship/eval/offer_read_check.py --split dev --read file:.replay.json
 ```
 
+**Today's AI reader, measured (S3) — PAID.** `offer_fresh_read.py` runs the production AI offer
+read — `vision.extract_document_fields('', 'offer_letter', image=…, content_type=…)`, the exact call
+`_run_field_extraction_impl` makes (PDF → page-1 PNG, the offer prompt and schema, the model
+cascade, the clean-up) — on the LOCAL letter file, and caches `snapshots/<key>.fresh.json`
+(gitignored): `fields` (the stored read's shape), the answering model, every call's input / output /
+**thinking** tokens and cost, what the usage meter was handed, and the code / prompt / schema
+hashes. For the run the meter is replaced by a recorder, every database query and Storage raise,
+so nothing persists but the cache and `offer_fresh_read.log`. Cache-first (`--force` re-reads);
+`--keys`, `--split`, `--limit`; `--dry-run` prints counts and the cost (measured per-letter mean once
+caches exist) with no call; a **402 or 429 stops the whole run** (no retry, no model fall-through).
+`--compare` (free) prints per field stored vs fresh on the same letters, with fixed / broke counts;
+`offer_read_check.py --read file:.fresh.json` scores the cache (letters with no cache are counted,
+not scored). Key: `GEMINI_API_KEY` from `--env-file` (default the repo-root `.env`), never printed.
+Prices (US$/1M, paid tier): 2.5 Flash in 0.30, out + thinking 2.50; Flash-Lite 0.10 / 0.40; RM 4.4
+per US$. The recording client, the guards and the prices are in `offer_fresh_gemini.py`. Tests:
+`tests/test_offer_fresh_read.py` (fake Gemini client, synthetic twins).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_fresh_read.py --split all --dry-run --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --split dev --eval-dir <corpus> --env-file <repo>/.env
+python -I apps/scholarship/eval/offer_fresh_read.py --compare --split dev --eval-dir <corpus>
+```
+
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.

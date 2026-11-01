@@ -77,7 +77,9 @@ from the AI reader, by family, input kind and programme — likely cheap wins fo
 
 THE READ. Default `stored`: the production read in `snapshots/<key>.json` (`vision_fields.fields`).
 `--read file:<suffix>` reads `snapshots/<key><suffix>` instead (S3's fresh reads), a JSON with
-`fields` (or `vision_fields.fields`) and optionally `capture`.
+`fields` (or `vision_fields.fields`) and optionally `capture`. A letter with no such file has
+no read: it is counted ("answered letters with no read file") and NOT scored, so a partial run
+(S3 reads 10 letters first) scores only the letters it read.
 
 Usage:  python -I apps/scholarship/eval/offer_read_check.py [--split heldout|dev|all]
             [--eval-dir DIR] [--read stored|file:<suffix>] [--json]
@@ -257,9 +259,13 @@ def stored_read(eval_dir, key):
 
 
 def file_read(suffix):
-    """A read source from `snapshots/<key><suffix>` (S3's fresh reads, or any other reader)."""
+    """A read source from `snapshots/<key><suffix>` (S3's fresh reads, or any other reader).
+    A letter with NO such file has no read: `(None, 'no_read')` — it is counted, not scored (S3
+    reads a subset first; scoring the rest as all-missing would be a false score)."""
     def _read(eval_dir, key):
-        data = read_json_file(os.path.join(eval_dir, 'snapshots', key + suffix)) or {}
+        data = read_json_file(os.path.join(eval_dir, 'snapshots', key + suffix))
+        if data is None:
+            return None, 'no_read'
         fields = data.get('fields') or (data.get('vision_fields') or {}).get('fields') or {}
         return fields, str(data.get('capture') or 'file')
     return _read
@@ -422,8 +428,10 @@ def summarise(all_rows, split):
     rows = rows_in_split(all_rows, split)
     bad = [r for r in rows if r['problems']]
     scored = []
+    no_read = sum(1 for r in rows if r['answer'] is not None and not r['problems']
+                  and r['read'] is None)
     for r in rows:
-        if r['answer'] is None or r['problems']:
+        if r['answer'] is None or r['problems'] or r['read'] is None:
             continue
         outcomes = score_letter(r['answer'], r['read'], r['family'])
         scored.append({**r, 'outcomes': outcomes, 'fully_exact': fully_exact(outcomes)})
@@ -438,6 +446,7 @@ def summarise(all_rows, split):
     return {
         'split': split, 'letters': len(rows),
         'with_answers': sum(1 for r in rows if r['answer'] is not None),
+        'answered_no_read': no_read,
         'format_problems': {r['key']: r['problems'] for r in sorted(bad, key=lambda x: x['key'])},
         'total': _tally(scored), 'groups': groups,
         'unsure': {'answers': sum(1 for r in scored if r['answer'].get('unsure_fields')),
@@ -488,6 +497,8 @@ def print_report(s, read_spec, eval_dir):
     print(f"Offer letters - exact read | read: {read_spec} | split: {s['split']}")
     print(f"letters in split: {s['letters']} | with answers: {s['with_answers']} | "
           f"answer format problems: {len(s['format_problems'])}")
+    if s.get('answered_no_read'):
+        print(f"answered letters with no read file (not scored): {s['answered_no_read']}")
     for key, probs in s['format_problems'].items():
         print(f'  FORMAT {key:<34} {",".join(probs)}')
     _print_known_format_ai(s['known_format_ai'])

@@ -251,7 +251,8 @@ def failure_map(eval_dir, split, read_spec='stored', split_file=orc.SPLIT_PATH):
     """{grid, kinds, letters} — keys, field names and counts only."""
     rows = orc.letter_rows(eval_dir, orc.offer_keys(eval_dir), orc.read_source(read_spec),
                            orc.load_heldout(split_file))
-    rows = [r for r in orc.rows_in_split(rows, split) if r['answer'] is not None and not r['problems']]
+    rows = [r for r in orc.rows_in_split(rows, split)
+            if r['answer'] is not None and not r['problems'] and r['read'] is not None]
     dims = ('family', 'pages', 'input_kind', 'stored_capture', 'stored_reader_version',
             'stored_genuineness_version')
     grid = {'total': {f: Counter() for f in orc.CORE}}
