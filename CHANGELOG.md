@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — BUILT, not deployed
+
+Measurement tooling only; no production code, no migration, no paid call
+(`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, approved D1–D6 a).
+
+- **The correct-answer format** `<key>.offer_expect.json` (gitignored, beside the snapshot): name, NRIC,
+  institution as printed + the campus a person would pick, programme / stream / specialisation, intake,
+  reporting and offer dates, issuer, duration and fees (written, not scored), is-it-an-offer, pages,
+  unsure fields, a short note; a field the letter does not print is an explicit `null`.
+- **The scorer** `eval/offer_read_check.py`: per core field exact / blank_correct / missing / wrong / extra,
+  "fully exact" per letter, by family, input kind, capture, programme, split and answer kind; tidying only,
+  no fuzzy matching; a pluggable read source for S3; keys, field names and counts only. It also prints the
+  known-format-AI count (STPM / matriculation / polytechnic letters read by the AI reader) for S5.
+- **The held-out split** `eval/offer_split.json` + `eval/offer_split.py`: 90 letters, fixed seed, drawn only from
+  unseen letters with an AI read (owner steer: the fixed-format locks are already exact), stratified by
+  family + programme; `--check` re-derives it.
+- **`fetch_corpus.py` pages every read** — PostgREST caps a response at 1,000 rows, so the profile read was
+  silently cut short. Read-only; not yet re-run against production.
+- `tests/test_offer_read_scorer.py` (synthetic twins: tidying, every outcome, fully exact, no value printed,
+  split determinism, paging).
+
+## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
+
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 
 - **The bug:** the apply form stashes the WHOLE form (IC, household income, parent name and phone, the typed
