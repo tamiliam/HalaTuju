@@ -7280,3 +7280,12 @@ treat a leading type prefix ("KK", "POLY", "POLITEKNIK", "KOLEJ KOMUNITI") as a 
 KUANTAN") name nothing once "metro" is a type word. Every such miss is safe (no tick, no fill, nothing pinned) but
 inconsistent. **Fix:** derive the town words from the catalogue (institution towns/states) or add an alias per
 campus that letters name only by town; test each campus's short form. *(B · S)*
+
+### [TD-453] Adopt `future.hoverOnlyWhenSupported` — after a sweep for other hover-only reveals - low
+
+**Raised 2026-11-01 by Mobile M2.** M1a did not adopt the Tailwind flag because the student header's BrightPath menu
+opened on `group-hover` and reached iPads only through Safari's sticky hover. M2 made that menu open on a click, so the
+named blocker is gone. Not adopted in M2: the flag changes every `hover:` on touch screens, so first sweep for any OTHER
+reveal that relies on hover (`group-hover:block`, `hover:` that shows content or a control, `peer-hover`), give each
+a tap path, then turn the flag on and re-run mobile-check. **Fix:** grep `group-hover:` / `hover:block` / `hover:flex` /
+`hover:opacity-100` across `src`, fix each, adopt the flag in `tailwind.config`. *(B · S)*

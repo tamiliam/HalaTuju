@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
+
+Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,
+no API change.
+
+- **One student header on every student page, Home included** (`AppHeader`). Phone: one row — logo, **Log in**
+  (signed out; the student sign-in gate — on the sponsor landing, the sponsor login) or her avatar (signed in; to her profile, with the "still to fill" badge),
+  and a 44 px menu button. Home's own three-row bar is gone. Desktop: the nav row as before (Dashboard, Explore,
+  BrightPath ▾, Saved); My Profile is in the avatar's dropdown.
+- **The phone menu is the shared `Sheet`** (bottom sheet, height-capped, its own scroll): signed out — **Sign up
+  first**, Dashboard / Explore / Saved, BrightPath (Apply, Sponsor), the three logins, theme, language; signed in —
+  her name on top, the destinations, My Bursary when she has a file, My Profile / Settings, theme, language, **Log
+  out pinned at the foot**. Every destination once (Profile and Saved were listed twice; "My Applications" was a
+  second name for `/saved` and is gone). Rows 48 px; focus opens on the first item.
+- **Theme and language moved into the menus**, as 44 px segmented controls (`ThemeSegments` / `LanguageSegments`
+  in `StudentMenus.tsx`; the selects stay on settings, the sponsor portal and the console, unchanged).
+  Signed-out desktop: a globe "Language" button opens them.
+- **BrightPath (desktop) opens on a click**, not a hover — no more dependence on iPad sticky hover.
+- **Lighter on every student route:** `AppHeader.tsx` is now only the phone bar; the phone menu, the desktop row,
+  both pickers, Log in ▾ / Sign Up and sign-out are one lazily loaded chunk (`StudentMenus.tsx`) — fetched on the
+  first phone-menu open (prefetched on pointer/focus) and at once on a screen `lg` or wider.
+- **Onboarding header** (`FlowHeader`, all five steps): the logo never shrinks and "Step 2 of 3" sits over its bars.
+  In Malay the old row squeezed the logo to 74 px at 390 and 44 px at 360.
+- **Grade rows:** the STPM row restacks on a phone (`StpmSubjectRow`: subject + remove, then grade + "counts" tag);
+  every remove/clear button and every subject/grade picker on the grades steps is 44 px; the SPM stream buttons stack icon over label on a phone; SPM grade buttons,
+  the SPM-prerequisite stream pills and the MUET bands are 44 px tall on phones.
+- **Sandbox + mobile-check:** `header-signed-out`, `header-signed-out-menu`, `header-signed-in-menu`,
+  `header-signed-in-menu-bursary`, `onboarding-stepper`, `stpm-grade-rows` (signed-in ones use a synthetic
+  `AuthContext`, never a real sign-in).
+- **Tests:** `AppHeader.menu.test.tsx` (no destination twice; signed-in/out lists; My Bursary only with a file; Log
+  out clears her data and ends the session; first-item focus; BrightPath on a click); `navLayout.test.ts` now pins
+  the one-row header, the onboarding header and the grade rows; `theme.test.ts` and `AppHeader.bursary.test.tsx`
+  follow the header's new shape.
+
 ## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
 
 Owner rulings 2026-11-01 (decisions.md, the 7b entry). **Migration scholarship 0197

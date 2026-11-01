@@ -1,5 +1,63 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M2: one student header; the phone menu is the shared Sheet; BrightPath opens on a click (2026-11-01)
+
+**Owner (2026-11-01), approving Stitch M2a / M2b / M2c2 / M2d2:** the signed-out phone bar shows **Log in**
+(the student sign-in gate; sponsors and partners log in from the menu) and **Sign up** is the first, prominent
+item in the menu; the phone menu is a **bottom sheet through the shared `Sheet`**. The Stitch extras (hero badge,
+stat cards, bell, the name beside the avatar, a "Saved 4" count, the CGPA card, an add-subject row) are not built.
+
+**One header.** `AppHeader` is the header of every student page, Home included — Home's own bar (theme select,
+language select, About, Log in ▾, Sign Up, wrapping onto three rows: 184 px tall in every language) is gone. On
+a phone the bar is one row that cannot wrap: the logo (never shrinks), ONE action and a 44 px menu button. Why one
+action: "Log in" + "Sign up" measured 385 px in Tamil (and 357 in Malay) against the 358 px a 390 px phone leaves,
+and 328 at 360. Signed in, the action is her avatar, a link to her profile carrying the "still to fill" badge. On the sponsor side (the signed-out sponsor landing, `/sponsor*`) the bar's Log in goes to `/sponsor/login`: the student gate there would greet a returning sponsor with the student sign-in (found checking the landing, which inherits the header).
+Desktop keeps its nav row (Dashboard, Explore, BrightPath ▾, Saved); My Profile moved into the avatar's dropdown.
+
+**The menu lists each destination once.** Before, a signed-in student saw Profile twice and Saved twice under two
+names ("Saved" and "My Applications" were both `/saved`); `header.myApplications` is deleted. Signed out: Sign up,
+then Dashboard / Explore / Saved (the gate), BrightPath (Apply, Sponsor), the three logins, theme, language.
+Signed in: her name heads the sheet, then Dashboard / Explore / Saved, BrightPath (Apply, My Bursary when she has a
+file, Sponsor), My Profile (badge) / Settings, theme, language, and Log out pinned in the footer. `dismissible`
+stays true (it is navigation); focus opens on the FIRST ITEM (Sign up / Dashboard) via `initialFocus`, never the ×.
+From `md` to `lg` (a tablet) the Sheet is a centred dialog — the same list.
+
+**Theme and language left the bar.** Phone: in the sheet. Desktop: in the avatar's dropdown, or (signed out)
+behind a globe "Language" button (a globe, because it must read to someone who cannot read the language on screen).
+In those menus they are three 44 px segmented buttons sized to their words (`ThemeSegments`, `LanguageSegments` in
+`StudentMenus.tsx`), doing exactly what `ThemeSelector` / `LanguageSelector` do — the language one keeps the
+pending-choice / failure-toast rule. They are NOT variants of the two selectors: a first build tried that, and since
+the selectors ride eagerly on the console and the sponsor portal it added bytes to ~75 routes (the route median
+among them) for a control only the student menus show. The selects stay everywhere else, unchanged.
+
+**BrightPath opens on a click, not a hover.** The desktop dropdown was `group-hover` / `group-focus-within`, which
+reached iPads only through Safari's sticky hover — the reason M1a did NOT adopt `future.hoverOnlyWhenSupported`.
+It is now a button with `aria-expanded` that toggles a list, closing on a second click, an outside tap, Escape or
+navigation; nothing of it is in the page until then (`AppHeader.menu.test.tsx`). **Can `hoverOnlyWhenSupported`
+now be adopted?** This was the only blocker named in the M1a entry, and it is gone. Not adopted in M2 (owner's
+scope): adopting it changes every `hover:` in the product on touch screens, so it wants its own sweep for any
+OTHER hover-only reveal (`group-hover:block`, `hover:` that shows content) before the flag goes on — TD-453.
+
+**Weight: the phone bar is the only eager part.** `AppHeader.tsx` is the logo, the one action and the menu button.
+Everything else — the phone menu, the DESKTOP ROW with its dropdowns, both pickers, Log in ▾ / Sign Up and the
+sign-out routine — lives in `components/StudentMenus.tsx`, imported by `AppHeader` on the first phone-menu open
+(prefetched on pointer or focus) and at once on a screen `lg` or wider (`matchMedia`). The import is owned (not
+`next/dynamic`, the InfoTip reason). Why the desktop row too: with it in the eager bar, every student route got
+lighter (the pickers and menus left) but HOME — whose own bar had been lighter than any header — rose 2 kB, crossed
+the route median and pushed it 0.4 kB over its 148 kB budget. The cost: on a desktop the nav row appears a moment
+after the logo (one small, usually cached chunk; the bar's height does not move). The `Sheet` costs nothing:
+`AuthGateModal` already carries it on every route. No new string: every label is an existing core key.
+
+**Onboarding header.** The five onboarding pages each carried a copy of logo + `ProgressStepper` in a row; in
+MALAY ("Langkah 2 daripada 3" + bars = 268 px) it squeezed the logo to 74 px at 390 and 44 px at 360 — Tamil and
+English fitted. One `FlowHeader` now: the logo `shrink-0`, the step words stacked OVER smaller bars (the indicator
+is as wide as its words — 152 px in Malay), sticky like the student header.
+
+**Grade rows.** The STPM row put subject, grade, the "not counted" tag (up to 176 px) and remove in one line, leaving
+the subject ~12 px. `StpmSubjectRow` restacks below `sm`: subject + 44 px remove, then grade + tag (wrapping). Every
+remove/clear and every subject/grade picker on the grades steps is 44 px; the SPM stream buttons stack their icon over the label on a phone
+(the Tamil "தொழில்நுட்பம்" pushed the icons out); the SPM grade buttons and MUET bands are 44 px tall on phones.
+
 ## The date rule: a pick made before the picker was complete is not a real selection; one campus test (owner, 2026-11-01)
 
 **Decision (date rule).** The scholarship course picker was complete only from `PICKER_COMPLETE_AT`, 2026-10-31

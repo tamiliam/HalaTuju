@@ -39,8 +39,11 @@ Three kinds of check, from cheapest to most human:
 - **Why:** a page that slides left and right feels broken and hides content off the edge.
 - **Checked by:** mobile-check (`scrollWidth ≤ clientWidth` on every cell; it names the widest element).
 - **Copy this:** long words and IDs get `break-words` or `truncate`; rows that might not fit use
-  `flex flex-wrap`, as the Home top bar does (`src/app/page.tsx`, pinned by
-  `src/lib/__tests__/navLayout.test.ts`).
+  `flex flex-wrap` (the TVET requirement rows, `src/components/RequirementsCard.tsx`). A bar that must stay ONE
+  row is built from fixed, measured widths instead: the student header (`src/components/AppHeader.tsx`) is the
+  logo (`shrink-0`), one action and the menu button — measured in Tamil and Malay at 360 — and a row with a
+  long tag restacks below `sm` (`src/components/StpmSubjectRow.tsx`). Both pinned by
+  `src/lib/__tests__/navLayout.test.ts`.
 
 ### 2. Text fields are 16 px or more on phones
 - **Why:** iPhone Safari zooms the whole page when you tap a field under 16 px, and it stays zoomed.
@@ -144,7 +147,9 @@ Three kinds of check, from cheapest to most human:
 ### 11. One-thumb navigation
 - **Why:** every shell needs a phone navigation that fits — in Tamil, at 360 px.
 - **Checked by:** mobile-check (Tamil at 360) and review.
-- **Copy this:** the admin drawer (`src/components/admin/AppShell.tsx`) or bottom tabs
+- **Copy this:** the student header's menu (`src/components/AppHeader.tsx` + `StudentMenus.tsx`, Mobile M2: a
+  one-row bar, then every destination once in the shared `Sheet`, loaded on the first open), the admin drawer
+  (`src/components/admin/AppShell.tsx`) or bottom tabs
   (`src/app/scholarship/apply/page.tsx`).
 
 ### 12. Body text is 12 px or more on phones

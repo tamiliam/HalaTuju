@@ -1,70 +1,70 @@
 {
   "_how_this_works": "The mobile-check ratchet (Mobile M0). One cell per page × width × language: overflow = sideways scroll in CSS px, smallInputs = text fields under 16 px, smallTargets = controls under 44 × 44 px. A run fails when a cell gets worse. `npm run mobile-check -- --update` rewrites this file and only ever LOWERS numbers (MOBILE_ALLOW_WORSE=1 is the documented exception — see mobile-check/run.mjs). Never edit by hand.",
   "measured": {
-    "public": "http://localhost:3110",
-    "sandbox": "http://localhost:3110",
-    "updated": "2026-10-31"
+    "public": "http://localhost:3100",
+    "sandbox": "http://localhost:3100",
+    "updated": "2026-11-01"
   },
   "cells": {
     "/ @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/ @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/ @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/ @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/ @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/ @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/about @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/about @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/about @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/about @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/about @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/about @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/admin/login @360 en": {
       "overflow": 0,
@@ -99,212 +99,212 @@
     "/contact @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/contact @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/contact @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/contact @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/contact @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/contact @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 13
+      "smallTargets": 12
     },
     "/cookies @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/cookies @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/cookies @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/cookies @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/cookies @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/cookies @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/course/[id] @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/course/[id] @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/course/[id] @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/course/[id] @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/course/[id] @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/course/[id] @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 32
+      "smallTargets": 31
     },
     "/get-started @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/get-started @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/get-started @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/get-started @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/get-started @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/get-started @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/login @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/login @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/login @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/login @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/login @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/login @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 14
+      "smallTargets": 10
     },
     "/privacy @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/privacy @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/privacy @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/privacy @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/privacy @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/privacy @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/scholarship @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/scholarship/apply @360 en": {
       "overflow": 0,
@@ -339,62 +339,62 @@
     "/search @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/search @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 26
     },
     "/search @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/search @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/search @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/search @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/sponsor @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "/sponsor/login @360 en": {
       "overflow": 0,
@@ -459,62 +459,62 @@
     "/stpm/search @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/stpm/search @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 26
     },
     "/stpm/search @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/stpm/search @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/stpm/search @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/stpm/search @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 28
+      "smallTargets": 27
     },
     "/terms @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/terms @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/terms @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/terms @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/terms @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "/terms @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 10
     },
     "sandbox:action-centre @360 en": {
       "overflow": 0,
@@ -846,6 +846,126 @@
       "smallInputs": 0,
       "smallTargets": 1
     },
+    "sandbox:header-signed-in-menu @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-in-menu-bursary @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:header-signed-out-menu @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:officer-cockpit @360 en": {
       "overflow": 257,
       "smallInputs": 0,
@@ -875,6 +995,36 @@
       "overflow": 227,
       "smallInputs": 0,
       "smallTargets": 19
+    },
+    "sandbox:onboarding-stepper @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-stepper @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-stepper @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-stepper @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-stepper @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-stepper @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     },
     "sandbox:pieces @360 en": {
       "overflow": 0,
@@ -1119,32 +1269,62 @@
     "sandbox:sponsor-landing @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "sandbox:sponsor-landing @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "sandbox:sponsor-landing @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "sandbox:sponsor-landing @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "sandbox:sponsor-landing @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
     },
     "sandbox:sponsor-landing @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 11
+    },
+    "sandbox:stpm-grade-rows @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:stpm-grade-rows @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:stpm-grade-rows @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:stpm-grade-rows @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:stpm-grade-rows @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:stpm-grade-rows @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     }
   }
 }
