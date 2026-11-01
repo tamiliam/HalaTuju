@@ -67,6 +67,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-11-01 Empty-pick fill (#202; owner: Check 1 records facts; review round 6; no migration; link_offer_courses --apply filled #202) — 3eba43b6 b19577ea
 - 2026-11-01 Offer letters read exactly Sprint 1 (eval tooling: scorer, held-out split, review page, paged fetch; baseline 21/90 fully exact; no reader change) — 6cb620d5 7da17db2 af17c491 f7029a63 fe5981a3
 - 2026-11-01 Offer letters read exactly Sprint 2 (dev answers, campus split, OCR + replay, failure map, offer-check page; eval only, no reader change) — 68ab0595 ceea1ee5 19106084 40ece202
+- 2026-11-01 Offer letters read exactly Sprint 3 (today's AI reader measured on 216 letters, RM3.72; eval only) — d7c0a546
 
 ## Reviews
 

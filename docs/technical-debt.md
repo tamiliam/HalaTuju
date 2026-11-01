@@ -7298,3 +7298,14 @@ which is true only once the NRIC is verified. A student who signed in with Googl
 same. Tapping Log in opens the gate, which resumes her NRIC step, so nothing is lost, but she cannot sign out from the
 header on a shared phone. **Fix:** treat `hasSession && !isAnonymous` as signed in for the header's Log out (and her
 name), keep the account-only links gated on `isAuthenticated`; a test for the needs-nric state. *(B · S)*
+
+### [TD-459] The Gemini usage meter does not count thinking tokens - medium (money)
+
+**Raised 2026-11-01 by the offer exact-read S3 run.** `usage.gemini_tokens` records the prompt and candidate token
+counts only. Gemini 2.5 bills its THINKING tokens at the output rate and reports them separately
+(`thoughts_token_count`); on 216 offer reads they were ~84% of the billed output tokens (251,431 thinking vs
+46,877 output). So `UsageEvent` cost and the per-tenant billing (`BILLING_USAGE_ENABLED`) under-count every Gemini
+read - roughly 3-5x on the output side. **Fix:** record `thoughts_token_count` as its own column or add it to the
+output count at the output price, wherever the meter reads `usage_metadata`; test with a fake response carrying
+thoughts; say how many existing usage rows carry the old count (not repaired - billing history stays as charged
+unless the owner rules otherwise). *(B · S)*
