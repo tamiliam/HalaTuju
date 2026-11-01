@@ -64,7 +64,10 @@ Three kinds of check, from cheapest to most human:
   with padding — the look can stay small. (A pseudo-element hit area is invisible to the check, so use padding.)
   For a small control in a line of text, pad it to 44 and cancel the padding with negative margins
   so nothing around it moves: `src/components/Toggle.tsx` (44 × 44 button, 44 × 24 track inside),
-  `src/components/InfoTip.tsx` (44 px around an 18 px mark).
+  `src/components/InfoTip.tsx` (44 px around an 18 px mark). A small round face on a card: a 44 px
+  button with the face inside it (`CourseCard.tsx`'s save button, Mobile M3). A list of links: each an
+  `inline-flex min-h-11` row with the list's gaps dropped, and two columns on a phone so the list is no
+  taller (`AppFooter.tsx`).
 
 ### 4. No hover-only information or actions
 - **Why:** a phone has no hover. A tooltip or a hover-revealed button simply does not exist there.
@@ -97,6 +100,10 @@ Three kinds of check, from cheapest to most human:
   field** — when that is not the main action (the sign-in gate's phone box, with phone sign-in off), pass
   `initialFocus`, or a phone's keyboard rises and pushes the real action out of view. Sandbox: `sheet-short`,
   `sheet-long-form`, `sheet-locked-confirm`.
+  **Filters on a phone go in a Sheet** (Mobile M3): `src/components/search/SearchFilterSheet.tsx` — one group of
+  44 px chips per facet, long facets behind "Show all (N)", focus on the first chip, a tap applies at once and the
+  footer button says how many results and closes. The desktop keeps its own row; both read ONE list of facets.
+  Sandbox: `search-filters`.
 
 ### 6. Safe areas and dvh
 - **Why:** `100vh` on iPhone is taller than the visible screen while the address bar shows; fixed
@@ -114,13 +121,19 @@ Three kinds of check, from cheapest to most human:
   Heights: `dvh` units (`max-h-[90dvh]`, `min-h-dvh`), never `vh` — but a browser that does not know `dvh`
   (Safari < 15.4, Chrome < 108) drops the WHOLE declaration, so a cap a screen depends on (the Sheet's) is
   computed in pixels from `visualViewport` instead.
+  **A phone's main action in a long page is a sticky bottom bar** (Mobile M3, `CourseSaveBar` in
+  `src/components/CourseDetailShared.tsx`): `sticky bottom-0 md:hidden` — `sticky`, not `fixed`, so it rests
+  above the footer at the end and never covers it — padded `pb-[max(0.75rem,env(safe-area-inset-bottom))]`, and it
+  calls `useBottomBarInset(ref)` (`src/lib/bottomBarInset.ts`) so the toast rises above it.
 
 ### 7. Tables become cards on phones
 - **Why:** a seven-column table dragged sideways is the wrong shape for the screen people check things on.
 - **Checked by:** static guard (`src/lib/__tests__/pageWidth.test.ts` — every admin list has phone
   cards or a written exemption) and mobile-check (overflow).
 - **Copy this:** `hidden md:block` table + `md:hidden` cards (`src/app/admin/students/page.tsx`), or
-  `TableFrame` (`src/components/admin/TableFrame.tsx`) for genuinely wide data.
+  `TableFrame` (`src/components/admin/TableFrame.tsx`) for genuinely wide data. A side-by-side COMPARISON
+  on a phone: two columns, each row's label a heading line above its two values, and a chooser for the second
+  column when there are more (`src/components/saved/SavedCompare.tsx`, Mobile M3; sandbox `saved-compare`).
 
 ### 8. The right keyboard for every field
 - **Why:** a number pad for a postcode, the one-time-code row for an OTP — fewer mistakes, faster.

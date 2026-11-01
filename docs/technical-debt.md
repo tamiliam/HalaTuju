@@ -7298,3 +7298,28 @@ which is true only once the NRIC is verified. A student who signed in with Googl
 same. Tapping Log in opens the gate, which resumes her NRIC step, so nothing is lost, but she cannot sign out from the
 header on a shared phone. **Fix:** treat `hasSession && !isAnonymous` as signed in for the header's Log out (and her
 name), keep the account-only links gated on `isAuthenticated`; a test for the needs-nric state. *(B · S)*
+### [TD-455] Saved courses: the remove / status toasts are English-only - low
+
+**Raised 2026-11-01 by Mobile M3.** M3 moved the saved page's compare words into the `discovery` slice in three
+languages, but its three toasts are still literal English in `app/saved/page.tsx`: "Course removed", "Failed to
+remove course", "Failed to update status". A Malay or Tamil reader sees English for a second. **Fix:** three
+`saved.*` keys (core, since `/saved` already loads it) in en/ms/ta; a test that no `showToast('…')` literal is left
+in the page. *(B · S)*
+
+### [TD-456] Course pages and cards: English-only labels and 9-11 px merit text - low
+
+**Raised 2026-11-01 by Mobile M3 (left out of scope).** On `/course/[id]` and `/stpm/[id]` the Quick facts labels
+(Level, Field, Department, Duration, WBL, Category, Stream, "Avg. Merit"), every "More Info" button, the STPM
+school filters ("All States", "All Districts", "No schools match…"), "Subject Key" and the not-found screen are
+literal English; `CourseCard`'s merit bar reads "High / Fair / Low Chance" and "You: … | Need: …" in English at
+9-11 px (mobile-standard rule 12: body text 12 px or more). **Fix:** move the strings into `courseDetail.*` (the
+course pages load core) and lift the merit row to `text-xs`; re-run mobile-check on `/search`, `/dashboard` and both
+course pages in Tamil (the merit row must still fit a card at 360). *(B · M)*
+
+### [TD-457] The phone compare's sticky course-name row assumes the student header's height - low
+
+**Raised 2026-11-01 by Mobile M3.** In `components/saved/SavedCompare.tsx` the two course names stick at
+`top-[calc(4.25rem+env(safe-area-inset-top))]` — the student header's measured height (64 px plus its border) and
+its safe area. If the header's height changes, the row either hides under it or floats below it. **Fix:** have
+`AppHeader` publish its height as a CSS variable (the `--bottom-bar` pattern, `lib/bottomBarInset.ts`) and stick at
+`var(--header-height)`; a test pinning the two together. *(B · S)*

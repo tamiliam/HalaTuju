@@ -1,5 +1,72 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M3: search filters in a sheet; course pages reorder on a phone and save from a sticky bar; compare on phones is layout B (2026-11-01)
+
+**Owner (2026-11-01):** the Stitch filter sheet, course page and compare are APPROVED — build only data we hold,
+none of Stitch's invented facts (no "3 Years Full-time", "TVET Accredited", "Competitive entry", "← Explore
+Courses" link or "best" dots); the `/search` phone bar is approved FROM THE BUILD (its Stitch screen never came
+back), with before/after screenshots before the push; compare is **B, two columns, no "best" marks**; footer
+links become 44 px in M3.
+
+**Search filters live in a sheet on a phone, and apply on tap.** Below `md` the page shows the search box, a
+"Filters" button with a count badge (every picked facet; the search words are not counted), the picked facets as
+removable 44 px chips that wrap, and the "eligible only" switch. The facets open in the shared `Sheet`
+(`components/search/SearchFilterSheet.tsx`): one group of 44 px chips per facet, ONE value per facet as before
+(tapping the picked chip clears it), states and fields behind "Show all (N)" with the picked chip always visible.
+A tap applies at once — the page searches again behind the sheet, exactly as the pills always did — so the
+footer's "Show N courses" only closes it, and shows the live count. The sheet's Clear clears the facets only (the
+desktop's "Clear filters" still also clears the words and the switch). `dismissible` is true (it is navigation);
+focus opens on the first chip via `initialFocus`, never a text field. **The eligible switch stays in the bar**,
+not the sheet: signed out, it opens the sign-in sheet, and a sheet over a sheet is the wrong shape. From `md` the
+row of pills is unchanged. The facets are ONE list for both faces (`facets` in the page), so the pills and the
+chips cannot drift.
+
+**Nothing in M3 is lazy-loaded.** The sheet, the compare view and the save bar are in their pages' entries. Each is
+the only way to do its job on a phone (filter, compare, save), so a failed `import()` chunk would leave none (the
+M2 lesson); and every new async chunk adds ~9 bytes to EVERY route's runtime, against a median 0.44 kB under its
+budget. The five M3 routes all sit 4-38 kB ABOVE the median and none has its own line, so their page weight
+cannot move a budget.
+
+**The new words are a `discovery` slice**, loaded by the PAGES of `/search`, `/course/[id]` and `/saved` (and the
+sandbox layout) — `lib/messagesDiscovery.ts`, the bursary slice's pattern. In core they would have moved all ~90
+routes. Shared components (`CourseCard`, the footer, `CourseDetailShared`) read only core keys, so the slice never
+follows them to the dashboard. The saved compare's hard-coded Malay ("Bandingkan", "Batal", "Perbandingan Kursus",
+the row labels, "/bln", "Temuduga") moved into it in English, Malay and Tamil.
+
+**The course pages reorder on a phone with `display: contents`.** Each column is `contents` below `md`, so every
+section is an item of one flex column and takes its phone place from `order-*`: quick facts, entry requirements,
+special conditions, about, careers, where to study, (subject key), actions. From `md` the columns are real and the
+order is reset. **The trade-off, accepted:** the reading order (screen readers, Tab) stays the source order — the
+desktop's — while a phone SHOWS a different order. Every section keeps its own heading, so a screen-reader user
+moving by heading still lands on named sections; nothing is hidden. The alternative (duplicating quick facts and
+requirements, one copy per width) doubles ids and test queries and was refused.
+
+**Save is a sticky bar on a phone** (`CourseSaveBar`): `sticky`, not `fixed`, so it rides at the foot over the
+course and comes to rest above the footer — it never covers the footer or the last lines. It clears the home bar
+(`pb-[max(0.75rem,env(safe-area-inset-bottom))]`). The sidebar's Save button is the desktop's only; the phone
+keeps the Actions card for its "back to recommendations" link. **The toast rises above a bottom bar**: the bar
+writes its height to `--bottom-bar` (`lib/bottomBarInset.ts`; 0 when hidden from `md`) and the toast's offset adds
+it. The saved page's compare bar does the same.
+
+**A phone shows three institutions, then "Show all N".** From `md`, all of them as before. The STPM stream's
+600 px inner scroll box is gone; the list is part of the page, 20 schools a page (was 50 inside the box).
+
+**Compare on a phone is layout B.** The first pick is column one; with three picks, "Compare with" chooses column
+two. Each row's label is a heading line above its two values. No "best" marks: which fee or merit is better is the
+student's judgement. From `md` the table of all picks stays. The compare bar shows from the first tick on a phone
+(Compare is enabled from two), from two on a desktop as before.
+
+**Report tables are not framed, because there are none.** `react-markdown` runs without `remark-gfm`, so a pipe
+table in a report is drawn as plain lines that wrap. Adding GFM would need a framed table first (noted in
+`ReportView.tsx`). The report's width fix is gutters (16 px on a phone) and `break-words`.
+
+**Footer: 44 px rows, not a taller footer.** Every link is `inline-flex min-h-11`; on a phone the three lists sit
+in two columns (the brand spans both) and lose their 8 px gaps.
+
+**`/stpm/[id]` is public** — its API view is `AllowAny`; M0 had filed it as signed-in, so it was never measured.
+mobile-check now opens `/stpm/UP6523001`, and `/course/stpm-sains` beside `/course/POLY-DIP-019`
+(`alsoVisit`, its own baseline id `<route>=<url>`).
+
 ## Mobile M2: one student header; the phone menu is the shared Sheet; BrightPath opens on a click (2026-11-01)
 
 **Owner (2026-11-01), approving Stitch M2a / M2b / M2c2 / M2d2:** the signed-out phone bar shows **Log in**

@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M3 — student discovery: search filters in a sheet, course pages without the scroll trap, compare on phones (not yet live)
+
+Owner approved the Stitch filter sheet, course page and compare (layout B) on 2026-11-01; the `/search` phone bar
+is approved from the build (decisions.md, the Mobile M3 entry). No migration, no API change.
+
+- **Course search on a phone**: the first screen is the search box with a **Filters** button beside it (a count
+  badge for every picked filter), the picked filters as removable 44 px chips, the "eligible only" switch and the
+  results. The filters open in the shared `Sheet` (`components/search/SearchFilterSheet.tsx`): one group of 44 px
+  chips per facet, states and fields behind "Show all (N)", Clear and "Show N courses" pinned at the foot. A tap
+  applies at once, as before; focus opens on the first chip. From `md` the row of pills is unchanged.
+- **Course cards**: the save button is a 44 × 44 target (it was 28), named in the student's language and marked
+  pressed when saved. Reaches `/search`, `/dashboard` and every other card list.
+- **Course pages (`/course/[id]`, `/stpm/[id]`) on a phone**: quick facts and entry requirements come first, the
+  institutions last (the two columns dissolve into one ordered column); **Save is a sticky bar** at the foot of the
+  screen, clear of the home bar (it was 6,800 px down on a polytechnic diploma); a phone shows the first three
+  institutions and "Show all N institutions"; the STPM stream page's **600 px inner scroll box is gone** (the list
+  is part of the page, 20 schools at a time) and so is its 8 px sideways scroll at 375; every "More Info", phone,
+  website and career link and the requirements "Show all" button is 44 px. The toast rises above the Save bar
+  (`--bottom-bar`, `lib/bottomBarInset.ts`).
+- **Saved courses**: compare works on a phone — a "Compare" tick box with its word on every card (no hover
+  `title=`), a sticky compare bar, and **layout B**: two columns with each row's label above its two values, and
+  "Compare with" to choose the second course when three are picked; no "best" marks. The desktop table stays. The
+  status pills wrap (Tamil) and are 44 px; the remove button is 44 px; the page has its heading. The compare words
+  were hard-coded Malay — now in English, Malay and Tamil.
+- **Report**: 16 px gutters and card padding on a phone (the text had ~278 px), a 44 px Download PDF button, long
+  words wrap, and the header shows while loading and on an error.
+- **Footer (every student page)**: every link is a 44 px row; on a phone the three lists sit in two columns so the
+  footer is shorter than before (782 → 739 px in English, 802 → 759 in Tamil, at 390).
+- **New words** live in a new `discovery` message slice loaded by the pages of `/search`, `/course/[id]` and
+  `/saved` (and the sandbox) — never in the core every route downloads.
+- **mobile-check**: `/stpm/[id]` is measured (`/stpm/UP6523001`; M0 had filed this public page as signed-in),
+  `/course/stpm-sains` is measured beside `/course/POLY-DIP-019`, and four sandbox surfaces: `search-filters`,
+  `saved-list`, `saved-compare`, `report`.
+- **Guards**: `discoveryLayout.test.ts` (no fixed-pixel scroll box on a course page, the phone column order and
+  `min-w-0`, the sticky Save bar, the toast offset, the search phone bar, the saved tick box and pills, no
+  hard-coded Malay compare words, the report header, 44 px footer links); `navLayout.test.ts` adds the 44 px
+  eligible switch; tests for the filter sheet, the card's save button, the compare view and bar, and the bar inset.
+- **Numbers (measured):** Jest 5,919 → 5,965 (367 → 372 suites); mobile-check 264 → 300 cells, every M3 cell
+  0 / 0 / 0 (`/search` small targets 27 → 0, `/course/[id]` 31 → 0), 90 existing cells better (the footer);
+  first-load JS (exact): median 147.556 → 147.613 (0.39 under 148; the shared footer, toast and two slice chunks),
+  `/search` 156.395 → 159.950, `/course/[id]` 185.099 → 186.550, `/stpm/[id]` 162.940 → 163.760, `/saved`
+  152.489 → 154.216, `/report/[id]` 182.328 → 182.509; budgeted `/profile` 196.088 → 196.145,
+  `/scholarship/application` 210.050 → 210.139, `/scholarship/apply` 186.291 → 186.348. Nothing raised.
+
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 
 Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,
