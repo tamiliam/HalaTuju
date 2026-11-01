@@ -1218,11 +1218,13 @@ describe('the F6 semantic corrections the codemod could not make', () => {
     // Both were declared twice, byte-identical, in `course/[id]` and the pathway page — the two
     // pages a student moves between while comparing. Same bug as above, found by grepping for
     // `Record<…, colour>` rather than by reading, which is why that grep is on the checklist.
-    for (const f of ['src/app/course/[id]/page.tsx', 'src/app/pathway/stpm/page.tsx']) {
+    // Mobile M3: the course page's Form Six / matriculation sections moved, verbatim, to
+    // `components/course/PreUInstitutions.tsx` — the rule follows them there.
+    for (const f of ['src/components/course/PreUInstitutions.tsx', 'src/app/pathway/stpm/page.tsx']) {
       expect(read(f)).toMatch(/from '@\/lib\/stpmSubjects'/)
       expect(withoutComments(read(f))).not.toMatch(/const SUBJECT_NAMES/)
     }
-    for (const f of ['src/app/course/[id]/page.tsx', 'src/app/pathway/matric/page.tsx']) {
+    for (const f of ['src/components/course/PreUInstitutions.tsx', 'src/app/pathway/matric/page.tsx']) {
       expect(read(f)).toMatch(/from '@\/lib\/matricTracks'/)
       expect(withoutComments(read(f))).not.toMatch(/const TRACK_COLOURS/)
     }

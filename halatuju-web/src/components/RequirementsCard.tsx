@@ -450,7 +450,7 @@ function OrGroupSection({
       {groups.length > 3 && !expanded && (
         <button
           onClick={() => setExpanded(true)}
-          className="mt-2.5 w-full text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center justify-center gap-1 py-1.5"
+          className="mt-2.5 w-full min-h-11 text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center justify-center gap-1 py-1.5"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

@@ -27,8 +27,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast container — bottom-right on a desktop; on a phone, full width less 16 px gutters and above the home bar (Mobile M1a) */}
-      <div className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col gap-2 sm:left-auto sm:right-[max(1rem,env(safe-area-inset-right))] sm:bottom-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Toast container — bottom-right on a desktop; on a phone, full width less 16 px gutters and above the home bar (Mobile M1a),
+          and above a page's sticky bottom bar when it has one (`--bottom-bar`, lib/bottomBarInset.ts, Mobile M3) */}
+      <div className="fixed inset-x-4 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--bottom-bar,0px))] z-50 flex flex-col gap-2 sm:left-auto sm:right-[max(1rem,env(safe-area-inset-right))]">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}

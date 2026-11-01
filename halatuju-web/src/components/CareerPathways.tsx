@@ -28,7 +28,7 @@ export default function CareerPathways({ occupations }: CareerPathwaysProps) {
               href={occ.emasco_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-category-8-surface text-category-8-ink rounded-full text-sm font-medium hover:opacity-80 transition-opacity"
+              className="inline-flex min-h-11 items-center gap-1.5 px-3 py-1.5 bg-category-8-surface text-category-8-ink rounded-full text-sm font-medium hover:opacity-80 transition-opacity"
             >
               {occ.job_title}
               <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -9,7 +9,7 @@ import AppFooter from '@/components/AppFooter'
 import CourseHeader from '@/components/CourseHeader'
 import SpecialConditions from '@/components/SpecialConditions'
 import CareerPathways from '@/components/CareerPathways'
-import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
+import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions, CourseSaveBar } from '@/components/CourseDetailShared'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useCallback } from 'react'
@@ -49,13 +49,15 @@ export default function StpmCourseDetailPage() {
         subtitle={data.headline || data.university}
       />
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid md:grid-cols-3 gap-8">
+      {/* Main Content — on a phone the columns dissolve into one ordered column, exactly as on the
+          SPM course page (`course/[id]/page.tsx` says why; Mobile M3). */}
+      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8">
           {/* Left Column */}
-          <div className="md:col-span-2 space-y-8">
+          <div className="contents md:col-span-2 md:block md:min-w-0 md:space-y-8">
             {/* About */}
             {data.description && (
+              <div className="order-4 min-w-0 md:order-none">
               <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
                 <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.aboutTitle')}
@@ -69,19 +71,23 @@ export default function StpmCourseDetailPage() {
                       href={data.mohe_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
+                      className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                     >
                       More Info
                     </a>
                   </div>
                 )}
               </section>
+              </div>
             )}
 
             {/* Career Pathways */}
+            <div className="order-5 min-w-0 empty:hidden md:order-none">
             <CareerPathways occupations={data.career_occupations || []} />
+            </div>
 
             {/* Institution */}
+            <div className="order-6 min-w-0 md:order-none">
             <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.whereToStudy')}
@@ -89,9 +95,9 @@ export default function StpmCourseDetailPage() {
               </h2>
               {data.institution ? (
                 <div className="rounded-lg border border-ground-200 bg-ground-50 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-ground-900 mb-1">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-ground-900 mb-1 break-words">
                         {data.institution.institution_name}
                       </h3>
                       <p className="text-sm text-ground-500 mb-2">
@@ -108,7 +114,7 @@ export default function StpmCourseDetailPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
                       <span className="px-2 py-1 rounded text-xs font-medium bg-positive-100 text-positive-700">
                         {data.institution.category}
                       </span>
@@ -117,7 +123,7 @@ export default function StpmCourseDetailPage() {
                           href={data.institution.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors"
+                          className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors"
                         >
                           More Info
                         </a>
@@ -132,11 +138,13 @@ export default function StpmCourseDetailPage() {
                 </div>
               )}
             </section>
+            </div>
           </div>
 
           {/* Right Column - Sidebar */}
-          <div className="space-y-6">
+          <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
+            <div className="order-1 min-w-0 md:order-none">
             <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
@@ -160,8 +168,10 @@ export default function StpmCourseDetailPage() {
                 )}
               </div>
             </section>
+            </div>
 
             {/* Entry Requirements — unified card */}
+            <div className="order-2 min-w-0 md:order-none">
             <section className="bg-ground-0 rounded-xl border border-ground-200 overflow-hidden">
               {/* Header */}
               <div className="px-5 pt-5 pb-3 flex items-center justify-between">
@@ -354,8 +364,10 @@ export default function StpmCourseDetailPage() {
                 )}
               </div>
             </section>
+            </div>
 
             {/* Special Conditions */}
+            <div className="order-3 min-w-0 empty:hidden md:order-none">
             <SpecialConditions
               reqInterview={data.requirements.req_interview}
               noColorblind={data.requirements.no_colorblind}
@@ -365,8 +377,10 @@ export default function StpmCourseDetailPage() {
               single={data.requirements.single}
               noDisability={data.requirements.no_disability}
             />
+            </div>
 
-            {/* Actions */}
+            {/* Actions — on a phone only "back"; Save is the sticky bar below */}
+            <div className="order-8 min-w-0 md:order-none">
             <CourseActions
               isSaved={isSaved}
               isHovering={isHovering}
@@ -374,9 +388,12 @@ export default function StpmCourseDetailPage() {
               onHoverStart={() => setIsHovering(true)}
               onHoverEnd={() => setIsHovering(false)}
             />
+            </div>
           </div>
         </div>
       </div>
+
+      <CourseSaveBar isSaved={isSaved} onSave={handleSave} />
 
       <AppFooter />
     </main>

@@ -10,15 +10,14 @@ import AppFooter from '@/components/AppFooter'
 import CourseHeader from '@/components/CourseHeader'
 import RequirementsCard from '@/components/RequirementsCard'
 import SpecialConditions from '@/components/SpecialConditions'
-import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
+import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions, CourseSaveBar } from '@/components/CourseDetailShared'
 import CareerPathways from '@/components/CareerPathways'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
-import { useState, useMemo, useCallback } from 'react'
-import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
-import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
-import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
-import { MATRIC_TRACK_MAP, TRACK_CHIP, TRACK_LABELS, type TrackId } from '@/lib/matricTracks'
+import { useState, useCallback } from 'react'
+import { StpmInstitutionsSection, MatricInstitutionsSection, SubjectLegend } from '@/components/course/PreUInstitutions'
+// Mobile M3: "show all" on a phone (the `discovery` slice), loaded by this PAGE.
+import '@/lib/messagesDiscovery'
 
 export default function CourseDetailPage() {
   const params = useParams()
@@ -78,12 +77,20 @@ export default function CourseDetailPage() {
         subtitle={subtitle || undefined}
       />
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid md:grid-cols-3 gap-8">
+      {/* Main Content.
+          ⚠ ON A PHONE THE TWO COLUMNS DISSOLVE (Mobile M3): each column is `contents` below `md`, so
+          every section is an item of ONE flex column and takes its phone place from `order-*` —
+          quick facts and entry requirements first, the long institution list last. From `md` the
+          columns are real again and the order classes are reset. Reading order (screen readers,
+          Tab) stays the source order, the desktop's; each section keeps its own heading
+          (docs/decisions.md, Mobile M3). Every item is `min-w-0`: a `truncate` school name used to
+          set the column's width and push the page 8 px past a 375 px screen. */}
+      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8">
           {/* Left Column - Description */}
-          <div className="md:col-span-2 space-y-8">
+          <div className="contents md:col-span-2 md:block md:min-w-0 md:space-y-8">
             {/* About */}
+            <div className="order-4 min-w-0 md:order-none">
             <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.aboutTitle')}
@@ -101,18 +108,22 @@ export default function CourseDetailPage() {
                     href={courseInfoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
+                    className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                   >
                     More Info
                   </a>
                 </div>
               )}
             </section>
+            </div>
 
             {/* Career Pathways */}
+            <div className="order-5 min-w-0 empty:hidden md:order-none">
             <CareerPathways occupations={career_occupations || []} />
+            </div>
 
             {/* Institutions */}
+            <div className="order-6 min-w-0 md:order-none">
             {courseId.startsWith('stpm-') ? (
               <StpmInstitutionsSection courseId={courseId} />
             ) : courseId.startsWith('matric-') ? (
@@ -128,11 +139,7 @@ export default function CourseDetailPage() {
                   )}
                 </h2>
                 {institutions && institutions.length > 0 ? (
-                  <div className="space-y-4">
-                    {institutions.map((inst) => (
-                      <InstitutionCard key={inst.institution_id} institution={inst} />
-                    ))}
-                  </div>
+                  <InstitutionList institutions={institutions} />
                 ) : (
                   <p className="text-ground-500">
                     {t('courseDetail.noInstitutions')}
@@ -140,11 +147,13 @@ export default function CourseDetailPage() {
                 )}
               </section>
             )}
+            </div>
           </div>
 
           {/* Right Column - Quick Info */}
-          <div className="space-y-6">
+          <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
+            <div className="order-1 min-w-0 md:order-none">
             <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
@@ -177,11 +186,15 @@ export default function CourseDetailPage() {
                 )}
               </div>
             </section>
+            </div>
 
             {/* Requirements */}
+            <div className="order-2 min-w-0 empty:hidden md:order-none">
             {requirements && <RequirementsCard requirements={requirements} />}
+            </div>
 
             {/* Special Conditions */}
+            <div className="order-3 min-w-0 empty:hidden md:order-none">
             {requirements && (
               <SpecialConditions
                 reqInterview={requirements.special?.some((s: { key: string }) => s.key === 'req_interview')}
@@ -193,13 +206,17 @@ export default function CourseDetailPage() {
                 noDisability={requirements.general?.some((s: { key: string }) => s.key === 'no_disability')}
               />
             )}
+            </div>
 
             {/* Subject Key for STPM courses */}
             {courseId.startsWith('stpm-') && (
+              <div className="order-7 min-w-0 md:order-none">
               <SubjectLegend stream={courseId === 'stpm-sains' ? 'Sains' : 'Sains Sosial'} />
+              </div>
             )}
 
-            {/* Actions */}
+            {/* Actions — on a phone only "back"; Save is the sticky bar below */}
+            <div className="order-8 min-w-0 md:order-none">
             <CourseActions
               isSaved={isSaved}
               isHovering={isHovering}
@@ -207,12 +224,43 @@ export default function CourseDetailPage() {
               onHoverStart={() => setIsHovering(true)}
               onHoverEnd={() => setIsHovering(false)}
             />
+            </div>
           </div>
         </div>
       </div>
 
+      <CourseSaveBar isSaved={isSaved} onSave={handleSave} />
+
       <AppFooter />
     </main>
+  )
+}
+
+/** How many institutions a phone shows before "Show all N institutions" (Mobile M3). */
+const PHONE_INSTITUTIONS = 3
+
+/**
+ * The institutions, all of them from `md`; on a phone the first three and a button for the rest —
+ * eighteen polytechnic cards used to stand between the student and everything below them.
+ */
+function InstitutionList({ institutions }: { institutions: Institution[] }) {
+  const { t } = useT()
+  const [all, setAll] = useState(false)
+  const hidden = institutions.length - PHONE_INSTITUTIONS
+  return (
+    <div className="space-y-4">
+      {institutions.map((inst, i) => (
+        <div key={inst.institution_id} className={!all && i >= PHONE_INSTITUTIONS ? 'hidden md:block' : undefined}>
+          <InstitutionCard institution={inst} />
+        </div>
+      ))}
+      {!all && hidden > 0 && (
+        <button type="button" onClick={() => setAll(true)}
+          className="flex min-h-11 w-full items-center justify-center rounded-lg border border-ground-300 px-4 text-sm font-medium text-primary-600 hover:bg-ground-50 md:hidden">
+          {t('discovery.showAllInstitutions', { count: String(institutions.length) })}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -230,9 +278,10 @@ function InstitutionCard({ institution }: { institution: Institution }) {
     <div
       className="rounded-lg border border-ground-200 p-4 bg-ground-50"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <h3 className="font-semibold text-ground-900 mb-1">
+      {/* A phone stacks the badge and link UNDER the name (Mobile M3): side by side they squeezed it. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-ground-900 mb-1 break-words">
             {institution.institution_name}
           </h3>
           <p className="text-sm text-ground-500 mb-2">
@@ -306,7 +355,7 @@ function InstitutionCard({ institution }: { institution: Institution }) {
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex items-center justify-between gap-2 sm:flex-col sm:items-end">
           <span
             className={`px-2 py-1 rounded text-xs font-medium ${
               institution.category === 'Public'
@@ -321,279 +370,13 @@ function InstitutionCard({ institution }: { institution: Institution }) {
               href={institution.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors"
+              className="inline-flex min-h-11 items-center px-4 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover transition-colors"
             >
               More Info
             </a>
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// ── STPM rich institution section ────────────────────────────────────────
-
-function SubjectLegend({ stream }: { stream: string }) {
-  const subjects = legendSubjects(stream)
-
-  return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
-      <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
-      <div className="space-y-2">
-        {subjects.map(code => (
-          <div key={code} className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_CHIP}`}>
-              {code}
-            </span>
-            <span className="text-xs text-ground-600">{SUBJECT_NAMES[code]}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function formatPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '')
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)} ${d.slice(6)}`
-  if (d.length === 9) return `${d.slice(0, 2)}-${d.slice(2, 5)} ${d.slice(5)}`
-  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)} ${d.slice(7)}`
-  return raw
-}
-
-const STPM_STREAM_MAP: Record<string, string> = {
-  'stpm-sains': 'Sains',
-  'stpm-sains-sosial': 'Sains Sosial',
-}
-
-const PAGE_SIZE = 50
-
-function StpmInstitutionsSection({ courseId }: { courseId: string }) {
-  const { t } = useT()
-  const streamName = STPM_STREAM_MAP[courseId] || 'Sains'
-  const [stateFilter, setStateFilter] = useState('')
-  const [ppdFilter, setPpdFilter] = useState('')
-  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
-
-  const streamSchools = useMemo(() => {
-    return STPM_SCHOOLS.filter(s => s.streams.includes(streamName))
-  }, [streamName])
-
-  const allStates = useMemo(() => {
-    return Array.from(new Set(streamSchools.map(s => s.state))).sort()
-  }, [streamSchools])
-
-  const availablePpds = useMemo(() => {
-    let schools = streamSchools
-    if (stateFilter) schools = schools.filter(s => s.state === stateFilter)
-    return Array.from(new Set(schools.map(s => s.ppd))).sort()
-  }, [streamSchools, stateFilter])
-
-  const filteredSchools = useMemo(() => {
-    let schools = streamSchools
-    if (stateFilter) schools = schools.filter(s => s.state === stateFilter)
-    if (ppdFilter) schools = schools.filter(s => s.ppd === ppdFilter)
-    return schools
-  }, [streamSchools, stateFilter, ppdFilter])
-
-  const displayedSchools = filteredSchools.slice(0, displayCount)
-  const remaining = filteredSchools.length - displayCount
-
-  return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
-      <h2 className="text-xl font-semibold text-ground-900 mb-4">
-        {t('courseDetail.whereToStudy')}
-        <span className="text-ground-500 font-normal ml-2">
-          ({filteredSchools.length})
-        </span>
-      </h2>
-
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select
-          value={stateFilter}
-          onChange={e => { setStateFilter(e.target.value); setPpdFilter(''); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
-        >
-          <option value="">All States</option>
-          {allStates.map(state => (
-            <option key={state} value={state}>{state}</option>
-          ))}
-        </select>
-        <select
-          value={ppdFilter}
-          onChange={e => { setPpdFilter(e.target.value); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
-        >
-          <option value="">All Districts</option>
-          {availablePpds.map(ppd => (
-            <option key={ppd} value={ppd}>{ppd}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="max-h-[600px] overflow-y-auto space-y-3">
-        {displayedSchools.length > 0 ? (
-          displayedSchools.map(school => (
-            <StpmSchoolCard key={school.code} school={school} stream={streamName} />
-          ))
-        ) : (
-          <p className="text-ground-400 text-center py-8">
-            No schools match the selected filters.
-          </p>
-        )}
-      </div>
-
-      {remaining > 0 && (
-        <div className="text-center pt-4">
-          <button
-            className="btn-secondary"
-            onClick={() => setDisplayCount(displayCount + PAGE_SIZE)}
-          >
-            Load More ({remaining} remaining)
-          </button>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function StpmSchoolCard({ school, stream }: { school: StpmSchool; stream: string }) {
-  const subjects = school.subjects ? filterSubjects(school.subjects, stream) : []
-
-  return (
-    <div className="rounded-lg border border-ground-200 bg-ground-50 p-3 sm:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-ground-900 text-sm sm:text-base mb-1 truncate">
-            {school.name}
-          </h3>
-          <p className="text-xs sm:text-sm text-ground-500 mb-2">
-            {school.state} &middot; {school.ppd}
-          </p>
-          {subjects.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {subjects.map(s => (
-                <span key={s} className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${SUBJECT_CHIP}`}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        {school.phone && (
-          <a
-            href={`tel:${school.phone}`}
-            className="text-xs sm:text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap flex items-center gap-1"
-          >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            {formatPhone(school.phone)}
-          </a>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Matric rich institution section ──────────────────────────────────────
-
-function MatricInstitutionsSection({ courseId }: { courseId: string }) {
-  const { t } = useT()
-  // No fallback (Bumi D2): a track without a college list here (the two Bumi-only tracks) lists
-  // no colleges, rather than the Science track's.
-  const trackId: TrackId = MATRIC_TRACK_MAP[courseId]
-  const [stateFilter, setStateFilter] = useState('')
-
-  const trackColleges = useMemo(() => {
-    let colleges = MATRIC_COLLEGES.filter(c =>
-      c.tracks.includes(trackId as MatricCollege['tracks'][number])
-    )
-    if (stateFilter) colleges = colleges.filter(c => c.state === stateFilter)
-    return colleges
-  }, [trackId, stateFilter])
-
-  const availableStates = useMemo(() => {
-    const filtered = MATRIC_COLLEGES.filter(c =>
-      c.tracks.includes(trackId as MatricCollege['tracks'][number])
-    )
-    return Array.from(new Set(filtered.map(c => c.state))).sort()
-  }, [trackId])
-
-  return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <h2 className="text-xl font-semibold text-ground-900">
-          {t('courseDetail.whereToStudy')}
-          <span className="text-ground-400 font-normal ml-2 text-base">
-            ({trackColleges.length})
-          </span>
-        </h2>
-        <select
-          value={stateFilter}
-          onChange={e => setStateFilter(e.target.value)}
-          className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
-        >
-          <option value="">All States</option>
-          {availableStates.map(state => (
-            <option key={state} value={state}>{state}</option>
-          ))}
-        </select>
-      </div>
-
-      {trackColleges.length > 0 ? (
-        <div className="space-y-3">
-          {trackColleges.map(college => (
-            <MatricCollegeCard key={college.id} college={college} trackId={trackId} />
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-ground-500 text-center py-8">
-          No colleges found for the selected filters.
-        </p>
-      )}
-    </section>
-  )
-}
-
-function MatricCollegeCard({ college, trackId }: { college: MatricCollege; trackId: TrackId }) {
-  return (
-    <div className="bg-ground-50 rounded-lg p-4">
-      <h3 className="font-semibold text-ground-900 mb-2">{college.name}</h3>
-
-      <div className="flex items-center gap-1.5 text-sm text-ground-500 mb-3">
-        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        {college.state}
-      </div>
-
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TRACK_CHIP[trackId]}`}>
-          {TRACK_LABELS[trackId]}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-2 text-sm text-ground-600 mb-1.5">
-        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-        </svg>
-        {college.phone}
-      </div>
-
-      <a
-        href={`https://${college.website}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 hover:underline"
-      >
-        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-        {college.website}
-      </a>
     </div>
   )
 }
