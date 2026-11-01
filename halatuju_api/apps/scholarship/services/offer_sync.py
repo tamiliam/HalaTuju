@@ -5,6 +5,7 @@ Moved here VERBATIM from `apps/scholarship/services.py` at code health H15 (2026
 Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 import logging
+from datetime import datetime, timezone as _tz
 
 from django.utils.dateparse import parse_date
 
@@ -372,6 +373,33 @@ def autofill_pathway_from_offer(application):
     return True
 
 
+#: When the scholarship course picker became COMPLETE (owner, 2026-11-01: a pick made before it was
+#: made on an incomplete list, so it is not a real selection). The last piece, MARA's own diplomas
+#: under MARA (commit fadedfc1), went live in the deploy of commit 1f91f495: Cloud Build 584c29de
+#: (web) finished 2026-10-31 05:00:23 UTC and 92af6beb (api, the offerings endpoint) 05:10:20 UTC —
+#: 13:10:20 MYT, read from `gcloud builds list` on 2026-11-01. The later one, rounded up a second.
+PICKER_COMPLETE_AT = datetime(2026, 10, 31, 5, 10, 21, tzinfo=_tz.utc)
+
+
+def realign_basis(application, course_id):
+    """Why a genuine offer for ``course_id`` may replace this application's own pick — ``'bumi_only'``
+    (the course is Bumiputera-only: owner, 2026-10-31) or ``'old_pick'`` (owner, 2026-11-01: picked
+    before ``PICKER_COMPLETE_AT``, on an incomplete list) — or the skip: ``'new_pick'`` (submitted
+    since, so a real choice) / ``'may_have_repicked'`` (submitted before, but the profile has been
+    saved since; there is no per-pick timestamp and ``StudentProfile.updated_at`` moves on ANY full
+    save of the profile, a pathway edit or not — so in doubt it is skipped, never realigned)."""
+    from ..offer_course_match import is_bumiputera_only
+    if is_bumiputera_only(course_id):
+        return 'bumi_only'
+    submitted = getattr(application, 'submitted_at', None)
+    if submitted is None or submitted >= PICKER_COMPLETE_AT:
+        return 'new_pick'
+    saved = getattr(getattr(application, 'profile', None), 'updated_at', None)
+    if saved is None or saved >= PICKER_COMPLETE_AT:
+        return 'may_have_repicked'
+    return 'old_pick'
+
+
 def plan_bumi_realign(application, offer, chk):
     """``(skip_reason, new_chosen_programme, new_pathway)`` — whether the owner's Bumiputera-only
     realignment applies to this application's live offer. ``skip_reason`` '' means it does.
@@ -388,12 +416,14 @@ def plan_bumi_realign(application, offer, chk):
     ``not_own_letter``   the letter's name or IC is a mismatch;
     ``not_genuine``      the offer is not scored genuine (``offer_band``);
     ``pre_u_offer``      the letter is a Form 6 / matriculation offer (no catalogue course_id shape);
-    ``unresolved``       the letter does not name ONE catalogue course;
+    ``unresolved``       the letter does not name ONE catalogue course, at the level it states (a
+                         letter with no level word, or a pre-U virtual course, never realigns);
     ``campus_unpinned``  the course has several campuses and the letter names none or several — the
                          realignment never writes a campus it cannot pin (a human does);
     ``same_course``      the stored pick already is that course;
-    ``not_bumi_only``    the COURSE's own flag says it is open to all (the student's Bumiputera answer
-                         is never read: it is course-guide only, decisions.md 2026-10-28);
+    ``new_pick`` /       the course is open to all (its OWN flag — the student's Bumiputera answer is
+    ``may_have_repicked``  never read, decisions.md 2026-10-28) and the pick is not an OLD one: see
+                         ``realign_basis`` (owner, 2026-11-01 — the date rule);
     ``confirmed_source`` a human or an earlier offer settled the pick (``CONFIRMED_CP_SOURCES``; an
                          ``offer_letter_auto`` pick WITHOUT a course_id is only labels, so not settled);
     ``pre_u``            the stored pathway is Form 6 / matriculation — a human decides.
@@ -404,7 +434,7 @@ def plan_bumi_realign(application, offer, chk):
     from .. import card_display
     from .. import offer_pathway as op
     from ..family import CONFIRMED_CP_SOURCES
-    from ..offer_course_match import is_bumiputera_only, match_offer_course
+    from ..offer_course_match import pinned_match
     from ..pathway_engine import offer_band
     from .querying import querying_locked
     verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
@@ -417,16 +447,17 @@ def plan_bumi_realign(application, offer, chk):
     prog, inst = (chk.get('programme') or '').strip(), (chk.get('institution') or '').strip()
     if op.is_pre_u(op.detect_pathway_type(prog, inst)):
         return 'pre_u_offer', None, ''
-    match = match_offer_course(prog, inst, (chk.get('issuer') or '').strip())
-    if not match:
-        return 'unresolved', None, ''
-    if not (match.get('institution') or '').strip():
-        return 'campus_unpinned', None, ''
+    # The link's and the confirm's own test (round-3 review): ONE course, never a pre-U virtual one,
+    # at the level the letter STATES, at ONE campus.
+    why, match = pinned_match(prog, inst, (chk.get('issuer') or '').strip())
+    if why:
+        return why, None, ''
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     if (cp.get('course_id') or '').strip() == match['course_id']:
         return 'same_course', None, ''
-    if not is_bumiputera_only(match['course_id']):
-        return 'not_bumi_only', None, ''
+    basis = realign_basis(application, match['course_id'])
+    if basis not in ('bumi_only', 'old_pick'):
+        return basis, None, ''
     source = cp.get('source') or ''
     if source in CONFIRMED_CP_SOURCES and (source != 'offer_letter_auto' or cp.get('course_id')):
         return 'confirmed_source', None, ''
@@ -454,6 +485,7 @@ def realign_bumi_only_pick(application, offer, chk):
     reason, new_cp, new_pathway = plan_bumi_realign(application, offer, chk)
     if reason:
         return False
+    basis = realign_basis(application, new_cp['course_id'])     # before the write: the profile sync
     old_cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     old_pathway = application.chosen_pathway or ''
     application.chosen_programme = new_cp
@@ -468,8 +500,8 @@ def realign_bumi_only_pick(application, offer, chk):
         application.save(update_fields=fields)
         if profile_follows(application):
             sync_profile_pathway(application, may_clear=lambda f: False)
-    logger.info('AUDIT bumi_offer_realign app_id=%s old_course_id=%s new_course_id=%s '
-                'old_pathway=%s new_pathway=%s', application.id, old_cp.get('course_id') or '-',
+    logger.info('AUDIT bumi_offer_realign app_id=%s basis=%s old_course_id=%s new_course_id=%s '
+                'old_pathway=%s new_pathway=%s', application.id, basis, old_cp.get('course_id') or '-',
                 new_cp['course_id'], old_pathway or '-', application.chosen_pathway or '-')
     return True
 

@@ -249,21 +249,18 @@ def _campus_rows(course_id: str):
     return [(stpm[0].strip(), acronym)]
 
 
-def _refers_to_campus(name: str, acronym: str, hint: str) -> bool:
+def _refers_to_campus(name: str, acronym: str, hint: str, index=None) -> bool:
     """Does ``hint`` name this campus? Checked three ways — distinctive-token alignment, the
     parenthetical-stripped name, and the catalogue ACRONYM. The acronym is what makes
     "UTHM - KAMPUS (CAWANGAN PAGOH)" and "Universiti Tun Hussein Onn Malaysia" the same place;
     they share no distinctive token at all ({uthm, kampus, pagoh} vs {tun, hussein, onn})."""
     from .pathway_engine import distinctive_tokens
-    hint, name = school_name_core(hint), school_name_core(name)   # the NAME, never our ", TOWN"
-    hint_tokens = distinctive_tokens(hint)
-    if _name_aligns(hint_tokens, distinctive_tokens(name)):
-        return True
-    hn = _norm_inst_name(hint)
-    if hn and _norm_inst_name(name or '') == hn:
-        return True
-    acr = (acronym or '').strip().lower()
-    return bool(acr and acr in hint_tokens)
+    # 2026-11-01: ONE definition, shared with the matcher — `offer_course_match.CampusReader` (name
+    # or unique acronym first; a line naming ANOTHER institution outright never names this one; words
+    # only when the campus's own words, one of them its alone, sit inside the line). #168's
+    # "…, UMS Kota Kinabalu" had ticked Politeknik Kota Kinabalu by its town words.
+    from .offer_course_match import CampusReader
+    return CampusReader(hint, index).names(name, acronym)
 
 
 def _names_another_institution(campus_name: str, campus_acronym: str, hint: str) -> str:
@@ -317,9 +314,10 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str,
     The letter's side is ``offer_course_match.letter_place`` (2026-10-31): a hostel line yields to the
     ``issuer`` that names the university (#175 UPM, #252 UPSI, #354 UNIMAS, #395 UTHM).
     """
-    from .offer_course_match import letter_place
+    from .offer_course_match import CampusReader, catalogue_index, letter_place
     rows = _campus_rows(course_id) if (course_id or '').strip() and (offer_institution or issuer or '').strip() else []
-    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows)
+    index = catalogue_index() if rows else None               # ONE read for this whole check
+    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows, index=index)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return 'unknown'
     if not rows:
@@ -327,7 +325,7 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str,
     if len(rows) == 1:
         name, acronym = rows[0]
         other = _names_another_institution(name, acronym, offer_institution)
-        if _refers_to_campus(name, acronym, offer_institution):
+        if _refers_to_campus(name, acronym, offer_institution, index):
             # …unless the letter IS another row's exact name: "Universiti Teknologi MARA" contains
             # UTM's words but is not UTM. Pagoh stays a match (no row is named "uthm - kampus").
             return 'clash' if other == 'name' else 'match'
@@ -335,7 +333,8 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str,
     if not (recorded or '').strip():
         return 'unknown'                     # nothing recorded to compare the letter against
     def _which(hint):
-        hits = {n for n, a in rows if _refers_to_campus(n, a, hint)}
+        reader = CampusReader(hint, index)
+        hits = {n for n, a in rows if reader.names(n, a)}
         return next(iter(hits)) if len(hits) == 1 else ''
     a, b = _which(recorded), _which(offer_institution)
     if not a or not b:
@@ -402,9 +401,10 @@ def offer_contradicts_course_institution(course_id: str, offer_institution: str,
     No campuses on file → False: a catalogue gap is not evidence of disagreement. A hostel line
     yields to the ``issuer`` exactly as in ``institution_agreement`` (``letter_place``).
     """
-    from .offer_course_match import letter_place
+    from .offer_course_match import CampusReader, catalogue_index, letter_place
     rows = _campus_rows(course_id) if (course_id or '').strip() and (offer_institution or issuer or '').strip() else []
-    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows)
+    index = catalogue_index() if rows else None               # ONE read for this whole check
+    offer_institution = letter_place(course_id, offer_institution, issuer, rows=rows, index=index)
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return False
     if not rows:
@@ -412,7 +412,8 @@ def offer_contradicts_course_institution(course_id: str, offer_institution: str,
     # Shares its identity test with institution_agreement — one definition of "this string names
     # this campus", so the writer's guard and the display comparison can never disagree again (the
     # #48 regression was exactly those two drifting apart).
-    return not any(_refers_to_campus(n, a, offer_institution) for n, a in rows)
+    reader = CampusReader(offer_institution, index)
+    return not any(reader.names(n, a) for n, a in rows)
 
 
 def catalogue_institution(course_id: str, hint: str = '') -> str:

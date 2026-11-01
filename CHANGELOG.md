@@ -14,6 +14,64 @@ All notable changes to this project will be documented in this file.
 - Tests: `Sheet.test.tsx` (pixel cap, no `dvh`), `InfoTip.test.tsx` (a tap on the bubble), `mobileStandard.test.ts`
   (the rule's media query). Bite-checked: reverting each fix turns its test red. Minor findings left: TD-450.
 
+## Offer realignment: the date rule, and one campus test (#168's false Institution tick) (2026-11-01)
+
+Owner rulings 2026-11-01 (decisions.md). Not deployed; no migration; no MODEL_VERSION bump.
+
+- **The date rule.** `services/offer_sync.PICKER_COMPLETE_AT` = 2026-10-31 05:10:21 UTC (13:10:21 MYT): the
+  deploy of 1f91f495, the first build carrying fadedfc1 (MARA under MARA), Cloud Build 92af6beb (api) finished
+  05:10:20 UTC, 584c29de (web) 05:00:23 UTC. `realign_basis` lets a genuine own offer replace a pick for ANY
+  catalogue course when the pick is OLD (application submitted before the cut-off AND the profile not saved since);
+  Bumi-only courses still realign as before. Skip `not_bumi_only` is now `new_pick` (submitted since) or
+  `may_have_repicked` (profile saved since: `updated_at` moves on any full profile save, so in doubt it is skipped).
+  Every other guard is unchanged. `realign_bumi_offers` prints the basis (`bumi_only` / `old_pick`); the AUDIT line
+  carries it. Dry run: 27 old-pick realigns (#168, 199, 207, 247, 264, 277, 360 among them), 4 `may_have_repicked`.
+- **One campus test.** `offer_course_match.CampusReader` is the one definition of "this line names this campus",
+  used by the matcher, `letter_place`, `institution_agreement` and `offer_contradicts_course_institution`
+  (`offer_pathway._refers_to_campus` delegates). Name or unique acronym first; a line naming ANOTHER institution
+  outright never names this campus; words only when the campus's own words (two or more, not only place words)
+  sit in the line and one of them is no other row's. #168's hostel line "…, UMS Kota Kinabalu" had named
+  Politeknik Kota Kinabalu by its town words and ticked the Institution (`chosen_institution_status`, served; the
+  web only reads it). Dry run: #168 alone changes (match → unknown; offer contradicts False → True).
+- **Round-3 review fixes (third commit):** the campus test no longer asks for "a word no other row has" over the
+  whole table (it lost UTHM, UMPSA and most polytechnics, and a new school row could flip a tick). A campus is
+  judged against itself: name or unique acronym, a listed alias (`_ALIASES`: "Universiti Malaysia Pahang" / UMP for
+  UMPSA), else its own words either way round with at least one that is not a place word (states and the towns in
+  `_TOWN_WORDS`); a line naming another institution outright still never names it. The realignment, the link and
+  the confirm share `offer_course_match.pinned_match` (one course, never a pre-U virtual course, a level the letter
+  STATES, one campus). The link also requires the stored institution label to name the matched campus
+  (`place_disagrees`), sets `pathway_certainty='sure'`, gives the realignment's pathway when the realignment would
+  take the record too, and its command runs the realignment first — so the order of the two never changes a row.
+  One read of the institution table per check (#168's shape: 8 queries / 4 full reads → 6 / 2).
+- **Round-4 review fixes (fourth commit):** `pinned_match` compares the letter's level words with the course's
+  OWN `level` field, exactly (`letter_level` / `course_level`) — "SIJIL …" never pins a Diploma, "SIJIL LANJUTAN …"
+  only a Sijil Lanjutan, "DIPLOMA LANJUTAN …" nothing (no catalogue course has that level). Type words
+  (`_TYPE_WORDS`: komuniti, metro, guru, pendidikan, jabatan, kemahiran, mara, …) never make a campus named, and a
+  line of only place and type words names no campus — "KOLEJ KOMUNITI", the ministry issuer "JABATAN PENDIDIKAN
+  POLITEKNIK DAN KOLEJ KOMUNITI", "INSTITUT PENDIDIKAN GURU" and "POLITEKNIK METRO KL" no longer name every campus
+  of their type. Live dry run: no change to the 27 realigns, the 27 links or any tick.
+- Tests: `test_offer_date_rule.py`. Amended with the reason written in: a UKM letter holding UKM's full name now
+  reads `match` (was `unknown`) in `test_td145_wrong_university.py`; `TestCatalogueHint` is a `TestCase` (the test
+  reads the catalogue); the multi-campus tests name both campuses by name.
+
+## Offer link: an offer-sourced, labels-only pick is linked to its catalogue course (2026-11-01)
+
+Owner, 2026-11-01 (#243). Not deployed; no migration; no MODEL_VERSION bump (no reading change).
+
+- New `services/offer_link.py`: `pinned_course` (the letter names ONE catalogue course at ONE campus, at the
+  letter's own level) and `plan_offer_link` / `link_offer_course`. A pick whose `source` is `offer_letter_auto`
+  or `offer_letter_confirmed` and that has no `course_id` gets the course id, the catalogue's course name and
+  campus (`card_display.with_institution` keeps `institution_id` true); the source is KEPT. Skips:
+  not offer-sourced, has a course id, decided, not own letter, a FAKE letter (suspect and unscored letters
+  link — linking replaces no choice), Form 6 / matric letter or pathway, unresolved, no course name, labels
+  that name another course. `chosen_pathway` is set to the course's picker pathway only when it is blank or
+  not a picker value (`degree`); the profile follows; AUDIT `offer_course_link`.
+- New command `link_offer_courses` (report by default, `--apply`): one line per offer-sourced pick with a live
+  offer, and the pathway changes listed apart.
+- Forward path: the offer confirm now links a labels-only pick (`_settle_stale_course_id` calls
+  `pinned_course`); the autofill already pinned one for a new degree letter (now tested).
+- Tests: `test_offer_link.py`.
+
 ## My activity: 10 rows first, no per-row rebuilt tag (owner, 2026-11-01) — LIVE 2026-11-01 (main 8e6773d5; web-01050-vfk)
 
 - **Ten rows first**: `FIRST_PAGE` 6 → 10 in `components/adminProfile/ActivityCard.tsx` (first load, chip change, Try again); Show older stays at 20.

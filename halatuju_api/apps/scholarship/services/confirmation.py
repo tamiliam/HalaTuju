@@ -342,8 +342,8 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
         we cannot pin, a letter with no level word) keeps the id: cannot tell is not a change.
     A stale id is re-pinned when ``resolve_catalogue_course`` names a UNIQUE tertiary course at the
     new place AT THE SAME LEVEL as the letter (``detect_pathway_type``: a degree letter never pins a
-    diploma), else the key is dropped. Pre-U and PISMP confirms (pinned above by their own rules)
-    keep what they have. Mutates ``application.chosen_programme`` only; the caller saves it."""
+    diploma), else the key is dropped. A pick with NO id is linked by ``offer_link.pinned_course``
+    (2026-11-01). Pre-U and PISMP confirms (pinned above by their own rules) keep what they have. Mutates ``application.chosen_programme`` only; the caller saves it."""
     from .. import offer_pathway as op
     # ⚠ The RECONCILED type: confirm_pathway has already moved a stpm→degree switch to 'degree'.
     pw = (application.chosen_pathway or '').strip().lower()
@@ -354,9 +354,16 @@ def _settle_stale_course_id(application, offer, prog, offer_type):
     # The letterhead too (2026-10-31): a hostel line yields to it, as in every other reader.
     vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
     issuer = str(((vf.get('fields') or {}) if isinstance(vf.get('fields'), dict) else {}).get('issuer') or '').strip()
+    if not cid:
+        # 2026-11-01: a LABELS-only confirm is linked to the catalogue course the letter names (ONE
+        # course, a pinned campus, the letter's own level) — #243 was confirmed before the matcher
+        # could read a degree, and stayed unlinked. Nothing to re-pin when nothing pins: keep labels.
+        from .offer_link import pinned_course
+        application.chosen_programme = pinned_course(cp, prog, inst, issuer) or cp
+        return
     preu_ids = set(op.PREU_COURSE_SLUG.values())
     level = op.detect_pathway_type(prog, '')
-    if not cid or not (cid in preu_ids or (inst and (
+    if not (cid in preu_ids or (inst and (
             _names_another_place(op, cid, inst, issuer)
             or (level and op.programme_agreement(cid, prog, inst, issuer) == 'clash')))):
         return

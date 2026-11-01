@@ -129,11 +129,14 @@ class ReviewRoundAgreementTest(_Catalogue):
     def test_a_ukm_letter_with_an_address_tail_never_clashes(self):
         # Every word of UKM's name is generic, so a SHARED-WORD search once found one seeded row
         # ("KM Selangor") and called it a clash. Only an exact name or a whole acronym counts now.
+        # Superseded 2026-11-01 (one campus test, `CampusReader`): a line holding UKM's FULL NAME
+        # names UKM, so these read 'match' (they read 'unknown' before) — the invariant this test
+        # guards, never a clash, holds.
         for letter in ('UNIVERSITI KEBANGSAAN MALAYSIA, BANGI, SELANGOR',
                        'UNIVERSITI KEBANGSAAN MALAYSIA, MACHANG',
                        'UNIVERSITI KEBANGSAAN MALAYSIA KAMPUS SKUDAI'):
             with self.subTest(letter=letter):
-                self.assertEqual(op.institution_agreement('TD-UKM-ASASI', '', letter), 'unknown')
+                self.assertEqual(op.institution_agreement('TD-UKM-ASASI', '', letter), 'match')
         self.assertEqual(op.institution_agreement('TD-UKM-ASASI', '', 'UKM, BANGI'), 'match')
 
     def test_a_name_inside_another_name_is_still_a_different_university(self):

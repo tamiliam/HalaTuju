@@ -64,7 +64,7 @@ class RealignTest(_Base):
         self.assertEqual(app.chosen_programme, {**UITM_COURSE, 'institution_id': 'RA-UITM'})
         self.assertEqual(app.chosen_pathway, 'university')
         self.assertEqual(app.pathway_certainty, 'sure')
-        self.assertTrue(any(f'AUDIT bumi_offer_realign app_id={app.id} old_course_id=UM6343002 '
+        self.assertTrue(any(f'AUDIT bumi_offer_realign app_id={app.id} basis=bumi_only old_course_id=UM6343002 '
                             f'new_course_id=UE6343001' in line for line in logs.output))
         self.assertEqual(student_offer_check(offer)['pathway'], 'match')
         # Idempotent: the written pick is now a settled source.
@@ -130,7 +130,7 @@ class SkipTest(_Base):
     def test_a_course_open_to_all(self):
         app = self._app(pick={'course_id': 'UE6343002', 'course_name': 'x', 'institution': 'Universiti Teknologi MARA'})
         self._assert_skip(app, _offer(app, ('SARJANA MUDA PENGURUSAN MUAMALAT', 'Universiti Malaya',
-                                            'Universiti Malaya')), 'not_bumi_only')
+                                            'Universiti Malaya')), 'new_pick')   # was not_bumi_only: the date rule, 2026-11-01
 
     def test_a_pre_u_pathway_is_for_a_human(self):
         app = self._app(pathway='stpm')
@@ -219,7 +219,7 @@ class RepairCommandTest(_Base):
         out = StringIO()
         call_command('realign_bumi_offers', stdout=out)
         text = out.getvalue()
-        self.assertIn(f'#{app.id} [profile_complete] REALIGN (would): UM6343002', text)
+        self.assertIn(f'#{app.id} [profile_complete] REALIGN bumi_only (would): UM6343002', text)
         self.assertIn('->  UE6343001 | Sarjana Muda Perniagaan Kewangan (Kepujian) | Universiti Teknologi MARA', text)
         self.assertIn(f'#{other.id} [profile_complete] SKIP confirmed_source', text)
         app.refresh_from_db()
@@ -270,7 +270,7 @@ class ReviewFindingsRealignTest(_Base):
 
     def test_3_a_campus_the_letter_cannot_pin_is_never_written(self):
         app = self._app()
-        offer = _offer(app, ('DIPLOMA PELANCONGAN', 'KOMUNITI ARAU KANGAR', ''))   # names both campuses
+        offer = _offer(app, ('DIPLOMA PELANCONGAN', 'KOLEJ KOMUNITI ARAU DAN KOLEJ KOMUNITI KANGAR', ''))
         self.assertEqual(plan_bumi_realign(app, offer, student_offer_check(offer))[0], 'campus_unpinned')
         app2 = self._app()
         offer2 = _offer(app2, ('DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL', 'IKM BESERI', ''))
