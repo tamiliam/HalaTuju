@@ -80,6 +80,11 @@ const STATIC_IMPORT_ALLOWED: Record<string, string> = {
     + 'Bursary Funds and Contract tabs), imported for its side effect by `/scholarship/bursary` and the '
     + 'two tab components — so they ride on that ONE route; in the scholarship slice they pushed '
     + '/scholarship/apply and /scholarship/application over their first-load budgets.',
+  'src/lib/messagesDiscovery.ts':
+    'Mobile M3 (2026-11-01). English DISCOVERY words only (`discovery.*`: the phone search filters, '
+    + 'the course page "show all", the saved-course compare), imported for its side effect by the '
+    + 'PAGES of /search, /course/[id] and /saved (and the sandbox layout) — in core they '
+    + 'would have moved the first load of every route, with the median 0.44 kB under its budget.',
   // ⚠ `src/lib/preUPlan.ts` WAS HERE, and it is gone — TD-280, closed by code health H18. The
   // officer cockpit's Malay pre-U track label is now RESOLVED BY THE API and served on the
   // payload (`pre_u_track_label`), so the browser downloads no Malay catalogue for it and there
@@ -102,6 +107,7 @@ const STATIC_IMPORT_SHAPE: Record<string, string[]> = {
   'src/lib/messagesScholarship.ts': ['en?slice=scholarship'],
   'src/lib/messagesSponsor.ts': ['en?slice=sponsor'],
   'src/lib/messagesBursary.ts': ['en?slice=bursary'],
+  'src/lib/messagesDiscovery.ts': ['en?slice=discovery'],
   'src/lib/applyCopyPlatform.ts': ['en', 'ms', 'ta'],
 }
 
@@ -193,7 +199,7 @@ describe('one locale per visitor', () => {
     // `import('@/messages/' + locale + '.json')`, never a computed `?slice=${…}`.
     const chunks = stripComments(fs.readFileSync(path.join(SRC, 'lib', 'messageChunks.ts'), 'utf8'))
     for (const locale of ['ms', 'ta']) {
-      for (const slice of ['core', 'admin', 'documents', 'scholarship', 'sponsor', 'bursary']) {
+      for (const slice of ['core', 'admin', 'documents', 'scholarship', 'sponsor', 'bursary', 'discovery']) {
         expect(chunks).toContain(`import('@/messages/${locale}.json?slice=${slice}')`)
       }
     }

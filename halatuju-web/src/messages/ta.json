@@ -848,6 +848,41 @@
     "noSpm": "SPM படிப்புகள் எதுவும் சேமிக்கப்படவில்லை.",
     "noStpm": "STPM படிப்புகள் எதுவும் சேமிக்கப்படவில்லை."
   },
+  "discovery": {
+    "filters": "வடிப்பான்கள்",
+    "showCourses": "{count} படிப்புகளைக் காட்டு",
+    "showAll": "அனைத்தையும் காட்டு ({count})",
+    "removeFilter": "வடிப்பானை நீக்கு: {name}",
+    "activeFilters": "பயன்பாட்டில் உள்ள வடிப்பான்கள்",
+    "showAllInstitutions": "அனைத்து {count} நிறுவனங்களையும் காட்டு",
+    "compareSelect": "ஒப்பிடு",
+    "compareHint": "அருகருகே ஒப்பிட 2 அல்லது 3 படிப்புகளைத் தேர்ந்தெடுக்கவும்.",
+    "selectedCount": "{count} தேர்ந்தெடுக்கப்பட்டன",
+    "compare": "ஒப்பிடுக",
+    "compareTitle": "படிப்புகளின் ஒப்பீடு",
+    "backToSaved": "சேமித்த படிப்புகளுக்குத் திரும்பு",
+    "compareWith": "இதனுடன் ஒப்பிடு",
+    "loadingDetails": "படிப்பு விவரங்கள் ஏற்றப்படுகின்றன…",
+    "maxThree": "அதிகபட்சம் 3 படிப்புகளை ஒப்பிடலாம்.",
+    "minTwo": "குறைந்தது 2 படிப்புகளைத் தேர்ந்தெடுக்கவும்.",
+    "loadFailed": "படிப்பு விவரங்களை ஏற்ற முடியவில்லை.",
+    "perMonth": "RM{amount}/மாதம்",
+    "reqInterview": "நேர்காணல்",
+    "reqNoColourBlind": "நிறக்குருடு இருக்கக்கூடாது",
+    "row": {
+      "course": "படிப்பு",
+      "institution": "நிறுவனம்",
+      "state": "மாநிலம்",
+      "type": "வகை",
+      "level": "நிலை",
+      "field": "துறை",
+      "semesters": "பருவங்கள்",
+      "fees": "பருவக் கட்டணம்",
+      "allowance": "உதவித்தொகை",
+      "merit": "தகுதிப் புள்ளி",
+      "requirements": "நுழைவுத் தேவைகள்"
+    }
+  },
   "scholarship": {
     "nav": "{programmeName}",
     "apply": {

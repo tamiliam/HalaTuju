@@ -848,6 +848,41 @@
     "noSpm": "Tiada kursus SPM disimpan lagi.",
     "noStpm": "Tiada kursus STPM disimpan lagi."
   },
+  "discovery": {
+    "filters": "Penapis",
+    "showCourses": "Papar {count} kursus",
+    "showAll": "Papar semua ({count})",
+    "removeFilter": "Buang penapis: {name}",
+    "activeFilters": "Penapis yang digunakan",
+    "showAllInstitutions": "Papar semua {count} institusi",
+    "compareSelect": "Banding",
+    "compareHint": "Tandakan 2 atau 3 kursus untuk membandingkannya bersebelahan.",
+    "selectedCount": "{count} dipilih",
+    "compare": "Bandingkan",
+    "compareTitle": "Perbandingan kursus",
+    "backToSaved": "Kembali ke kursus disimpan",
+    "compareWith": "Bandingkan dengan",
+    "loadingDetails": "Memuatkan maklumat kursus…",
+    "maxThree": "Anda boleh membandingkan sehingga 3 kursus.",
+    "minTwo": "Pilih sekurang-kurangnya 2 kursus.",
+    "loadFailed": "Maklumat kursus tidak dapat dimuatkan.",
+    "perMonth": "RM{amount}/bulan",
+    "reqInterview": "Temuduga",
+    "reqNoColourBlind": "Tiada buta warna",
+    "row": {
+      "course": "Kursus",
+      "institution": "Institusi",
+      "state": "Negeri",
+      "type": "Jenis",
+      "level": "Tahap",
+      "field": "Bidang",
+      "semesters": "Semester",
+      "fees": "Yuran setiap semester",
+      "allowance": "Elaun",
+      "merit": "Merit",
+      "requirements": "Syarat kemasukan"
+    }
+  },
   "scholarship": {
     "nav": "{programmeName}",
     "apply": {

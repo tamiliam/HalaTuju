@@ -389,7 +389,7 @@ interface SliceRule {
   floors?: { keyFiles: number; importers: number; loaders: number }
 }
 
-const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary', SliceRule> = {
+const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', SliceRule> = {
   scholarship: {
     loader: path.join(SRC, 'lib', 'messagesScholarship.ts'),
     key: new RegExp(`^scholarship\\.(?!(?:${KEPT.join('|')})(?:\\.|$))|\\$\\{\\}scholarship\\.`),
@@ -423,6 +423,16 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary', SliceRule> = {
     owners: ['/scholarship/bursary'],
     // One route: the page and its two tab components read the keys; only the page imports the loader.
     floors: { keyFiles: 3, importers: 1, loaders: 1 },
+  },
+  // Mobile M3 (2026-11-01): the phone search filters, the course page's "show all" and the saved-
+  // course compare. Three production routes load it from their PAGES; the sandbox from its layout.
+  discovery: {
+    loader: path.join(SRC, 'lib', 'messagesDiscovery.ts'),
+    key: /^discovery\.|\$\{\}discovery\./,
+    notKey: /^discovery\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
+    owners: ['/course/[id]', '/sandbox', '/sandbox/[surface]', '/saved', '/search'],
+    // The two search files, the course pages and their shared pieces, the saved page and compare.
+    floors: { keyFiles: 4, importers: 4, loaders: 5 },
   },
 }
 

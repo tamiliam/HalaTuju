@@ -36,3 +36,9 @@ declare module '*.json?slice=bursary' {
   const catalogue: Record<string, unknown>
   export default catalogue
 }
+
+/** `discovery` = the phone search filters, course "show all" and saved compare (Mobile M3). */
+declare module '*.json?slice=discovery' {
+  const catalogue: Record<string, unknown>
+  export default catalogue
+}

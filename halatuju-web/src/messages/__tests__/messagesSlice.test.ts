@@ -44,22 +44,24 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
   const scholarship = pickSlice(file, 'scholarship') as Cat
   const sponsor = pickSlice(file, 'sponsor')
   const bursary = pickSlice(file, 'bursary')
+  const discovery = pickSlice(file, 'discovery')
   const whole = file.scholarship as Record<string, unknown>
   const SPONSOR_NS = ['sponsorPortal', 'sponsorAuth', 'sponsorPool', 'sponsorLanding']
 
-  test('core ∪ admin ∪ documents ∪ scholarship ∪ sponsor ∪ bursary is the whole file, value for value', () => {
+  test('core ∪ admin ∪ documents ∪ scholarship ∪ sponsor ∪ bursary ∪ discovery is the whole file, value for value', () => {
     // Merged the way the runtime merges them, in BOTH orders (Malay core and Malay scholarship
     // arrive in parallel, either first) — a plain spread would drop the split namespace's half.
-    for (const order of [[core, admin, documents, scholarship, sponsor, bursary],
-      [bursary, sponsor, scholarship, documents, admin, core]]) {
+    for (const order of [[core, admin, documents, scholarship, sponsor, bursary, discovery],
+      [discovery, bursary, sponsor, scholarship, documents, admin, core]]) {
       const merged = order.reduce((acc, s) => mergeSlice(acc, s), {} as Record<string, unknown>)
       expect(merged).toEqual(file)
     }
   })
 
   test('no two slices share a namespace, and the split namespace shares no child', () => {
-    expect(Object.keys(core).filter((ns) => ns in admin || ns in documents || ns in sponsor || ns in bursary)).toEqual([])
+    expect(Object.keys(core).filter((ns) => ns in admin || ns in documents || ns in sponsor || ns in bursary || ns in discovery)).toEqual([])
     expect(Object.keys(bursary).filter((ns) => ns in admin || ns in documents || ns in scholarship || ns in sponsor)).toEqual([])
+    expect(Object.keys(discovery).filter((ns) => ns in admin || ns in documents || ns in scholarship || ns in sponsor || ns in bursary)).toEqual([])
     expect(Object.keys(admin).filter((ns) => ns in documents || ns in scholarship || ns in sponsor)).toEqual([])
     expect(Object.keys(sponsor).filter((ns) => ns in documents || ns in scholarship)).toEqual([])
     expect(Object.keys(scholarship)).toEqual(['scholarship'])
@@ -82,15 +84,18 @@ describe.each(FILES)('the %s file, cut into slices', (_name, file) => {
     for (const ns of SPONSOR_NS) expect(sponsor[ns]).toBe(file[ns])
   })
 
-  test('admin, documents, sponsor and bursary are their namespaces alone; core is every other namespace', () => {
+  test('admin, documents, sponsor, bursary and discovery are their namespaces alone; core is every other namespace', () => {
     expect(Object.keys(admin)).toEqual(['admin'])
     expect(admin.admin).toBe(file.admin)
     expect(Object.keys(documents)).toEqual(['documentsTab'])
     expect(documents.documentsTab).toBe(file.documentsTab)
     expect(Object.keys(bursary)).toEqual(['bursaryTabs'])          // S5b
     expect(bursary.bursaryTabs).toBe(file.bursaryTabs)
+    expect(Object.keys(discovery)).toEqual(['discovery'])          // Mobile M3
+    expect(discovery.discovery).toBe(file.discovery)
     expect(Object.keys(core)).toEqual(Object.keys(file)
-      .filter((ns) => ns !== 'admin' && ns !== 'documentsTab' && ns !== 'bursaryTabs' && !SPONSOR_NS.includes(ns)))
+      .filter((ns) => ns !== 'admin' && ns !== 'documentsTab' && ns !== 'bursaryTabs' && ns !== 'discovery'
+        && !SPONSOR_NS.includes(ns)))
     // A floor, so a file that lost its namespaces cannot pass the identity checks above on {}.
     expect(Object.keys(core).length).toBeGreaterThanOrEqual(30)
   })

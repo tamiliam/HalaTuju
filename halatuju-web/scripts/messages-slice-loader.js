@@ -18,6 +18,8 @@
  *     banner). Those children stay in core; the slice holds every other child.
  *   - `sponsor` = the four `sponsor*` namespaces (`sponsorPortal`, `sponsorAuth`, `sponsorPool`,
  *     `sponsorLanding`) — the sponsor routes' words (TD-416).
+ *   - `discovery` = the `discovery` namespace — the phone search filters, the course page's "show
+ *     all" and the saved-course compare (Mobile M3), loaded by those three routes' pages.
  *   - `bursary` = the `bursaryTabs` namespace — her My Bursary Funds and Contract tabs (maintenance
  *     S5b). In the scholarship slice they pushed /scholarship/apply and /scholarship/application over
  *     their first-load budgets, for words neither route ever shows.
@@ -53,6 +55,10 @@ const SLICES = {
   // Student maintenance S5b (2026-10-30): her Funds and Contract tabs' words — only /scholarship/bursary
   // reads them, so they ride their own chunk instead of the scholarship slice six routes load.
   bursary: ['bursaryTabs'],
+  // Mobile M3 (2026-11-01): the phone search filters, the course page's "show all" and the saved-
+  // course compare. Loaded by the PAGES of /search, /course/[id] and /saved
+  // (`lib/messagesDiscovery.ts`) — in core they would have moved every route's first load.
+  discovery: ['discovery'],
 }
 
 /**

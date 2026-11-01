@@ -848,6 +848,41 @@
     "noSpm": "No SPM courses saved yet.",
     "noStpm": "No STPM courses saved yet."
   },
+  "discovery": {
+    "filters": "Filters",
+    "showCourses": "Show {count} courses",
+    "showAll": "Show all ({count})",
+    "removeFilter": "Remove filter: {name}",
+    "activeFilters": "Filters in use",
+    "showAllInstitutions": "Show all {count} institutions",
+    "compareSelect": "Compare",
+    "compareHint": "Tick 2 or 3 courses to compare them side by side.",
+    "selectedCount": "{count} selected",
+    "compare": "Compare",
+    "compareTitle": "Compare courses",
+    "backToSaved": "Back to saved courses",
+    "compareWith": "Compare with",
+    "loadingDetails": "Loading course details…",
+    "maxThree": "You can compare up to 3 courses.",
+    "minTwo": "Choose at least 2 courses.",
+    "loadFailed": "The course details could not be loaded.",
+    "perMonth": "RM{amount}/month",
+    "reqInterview": "Interview",
+    "reqNoColourBlind": "No colour blindness",
+    "row": {
+      "course": "Course",
+      "institution": "Institution",
+      "state": "State",
+      "type": "Type",
+      "level": "Level",
+      "field": "Field",
+      "semesters": "Semesters",
+      "fees": "Fees per semester",
+      "allowance": "Allowance",
+      "merit": "Merit",
+      "requirements": "Entry requirements"
+    }
+  },
   "scholarship": {
     "nav": "{programmeName}",
     "apply": {

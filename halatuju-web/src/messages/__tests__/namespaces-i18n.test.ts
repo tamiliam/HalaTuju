@@ -233,6 +233,8 @@ const SPECS: NamespaceSpec[] = [
   { ns: 'documentsTab', minLeaves: 20 },
   // Student maintenance S5b: her My Bursary Funds and Contract tabs (their own message slice).
   { ns: 'bursaryTabs', minLeaves: 30 },
+  // Mobile M3: the phone search filters, course "show all" and saved compare (31 leaves).
+  { ns: 'discovery', minLeaves: 25 },
 ]
 
 describe('the scan found the tree and the catalogue (the floor)', () => {

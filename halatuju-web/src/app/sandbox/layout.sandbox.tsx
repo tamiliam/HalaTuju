@@ -15,6 +15,8 @@
 import '@/lib/messagesAdmin'
 // TD-416: …and student scholarship surfaces, so it needs the scholarship slice too.
 import '@/lib/messagesScholarship'
+// Mobile M3: …and the search filters, saved compare and report surfaces read the discovery slice.
+import '@/lib/messagesDiscovery'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
