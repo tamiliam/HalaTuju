@@ -15,18 +15,25 @@ THE FAILURE KINDS — one kind per failing field (the first rule that matches, i
 two letter-level kinds. Rule-based; each rule reads only the answer, the read, the letter's page
 count and its cached OCR page texts, and says what it checks:
 
-  institution
+  institution — owner 2026-11-01: the answer's `institution_as_printed` is the institution's NAME
+  only and `institution_campus` the campus / branch (or null); "the name" / "the campus" below are
+  those two answer fields, tidied as the scorer tidies them
     institution = reporting venue        the read names a venue word (DEWAN, BANGUNAN, KOMPLEKS,
                                          AUDITORIUM, DATARAN, STADIUM, GELANGGANG, PANGGUNG, ARAS,
-                                         BILIK, KOLEJ KEDIAMAN, TEMPAT) the printed line lacks
+                                         BILIK, KOLEJ KEDIAMAN, TEMPAT) the name lacks
     institution = issuer                 the read equals the answer's issuer (tidied)
-    institution keeps part of the line   the read is a strict part of the printed line (tidied)
-    institution adds to the line         the printed line is a strict part of the read
-    institution names a campus / branch / college the line does not
+    institution = the campus             the answer has a campus and the read is exactly it
+    institution joins the campus         the answer has a campus, the read contains it (whole
+                                         words) and the name does not — the read put the campus
+                                         into the institution ("UITM KAMPUS KOTA KINABALU")
+    institution keeps part of the name   the read is a strict part of the name (tidied)
+    institution adds to the name         the name is a strict part of the read (not the campus)
+    institution names a campus / branch / college the answer does not
                                          the read has KAMPUS / CAMPUS / CAWANGAN / BRANCH / KOLEJ /
-                                         COLLEGE / PUSAT / CENTRE that the printed line lacks
-    institution = the university, the line names a campus / college
-                                         the read says UNIVERSITI / UNIVERSITY, the printed line not
+                                         COLLEGE / PUSAT / CENTRE that neither the name nor the
+                                         campus has
+    institution = a university, the name is not
+                                         the read says UNIVERSITI / UNIVERSITY, the name does not
   programme
     programme keeps a code               the read carries a code token (3+ characters mixing letters
                                          and digits, e.g. "UH6481001", "DKM1") the answer lacks
@@ -157,14 +164,19 @@ def field_kind(field, outcome, answer, read, family, pages=None, texts=(), compl
             return 'institution = reporting venue'
         if answer.get('issuer') and got == orc.tidy_text(answer['issuer']):
             return 'institution = issuer'
+        campus = orc.tidy_institution(answer.get('institution_campus'))
+        if campus and got == campus:
+            return 'institution = the campus'
+        if campus and f' {campus} ' in f' {got} ' and f' {campus} ' not in f' {want} ':
+            return 'institution joins the campus'
         if f' {got} ' in f' {want} ':
-            return 'institution keeps part of the line'
+            return 'institution keeps part of the name'
         if f' {want} ' in f' {got} ':
-            return 'institution adds to the line'
-        if set(_PLACE_RE.findall(got)) - set(_PLACE_RE.findall(want)):
-            return 'institution names a campus / branch / college the line does not'
+            return 'institution adds to the name'
+        if set(_PLACE_RE.findall(got)) - set(_PLACE_RE.findall(f'{want} {campus}')):
+            return 'institution names a campus / branch / college the answer does not'
         if _UNI_RE.search(got) and not _UNI_RE.search(want):
-            return 'institution = the university, the line names a campus / college'
+            return 'institution = a university, the name is not'
     if field == 'programme' and outcome == 'wrong':
         if set(_CODE_RE.findall(got)) - set(_CODE_RE.findall(want)):
             return 'programme keeps a code'

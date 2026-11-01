@@ -10,9 +10,10 @@ Every key below must be present; a field the letter does not print is JSON `null
 
   candidate_name          the offered student's name, as printed
   candidate_nric          their IC, as printed
-  institution_as_printed  the college / campus / school line, exactly as printed (read accuracy)
-  institution_campus      the campus a person would pick from that line (may be null) — not scored;
-                          kept so the campus matcher (TD-451/452) can be measured later
+  institution_as_printed  the institution's NAME only, as printed (owner 2026-11-01: the
+                          institution and the campus are TWO fields)
+  institution_campus      the campus / branch, as printed, or null. One printed line holding both
+                          ("UiTM KAMPUS KOTA KINABALU") is split: "UiTM" + "KAMPUS KOTA KINABALU"
   programme               the programme / course title, as printed; PISMP: the degree title
                           ("Ijazah Sarjana Muda Perguruan"), as for any university (owner 2026-11-01)
   stream                  STPM "Bidang" or matriculation "Jurusan" (null for other families)
@@ -34,9 +35,13 @@ Every key below must be present; a field the letter does not print is JSON `null
 THE SCORE. Core fields (decision D2): name, nric, institution, programme, intake, reporting_date.
 `programme` is family-specific: STPM / matriculation → `stream` vs the read's `stream`; every
 other family, PISMP included → `programme` vs the read's `programme` (owner 2026-11-01: PISMP's
-programme is the degree title). offer_date, issuer and specialisation are scored too but are NOT
-core; specialisation (vs the read's `bidang_pengkhususan`) only on letters whose answer has one,
-and its % is over those letters. Per field:
+programme is the degree title). `institution` is the answer's `institution_as_printed` (the name
+only) vs the read's `institution`. offer_date, issuer, campus and specialisation are scored too
+but are NOT core. `campus` is the answer's `institution_campus` vs the read's `campus`, on every
+letter (a null campus read blank is blank_correct); today's reader has no `campus` field, so a
+printed campus scores `missing` — the honest baseline. specialisation (vs the read's
+`bidang_pengkhususan`) only on letters whose answer has one, and its % is over those letters.
+Per field:
 
   exact          both present and equal after tidying
   blank_correct  the letter does not print it (answer null) and the read is blank
@@ -51,10 +56,15 @@ text → accents dropped, upper case, apostrophes removed, any other punctuation
 collapsed. NRIC → digits only. Dates → "D Mon YYYY" from DD/MM/YYYY (also - or .; a two-digit
 year is 20YY), YYYY-MM-DD, or "D Month YYYY" with a Malay or English month, after dropping a
 weekday, a time and anything in brackets; anything unparseable is compared as tidied text.
-Intake → tidied text with a leading "Sesi / Sesi Akademik / Session / Academic Session /
-Ambilan / Intake" label dropped, then a leading "Tahun" dropped when a 4-digit year follows, and
-Malay/English month names written as the English 3 letters. Institution → ONE trailing bracketed
-acronym (2-12 letters/digits/&.-, e.g. "(UniSZA)") dropped, then tidied text.
+Intake (the answer keeps its label as printed; the scorer strips it only to compare) → tidied
+text with the labels "Sesi / Sesi Akademik / Sesi Mula / Session / Academic Session / Ambilan /
+Pengambilan / Intake" dropped from the START and from the END ("JUNE 2026 INTAKE" = "INTAKE JUNE
+2026" = "JUNE 2026"; a label mid-line stays), then a leading "Tahun" dropped when a 4-digit year
+follows, and Malay/English month names written as the English 3 letters. "Semester 1" /
+"Semester Pertama" is content, not a label (a read that drops it is a real miss), and so is a
+session number: "SESI I : 2026/2027" tidies to "I 2026 2027", not "2026 2027".
+Institution and campus → ONE trailing bracketed acronym (2-12 letters/digits/&.-, e.g.
+"(UniSZA)") dropped, then tidied text.
 
 THE SPLIT. `offer_split.json` (committed, keys only; made by `offer_split.py`) lists the held-out
 letters: drawn only from letters NOT in the old corpus whose stored read is the AI reader's
@@ -103,8 +113,9 @@ FAMILIES = ('stpm', 'matriculation', 'polytechnic', 'pismp', 'uitm', 'other_univ
 #: The families the fixed-format reader (`offer_parse.parse_govt_offer`) handles.
 KNOWN_FORMAT_FAMILIES = ('stpm', 'matriculation', 'polytechnic')
 CORE = ('name', 'nric', 'institution', 'programme', 'intake', 'reporting_date')
-#: Scored, not in "fully exact". `specialisation` is scored only where the answer has one.
-NOT_CORE = ('offer_date', 'issuer', 'specialisation')
+#: Scored, not in "fully exact". `campus` on every letter; `specialisation` only where the
+#: answer has one.
+NOT_CORE = ('offer_date', 'issuer', 'campus', 'specialisation')
 OUTCOMES = ('exact', 'blank_correct', 'missing', 'wrong', 'extra')
 RIGHT = ('exact', 'blank_correct')
 
@@ -128,7 +139,13 @@ _MONTH_RE = re.compile(r'\b(' + '|'.join(sorted(_MONTHS, key=len, reverse=True))
 _WEEKDAY_RE = re.compile(r'\b(ISNIN|SELASA|RABU|KHAMIS|JUMAAT|SABTU|AHAD|MON(?:DAY)?|TUE(?:SDAY)?|'
                          r'WED(?:NESDAY)?|THU(?:RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b')
 _TIME_RE = re.compile(r'\d{1,2}\s*[.:]\s*\d{2}\s*(?:PAGI|PETANG|TENGAH HARI|MALAM|AM|PM)?')
-_INTAKE_LABEL_RE = re.compile(r'^(?:SESI AKADEMIK|SESI|ACADEMIC SESSION|SESSION|AMBILAN|INTAKE)\s+')
+#: An intake label (on tidied text). Longest first, so "SESI MULA" is not read as "SESI".
+_INTAKE_LABEL = (r'(?:SESI AKADEMIK|SESI MULA|SESI|ACADEMIC SESSION|SESSION|PENGAMBILAN|AMBILAN|'
+                 r'INTAKE)')
+#: Labels at the START ("INTAKE JUNE 2026", "SESI PENGAMBILAN 2026") and at the END ("JUNE 2026
+#: INTAKE"); each needs a value beside it, so a bare "INTAKE" stays.
+_INTAKE_LABEL_RE = re.compile(r'^(?:' + _INTAKE_LABEL + r'\s+)+')
+_INTAKE_TRAILING_LABEL_RE = re.compile(r'(?:\s+' + _INTAKE_LABEL + r')+$')
 _INTAKE_TAHUN_RE = re.compile(r'^TAHUN\s+(?=\d{4}\b)')
 #: ONE trailing "(ACRONYM)" after some text: 2-12 letters/digits/&.- inside the brackets.
 _TRAILING_ACRONYM_RE = re.compile(r'^(.*\S)\s*\([A-Z0-9&.\-]{2,12}\)\s*$', re.IGNORECASE | re.DOTALL)
@@ -180,7 +197,11 @@ def tidy_date(value):
 
 
 def tidy_intake(value):
-    s = _INTAKE_TAHUN_RE.sub('', _INTAKE_LABEL_RE.sub('', tidy_text(value)))
+    """Labels dropped at the start and the end (never mid-line), then a "Tahun" before a year,
+    months one way. "SEMESTER 1" and a session number ("SESI I : 2026/2027" → "I 2026 2027")
+    stay: they are content."""
+    s = _INTAKE_TRAILING_LABEL_RE.sub('', _INTAKE_LABEL_RE.sub('', tidy_text(value)))
+    s = _INTAKE_TAHUN_RE.sub('', s)
     return _MONTH_RE.sub(lambda m: _MONTHS[m.group(1)].upper(), s)
 
 
@@ -269,6 +290,7 @@ def _pairs(answer, read, family):
         'nric': (answer.get('candidate_nric'), read.get('candidate_nric'), tidy_nric),
         'institution': (answer.get('institution_as_printed'), read.get('institution'),
                         tidy_institution),
+        'campus': (answer.get('institution_campus'), read.get('campus'), tidy_institution),
         'programme': (*prog, tidy_text),
         'intake': (answer.get('intake'), read.get('intake'), tidy_intake),
         'reporting_date': (answer.get('reporting_date'), read.get('reporting_date'), tidy_date),
