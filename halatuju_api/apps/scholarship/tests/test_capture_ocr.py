@@ -62,6 +62,72 @@ class TestCaptureHelpers(SimpleTestCase):
                          os.path.normpath(os.path.join(cap.HERE, 'fixtures', 'results_slip')))
 
 
+class TestCorpusCapturePlan(SimpleTestCase):
+    """offer exact-read S2: a corpus folder (--corpus), an earlier page-1 capture reused instead of
+    a second Vision call (--reuse-from), and a dry count that writes and calls nothing."""
+
+    def setUp(self):
+        import tempfile
+        self._tmp = tempfile.TemporaryDirectory()
+        self.snap = os.path.join(self._tmp.name, 'snapshots')
+        self.earlier = os.path.join(self._tmp.name, 'earlier')
+        self.docs = os.path.join(self._tmp.name, 'fixtures', 'offer_letter')
+        for d in (self.snap, self.earlier, self.docs):
+            os.makedirs(d)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _doc(self, name, data=b'\xff\xd8\xff synthetic'):
+        path = os.path.join(self.docs, name)
+        with open(path, 'wb') as fh:
+            fh.write(data)
+        return path
+
+    def _txt(self, folder, key, text='synthetic page one text'):
+        with open(os.path.join(folder, key + '.ocr.txt'), 'w', encoding='utf-8') as fh:
+            fh.write(text)
+
+    def test_a_corpus_reads_only_its_own_fixtures_folder(self):
+        self.assertEqual(cap.doc_folders('offer_letter', self._tmp.name), [self.docs])
+
+    def test_routes_cached_earlier_vision_and_unreadable(self):
+        cached, earlier, photo = self._doc('k1.jpg'), self._doc('k2.jpg'), self._doc('k3.png')
+        broken = self._doc('k4.pdf', b'<html>not a pdf</html>')
+        self._txt(self.snap, 'k1')
+        self._txt(self.earlier, 'k2')
+        plans = [cap.plan_one(p, self.snap, self.earlier) for p in (cached, earlier, photo, broken)]
+        self.assertEqual([p['route'] for p in plans], ['cached', 'earlier', 'vision', 'unreadable'])
+        self.assertEqual(cap.plan_summary(plans), {
+            'docs': 4, 'routes': {'cached': 1, 'earlier': 1, 'unreadable': 1, 'vision': 1},
+            'vision_calls': 1, 'vision_usd': round(cap.VISION_USD_PER_PAGE, 4)})
+
+    def test_without_reuse_an_earlier_capture_is_not_taken(self):
+        path = self._doc('k2.jpg')
+        self._txt(self.earlier, 'k2')
+        self.assertEqual(cap.plan_one(path, self.snap)['route'], 'vision')
+
+    def test_reuse_copies_the_text_with_an_earlier_vision_meta(self):
+        import json
+        self._txt(self.earlier, 'k2', 'abc')
+        self.assertEqual(cap.reuse_earlier('k2', self.snap, self.earlier), 3)
+        with open(os.path.join(self.snap, 'k2.ocr.meta.json'), encoding='utf-8') as fh:
+            meta = json.load(fh)
+        self.assertEqual((meta['path'], meta['vision_calls'], meta['production_reads_page']),
+                         ('earlier_vision', 0, 1))
+
+    def test_a_dry_run_writes_nothing_and_makes_no_call(self):
+        import contextlib
+        import io
+        self._doc('k3.png')
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            cap.main(['offer_letter', '--corpus', self._tmp.name, '--reuse-from', self.earlier,
+                      '--dry-run'])
+        self.assertIn('vision 1', out.getvalue())
+        self.assertEqual(os.listdir(self.snap), [])
+
+
 class TestCaptureUsesProductionPdfLibraries(SimpleTestCase):
     """The capture reads PDFs with production's own pdf_pages functions, and warns when the installed
     pypdf / pypdfium2 differ from requirements.lock (another version lays a text layer out differently)."""

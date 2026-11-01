@@ -152,6 +152,36 @@ downloads `offer_review_results.json`. `--apply <that file>` prints counts only 
 lines wrong per field) and changes no answer file — the lead decides. Tests:
 `tests/test_offer_review_page.py` (synthetic twins).
 
+**Free text, today's free readers, and the failure map (S2).** `capture_ocr.py offer_letter
+--corpus <eval-dir> --reuse-from snapshots` caches OCR for every letter into the corpus's own
+`snapshots/` (gitignored): a digital PDF's text layer (free); else an earlier page-1 Vision capture
+from `eval/snapshots/` (meta `earlier_vision`, no second call); else Vision, one call per page.
+`--dry-run` first prints the counts and the cost and writes nothing. `offer_replay.py --write` runs
+today's deterministic offer reader (`offer_parse.parse_govt_offer`) and the offer genuineness on the
+text production would feed them (the text layer, or Vision **page 1**), no paid call, and writes
+`<key>.replay.json`: a lock is merged over the stored read as a production re-run does; a fallback
+keeps the stored read as a stand-in for the Gemini read it does not make (`capture: ai_stand_in`).
+It prints lock / fallback by family and input kind (photo / scanned_pdf / text_pdf), the
+known-format-AI letters that lock today and, for the rest, a rule-based reason (no_text /
+photo_ocr_noise / layout_variant / other — the rules are in its docstring), genuineness stored vs
+today, and the stored Exact reads today's parser would now defer. The scorer reads it with
+`--read file:.replay.json`. `offer_failure_map.py --split dev` (or heldout / all, `--read`,
+`--keys`, `--json`) prints per core field wrong / missing / extra, by family, pages, input kind,
+stored capture, stored reader version and stored genuineness version, and a **ranked list of failure
+kinds** (institution = reporting venue, programme keeps a code, intake drops Semester, reporting date
+only on page 2+, known format not locked, real offer judged not genuine, …), each tagged against
+today's free readers: `old read` (a re-read fixes it), `today too`, or `ai, S3` (still Gemini today —
+S3 measures it). Every kind's rule is in its docstring. Counts and keys only, never a value. Tests:
+`tests/test_offer_replay.py`, `tests/test_capture_ocr.py` (synthetic twins).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/capture_ocr.py offer_letter --corpus apps/scholarship/eval/fixtures/offer_letters_2026-11-01 --reuse-from apps/scholarship/eval/snapshots --dry-run
+python -I apps/scholarship/eval/offer_replay.py --write
+python -I apps/scholarship/eval/offer_failure_map.py --split dev
+python -I apps/scholarship/eval/offer_read_check.py --split dev --read file:.replay.json
+```
+
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.
