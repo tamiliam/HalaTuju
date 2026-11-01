@@ -267,6 +267,14 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Acceptance:** fresh-read score on dev beside the stored score; measured cost per letter; a TD if the live meter
   under-counts thinking tokens.
 - **Owner:** yes to ≈ RM3–9 (dev set, one pass).
+- **DONE 2026-11-01.** `eval/offer_fresh_read.py` runs `vision.extract_document_fields` (the production AI read,
+  same prompt / schema / cascade / page-1 image) on the local files, nothing persisted but the cache. All 216
+  answered letters read once: **US$0.845 = RM3.72** (pilot RM0.15 + run RM3.57), US$0.0039 a letter, every call
+  answered by gemini-2.5-flash, no 402/429. **Today's reader = the stored reads:** fully exact 53/216 fresh vs
+  50/216 stored; institution 96 vs 99 right, programme 155 vs 152, intake 183 vs 184, name 208 vs 205 - the
+  failures are the reader's, not old reads. **Every image is sent as 258 tokens** (a low-detail view of page 1,
+  whatever its size) - an S4 input. **The usage meter drops thinking tokens** (~80-85% of the billed output):
+  TD-459.
 
 ### S4 — Reader round 1: traceability and what Gemini sees (medium–high, ~10 h; production code)
 - **Matcher contract (Cockpit session, 2026-11-01):** the offer matcher reads `fields.programme`, `fields.institution`,
@@ -286,8 +294,8 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   blank a correct blank (UNIMAS 12/13, UPSI 7/7, UUM 4/4, UTHM 4/4, AIMST, i-CATS, Cyberjaya). Stored reads: 155/157
   right, 2 blank, 0 wrong. **Real gaps = NRIC only inside the reference line:** UPM 2/2 ("[NRIC]/UP...") and
   Netherlands Maritime University College 1/1 ("Our Reference .../[NRIC]") - S4 reads it from the reference line.
-  Politeknik/KK and STPM put it in the reference too but always print it elsewhere. Owner rule open: does a filled
-  acceptance form inside the same PDF count as "the letter prints it" (one i-CATS letter)?
+  Politeknik/KK and STPM put it in the reference too but always print it elsewhere. Owner rule (2026-11-01): only the
+  OFFER pages count - an NRIC on a filled acceptance form later in the same PDF is not "printed by the letter".
 - **Goal:** fix the biggest S2 failure kinds that come from the AI read's inputs and prompt.
 - **Scope (expected, confirmed by S2):** an offer reader version stamped on every read (AI and deterministic);
   Gemini sees up to 3 pages, and the text layer beside the image for a digital PDF; prompt fixes for the top

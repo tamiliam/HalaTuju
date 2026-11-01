@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Offer letters read exactly — Sprint 3 (today's AI reader measured) — 2026-11-01 — BUILT, not deployed
+
+Measurement only; no production code. Paid: RM3.72 of Gemini (owner yes, RM3–9).
+
+- **`eval/offer_fresh_read.py`** (+ `offer_fresh_gemini.py`): the production AI offer read
+  (`vision.extract_document_fields`) on the local files; the usage meter replaced by a recorder, any database or
+  Storage access raises; caches `<key>.fresh.json` (fields, model, per-call tokens incl. thinking, cost, code
+  fingerprints). `--dry-run`, `--limit`, `--split`, `--force`, `--compare`; a 402/429 stops the run.
+- **Result (216 letters):** fully exact 53 fresh vs 50 stored - today's reader is no better than the stored reads;
+  US$0.0039 a letter. Images are sent as 258 tokens each. The live usage meter misses thinking tokens (TD-459).
+- `tests/test_offer_fresh_read.py` (fake Gemini client).
+
 ## Offer letters read exactly — Sprint 2 (answers, failure map, owner checks) — 2026-11-01 — BUILT, not deployed
 
 Measurement tooling only; no production code, no migration, no Gemini call.
