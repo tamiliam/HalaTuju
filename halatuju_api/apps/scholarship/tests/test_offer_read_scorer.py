@@ -88,6 +88,51 @@ class TestTidying(SimpleTestCase):
         self.assertEqual(orc.tidy_intake('Ambilan Julai 2031'), orc.tidy_intake('jul 2031'))
         self.assertNotEqual(orc.tidy_intake('2031/2032'), orc.tidy_intake('2031/32'))
 
+    def test_intake_tahun_before_a_year_is_part_of_the_label(self):
+        self.assertEqual(orc.tidy_intake('Ambilan Tahun 2031'), '2031')
+        self.assertEqual(orc.tidy_intake('TAHUN 2031'), '2031')
+        self.assertEqual(orc.tidy_intake('Sesi Tahun 2031/2032'), orc.tidy_intake('2031/2032'))
+
+    def test_intake_tahun_without_a_following_year_stays(self):
+        self.assertEqual(orc.tidy_intake('Tahun Satu'), 'TAHUN SATU')
+        self.assertEqual(orc.tidy_intake('Tahun 1'), 'TAHUN 1')
+        self.assertEqual(orc.tidy_intake('Tahun'), 'TAHUN')
+        self.assertEqual(orc.tidy_intake('2031 Tahun'), '2031 TAHUN')
+        self.assertNotEqual(orc.tidy_intake('Tahun Akademik 2031'), '2031')
+
+    def test_institution_trailing_bracketed_acronym_is_optional(self):
+        for raw in ('Universiti Zantharion Perlak (UniZP)', 'Universiti Zantharion Perlak (UZP)',
+                    'UNIVERSITI ZANTHARION PERLAK  (UZP) ',
+                    'Universiti Zantharion Perlak(U-Z.P&2)', 'universiti zantharion perlak'):
+            with self.subTest(raw=raw):
+                self.assertEqual(orc.tidy_institution(raw), 'UNIVERSITI ZANTHARION PERLAK')
+        self.assertEqual(orc.tidy_institution(None), '')
+        out = orc.score_letter(_answer(institution_as_printed='Universiti Zantharion Perlak (UZP)'),
+                               _read(institution='Universiti Zantharion Perlak'), 'other_university')
+        self.assertEqual(out['institution'], 'exact')
+        out = orc.score_letter(_answer(institution_as_printed='Universiti Zantharion Perlak'),
+                               _read(institution='UNIVERSITI ZANTHARION PERLAK (UZP)'), 'uitm')
+        self.assertEqual(out['institution'], 'exact')
+
+    def test_institution_other_brackets_stay(self):
+        mid = 'Universiti Zantharion Perlak (UZP) Kampus Qorvane'
+        self.assertEqual(orc.tidy_institution(mid),
+                         'UNIVERSITI ZANTHARION PERLAK UZP KAMPUS QORVANE')
+        self.assertNotEqual(orc.tidy_institution(mid),
+                            orc.tidy_institution('Universiti Zantharion Perlak Kampus Qorvane'))
+        # only ONE trailing token goes; too short, too long or spaced inside is not an acronym
+        self.assertEqual(orc.tidy_institution('Kolej Qorvane (KQ) (UZP)'), 'KOLEJ QORVANE KQ')
+        self.assertEqual(orc.tidy_institution('Kolej Qorvane (K)'), 'KOLEJ QORVANE K')
+        self.assertEqual(orc.tidy_institution('Kolej Qorvane (ABCDEFGHIJKLM)'),
+                         'KOLEJ QORVANE ABCDEFGHIJKLM')
+        self.assertEqual(orc.tidy_institution('Kolej Qorvane (Kampus Utara)'),
+                         'KOLEJ QORVANE KAMPUS UTARA')
+        self.assertEqual(orc.tidy_institution('(UZP)'), 'UZP')
+        # the rule is the institution's only: programme still differs with an acronym
+        out = orc.score_letter(_answer(programme='Diploma Qorvane (DQ)'),
+                               _read(programme='Diploma Qorvane'), 'polytechnic')
+        self.assertEqual(out['programme'], 'wrong')
+
 
 class TestOutcomes(SimpleTestCase):
     def test_each_outcome_kind(self):
