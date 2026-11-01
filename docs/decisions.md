@@ -216,6 +216,29 @@ diploma transcripts today) gets no colour. The offer letter's intake rule (intak
 officer learned to ignore. Display only: no verdict, query or money reader consumes the status.
 
 **Revisit if:** a transcript starts carrying a readable year (colour it by the same table), or a route's timing changes.
+## Offer letters: the institution and the campus are two fields; what a genuineness status means (owner rulings, 2026-11-01)
+
+**Context.** The offer exact-read arc (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`) measured the AI
+reader on 216 hand-answered letters. The institution is wrong on about half, mostly a reporting venue or a joined
+campus; and the genuineness check called real public-institute offers "not an offer letter".
+
+**Decisions (owner).**
+1. **The reader returns the institution's name and the campus as TWO fields** (`institution`, `campus` - '' when
+   none); a hostel / residential college / reporting venue goes in neither. Shape agreed with the matcher's
+   session; the matcher joins institution + campus for multi-campus families, and the reader change does not
+   ship until the matcher reads `campus`.
+2. **Intake is recorded as printed, with its label** ("SESI 1-2026/2027"); the scorer strips the label only to
+   compare. **PISMP's programme is the degree title** ("IJAZAH SARJANA MUDA PERGURUAN"); the specialisation is
+   kept beside it.
+3. **A genuineness status is a bursary decision, not a document type.** `not_offer_letter` = a fail; `suspect` =
+   not sure, a person decides. An offer from a private college (IPTS) or a public university's private wing is
+   `not_offer_letter`. An admission printout / portal page is `suspect`. A confirmation-of-studies letter from a
+   public institution with no private wing is an acceptable alternative to an offer (with a private wing:
+   confirm the government programme). Public skills institutes (IKBN, IKM) are public offers.
+4. The offer letter's NRIC belongs to this arc (owner, via the matcher's session): a blank is correct where the
+   issuer prints none (UNIMAS, UPSI, UUM, UTHM...); UPM and one private college print it only inside the reference.
+
+**Revisit if:** the bursary starts funding private colleges, or the matcher needs the venue.
 
 ## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
 

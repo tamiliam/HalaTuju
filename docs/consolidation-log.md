@@ -71,6 +71,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-11-01 Route-aware exam-year colours (owner table; display only; no migration) — 49e50778
 - 2026-11-02 Offer matcher reads the S4 campus and programme_code fields (cloud session + Cockpit; adversarial review on the campus join; no migration) — 50cf6531 d08283f1 26e1f6cf 7b8403e3
 - 2026-11-01 Offer letters read exactly Sprint 1 (eval tooling: scorer, held-out split, review page, paged fetch; baseline 21/90 fully exact; no reader change) — 6cb620d5 7da17db2 af17c491 f7029a63 fe5981a3
+- 2026-11-01 Offer letters read exactly Sprint 2 (dev answers, campus split, OCR + replay, failure map, offer-check page; eval only, no reader change) — 68ab0595 ceea1ee5 19106084 40ece202
 
 - 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration)
 
