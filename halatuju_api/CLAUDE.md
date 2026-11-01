@@ -1146,7 +1146,7 @@ rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare
 in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
 apply-form draft storage (rec. tab-only sessionStorage).
 
-### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7d BUILT, NOT LIVE (branch `maint-s7`) — staff can also be mentors
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7d LIVE (main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first) — staff can also be mentors
 
 **Next free migration numbers: courses 0092, scholarship 0199** (7d adds NO scholarship migration). **courses
 0091_partneradmin_staff_mentor — MIGRATE FIRST by hand** (drop + add the relaxed CHECK

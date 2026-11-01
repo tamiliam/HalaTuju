@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 7d — staff can also be mentors (not yet live)
+## Student maintenance Sprint 7d — staff can also be mentors — LIVE 2026-11-01 (main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first)
 
 Owner rulings and the approved MentorsAddStaff / StaffMentorProfile boards, 2026-11-01; the lead's two data
 rulings the same day (decisions.md, the 7d entry). **courses 0091 — migrate first, by hand** (DDL in its docstring).

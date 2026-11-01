@@ -55,5 +55,14 @@ student's CURRENT contact email (the submit-time copy can be stale), and no conc
 longer be handled). pytest 11417, jest 5934. **Lesson:** a copied field (`notify_email`) is a snapshot — a reader that
 needs the live value must read the source, not the copy.
 
+## Sprint 7d (same day) — staff can also be mentors, on the same login
+LIVE main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first. Org admins, admins, reviewers and QC can be added as mentors from the Mentors page (no email);
+they keep their role and gain My students and the mentor profile cards (share-phone-with-students OFF for existing
+staff). Every staff exit (Stop, revoke, cancel, role change to finance, re-invite) ends mentoring without touching
+the login; mentoring counts as recorded work, so a staff mentor who has mentored is revoke-only. The review found a
+staff phone shown on staff screens without the team-visibility rule, and a revoke/cancel racing an add (fixed with
+row locks and a refusal for login-less or inactive mentors). **Lesson:** when one row gains a second role, every
+"is this a pure X?" test in the code is a door — list them (deny-by-default, staff lists, lifecycle) before building.
+
 ## Next
 Sprint 8 (Announcements) or 7c (mentors see their students and log meetings), on the owner's choice.
