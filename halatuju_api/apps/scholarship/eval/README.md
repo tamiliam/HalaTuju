@@ -151,6 +151,7 @@ wins over the default), and "Save my answers"
 downloads `offer_review_results.json`. `--apply <that file>` prints counts only (letters checked,
 lines wrong per field) and changes no answer file — the lead decides. Tests:
 `tests/test_offer_review_page.py` (synthetic twins).
+`--offer-check` (S2) writes `review_s2_offer.html` the same way: every letter (any split) whose answer's `is_offer_letter` is not `yes` or whose stored genuineness status is `not_offer_letter`, with two Right/Wrong lines (our label; the live system's decision) and the labeller's note; it saves `offer_review_s2_results.json`, which `--apply` counts.
 
 **Free text, today's free readers, and the failure map (S2).** `capture_ocr.py offer_letter
 --corpus <eval-dir> --reuse-from snapshots` caches OCR for every letter into the corpus's own
