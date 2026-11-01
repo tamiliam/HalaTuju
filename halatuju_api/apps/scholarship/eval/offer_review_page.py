@@ -13,13 +13,16 @@ non-empty `unsure_fields`, plus `--random N` (default 20) of the rest, drawn wit
 file, or a malformed one, is skipped (counted, never named).
 
 THE PAGE — one card per letter: the document on the left, the answer's fields on the right, each
-with Right / Wrong and a correction box when Wrong; a note per letter; progress kept in the
-browser (`localStorage`); "Save my answers" downloads `offer_review_results.json`:
+with Right / Wrong and a correction box when Wrong; a note per letter. By default every line
+starts ticked Right, so the owner changes only the wrong ones (`--blank`: nothing ticked). The
+progress line counts letters looked at (scrolled to the note box) or changed (`--blank`: letters
+with every line ticked). Work is kept in the browser (`localStorage`) and an earlier tick wins
+over the default. "Save my answers" downloads `offer_review_results.json`:
 
-  {"page": "review_s1", "saved_at": "...",
+  {"page": "review_s1", "mode": "prefilled" | "blank", "saved_at": "...",
    "letters": {<key>: {"fields": {<answer field>: {"verdict": "right" | "wrong" | "not_checked",
                                                   "correction": "..."}},
-                       "note": "..."}}}
+                       "note": "...", "looked_at": true | false}}}
 
 `--apply <results.json>` reads that file and prints COUNTS ONLY (letters checked, fields marked
 wrong per field, letters with any wrong). It never changes an answer file — the lead decides.
@@ -27,7 +30,7 @@ wrong per field, letters with any wrong). It never changes an answer file — th
 It prints counts and the page path — NEVER a value.
 
 Usage:  python -I apps/scholarship/eval/offer_review_page.py [--eval-dir DIR] [--random N]
-            [--seed S] [--split-file F]
+            [--seed S] [--split-file F] [--blank]
         python -I apps/scholarship/eval/offer_review_page.py --apply offer_review_results.json
 """
 import argparse
@@ -168,8 +171,9 @@ def _doc_html(doc, n):
     return '\n'.join(parts)
 
 
-def _line_html(idx, field, label, value, unsure):
+def _line_html(idx, field, label, value, unsure, blank=False):
     base = f'c{idx}-{field}'
+    right_on = '' if blank else ' checked'
     tag = ' <span class="unsure">unsure</span>' if unsure else ''
     shown = _display(field, value)
     cls = ' blank' if shown == NOT_PRINTED else ''
@@ -177,7 +181,7 @@ def _line_html(idx, field, label, value, unsure):
 <legend>{_e(label)}{tag}</legend>
 <p class="value{cls}">{_e(shown)}</p>
 <div class="choices">
-<label><input type="radio" name="{base}" value="right"> Right</label>
+<label><input type="radio" name="{base}" value="right"{right_on}> Right</label>
 <label><input type="radio" name="{base}" value="wrong"> Wrong</label>
 </div>
 <div class="fix" hidden>
@@ -187,13 +191,14 @@ def _line_html(idx, field, label, value, unsure):
 </fieldset>'''
 
 
-def _card_html(eval_dir, key, answer, idx, total):
-    lines = '\n'.join(
-        _line_html(idx, f, label, answer.get(f), f in set(answer.get('unsure_fields') or []))
-        for f, label in page_fields(answer))
+def _card_html(eval_dir, key, answer, idx, total, blank=False):
+    unsure = set(answer.get('unsure_fields') or [])
+    lines = '\n'.join(_line_html(idx, f, label, answer.get(f), f in unsure, blank)
+                      for f, label in page_fields(answer))
+    badge = 'Done' if blank else 'Looked at'
     doc = document_info(eval_dir, key)
     return f'''<section class="card" data-key="{_e(key)}" id="card-{idx}">
-<h2>Letter {idx} of {total} <span class="done-badge" hidden>Done</span></h2>
+<h2>Letter {idx} of {total} <span class="done-badge" hidden>{badge}</span></h2>
 <div class="cols">
 <div class="left">
 {_doc_html(doc, idx)}
@@ -248,7 +253,18 @@ input[type=text], textarea { width:100%; font:inherit; padding:6px 8px; border:1
 _JS = r'''
 (function () {
   var KEY = "__STORAGE_KEY__";
+  var SEEN_KEY = KEY + "-looked-at";
+  var MODE = "__MODE__";          /* "prefilled": every line starts Right; "blank": none ticked */
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  var seen = {};
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || "{}") || {}; } catch (e) { seen = {}; }
+  function markSeen(card) {
+    var k = card && card.getAttribute("data-key");
+    if (!k || seen[k]) { return; }
+    seen[k] = true;
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) { /* no storage */ }
+    refresh();
+  }
   function collect() {
     var out = {};
     cards.forEach(function (card) {
@@ -261,7 +277,8 @@ _JS = r'''
         };
       });
       out[card.getAttribute("data-key")] = {fields: fields,
-                                            note: card.querySelector(".note-box").value};
+                                            note: card.querySelector(".note-box").value,
+                                            looked_at: !!seen[card.getAttribute("data-key")]};
     });
     return out;
   }
@@ -274,11 +291,13 @@ _JS = r'''
         if (picked) { ticked += 1; }
         line.querySelector(".fix").hidden = !(picked && picked.value === "wrong");
       });
-      var isDone = ticked === lines.length;
+      var isDone = MODE === "blank" ? ticked === lines.length
+                                    : !!seen[card.getAttribute("data-key")];
       card.querySelector(".done-badge").hidden = !isDone;
       if (isDone) { done += 1; }
     });
-    document.getElementById("progress").textContent = done + " of " + cards.length + " done";
+    document.getElementById("progress").textContent = done + " of " + cards.length +
+      (MODE === "blank" ? " done" : " letters looked at or changed");
   }
   function remember() {
     try { localStorage.setItem(KEY, JSON.stringify(collect())); } catch (e) { /* no storage */ }
@@ -293,10 +312,11 @@ _JS = r'''
       card.querySelectorAll(".line").forEach(function (line) {
         var f = (s.fields || {})[line.getAttribute("data-field")];
         if (!f) { return; }
+        line.querySelector(".correction").value = f.correction || "";
+        if (f.verdict !== "right" && f.verdict !== "wrong") { return; }  /* keeps the default */
         line.querySelectorAll("input[type=radio]").forEach(function (r) {
           r.checked = (r.value === f.verdict);
         });
-        line.querySelector(".correction").value = f.correction || "";
       });
       card.querySelector(".note-box").value = s.note || "";
     });
@@ -309,10 +329,22 @@ _JS = r'''
       img.parentNode.replaceChild(p, img);
     });
   });
-  document.addEventListener("change", function () { refresh(); remember(); });
-  document.addEventListener("input", function () { remember(); });
+  function cardOf(ev) { return ev.target.closest ? ev.target.closest(".card") : null; }
+  document.addEventListener("change", function (ev) {
+    markSeen(cardOf(ev)); refresh(); remember();
+  });
+  document.addEventListener("input", function (ev) { markSeen(cardOf(ev)); remember(); });
+  if ("IntersectionObserver" in window) {   /* a letter is looked at once its note box shows */
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { markSeen(en.target.closest(".card")); }
+      });
+    });
+    document.querySelectorAll(".note").forEach(function (n) { io.observe(n); });
+  }
   document.getElementById("save").addEventListener("click", function () {
-    var data = {page: "review_s1", saved_at: new Date().toISOString(), letters: collect()};
+    var data = {page: "review_s1", mode: MODE, saved_at: new Date().toISOString(),
+                letters: collect()};
     var blob = new Blob([JSON.stringify(data, null, 1)], {type: "application/json"});
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -329,16 +361,24 @@ _JS = r'''
 })();
 '''
 
-INSTRUCTION = ('For each letter, look at the document on the left and the answer on the right. '
-               'Tick Right or Wrong for each line. If wrong, type what the letter really says. '
-               'When you finish, press Save my answers at the bottom.')
+#: The default page: every line starts ticked Right (owner request, 2026-11-01).
+INSTRUCTION = ('Every line is already marked Right. Look at the document, and change a line to '
+               'Wrong only if it does not match the letter, then type what the letter really says. '
+               'When you finish, press Save my answers.')
+#: `--blank`: no line ticked to start with.
+INSTRUCTION_BLANK = ('For each letter, look at the document on the left and the answer on the '
+                     'right. Tick Right or Wrong for each line. If wrong, type what the letter '
+                     'really says. When you finish, press Save my answers at the bottom.')
 
 
-def build_page(eval_dir, keys, answers):
+def build_page(eval_dir, keys, answers, blank=False):
     total = len(keys)
-    cards = '\n'.join(_card_html(eval_dir, k, answers[k], i, total)
+    cards = '\n'.join(_card_html(eval_dir, k, answers[k], i, total, blank)
                       for i, k in enumerate(keys, start=1))
-    js = _JS.replace('__STORAGE_KEY__', STORAGE_KEY).replace('__RESULTS_NAME__', RESULTS_NAME)
+    js = (_JS.replace('__STORAGE_KEY__', STORAGE_KEY).replace('__RESULTS_NAME__', RESULTS_NAME)
+          .replace('__MODE__', 'blank' if blank else 'prefilled'))
+    instruction = INSTRUCTION_BLANK if blank else INSTRUCTION
+    progress = f'0 of {total} done' if blank else f'0 of {total} letters looked at or changed'
     return f'''<!doctype html>
 <html lang="en-GB">
 <head>
@@ -350,11 +390,11 @@ def build_page(eval_dir, keys, answers):
 <body>
 <header class="intro">
 <h1>Offer letter check</h1>
-<p>{_e(INSTRUCTION)}</p>
-<p>Your ticks are kept in this browser as you go, so closing or refreshing the page does not
+<p>{_e(instruction)}</p>
+<p>Your changes are kept in this browser as you go, so closing or refreshing the page does not
 lose them. Lines marked <span class="unsure">unsure</span> are the ones most worth a careful
 look.</p>
-<p id="progress" aria-live="polite">0 of {total} done</p>
+<p id="progress" aria-live="polite">{progress}</p>
 </header>
 <main>
 {cards}
@@ -441,6 +481,8 @@ def main(argv=None):
     ap.add_argument('--split-file', default=orc.SPLIT_PATH)
     ap.add_argument('--random', type=int, default=RANDOM_N, help='letters drawn from the rest')
     ap.add_argument('--seed', type=int, default=SEED)
+    ap.add_argument('--blank', action='store_true',
+                    help='start with no line ticked (default: every line starts Right)')
     ap.add_argument('--apply', metavar='RESULTS_JSON',
                     help="count the owner's saved results (changes nothing)")
     args = ap.parse_args(argv)
@@ -466,7 +508,7 @@ def main(argv=None):
         return 2
     path = os.path.join(args.eval_dir, PAGE_NAME)
     with open(path, 'w', encoding='utf-8', newline='\n') as fh:
-        fh.write(build_page(args.eval_dir, keys, answers))
+        fh.write(build_page(args.eval_dir, keys, answers, args.blank))
     print(f"sample: {counts['total']} letters ({counts['unsure']} unsure + {counts['random']} "
           f"random; skipped {counts['skipped']})")
     print(f'page: {path}')
