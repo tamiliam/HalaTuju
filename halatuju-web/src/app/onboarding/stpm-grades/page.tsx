@@ -167,7 +167,7 @@ export default function StpmGradesPage() {
     return <StpmCountTag testId={`count-${id}`} kind={id === 'PA' ? 'always' : counts ? 'counted' : 'notCounted'} />
   }
 
-  const gradeCls = (graded: boolean) => `w-24 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+  const gradeCls = (graded: boolean) => `min-h-11 w-24 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
     graded ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-ground-50 border-ground-300 text-ground-500'}`
   const gradeSelect = (id: string) => (
     <select value={stpmGrades[id] || ''} onChange={(e) => handleStpmGradeChange(id, e.target.value)}
@@ -176,7 +176,7 @@ export default function StpmGradesPage() {
       {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
     </select>
   )
-  const subjectCls = 'w-full min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
+  const subjectCls = 'min-h-11 w-full min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">

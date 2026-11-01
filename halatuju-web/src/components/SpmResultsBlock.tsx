@@ -203,7 +203,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                 <select
                   value={spmGrades[subject.id] || ''}
                   onChange={(e) => handleSpmGradeChange(subject.id, e.target.value)}
-                  className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+                  className={`min-h-11 w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                     spmGrades[subject.id]
                       ? 'bg-primary-50 border-primary-200 text-primary-700'
                       : 'bg-ground-50 border-ground-300 text-ground-500'
@@ -228,7 +228,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                 <select
                   value={subjectId}
                   onChange={(e) => handleSpmAliranChange(index, e.target.value)}
-                  className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                  className="min-h-11 flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                 >
                   <option value="">{t('onboarding.selectSubject')}</option>
                   {spmStreamPool
@@ -241,7 +241,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                   <select
                     value={spmGrades[subjectId] || ''}
                     onChange={(e) => handleSpmGradeChange(subjectId, e.target.value)}
-                    className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+                    className={`min-h-11 w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                       spmGrades[subjectId]
                         ? 'bg-primary-50 border-primary-200 text-primary-700'
                         : 'bg-ground-50 border-ground-300 text-ground-500'
@@ -274,7 +274,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                 <select
                   value={subjectId}
                   onChange={(e) => updateSpmElektifSubject(index, e.target.value)}
-                  className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                  className="min-h-11 flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                 >
                   <option value="">{t('onboarding.selectSubject')}</option>
                   {spmElektifPool
@@ -287,7 +287,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                   <select
                     value={spmGrades[subjectId] || ''}
                     onChange={(e) => handleSpmGradeChange(subjectId, e.target.value)}
-                    className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+                    className={`min-h-11 w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                       spmGrades[subjectId]
                         ? 'bg-primary-50 border-primary-200 text-primary-700'
                         : 'bg-ground-50 border-ground-300 text-ground-500'

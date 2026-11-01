@@ -54,8 +54,8 @@ function Page({ children }: { children: ReactNode }) {
   return <div className="min-h-[60dvh] bg-ground-50">{children}<div className="h-96" /></div>
 }
 
-const GRADE = 'w-24 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700'
-const SUBJECT = 'w-full min-w-0 rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-sm'
+const GRADE = 'min-h-11 w-24 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700'
+const SUBJECT = 'min-h-11 w-full min-w-0 rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-sm'
 
 /** The STPM rows as a phone shows them once a PNGK is known: counted, always, and not counted. */
 function StpmRows() {

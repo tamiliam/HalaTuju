@@ -541,7 +541,7 @@ function CompactSubjectRow({
       <select
         value={selectedId}
         onChange={(e) => onSubjectChange(e.target.value)}
-        className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+        className="min-h-11 flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
       >
         <option value="">{t('onboarding.selectSubject')}</option>
         {options.map((s) => (
@@ -554,7 +554,7 @@ function CompactSubjectRow({
         <select
           value={grade}
           onChange={(e) => onGradeChange(e.target.value)}
-          className={`w-24 flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+          className={`min-h-11 w-24 flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
             grade
               ? 'bg-primary-50 border-primary-200 text-primary-700'
               : 'bg-ground-50 border-ground-300 text-ground-500'
