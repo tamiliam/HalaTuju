@@ -36,5 +36,15 @@ nothing new.
   (TD-433, not touched by 7b).
 - 61 files in the two commits.
 
+## Follow-up (same day) — mentors are invited from Invitations, like sources
+LIVE main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded. Owner, looking at the Mentors, Sources and Invitations pages side by side: the Mentors page is a
+MANAGEMENT page (like People for reviewers), with Mentors · Emails · Terms tabs; inviting lives on Invitations. The
+mentor letter became an editable `invite_mentor` template. Its review found a finance read of mentor invitations, a
+way to put the temporary password into an email SUBJECT (all invitation kinds, pre-existing — now refused at save and
+at send), two disagreeing edit gates, and a Reactivate that still sent an invitation from the management page.
+**Lesson:** when the owner compares pages side by side, the pattern of the SIBLING pages is the spec — 7a built the
+mentor invite on the Mentors page because the board drew it there, while every sibling (sources, sponsors, staff)
+invites from Invitations. Check the sibling surfaces before trusting a single board.
+
 ## Next
 Sprint 8 (Announcements) or 7c (mentors see their students and log meetings), on the owner's choice.
