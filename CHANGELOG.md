@@ -408,7 +408,6 @@ rollback in its docstring).** No new table. Release order: 0198 by hand, then AP
   (`mobileClass.ts`, M6).
 - Review fixes: the mentor sees the student's CURRENT contact email (the copy taken at submit only as a fallback);
   a concern on a closed file shows no chip and is not in the "Mentor concerned" filter (it can no longer be handled).
-
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 
 Owner approved Stitch M2a / M2b / M2c2 / M2d2 on 2026-11-01 (decisions.md, the Mobile M2 entry). No migration,
