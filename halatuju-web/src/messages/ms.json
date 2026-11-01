@@ -3588,7 +3588,8 @@
         "error": {
           "unknownPlaceholder": "E-mel ini tidak boleh mengisi: {list}. Buangkannya, atau gunakan salah satu butiran yang disenaraikan di bawah kotak.",
           "conduitPhrasing": "Sila ubah kata-kata: {list}. Organisasi rakan menjalankan bursari ini bersama kami, jadi pelajar itu milik organisasi — bukan milik pembaca, dan bukan sekadar orang yang mereka rujuk.",
-          "required": "Subjek dan isi kedua-duanya diperlukan."
+          "required": "Subjek dan isi kedua-duanya diperlukan.",
+          "structuralInSubject": "Subjek tidak boleh mengandungi perenggan log masuk atau nota. Pindahkannya ke dalam mesej."
         },
         "toStudent": "kepada pelajar",
         "studentUnaffected": "Masih dihantar — suis di atas mengawal apa yang diterima oleh organisasi, manakala e-mel ini memberitahu pelajar siapa yang dapat melihat butiran mereka sendiri."
@@ -8400,7 +8401,8 @@
         "already_joined": "Mentor ini sudah log masuk.",
         "not_active": "Mentor ini sudah tidak aktif.",
         "active": "Mentor ini sudah aktif.",
-        "generic": "Tindakan itu tidak berjaya. Cuba lagi."
+        "generic": "Tindakan itu tidak berjaya. Cuba lagi.",
+        "not_arrived": "Mentor ini tidak pernah log masuk. Jemput mereka sekali lagi dari Jemputan → Mentor."
       },
       "status": {
         "active": "Aktif",
@@ -8433,10 +8435,9 @@
         "revoke": "Jemputan {name} telah ditarik balik.",
         "deactivate": "{name} tidak lagi boleh log masuk.",
         "reactivate": "{name} boleh log masuk semula.",
-        "reactivateInvited": "{name} boleh log masuk semula. Jemputan telah dihantar semula.",
         "notEmailed": "E-mel tidak dapat dihantar. Cuba Hantar semula."
       },
-      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Mentor yang menunggu untuk menerima ada di Jemputan → Mentor. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
+      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Halaman ini menyenaraikan mentor yang telah log masuk; mentor yang menunggu untuk menerima ada di Jemputan → Mentor, dan mentor yang dimatikan sebelum log masuk kembali dengan menjemput alamat yang sama di sana sekali lagi. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
       "empty": "Tiada mentor dalam senarai ini.",
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {

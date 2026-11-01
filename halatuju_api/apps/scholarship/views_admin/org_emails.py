@@ -166,6 +166,13 @@ class AdminPartnerEmailDetailView(_SourcesBase):
                                  'code': 'missing_required_placeholder',
                                  'placeholders': list(missing)},
                                 status=status.HTTP_400_BAD_REQUEST)
+            # S7b follow-up review fix 2: a block in an invitation's SUBJECT would be flattened into
+            # it — `{access}` there puts the temporary password in the subject line.
+            in_subject = partner_comms.structural_in_subject(kind, subject)
+            if in_subject:
+                return Response({'error': 'structural_in_subject', 'code': 'structural_in_subject',
+                                 'placeholders': list(in_subject)},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         fields = []
         if 'enabled' in request.data:

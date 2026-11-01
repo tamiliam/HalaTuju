@@ -3588,7 +3588,8 @@
         "error": {
           "unknownPlaceholder": "This email cannot fill in: {list}. Remove it, or use one of the details listed below the box.",
           "conduitPhrasing": "Please reword: {list}. A partner organisation runs this bursary alongside us, so the students are the organisation's — not the reader's, and not ones they merely referred.",
-          "required": "A subject and a body are both needed."
+          "required": "A subject and a body are both needed.",
+          "structuralInSubject": "The subject cannot carry the sign-in paragraph or a note. Move it into the message."
         },
         "toStudent": "to the student",
         "studentUnaffected": "Still sending — the switch above governs what organisations receive, and this one tells a student who can see their own details."
@@ -8400,7 +8401,8 @@
         "already_joined": "This mentor has already signed in.",
         "not_active": "This mentor is already inactive.",
         "active": "This mentor is already active.",
-        "generic": "That did not work. Try again."
+        "generic": "That did not work. Try again.",
+        "not_arrived": "This mentor never signed in. Invite them again from Invitations → Mentor."
       },
       "status": {
         "active": "Active",
@@ -8433,10 +8435,9 @@
         "revoke": "{name}'s invitation is withdrawn.",
         "deactivate": "{name} can no longer sign in.",
         "reactivate": "{name} can sign in again.",
-        "reactivateInvited": "{name} can sign in again. The invitation was sent again.",
         "notEmailed": "The email could not be sent. Try Resend."
       },
-      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. Mentors waiting to accept are on Invitations → Mentor. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
+      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. This page lists the mentors who have signed in; mentors waiting to accept are on Invitations → Mentor, and one switched off before signing in comes back by inviting the same address there again. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
       "empty": "No mentors in this list.",
       "loadError": "We could not load the mentors.",
       "profile": {

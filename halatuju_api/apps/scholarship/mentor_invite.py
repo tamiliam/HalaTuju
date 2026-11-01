@@ -12,8 +12,11 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
   `staff_reinvite.reissue_credential`. Only the LETTER differs (`emails.send_mentor_invitation_email`)
   — and ⚠ it is the ONLY email a mentor is ever sent (owner ruling), with its resend.
 - ONE EMAIL, ONE ADMIN SIGN-IN: an address that already has ANY `PartnerAdmin` row (staff, source,
-  another mentor) is refused `already_staff`. There is no re-invite: a mentor is NEVER DELETED, so
-  the way back is Reactivate.
+  another mentor) is refused `already_staff` — with ONE exception, the source pattern's
+  (`source_invite.reusable_row`; S7b follow-up review, owner 2026-11-01): a SWITCHED-OFF mentor of THIS
+  organisation who NEVER SIGNED IN (revoked or deactivated before arriving) is brought back by inviting
+  the same address again on Invitations → Mentor (`reusable_row`): reactivated, a fresh invitation and
+  letter, a fresh password only where we issue one (`staff_reinvite.reissue_credential`).
 - A STUDENT'S OR SPONSOR'S LOGIN MAY BE A MENTOR (owner ruling 2026-10-31, replacing the review's
   "any existing sign-in is refused"): the admin side and the student/sponsor side are separate
   domains, as for staff. Such an address keeps its own login — `provision_*` answers
@@ -24,9 +27,12 @@ THE SOURCE-PARTNER PATTERN (`source_invite.py`), with the mentor's own rules. Th
   the mentor keeps their own details up to date. Staff never write the mentor's profile.
 - DEACTIVATE switches the login off (`is_active=False`, the source user's revoke), withdraws a waiting
   invitation and kills its emailed password, and stamps `deactivated_at/_by_email`. REACTIVATE
-  reverses it; a mentor who never signed in is sent their invitation again (its resend).
+  reverses it for a mentor who has signed in, and sends nothing (see the Mentors-page rule below).
   S7b: Deactivate (and Revoke, the same switch-off) also ENDS every open mentoring assignment of
   theirs (`mentoring.end_for_mentor`); Reactivate restores none.
+- THE MENTORS PAGE NEVER INVITES (S7b follow-up review, owner 2026-11-01): it manages mentors who have
+  ARRIVED, like People. Reactivate is only for a mentor who has signed in, and sends nothing; a mentor
+  who never signed in is refused `not_arrived` there — they come back by a re-invite (above).
 
 STATUS IS DERIVED (`status_of`), never stored: `inactive` when deactivated; `invited` until the login's
 first sign-in (`has_signed_in`); else `active`.
@@ -128,14 +134,54 @@ def status_of(mentor, login, credential_issued=None):
 
 
 # ── inviting ─────────────────────────────────────────────────────────────────────
+def reusable_row(existing, organisation):
+    """The mentor login a re-invite brings back, or None (then ``existing`` is a 409): ONLY a
+    switched-off mentor of THIS organisation who never signed in. Any other row stays refused."""
+    if (existing is None or not existing.is_mentor or organisation is None
+            or existing.mentor.organisation_id != organisation.pk
+            or existing.mentor.deactivated_at is None or has_signed_in(existing)):
+        return None
+    return existing
+
+
+def _reinvite(caller, login, *, organisation, email, name):
+    """Bring ``login``'s switched-off, never-signed-in mentor back: a fresh credential where we issued
+    one (never onto a login the person brought — `reissue_credential`), the mentor and login switched
+    on, a fresh invitation, the letter. Nothing is written when the credential cannot be issued."""
+    from apps.courses.views_admin import is_google_email
+    mentor = login.mentor
+    temp_password, err = staff_reinvite.reissue_credential(login)
+    if err:
+        return Invited('create_failed', None, None, None, False, False, False)
+    with transaction.atomic():
+        if not Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=False).update(
+                deactivated_at=None, deactivated_by_email=''):
+            return Invited('already_staff', None, None, None, False, False, False)
+        PartnerAdmin.objects.filter(pk=login.pk).update(is_active=True, paused_at=None, name=name)
+        login.refresh_from_db()
+        mentor.refresh_from_db()
+        inv = invitations.create_or_refresh(
+            audience=AUDIENCE, email=login.email, name=name, role=MENTOR_ROLE,
+            organisation=organisation, invited_by=caller, partner_admin=login,
+            credential_issued=bool(temp_password), mentor=mentor)
+    google = temp_password is None and is_google_email(login.email)
+    emailed = send(inv, login, organisation, temp_password, google, actor=caller)
+    return Invited(None, mentor, login, inv, google, temp_password is None and not google, emailed)
+
+
 def invite(caller, *, organisation, email, name):
     """Make ``organisation``'s new mentor, their login and their invitation, then send the letter.
 
     The caller has already checked who may invite and resolved the organisation (inside its fence).
     Nothing is left behind by a refusal or a failure: the mentor, the login row and the invitation
-    are written in ONE transaction, and the letter goes only after it commits."""
-    if PartnerAdmin.objects.filter(email__iexact=email).exists():
-        return Invited('already_staff', None, None, None, False, False, False)
+    are written in ONE transaction, and the letter goes only after it commits. A switched-off mentor
+    of this organisation who never signed in is brought back instead (`reusable_row`)."""
+    existing = PartnerAdmin.objects.select_related('mentor').filter(email__iexact=email).order_by('id').first()
+    if existing is not None:
+        reuse = reusable_row(existing, organisation)
+        if reuse is None:
+            return Invited('already_staff', None, None, None, False, False, False)
+        return _reinvite(caller, reuse, organisation=organisation, email=email, name=name)
     try:
         with transaction.atomic():
             mentor = Mentor.objects.create(organisation=organisation,
@@ -171,7 +217,7 @@ def send(inv, account, organisation, temp_password, google, *, actor=None):
 
 def _send_again(caller, mentor, login):
     """A fresh credential (where we issued one) on a fresh invitation, and the letter: ``(emailed,
-    error)``. Shared by Resend and by Reactivate of a mentor who never signed in."""
+    error)``. The Resend's (Invitations → Mentor)."""
     from apps.courses.views_admin import is_google_email
     # A password is reissued ONLY onto a login we issued one for — never onto one somebody brought
     # with them: `reissue_credential` holds that rule for every Resend since TD-440.
@@ -247,13 +293,16 @@ def deactivate(caller, mentor, login):
 
 def reactivate(caller, mentor, login):
     """Switch a deactivated mentor back ON: ``(done, emailed, error)``. Their login is switched on and
-    the stamp cleared; a mentor who NEVER signed in is sent their invitation again (a fresh password
-    where we issued one — the old one was killed), the only other email a mentor may get. A mentor
-    who has signed in is sent nothing: their login is theirs. `active` when not deactivated."""
+    the stamp cleared; nothing is sent — their login is theirs. ONLY for a mentor who has signed in
+    (S7b follow-up review: the Mentors page never invites): one who never did is refused
+    `not_arrived` and comes back by a re-invite on Invitations → Mentor (`reusable_row`).
+    `active` when not deactivated."""
     if status_of(mentor, login) != INACTIVE:
         return False, False, 'active'
     if login is None:
         return False, False, 'no_login'
+    if not has_signed_in(login):
+        return False, False, 'not_arrived'
     with transaction.atomic():
         if not Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=False).update(
                 deactivated_at=None, deactivated_by_email=''):
@@ -261,10 +310,7 @@ def reactivate(caller, mentor, login):
         PartnerAdmin.objects.filter(pk=login.pk).update(is_active=True, paused_at=None)
     mentor.deactivated_at, mentor.deactivated_by_email = None, ''
     login.is_active = True
-    if has_signed_in(login):
-        return True, False, None
-    emailed, err = _send_again(caller, mentor, login)
-    return True, emailed, err
+    return True, False, None
 
 
 # ── staff editing name and email, until the first sign-in ────────────────────────

@@ -150,7 +150,10 @@ def mentor_kind_extras(caller, mentor_ids):
     rows (`mentor_rows`, with `manageable`) for the mentors behind the waiting invitations. The ids
     come from invitations already fenced to the caller's organisation; the mentors are fenced again
     here (a super: any organisation)."""
+    from .. import mentor_invite
     from ..models import Mentor
+    if not mentor_invite.may_read(caller):     # review fix 1: the roster's own readers only
+        return {'mentors': []}
     qs = Mentor.objects.filter(pk__in=list(mentor_ids))
     if not getattr(caller, 'is_super', False):
         qs = qs.filter(organisation_id=caller.owning_organisation_id)
@@ -283,7 +286,7 @@ class AdminMentorActionView(_MentorsBase):
             _, refusal = mentor_invite.revoke_invite(admin, mentor, login)
         else:
             _, refusal = mentor_invite.deactivate(admin, mentor, login)
-        if refusal in ('already_joined', 'not_active', 'active', 'no_login'):
+        if refusal in ('already_joined', 'not_active', 'active', 'no_login', 'not_arrived'):
             return _error(refusal, status.HTTP_400_BAD_REQUEST)
         if refusal == 'not_configured':
             return _error('not_configured', status.HTTP_500_INTERNAL_SERVER_ERROR,

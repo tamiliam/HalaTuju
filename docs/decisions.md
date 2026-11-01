@@ -152,7 +152,12 @@ page". (16) **The Mentors page manages arrived mentors, like People**: Active an
 Reactivate; invitations live on Invitations; "Invite a mentor →" is a link there. (17) The Mentors page wears
 People's tab bar (Mentors · Emails · Terms disabled); **the mentor's invitation is an editable template**
 (`invite_mentor`, scholarship 0197, choices only), shown on both Emails tabs through one card; it remains the
-only email a mentor receives.
+only email a mentor receives. (18) **Review fixes:** the Mentor kind is served only to the Mentors roster's
+readers (finance gets nothing); an invitation subject may carry no structural token (`{access}`, `{note}`), at
+save and at send; Mentors → Emails follows the invitation editor's gate; **the Mentors page lists only mentors
+who have signed in, and its Reactivate sends nothing** — a mentor switched off before arriving is brought back
+by a re-invite of the same address on Invitations → Mentor (`mentor_invite.reusable_row`, the source pattern);
+any other existing sign-in stays 409.
 
 **Trade-offs:** `MentorAssignment.application` is CASCADE in Django, like `letters` and `student_activity` (file
 records), not PROTECT. The self-mentor end on sign-in is best effort: if it fails, the sign-in still succeeds and

@@ -166,6 +166,12 @@ def _invite_render(kind, context, must_contain=()):
         tpl = _T.objects.filter(kind=kind).first()
         if tpl is None:
             return None
+        # S7b follow-up review fix 2 — SEND-TIME BACKSTOP for a subject carrying a block (`{access}`
+        # would put the password in the subject line): use the built-in letter instead.
+        if partner_comms.structural_in_subject(kind, tpl.subject):
+            logger.warning('Invitation template %s carries a block in its subject; '
+                           'using the built-in body', kind)
+            return None
         subject, text_body, _html = partner_comms.render(kind, tpl, dict(context))
         # ⚠ SEND-TIME BACKSTOP, and it is not redundant with the save guard. The save guard refuses
         # a body missing a required token, which covers every edit made through the console. This

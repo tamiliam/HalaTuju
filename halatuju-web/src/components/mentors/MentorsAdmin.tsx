@@ -1,30 +1,34 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ComponentType } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { effectiveRole } from '@/lib/navigation'
+import { isSuperRole } from '@/lib/superRole'
 import {
   getInvitations, getMentors, mentorAction,
   type MentorAction, type MentorRow, type MentorStatus, type MentorsPayload,
 } from '@/lib/admin-api'
 import TableFrame, { TH } from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { lazySource } from '@/components/source/LazySource'
-
-// The Emails tab is the Invitations page's own card (one template, one editor) — its own chunk,
-// fetched only when the tab is opened.
-const InvitationEmailsCard = lazySource(
-  () => import('@/components/admin/InvitationEmailsCard').then((m) => m.default))
+/** The Emails tab's card — the Invitations page's own `InvitationEmailsCard` (one template, one editor).
+ *  ⚠ HANDED IN BY THE ROUTE (`app/admin/organisation/mentors/page.tsx`), never imported here: this
+ *  screen is a lazy chunk, and a lazy chunk that needs the shared template editor puts that editor's
+ *  chunk into the webpack runtime EVERY route downloads — +0.02 kB on `/scholarship/application`, a
+ *  student route at its first-load line (review fix 5). Imported by the route, it stays initial. */
+export type EmailsCard = ComponentType<{
+  token: string | null; t: (k: string, p?: Record<string, string>) => string
+  only?: readonly string[]; note?: string
+}>
 
 /**
  * Organisation → Mentors (student maintenance S7a, 2026-10-31; reshaped by the S7b follow-up,
  * 2026-11-01, owner rulings). A MANAGEMENT page, like Organisation → People: Invitations invites;
  * this is where you look at the mentors who have ARRIVED.
  *
- * ⚠ ARRIVED ONLY: chips Active and Inactive. A mentor invited and not signed in yet lives on
+ * ⚠ ARRIVED ONLY (signed in): chips Active and Inactive; Reactivate sends nothing. A mentor switched off
+ * before arriving is not listed — a re-invite on Invitations → Mentor brings them back (review fix 4). A mentor invited and not signed in yet lives on
  * Invitations → Mentor, with its Resend and Revoke; this page says how many are waiting there (the
  * Invitations payload's own count — the chip's — never a subtraction) and links to it.
  * ⚠ "Invite a mentor →" is a LINK to `/admin/organisation/staff?kind=mentor`, like the Sources
@@ -42,7 +46,7 @@ type Panel = 'mentors' | 'emails' | 'terms'
 const K = 'admin.mentors'
 const STATUSES = ['active', 'inactive'] as const
 type Arrived = typeof STATUSES[number]
-const ACTION_REFUSALS = ['already_joined', 'not_active', 'active']
+const ACTION_REFUSALS = ['already_joined', 'not_active', 'active', 'not_arrived']
 const LINK = 'text-sm font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50'
 const CHIP_TONE: Record<MentorStatus, string> = {
   active: 'bg-positive-50 text-positive-800',
@@ -66,10 +70,16 @@ function statusText(t: T, m: MentorRow): string {
   return t(`${K}.inactiveOn`, { date: formatDate(m.deactivated_at) })
 }
 
-export default function MentorsAdmin() {
+export default function MentorsAdmin({ EmailsCard }: { EmailsCard: EmailsCard }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const mayInvite = ['super', 'org_admin'].includes(effectiveRole(role))
+  // ⚠ `superRole` (a leaf), never `lib/navigation`'s `effectiveRole`: importing the route registry here
+  // split it into a shared chunk — one more runtime entry every route pays for (review fix 5).
+  const r = isSuperRole(role) ? 'super' : (role?.role ?? '')
+  const mayInvite = ['super', 'org_admin'].includes(r)
+  // The Emails tab follows the invitation-template editor's own gate (`_sources_admin`: super,
+  // org_admin, admin) so it agrees with Invitations → Emails (follow-up review fix 3).
+  const mayEditEmails = ['super', 'org_admin', 'admin'].includes(r)
   const [panel, setPanel] = useState<Panel>('mentors')
   const [data, setData] = useState<MentorsPayload | null>(null)
   const [waiting, setWaiting] = useState<number | null>(null)
@@ -96,11 +106,8 @@ export default function MentorsAdmin() {
     if (action === 'deactivate' && !window.confirm(t(`${K}.confirm.deactivate`, { name: m.name }))) return
     setBusyId(m.id); setBanner(null)
     try {
-      const row = await mentorAction(m.id, action, { token })
-      const reInvited = action === 'reactivate' && row.status === 'invited'
-      setBanner(row.emailed === false && reInvited
-        ? { ok: false, text: t(`${K}.done.notEmailed`) }
-        : { ok: true, text: t(`${K}.done.${reInvited ? 'reactivateInvited' : action}`, { name: m.name, email: m.email }) })
+      await mentorAction(m.id, action, { token })
+      setBanner({ ok: true, text: t(`${K}.done.${action}`, { name: m.name, email: m.email }) })
     } catch (err) {
       const code = codeOf(err)
       setBanner({ ok: false, text: t(`${K}.error.${ACTION_REFUSALS.includes(code) ? code : 'generic'}`) })
@@ -110,9 +117,14 @@ export default function MentorsAdmin() {
     }
   }
 
-  const arrived = (data?.mentors ?? []).filter((m) => m.status !== 'invited')
+  // ARRIVED = has signed in (`mentor_invite.has_signed_in`, the server's `signed_in`). A mentor
+  // switched off before arriving is not listed here: a re-invite on Invitations brings them back.
+  const arrived = (data?.mentors ?? []).filter((m) => m.signed_in && m.status !== 'invited')
   const rows = arrived.filter((m) => m.status === filter)
-  const counts: Record<Arrived, number> = { active: data?.counts.active ?? 0, inactive: data?.counts.inactive ?? 0 }
+  const counts: Record<Arrived, number> = {
+    active: arrived.filter((m) => m.status === 'active').length,
+    inactive: arrived.filter((m) => m.status === 'inactive').length,
+  }
 
   return (
     <div className="space-y-5" data-testid="mentors-admin">
@@ -132,14 +144,14 @@ export default function MentorsAdmin() {
       <PanelTabs ariaLabelKey={`${K}.tabsAria`} active={panel} onSelect={(k) => setPanel(k as Panel)}
         tabs={[
           { key: 'mentors', labelKey: `${K}.tab.mentors` },
-          ...(mayInvite ? [{ key: 'emails' as const, labelKey: 'admin.reviewers.tabEmails' }] : []),
+          ...(mayEditEmails ? [{ key: 'emails' as const, labelKey: 'admin.reviewers.tabEmails' }] : []),
           // Mentors sign nothing today. Shown disabled so the surfaces look alike (People, Sources).
           { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
         ]} />
 
       {/* Mounted only while selected: each reveal re-reads the template. */}
-      {panel === 'emails' && mayInvite && (
-        <InvitationEmailsCard token={token} t={t} only={['invite_mentor']} note={t(`${K}.emailsNote`)} />
+      {panel === 'emails' && mayEditEmails && (
+        <EmailsCard token={token} t={t} only={['invite_mentor']} note={t(`${K}.emailsNote`)} />
       )}
 
       {panel === 'mentors' && (<>

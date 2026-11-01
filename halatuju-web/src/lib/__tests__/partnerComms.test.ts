@@ -109,6 +109,8 @@ describe('errorKey', () => {
     expect(errorKey('unknown_placeholder')).toBe('admin.sources.emails.error.unknownPlaceholder')
     expect(errorKey('conduit_phrasing')).toBe('admin.sources.emails.error.conduitPhrasing')
     expect(errorKey('subject_and_body_required')).toBe('admin.sources.emails.error.required')
+    // S7b follow-up review: a block in an invitation's subject is refused in its own words.
+    expect(errorKey('structural_in_subject')).toBe('admin.sources.emails.error.structuralInSubject')
   })
 
   it('falls back to the generic failure for anything unmapped', () => {

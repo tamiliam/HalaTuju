@@ -104,5 +104,7 @@ export function errorKey(code: string | undefined): string {
   if (code === 'unknown_placeholder') return 'admin.sources.emails.error.unknownPlaceholder'
   if (code === 'conduit_phrasing') return 'admin.sources.emails.error.conduitPhrasing'
   if (code === 'subject_and_body_required') return 'admin.sources.emails.error.required'
+  // S7b follow-up review: a block such as {access} is refused in an invitation's subject.
+  if (code === 'structural_in_subject') return 'admin.sources.emails.error.structuralInSubject'
   return 'admin.actionFailed'
 }

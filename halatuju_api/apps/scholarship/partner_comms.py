@@ -169,6 +169,15 @@ def unknown_placeholders(kind, *parts):
     return email_templates.unknown_placeholders(PLACEHOLDERS.get(kind, set()), *parts)
 
 
+def structural_in_subject(kind, subject):
+    """The STRUCTURAL tokens (`access`, `note`, …) an INVITATION's subject carries — refused at save
+    and at send (S7b follow-up review fix 2): `email_templates.render` flattens a block into the
+    subject, which would put a temporary password into a subject line, a preview and a mail log."""
+    if kind not in PartnerEmailTemplate.INVITE_KINDS:
+        return ()
+    return tuple(sorted(set(_TOKEN_RE.findall(subject or '')) & STRUCTURAL_TOKENS))
+
+
 def missing_required_placeholders(kind, *parts):
     """Tokens this kind REQUIRES that the given subject/body have dropped. See
     `REQUIRED_PLACEHOLDERS` for why the opposite-direction check exists."""

@@ -23,6 +23,20 @@ editable mentor letter has its row.
   as Invitations → Emails — and says "Mentors receive no other email from HalaTuju". `send_mentor_invitation_email`
   sends the stored wording; the sign-in paragraph stays ours, and a stored body without it falls back to the
   built-in letter (reworded "The students you mentor see…", since "your students" is refused in this family).
+- **Review fixes (adversarial review of the follow-up):** (1) finance (who may open Invitations) gets nothing of
+  the Mentor kind — no rows, no mentor rows, a count of 0. (2) A structural token (`{access}`, `{note}`) in an
+  invitation's SUBJECT is refused at save (400 `structural_in_subject`, in plain words in en/ms/ta) and falls
+  back to the built-in letter at send, for every invitation kind — it would have put the temporary password in
+  the subject line. (3) Mentors → Emails follows the invitation editor's own gate (super, org admin, admin), as
+  Invitations → Emails does. (4) The Mentors page never invites: it lists only mentors who have SIGNED IN, and
+  Reactivate (signed-in mentors only, 400 `not_arrived` otherwise) sends nothing; a mentor switched off before
+  arriving comes back by inviting the same address again on Invitations → Mentor (the source pattern: the row
+  reused, a fresh invitation and letter, a fresh password only where we issued one). (5) No new entry in the webpack
+  runtime every route downloads: the Mentor tab rides the Source tab's lazy chunk (`SourceInvite` re-exports it),
+  the Mentors screen imports `lib/superRole` rather than the route registry, and its Emails card is imported by
+  the ROUTE and handed in (from the lazy screen it pulled the shared template editor's chunk into the runtime).
+  `/scholarship/application` reads 211.823 kB here against 211.821 kB on this branch's base (9969c1f3), measured
+  the same way; the follow-up as first committed read 211.876 kB.
 
 ## Mobile M1 close-review fixes (2026-11-01)
 

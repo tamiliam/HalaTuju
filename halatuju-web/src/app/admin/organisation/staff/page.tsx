@@ -23,11 +23,12 @@ const SourceInviteForm = lazySource(
   () => import('@/components/sources/SourceInvite').then((m) => m.SourceInviteForm))
 const SourceRoster = lazySource(
   () => import('@/components/sources/SourceInvite').then((m) => m.SourceRoster))
-// S7b follow-up: the Mentor tab's form and roster, likewise their own chunk.
+// S7b follow-up: the Mentor tab's form and roster ride the SAME chunk as the Source tab's (re-exported
+// by `SourceInvite`) — a chunk of their own would add a runtime entry every route pays for.
 const MentorInviteForm = lazySource(
-  () => import('@/components/mentors/MentorInvite').then((m) => m.MentorInviteForm))
+  () => import('@/components/sources/SourceInvite').then((m) => m.MentorInviteForm))
 const MentorRoster = lazySource(
-  () => import('@/components/mentors/MentorInvite').then((m) => m.MentorRoster))
+  () => import('@/components/sources/SourceInvite').then((m) => m.MentorRoster))
 
 const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'mentor', 'sponsors']
 

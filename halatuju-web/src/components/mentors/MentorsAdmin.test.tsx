@@ -9,7 +9,11 @@
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import * as api from '@/lib/admin-api'
-import MentorsAdmin, { languagesLine } from './MentorsAdmin'
+import MentorsAdminScreen, { languagesLine } from './MentorsAdmin'
+import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
+
+/** The screen as the route mounts it: the Emails card handed in (review fix 5). */
+const MentorsAdmin = () => <MentorsAdminScreen EmailsCard={InvitationEmailsCard} />
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }),
@@ -96,7 +100,7 @@ it('Emails shows ONLY the mentor invitation, with the "no other email" note', as
   expect(screen.getByTestId('invitation-emails-note').textContent).toBe('admin.mentors.emailsNote')
 })
 
-it('an admin (read-only) sees the list, no Emails tab, no invite link, no actions', async () => {
+it('an admin (read-only) sees the list and the Emails tab (the template editor gate), no invite link, no actions', async () => {
   mockRole = { role: 'admin' }
   mockApi.getMentors.mockResolvedValue(payload({
     can_invite: false, mentors: [ACTIVE, INVITED, INACTIVE].map((m) => ({ ...m, manageable: false })),
@@ -105,7 +109,8 @@ it('an admin (read-only) sees the list, no Emails tab, no invite link, no action
   const active = await screen.findByTestId('mentor-row-1')
   expect(within(active).queryByRole('button')).toBeNull()
   expect(screen.queryByTestId('mentor-invite-link')).toBeNull()
-  expect(screen.queryByRole('tab', { name: 'admin.reviewers.tabEmails' })).toBeNull()
+  // Review fix 3: the same gate as Invitations → Emails (super, org_admin, admin).
+  expect(screen.getByRole('tab', { name: 'admin.reviewers.tabEmails' })).toBeTruthy()
   expect(mockApi.getInvitations).not.toHaveBeenCalled()
 })
 
@@ -144,4 +149,24 @@ it('S7b: "Scholars now" shows how many scholars each mentor has now', async () =
   render(<MentorsAdmin />)
   expect(await screen.findByText('admin.mentors.col.scholarsNow')).toBeTruthy()
   expect(screen.getByTestId('mentor-scholars-1').textContent).toBe('4')
+})
+
+it('review fix 3: finance (not an editor of the invitation letters) gets no Emails tab', async () => {
+  mockRole = { role: 'finance' }
+  render(<MentorsAdmin />)
+  await screen.findByTestId('mentor-row-1')
+  expect(screen.queryByRole('tab', { name: 'admin.reviewers.tabEmails' })).toBeNull()
+})
+
+it('review fix 4: a mentor switched off before signing in is not listed, and Inactive counts only arrivals', async () => {
+  const revokedEarly = row({ id: 4, name: 'Never Arrived', status: 'inactive', signed_in: false,
+    deactivated_at: '2026-10-25T00:00:00Z' })
+  mockApi.getMentors.mockResolvedValue(payload({ mentors: [ACTIVE, INVITED, INACTIVE, revokedEarly],
+    counts: { active: 1, invited: 1, inactive: 2 } }))
+  render(<MentorsAdmin />)
+  const chip = await screen.findByTestId('mentor-chip-inactive')
+  expect(chip.textContent).toContain('1')
+  fireEvent.click(chip)
+  expect(await screen.findByTestId('mentor-row-3')).toBeTruthy()
+  expect(screen.queryByTestId('mentor-row-4')).toBeNull()
 })

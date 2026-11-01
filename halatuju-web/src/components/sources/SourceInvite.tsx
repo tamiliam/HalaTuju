@@ -11,6 +11,12 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
 import { SignInBadge } from '@/components/sources/shared'
 
+// ⚠ THE MENTOR TAB RIDES THIS CHUNK (S7b follow-up review fix 5): Invitations loads its Mentor form and
+// roster through THIS module, so they share the Source tab's lazy chunk instead of adding one. Every
+// lazy chunk is an entry in the webpack runtime that EVERY route downloads — a chunk of its own put
+// ~0.05 kB on `/scholarship/application`, a student route under its first-load line.
+export { MentorInviteForm, MentorRoster } from '@/components/mentors/MentorInvite'
+
 /**
  * Invitations → **Source** (source sign-in S2, 2026-10-30). Design of record: the owner-approved
  * mock-up of that tab ("Looks good. Proceed", 2026-10-30).

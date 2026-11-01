@@ -60,6 +60,14 @@ class AdminInvitationsView(_ReviewersBase):
         kind = (request.GET.get('kind') or inv_service.KIND_ADMINS).strip()
         if kind not in inv_service.KINDS:
             kind = inv_service.KIND_ADMINS
+        # S7b follow-up review fix 1: this screen admits finance (`may_read_team`), the Mentors
+        # roster does not (`mentor_invite.may_read`). A caller outside it gets NOTHING of the Mentor
+        # kind — no rows, no mentor rows, a count of 0 — so a mentor's name never reaches finance.
+        from .. import mentor_invite
+        reads_mentors = mentor_invite.may_read(admin)
+        if not reads_mentors:
+            counts[inv_service.KIND_MENTOR] = 0
+            totals[inv_service.KIND_MENTOR] = 0
 
         # ⚠ WAITING-ONLY IS THE DEFAULT, AND THAT IS THE POINT OF THIS PAGE (2026-09-09).
         # It used to list every invitation ever sent, which on this tenant meant 18 accepted rows
@@ -67,7 +75,8 @@ class AdminInvitationsView(_ReviewersBase):
         # that would have got WORSE on its own as each waiting sponsor registered. Who is already
         # in is answered by the People directory; this endpoint answers who has not replied.
         # `?all=1` keeps the full history reachable for a caller that genuinely wants it.
-        listed = inv_service.for_kind(qs, kind)
+        listed = inv_service.for_kind(qs, kind) if (reads_mentors or kind != inv_service.KIND_MENTOR) \
+            else qs.none()
         if (request.GET.get('all') or '').strip() not in ('1', 'true'):
             listed = inv_service.open_only(listed)
 
@@ -112,7 +121,7 @@ class AdminInvitationsView(_ReviewersBase):
             # The Source tab's roster and the invite form's choices (source sign-in S2).
             from .source_users import source_kind_extras
             extras = source_kind_extras(admin, org_id)
-        elif kind == inv_service.KIND_MENTOR:
+        elif kind == inv_service.KIND_MENTOR and reads_mentors:
             # The Mentor tab's roster (S7b follow-up): the Mentors page's own rows for the waiting
             # invitations' mentors, so the tab offers exactly the actions those endpoints take.
             from .mentors import mentor_kind_extras

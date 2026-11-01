@@ -142,14 +142,16 @@ class TestInvite(_Base):
         self.assertNotIn('temporary password', mail.outbox[-1].body)
 
     def test_their_own_login_is_never_reset_killed_or_deleted(self):
-        """Resend, Revoke, Reactivate and an email move before they sign in: the row has no UID and
+        """Resend, Revoke, a re-invite and an email move before they sign in: the row has no UID and
         the invitation issued no password, so nothing reaches the person's own login."""
         self.invite(new_login=(None, True, None))
         mentor = Mentor.objects.get()
         with patch(ISSUE, return_value=True) as issued, patch(KILL, return_value='killed') as killed,                 patch(DELETE, return_value='deleted') as deleted:
-            for action in ('resend', 'revoke', 'reactivate'):
+            for action in ('resend', 'revoke'):
                 r = authed_client(self.lead).post(f'{MENTORS}{mentor.pk}/{action}/', {}, format='json')
                 self.assertEqual(r.status_code, 200, (action, r.content))
+            # S7b follow-up review: the way back is a re-invite on Invitations → Mentor, not Reactivate.
+            self.assertEqual(self.invite(new_login=(None, True, None)).status_code, 201)
             with patch(NEW_LOGIN, return_value=(None, True, None)):
                 r = authed_client(self.lead).patch(f'{MENTORS}{mentor.pk}/', {'email': 'other@example.org'},
                                                    format='json')
@@ -326,16 +328,16 @@ class TestActions(_Base):
         again = self.act(self.mentor.pk, 'reactivate')
         self.assertEqual((again.status_code, again.json()['code']), (400, 'active'))
 
-    def test_reactivate_a_mentor_who_never_signed_in_sends_the_invitation_again(self):
+    def test_reactivate_is_refused_for_a_mentor_who_never_signed_in(self):
+        """S7b follow-up review (owner): the Mentors page never invites. A mentor revoked before
+        arriving comes back by a re-invite on Invitations → Mentor, never by Reactivate."""
         self.act(self.mentor.pk, 'revoke')
+        mail.outbox.clear()
         r = self.act(self.mentor.pk, 'reactivate')
-        self.assertEqual((r.status_code, r.json()['status'], r.json()['emailed']),
-                         (200, 'invited', True))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('mentor', mail.outbox[0].subject)
-        waiting = Invitation.objects.filter(audience='mentor', accepted_at__isnull=True,
-                                            revoked_at__isnull=True)
-        self.assertEqual(waiting.count(), 1)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_arrived'))
+        self.assertEqual(mail.outbox, [])
+        self.mentor.refresh_from_db()
+        self.assertIsNotNone(self.mentor.deactivated_at)
 
     def test_an_unknown_action_is_404(self):
         self.assertEqual(self.act(self.mentor.pk, 'delete').status_code, 404)
@@ -710,3 +712,96 @@ class TestTheMentorInvitationIsEditable(TestCase):
         others = [t['kind'] for t in authed_client(sup).get(
             '/api/v1/admin/scholarship/partner-emails/').json()['templates']]
         self.assertNotIn('invite_mentor', others)
+
+
+class TestFollowUpReviewFixes(_Base):
+    """The adversarial review of the S7b follow-up (2026-11-01): four findings, a test each."""
+
+    # ── 1. finance never reads mentors through Invitations ─────────────────────────────────
+    def test_finance_gets_nothing_of_the_mentor_kind(self):
+        self.invite()
+        finance = make_admin('finance', owning_org=self.org)
+        body = authed_client(finance).get(INVITE + '?kind=mentor').json()
+        self.assertEqual((body['invitations'], body['waiting']['mentor'], body['totals']['mentor']), ([], 0, 0))
+        self.assertNotIn('mentors', body)
+        self.assertNotIn('Priya', str(body))
+        # The roster's own readers still see it.
+        self.assertEqual(authed_client(self.viewer).get(INVITE + '?kind=mentor').json()['waiting']['mentor'], 1)
+
+    # ── 2. no structural token in an invitation's subject ─────────────────────────────────
+    def test_a_subject_carrying_a_block_is_refused_at_save_for_every_invitation_kind(self):
+        from django.core.management import call_command
+        import io as _io
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+        for kind in ('invite_admin', 'invite_source', 'invite_mentor'):
+            with self.subTest(kind=kind):
+                r = authed_client(self.lead).patch(f'/api/v1/admin/scholarship/partner-emails/{kind}/', {
+                    'subject': 'Your password: {access}',
+                    'body': 'Hello.\n\n{login_link}\n\n{access}\n\n{team_signoff}'}, format='json')
+                self.assertEqual((r.status_code, r.json()['code']), (400, 'structural_in_subject'))
+
+    def test_a_stored_subject_carrying_a_block_falls_back_at_send(self):
+        from django.core.management import call_command
+        import io as _io
+        from apps.scholarship import emails
+        from apps.scholarship.models import PartnerEmailTemplate
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+        PartnerEmailTemplate.objects.filter(kind__in=('invite_admin', 'invite_source', 'invite_mentor')).update(
+            subject='Your password: {access}')
+        letters = {
+            'invite_admin': emails.build_partner_welcome_email('x@example.org', 'Priya', 'admin',
+                                                               temp_password='Kx7m-Pq4t-Rd92'),
+            'invite_source': emails.build_source_invitation_email(
+                org_name='Centre', contact_person='Devi', login_link='https://e.org/admin/login',
+                access='Your temporary password: Kx7m-Pq4t-Rd92'),
+            'invite_mentor': emails.build_mentor_invitation_email(
+                org_name='BrightPath', name='Priya', login_link='https://e.org/admin/login',
+                access='Your temporary password: Kx7m-Pq4t-Rd92'),
+        }
+        for kind, (subject, _body) in letters.items():
+            with self.subTest(kind=kind):
+                self.assertNotIn('Kx7m-Pq4t-Rd92', subject)
+                self.assertNotIn('Your password', subject)          # the built-in letter, not the stored one
+
+    # ── 4. the Mentors page never invites; a re-invite brings a mentor back ────────────────
+    def _revoked_before_arriving(self):
+        self.invite()
+        mentor = Mentor.objects.get()
+        self.act(mentor.pk, 'revoke')
+        mail.outbox.clear()
+        return mentor
+
+    def test_a_re_invite_brings_back_a_mentor_revoked_before_arriving(self):
+        mentor = self._revoked_before_arriving()
+        with patch(ISSUE, return_value=True) as issued, patch(READ, return_value=UNTOUCHED):
+            r = self.invite(name='Priya D')
+        self.assertEqual(r.status_code, 201, r.content)
+        mentor.refresh_from_db()
+        login = self.login()
+        self.assertIsNone(mentor.deactivated_at)
+        self.assertEqual((login.is_active, login.name, login.mentor_id), (True, 'Priya D', mentor.pk))
+        self.assertEqual((Mentor.objects.count(), PartnerAdmin.objects.filter(role='mentor').count()), (1, 1))
+        issued.assert_called_once()
+        self.assertEqual([m.to for m in mail.outbox], [['priya@example.org']])
+        self.assertEqual(Invitation.objects.filter(audience='mentor', accepted_at__isnull=True,
+                                                   revoked_at__isnull=True).count(), 1)
+        self.assertEqual(r.json()['mentor']['status'], 'invited')
+
+    def test_a_re_invite_never_resets_a_login_the_person_brought(self):
+        mentor = self._revoked_before_arriving()
+        PartnerAdmin.objects.filter(mentor=mentor).update(supabase_user_id=None)
+        with patch(ISSUE) as issued:
+            r = self.invite()
+        self.assertEqual(r.status_code, 201, r.content)
+        issued.assert_not_called()
+        self.assertFalse(Invitation.objects.filter(audience='mentor', revoked_at__isnull=True)
+                         .get().credential_issued)
+
+    def test_a_signed_in_or_another_organisations_mentor_stays_409(self):
+        mentor = self._revoked_before_arriving()
+        r = self.invite(caller=self.other_lead)
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'))
+        PartnerAdmin.objects.filter(mentor=mentor).update(first_seen_at=timezone.now())
+        r = self.invite()
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'))
+        self.assertEqual(Mentor.objects.count(), 1)
