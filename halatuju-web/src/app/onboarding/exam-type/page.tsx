@@ -1,10 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import ProgressStepper from '@/components/ProgressStepper'
+import FlowHeader from '@/components/FlowHeader'
 import { KEY_EXAM_TYPE } from '@/lib/storage'
 
 export default function ExamTypePage() {
@@ -27,17 +26,7 @@ export default function ExamTypePage() {
 
   return (
     <main className="min-h-screen bg-ground-50">
-      {/* Header */}
-      <div className="bg-ground-0 border-b border-ground-100">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandLogo width={120} height={40} />
-            </Link>
-            <ProgressStepper currentStep={1} />
-          </div>
-        </div>
-      </div>
+      <FlowHeader step={1} />
 
       {/* Content */}
       <div className="container mx-auto px-6 py-16 max-w-4xl">

@@ -3,12 +3,11 @@
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
 import { getProfile, type SyncProfileData } from '@/lib/api'
-import ProgressStepper from '@/components/ProgressStepper'
+import FlowHeader from '@/components/FlowHeader'
 import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_STPM_KOKO_CONFIRMED, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
@@ -232,17 +231,7 @@ export default function ProfileInputPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
-      {/* Header */}
-      <div className="bg-ground-0 border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandLogo width={120} height={40} />
-            </Link>
-            <ProgressStepper currentStep={3} />
-          </div>
-        </div>
-      </div>
+      <FlowHeader step={3} />
 
       {/* Content */}
       <div className="container mx-auto px-6 py-8 max-w-2xl">

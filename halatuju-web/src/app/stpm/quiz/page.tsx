@@ -276,11 +276,11 @@ export default function StpmQuizPage() {
     <main className="min-h-screen bg-ground-50">
       {/* Gradient header */}
       <header className="bg-gradient-to-r from-brand-fill to-brand-fill-hover text-brand-fill-ink">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="text-brand-fill-ink/90 hover:text-brand-fill-ink text-sm font-medium">
+        <div className="container mx-auto px-6 py-2 flex items-center justify-between">
+          <Link href="/dashboard" className="-ml-2 inline-flex min-h-11 items-center px-2 text-brand-fill-ink/90 hover:text-brand-fill-ink text-sm font-medium">
             &larr; {t('common.appName')}
           </Link>
-          <Link href="/dashboard" className="text-brand-fill-ink/70 hover:text-brand-fill-ink text-sm">
+          <Link href="/dashboard" className="-mr-2 inline-flex min-h-11 items-center px-2 text-brand-fill-ink/70 hover:text-brand-fill-ink text-sm">
             {t('stpmQuiz.skip')}
           </Link>
         </div>

@@ -181,7 +181,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
               <button
                 key={s.id}
                 onClick={() => handleSpmStreamChange(s.id)}
-                className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                className={`min-h-11 min-w-0 flex-1 break-words py-2 px-2 rounded-lg text-xs font-medium transition-all ${
                   spmStream === s.id
                     ? 'bg-brand-fill text-brand-fill-ink shadow-sm'
                     : 'bg-ground-0 text-ground-600 border border-ground-200 hover:bg-ground-50'
@@ -253,7 +253,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                 )}
                 <button
                   onClick={() => handleSpmAliranChange(index, '')}
-                  className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
+                  className="-my-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-400 hover:bg-ground-50 hover:text-critical-600"
                   aria-label={t('common.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,7 +299,7 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
                 )}
                 <button
                   onClick={() => removeSpmElektifSlot(index)}
-                  className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
+                  className="-my-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-400 hover:bg-ground-50 hover:text-critical-600"
                   aria-label={t('common.remove')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

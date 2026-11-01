@@ -20,8 +20,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import BrandLogo from '@/components/BrandLogo'
-import ProgressStepper from '@/components/ProgressStepper'
+import FlowHeader from '@/components/FlowHeader'
 import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
 import { useT } from '@/lib/i18n'
 import { MUET_BANDS } from '@/lib/subjects'
@@ -129,16 +128,7 @@ export default function HigherGradesPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
-      <div className="bg-ground-0 border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandLogo width={120} height={40} />
-            </Link>
-            <ProgressStepper currentStep={2} />
-          </div>
-        </div>
-      </div>
+      <FlowHeader step={2} />
 
       <div className="container mx-auto px-6 py-8 max-w-3xl">
         <div className="text-center mb-8">

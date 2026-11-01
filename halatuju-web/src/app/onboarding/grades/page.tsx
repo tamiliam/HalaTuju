@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import ProgressStepper from '@/components/ProgressStepper'
+import FlowHeader from '@/components/FlowHeader'
 import { calculateMerit } from '@/lib/api'
 import {
   getSubjectName,
@@ -270,17 +269,7 @@ export default function GradesInputPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
-      {/* Header */}
-      <div className="bg-ground-0 border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandLogo width={120} height={40} />
-            </Link>
-            <ProgressStepper currentStep={2} />
-          </div>
-        </div>
-      </div>
+      <FlowHeader step={2} />
 
       {/* Content */}
       <div className="container mx-auto px-6 py-8 max-w-3xl">
@@ -304,7 +293,9 @@ export default function GradesInputPage() {
               <button
                 key={s.id}
                 onClick={() => handleStreamChange(s.id)}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                // Icon OVER the label on a phone (Mobile M2): side by side, the Tamil
+                // "தொழில்நுட்பம்" filled its third of the row and pushed the icons out.
+                className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 px-2 py-2 text-center rounded-xl text-sm font-medium break-words transition-all sm:flex-row sm:gap-2 sm:px-4 ${
                   stream === s.id
                     ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                     : 'bg-ground-0 text-ground-700 border border-ground-200 shadow-sm hover:shadow-md hover:border-ground-300'
@@ -495,7 +486,7 @@ function CoreSubjectGrade({
           <span className="text-critical-600 text-sm">*</span>
         </div>
         {value && (
-          <button onClick={onClear} className="text-ground-400 hover:text-ground-600 p-1" aria-label={t('common.clear')}>
+          <button onClick={onClear} className="-my-2 -mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-400 hover:bg-ground-50 hover:text-ground-600" aria-label={t('common.clear')}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -508,7 +499,7 @@ function CoreSubjectGrade({
           <button
             key={grade}
             onClick={() => onChange(grade)}
-            className={`h-9 rounded-lg text-xs font-medium transition-all ${
+            className={`h-11 md:h-9 rounded-lg text-xs font-medium transition-all ${
               value === grade
                 ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                 : 'bg-ground-50 text-ground-700 shadow-sm hover:bg-ground-100 hover:shadow-md border border-ground-100'
@@ -579,7 +570,7 @@ function CompactSubjectRow({
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
+        className="-my-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-400 hover:bg-ground-50 hover:text-critical-600"
         aria-label={t('common.remove')}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

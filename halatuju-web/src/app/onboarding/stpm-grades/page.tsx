@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import ProgressStepper from '@/components/ProgressStepper'
+import FlowHeader from '@/components/FlowHeader'
+import StpmSubjectRow, { StpmCountTag } from '@/components/StpmSubjectRow'
 import { MUET_BANDS } from '@/lib/subjects'
 import { STPM_SUBJECTS, stpmSubjectLabel, STPM_GRADES } from '@/lib/stpmResultsSubjects'
 import { calculateCgpa, type StpmCgpaResult } from '@/lib/api'
@@ -164,28 +164,23 @@ export default function StpmGradesPage() {
   const countTag = (id: string) => {
     if (cgpa === null || !stpmGrades[id]) return null
     const counts = calc?.counted?.includes(id)   // optional: an API answering before C2 has no list
-    const label = id === 'PA' ? 'onboarding.stpmCountsAlways'
-      : counts ? 'onboarding.stpmCounts' : 'onboarding.stpmNotCounted'
-    return (
-      <span data-testid={`count-${id}`}
-        className={`text-xs flex-shrink-0 ${counts ? 'text-primary-600' : 'text-ground-400 max-w-[11rem]'}`}>
-        {t(label)}
-      </span>
-    )
+    return <StpmCountTag testId={`count-${id}`} kind={id === 'PA' ? 'always' : counts ? 'counted' : 'notCounted'} />
   }
+
+  const gradeCls = (graded: boolean) => `w-24 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+    graded ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-ground-50 border-ground-300 text-ground-500'}`
+  const gradeSelect = (id: string) => (
+    <select value={stpmGrades[id] || ''} onChange={(e) => handleStpmGradeChange(id, e.target.value)}
+      className={gradeCls(!!stpmGrades[id])}>
+      <option value="">{t('onboarding.stpmGrade')}</option>
+      {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+    </select>
+  )
+  const subjectCls = 'w-full min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
-      <div className="bg-ground-0 border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <BrandLogo width={120} height={40} />
-            </Link>
-            <ProgressStepper currentStep={2} />
-          </div>
-        </div>
-      </div>
+      <FlowHeader step={2} />
 
       <div className="container mx-auto px-6 py-8 max-w-3xl">
         <div className="text-center mb-8">
@@ -230,108 +225,53 @@ export default function StpmGradesPage() {
             <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.stpmSubjectsHint')}</p>
 
             <div className="space-y-3">
-              {/* PA — compulsory */}
-              <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-3">
-                <div className="flex-1 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-primary-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span className="font-medium text-ground-900">Pengajian Am</span>
-                  <span className="text-critical-600 text-xs">*</span>
-                </div>
-                {countTag('PA')}
-                <select
-                  value={stpmGrades.PA || ''}
-                  onChange={(e) => handleStpmGradeChange('PA', e.target.value)}
-                  className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                    stpmGrades.PA
-                      ? 'bg-primary-50 border-primary-200 text-primary-700'
-                      : 'bg-ground-50 border-ground-300 text-ground-500'
-                  }`}
-                >
-                  <option value="">{t('onboarding.stpmGrade')}</option>
-                  {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
+              {/* PA — compulsory. Rows restack on a phone (StpmSubjectRow, Mobile M2). */}
+              <StpmSubjectRow
+                subject={
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-primary-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span className="font-medium text-ground-900">Pengajian Am</span>
+                    <span className="text-critical-600 text-xs">*</span>
+                  </span>
+                }
+                grade={gradeSelect('PA')}
+                tag={countTag('PA')}
+              />
 
               {/* 3 stream-specific subject slots */}
               {selectedSubjects.map((subjectId, index) => (
-                <div key={`stream-${index}`} className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-3">
-                  <select
-                    value={subjectId}
-                    onChange={(e) => handleSubjectChange(index, e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
-                  >
-                    <option value="">{t('onboarding.stpmSelectSubject')}</option>
-                    {streamSubjects
-                      .filter(s => !allSelected.includes(s.id) || s.id === subjectId)
-                      .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
-                  </select>
-                  {subjectId && (
-                    <select
-                      value={stpmGrades[subjectId] || ''}
-                      onChange={(e) => handleStpmGradeChange(subjectId, e.target.value)}
-                      className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                        stpmGrades[subjectId]
-                          ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-ground-50 border-ground-300 text-ground-500'
-                      }`}
-                    >
-                      <option value="">{t('onboarding.stpmGrade')}</option>
-                      {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                <StpmSubjectRow key={`stream-${index}`}
+                  subject={
+                    <select value={subjectId} onChange={(e) => handleSubjectChange(index, e.target.value)} className={subjectCls}>
+                      <option value="">{t('onboarding.stpmSelectSubject')}</option>
+                      {streamSubjects
+                        .filter(s => !allSelected.includes(s.id) || s.id === subjectId)
+                        .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
                     </select>
-                  )}
-                  {subjectId && countTag(subjectId)}
-                  <button
-                    onClick={() => handleSubjectChange(index, '')}
-                    className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
-                    aria-label={t('common.remove')}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                  }
+                  grade={subjectId ? gradeSelect(subjectId) : undefined}
+                  tag={subjectId ? countTag(subjectId) : undefined}
+                  onRemove={() => handleSubjectChange(index, '')}
+                />
               ))}
 
               {/* Elective slot — click to add */}
               {showElective ? (
-                <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-dashed border-ground-300 hover:shadow-md transition-shadow p-3">
-                  <select
-                    value={electiveSubject}
-                    onChange={(e) => handleElectiveChange(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
-                  >
-                    <option value="">{t('onboarding.stpmElective')}</option>
-                    {allOptionalSubjects
-                      .filter(s => !allSelected.includes(s.id) || s.id === electiveSubject)
-                      .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
-                  </select>
-                  {electiveSubject && (
-                    <select
-                      value={stpmGrades[electiveSubject] || ''}
-                      onChange={(e) => handleStpmGradeChange(electiveSubject, e.target.value)}
-                      className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                        stpmGrades[electiveSubject]
-                          ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-ground-50 border-ground-300 text-ground-500'
-                      }`}
-                    >
-                      <option value="">{t('onboarding.stpmGrade')}</option>
-                      {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                <StpmSubjectRow dashed
+                  subject={
+                    <select value={electiveSubject} onChange={(e) => handleElectiveChange(e.target.value)} className={subjectCls}>
+                      <option value="">{t('onboarding.stpmElective')}</option>
+                      {allOptionalSubjects
+                        .filter(s => !allSelected.includes(s.id) || s.id === electiveSubject)
+                        .map(s => <option key={s.id} value={s.id}>{stpmSubjectLabel(s, contentLocale)}</option>)}
                     </select>
-                  )}
-                  {electiveSubject && countTag(electiveSubject)}
-                  <button
-                    onClick={() => { handleElectiveChange(''); setShowElective(false) }}
-                    className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
-                    aria-label={t('common.remove')}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+                  }
+                  grade={electiveSubject ? gradeSelect(electiveSubject) : undefined}
+                  tag={electiveSubject ? countTag(electiveSubject) : undefined}
+                  onRemove={() => { handleElectiveChange(''); setShowElective(false) }}
+                />
               ) : (
                 <button
                   onClick={() => setShowElective(true)}
@@ -361,7 +301,7 @@ export default function StpmGradesPage() {
                   <button
                     key={band}
                     onClick={() => setMuetBand(band)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                    className={`w-11 h-11 rounded-lg text-sm font-medium transition-all ${
                       muetBand === band
                         ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                         : 'bg-ground-50 text-ground-700 border border-ground-200 hover:bg-ground-100'
