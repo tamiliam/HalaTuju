@@ -18,7 +18,8 @@ import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
 import { getApplyGate, getMyScholarshipApplications, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
-import { APPLY_PROGRAMME_KEY, stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
+import { APPLY_PROGRAMME_KEY, type ApplyFormState } from '@/lib/scholarship'
+import { seedApplyDraft, signAndSubmit, testSession } from '@/test/applyDraftSeed'
 import { readWeb } from '@/test/sourceGuard'
 
 // ONE router object: the page's effects depend on it (see page.results.test.tsx).
@@ -66,7 +67,7 @@ function serveIntake(bare: object, byCode: Record<string, object> = {}) {
 
 const profile = { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-1234', nric_verified: true }
 const mount = () => render(
-  <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', showAuthGate: () => {} } as never}>
+  <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', session: testSession, showAuthGate: () => {} } as never}>
     <ScholarshipApplyPage />
   </AuthContext.Provider>,
 )
@@ -208,30 +209,25 @@ describe('submit still names the gift', () => {
   }
 
   it('sends the code in force as programme_code — after a My Results detour back', async () => {
-    // The detour's return: the stash, and the URL carrying ?p= (applyPagePath).
-    stashApplyForm(complete)
+    // The detour's return: HER DRAFT for sabah, and the URL carrying ?p= (applyPagePath).
+    seedApplyDraft(complete, 'support', 'sabah')
     window.history.replaceState({}, '', '/scholarship/apply?p=sabah')
     serveIntake(TWO_OPEN, { sabah: SABAH_OPEN })
     mount()
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await signAndSubmit('Priya')
     await waitFor(() => expect(submit).toHaveBeenCalled())
     expect(submit.mock.calls[0][0].programme_code).toBe('sabah')
     expect(sessionStorage.getItem(APPLY_PROGRAMME_KEY)).toBeNull()   // forgotten once submitted
   })
 
   /** Land on the last tab with a complete form and press Submit. */
-  async function submitComplete() {
-    stashApplyForm(complete)
+  /** `programme`: the code the form settles on — her draft is only restored onto that programme's form. */
+  async function submitComplete(programme = '') {
+    seedApplyDraft(complete, 'support', programme)
     mount()
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await signAndSubmit('Priya')
     await waitFor(() => expect(submit).toHaveBeenCalled())
     return submit.mock.calls[0][0]
   }
@@ -240,19 +236,19 @@ describe('submit still names the gift', () => {
     // Without it the server re-resolves at submit: if that round closed and another opened while
     // she typed, she would be filed under the other gift with no error anywhere.
     serveIntake({ open: true, cohort_name: SABAH, programme_code: 'sabah', choices: [], apply_copy: {} })
-    expect((await submitComplete()).programme_code).toBe('sabah')
+    expect((await submitComplete('sabah')).programme_code).toBe('sabah')
   })
 
   it('a link via a retired alias submits the CANONICAL code the server answered with', async () => {
     window.history.replaceState({}, '', '/scholarship/apply?p=sabah-old')
     serveIntake(TWO_OPEN, { 'sabah-old': { ...SABAH_OPEN, programme_code: 'sabah' } })
-    expect((await submitComplete()).programme_code).toBe('sabah')
+    expect((await submitComplete('sabah')).programme_code).toBe('sabah')
   })
 
   it('an older api that sends no programme_code: the URL code is submitted (and none on a bare visit)', async () => {
     window.history.replaceState({}, '', '/scholarship/apply?p=sabah')
     serveIntake(TWO_OPEN, { sabah: SABAH_OPEN })               // SABAH_OPEN carries no programme_code
-    expect((await submitComplete()).programme_code).toBe('sabah')
+    expect((await submitComplete('sabah')).programme_code).toBe('sabah')
   })
 
   it('an older api on a bare visit sends no code at all, exactly as before', async () => {
@@ -291,7 +287,7 @@ describe('submit still names the gift', () => {
       return Promise.reject(Object.assign(new Error('API error: 409'),
         { status: 409, code: 'No open application round is currently available.', bodyCode: '' }))
     })
-    await submitComplete()
+    await submitComplete('sabah')
     expect(await screen.findByTestId('apply-gift-closed')).toBeTruthy()
     expect(intake).toHaveBeenLastCalledWith()            // re-asked: the gift, then "anything else?"
     expect(intake).toHaveBeenCalledWith('sabah')

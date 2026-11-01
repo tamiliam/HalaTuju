@@ -95,7 +95,8 @@ it('anything a screen writes while the sign-out is in flight is wiped too', asyn
 describe('sign-out also wipes this tab', () => {
   function seedTab() {
     sessionStorage.clear()
-    sessionStorage.setItem(APPLY_STASH_KEY, '{"nric":"010101-14-1234","householdIncome":"2400"}')
+    sessionStorage.setItem(APPLY_STASH_KEY, '{"v":1,"uid":"u1","form":{"householdIncome":"2400"}}')
+    sessionStorage.setItem('halatuju_apply_stash', '{"nric":"010101-14-1234"}')   // a pre-M4 tab's whole-form stash
     sessionStorage.setItem(APPLY_RETURN_KEY, '1')
     sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'BP2026')
     sessionStorage.setItem(ONBOARDING_RETURN_KEY, '/scholarship/apply')
@@ -107,7 +108,7 @@ describe('sign-out also wipes this tab', () => {
   it('removes her apply form and markers, keeps the admin and sponsor tab state', async () => {
     seed(); seedTab()
     await signOutStudent(() => {})
-    for (const k of [APPLY_STASH_KEY, APPLY_RETURN_KEY, APPLY_PROGRAMME_KEY, ONBOARDING_RETURN_KEY]) {
+    for (const k of [APPLY_STASH_KEY, 'halatuju_apply_stash', APPLY_RETURN_KEY, APPLY_PROGRAMME_KEY, ONBOARDING_RETURN_KEY]) {
       expect(k.startsWith('halatuju_')).toBe(true)   // a renamed key without the prefix would escape the wipe
       expect(sessionStorage.getItem(k)).toBeNull()
     }
@@ -135,10 +136,13 @@ describe('sign-out also wipes this tab', () => {
     expect(localStorage.getItem('halatuju_grades')).toBe('{"BM":"A"}')
   })
 
-  it('an abandoned detour drops the stashed form with the return marker', () => {
+  // Mobile M4: the abandoned detour drops only the MARKER. Her draft stays — it is bound to her user id
+  // and programme and expires in 24 h (applyDraft.test.ts), so it pre-fills nobody else's form, and a
+  // trip to the dashboard must not throw her typing away. Sign-out and SIGNED_OUT still wipe it (above).
+  it('an abandoned detour drops the return marker and keeps her (id-bound) draft', () => {
     seedTab()
     abandonApplyDetour()
-    expect(sessionStorage.getItem(APPLY_STASH_KEY)).toBeNull()
+    expect(sessionStorage.getItem(APPLY_STASH_KEY)).not.toBeNull()
     expect(sessionStorage.getItem(APPLY_RETURN_KEY)).toBeNull()
     expect(sessionStorage.getItem(APPLY_PROGRAMME_KEY)).toBe('BP2026')
   })

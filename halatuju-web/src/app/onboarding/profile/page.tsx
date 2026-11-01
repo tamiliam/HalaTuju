@@ -12,7 +12,8 @@ import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_STPM_KOKO_CONFIRMED, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
 import { resultsEditPath } from '@/lib/qualification'
-import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
+import { hasApplyReturn, clearApplyReturn, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
+import { peekApplyDraft } from '@/lib/applyDraftPeek'   // the apply form's draft, during the edit-results detour
 import { applyPagePath } from '@/lib/applyPagePath'
 import { isMalaysian } from '@/lib/bumiputera'
 
@@ -26,7 +27,8 @@ const MALAYSIAN_STATES = [
 export default function ProfileInputPage() {
   const router = useRouter()
   const { t } = useT()
-  const { token, isAnonymous, refreshProfile } = useAuth()
+  const { token, isAnonymous, refreshProfile, session } = useAuth()
+  const uid = session?.user?.id
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   // Bumi coverage Sprint B: COURSE GUIDE ONLY (unlocks Bumiputera-only courses). null = not
@@ -58,7 +60,7 @@ export default function ProfileInputPage() {
   }, [])
 
   useEffect(() => {
-    const stashSchool = (peekApplyStash()?.school ?? '').trim()
+    const stashSchool = (peekApplyDraft(uid)?.school ?? '').trim()
     const savedProfile = localStorage.getItem(KEY_PROFILE)
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile)
@@ -88,11 +90,11 @@ export default function ProfileInputPage() {
         // in-progress homeState is more recent than the profile's preferred_state
         // (apply only commits on submit). Honour it so the same field doesn't
         // appear to re-prompt with a stale value the student already changed.
-        const stash = peekApplyStash()
+        const stash = peekApplyDraft(uid)
         if (stash?.homeState) setState(stash.homeState)
       }).catch(() => {})
     }
-  }, [token, isAnonymous])
+  }, [token, isAnonymous, uid])
 
   const malaysian = isMalaysian(nationality)
   // Required like gender — but only asked of a Malaysian (a Foreign student is never Bumiputera).

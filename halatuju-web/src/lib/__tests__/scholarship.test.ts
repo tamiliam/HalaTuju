@@ -25,12 +25,9 @@ import {
   referralAcronym,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
-  stashApplyForm,
-  popApplyStash,
-  peekApplyStash,
+  setApplyReturn,
   hasApplyReturn,
   clearApplyReturn,
-  APPLY_STASH_KEY,
   APPLY_RETURN_KEY,
   firstTooLongField,
   showsActionCentre,
@@ -636,7 +633,8 @@ describe('nricChanged', () => {
   })
 })
 
-describe('apply stash / return marker (My Results onboarding round-trip)', () => {
+// The detour's form is THE APPLY DRAFT since Mobile M4 — its tests: applyDraft.test.ts.
+describe('apply return marker (My Results onboarding round-trip)', () => {
   function fakeStorage() {
     const m = new Map<string, string>()
     return {
@@ -647,56 +645,16 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
     }
   }
 
-  it('stashes the form and sets the return marker', () => {
+  it('sets the return marker', () => {
     const s = fakeStorage()
-    const form = baseForm({ name: 'Priya', householdIncome: '1800' })
-    stashApplyForm(form, s)
+    setApplyReturn(s)
     expect(s.getItem(APPLY_RETURN_KEY)).toBe('1')
     expect(hasApplyReturn(s)).toBe(true)
-    expect(JSON.parse(s.getItem(APPLY_STASH_KEY)!).name).toBe('Priya')
-  })
-
-  it('pops and consumes the stash (round-trips the form, then clears it)', () => {
-    const s = fakeStorage()
-    const form = baseForm({ school: 'SMK Taman Desa', parentName: 'Rajan' })
-    stashApplyForm(form, s)
-    const restored = popApplyStash(s)
-    expect(restored?.school).toBe('SMK Taman Desa')
-    expect(restored?.parentName).toBe('Rajan')
-    // consumed — a second pop returns null
-    expect(popApplyStash(s)).toBeNull()
-  })
-
-  it('returns null on missing / unparseable stash', () => {
-    const s = fakeStorage()
-    expect(popApplyStash(s)).toBeNull()
-    s.setItem(APPLY_STASH_KEY, '{not json')
-    expect(popApplyStash(s)).toBeNull()
-  })
-
-  it('peeks the stash without consuming it (onboarding detour can read it then apply page still pops it)', () => {
-    const s = fakeStorage()
-    const form = baseForm({ homeState: 'Johor' })
-    stashApplyForm(form, s)
-    // peek twice — value stays
-    expect(peekApplyStash(s)?.homeState).toBe('Johor')
-    expect(peekApplyStash(s)?.homeState).toBe('Johor')
-    // pop still works after peeks
-    expect(popApplyStash(s)?.homeState).toBe('Johor')
-    expect(peekApplyStash(s)).toBeNull()
-  })
-
-  it('peekApplyStash returns null on missing / unparseable / no-storage', () => {
-    const s = fakeStorage()
-    expect(peekApplyStash(s)).toBeNull()
-    s.setItem(APPLY_STASH_KEY, '{not json')
-    expect(peekApplyStash(s)).toBeNull()
-    expect(peekApplyStash()).toBeNull()
   })
 
   it('clears the return marker', () => {
     const s = fakeStorage()
-    stashApplyForm(baseForm(), s)
+    setApplyReturn(s)
     clearApplyReturn(s)
     expect(hasApplyReturn(s)).toBe(false)
   })
@@ -707,8 +665,7 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
     const desc = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
     Object.defineProperty(globalThis, 'sessionStorage', { value: undefined, configurable: true })
     try {
-      expect(() => stashApplyForm(baseForm())).not.toThrow()
-      expect(popApplyStash()).toBeNull()
+      expect(() => setApplyReturn()).not.toThrow()
       expect(hasApplyReturn()).toBe(false)
       expect(() => clearApplyReturn()).not.toThrow()
     } finally {
@@ -1300,14 +1257,12 @@ describe('enterApplyPage / applyPagePath', () => {
     expect(s.getItem(APPLY_PROGRAMME_KEY)).toBe('brightpath-flagship')
   })
 
-  it('link → My Results detour → return keeps the code (the form stash survives too)', () => {
+  it('link → My Results detour → return keeps the code (the draft itself: applyDraft.test.ts)', () => {
     const s = store()
     enterApplyPage('?p=brightpath-flagship', s)
-    stashApplyForm(baseForm(), s)
     const back = applyPagePath(s)               // what onboarding sends the student back to
     expect(back).toBe('/scholarship/apply?p=brightpath-flagship')
     expect(arriveAt(back, s)).toBe('brightpath-flagship')
-    expect(popApplyStash(s)?.name).toBe('Priya')
   })
 
   it('link → sign-in round trip → return keeps the code', () => {

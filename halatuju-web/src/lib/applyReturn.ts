@@ -34,17 +34,26 @@ export function clearApplyReturn(storage?: StorageLike): void {
   s?.removeItem(APPLY_RETURN_KEY)
 }
 
-/** The in-progress apply form, stashed for the edit-results detour (IC, income, parent phone, the
- *  typed signature). Defined here so the leaf can discard it; `scholarship.ts` writes and reads it. */
-export const APPLY_STASH_KEY = 'halatuju_apply_stash'
+/** Mark that onboarding should return to the apply form (the "edit my results" detour). */
+export function setApplyReturn(storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.setItem(APPLY_RETURN_KEY, '1')
+}
 
-/** The detour was ABANDONED (the dashboard, TD-057): drop the return marker AND the stashed form. The
- *  apply page restores a stash on any mount, so a stash left behind would pre-fill the form for the
- *  next person to sign in on this tab (Mobile M4 audit). */
+/** THE APPLY DRAFT (Mobile M4, owner ruling: this tab only) — the half-filled form, kept so an iOS
+ *  tab kill or the "edit my results" detour loses nothing. ONE key for both: the detour's old
+ *  whole-form stash (`halatuju_apply_stash`, which held the IC and the typed signature and restored
+ *  for whoever opened the form next) is gone. What it holds and every rule for reading it:
+ *  `./applyDraft`. Wiped with every `halatuju_` tab key at sign-out and on any SIGNED_OUT. */
+export const APPLY_STASH_KEY = 'halatuju_apply_draft'
+
+/** The detour was ABANDONED (the dashboard, TD-057): drop the return marker, so a later ordinary
+ *  onboarding does not route back to the form. The DRAFT stays on purpose (Mobile M4): it is bound to
+ *  her user id and programme and expires in 24 h (`./applyDraft`), so it can no longer pre-fill the
+ *  form for anyone else — and leaving the form for the dashboard must not throw her typing away. */
 export function abandonApplyDetour(storage?: StorageLike): void {
   const s = storage ?? safeSession()
   s?.removeItem(APPLY_RETURN_KEY)
-  s?.removeItem(APPLY_STASH_KEY)
 }
 
 /** The gift (programme code) the apply page is open for — written on arrival from `?p=` or a pick

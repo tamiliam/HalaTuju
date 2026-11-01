@@ -18,7 +18,8 @@ import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
 import { claimNric, getApplyGate, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
-import { stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
+import { type ApplyFormState } from '@/lib/scholarship'
+import { seedApplyDraft, signAndSubmit, testSession } from '@/test/applyDraftSeed'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -85,7 +86,7 @@ const profile = { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-12
 const mountAs = (status: string) => render(
   <AuthContext.Provider value={{
     status, profile: status === 'ready' ? profile : null, token: status === 'ready' ? 'tkn' : null,
-    showAuthGate: () => {},
+    session: status === 'ready' ? testSession : null, showAuthGate: () => {},
   } as never}>
     <ScholarshipApplyPage />
   </AuthContext.Provider>,
@@ -107,15 +108,12 @@ const complete: ApplyFormState = {
   declarationName: 'Priya',
 }
 
-/** Signed in, a complete form restored, the last tab, Submit pressed. */
+/** Signed in, her draft restored on the last step, consent + signature given afresh, Submit pressed. */
 async function submitComplete() {
-  stashApplyForm(complete)
+  seedApplyDraft(complete, 'support', 'bp')
   mountAs('ready')
   await screen.findByTestId('apply-gift-line')
-  fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-  })
+  await signAndSubmit('Priya')
   await waitFor(() => expect(submit).toHaveBeenCalled())
 }
 const refusal = (status: number, bodyCode = '') =>
@@ -241,16 +239,13 @@ describe('signed in — the page obeys the served verdict', () => {
     // to her because a FINISHED application never blocks another programme.
     serveIntake(TWO_OPEN, { sabah: SABAH_OPEN, bp: ONE_OPEN })
     serveGate(ALLOWED, { bp: ALREADY, sabah: ALLOWED })
-    stashApplyForm(complete)
+    seedApplyDraft(complete, 'support', 'sabah')
     mountAs('ready')
     await screen.findByText('scholarship.apply.chooseTitle')
     fireEvent.click(screen.getByLabelText(SABAH))
     fireEvent.click(screen.getByTestId('apply-choose-continue'))
     expect((await screen.findByTestId('apply-gift-line')).textContent).toContain(SABAH)
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await signAndSubmit('Priya')
     await waitFor(() => expect(submit).toHaveBeenCalled())
     expect(submit.mock.calls[0][0].programme_code).toBe('sabah')
     expect(mockRouter.replace).toHaveBeenLastCalledWith('/scholarship/application')   // filed: her page
@@ -353,8 +348,10 @@ describe('a refused submit (TD-337 codes, and TD-340)', () => {
     await act(async () => { await Promise.resolve() })
     expect(screen.getByText('scholarship.apply.error.generic')).toBeTruthy()
 
-    fireEvent.click(screen.getByText('scholarship.apply.tab.personal').closest('button') as HTMLButtonElement)
+    // A step change (Back, four times to About Me): the refusal stays.
+    fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.back' }))
     expect(screen.getByText('scholarship.apply.error.generic')).toBeTruthy()
+    for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.back' }))
 
     fireEvent.change(screen.getByDisplayValue('Priya'), { target: { value: 'Priya D' } })
     await waitFor(() => expect(screen.queryByText('scholarship.apply.error.generic')).toBeNull())
@@ -383,17 +380,18 @@ describe('a refused submit (TD-337 codes, and TD-340)', () => {
   it('TD-340: an NRIC already taken (a server answer) stays on the About Me tab', async () => {
     claim.mockResolvedValueOnce({ status: 'exists' })
     const unverified = { ...profile, nric_verified: false, nric: '080101-14-9999' }
-    stashApplyForm(complete)
+    // The draft never holds the IC: she lands on About Me and TYPES the one she claims, then walks on.
+    seedApplyDraft(complete, 'personal', 'bp')
     render(
-      <AuthContext.Provider value={{ status: 'ready', profile: unverified, token: 'tkn', showAuthGate: () => {} } as never}>
+      <AuthContext.Provider value={{ status: 'ready', profile: unverified, token: 'tkn', session: testSession, showAuthGate: () => {} } as never}>
         <ScholarshipApplyPage />
       </AuthContext.Provider>,
     )
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await screen.findByDisplayValue('Priya')                     // the draft has landed on About Me
+    fireEvent.change(screen.getByDisplayValue('080101-14-9999'), { target: { value: '080101141234' } })
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.continue' }))
+    await signAndSubmit('Priya')
     expect(await screen.findByText('scholarship.apply.error.nricTaken')).toBeTruthy()
     await act(async () => { await Promise.resolve() })
     expect(screen.getByText('scholarship.apply.error.nricTaken')).toBeTruthy()

@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import SchoolSelect from '@/components/SchoolSelect'
+// The School field's suggesting component loads on mount (Mobile M4: the route's budget paid for the draft).
+import SchoolSelect from '@/components/scholarship/LazySchoolSelect'
 import InfoTip from '@/components/InfoTip'
 import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
@@ -22,8 +23,7 @@ import {
   formatPhone,
   formatMoney2dp,
   nricChanged,
-  stashApplyForm,
-  popApplyStash,
+  setApplyReturn,
   clearApplyReturn,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
@@ -44,6 +44,9 @@ import ReferralSelect, { useReferralOptions } from '@/components/scholarship/Ref
 import { isReferralNotOffered } from '@/lib/referralSources'
 import GiftClosed from '@/components/scholarship/GiftClosed'
 import AlreadyApplied from '@/components/scholarship/AlreadyApplied'
+import { ApplyProgress, ApplyFooter } from '@/components/scholarship/ApplyStepper'
+// THE DRAFT (Mobile M4, owner: this tab only) - no IC, signature or consent; bound to her id + programme.
+import { readApplyDraft, writeApplyDraft, clearApplyDraft, useApplyDraft } from '@/lib/applyDraft'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -61,25 +64,10 @@ const ERROR_TAB: Record<string, TabKey> = {
   declarationMismatch: 'personal',
 }
 
-function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
-  const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-ground-400'}`
-  const p: Record<TabKey, string> = {
-    personal: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-    family: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0M19 8a3 3 0 11-6 0 3 3 0 016 0z',
-    results: 'M9 12l2 2 4-4m1-7H8a2 2 0 00-2 2v14a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2z',
-    plans: 'M13 7l5 5m0 0l-5 5m5-5H6',
-    support: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l.8-3.6A7.9 7.9 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
-  }
-  return (
-    <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d={p[tab]} />
-    </svg>
-  )
-}
-
 export default function ScholarshipApplyPage() {
   const { t, locale } = useT()
-  const { status, profile, token, showAuthGate } = useAuth()
+  const { status, profile, token, showAuthGate, session } = useAuth()
+  const uid = session?.user?.id
   const router = useRouter()
 
   const [form, setForm] = useState<ApplyFormState>(() => profileToApplyDefaults(null))
@@ -117,35 +105,34 @@ export default function ScholarshipApplyPage() {
   // key; the card below names the exam only where it has the results to name it from.
   const sectionKey = (k: string) => k
 
-  // Returning from the My Results → onboarding detour: restore the stashed
-  // in-progress edits and land back on the Results tab. Runs once on mount,
-  // before the profile prefill below (which then skips, seeing populatedRef). (`?p=`: useApplyGift.)
-  useEffect(() => {
-    const stashed = popApplyStash()
-    if (stashed) {
-      setForm(stashed)
-      setTab('results')
-      populatedRef.current = true
-    } else {
-      // No stash on a normal apply visit → clear any orphan return marker left by
-      // an abandoned results-edit detour, so a later normal onboarding doesn't
-      // wrongly route back here.
-      clearApplyReturn()
-    }
-  }, [])
+  // On the form, the "edit my results" detour is over (or never began): clear its return marker, so a
+  // later ordinary onboarding does not route back here. Her typing comes back from THE DRAFT below.
+  useEffect(() => { clearApplyReturn() }, [])
 
-  // Pre-fill from the profile once it carries its NRIC (skipped if we restored a stash).
-  // Wait for the NRIC specifically: a brand-new user claims it at the auth gate *after*
-  // this page mounts, so the first profile snapshot has no NRIC. Seeding (and locking
-  // populatedRef) on that early snapshot would leave the NRIC box blank even though the
-  // gate has since saved it. Once the gate completes, the refetched profile has the NRIC
-  // and we seed the whole form — including a pre-filled, still-editable NRIC.
+  // Pre-fill from the profile once it carries its NRIC - then lay HER DRAFT for THIS programme over it
+  // (Mobile M4: an iOS tab kill, the results detour, a trip to Home). The draft holds no IC, signature
+  // or consent, so those always come from the profile / a fresh answer. Wait for the NRIC specifically:
+  // a brand-new user claims it at the auth gate *after* this page mounts, so the first profile snapshot
+  // has no NRIC; seeding (and locking populatedRef) on it would leave the box blank. And wait for the
+  // programme: a draft is only ever restored onto the form for the programme it was typed for.
+  const baseFormRef = useRef<ApplyFormState | null>(null)
   useEffect(() => {
-    if (profile && profile.nric && !populatedRef.current) {
-      setForm(profileToApplyDefaults(profile))
-      populatedRef.current = true
-    }
-  }, [profile])
+    // Not while the chooser is up (several open, none picked): no programme yet to read a draft for.
+    if (!profile?.nric || populatedRef.current || !gift.settled || gift.choices.length > 1 || !uid) return
+    const draft = readApplyDraft({ uid, programme: gift.code })
+    const seeded = draft ? { ...profileToApplyDefaults(profile), ...draft.form } : profileToApplyDefaults(profile)
+    setForm(seeded)
+    baseFormRef.current = seeded
+    if (draft && (TAB_ORDER as string[]).includes(draft.step)) setTab(draft.step as TabKey)
+    populatedRef.current = true
+  }, [profile, gift.settled, gift.choices.length, gift.code, uid])
+  // Kept as she types - only once she has changed something, and never once the form is sent.
+  const [sent, setSent] = useState(false)
+  useApplyDraft(form, uid, gift.code, tab, populatedRef.current && !sent && baseFormRef.current !== form)
+  // A form that will not be sent from here - already applied, programme closed, sent away - keeps no draft.
+  useEffect(() => {
+    if (gate.state === 'already_applied' || gift.closed || exit) clearApplyDraft()
+  }, [gate.state, gift.closed, exit])
   // "Who referred you?" is pre-filled ONCE, only from her own earlier answer to THIS organisation
   // (the gate's `referral`) — never a `?ref=` code (sources Sprint C) — and never over a choice made.
   const referralSeeded = useRef(false)
@@ -185,10 +172,11 @@ export default function ScholarshipApplyPage() {
   }, [form, examType, tab, error, t])
 
   // Edit/add results → run the full onboarding (grades, electives, co-curricular,
-  // "a few more details"), then return here. Stash the in-progress edits first so
-  // they survive the detour (the form only commits on submit).
+  // "a few more details"), then return here. Save THE DRAFT first (landing back on Results) so her
+  // edits survive the detour (the form only commits on submit).
   const goEditResults = () => {
-    stashApplyForm(form)
+    writeApplyDraft(form, { uid, programme: gift.code }, 'results')
+    setApplyReturn()
     router.push('/onboarding/exam-type')
   }
 
@@ -203,8 +191,27 @@ export default function ScholarshipApplyPage() {
       : [...p.otherScholarships, key],
   }))
 
+  // Validate on Continue: block advancing while an error sits in the current (or an earlier) step, and
+  // surface it there. Errors that belong only to a later step don't block - fixed when she gets there.
+  const goNext = () => {
+    const at = TAB_ORDER.indexOf(tab)
+    const errKey = applyFormError(form, examType)
+    if (errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= at) {
+      setError(t(`scholarship.apply.error.${errKey}`))
+      setTab(ERROR_TAB[errKey] ?? 'personal')
+      return
+    }
+    setError(null)
+    setTab(TAB_ORDER[Math.min(at + 1, TAB_ORDER.length - 1)])
+  }
+  const goBack = () => { setError(null); setTab(TAB_ORDER[Math.max(TAB_ORDER.indexOf(tab) - 1, 0)]) }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // A press while a submit is in flight (Enter in a field, a second tap) sends nothing (Mobile M4).
+    if (submitting) return
+    // Enter / "Go" on a phone keyboard before the last step means NEXT - never "submit the whole form".
+    if (tab !== TAB_ORDER[TAB_ORDER.length - 1]) { goNext(); return }
     const errKey = applyFormError(form, examType)
     if (errKey) {
       setError(t(`scholarship.apply.error.${errKey}`))
@@ -237,6 +244,7 @@ export default function ScholarshipApplyPage() {
       // PF-1: the code the "You are applying to" line was resolved from (`useApplyGift`).
       if (gift.code) payload.programme_code = gift.code
       await submitScholarshipApplication(payload, locale, { token })
+      setSent(true); clearApplyDraft()   // sent: nothing of it stays on this phone
       clearApplyProgramme()
       router.replace('/scholarship/application')
     } catch (err) {
@@ -336,21 +344,6 @@ export default function ScholarshipApplyPage() {
   const academic = profileAcademicSummary(profile)
   const tabIndex = TAB_ORDER.indexOf(tab)
   const isLast = tabIndex === TAB_ORDER.length - 1
-  // Validate on Continue: block advancing while an error sits in the current
-  // (or an earlier) step, and surface it there. Errors that belong only to a
-  // later step don't block — the student fixes those when they reach them.
-  const goNext = () => {
-    const errKey = applyFormError(form, examType)
-    if (errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= tabIndex) {
-      setError(t(`scholarship.apply.error.${errKey}`))
-      setTab(ERROR_TAB[errKey] ?? 'personal')
-      return
-    }
-    setError(null)
-    setTab(TAB_ORDER[Math.min(tabIndex + 1, TAB_ORDER.length - 1)])
-  }
-  const goBack = () => { setError(null); setTab(TAB_ORDER[Math.max(tabIndex - 1, 0)]) }
-
 
   const ProfileBadge = (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
@@ -662,15 +655,8 @@ export default function ScholarshipApplyPage() {
         </aside>
 
         <div>
-          {/* Progress */}
-          <div className="mb-1 flex gap-1.5">
-            {TAB_ORDER.map((k, i) => (
-              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-brand-shape' : 'bg-ground-200'}`} />
-            ))}
-          </div>
-          <p className="text-xs text-ground-500 mb-4">
-            {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${sectionKey(tab)}`)}
-          </p>
+          {/* Phone + desktop: "Step n/5 · section", the bars, and "Saved on this device only" (Mobile M4) */}
+          <ApplyProgress index={tabIndex} total={TAB_ORDER.length} label={t(`scholarship.apply.section.${sectionKey(tab)}`)} />
 
           {/* Active section card */}
           <div className="bg-ground-0 border rounded-2xl p-5 shadow-sm mb-4">
@@ -688,45 +674,10 @@ export default function ScholarshipApplyPage() {
             </div>
           )}
 
-          {/* Commit-on-submit: nothing is saved until the application is submitted */}
-          {isLast && (
-            <p className="mb-3 text-center text-xs text-ground-400">{t('scholarship.apply.commitNote')}</p>
-          )}
-
-          {/* Linear nav */}
-          <div className="flex gap-3 mb-4">
-            {tabIndex > 0 && (
-              <button type="button" onClick={goBack} className="btn-secondary flex-1">{t('scholarship.apply.back')}</button>
-            )}
-            {isLast ? (
-              <button type="submit" disabled={submitting} className="btn-primary flex-1 disabled:opacity-50">
-                {submitting ? t('scholarship.apply.submitting') : t('scholarship.apply.submit')}
-              </button>
-            ) : (
-              <button type="button" onClick={goNext} className="btn-primary flex-1">{t('scholarship.apply.continue')}</button>
-            )}
-          </div>
+          {/* Back / Continue (Submit on the last step): a sticky bar on a phone, clear of the home bar */}
+          <ApplyFooter first={tabIndex === 0} last={isLast} submitting={submitting} onBack={goBack} onNext={goNext} />
         </div>
       </div>
-
-      {/* Bottom tab bar (mobile only — replaced by the left rail on desktop) */}
-      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-6 px-2 lg:hidden">
-        <Link href="/scholarship" className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
-          <svg className="w-6 h-6 text-ground-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
-          </svg>
-          <span className="text-[10px] text-ground-400">{t('scholarship.apply.tab.home')}</span>
-        </Link>
-        {TAB_ORDER.map((k) => (
-          <button key={k} type="button" onClick={() => setTab(k)}
-            className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
-            <TabIcon tab={k} active={k === tab} />
-            <span className={`text-[10px] ${k === tab ? 'text-primary-600 font-medium' : 'text-ground-400'}`}>
-              {t(`scholarship.apply.tab.${k}`)}
-            </span>
-          </button>
-        ))}
-      </nav>
     </form>
   )
 }

@@ -5,7 +5,7 @@
  */
 import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
-import { APPLY_RETURN_KEY, APPLY_STASH_KEY, safeSession, type StorageLike } from './applyReturn'
+import { safeSession, type StorageLike } from './applyReturn'
 import { asQualification, isThirdRoute, isTertiary, type Qualification } from './qualification'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
@@ -602,12 +602,12 @@ export function declarationNameMismatch(form: ApplyFormState): boolean {
 
 // ── My Results → onboarding round-trip (Sprint 9b) ───────────────────────
 // Editing/adding results sends the student through the full onboarding flow.
-// The apply form only commits on submit, so before leaving we STASH the
-// in-progress About Me / My Family edits and set a RETURN marker; the final
-// onboarding step reads the marker to route back here (and we restore the stash).
+// The apply form only commits on submit, so before leaving it keeps THE DRAFT
+// (`./applyDraft`, Mobile M4) and sets a RETURN marker; the final onboarding
+// step reads the marker to route back here, and the form restores the draft.
 // sessionStorage keys are constants (not string literals) to avoid drift.
 // The return marker, the stash key and the storage seam live in the leaf `./applyReturn` (TD-057).
-export { APPLY_RETURN_KEY, APPLY_STASH_KEY, hasApplyReturn, clearApplyReturn, abandonApplyDetour, APPLY_PROGRAMME_KEY } from './applyReturn'
+export { APPLY_RETURN_KEY, APPLY_STASH_KEY, hasApplyReturn, clearApplyReturn, setApplyReturn, abandonApplyDetour, APPLY_PROGRAMME_KEY } from './applyReturn'
 
 // The apply form's gift code (`?p=`) helpers live in the leaf `./applyProgramme` (2026-10-05).
 
@@ -637,43 +637,8 @@ export function liveApplications<T extends { status: string }>(apps: readonly T[
   return apps.filter((a) => (LIVE_APPLICATION_STATES as readonly string[]).includes(a.status))
 }
 
-/** Stash the in-progress form and mark that onboarding should return to the apply page. */
-export function stashApplyForm(form: ApplyFormState, storage?: StorageLike): void {
-  const s = storage ?? safeSession()
-  if (!s) return
-  s.setItem(APPLY_STASH_KEY, JSON.stringify(form))
-  s.setItem(APPLY_RETURN_KEY, '1')
-}
-
-/** Read and consume the stashed form (returns null if none / unparseable). */
-export function popApplyStash(storage?: StorageLike): ApplyFormState | null {
-  const s = storage ?? safeSession()
-  if (!s) return null
-  const raw = s.getItem(APPLY_STASH_KEY)
-  if (!raw) return null
-  s.removeItem(APPLY_STASH_KEY)
-  try {
-    return JSON.parse(raw) as ApplyFormState
-  } catch {
-    return null
-  }
-}
-
-/** Non-destructive read of the stash. Onboarding pages visited during the
- *  edit-results detour use this to prefer the in-progress apply edit over
- *  the older profile value — so shared fields (homeState) don't appear to
- *  re-prompt the student. The apply page still pops the stash on return. */
-export function peekApplyStash(storage?: StorageLike): ApplyFormState | null {
-  const s = storage ?? safeSession()
-  if (!s) return null
-  const raw = s.getItem(APPLY_STASH_KEY)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as ApplyFormState
-  } catch {
-    return null
-  }
-}
+// The detour's stash is now THE APPLY DRAFT (Mobile M4): `./applyDraft` (write, read, peek, clear) —
+// a leaf, so its hook stays off /profile and /scholarship/application, which carry this module.
 
 // A general "after onboarding, return to this path" marker — used when a flow other
 // than the apply form (e.g. an /application Action Centre academic ticket) sends the

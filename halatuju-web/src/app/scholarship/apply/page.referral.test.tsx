@@ -21,7 +21,8 @@ import ScholarshipApplyPage from './page'
 import { AuthContext } from '@/lib/auth-context'
 import { sandboxProfileSpm } from '@/sandbox/fixtures/scholarship'
 import { getApplyGate, getScholarshipIntake, submitScholarshipApplication } from '@/lib/api'
-import { stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
+import { type ApplyFormState } from '@/lib/scholarship'
+import { seedApplyDraft, signAndSubmit, testSession } from '@/test/applyDraftSeed'
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() }
 jest.mock('next/navigation', () => ({
@@ -66,7 +67,7 @@ const mount = (saved: string | null = '', chip = '') => {
   if (saved !== null) gate.mockResolvedValue({ allowed: true, reason: '', application_id: null, referral: saved })
   return render(
     <AuthContext.Provider value={{
-      status: 'ready', token: 'tkn', showAuthGate: () => {},
+      status: 'ready', token: 'tkn', session: testSession, showAuthGate: () => {},
       profile: { ...sandboxProfileSpm, results_held: 'spm', nric: '080101-14-1234', nric_verified: true,
         referral_source: chip },
     } as never}>
@@ -231,8 +232,11 @@ describe('a gift that switched off a fixed choice', () => {
     intake.mockResolvedValue(SERVED(['halatuju', 'other']))
     mount('social')
     await screen.findByTestId('apply-gift-line')
-    await waitFor(() => expect(select().value).toBe(''))
-    expect(optionCodes()).not.toContain('social')
+    // The form is seeded once the programme has settled (Mobile M4: the draft is read for THAT
+    // programme), then her earlier answer, then the clearing — wait for the END state, not the first frame.
+    await waitFor(() => expect(gate).toHaveBeenCalled())
+    await waitFor(() => expect(optionCodes()).not.toContain('social'))
+    expect(select().value).toBe('')
   })
 
   it('keeps a saved fixed choice the gift still offers', async () => {
@@ -269,10 +273,10 @@ describe('a `?ref=` code never pre-fills (sources Sprint C, owner\'s ruling)', (
 
   it('never overwrites a choice she has already made (restored from the results detour)', async () => {
     intake.mockResolvedValue(OPEN([SMC, CUMIG]))
-    stashApplyForm({ ...STASHED, referringOrg: 'cumig' })
+    seedApplyDraft({ ...STASHED, referringOrg: 'cumig' }, 'personal', 'bp')
     mount('smc')
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.personal').closest('button') as HTMLButtonElement)
+    await waitFor(() => expect(select().value).toBe('cumig'))
     await act(async () => { await Promise.resolve() })
     expect(select().value).toBe('cumig')
   })
@@ -283,13 +287,10 @@ describe('the server refuses the code at submit', () => {
 
   it('sends an offered source as referral_source', async () => {
     intake.mockResolvedValue(OPEN([SMC]))
-    stashApplyForm(complete)
+    seedApplyDraft(complete, 'support', 'bp')
     mount()
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await signAndSubmit('Priya')
     await waitFor(() => expect(submit).toHaveBeenCalled())
     expect(submit.mock.calls[0][0].referral_source).toBe('smc')
   })
@@ -303,13 +304,10 @@ describe('the server refuses the code at submit', () => {
       return Promise.reject(Object.assign(new Error('API error: 400'),
         { status: 400, code: 'referral_source_not_offered', bodyCode: 'referral_source_not_offered' }))
     })
-    stashApplyForm(complete)
+    seedApplyDraft(complete, 'support', 'bp')
     mount()
     await screen.findByTestId('apply-gift-line')
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
-    })
+    await signAndSubmit('Priya')
 
     // Back on About Me, the field blank, the list re-read, the sentence beside it.
     expect(await screen.findByTestId('referral-refused')).toBeTruthy()
@@ -325,7 +323,8 @@ describe('the server refuses the code at submit', () => {
     // Choosing again takes the sentence away, and the next submit sends the new choice.
     fireEvent.change(select(), { target: { value: 'cumig' } })
     expect(screen.queryByTestId('referral-refused')).toBeNull()
-    fireEvent.click(screen.getByText('scholarship.apply.tab.support').closest('button') as HTMLButtonElement)
+    // Walk to the last step again (Continue × 4): the consent and the signature she gave are still there.
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.continue' }))
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'scholarship.apply.submit' }))
     })

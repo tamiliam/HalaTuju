@@ -15,7 +15,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import ProfileInputPage from './page'
 import { getProfile, syncProfile } from '@/lib/api'
-import { APPLY_RETURN_KEY, stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
+import { APPLY_RETURN_KEY, setApplyReturn, type ApplyFormState } from '@/lib/scholarship'
+import { seedApplyDraft } from '@/test/applyDraftSeed'
 import { KEY_PROFILE } from '@/lib/storage'
 
 const push = jest.fn()
@@ -23,7 +24,7 @@ const push = jest.fn()
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/auth-context', () => ({
-  useAuth: () => ({ token: 'tkn', isAnonymous: false, refreshProfile: jest.fn(() => Promise.resolve()) }),
+  useAuth: () => ({ token: 'tkn', isAnonymous: false, session: { user: { id: 'stu-apply-test' } }, refreshProfile: jest.fn(() => Promise.resolve()) }),
 }))
 jest.mock('@/lib/api', () => ({
   getProfile: jest.fn(),
@@ -39,9 +40,11 @@ jest.mock('next/link', () => ({
 const profileMock = getProfile as jest.Mock
 const syncMock = syncProfile as jest.Mock
 
-/** The apply form's detour: stash the form (which also sets the return flag). */
-const detourFrom = (school: string) =>
-  stashApplyForm({ school, homeState: 'Selangor' } as unknown as ApplyFormState)
+/** The apply form's detour: her draft (bound to her id) and the return flag. */
+const detourFrom = (school: string) => {
+  seedApplyDraft({ school, homeState: 'Selangor' } as unknown as ApplyFormState, 'results', 'bp')
+  setApplyReturn()
+}
 
 const schoolBox = () => screen.queryByTestId('onboarding-school')
 const schoolInput = () => (schoolBox() as HTMLElement).querySelector('input') as HTMLInputElement

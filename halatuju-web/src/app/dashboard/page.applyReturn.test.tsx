@@ -19,7 +19,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import DashboardPage from './page'
 import ProfileInputPage from '../onboarding/profile/page'
-import { APPLY_RETURN_KEY, stashApplyForm, type ApplyFormState } from '@/lib/scholarship'
+import { APPLY_RETURN_KEY, setApplyReturn, type ApplyFormState } from '@/lib/scholarship'
+import { seedApplyDraft } from '@/test/applyDraftSeed'
 import { KEY_PROFILE } from '@/lib/storage'
 
 const mockPush = jest.fn()
@@ -60,8 +61,8 @@ beforeEach(() => {
   localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'male', bumiputera: false, state: 'Johor' }))
 })
 
-/** The apply form's "edit results": the stash and the return marker, exactly as it writes them. */
-const startDetour = () => stashApplyForm({} as ApplyFormState)
+/** The apply form's "edit results": her draft and the return marker, exactly as it writes them. */
+const startDetour = () => { seedApplyDraft({} as ApplyFormState, 'results', 'bp'); setApplyReturn() }
 
 /** An onboarding's last step, pressed: where does it send the student? */
 async function finishOnboarding(): Promise<string> {
