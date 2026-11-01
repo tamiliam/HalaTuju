@@ -47,6 +47,28 @@ no API change.
   the one-row header, the onboarding header and the grade rows; `theme.test.ts` and `AppHeader.bursary.test.tsx`
   follow the header's new shape.
 
+## An empty pick is filled from the student's own offer letter (2026-11-01, #202)
+
+Owner ruling, verbatim: "That's not a decision at check 1. Its role is to get the facts as they are. The only
+restrictions are imposed in the gift rules." Not deployed; no migration; no MODEL_VERSION bump.
+
+- `services/offer_link.fill_empty_pick`: a `chosen_programme` with no course id and no course name is filled from the
+  live, own, non-fake letter's `pinned_match` (one course, one campus, the letter's level) — course id, catalogue
+  name, catalogue campus, source `offer_letter_auto` (an offer source already on the record is kept), pathway only
+  over a blank or `degree`, certainty `sure`, the profile follows, AUDIT `offer_course_link`. No date cut-off, no
+  "may have re-picked", and a pre-U college on file does not block it; decided cases and pre-U pathways are skipped.
+  Called from `autofill_pathway_from_offer` before its mismatch exit (future uploads) and by `link_offer_courses`
+  (`FILL` lines, `--apply`). Labels with NO course name were `no_course_name`; they are now an empty pick.
+- Verdict: #202 read `mismatch` only because her pre-U college ("KM Labuan") stood in as her declaration; once her
+  course is filled it reads `match` through the catalogue. She is the only open tertiary record with that shape, so
+  no verdict rule was changed.
+- **Round-6 review fixes (second commit):** the fill ALWAYS writes the course's own pathway (a degree left on `poly`
+  was paid on the polytechnic calendar); it needs a GENUINE letter (a fill locks the pick, as the realignment does —
+  the link of labels already copied off a letter stays relaxed); the profile takes the letter's course only when its
+  own plan is empty too, else it is left alone; and the AUDIT line (fill and link) keeps the OLD pick and pathway and
+  says what happened to the profile (`refreshed` / `kept_own_plan` / `not_following`).
+- Tests: `test_offer_empty_pick.py` (#202's exact strings).
+
 ## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources — LIVE 2026-11-01 (main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded)
 
 Owner rulings 2026-11-01 (decisions.md, the 7b entry). **Migration scholarship 0197

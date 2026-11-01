@@ -23,7 +23,8 @@ from django.db import connection
 from apps.scholarship.document_snapshot import SNAPSHOT_ORDER
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
 from apps.scholarship.pathway_engine import student_offer_check
-from apps.scholarship.services.offer_link import OFFER_SOURCES, link_offer_course, plan_offer_link
+from apps.scholarship.services.offer_link import (
+    OFFER_SOURCES, is_empty_pick, link_offer_course, plan_offer_link)
 from apps.scholarship.services.offer_sync import plan_bumi_realign, realign_basis, realign_bumi_only_pick
 
 
@@ -50,7 +51,8 @@ class Command(BaseCommand):
               .select_related('profile').order_by('id'))
         for app in qs:
             cp = app.chosen_programme if isinstance(app.chosen_programme, dict) else {}
-            if (cp.get('source') or '') not in OFFER_SOURCES:
+            empty = is_empty_pick(cp)
+            if (cp.get('source') or '') not in OFFER_SOURCES and not empty:
                 continue
             offer = (ApplicantDocument.objects
                      .filter(application=app, doc_type='offer_letter', superseded_at__isnull=True)
@@ -67,18 +69,18 @@ class Command(BaseCommand):
                                   f"{'' if apply else ' (would)'}: {_pick(cp)}  ->  {_pick(realign[1])}")
                 continue
             reason, new_cp, new_pathway = plan_offer_link(app, offer, chk)
-            head = f"#{app.pk} [{app.status}] ({cp.get('source')})"
+            head = f"#{app.pk} [{app.status}] ({'empty_pick' if empty else cp.get('source')})"
             if reason:
                 counts[f'skip:{reason}'] += 1
                 self.stdout.write(f"  {head} SKIP {reason}: {_pick(cp)}")
                 continue
-            counts['link'] += 1
+            counts['fill' if empty else 'link'] += 1
             old, old_pathway = _pick(cp), app.chosen_pathway or '-'
             if new_pathway and new_pathway != (app.chosen_pathway or '').strip().lower():
                 pathway_changes.append(f"  #{app.pk}: {old_pathway} -> {new_pathway}")
             if apply:
                 link_offer_course(app, offer, chk)
-            self.stdout.write(f"  {head} LINK{'' if apply else ' (would)'}: {old}  ->  {_pick(new_cp)}"
+            self.stdout.write(f"  {head} {'FILL' if empty else 'LINK'}{'' if apply else ' (would)'}: {old}  ->  {_pick(new_cp)}"
                               f" | pathway {old_pathway}"
                               + (f" -> {new_pathway}" if new_pathway and new_pathway != old_pathway else ''))
         if pathway_changes:

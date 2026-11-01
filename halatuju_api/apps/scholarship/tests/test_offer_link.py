@@ -60,7 +60,7 @@ class Link243Test(_Base):
             'course_id': 'UE6211001', 'course_name': 'Sarjana Muda Seni Halus (Kepujian) #',
             'institution': 'Universiti Teknologi MARA', 'source': 'offer_letter_confirmed'})
         self.assertEqual(app.chosen_pathway, 'university')     # 'degree' is no picker value
-        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} course_id=UE6211001' in line
+        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} kind=link course_id=UE6211001' in line
                             for line in logs.output))
         self.assertEqual(_plan(app, offer)[0], 'has_course_id')   # idempotent
 
@@ -119,8 +119,11 @@ class SkipTest(_Base):
     def test_labels_from_another_letter(self):
         app = self._app(pick={**LABELS, 'course_name': 'Sarjana Muda Perakaunan (Kepujian)'})
         self._skip(app, _offer(app, SENI_HALUS), 'labels_disagree')
+        # Labels that name NO course are an empty pick since 2026-11-01 (owner: the letter's course is
+        # a fact to record) — filled, keeping its source; this used to skip as `no_course_name`.
         app = self._app(pick={**LABELS, 'course_name': ''})
-        self._skip(app, _offer(app, SENI_HALUS), 'no_course_name')
+        offer = _offer(app, SENI_HALUS)
+        self.assertEqual(_plan(app, offer)[1]['source'], 'offer_letter_confirmed')
 
     def test_decided_and_the_open_interview_ruling(self):
         app = self._app(stage='interviewing')
