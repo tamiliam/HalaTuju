@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Offer letters read exactly — Sprint 2 (tooling half) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 2 (answers, failure map, owner checks) — 2026-11-01 — BUILT, not deployed
 
 Measurement tooling only; no production code, no migration, no Gemini call.
 
@@ -17,6 +17,14 @@ Measurement tooling only; no production code, no migration, no Gemini call.
 - **`eval/offer_failure_map.py`** — per core field wrong / missing / extra by family, pages, input kind, stored
   capture and versions; a ranked, rule-based list of failure kinds, each tagged old read / today too / ai, S3.
 - `tests/test_offer_replay.py`, `tests/test_capture_ocr.py` (synthetic twins).
+- **Answers:** 126 dev letters (the AI-read ones) by four labelling agents, then one consistency pass for the
+  institution / campus split (owner) - 216 letters answered. Scorer: `campus` scored (not core); intake labels
+  stripped at either end (Sesi, Sesi Akademik, Sesi Mula, Session, Ambilan, Pengambilan, Intake); "Semester 1"
+  stays content. Held-out 19/90 fully exact, dev 31/126.
+- **Owner offer check** (`offer_review_page.py --offer-check`, 47 letters): our labels 47/47 right; 8 live
+  genuineness calls wrong - the rulings are in `docs/decisions.md` and the roadmap's S6.
+- **NRIC map:** 157 of 187 offers print it, 30 print none (correct blanks); the only gaps are an NRIC inside the
+  reference line (UPM 2, Netherlands Maritime 1).
 
 ## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — BUILT, not deployed
 
