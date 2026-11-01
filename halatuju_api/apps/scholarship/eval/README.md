@@ -115,7 +115,8 @@ specialisation; else the programme), intake, reporting_date — as **exact / bla
 missing / wrong / extra**; offer_date and issuer are scored but not core. A letter is **fully
 exact** when every core field is exact or blank_correct. Tidying only — case, spacing,
 punctuation, accents, NRIC digits, dates to `D Mon YYYY` (Malay/English months, numeric dates),
-an intake label dropped — and **no fuzzy matching**: one letter different is `wrong`. Reports the
+an intake label (and a "Tahun" before a 4-digit year) dropped, one trailing bracketed acronym on
+the institution dropped ("… (UniSZA)" = "…"; a bracket mid-line stays) — and **no fuzzy matching**: one letter different is `wrong`. Reports the
 totals, per field, and by family, input kind (pdf / photo), capture, programme, split and answer
 kind, the letters not fully exact (keys + field names), and — whatever the split, with or without
 answers — the **known-format-AI count**: STPM / matriculation / polytechnic letters whose stored

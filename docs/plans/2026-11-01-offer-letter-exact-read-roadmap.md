@@ -209,7 +209,9 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 
 ### S2 — Dev-set answers and the failure map (low–medium, ~6 h + owner ~30 min)
 - **Goal:** know which failures matter most, and which are old reads versus today's reader.
-- **Scope:** answers for the other ~197 letters (dev set); the scorer on dev; a failure table (wrong vs missing vs
+- **Scope:** answers for the dev letters **whose stored read is the AI reader's** (owner steer 2026-11-01: the known
+  formats the fixed-format reader locked are already exact and covered by the stpm/matric/poly parse checks — not
+  re-labelled); the scorer on dev; a failure table (wrong vs missing vs
   extra; by family, page count, photo/scan/text PDF, capture, stored version); replay of today's deterministic
   reader and genuineness on all free text; Vision capture for the 96 letters with no text (`capture_ocr.py`).
   Label "is this a real offer letter?" (yes / conditional / portal page / private) so genuineness is scored too.
@@ -237,7 +239,10 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 
 ### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.
-- **Scope:** `offer_parse.py` — the government families where the dev set shows Gemini fallback or a wrong field;
+- **Scope:** `offer_parse.py` — FIRST the 48 known-format letters (STPM 9, matriculation 17, polytechnic 22; 27 PDF,
+  21 photo; Sabah 22, flagship 26) whose stored read is the AI reader's: find why the fixed-format reader did not
+  lock them (a photo with no OCR text, a layout variant) and close that gap (owner steer 2026-11-01). Then the
+  government families where the dev set shows Gemini fallback or a wrong field;
   a text-layer reader for any university template held by ≥5 letters (data-gated; skip if none). `PARSER_VERSION`
   bump; `eval/offer_parse_check.py` (exact / fallback / WRONG per letter, like `stpm_parse_check.py`).
 - **Acceptance:** 0 WRONG on dev and held-out; lock rate up; held-out exact score not down.

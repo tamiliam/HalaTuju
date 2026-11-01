@@ -48,7 +48,9 @@ collapsed. NRIC → digits only. Dates → "D Mon YYYY" from DD/MM/YYYY (also - 
 year is 20YY), YYYY-MM-DD, or "D Month YYYY" with a Malay or English month, after dropping a
 weekday, a time and anything in brackets; anything unparseable is compared as tidied text.
 Intake → tidied text with a leading "Sesi / Sesi Akademik / Session / Academic Session /
-Ambilan / Intake" label dropped and Malay/English month names written as the English 3 letters.
+Ambilan / Intake" label dropped, then a leading "Tahun" dropped when a 4-digit year follows, and
+Malay/English month names written as the English 3 letters. Institution → ONE trailing bracketed
+acronym (2-12 letters/digits/&.-, e.g. "(UniSZA)") dropped, then tidied text.
 
 THE SPLIT. `offer_split.json` (committed, keys only; made by `offer_split.py`) lists the held-out
 letters: drawn only from letters NOT in the old corpus whose stored read is the AI reader's
@@ -122,6 +124,9 @@ _WEEKDAY_RE = re.compile(r'\b(ISNIN|SELASA|RABU|KHAMIS|JUMAAT|SABTU|AHAD|MON(?:D
                          r'WED(?:NESDAY)?|THU(?:RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b')
 _TIME_RE = re.compile(r'\d{1,2}\s*[.:]\s*\d{2}\s*(?:PAGI|PETANG|TENGAH HARI|MALAM|AM|PM)?')
 _INTAKE_LABEL_RE = re.compile(r'^(?:SESI AKADEMIK|SESI|ACADEMIC SESSION|SESSION|AMBILAN|INTAKE)\s+')
+_INTAKE_TAHUN_RE = re.compile(r'^TAHUN\s+(?=\d{4}\b)')
+#: ONE trailing "(ACRONYM)" after some text: 2-12 letters/digits/&.- inside the brackets.
+_TRAILING_ACRONYM_RE = re.compile(r'^(.*\S)\s*\([A-Z0-9&.\-]{2,12}\)\s*$', re.IGNORECASE | re.DOTALL)
 
 
 def tidy_text(value):
@@ -170,8 +175,17 @@ def tidy_date(value):
 
 
 def tidy_intake(value):
-    s = _INTAKE_LABEL_RE.sub('', tidy_text(value))
+    s = _INTAKE_TAHUN_RE.sub('', _INTAKE_LABEL_RE.sub('', tidy_text(value)))
     return _MONTH_RE.sub(lambda m: _MONTHS[m.group(1)].upper(), s)
+
+
+def tidy_institution(value):
+    """ONE trailing bracketed acronym dropped ("Universiti X (UniSZA)" = "Universiti X"), then
+    `tidy_text`. A bracket anywhere else in the line stays."""
+    if value is None:
+        return ''
+    m = _TRAILING_ACRONYM_RE.match(str(value))
+    return tidy_text(m.group(1) if m else value)
 
 
 # ── Family, input kind, the read ────────────────────────────────────────────────────────────
@@ -245,7 +259,8 @@ def _pairs(answer, read, family):
     return {
         'name': (answer.get('candidate_name'), read.get('candidate_name'), tidy_text),
         'nric': (answer.get('candidate_nric'), read.get('candidate_nric'), tidy_nric),
-        'institution': (answer.get('institution_as_printed'), read.get('institution'), tidy_text),
+        'institution': (answer.get('institution_as_printed'), read.get('institution'),
+                        tidy_institution),
         'programme': (*prog, tidy_text),
         'intake': (answer.get('intake'), read.get('intake'), tidy_intake),
         'reporting_date': (answer.get('reporting_date'), read.get('reporting_date'), tidy_date),
