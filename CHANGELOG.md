@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
+
+- **The bug:** the apply form stashes the WHOLE form (IC, household income, parent name and phone, the typed
+  signature) in the tab's `sessionStorage` for the "edit my results" round trip, and restores it on any mount. Sign-out
+  cleared only `localStorage` and reloaded the same tab, so the next student to sign in on a shared phone opened
+  `/scholarship/apply` pre-filled with the last student's details. Found by Mobile M4's audit.
+- **The fix:** `clearAll()` also wipes the tab's `halatuju_` keys (admin and sponsor tab state kept); any `SIGNED_OUT`
+  event (revoked session, refresh failure, sign-out in another tab) wipes the tab via `clearStudentTab()` — not her
+  grades, which a signed-out visitor keeps; the dashboard drops an abandoned detour's stashed form with its marker
+  (`abandonApplyDetour`). Tests in `studentSignOut.test.ts` (keys imported, prefix pinned, wiring guarded); bite-checked
+  (5 of 5 red). Adversarial review: safe to ship; the gaps it found are TD-458.
+
 ## Student maintenance Sprint 7d — staff can also be mentors — LIVE 2026-11-01 (main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first)
 
 Owner rulings and the approved MentorsAddStaff / StaffMentorProfile boards, 2026-11-01; the lead's two data

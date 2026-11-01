@@ -128,7 +128,7 @@ export const COURSE_PAGE_SIZE = 9
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-/** Remove all halatuju_* keys from localStorage. */
+/** Remove this student's halatuju_* keys from localStorage AND this tab's sessionStorage. */
 /** Auth scopes that share the `halatuju_` prefix but belong to OTHER user types —
  *  a student logout must NOT wipe the admin / sponsor sessions (they're isolated
  *  Supabase clients with their own storage keys, incl. their PKCE verifiers). */
@@ -138,7 +138,28 @@ export function clearAll(): void {
   Object.keys(localStorage)
     .filter(k => k.startsWith('halatuju_') && !PRESERVE_ON_CLEAR.some(p => k.startsWith(p)))
     .forEach(k => localStorage.removeItem(k))
+  // ⚠ AND THIS TAB'S sessionStorage. The apply form stashes the WHOLE form there (IC, income,
+  // parent name and phone, the typed signature — `APPLY_STASH_KEY`) for the "edit my results"
+  // round trip, and sign-out reloads the SAME tab, so it survived: the next student to sign in on a
+  // shared phone opened /scholarship/apply pre-filled with the last student's details (found by
+  // Mobile M4's audit). The admin and sponsor flows keep their own tab state.
+  clearStudentTab()
 }
+
+/** Only the tab half of `clearAll`: a session that ends WITHOUT the sign-out button (revoked,
+ *  a failed refresh, a sign-out in another tab) runs this from the auth listener. Not `clearAll`:
+ *  a signed-out visitor's grades live only in localStorage, and a refresh failure must not wipe them. */
+export function clearStudentTab(): void {
+  try {
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith('halatuju_') && !SESSION_PRESERVE.some(p => k.startsWith(p)))
+      .forEach(k => sessionStorage.removeItem(k))
+  } catch { /* sessionStorage unavailable — nothing is held there */ }
+}
+
+/** Tab state that belongs to the OTHER user types (an admin's list navigation, a sponsor's
+ *  half-finished registration) — a student's sign-out must not wipe it. */
+const SESSION_PRESERVE = ['halatuju_admin_', 'halatuju_sponsor_']
 
 /** Check if the user has entered any results (SPM or STPM grades, or a third-route CGPA). */
 export function hasGrades(): boolean {

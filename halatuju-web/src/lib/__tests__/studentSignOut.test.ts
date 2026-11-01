@@ -15,6 +15,10 @@ jest.mock('@/lib/supabase', () => ({
 }))
 
 import { signOutStudent } from '@/lib/studentSignOut'
+import { clearStudentTab } from '@/lib/storage'
+import { APPLY_PROGRAMME_KEY, APPLY_RETURN_KEY, APPLY_STASH_KEY, abandonApplyDetour } from '@/lib/applyReturn'
+import { ONBOARDING_RETURN_KEY } from '@/lib/scholarship'
+import { readWeb } from '@/test/sourceGuard'
 
 beforeAll(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = PROJECT
@@ -82,4 +86,71 @@ it('anything a screen writes while the sign-out is in flight is wiped too', asyn
   }
   await signOutStudent(jest.fn())
   expect(localStorage.getItem('halatuju_grades')).toBeNull()
+})
+
+// ── This tab's sessionStorage (Mobile M4 audit) ──────────────────────────────────────────────
+// The apply form stashes the WHOLE form in sessionStorage for the "edit my results" round trip, and
+// sign-out reloads the SAME tab — so the next student to sign in on a shared phone opened the form
+// pre-filled with the last student's IC, income, parent phone and typed signature.
+describe('sign-out also wipes this tab', () => {
+  function seedTab() {
+    sessionStorage.clear()
+    sessionStorage.setItem(APPLY_STASH_KEY, '{"nric":"010101-14-1234","householdIncome":"2400"}')
+    sessionStorage.setItem(APPLY_RETURN_KEY, '1')
+    sessionStorage.setItem(APPLY_PROGRAMME_KEY, 'BP2026')
+    sessionStorage.setItem(ONBOARDING_RETURN_KEY, '/scholarship/apply')
+    sessionStorage.setItem('halatuju_admin_scholarship_nav', '[1,2,3]')
+    sessionStorage.setItem('halatuju_sponsor_pending', '{"name":"S"}')
+    sessionStorage.setItem('other_tab_key', 'keeps')
+  }
+
+  it('removes her apply form and markers, keeps the admin and sponsor tab state', async () => {
+    seed(); seedTab()
+    await signOutStudent(() => {})
+    for (const k of [APPLY_STASH_KEY, APPLY_RETURN_KEY, APPLY_PROGRAMME_KEY, ONBOARDING_RETURN_KEY]) {
+      expect(k.startsWith('halatuju_')).toBe(true)   // a renamed key without the prefix would escape the wipe
+      expect(sessionStorage.getItem(k)).toBeNull()
+    }
+    expect(sessionStorage.getItem('halatuju_admin_scholarship_nav')).toBe('[1,2,3]')
+    expect(sessionStorage.getItem('halatuju_sponsor_pending')).toBe('{"name":"S"}')
+    expect(sessionStorage.getItem('other_tab_key')).toBe('keeps')
+  })
+
+  it('wipes the tab even when the server sign-out fails', async () => {
+    seed(); seedTab()
+    mockOutcome = () => Promise.resolve({ error: new Error('network') })
+    try {
+      await signOutStudent(() => {})
+    } finally {
+      mockOutcome = () => Promise.resolve({ error: null })
+    }
+    expect(sessionStorage.getItem(APPLY_STASH_KEY)).toBeNull()
+  })
+
+  it('a session that ends WITHOUT the button wipes the tab but never her grades (a signed-out visitor keeps them)', () => {
+    seed(); seedTab()
+    clearStudentTab()
+    expect(sessionStorage.getItem(APPLY_STASH_KEY)).toBeNull()
+    expect(sessionStorage.getItem('halatuju_admin_scholarship_nav')).toBe('[1,2,3]')
+    expect(localStorage.getItem('halatuju_grades')).toBe('{"BM":"A"}')
+  })
+
+  it('an abandoned detour drops the stashed form with the return marker', () => {
+    seedTab()
+    abandonApplyDetour()
+    expect(sessionStorage.getItem(APPLY_STASH_KEY)).toBeNull()
+    expect(sessionStorage.getItem(APPLY_RETURN_KEY)).toBeNull()
+    expect(sessionStorage.getItem(APPLY_PROGRAMME_KEY)).toBe('BP2026')
+  })
+})
+
+describe('the wiring (Mobile M4 audit)', () => {
+  it('ANY sign-out event wipes this tab, not only the button', () => {
+    const src = readWeb('src/lib/auth-context.tsx', 'the auth listener')
+    expect(src).toMatch(/if \(event === 'SIGNED_OUT'\) \{[^}]*clearStudentTab\(\)/)
+  })
+  it('the dashboard drops an abandoned detour WITH its stashed form', () => {
+    const src = readWeb('src/app/dashboard/page.tsx', 'the dashboard')
+    expect(src).toMatch(/useEffect\(\(\) => \{ abandonApplyDetour\(\) \}, \[\]\)/)
+  })
 })

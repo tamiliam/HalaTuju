@@ -34,6 +34,19 @@ export function clearApplyReturn(storage?: StorageLike): void {
   s?.removeItem(APPLY_RETURN_KEY)
 }
 
+/** The in-progress apply form, stashed for the edit-results detour (IC, income, parent phone, the
+ *  typed signature). Defined here so the leaf can discard it; `scholarship.ts` writes and reads it. */
+export const APPLY_STASH_KEY = 'halatuju_apply_stash'
+
+/** The detour was ABANDONED (the dashboard, TD-057): drop the return marker AND the stashed form. The
+ *  apply page restores a stash on any mount, so a stash left behind would pre-fill the form for the
+ *  next person to sign in on this tab (Mobile M4 audit). */
+export function abandonApplyDetour(storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.removeItem(APPLY_RETURN_KEY)
+  s?.removeItem(APPLY_STASH_KEY)
+}
+
 /** The gift (programme code) the apply page is open for — written on arrival from `?p=` or a pick
  *  in the chooser, cleared on a bare arrival and on submit. See `enterApplyPage` in scholarship.ts. */
 export const APPLY_PROGRAMME_KEY = 'halatuju_apply_programme'

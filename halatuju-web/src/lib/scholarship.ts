@@ -5,7 +5,7 @@
  */
 import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
-import { APPLY_RETURN_KEY, safeSession, type StorageLike } from './applyReturn'
+import { APPLY_RETURN_KEY, APPLY_STASH_KEY, safeSession, type StorageLike } from './applyReturn'
 import { asQualification, isThirdRoute, isTertiary, type Qualification } from './qualification'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
@@ -606,9 +606,8 @@ export function declarationNameMismatch(form: ApplyFormState): boolean {
 // in-progress About Me / My Family edits and set a RETURN marker; the final
 // onboarding step reads the marker to route back here (and we restore the stash).
 // sessionStorage keys are constants (not string literals) to avoid drift.
-export const APPLY_STASH_KEY = 'halatuju_apply_stash'
-// The return marker and the storage seam live in the leaf `./applyReturn` (TD-057).
-export { APPLY_RETURN_KEY, hasApplyReturn, clearApplyReturn, APPLY_PROGRAMME_KEY } from './applyReturn'
+// The return marker, the stash key and the storage seam live in the leaf `./applyReturn` (TD-057).
+export { APPLY_RETURN_KEY, APPLY_STASH_KEY, hasApplyReturn, clearApplyReturn, abandonApplyDetour, APPLY_PROGRAMME_KEY } from './applyReturn'
 
 // The apply form's gift code (`?p=`) helpers live in the leaf `./applyProgramme` (2026-10-05).
 

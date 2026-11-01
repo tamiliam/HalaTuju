@@ -7323,3 +7323,15 @@ course pages in Tamil (the merit row must still fit a card at 360). *(B · M)*
 its safe area. If the header's height changes, the row either hides under it or floats below it. **Fix:** have
 `AppHeader` publish its height as a CSS variable (the `--bottom-bar` pattern, `lib/bottomBarInset.ts`) and stick at
 `var(--header-height)`; a test pinning the two together. *(B · S)*
+
+### [TD-458] Shared phone: what a session that ends without the sign-out button still leaves behind - medium
+
+**Raised 2026-11-01 by the adversarial review of the apply-form privacy fix** (Mobile M4, part 0). The fix wipes the
+tab's stashed apply form on the sign-out button, on ANY `SIGNED_OUT` event and when the dashboard abandons the detour.
+Still open: (1) **back button after sign-out** — no `pageshow` handler and no `no-store` header, so Safari's
+back-forward cache may show the previous page, filled in, from memory (unverified; fix: reload when
+`event.persisted`); (2) **grades and profile in localStorage survive a session that ends without the button** (revoked,
+refresh failure) and `AuthGateModal` uploads them into the NEXT account that signs in on that browser (pre-existing;
+not wiped on `SIGNED_OUT` on purpose, because a signed-out visitor's grades live only there — the fix needs an owner
+of the data, e.g. tag them with the user id); (3) a duplicated tab copies sessionStorage. **Trigger:** Mobile M4 (the
+apply draft keyed to the user id closes most of (2) for the form). *(B · M)*
