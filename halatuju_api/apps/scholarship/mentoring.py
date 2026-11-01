@@ -159,14 +159,17 @@ def is_the_student(login, application):
 
 def refusal_for_mentor(application, mentor):
     """None when ``mentor`` may be assigned to ``application``, else the refusal code:
-    `mentor_not_found` (unknown, or another organisation's — one answer, so neither is confirmed),
-    `mentor_inactive` (deactivated or revoked), `own_application` (the mentor is the student)."""
+    `mentor_not_found` (unknown, another organisation's — one answer, so neither is confirmed — or, S7d,
+    a mentor record with no login), `mentor_inactive` (deactivated or revoked; S7d: a login that is off,
+    or a staff member who may not mentor now), `own_application` (the mentor is the student)."""
     if mentor is None or mentor.organisation_id != application.owning_organisation_id:
         return 'mentor_not_found'
     if mentor.deactivated_at is not None:
         return 'mentor_inactive'
     login = _login(mentor)
-    if _staff_not_mentoring(login):
+    if login is None:
+        return 'mentor_not_found'   # S7d review fix 2: a mentor record nobody signs in as
+    if not login.is_active or _staff_not_mentoring(login):
         return 'mentor_inactive'
     if is_the_student(login, application):
         return 'own_application'
@@ -190,7 +193,11 @@ def assignable_mentors(application):
     out = []
     for m in mentors:
         f = facts.get(m.pk) or {}
-        if is_the_student(f.get('login'), application) or _staff_not_mentoring(f.get('login')):
+        login = f.get('login')
+        # S7d review fix 2: the picker offers what `refusal_for_mentor` accepts — a login that exists,
+        # is on, and (a staff member's) may mentor now.
+        if (login is None or not login.is_active or _staff_not_mentoring(login)
+                or is_the_student(login, application)):
             continue
         out.append({'id': m.pk, 'name': f.get('name', ''), 'area': m.area,
                     'languages': f.get('languages', []), 'other_language': f.get('other_language', ''),
@@ -214,6 +221,7 @@ def mentor_facts(mentors):
     from apps.courses.models import PartnerAdmin
     from . import mentor_invite
     from .models import Invitation, ReviewerProfile
+    from .staff_contact import staff_screen_phone
     mentors = list(mentors)
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)}
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
@@ -231,6 +239,9 @@ def mentor_facts(mentors):
             'name': (login.name if login else '') or '',
             'email': (login.email if login else '') or '',
             'phone': (rp.phone or '') if rp else '',
+            # S7d review fix 1: what STAFF screens show — a staff mentor's number only under the team
+            # rule (`staff_contact.staff_screen_phone`). `phone` above is for the student's own rule.
+            'staff_phone': staff_screen_phone(login, rp),
             'share_phone': bool(rp and rp.share_phone_with_students and (rp.phone or '').strip()),
             'about': (rp.about or '') if rp else '',
             'languages': languages_of(rp),

@@ -32,6 +32,15 @@ rulings the same day (decisions.md, the 7d entry). **courses 0091 — migrate fi
 - Tests: `test_staff_mentor.py` (29: every door in and out, the staff login unchanged, `_switch_off` never
   reached, finance never an active mentor through any door), `StaffMentors.test.tsx`, navigation / profile cards /
   profile page cases.
+- **Review fixes (adversarial review, before the push):** (1) a STAFF mentor's phone on the Mentors list and the
+  Mentoring tab follows the reviewer detail's team rule (`staff_contact.staff_screen_phone` →
+  `assigner_sees_phone`), before and after Stop mentoring; a mentor login's phone and the student's rule are
+  unchanged. (2) Races: `staff_mentor.leave` re-reads the row under a lock; People → Revoke locks its target; a
+  re-invite stamps a dropped staff mentor inactive; the assign refusal and the picker refuse a mentor with no
+  login or a login that is off; a staff mentor whose login cannot mentor reads inactive. (3) A mentor login is
+  never made staff: `change_role`, the role endpoint, `may_reuse` and `bring_back` refuse it (tests). An
+  organisation admin may add or stop a peer organisation admin as a mentor (no login is touched) — kept.
+  `test_staff_mentor.py` 29 → 36.
 
 ## Mobile M3 — student discovery: search filters in a sheet, course pages without the scroll trap, compare on phones (not yet live)
 

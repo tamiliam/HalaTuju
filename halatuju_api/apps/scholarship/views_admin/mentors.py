@@ -114,6 +114,7 @@ def mentor_rows(caller, mentors):
     from .. import mentor_invite
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
+    from ..staff_contact import staff_screen_phone
     logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)}
     now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
@@ -138,7 +139,8 @@ def mentor_rows(caller, mentors):
             'staff_role': login.role if staff else None,
             'name': login.name if login else '',
             'email': login.email if login else '',
-            'phone': (rp.phone or '') if rp else '',
+            # S7d review fix 1: a STAFF mentor's phone only under the team rule People's screens use.
+            'phone': staff_screen_phone(login, rp),
             'status': mentor_invite.status_of(m, login, issued),
             'area': m.area,
             'languages': {'en': getattr(rp, 'english_fluency', '') or '',

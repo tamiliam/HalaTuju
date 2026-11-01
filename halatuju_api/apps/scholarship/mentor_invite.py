@@ -140,7 +140,9 @@ def status_of(mentor, login, credential_issued=None):
     if mentor.deactivated_at is not None:
         return INACTIVE
     if is_staff_login(login):
-        return ACTIVE
+        # S7d review fix 2: a staff mentor whose login is off (revoked, switched off) or whose role may
+        # not mentor reads inactive, whatever a race left on the mentor record.
+        return ACTIVE if login.mentors_now else INACTIVE
     if not has_signed_in(login, credential_issued):
         return INVITED
     return ACTIVE

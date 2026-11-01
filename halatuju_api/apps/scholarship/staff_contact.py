@@ -19,6 +19,9 @@ ONE home for the rules the profile endpoints share (`views_admin/me.py`, `views_
 - `assigner_sees_phone(target, profile)` — the reviewer DETAIL serves a phone only when the person
   can be assigned cases (`review`: the person handing out work must reach them, owner 2026-08-02)
   or chose "show my phone to my team" (review fix M1).
+- `staff_screen_phone(login, profile)` — S7d review fix 1: a mentor's phone on STAFF screens (the
+  Mentors list, the Mentoring tab). A mentor login's own number as 7a; a STAFF mentor's only under
+  `assigner_sees_phone` — the rule the reviewer detail already applies.
 """
 from rest_framework import status
 from rest_framework.response import Response
@@ -50,3 +53,17 @@ def assigner_sees_phone(target, profile):
     if profile is None:
         return False
     return bool(profile.share_phone_with_team) or (not target.is_super and target.has_perm('review'))
+
+
+def staff_screen_phone(login, profile):
+    """The mentor's phone as STAFF screens show it (the Mentors list, a scholar's Mentoring tab) — S7d
+    review fix 1. A mentor LOGIN: their own number, which the inviting organisation sees (7a; the
+    Contact card tells them). A STAFF member who also mentors: the reviewer detail's rule,
+    `assigner_sees_phone` — only when they show it to their team, or hold `review` — never a number
+    they gave for staff use reaching a screen People would not show it on. '' when not shown."""
+    phone = (getattr(profile, 'phone', '') or '') if profile is not None else ''
+    if not phone or login is None:
+        return ''
+    if login.is_staff_mentor and not assigner_sees_phone(login, profile):
+        return ''
+    return phone

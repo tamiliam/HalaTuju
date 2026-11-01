@@ -608,8 +608,9 @@ def scholarship_staff():
 def staff_mentor_leaves(target, by=''):
     """S7d: a staff door (Revoke, Delete) has taken ``target`` out of mentoring — `staff_mentor.leave`
     (the mentor stamped deactivated, open assignments ended, no email). Inside the caller's transaction;
-    0 and nothing written for anybody who is not a staff mentor."""
-    if target is None or not target.is_staff_mentor:
+    0 and nothing written for anybody who is not a staff mentor. ⚠ Never judged on ``target``, which may
+    be stale (S7d review fix 2): `leave` re-reads the row under a lock and decides there."""
+    if target is None:
         return 0
     _, _, _, staff_mentor = _scholarship_staff_modules()
     return staff_mentor.leave(target, by=by)

@@ -324,8 +324,9 @@ class AdminInvitationCancelView(_ReviewersBase):
                     pk=account.pk, first_seen_at__isnull=True).update(is_active=False):
                 transaction.set_rollback(True)
                 return not_open
-            if account is not None and account.is_staff_mentor:
-                # S7d: a switched-off staff member who was also added as a mentor stops mentoring.
+            if account is not None:
+                # S7d: a switched-off staff member who was also added as a mentor stops mentoring —
+                # decided on the row re-read under a lock (`leave`), never on this copy (review fix 2).
                 from .. import staff_mentor
                 staff_mentor.leave(account, by=admin.email or '')
         inv.revoked_at = now

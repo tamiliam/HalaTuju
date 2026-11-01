@@ -512,7 +512,14 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
         if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
 
-        target = PartnerAdmin.objects.filter(id=admin_id).first()
+        # S7d review fix 2: the row is LOCKED for the whole revoke / restore, so an "Add a staff member
+        # as mentor" (which locks it too) lands either wholly before — and `staff_mentor_leaves` stamps
+        # its mentor — or after, when it sees the login off and refuses.
+        with transaction.atomic():
+            target = PartnerAdmin.objects.select_for_update().filter(id=admin_id).first()
+            return self._revoke_locked(request, admin, target)
+
+    def _revoke_locked(self, request, admin, target):
         if target is None or not _staff_target_manageable(admin, target):
             # 404 for a missing row OR a target outside this caller's remit (cross-org / super).
             return Response({'error': 'Admin not found'}, status=404)
@@ -534,12 +541,11 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             if not has_other:
                 return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
-            with transaction.atomic():
-                target.is_active = False
-                target.save(update_fields=['is_active'])
-                # S7d: a staff member who also mentors stops mentoring with the revoke (their scholars'
-                # assignments end, no email). A later Restore does NOT bring mentoring back.
-                staff_mentor_leaves(target, by=admin.email or '')
+            target.is_active = False
+            target.save(update_fields=['is_active'])
+            # S7d: a staff member who also mentors stops mentoring with the revoke (their scholars'
+            # assignments end, no email). A later Restore does NOT bring mentoring back.
+            staff_mentor_leaves(target, by=admin.email or '')
             return Response({'message': f'{target.name} access revoked'})
         elif action == 'restore':
             # Sources Sprint D review: a `partner` login comes back only onto an ACTIVE referral

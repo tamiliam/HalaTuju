@@ -40,8 +40,8 @@ def help_asked(application):
 
 
 def file_payload(caller, application):
-    """The staff Mentoring tab for ONE application the view has fenced: the current mentor (staff
-    always see the phone), the history (ended, with reasons), every meeting with its notes, what the
+    """The staff Mentoring tab for ONE application the view has fenced: the current mentor (staff see a
+    mentor login's phone; a STAFF mentor's only under the team rule — `staff_contact.staff_screen_phone`), the history (ended, with reasons), every meeting with its notes, what the
     scholar asked for, the mentors the picker may offer, `can_act` and the email switch."""
     rows = list(MentorAssignment.objects.filter(application_id=application.pk)
                 .select_related('mentor').order_by('-started_at', '-id'))
@@ -61,7 +61,7 @@ def file_payload(caller, application):
     def mentor_bits(mid):
         f = facts.get(mid) or {}
         return {'mentor_id': mid, 'name': f.get('name', ''), 'email': f.get('email', ''),
-                'phone': f.get('phone', ''), 'area': mentors[mid].area, 'languages': f.get('languages', []),
+                'phone': f.get('staff_phone', ''), 'area': mentors[mid].area, 'languages': f.get('languages', []),
                 'other_language': f.get('other_language', ''), 'status': f.get('status', '')}
 
     current = next((r for r in rows if r.ended_at is None), None)

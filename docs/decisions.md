@@ -50,6 +50,22 @@ is revoke-only, never deleted — the existing "work done means revoke" doctrine
 be deleted; the delete stamps their mentor deactivated first, and a mentor record left with no login is not
 listed on the Mentors page.
 
+**Policy (lead, at review):** an organisation admin may add, stop and bring back a PEER organisation admin of
+the same organisation as a mentor — no login is touched by any of the three, so it is not the privilege a
+revoke would be (staff management still refuses a peer org_admin).
+
+**Review fixes (adversarial review, same day):** (1) **A staff mentor's phone on staff screens** (the Mentors
+list, the scholar's Mentoring tab) follows the reviewer detail's rule, `staff_contact.assigner_sees_phone`
+(shown to the team, or a `review` holder), through ONE helper, `staff_contact.staff_screen_phone`; a mentor
+login's own number is unchanged (7a), and the student's rule is untouched. (2) **Races:** `staff_mentor.leave`
+re-reads the row under a lock and decides there, never on the caller's copy; People → Revoke locks the target
+for the whole revoke / restore; a re-invite (`staff_reinvite.bring_back`) stamps the mentor inactive whenever it
+drops a staff link; the assign refusal and the picker refuse a mentor record with no login (`mentor_not_found`)
+or whose login is off (`mentor_inactive`); a staff mentor whose login cannot mentor now reads inactive, and
+Mentor again judges the login before anything else. (3) **A mentor login is never made staff:** since 0091 the
+database no longer refuses it, so the doors do — `change_role` (no pair), the role endpoint (404),
+`may_reuse` and `bring_back` (a not-staff row is never re-invited into another role) — each pinned by a test.
+
 **Alternatives considered:** a `Mentor.is_staff` flag (rejected: derived from the role, one fact); unlinking on
 Admin → Finance (rejected, ruling A); refusing the role change while they mentor (rejected: the owner named the
 switch as a way out); reusing "Mentor deactivated" as the reason (rejected: the staff member was not deactivated).

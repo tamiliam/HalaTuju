@@ -256,6 +256,12 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
                .filter(pk=existing.pk, is_active=False, first_seen_at__isnull=True).first())
         if row is None:
             return None, False, 'not_reusable'
+        # S7d review fix 3: a MENTOR login (or a source user) is never turned into ANOTHER role by a
+        # re-invite. Since courses 0091 the database would no longer refuse a mentor row becoming a
+        # reviewer, so this door refuses it itself (as `may_reuse` already does through
+        # `_staff_target_manageable`). The source invite's own re-invite (same role) is untouched.
+        if row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role:
+            return None, False, 'not_reusable'
         email = email or row.email
         if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
             return None, False, 'not_reusable'
@@ -269,11 +275,14 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
             if err:
                 return None, False, err
         # S7d: a switched-off staff member who had been added as a mentor comes back as a NEW start —
-        # never a mentor again by a re-invite. Their mentor record was stamped inactive when they were
-        # switched off, and `may_reuse` admits only a row with no footprint, so it never had a
-        # scholar: the link goes (else a new role or organisation could break the binding).
-        fields = ['mentor'] if row.mentor_id is not None and row.role != PartnerAdmin.MENTOR_ROLE else []
+        # never a mentor again by a re-invite. `may_reuse` admits only a row with no footprint, so the
+        # mentor never had a scholar: the link goes (else a new role or organisation could break the
+        # binding), and the mentor is STAMPED INACTIVE here too (review fix 2) — whatever a racing Add
+        # left, it can never be an active mentor without a login.
+        fields = ['mentor'] if row.mentor_id is not None else []
         if fields:
+            from .views_admin import staff_mentor_leaves
+            staff_mentor_leaves(row, by='')
             row.mentor = None
         row.name, row.role, row.org, row.owning_organisation = name, role, org, owning_org
         row.email = email

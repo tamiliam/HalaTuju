@@ -116,12 +116,12 @@ def resume(caller, mentor, login):
     login untouched; no assignment comes back."""
     if login is None or not login.is_staff_mentor:
         return 'not_staff'
-    if mentor.deactivated_at is None:
-        return 'active'
     with transaction.atomic():
         row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk).first()
         if not eligible(row):
-            return 'not_eligible'
+            return 'not_eligible'   # judged first: a login that is off is never "already active"
+        if mentor.deactivated_at is None:
+            return 'active'
         if not Mentor.objects.filter(pk=mentor.pk, deactivated_at__isnull=False).update(
                 deactivated_at=None, deactivated_by_email=''):
             return 'active'
@@ -135,14 +135,22 @@ def leave(login, by=''):
     """A STAFF door has taken ``login`` out of mentoring (revoked, switched off, about to be deleted, or a
     role that may not mentor): the mentor is stamped deactivated and every open assignment ends, inside
     the caller's transaction (a savepoint). The login itself is the caller's business. Returns how many
-    assignments ended; 0 and nothing written for a login that is not a staff mentor."""
-    if login is None or not login.is_staff_mentor:
-        return 0
-    mentor = Mentor.objects.filter(pk=login.mentor_id).first()
-    if mentor is None:
+    assignments ended; 0 and nothing written for a login that is not a staff mentor.
+
+    ⚠ S7d REVIEW FIX 2: DECIDED ON THE ROW AS IT IS NOW, never on the caller's copy. The row is re-read
+    UNDER A LOCK (`mentor_id`, `role`) inside this transaction, so an Add that committed after the
+    caller read the row (a Revoke or a Cancel racing it) is still caught: its mentor is stamped too."""
+    if login is None:
         return 0
     by = (by or '')[:254]
     with transaction.atomic():
+        row = PartnerAdmin.objects.select_for_update().filter(pk=login.pk).first()
+        if row is None or not row.is_staff_mentor:
+            return 0
+        mentor = Mentor.objects.filter(pk=row.mentor_id).first()
+        if mentor is None:
+            return 0
         _, ended = _end_mentoring(mentor, by)
+    login.mentor_id = row.mentor_id
     logger.info('AUDIT staff_mentor_left mentor=%s account=%s ended=%s by=%s', mentor.pk, login.pk, ended, by)
     return ended

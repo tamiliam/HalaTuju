@@ -486,3 +486,104 @@ class TestTheReaders(_Base):
         self.kavitha.refresh_from_db()
         self.assertIsNone(self.kavitha.deactivated_at)
         self.assertEqual(PartnerAdmin.objects.filter(mentor=mentor).count(), 1)
+
+
+class TestReviewFixes(_Base):
+    """S7d adversarial review (2026-11-01): the staff phone, the races, a mentor never made staff."""
+
+    # ── 1. a STAFF mentor's phone on staff screens follows the team rule ───────────────────────
+    def _phone_on_staff_screens(self, mentor):
+        row = {m['id']: m for m in authed_client(self.lead).get(MENTORS).json()['mentors']}[mentor.pk]
+        tab_body = authed_client(self.lead).get(tab(self.app.pk)).json()
+        return row['phone'], (tab_body['current'] or {}).get('phone'), str(tab_body)
+
+    def test_a_staff_mentor_phone_needs_team_sharing_before_and_after_stop(self):
+        ReviewerProfile.objects.create(partner_admin=self.officer, phone='012-777 8899',
+                                       share_phone_with_team=False)
+        mentor = self.added(self.officer)
+        self.assign(mentor)
+        listed, on_tab, whole = self._phone_on_staff_screens(mentor)
+        self.assertEqual((listed, on_tab), ('', ''))
+        self.assertNotIn('012-777 8899', whole)
+        self.act(mentor, 'stop')
+        listed, on_tab, whole = self._phone_on_staff_screens(mentor)
+        self.assertEqual((listed, on_tab), ('', None))
+        self.assertNotIn('012-777 8899', whole)
+        # Shown to the team: shown here too (People's own rule).
+        ReviewerProfile.objects.filter(partner_admin=self.officer).update(share_phone_with_team=True)
+        self.assertEqual(self._phone_on_staff_screens(mentor)[0], '012-777 8899')
+
+    def test_a_reviewer_mentor_follows_the_reviewer_detail_and_a_mentor_login_is_unchanged(self):
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='019-111 2222',
+                                       share_phone_with_team=False)
+        mentor = self.added(self.reviewer)
+        self.assertEqual(self._phone_on_staff_screens(mentor)[0], '019-111 2222')   # holds `review`
+        # A mentor login's own number, whatever its team switch (7a: the inviting organisation sees it).
+        self.assertEqual(self._phone_on_staff_screens(self.kavitha)[0], '012-345 6789')
+
+    # ── 2. a Revoke / Cancel racing an Add ────────────────────────────────────────────────────
+    def test_leave_decides_on_the_row_as_it_is_now(self):
+        stale = PartnerAdmin.objects.get(pk=self.officer.pk)   # read before the Add committed
+        mentor = self.added(self.officer)
+        self.assign(mentor)
+        self.assertIsNone(stale.mentor_id)
+        from apps.courses.views_admin import staff_mentor_leaves
+        self.assertEqual(staff_mentor_leaves(stale, by='x'), 1)
+        mentor.refresh_from_db()
+        self.assertIsNotNone(mentor.deactivated_at)
+        self.assertEqual(self.open_count(mentor), 0)
+
+    def test_a_revoked_login_is_never_assignable_even_if_its_mentor_was_left_on(self):
+        mentor = self.added(self.officer)
+        PartnerAdmin.objects.filter(pk=self.officer.pk).update(is_active=False)   # a race's leftover
+        mentor.refresh_from_db()
+        self.assertIsNone(mentor.deactivated_at)
+        self.assertEqual(mentoring.refusal_for_mentor(self.app, mentor), 'mentor_inactive')
+        self.assertNotIn(mentor.pk, [m['id'] for m in mentoring.assignable_mentors(self.app)])
+        r = authed_client(self.lead).post(tab(self.app.id) + 'assign/', {'mentor_id': mentor.pk}, format='json')
+        self.assertEqual(r.json().get('code'), 'mentor_inactive')
+        row = {m['id']: m for m in authed_client(self.lead).get(MENTORS).json()['mentors']}[mentor.pk]
+        self.assertEqual(row['status'], 'inactive')
+        self.assertEqual(self.act(mentor, 'resume').json().get('code'), 'not_eligible')
+
+    def test_a_mentor_record_with_no_login_is_never_assignable(self):
+        orphan = Mentor.objects.create(organisation=self.org)
+        self.assertEqual(mentoring.refusal_for_mentor(self.app, orphan), 'mentor_not_found')
+        self.assertNotIn(orphan.pk, [m['id'] for m in mentoring.assignable_mentors(self.app)])
+
+    def test_a_re_invite_stamps_a_mentor_left_on_by_a_race(self):
+        from apps.courses import staff_reinvite
+        mentor = self.added(self.officer)
+        PartnerAdmin.objects.filter(pk=self.officer.pk).update(is_active=False, first_seen_at=None,
+                                                               supabase_user_id=None)
+        self.officer.refresh_from_db()
+        row, _, err = staff_reinvite.bring_back(self.officer, name='N', role='admin', org=None,
+                                                owning_org=self.org, temp_password=None)
+        self.assertIsNone(err)
+        self.assertIsNone(row.mentor_id)
+        mentor.refresh_from_db()
+        self.assertIsNotNone(mentor.deactivated_at)
+
+    # ── 3. a pure mentor login is never turned into staff ─────────────────────────────────────
+    def test_no_role_door_turns_a_mentor_login_into_staff(self):
+        from apps.courses import staff_reinvite
+        from apps.scholarship import staff_lifecycle
+        login = mentoring._login(self.kavitha)
+        for role in ('admin', 'finance', 'reviewer', 'qc', 'org_admin'):
+            with self.assertRaises(staff_lifecycle.RoleChangeRefused):
+                staff_lifecycle.change_role(login.pk, role)
+            r = authed_client(self.lead).patch(f'/api/v1/admin/admins/{login.pk}/role/', {'role': role},
+                                               format='json')
+            self.assertEqual(r.status_code, 404)
+        # A re-invite never reuses it, at either door.
+        PartnerAdmin.objects.filter(pk=login.pk).update(is_active=False, first_seen_at=None,
+                                                        supabase_user_id=None)
+        login.refresh_from_db()
+        self.assertFalse(staff_reinvite.may_reuse(self.lead, login))
+        self.assertEqual(staff_reinvite.bring_back(login, name='N', role='reviewer', org=None,
+                                                   owning_org=self.org, temp_password=None)[2], 'not_reusable')
+        r = authed_client(self.lead).post('/api/v1/admin/invite/', {'email': login.email, 'name': 'N',
+                                                                    'role': 'reviewer'}, format='json')
+        self.assertEqual(r.status_code, 409)
+        login.refresh_from_db()
+        self.assertEqual((login.role, login.mentor_id), ('mentor', self.kavitha.pk))
