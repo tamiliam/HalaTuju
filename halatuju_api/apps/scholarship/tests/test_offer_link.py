@@ -60,7 +60,7 @@ class Link243Test(_Base):
             'course_id': 'UE6211001', 'course_name': 'Sarjana Muda Seni Halus (Kepujian) #',
             'institution': 'Universiti Teknologi MARA', 'source': 'offer_letter_confirmed'})
         self.assertEqual(app.chosen_pathway, 'university')     # 'degree' is no picker value
-        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} course_id=UE6211001' in line
+        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} kind=link course_id=UE6211001' in line
                             for line in logs.output))
         self.assertEqual(_plan(app, offer)[0], 'has_course_id')   # idempotent
 

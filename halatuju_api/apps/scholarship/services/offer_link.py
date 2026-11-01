@@ -98,6 +98,10 @@ def plan_offer_link(application, offer, chk):
         return 'not_own_letter', None, ''
     if offer_band(offer) == 'not_offer_letter':
         return 'not_offer_letter', None, ''
+    if empty and offer_band(offer) != 'genuine':
+        # Round-6 review: a fill LOCKS the pick (offer_letter_auto + course_id), so it needs the realign's
+        # bar — a suspect letter's course would stand while a later genuine one went to a human question.
+        return 'not_genuine', None, ''
     prog, inst = (chk.get('programme') or '').strip(), (chk.get('institution') or '').strip()
     if op.is_pre_u(op.detect_pathway_type(prog, inst)):
         return 'pre_u_offer', None, ''
@@ -109,7 +113,9 @@ def plan_offer_link(application, offer, chk):
         return 'unresolved', None, ''
     if empty:                                         # nothing stored to agree with: the letter's fact
         new_cp['source'] = cp.get('source') if cp.get('source') in OFFER_SOURCES else 'offer_letter_auto'
-        return '', new_cp, _link_pathway(application, offer, chk, new_cp, pathway)
+        # ALWAYS the course's own pathway (round-6 review): an empty pick has no course to protect, and a
+        # degree left on `poly` would be paid on the polytechnic calendar.
+        return '', new_cp, course_pathway_type(new_cp['course_id'])
     if not labels_describe(cp['course_name'], new_cp['course_name']):
         return 'labels_disagree', None, ''
     if not _label_names_campus(cp.get('institution') or '', new_cp, (chk.get('issuer') or '').strip()):
@@ -140,8 +146,9 @@ def fill_empty_pick(application, offer, chk):
     are. The only restrictions are imposed in the gift rules."* An EMPTY pick has nothing to protect,
     so the offer letter's course is recorded as a fact — no date cut-off, no "may have re-picked", and
     a pre-U college on file (where she studied before) does not block it. Everything else is
-    ``plan_offer_link``'s (decided, own letter, not a fake, not pre-U, ONE course at ONE campus at the
-    letter's level). Called from ``autofill_pathway_from_offer`` before its mismatch exit, and by
+    ``plan_offer_link``'s (decided, own letter, a GENUINE letter — a fill locks the pick —, not pre-U, ONE
+    course at ONE campus at the letter's level); the course's own pathway is always written, and the
+    profile takes it only when its own plan is empty too (round-6 review). Called from ``autofill_pathway_from_offer`` before its mismatch exit, and by
     ``link_offer_courses``. Returns True when it wrote."""
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     return is_empty_pick(cp) and link_offer_course(application, offer, chk)
@@ -172,6 +179,8 @@ def link_offer_course(application, offer, chk):
     if reason:
         return False
     old_pathway = application.chosen_pathway or ''
+    old_cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    filling = is_empty_pick(old_cp)
     application.chosen_programme = new_cp
     fields = ['chosen_programme']
     if new_pathway and new_pathway != old_pathway.strip().lower():
@@ -180,11 +189,27 @@ def link_offer_course(application, offer, chk):
     if application.pathway_certainty != 'sure':        # the place is settled, as the autofill says
         application.pathway_certainty = 'sure'
         fields.append('pathway_certainty')
+    profile_note = 'not_following'
     with transaction.atomic():
         application.save(update_fields=fields)
         if profile_follows(application):
-            sync_profile_pathway(application, may_clear=lambda f: False)
-    logger.info('AUDIT offer_course_link app_id=%s course_id=%s source=%s old_pathway=%s new_pathway=%s',
-                application.id, new_cp['course_id'], new_cp.get('source') or '-', old_pathway or '-',
-                application.chosen_pathway or '-')
+            # Round-6 review: a FILL never overwrites a plan the student made on her profile — only an
+            # empty profile plan takes the letter's course; a link (labels off a letter) refreshes as before.
+            profile = application.profile
+            profile.refresh_from_db(fields=['chosen_programme'])
+            if filling and not is_empty_pick(profile.chosen_programme):
+                profile_note = 'kept_own_plan'
+            else:
+                sync_profile_pathway(application, may_clear=lambda f: False)
+                profile_note = 'refreshed'
+    logger.info('AUDIT offer_course_link app_id=%s kind=%s course_id=%s source=%s old_pick=%s old_pathway=%s '
+                'new_pathway=%s profile=%s', application.id, 'fill' if filling else 'link', new_cp['course_id'],
+                new_cp.get('source') or '-', _pick_text(old_cp), old_pathway or '-',
+                application.chosen_pathway or '-', profile_note)
     return True
+
+
+def _pick_text(cp):
+    """The pick an AUDIT line keeps: course_id | course_name | institution, '-' for each blank."""
+    cp = cp if isinstance(cp, dict) else {}
+    return ' | '.join((str(cp.get(k) or '').strip() or '-') for k in ('course_id', 'course_name', 'institution'))

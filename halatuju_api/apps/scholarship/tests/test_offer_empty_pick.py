@@ -70,7 +70,9 @@ class Fill202Test(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme, FILLED)
         self.assertEqual((app.chosen_pathway, app.pathway_certainty), ('university', 'sure'))
-        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} course_id=UW6442001' in x for x in logs.output))
+        self.assertTrue(any(f'AUDIT offer_course_link app_id={app.id} kind=fill course_id=UW6442001 '
+                            'source=offer_letter_auto old_pick=- | - | - old_pathway=university' in x
+                            for x in logs.output))
         # The verdict afterwards: the stored course is checked through the catalogue (the letterhead
         # names its campus), so her pre-U college no longer stands in for a declaration.
         self.assertEqual(student_offer_check(offer)['pathway'], 'match')
@@ -80,7 +82,10 @@ class Fill202Test(_Base):
         self.assertEqual(plan_offer_link(app, _offer(app), student_offer_check(_offer(app)))[0], '')
 
     def test_a_blank_or_degree_pathway_takes_the_courses_and_a_picker_value_stays(self):
-        for before, after in (('', 'university'), ('degree', 'university'), ('university', 'university')):
+        # Round-6 review: ALWAYS the course's own pathway — a degree left on `poly` would be paid on the
+        # polytechnic calendar (`contracts.pick_schedule_row`).
+        for before, after in (('', 'university'), ('degree', 'university'), ('university', 'university'),
+                              ('poly', 'university')):
             with self.subTest(before=before):
                 app = self._app(chosen_pathway=before)
                 offer = _offer(app)
@@ -88,10 +93,42 @@ class Fill202Test(_Base):
                 app.refresh_from_db()
                 self.assertEqual(app.chosen_pathway, after)
 
-    def test_an_institution_label_with_no_course_is_still_an_empty_pick(self):
-        app = self._app(chosen_programme={'institution': 'UNIMAS'})
+    def test_an_institution_label_with_no_course_is_still_an_empty_pick_and_the_audit_keeps_it(self):
+        app = self._app(chosen_programme={'institution': 'Politeknik Ungku Omar'}, chosen_pathway='poly')
         offer = _offer(app)
-        self.assertTrue(fill_empty_pick(app, offer, student_offer_check(offer)))
+        with self.assertLogs('apps.scholarship.services', level='INFO') as logs:
+            self.assertTrue(fill_empty_pick(app, offer, student_offer_check(offer)))
+        self.assertTrue(any('kind=fill course_id=UW6442001 source=offer_letter_auto '
+                            'old_pick=- | - | Politeknik Ungku Omar old_pathway=poly new_pathway=university' in x
+                            for x in logs.output))
+
+    def test_a_suspect_letter_never_fills(self):
+        app = self._app()
+        offer = _offer(app, status='suspect')
+        self.assertEqual(plan_offer_link(app, offer, student_offer_check(offer))[0], 'not_genuine')
+        self.assertFalse(fill_empty_pick(app, offer, student_offer_check(offer)))
+
+    def test_a_profile_plan_of_her_own_is_never_overwritten(self):
+        from apps.scholarship.tests.factories import make_student
+        own = {'course_id': 'RA-POLY-DPM', 'course_name': 'Diploma Pengurusan Muamalat',
+               'institution': 'Politeknik Ungku Omar'}
+        student = make_student(chosen_programme=dict(own), chosen_pathway='poly')
+        app = self._app(student=student)
+        offer = _offer(app)
+        with self.assertLogs('apps.scholarship.services', level='INFO') as logs:
+            self.assertTrue(fill_empty_pick(app, offer, student_offer_check(offer)))
+        student.refresh_from_db()
+        self.assertEqual((student.chosen_programme, student.chosen_pathway), (own, 'poly'))
+        self.assertTrue(any('profile=kept_own_plan' in x for x in logs.output))
+
+    def test_an_empty_profile_plan_follows(self):
+        from apps.scholarship.tests.factories import make_student
+        student = make_student(chosen_programme={}, chosen_pathway='')
+        app = self._app(student=student)
+        offer = _offer(app)
+        fill_empty_pick(app, offer, student_offer_check(offer))
+        student.refresh_from_db()
+        self.assertEqual((student.chosen_programme['course_id'], student.chosen_pathway), ('UW6442001', 'university'))
 
 
 class SkipTest(_Base):

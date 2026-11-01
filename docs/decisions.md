@@ -12,6 +12,10 @@ non-fake offer letter names ONE catalogue course at ONE campus at its own level,
 and a pre-U college on file — where she studied before — does not block it. Decided cases and Form 6 / matriculation
 pathways are still skipped (four live STPM-pathway records with an empty pick wait for a human).
 
+**Round-6 review (same day).** The fill always writes the course's own pathway, needs a GENUINE letter (it locks the
+pick), never overwrites a plan the student made on her profile (only an empty profile plan follows), and its AUDIT line
+keeps the replaced pick — an institution-only pick is still filled, because Check 1 records facts.
+
 **Revisit if:** a gift rule needs to know the intake; it reads the letter's own intake, never the absence of a course.
 
 ## The date rule: a pick made before the picker was complete is not a real selection; one campus test (owner, 2026-11-01)

@@ -17,6 +17,11 @@ restrictions are imposed in the gift rules." Not deployed; no migration; no MODE
 - Verdict: #202 read `mismatch` only because her pre-U college ("KM Labuan") stood in as her declaration; once her
   course is filled it reads `match` through the catalogue. She is the only open tertiary record with that shape, so
   no verdict rule was changed.
+- **Round-6 review fixes (second commit):** the fill ALWAYS writes the course's own pathway (a degree left on `poly`
+  was paid on the polytechnic calendar); it needs a GENUINE letter (a fill locks the pick, as the realignment does —
+  the link of labels already copied off a letter stays relaxed); the profile takes the letter's course only when its
+  own plan is empty too, else it is left alone; and the AUDIT line (fill and link) keeps the OLD pick and pathway and
+  says what happened to the profile (`refreshed` / `kept_own_plan` / `not_following`).
 - Tests: `test_offer_empty_pick.py` (#202's exact strings).
 
 ## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources — LIVE 2026-11-01 (main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded)
