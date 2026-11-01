@@ -255,6 +255,15 @@ Measurement tooling only; no production code, no migration, no paid call
   silently cut short. Read-only; not yet re-run against production.
 - `tests/test_offer_read_scorer.py` (synthetic twins: tidying, every outcome, fully exact, no value printed,
   split determinism, paging).
+- **The owner's spot-check** (32 held-out answers) and its conventions: the intake is written **as printed,
+  with its label** (the scorer drops the label, so scores do not move); **PISMP's programme is the degree title**
+  — the scorer's core `programme` now compares the programme for PISMP too, and `specialisation` is a scored
+  not-core field wherever the answer has one (its % over those letters, an `of` column). One core-field
+  labelling error found (a reporting date that was a commencement date); the answer files were corrected
+  (gitignored).
+- **The BASELINE (stored reads, held-out 90): 21 of 90 fully exact (23.3 %).** Right per core field: name
+  94.4 %, NRIC 98.9 %, institution 51.1 %, programme 73.3 %, intake 81.1 %, reporting date 96.7 %. Recorded in
+  the roadmap's S1 section with the owner's notes for S2, S4 and S6.
 
 ## Student maintenance Sprint 7b follow-up — mentors are invited from Invitations, like sources (not yet live)
 
