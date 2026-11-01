@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Route-aware exam-year colours in the cockpit (2026-11-01)
+## Route-aware exam-year colours in the cockpit (2026-11-01) — LIVE 2026-11-02 (main 49e50778; web built, api build at hand-over)
 
 Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not deployed; no migration.
 

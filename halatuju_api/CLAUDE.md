@@ -1184,6 +1184,21 @@ mentors are invited on Invitations → Mentor; the Mentors page manages arrived 
 NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings
 *(superseded: 7c built — see the state block above; scholarship 0198 claimed, next free 0199)*.
 
+### ⚠ HAND-OVER 2026-11-02 (Cockpit session, offer-letter + exam-year work) — read this first
+
+Live on main 49e50778: offer realignment (Bumi-only + DATE rule), offer link, empty-pick fill (#202), one campus
+test (`offer_course_match.CampusReader`), and route-aware exam-year colours (`apps/scholarship/exam_years.py`; owner
+table: SPM-only → SPM C−1; STPM → STPM C−1 + SPM C−3; matric/asasi → C + SPM C−2; diploma → C−1 or C + SPM C−4;
+display only). All live repairs applied (realign 13 + 27, link 9, fill #202).
+**ONE OPEN JOB, owned here:** the profile session's offer-reader S4 (branch `offer-read-s1`,
+`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`) will return `institution` = name only, `campus` = as
+printed, hostel/venue in neither (`reporting_venue`), `issuer` unchanged; it also reads the UPM reference-line NRIC
+(#175). Before S4 pushes, the matcher must read `campus` and join it with `institution` for per-campus families
+(poly / KK / IPG / IKBN / IKM / KKTM) in `match_offer_course`, `letter_place`, `CampusReader` (fed from
+`pathway_engine.student_offer_check`). S4 sends a realign/link/tick dry run first and waits for this change.
+Owner rules to keep: Check 1 records facts, only gift rules restrict; a reviewer judges a stale intake (#202).
+Open debt: TD-447–449, TD-451, TD-452.
+
 ### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT + DATE RULE + OFFER LINK LIVE (main 9969c1f3; api-01225-fxd; no migration)
 
 **Follow-up live 2026-11-01:** owner DATE rule — a pick on an application submitted before
