@@ -260,6 +260,21 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   `fields.issuer` and `authenticity.status`. Any change to what those carry (e.g. the institution line instead of
   the reporting venue — the S1 baseline's biggest gap) is flagged to the session that owns the matcher BEFORE the
   push, with the dry-run of realign / link on the new reads (rule 5).
+- **Institution / campus split (owner ruling 2026-11-01, option 1) — the shape agreed with the Cockpit session:**
+  `institution` = the institution's name only, as printed; new `campus` = the campus / branch as printed (`''`
+  when none); the hostel / residential college / reporting venue goes in NEITHER (a separate optional
+  `reporting_venue`, or dropped); `issuer` unchanged (the letterhead body — the matcher falls back to it). The
+  matcher reads these in `offer_course_match.match_offer_course`, `letter_place` and `CampusReader`, fed from
+  `pathway_engine.student_offer_check`; catalogue rows are per campus for polys, KK, IPG, IKBN/IKM/KKTM but one row
+  for UiTM / UM / UMS, so the matcher must join institution + campus for multi-campus families — **the Cockpit
+  session makes that matcher change, and S4 does not push until it is live** (else multi-campus pins drop). Send
+  Cockpit the dry-run of realign / link / ticks on the new reads before the push.
+- **NRIC (owner 2026-11-01: belongs to this arc).** Map of 187 answered offers: 157 print it, 30 print none - every
+  blank a correct blank (UNIMAS 12/13, UPSI 7/7, UUM 4/4, UTHM 4/4, AIMST, i-CATS, Cyberjaya). Stored reads: 155/157
+  right, 2 blank, 0 wrong. **Real gaps = NRIC only inside the reference line:** UPM 2/2 ("[NRIC]/UP...") and
+  Netherlands Maritime University College 1/1 ("Our Reference .../[NRIC]") - S4 reads it from the reference line.
+  Politeknik/KK and STPM put it in the reference too but always print it elsewhere. Owner rule open: does a filled
+  acceptance form inside the same PDF count as "the letter prints it" (one i-CATS letter)?
 - **Goal:** fix the biggest S2 failure kinds that come from the AI read's inputs and prompt.
 - **Scope (expected, confirmed by S2):** an offer reader version stamped on every read (AI and deterministic);
   Gemini sees up to 3 pages, and the text layer beside the image for a digital PDF; prompt fixes for the top
