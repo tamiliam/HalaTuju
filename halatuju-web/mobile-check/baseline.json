@@ -9,62 +9,62 @@
     "/ @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/ @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/ @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/ @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/ @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/ @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/about @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/admin/login @360 en": {
       "overflow": 0,
@@ -99,212 +99,242 @@
     "/contact @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/contact @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/contact @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/contact @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/contact @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/contact @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 12
+      "smallTargets": 2
     },
     "/cookies @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/cookies @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/cookies @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/cookies @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/cookies @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/cookies @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/course/[id] @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
     },
     "/course/[id] @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
     },
     "/course/[id] @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
     },
     "/course/[id] @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
     },
     "/course/[id] @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
     },
     "/course/[id] @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 31
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/course/[id]=/course/stpm-sains @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     },
     "/get-started @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/get-started @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/get-started @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/get-started @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/get-started @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/get-started @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/login @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/login @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/login @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/login @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/login @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/login @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/privacy @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/scholarship @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/scholarship/apply @360 en": {
       "overflow": 0,
@@ -339,62 +369,62 @@
     "/search @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/search @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 26
+      "smallTargets": 0
     },
     "/search @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/search @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/search @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/search @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/sponsor @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "/sponsor/login @360 en": {
       "overflow": 0,
@@ -456,65 +486,95 @@
       "smallInputs": 0,
       "smallTargets": 3
     },
+    "/stpm/[id] @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/stpm/[id] @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/stpm/[id] @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/stpm/[id] @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/stpm/[id] @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "/stpm/[id] @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "/stpm/search @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/stpm/search @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 26
+      "smallTargets": 0
     },
     "/stpm/search @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/stpm/search @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/stpm/search @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/stpm/search @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 27
+      "smallTargets": 0
     },
     "/terms @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/terms @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/terms @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/terms @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/terms @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "/terms @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 10
+      "smallTargets": 0
     },
     "sandbox:action-centre @360 en": {
       "overflow": 0,
@@ -1029,32 +1089,32 @@
     "sandbox:pieces @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:pieces @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:pieces @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:pieces @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:pieces @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:pieces @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:programme-config @360 en": {
       "overflow": 0,
@@ -1145,6 +1205,126 @@
       "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 2
+    },
+    "sandbox:report @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:report @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:report @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:report @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:report @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:report @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-compare @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:saved-list @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:search-filters @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     },
     "sandbox:sheet-locked-confirm @360 en": {
       "overflow": 0,
@@ -1269,32 +1449,32 @@
     "sandbox:sponsor-landing @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:sponsor-landing @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:sponsor-landing @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:sponsor-landing @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:sponsor-landing @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:sponsor-landing @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 11
+      "smallTargets": 1
     },
     "sandbox:stpm-grade-rows @360 en": {
       "overflow": 0,

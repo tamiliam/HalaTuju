@@ -8,7 +8,7 @@ Baseline last updated **2026-11-01** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **94 routes:** 64 Must · 24 Can · 6 Desktop-only.
-**21 measured** (public page or sandbox surface), **1 fully green.**
+**24 measured** (public page or sandbox surface), **13 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -18,8 +18,8 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 
 | Route | Class | Sprint | Cells measured | Overflow px | Small fields | Small targets | Status | Notes |
 |---|---|---|---|---|---|---|---|---|
-| `/` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ |  |
-| `/about` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ |  |
+| `/` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
+| `/about` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/admin` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/[...notFound]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/administration` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
@@ -64,12 +64,12 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/students` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/students/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/auth/callback` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
-| `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 12 | ❌ |  |
-| `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ |  |
-| `/course/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 31 | ❌ |  |
+| `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 2 | ❌ |  |
+| `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
+| `/course/[id]` | Must | M3 | 12 (public page, `/course/stpm-sains`) | 0 | 0 | 0 | ✅ |  |
 | `/dashboard` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
-| `/get-started` | Must | M2 | 6 (public page) | 0 | 0 | 11 | ❌ |  |
-| `/login` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ | redirects to `/` |
+| `/get-started` | Must | M2 | 6 (public page) | 0 | 0 | 1 | ❌ |  |
+| `/login` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/` |
 | `/onboarding/exam-type` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 | `/onboarding/grades` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 | `/onboarding/higher-grades` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
@@ -78,22 +78,22 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/onboarding/stpm-grades` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 | `/pathway/matric` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
 | `/pathway/stpm` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
-| `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ |  |
+| `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/profile` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 | `/quiz` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
 | `/r/[code]` | Must | M2 | — | — | — | — | n/a (redirect only) | redirects to `/` |
-| `/report/[id]` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
-| `/saved` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
-| `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 11 | ❌ |  |
+| `/report/[id]` | Must | M3 | 6 (sandbox `report`) | 0 | 0 | 0 | ✅ |  |
+| `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | ✅ |  |
+| `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 1 | ❌ |  |
 | `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 55 | 0 | 7 | ❌ |  |
 | `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 1 | ❌ |  |
 | `/scholarship/award` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/scholarship/bursary` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/scholarship/in-programme` | Must | M4 | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
 | `/scholarship/onboarding` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
-| `/search` | Must | M3 | 6 (public page) | 0 | 0 | 27 | ❌ |  |
+| `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/settings` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
-| `/sponsor` | Must | M5 | 12 (public page, sandbox `sponsor-landing`) | 0 | 0 | 11 | ❌ |  |
+| `/sponsor` | Must | M5 | 12 (public page, sandbox `sponsor-landing`) | 0 | 0 | 1 | ❌ |  |
 | `/sponsor/[...notFound]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/account` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/auth/callback` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
@@ -107,10 +107,10 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/sponsor/students/[id]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/terms` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/trust` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/stpm/[id]` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
+| `/stpm/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/stpm/quiz` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
-| `/stpm/search` | Must | M3 | 6 (public page) | 0 | 0 | 27 | ❌ | redirects to `/search?qualification=STPM` |
-| `/terms` | Must | M2 | 6 (public page) | 0 | 0 | 10 | ❌ |  |
+| `/stpm/search` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/search?qualification=STPM` |
+| `/terms` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/verify-email` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 
 ## Sandbox surfaces not tied to one route
@@ -126,7 +126,7 @@ Component galleries — measured, but no single route is "them".
 | `header-signed-out` | 6 | 0 | 0 | 0 | ✅ |
 | `header-signed-out-menu` | 6 | 0 | 0 | 0 | ✅ |
 | `onboarding-stepper` | 6 | 0 | 0 | 0 | ✅ |
-| `pieces` | 6 | 0 | 0 | 3 | ❌ |
+| `pieces` | 6 | 0 | 0 | 2 | ❌ |
 | `sheet-locked-confirm` | 6 | 0 | 0 | 0 | ✅ |
 | `sheet-long-form` | 6 | 0 | 0 | 0 | ✅ |
 | `sheet-short` | 6 | 0 | 0 | 0 | ✅ |

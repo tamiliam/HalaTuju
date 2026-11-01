@@ -37,6 +37,9 @@ for (const [route, e] of Object.entries(MOBILE_CLASS).sort(([a], [b]) => a.local
   const sources = []
   const measured = []
   if (e.visit && cellsOf(route).length) { sources.push('public page'); measured.push(...cellsOf(route)) }
+  for (const url of e.alsoVisit ?? []) {
+    if (cellsOf(`${route}=${url}`).length) { sources.push(`\`${url}\``); measured.push(...cellsOf(`${route}=${url}`)) }
+  }
   for (const s of e.surfaces ?? []) {
     if (cellsOf(`sandbox:${s}`).length) { sources.push(`sandbox \`${s}\``); measured.push(...cellsOf(`sandbox:${s}`)) }
   }

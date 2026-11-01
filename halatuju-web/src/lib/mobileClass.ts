@@ -36,6 +36,12 @@ interface EntryBase {
    * stranger can reach have one; the check never signs in. A dynamic route names one real id.
    */
   visit?: string
+  /**
+   * More URLs of the SAME route that need measuring because they draw a different screen (Mobile
+   * M3: the STPM stream page lists 240 schools, a polytechnic diploma 18 institutions). Each is its
+   * own baseline id, `<route>=<url>` (`mobile-check/targets.ts`).
+   */
+  alsoVisit?: readonly string[]
   /** Sandbox surfaces (`src/sandbox/surfaces.tsx` slugs) that mount this route's real screen. */
   surfaces?: readonly string[]
 }
@@ -63,13 +69,15 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/terms': { cls: 'must', sprint: 'M2', visit: '/terms' },
   '/get-started': { cls: 'must', sprint: 'M2', visit: '/get-started' },
   '/login': { cls: 'must', sprint: 'M2', redirect: '/', visit: '/login' },
-  '/search': { cls: 'must', sprint: 'M3', visit: '/search' },
+  '/search': { cls: 'must', sprint: 'M3', visit: '/search', surfaces: ['search-filters'] },
   '/stpm/search': {
     cls: 'must', sprint: 'M3', redirect: '/search?qualification=STPM', visit: '/stpm/search',
   },
   // POLY-DIP-019 is Diploma Kejuruteraan Mekanikal at the polytechnics — in every year's catalogue.
-  '/course/[id]': { cls: 'must', sprint: 'M3', visit: '/course/POLY-DIP-019' },
-  '/stpm/[id]': { cls: 'must', sprint: 'M3' },
+  // stpm-sains is the Form Six science stream: 240 schools, the page that had the inner scroll box.
+  '/course/[id]': { cls: 'must', sprint: 'M3', visit: '/course/POLY-DIP-019', alsoVisit: ['/course/stpm-sains'] },
+  // PUBLIC (the API view is AllowAny) — M0 filed it as signed-in. UP6523001 is a UPM degree.
+  '/stpm/[id]': { cls: 'must', sprint: 'M3', visit: '/stpm/UP6523001' },
   '/scholarship': { cls: 'must', sprint: 'M4', visit: '/scholarship' },
   '/scholarship/apply': {
     cls: 'must', sprint: 'M4', visit: '/scholarship/apply',
@@ -93,12 +101,12 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/onboarding/stpm-grades': { cls: 'must', sprint: 'M2' },
   '/onboarding/profile': { cls: 'must', sprint: 'M2' },
   '/onboarding/ic': { cls: 'must', sprint: 'M2', redirect: '/dashboard' },
-  '/saved': { cls: 'must', sprint: 'M3' },
+  '/saved': { cls: 'must', sprint: 'M3', surfaces: ['saved-list', 'saved-compare'] },
   '/quiz': { cls: 'must', sprint: 'M3' },
   '/stpm/quiz': { cls: 'must', sprint: 'M3' },
   '/pathway/matric': { cls: 'must', sprint: 'M3' },
   '/pathway/stpm': { cls: 'must', sprint: 'M3' },
-  '/report/[id]': { cls: 'must', sprint: 'M3' },
+  '/report/[id]': { cls: 'must', sprint: 'M3', surfaces: ['report'] },
   '/scholarship/application': {
     cls: 'must', sprint: 'M4',
     surfaces: ['documents', 'documents-lean', 'application-steps', 'application-steps-lean',

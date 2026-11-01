@@ -110,10 +110,16 @@ export interface Target {
 export function publicTargets(): Target[] {
   return Object.entries(MOBILE_CLASS)
     .filter(([, e]) => e.visit)
-    .map(([route, e]) => ({
-      id: route, url: `${PUBLIC_BASE}${e.visit}`, kind: 'public' as const,
-      finalPath: (e.redirect ?? e.visit ?? route).split('?')[0],
-    }))
+    .flatMap(([route, e]) => [
+      {
+        id: route, url: `${PUBLIC_BASE}${e.visit}`, kind: 'public' as const,
+        finalPath: (e.redirect ?? e.visit ?? route).split('?')[0],
+      },
+      // Another screen of the same route (Mobile M3): its own baseline id, `<route>=<url>`.
+      ...(e.alsoVisit ?? []).map((url) => ({
+        id: `${route}=${url}`, url: `${PUBLIC_BASE}${url}`, kind: 'public' as const, finalPath: url.split('?')[0],
+      })),
+    ])
 }
 
 /**
@@ -128,7 +134,7 @@ export function publicTargets(): Target[] {
  * because surfaces.tsx is on the oversize ledger). Each is read the same way — every
  * `export const …SURFACES: Surface[] = [` block, up to its closing `]` at column 0.
  */
-const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx', 'headerSurfaces.tsx']
+const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx', 'headerSurfaces.tsx', 'discoverySurfaces.tsx']
 
 export function sandboxSlugs(): string[] {
   const slugs: string[] = []

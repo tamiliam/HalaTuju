@@ -44,6 +44,7 @@ import {
 import { sandboxPool } from './fixtures/sponsor'
 import { SHEET_SURFACES } from './sheetSurfaces'
 import { HEADER_SURFACES } from './headerSurfaces'
+import { DISCOVERY_SURFACES } from './discoverySurfaces'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
@@ -419,8 +420,7 @@ export const SURFACES: Surface[] = [
       </WithAdminAuth>
     ),
   },
-  ...SHEET_SURFACES,
-  ...HEADER_SURFACES,
+  ...SHEET_SURFACES, ...HEADER_SURFACES, ...DISCOVERY_SURFACES,
 ]
 
 /**
