@@ -19,7 +19,6 @@ import SponsorLanding from '@/components/SponsorLanding'
 import SpecialConditions from '@/components/SpecialConditions'
 import PathwayTrackCard, { type PathwayTrack } from '@/components/PathwayTrackCard'
 import InfoBox from '@/components/InfoBox'
-import ProgressStepper from '@/components/ProgressStepper'
 import FilterPill from '@/components/FilterPill'
 import Toggle from '@/components/Toggle'
 import InfoTip from '@/components/InfoTip'
@@ -44,6 +43,7 @@ import {
 } from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
 import { SHEET_SURFACES } from './sheetSurfaces'
+import { HEADER_SURFACES } from './headerSurfaces'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
@@ -420,6 +420,7 @@ export const SURFACES: Surface[] = [
     ),
   },
   ...SHEET_SURFACES,
+  ...HEADER_SURFACES,
 ]
 
 /**
@@ -600,9 +601,6 @@ function PiecesGallery() {
             </InfoBox>
           ))}
         </div>
-      </div>
-      <div className={row}>
-        <ProgressStepper currentStep={2} totalSteps={3} />
       </div>
       <div className={row}>
         <FilterPill

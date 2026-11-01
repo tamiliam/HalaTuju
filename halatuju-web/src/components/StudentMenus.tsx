@@ -1,0 +1,448 @@
+'use client'
+
+/**
+ * The student header's MENUS — everything the header shows only after a tap (Mobile M2).
+ *
+ * ⚠ THIS MODULE IS ITS OWN CHUNK, imported by `AppHeader` the first time a phone menu opens (or a
+ * pointer/focus reaches its button, so the first opening is usually instant), and at once on a screen
+ * `lg` or wider, which draws the desktop row from here. AppHeader is on nearly every student route,
+ * and `/scholarship/application` sat a fraction of a kilobyte under its first-load line: the phone
+ * menu, the desktop row and its dropdowns, the theme and language pickers, Log in ▾ / Sign Up and the
+ * sign-out routine all live here so that none of them rides in any route's first load. The import is
+ * owned by AppHeader (not `next/dynamic`, which re-throws a failed load as a page error — the
+ * InfoTip / LazyPostAwardTask lesson).
+ *
+ *   - `PhoneMenu`    — below `lg`, the whole menu in the shared `Sheet` (rule 5): one list, every
+ *                      destination once, 48 px rows, its own scroll, Log out pinned in the footer.
+ *   - `DesktopBar`   — from `lg`, the nav row; BrightPath ▾ opens on a click.
+ *   - `AccountPanel` — from `lg`, the avatar's dropdown: profile, settings, theme, language, log out.
+ *   - `DisplayPanel` — from `lg` and signed out, the theme + language dropdown.
+ *
+ * The rows are built by AppHeader (`NavGroup[]`) and handed in, so the desktop nav row and the
+ * phone list can never disagree about what exists.
+ */
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import Sheet from '@/components/Sheet'
+import AuthButtons from '@/components/AuthButtons'
+import { useToast } from '@/components/ToastContext'
+import { signOut } from '@/lib/supabase'
+import { clearAll } from '@/lib/storage'
+import { useT, LOCALE_LABELS, type Locale } from '@/lib/i18n'
+import {
+  DEFAULT_MODE, THEME_MODES, applyTheme, devicePrefersDark, readStoredMode, resolveTheme,
+  writeStoredMode, type ThemeMode,
+} from '@/lib/theme'
+
+/** One destination. `gate` = needs an account: a signed-out tap opens the sign-in gate instead. */
+export interface NavLink {
+  href: string
+  label: string
+  gate?: 'save' | 'profile'
+  /** The profile's "fields still to fill" count, shown as a badge. */
+  badge?: number
+}
+
+export interface NavGroup {
+  /** A small heading over the group; none for a plain divider. */
+  label?: string
+  links: NavLink[]
+}
+
+export interface Who {
+  name: string
+  contact: string
+  initials: string
+}
+
+/**
+ * Sign out: wipe every `halatuju_` key the student's device holds (her grades, profile, the bursary
+ * hint — `clearAll` keeps the admin and sponsor sessions, which are other people's), end the
+ * Supabase session, and start again from Home with a full load so no screen keeps her data in memory.
+ */
+export async function signOutStudent(): Promise<void> {
+  clearAll()
+  await signOut()
+  window.location.href = '/'
+}
+
+const ROW = 'flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium'
+const ROW_IDLE = 'text-ground-700 hover:bg-ground-50'
+const ROW_HERE = 'bg-primary-50 text-primary-700'
+
+function Badge({ n }: { n: number }) {
+  return (
+    <span className="ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-critical-fill px-1.5 text-xs font-bold text-critical-fill-ink">
+      {n}
+    </span>
+  )
+}
+
+/** One row: a link, or — for a signed-out visitor and an account-only page — a button to the gate. */
+function Row({ link, here, onGo, onGate, first }: {
+  link: NavLink; here: boolean; onGo: () => void; onGate: (l: NavLink) => void
+  first?: RefObject<HTMLAnchorElement & HTMLButtonElement>
+}) {
+  const badge = link.badge ? <Badge n={link.badge} /> : null
+  if (link.gate) {
+    return (
+      <button ref={first} type="button" onClick={() => onGate(link)} className={`${ROW} ${ROW_IDLE}`}>
+        <span className="min-w-0 break-words">{link.label}</span>{badge}
+      </button>
+    )
+  }
+  return (
+    <Link ref={first} href={link.href} onClick={onGo} aria-current={here ? 'page' : undefined}
+      className={`${ROW} ${here ? ROW_HERE : ROW_IDLE}`}>
+      <span className="min-w-0 break-words">{link.label}</span>{badge}
+    </Link>
+  )
+}
+
+function GroupLabel({ children }: { children: ReactNode }) {
+  return <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-ground-500">{children}</p>
+}
+
+const SEGMENTS = 'flex w-full gap-1 rounded-lg bg-ground-100 p-1'
+const segment = (on: boolean) => `inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium ${
+  on ? 'bg-ground-0 text-ground-900 shadow-sm' : 'text-ground-600 hover:text-ground-900'}`
+
+/**
+ * Light / Dark / Auto as three 44 px buttons — `ThemeSelector`'s job (read after mount, write the
+ * device-local choice, apply it), drawn for a menu of big rows. Kept HERE, not as a variant of
+ * ThemeSelector: that file rides eagerly on the console and the sponsor portal, and a variant there
+ * added bytes to ~75 routes (the route median among them) to serve a control only these menus show.
+ */
+function ThemeSegments() {
+  const { t } = useT()
+  const [mode, setMode] = useState<ThemeMode>(DEFAULT_MODE)
+  useEffect(() => { setMode(readStoredMode()) }, [])
+  const pick = (next: ThemeMode) => {
+    setMode(next)
+    writeStoredMode(next)
+    applyTheme(resolveTheme(next, devicePrefersDark()))
+  }
+  return (
+    <div role="radiogroup" aria-label={t('theme.label')} className={SEGMENTS}>
+      {THEME_MODES.map((m) => (
+        <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => pick(m)} className={segment(mode === m)}>
+          {t(`theme.${m}`)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * English / Bahasa Melayu / தமிழ் as three 44 px buttons, sized to their words (`flex-auto`, so
+ * "Bahasa Melayu" gets its room and the row still fits a 320 px sheet body). ⚠ The SAME rule as
+ * `LanguageSelector` (read its header): the pending choice is this control's own state, shown at once
+ * with a spinner while the catalogue loads; a failed load puts it back and says so in the house toast;
+ * an answer for a choice already replaced is ignored. Kept here for the reason `ThemeSegments` is.
+ */
+function LanguageSegments() {
+  const { locale, setLocale, t } = useT()
+  const { showToast } = useToast()
+  const [pending, setPending] = useState<Locale | null>(null)
+  const latest = useRef<Locale | null>(null)
+  const choose = (next: Locale) => {
+    latest.current = next
+    setPending(next)
+    setLocale(next).then(
+      () => { if (latest.current === next) setPending(null) },
+      () => {
+        if (latest.current !== next) return
+        setPending(null)
+        showToast(t('common.languageLoadFailed'), 'error')
+      },
+    )
+  }
+  const shown = pending ?? locale
+  const busy = pending !== null && pending !== locale
+  return (
+    <div role="radiogroup" aria-label={t('settings.language')} aria-busy={busy} className={SEGMENTS}>
+      {(Object.keys(LOCALE_LABELS) as Locale[]).map((key) => (
+        <button key={key} type="button" role="radio" aria-checked={shown === key}
+          onClick={() => { if (key !== shown) choose(key) }} className={segment(shown === key)}>
+          {LOCALE_LABELS[key]}
+          {busy && shown === key && (
+            <span aria-hidden className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-shape border-t-transparent" />
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Theme and language, as 44 px segmented controls. */
+function DisplayControls() {
+  const { t } = useT()
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="px-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-ground-500">{t('theme.label')}</p>
+        <ThemeSegments />
+      </div>
+      <div>
+        <p className="px-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-ground-500">{t('settings.language')}</p>
+        <LanguageSegments />
+      </div>
+    </div>
+  )
+}
+
+export interface PhoneMenuProps {
+  open: boolean
+  onClose: () => void
+  pathname: string | null
+  groups: NavGroup[]
+  /** Signed in: who she is (heads the sheet). Signed out: null. */
+  who: Who | null
+  onGate: (l: NavLink) => void
+  onStudentLogin: () => void
+}
+
+export function PhoneMenu({ open, onClose, pathname, groups, who, onGate, onStudentLogin }: PhoneMenuProps) {
+  const { t } = useT()
+  const router = useRouter()
+  // Focus opens on the FIRST ITEM — Sign up, or Dashboard — never on a field (there is none) and
+  // never on the ×: a keyboard user lands where the list starts.
+  const first = useRef<HTMLAnchorElement & HTMLButtonElement>(null)
+  const go = () => onClose()
+  const gate = (l: NavLink) => { onClose(); onGate(l) }
+  let firstUsed = false
+  const takeFirst = () => { if (firstUsed) return undefined; firstUsed = true; return first }
+
+  const title = who ? (
+    <span className="flex items-center gap-3">
+      <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700">
+        {who.initials}
+      </span>
+      <span className="min-w-0">
+        {who.name && <span className="block truncate text-base">{who.name}</span>}
+        {who.contact && <span className="block truncate text-sm font-normal text-ground-500">{who.contact}</span>}
+      </span>
+    </span>
+  ) : t('common.menu')
+
+  return (
+    <Sheet open={open} onClose={onClose} title={title} label={t('common.menu')} initialFocus={first}
+      testId="student-menu"
+      footer={who ? (
+        <button type="button" onClick={() => { void signOutStudent() }}
+          className={`${ROW} text-critical-600 hover:bg-critical-50`}>
+          {t('header.logout')}
+        </button>
+      ) : undefined}>
+      <nav aria-label={t('common.menu')} className="-mx-2">
+        {!who && (
+          <button ref={takeFirst()} type="button" onClick={() => { onClose(); router.push('/get-started') }}
+            className="mb-2 flex min-h-12 w-full items-center justify-center rounded-lg bg-brand-fill px-4 text-base font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
+            {t('header.signUp')}
+          </button>
+        )}
+        {groups.map((g, i) => (
+          <div key={i} className={i > 0 && !g.label ? 'mt-2 border-t border-ground-100 pt-2' : ''}>
+            {g.label && <GroupLabel>{g.label}</GroupLabel>}
+            {g.links.map((l) => (
+              <Row key={l.href + (l.gate ?? '')} link={l} here={pathname === l.href} onGo={go} onGate={gate}
+                first={takeFirst()} />
+            ))}
+          </div>
+        ))}
+        {!who && (
+          <div>
+            <GroupLabel>{t('header.login.label')}</GroupLabel>
+            <button type="button" onClick={() => { onClose(); onStudentLogin() }} className={`${ROW} ${ROW_IDLE}`}>
+              {t('header.login.student')}
+            </button>
+            <Link href="/sponsor/login" onClick={go} className={`${ROW} ${ROW_IDLE}`}>{t('header.login.sponsor')}</Link>
+            <a href="/admin/login" className={`${ROW} ${ROW_IDLE}`}>{t('header.login.partner')}</a>
+          </div>
+        )}
+        <div className="mt-3 border-t border-ground-100 px-2 pt-4">
+          <DisplayControls />
+        </div>
+      </nav>
+    </Sheet>
+  )
+}
+
+/** The desktop avatar's dropdown. Positioned by AppHeader; this is only its card. */
+export function AccountPanel({ who, links, pathname, onClose }: {
+  who: Who; links: NavLink[]; pathname: string | null; onClose: () => void
+}) {
+  const { t } = useT()
+  return (
+    <div className="w-72 rounded-xl border border-ground-200 bg-ground-0 py-2 shadow-lg">
+      {(who.name || who.contact) && (
+        <div className="border-b border-ground-100 px-4 pb-2 pt-1">
+          {who.name && <p className="truncate text-sm font-medium text-ground-900">{who.name}</p>}
+          {who.contact && <p className="truncate text-xs text-ground-500">{who.contact}</p>}
+        </div>
+      )}
+      <div className="px-2 pt-1">
+        {links.map((l) => (
+          <Row key={l.href} link={l} here={pathname === l.href} onGo={onClose} onGate={() => {}} />
+        ))}
+      </div>
+      <div className="mx-2 mt-1 border-t border-ground-100 px-2 pb-1 pt-3">
+        <DisplayControls />
+      </div>
+      <div className="mx-2 mt-2 border-t border-ground-100 pt-1">
+        <button type="button" onClick={() => { void signOutStudent() }}
+          className={`${ROW} min-h-11 text-critical-600 hover:bg-critical-50`}>
+          {t('header.logout')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Signed out, from `lg`: the theme + language dropdown behind the header's globe button. */
+export function DisplayPanel() {
+  return (
+    <div className="w-80 rounded-xl border border-ground-200 bg-ground-0 p-3 shadow-lg">
+      <DisplayControls />
+    </div>
+  )
+}
+
+const CHEVRON = 'M19 9l-7 7-7-7'
+
+function Chevron({ open, className = 'h-4 w-4 text-ground-400' }: { open: boolean; className?: string }) {
+  return (
+    <svg className={`${className} transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" strokeWidth={2} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d={CHEVRON} />
+    </svg>
+  )
+}
+
+/**
+ * The desktop row (`lg` up): the nav links, BrightPath ▾, and on the right the avatar's dropdown —
+ * or, signed out, the globe "Language" dropdown and Log in ▾ / Sign Up. Hidden below `lg`.
+ *
+ * ⚠ BRIGHTPATH OPENS ON A CLICK (Mobile M2). It was `group-hover` / `group-focus-within`, which an
+ * iPad reached only through Safari's sticky hover — the reason M1a could not adopt Tailwind's
+ * `hoverOnlyWhenSupported`. Now every dropdown here is a button with `aria-expanded` whose list
+ * exists only while open, closing on a second click, a click or tap outside, Escape or navigation.
+ */
+export function DesktopBar({ pathname, mainLinks, b40Links, accountLinks, who, incompleteCount, onGate }: {
+  pathname: string | null
+  mainLinks: NavLink[]
+  b40Links: NavLink[]
+  accountLinks: NavLink[]
+  who: Who | null
+  incompleteCount: number
+  onGate: (l: NavLink) => void
+}) {
+  const { t } = useT()
+  const [drop, setDrop] = useState<null | 'b40' | 'account' | 'display'>(null)
+  const root = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!drop) return
+    const outside = (e: Event) => { if (root.current && !root.current.contains(e.target as Node)) setDrop(null) }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrop(null) }
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('pointerdown', outside)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [drop])
+  useEffect(() => { setDrop(null) }, [pathname])
+
+  const toggle = (which: 'b40' | 'account' | 'display') => setDrop((d) => (d === which ? null : which))
+  const item = (here: boolean) => `inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-medium transition-colors ${
+    here ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:text-ground-900 hover:bg-ground-50'}`
+  // The BrightPath dropdown is "active" on either the student or the sponsor side.
+  const b40Active = !!pathname?.startsWith('/scholarship') || pathname === '/sponsor'
+
+  return (
+    <div ref={root} className="hidden min-w-0 flex-1 items-center lg:flex">
+      <nav className="ml-8 flex items-center gap-1">
+        {mainLinks.slice(0, 2).map((l) => (
+          <Link key={l.href} href={l.href} className={item(pathname === l.href)}
+            aria-current={pathname === l.href ? 'page' : undefined}>{l.label}</Link>
+        ))}
+        <div className="relative">
+          <button type="button" aria-expanded={drop === 'b40'} aria-controls="b40-menu"
+            onClick={() => toggle('b40')} className={item(b40Active)}>
+            {t('scholarship.nav')}
+            <Chevron open={drop === 'b40'} className="h-3.5 w-3.5" />
+          </button>
+          {drop === 'b40' && (
+            <div id="b40-menu" className="absolute left-0 top-full z-20 pt-1">
+              <div className="min-w-[210px] rounded-xl border border-ground-100 bg-ground-0 py-1 shadow-lg">
+                {b40Links.map((c) => (
+                  <Link key={c.href} href={c.href} onClick={() => setDrop(null)}
+                    aria-current={pathname === c.href ? 'page' : undefined}
+                    className={`flex min-h-11 items-center px-4 text-sm ${
+                      pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:bg-ground-50'}`}>
+                    {c.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {mainLinks.slice(2).map((l) => l.gate ? (
+          <button key={l.href} type="button" onClick={() => onGate(l)} className={item(false)}>{l.label}</button>
+        ) : (
+          <Link key={l.href} href={l.href} className={item(pathname === l.href)}
+            aria-current={pathname === l.href ? 'page' : undefined}>{l.label}</Link>
+        ))}
+      </nav>
+
+      <div className="flex-1" />
+
+      <div className="flex items-center gap-3">
+        {who ? (
+          <div className="relative">
+            <button type="button" aria-expanded={drop === 'account'} aria-label={t('header.myProfile')}
+              onClick={() => toggle('account')}
+              className="flex min-h-11 items-center gap-2 rounded-lg px-2 hover:bg-ground-50">
+              <span className="relative">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-600">
+                  {who.initials}
+                </span>
+                {incompleteCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-critical-fill text-[10px] font-bold text-critical-fill-ink">
+                    {incompleteCount}
+                  </span>
+                )}
+              </span>
+              <Chevron open={drop === 'account'} />
+            </button>
+            {drop === 'account' && (
+              <div className="absolute right-0 top-full z-20 mt-1">
+                <AccountPanel who={who} links={accountLinks} pathname={pathname} onClose={() => setDrop(null)} />
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              {/* A globe — the sign for "language" that reads in any language. */}
+              <button type="button" aria-expanded={drop === 'display'} onClick={() => toggle('display')}
+                className="flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-ground-600 hover:bg-ground-50">
+                <svg className="h-5 w-5 text-ground-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0 0c2.5-2.4 3.75-5.4 3.75-9S14.5 5.4 12 3m0 18c-2.5-2.4-3.75-5.4-3.75-9S9.5 5.4 12 3M3.6 9h16.8M3.6 15h16.8" />
+                </svg>
+                {t('settings.language')}
+                <Chevron open={drop === 'display'} />
+              </button>
+              {drop === 'display' && (
+                <div className="absolute right-0 top-full z-20 mt-1"><DisplayPanel /></div>
+              )}
+            </div>
+            <AuthButtons />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

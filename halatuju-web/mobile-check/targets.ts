@@ -128,7 +128,7 @@ export function publicTargets(): Target[] {
  * because surfaces.tsx is on the oversize ledger). Each is read the same way — every
  * `export const …SURFACES: Surface[] = [` block, up to its closing `]` at column 0.
  */
-const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx']
+const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx', 'headerSurfaces.tsx']
 
 export function sandboxSlugs(): string[] {
   const slugs: string[] = []

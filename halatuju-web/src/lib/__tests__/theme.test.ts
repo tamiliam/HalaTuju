@@ -294,15 +294,35 @@ describe('the switch a person can actually click (Layer 1 F7d)', () => {
   it('is mounted on every shell a person can be in', () => {
     // The defect this prevents is silent and partial: the control exists, so the feature looks
     // shipped, but one population — sponsors, or reviewers — has no way to reach it.
+    // Mobile M2: the student header's switch lives in its menus (`StudentMenus` — asserted below).
+    // Home no longer draws a bar of its own.
     const SHELLS = [
-      'src/components/AppHeader.tsx',        // students and the public
       'src/components/admin/Topbar.tsx',     // reviewers, org admins, the officer cockpit
       'src/app/sponsor/(portal)/layout.tsx', // sponsors, who have no settings page at all
-      'src/app/page.tsx',                    // the landing page, which draws its own nav
       'src/app/settings/page.tsx',           // where a person goes looking for it
     ]
     const missing = SHELLS.filter((f) => !read(f).includes('<ThemeSelector />'))
     expect({ missing }).toEqual({ missing: [] })
+  })
+
+  it('reaches every student page: the header loads its menus, the menus mount the switch, Home draws that header', () => {
+    // Students and the public (Mobile M2): the switch is `ThemeSegments` in `StudentMenus`, the
+    // header's lazily loaded menus — the phone sheet, the avatar dropdown and the signed-out
+    // dropdown all draw it through `DisplayControls`. Each hop is part of "mounted": a header that
+    // stopped importing its menus, or a Home that went back to its own bar, would drop it silently.
+    expect(read('src/components/AppHeader.tsx')).toMatch(/import\('\.\/StudentMenus'\)/)
+    expect(read('src/app/page.tsx')).toMatch(/<AppHeader \/>/)
+    const menus = read('src/components/StudentMenus.tsx')
+    expect(menus).toMatch(/function DisplayControls[\s\S]*<ThemeSegments \/>/)
+    expect((menus.match(/<DisplayControls \/>/g) ?? []).length).toBe(3)
+    // It is the same switch as ThemeSelector: it writes the device-local choice and applies it…
+    const segments = menus.slice(menus.indexOf('function ThemeSegments'), menus.indexOf('function LanguageSegments'))
+    expect(segments).toMatch(/writeStoredMode\(next\)/)
+    expect(segments).toMatch(/applyTheme\(resolveTheme\(next, devicePrefersDark\(\)\)\)/)
+    // …and, like ThemeSelector, its mount effect only READS (the before-paint script owns applying).
+    const mount = segments.slice(segments.indexOf('useEffect(() =>'), segments.indexOf('const pick'))
+    expect(mount).toContain('readStoredMode')
+    expect(mount).not.toContain('applyTheme')
   })
 
   it('keeps `auto` live for the whole tab, from the provider stack and not from the control', () => {
@@ -784,6 +804,8 @@ export const F2B_FILES = [
   'src/components/AliranPicker.tsx', 'src/components/PathwayCards.tsx',
   'src/components/LanguageSelector.tsx', 'src/components/ReferralCapture.tsx',
   'src/components/HtmlLang.tsx', 'src/components/BrandLogo.tsx',
+  // Mobile M2: the student shell's new pieces.
+  'src/components/StudentMenus.tsx', 'src/components/FlowHeader.tsx', 'src/components/StpmSubjectRow.tsx',
 ]
 
 assertConverted('the remaining shared components (F2b)', F2B_FILES, 20)

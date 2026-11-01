@@ -1,21 +1,29 @@
 /**
- * Static guard: the Home page's top bar fits a phone (TD-310, 2026-09-29).
+ * Static guard: the student shell's rows fit a phone — the one student header (Mobile M2; Home's own
+ * bar before it, TD-310), the onboarding header, and the grade rows.
  *
- * The failure it prevents. The bar (logo · Auto · English · Log in · Sign Up) was one row that
- * could not wrap. Measured in Chromium at 390 px wide it was 414 px in English, 432 in Malay and
- * 588 in Tamil, so the whole Home page scrolled sideways and "Log in" broke onto two lines — and
- * switching the product to Lexend (a wider face) made it worse. Now the controls drop under the
- * logo and wrap among themselves, and the login label never breaks.
+ * The failures it prevents.
+ *   - TD-310 (2026-09-29): Home's bar was one row that could not wrap — 414 px in English, 432 in
+ *     Malay and 588 in Tamil at 390 — so Home scrolled sideways. The fix let it wrap, and it then
+ *     stood three rows (184 px) tall in every language. Mobile M2 replaced it with the ONE student
+ *     header: a single row that cannot wrap because every item but the logo is a fixed, measured
+ *     width — the logo, ONE action, the menu button. Two actions do not fit: "Log in" + "Sign up"
+ *     measured 385 px in Tamil against 358 at 390 wide.
+ *   - Mobile M2: in Malay the onboarding row (logo + "Langkah 2 daripada 3" + bars, 268 px wide)
+ *     squeezed the logo to 74 px at 390 and 44 px at 360.
+ *   - Mobile M2: the STPM row's "not counted" tag left the subject picker ~12 px on a phone.
  *
- * What this proves: the classes that do that are still there. What it does NOT prove: that the bar
- * fits — jsdom cannot lay out a page. That was measured in a real browser at 390 and 360 px in all
- * three languages (see CHANGELOG TD-310); this test keeps those classes from silently reverting.
+ * What this proves: the classes and the structure that do that are still there. What it does NOT
+ * prove: that the rows fit — jsdom cannot lay out a page. mobile-check measures that in a real
+ * browser (sandbox: header-*, onboarding-stepper, stpm-grade-rows) at 360 and 390 in all three
+ * languages; this test keeps the structure from silently reverting.
  */
 import { floorCount, readWeb } from '@/test/sourceGuard'
 
-const home = readWeb('src/app/page.tsx', 'the Home page owns its own top bar (not AppHeader)')
+const home = readWeb('src/app/page.tsx', 'the Home page draws the shared student header')
+const header = readWeb('src/components/AppHeader.tsx', 'the one student header (Mobile M2)')
 const auth = readWeb('src/components/AuthButtons.tsx',
-  'the Log in / Sign Up pair shared by the Home bar and the app header')
+  'the desktop Log in ▾ / Sign Up pair in the student header')
 
 /** The className of the first element whose opening tag matches `tagRe`. */
 function classOf(src: string, tagRe: RegExp): string {
@@ -26,30 +34,106 @@ function classOf(src: string, tagRe: RegExp): string {
 
 const classes = (s: string) => s.split(/\s+/)
 
-describe('the Home top bar fits a phone', () => {
-  it('the bar wraps, so the controls drop under the logo instead of widening the page', () => {
-    expect(classes(classOf(home, /<nav/))).toEqual(expect.arrayContaining(['flex', 'flex-wrap']))
+describe('one student header, one row on a phone (Mobile M2; was TD-310)', () => {
+  it('Home draws the shared student header, not a bar of its own', () => {
+    expect(home).toMatch(/<AppHeader \/>/)
+    expect(home).not.toMatch(/<nav\b/)
+    expect(home).not.toMatch(/<(ThemeSelector|LanguageSelector|AuthButtons)\b/)
   })
 
-  it('the logo never shrinks to make room', () => {
-    // The first <div> inside the nav holds the logo.
-    const logo = classOf(home, /<nav[^>]*>\s*<div/)
-    expect(classes(logo)).toContain('shrink-0')
+  it('the header row cannot wrap, and the logo never shrinks to make room', () => {
+    const row = classOf(header, /<header[^>]*>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<div/)
+    expect(classes(row)).toEqual(expect.arrayContaining(['flex', 'items-center']))
+    expect(classes(row)).not.toContain('flex-wrap')
+    expect(classes(classOf(header, /<Link href="\/"/))).toContain('shrink-0')
   })
 
-  it('the controls wrap among themselves (Tamil labels are wider than a phone)', () => {
-    const controls = home.match(/<\/div>\s*<div className="([^"]+)">\s*<ThemeSelector \/>/)
-    expect(controls).not.toBeNull()
-    expect(classes(controls![1])).toEqual(expect.arrayContaining(['flex', 'flex-wrap']))
+  it('the phone side is ONE action and the menu button — never the two-button pair', () => {
+    const start = header.indexOf('{/* Phone right side')
+    expect(start).toBeGreaterThan(-1)
+    const phone = header.slice(start, header.indexOf('</header>'))
+    expect(classes(classOf(phone, /<div/))).toEqual(expect.arrayContaining(['shrink-0', 'lg:hidden']))
+    expect(phone).not.toMatch(/<AuthButtons\b/)
+    expect(phone).not.toMatch(/header\.signUp/)
+    // "Log in" never breaks onto two lines, and both controls are 44 px targets.
+    const login = phone.match(/className="([^"]+)"\s*>\s*\{t\('header\.login\.label'\)\}/)
+    expect(login).not.toBeNull()
+    expect(classes(login![1])).toEqual(expect.arrayContaining(['whitespace-nowrap', 'min-h-11']))
+    const menu = phone.match(/aria-label=\{t\('common\.menu'\)\}[\s\S]*?className="([^"]+)"/)
+    expect(menu).not.toBeNull()
+    expect(classes(menu![1])).toEqual(expect.arrayContaining(['h-11', 'w-11']))
   })
 
-  it('"Log in" stays on one line, like "Sign Up" beside it', () => {
+  it('the bar never imports the menus\' heavy parts — they load on the first open', () => {
+    // ⚠ The bundle budget is the real guard; this names the cause when it trips.
+    // (`import type` is erased at build, so the menus' TYPES may be named.)
+    expect(header).not.toMatch(/^import (?!type ).*(ThemeSelector|LanguageSelector|Sheet|AuthButtons|StudentMenus)['"]/m)
+    expect(header).toMatch(/import\('\.\/StudentMenus'\)/)
+  })
+
+  it('"Log in" stays on one line in the desktop pair, like "Sign Up" beside it', () => {
     const buttons = Array.from(auth.matchAll(/<button[\s\S]*?className="([^"]+)"/g), (m) => m[1])
     // The "Log in ▾" toggle, the Student item inside its menu, and "Sign Up".
     expect(buttons).toHaveLength(3)
     const [login, , signUp] = buttons
     expect(classes(login)).toContain('whitespace-nowrap')
     expect(classes(signUp)).toContain('whitespace-nowrap')
+  })
+})
+
+describe('the onboarding header fits a 360 px phone in Malay (Mobile M2)', () => {
+  const flow = readWeb('src/components/FlowHeader.tsx', 'the onboarding header')
+  const stepper = readWeb('src/components/ProgressStepper.tsx', 'the step indicator')
+  const PAGES = [
+    ['exam-type', 1], ['grades', 2], ['higher-grades', 2], ['stpm-grades', 2], ['profile', 3],
+  ] as const
+
+  it('the logo never shrinks', () => {
+    expect(classes(classOf(flow, /<Link href="\/"/))).toContain('shrink-0')
+  })
+
+  it('the step words sit OVER the bars, so the indicator is only as wide as its words', () => {
+    expect(classes(classOf(stepper, /return \(\s*<div/))).toEqual(expect.arrayContaining(['flex', 'flex-col']))
+  })
+
+  it('every onboarding page uses it, and none keeps a copy of its own', () => {
+    for (const [page, step] of PAGES) {
+      const src = readWeb(`src/app/onboarding/${page}/page.tsx`, 'an onboarding step')
+      expect({ page, uses: src.includes(`<FlowHeader step={${step}} />`) }).toEqual({ page, uses: true })
+      expect({ page, copy: /<ProgressStepper\b|<BrandLogo\b/.test(src) }).toEqual({ page, copy: false })
+    }
+  })
+})
+
+describe('the grade rows fit a phone (Mobile M2)', () => {
+  it('an STPM row restacks below sm: the tag can never crush the subject', () => {
+    const row = readWeb('src/components/StpmSubjectRow.tsx', 'one STPM subject row')
+    const root = row.match(/return \(\s*<div className=\{`([^`]+)`/)
+    expect(root).not.toBeNull()
+    expect(classes(root![1])).toEqual(expect.arrayContaining(['flex', 'flex-wrap']))
+    // The grade + tag group takes its own line on a phone.
+    expect(row).toMatch(/className="order-3 flex w-full min-w-0[^"]*sm:w-auto/)
+    const page = readWeb('src/app/onboarding/stpm-grades/page.tsx', 'the STPM grades step')
+    floorCount(Array.from(page.matchAll(/<StpmSubjectRow\b/g)), 3, 'STPM rows drawn by the shared row',
+      'the compulsory subject, the stream subjects and the elective')
+  })
+
+  it('every remove / clear button on the grades steps is a 44 px target', () => {
+    const FILES = [
+      'src/app/onboarding/grades/page.tsx', 'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx',
+    ]
+    const found: string[] = []
+    for (const f of FILES) {
+      const src = readWeb(f, 'a grades step')
+      for (const m of src.matchAll(/aria-label=\{t\('common\.(remove|clear)'\)\}/g)) {
+        const open = src.lastIndexOf('<button', m.index)
+        const cls = src.slice(open, m.index! + 200).match(/className="([^"]+)"/)
+        expect({ f, cls: cls?.[1] }).toEqual({ f, cls: expect.stringMatching(/(^|\s)h-11(\s|$)/) })
+        expect({ f, cls: cls?.[1] }).toEqual({ f, cls: expect.stringMatching(/(^|\s)w-11(\s|$)/) })
+        found.push(f)
+      }
+    }
+    floorCount(found, 5, 'remove/clear buttons checked', 'grades: core clear + compact row; SPM block: two; STPM row: one')
   })
 })
 

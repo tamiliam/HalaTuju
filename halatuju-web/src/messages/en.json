@@ -38,7 +38,6 @@
   },
   "header": {
     "myProfile": "My Profile",
-    "myApplications": "My Applications",
     "logout": "Log Out",
     "signUp": "Sign Up",
     "login": {
