@@ -79,6 +79,69 @@ the eight SPM certificates are pages split out of combined uploads (`__p<n>`); p
 so the live hit rate on combined uploads is lower than the corpus score. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
 else gcloud Application Default Credentials.
 
+## Offer letters — exact read (offer exact-read S1, 2026-11-01)
+Roadmap: `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. The corpus is
+`fixtures/offer_letters_2026-11-01/` (gitignored PII): `fixtures/offer_letter/<key>.<ext>`,
+`snapshots/<key>.json` (the stored production read), `programme_by_key.csv`, `context.json`,
+`applicants.json`, `_manifest.csv`. The old `fixtures/offer_letter/` (~95 letters) is what "seen
+before" means (matched by doc id `__d<id>`).
+
+**The correct answer** — `snapshots/<key>.offer_expect.json` beside the snapshot (gitignored PII).
+Every key present; a field the letter does not print is JSON `null`, explicitly:
+
+| Key | What to write |
+|-----|---------------|
+| `candidate_name`, `candidate_nric` | as printed |
+| `institution_as_printed` | the college / campus / school line, exactly as printed |
+| `institution_campus` | the campus a person would pick from that line (may be `null`; not scored — kept for the campus matcher, TD-451/452) |
+| `programme` | the programme / course title, as printed |
+| `stream` | STPM "Bidang" / matriculation "Jurusan" (`null` for other families) |
+| `specialisation` | PISMP "Bidang Pengkhususan" (`null` for other families) |
+| `intake` | the session / intake, without its label |
+| `reporting_date` | the report / registration date (a range: its first day) |
+| `offer_date` | the issue date (not the print date) |
+| `issuer` | the body that issued the letter |
+| `duration`, `fees` | as printed — written, never scored (decision D3) |
+| `is_offer_letter` | `yes` · `conditional` · `portal_page` · `not_offer` · `unsure` |
+| `pages` | int, pages in the file |
+| `unsure_fields` | list of the field names above you are not sure of |
+| `labeller_note` | short, or `null` — no personal data beyond the fields |
+| `family` (optional) | `stpm` · `matriculation` · `polytechnic` · `pismp` · `uitm` · `other_university` · `tvet` · `other`; absent/`null` = derived from the stored read |
+
+**The scorer** `offer_read_check.py` compares a read (default the stored `vision_fields.fields`;
+`--read file:<suffix>` reads `snapshots/<key><suffix>`, for S3's fresh reads) with the answer, per
+core field — name, nric, institution, programme (STPM/matric: the stream; PISMP: the
+specialisation; else the programme), intake, reporting_date — as **exact / blank_correct /
+missing / wrong / extra**; offer_date and issuer are scored but not core. A letter is **fully
+exact** when every core field is exact or blank_correct. Tidying only — case, spacing,
+punctuation, accents, NRIC digits, dates to `D Mon YYYY` (Malay/English months, numeric dates),
+an intake label dropped — and **no fuzzy matching**: one letter different is `wrong`. Reports the
+totals, per field, and by family, input kind (pdf / photo), capture, programme, split and answer
+kind, the letters not fully exact (keys + field names), and — whatever the split, with or without
+answers — the **known-format-AI count**: STPM / matriculation / polytechnic letters whose stored
+read is the AI reader's, by family, input kind and programme (likely cheap S5 wins). Prints keys,
+field names and counts only, never a value; sorted, identical on re-run; `--json` for the same
+counts as JSON. Exit 1 when an answer file is malformed (listed as `FORMAT <key> <field>`).
+
+**The held-out split** `offer_split.json` (committed — keys, seed and rule only) is made by
+`offer_split.py`: ~90 letters drawn with a fixed seed from the letters **not** in the old corpus
+**whose stored read is the AI reader's** (`capture='ai'` — the fixed-format reader's locks are
+covered by the stpm/matric/poly parse checks and are not hand-labelled in S1), stratified by
+family + programme. Every other key is dev. `--check` re-derives it and exits 1 on a difference.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_read_check.py                   # held-out baseline
+python -I apps/scholarship/eval/offer_read_check.py --split dev       # or --split all, --json
+python -I apps/scholarship/eval/offer_split.py --check                # the split still reproduces
+```
+Run from a checkout that holds the corpus, or pass `--eval-dir` (and `--old-dir` for the split).
+Committed tests: `tests/test_offer_read_scorer.py` (synthetic twins only).
+
+`fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
+an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
+dropped most profiles before 2026-11-01.
+
 ## Limits (honest)
 - It scores each document **in isolation**. A check that needs a companion document present
   (e.g. a payslip verified against the matching parent IC) sees only the one doc — note such

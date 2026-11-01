@@ -42,14 +42,35 @@ PROFILE_COLS = (
     "referral_source")
 
 
-def rest(base, key, table, select, params=None):
-    """Read rows from PostgREST (service key bypasses RLS). Returns a list of dicts."""
-    q = {"select": select, "limit": "5000", **(params or {})}
-    url = f"{base}/rest/v1/{table}?" + urllib.parse.urlencode(q)
+#: Rows asked for per request. ⚠ PostgREST CAPS a response at the server's max-rows (Supabase:
+#: 1000) whatever `limit` says — the old single `limit=5000` GET silently got the first 1000
+#: profiles only (offer exact-read S1, 2026-11-01: 191 of 251 offer applicants had no profile).
+PAGE_ROWS = 1000
+
+
+def rest_page(base, key, table, query):
+    """ONE read-only PostgREST GET (service key bypasses RLS). Returns a list of dicts."""
+    url = f"{base}/rest/v1/{table}?" + urllib.parse.urlencode(query)
     req = urllib.request.Request(url, headers={
         "apikey": key, "Authorization": f"Bearer {key}", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read().decode())
+
+
+def rest(base, key, table, select, params=None, order="id", get_page=rest_page):
+    """EVERY matching row, paged with `limit` + `offset` over a stable `order`.
+
+    It stops only on an EMPTY page, never on a short one: a server cap below `PAGE_ROWS` returns
+    short pages and must not end the read early (that is how rows were dropped before)."""
+    rows, offset = [], 0
+    while True:
+        query = {"select": select, "order": order, "limit": str(PAGE_ROWS),
+                 "offset": str(offset), **(params or {})}
+        page = get_page(base, key, table, query)
+        if not page:
+            return rows
+        rows.extend(page)
+        offset += len(page)
 
 
 def download(base, key, path):
@@ -97,7 +118,8 @@ def main():
         "vision_nric,vision_name,vision_address,vision_error,vision_run_at,vision_fields,application_id",
         {"doc_type": f"in.{types_in}"})
     apps = {a["id"]: a for a in rest(sb_base, sb_key, "scholarship_applications", "*")}
-    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles", PROFILE_COLS)}
+    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles", PROFILE_COLS,
+                                                    order="supabase_user_id")}
     rows = []
     for d in docs:
         if not (d.get("storage_path") or "").strip():
