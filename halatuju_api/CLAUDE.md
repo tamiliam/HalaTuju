@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0 + M1 DONE (M1 live 2026-11-01, main 3ba3be3d, web-01049-tds), NEXT = M2 student shell + onboarding
+### Mobile-native arc (separate stream) — M0 + M1 + M2 DONE (M2 live 2026-11-01, main ab1aebc0), NEXT = M3 student discovery
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1137,7 +1137,11 @@ and the three named panels fails Jest; `dismissible={false}` for sign-in/consent
 portalled, so pass page-wrapper classes such as `font-plex` via `className`); text fields are 16 px on phones by ONE
 rule at the end of `globals.css`; Tamil renders in Mukta Malar (`--font-tamil`, Tamil-only unicode-range); phone
 fields autofill `tel-national` (never `tel`). `/scholarship/application` sits ~0.23 kB under its first-load line
-(TD-433) and the median 0.5 kB — lazy-load before adding weight. M2 is Stitch-first (one student header).
+(TD-433) and the median 0.44 kB — lazy-load before adding weight. **Since M2:** one student header (`AppHeader.tsx`)
+on every student page incl. Home; its menus, desktop row, nav lists and theme/language live in the lazy
+`StudentMenus.tsx` with an eager Log in / Log out fallback; student sign-out is ONLY `src/lib/studentSignOut.ts`
+(forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. M3 is
+Stitch-first (search filters in a sheet, course page scroll trap, saved compare on phones).
 
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b LIVE (main 7dc9c15d; api-01224-s6w, web-01047-lvq; 0196 applied by hand, ledger row in)
 

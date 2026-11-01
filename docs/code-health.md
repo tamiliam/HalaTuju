@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-01 | ab1aebc | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 167 | 0 | 0 | ok | ok |
 | 2026-11-01 | 49ec378 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 80 | 92 | 0 | 3 | 12 | 163 | 0 | 0 | ok | ok |
 | 2026-11-01 | f908d5b | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 79 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
 | 2026-10-31 | d85eedb | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 76 | 92 | 0 | 3 | 13 | 163 | 0 | 0 | ok | ok |
@@ -117,7 +118,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-01, 49ec378, window 2026-08-03 onward)
+## Latest run (2026-11-01, ab1aebc, window 2026-08-03 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -134,7 +135,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 259 fix / 245 feat commits since 2026-08-03
+- 265 fix / 251 feat commits since 2026-08-03
 
 ### Files over 1000 lines
 - `2435  halatuju_api/apps/scholarship/views.py`
@@ -162,7 +163,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `253  halatuju_api/apps/courses/views.py:126 get`
 - `244  halatuju_api/apps/courses/management/commands/classify_stpm_fields.py:296 classify_stpm_course`
 - `215  halatuju_api/apps/scholarship/verdict_engine.py:499 _verdict_income`
-- `190  halatuju_api/apps/scholarship/services/offer_sync.py:184 autofill_pathway_from_offer`
+- `191  halatuju_api/apps/scholarship/services/offer_sync.py:184 autofill_pathway_from_offer`
 - `186  halatuju_api/apps/scholarship/resolution.py:282 doc_match_verdict`
 - `169  halatuju_api/apps/courses/management/commands/sync_stpm_mohe.py:37 handle`
 - `165  halatuju_api/apps/courses/views.py:1017 get`
@@ -180,7 +181,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 18 edges (25 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 52 edges (254 import statements)
+- scholarship -> courses: 53 edges (260 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -199,10 +200,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 41 of 336 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
+- 41 of 340 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 447 entries have a defining line; 163 carry no resolution marker on it
+- 451 entries have a defining line; 167 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -229,7 +230,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at f908d5b
+- budgets no looser than at 49ec378
 
 ### tsc
 - 0 errors in 0 files
@@ -237,7 +238,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6899
+- Total keys per locale: 6908
 
 ## Reviews
 
@@ -249,6 +250,19 @@ _Decisions per run, newest first. Written by a person or the agent — never by 
 this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
 the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
 offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
+
+### 2026-11-01 (ab1aebc, Mobile-native M2 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since 49ec378 holds Mobile M2 (web only),
+the M1 close-review fixes, Sprint 7b follow-up and the offer link / empty-pick fill. Unchanged: `fix%` 51, `hot#1`
+officerCockpit.ts 28.2, `big` 15, `long` 15, `dup` 4, `supp` 92, `skip` 0, `mirror` 3, `guard%` 12, `unused` 0,
+`tsc` 0. Moved:
+
+- **`xapp` 80 -> 81 (not M2).** M2 changed no api file; the import is the offer-link / 7b follow-up work. **Accepted**
+  here as not this sprint's.
+- **`td_open` 163 -> 167.** TD-451, TD-452 (offer link close) and TD-453 (adopt `hoverOnlyWhenSupported` after a
+  hover sweep), TD-454 (Google-signed-in student without a verified NRIC sees the signed-out header; pre-existing,
+  found by M2's review). All low. **Accepted.**
 
 ### 2026-11-01 (49ec378, Mobile-native M1 close) — 0 FAIL
 

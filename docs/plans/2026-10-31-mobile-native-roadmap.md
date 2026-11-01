@@ -81,8 +81,7 @@ Each sprint: tests + `mobile-check` green, owner sees phone screenshots, **owner
 
 **M1 — Global foundations** — DONE, live 2026-11-01 (main 3ba3be3d; retrospective `docs/retrospectives/retrospective-2026-11-01-mobile-m1.md`). Tamil in Mukta Malar, 16 px fields, favicon 5.9 KB, safe areas, tap-safe InfoTip/Toggle/menus, keyboards, TD-311 closed; shared `Sheet` with 15 overlays moved and 3 full-screen panels exempt by name.
 
-**M2 — Student shell + onboarding** (medium; Stitch first for the header)
-One student header on all pages (Home included; theme/language move into the menu); menu height cap + scroll + no duplicates; onboarding header fit; STPM/SPM grade rows restack; stream buttons; 44 px remove buttons.
+**M2 — Student shell + onboarding** — DONE, live 2026-11-01 (main ab1aebc0; retrospective `docs/retrospectives/retrospective-2026-11-01-mobile-m2.md`). One student header everywhere incl. Home, phone menu in `Sheet`, onboarding `FlowHeader`, STPM rows restacked, 44 px targets, safe student sign-out.
 
 **M3 — Student discovery** (medium; Stitch first for filters + compare)
 Search filters in a bottom sheet ("Filters · 3"); course page without inner scroll traps; saved-course compare on phones (card-swipe compare); status pills wrap; course card save target; report page width.
