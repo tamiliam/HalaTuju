@@ -235,6 +235,22 @@ Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not dep
 - Nothing that decides, queries or pays reads `exam_year_status` (the Check-2 "exam year unknown" ask reads
   `exam_year` only).
 - Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
+## Offer letters read exactly — Sprint 2 (tooling half) — 2026-11-01 — BUILT, not deployed
+
+Measurement tooling only; no production code, no migration, no Gemini call.
+
+- **Free text for every letter.** `eval/capture_ocr.py` gains `--corpus` (read `<dir>/fixtures/<type>`, write
+  `<dir>/snapshots`), `--reuse-from` (an earlier page-1 Vision capture stands in, no second call) and
+  `--dry-run` (counts and cost, nothing written). Run once on the offer corpus: 134 text layers, 57 earlier
+  captures, 95 letters by Vision (**106 calls, ≈ US$0.16 list price, inside the free 1,000**), 1 not-a-PDF file
+  unreadable.
+- **`eval/offer_replay.py`** — today's deterministic offer reader and offer genuineness on the text production
+  would feed them, cached per letter as `<key>.replay.json` (the scorer reads it with `--read file:.replay.json`);
+  lock / fallback counts, the known-format-AI letters' lock and miss reasons, genuineness stored vs today.
+- **`eval/offer_failure_map.py`** — per core field wrong / missing / extra by family, pages, input kind, stored
+  capture and versions; a ranked, rule-based list of failure kinds, each tagged old read / today too / ai, S3.
+- `tests/test_offer_replay.py`, `tests/test_capture_ocr.py` (synthetic twins).
+
 ## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — BUILT, not deployed
 
 Measurement tooling only; no production code, no migration, no paid call
