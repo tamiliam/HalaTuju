@@ -61,7 +61,7 @@ export default function FilterPill({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'px-3 py-1.5 text-sm font-medium rounded-lg border',
+          'min-h-11 px-3 py-1.5 text-sm font-medium rounded-lg border',
           'flex items-center gap-1.5 transition-colors',
           value
             ? 'border-brand-shape bg-primary-50 text-primary-700 hover:bg-primary-100'
@@ -88,7 +88,7 @@ export default function FilterPill({
             type="button"
             onClick={() => handleSelect('')}
             className={clsx(
-              'w-full text-left px-4 py-2 text-sm transition-colors',
+              'w-full min-h-11 text-left px-4 py-2 text-sm transition-colors',
               !value
                 ? 'bg-primary-50 text-primary-600 font-medium'
                 : 'text-ground-700 hover:bg-ground-50'
@@ -104,7 +104,7 @@ export default function FilterPill({
               type="button"
               onClick={() => handleSelect(option)}
               className={clsx(
-                'w-full text-left px-4 py-2 text-sm transition-colors',
+                'w-full min-h-11 text-left px-4 py-2 text-sm transition-colors',
                 value === option
                   ? 'bg-primary-50 text-primary-600 font-medium'
                   : 'text-ground-700 hover:bg-ground-50'

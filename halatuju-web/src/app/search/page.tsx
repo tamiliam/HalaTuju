@@ -2,19 +2,23 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { searchCourses, checkEligibility, checkStpmEligibility, type SearchCourse, type SearchFilters, type EligibleCourse, type StudentProfile } from '@/lib/api'
+import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCourse } from '@/lib/api'
+import { loadEligibleCourses } from '@/lib/searchEligibility'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import CourseCard from '@/components/CourseCard'
 import FilterPill from '@/components/FilterPill'
+import SearchFilterSheet, { type FacetGroup } from '@/components/search/SearchFilterSheet'
 import { useAuth } from '@/lib/auth-context'
+// Mobile M3: the phone filter sheet's words (the `discovery` slice), loaded by this PAGE.
+import '@/lib/messagesDiscovery'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
 import { isThirdRoute } from '@/lib/qualification'
 import { isBumiputera } from '@/lib/bumiputera'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 
 export default function SearchPage() {
   return (
@@ -53,6 +57,8 @@ function SearchPageInner() {
   const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
   const [aliran, setAliran] = useState(searchParams.get('aliran') || '')
   const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
+  // Mobile M3: the phone filter sheet (below `md`; the desktop keeps its row of pills).
+  const [filtersOpen, setFiltersOpen] = useState(false)
   // Matriculation / Asasi / Diploma results held in this browser (third results route S2b)?
   const [thirdRoute, setThirdRoute] = useState(false)
   // The server's results_held when a profile is loaded (S2b review), else this browser's own.
@@ -76,72 +82,7 @@ function SearchPageInner() {
   const fetchEligibleIds = useCallback(async () => {
     try {
       setEligibleLoading(true)
-      const allIds = new Set<string>()
-      const allMap = new Map<string, EligibleCourse>()
-
-      // SPM eligibility — merge grades (stored separately) into profile
-      const stored = localStorage.getItem(KEY_PROFILE)
-      const gradesStr = localStorage.getItem(KEY_GRADES)
-      if (stored && gradesStr) {
-        const parsedProfile = JSON.parse(stored)
-        const parsedGrades = JSON.parse(gradesStr)
-        // TD-063: include the explicit stream picks for the merit weighting.
-        const aliranStr = localStorage.getItem(KEY_ALIRAN)
-        const streamSubjects = aliranStr ? JSON.parse(aliranStr) : undefined
-        const profile: StudentProfile = {
-          ...parsedProfile, grades: parsedGrades,
-          ...(streamSubjects && streamSubjects.length && { stream_subjects: streamSubjects }),
-        }
-        if (Object.keys(profile.grades).length > 0) {
-          const data = await checkEligibility(profile)
-          for (const c of data.eligible_courses) {
-            allIds.add(c.course_id)
-            allMap.set(c.course_id, c)
-          }
-        }
-      }
-
-      // STPM eligibility — check if STPM grades exist
-      const examType = localStorage.getItem(KEY_EXAM_TYPE)
-      const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
-      const stpmCgpaStr = localStorage.getItem(KEY_STPM_CGPA)
-      const muetBandStr = localStorage.getItem(KEY_MUET_BAND)
-      const spmPrereqStr = localStorage.getItem(KEY_SPM_PREREQ)
-
-      if (examType === 'stpm' && stpmGradesStr && stpmCgpaStr && muetBandStr) {
-        const profileData = stored ? JSON.parse(stored) : {}
-        const genderMap: Record<string, string> = { male: 'Lelaki', female: 'Perempuan' }
-        const nationalityMap: Record<string, string> = { malaysian: 'Warganegara', non_malaysian: 'Bukan Warganegara' }
-
-        const stpmData = await checkStpmEligibility({
-          stpm_grades: JSON.parse(stpmGradesStr),
-          spm_grades: spmPrereqStr ? JSON.parse(spmPrereqStr) : {},
-          cgpa: parseFloat(stpmCgpaStr),
-          muet_band: parseInt(muetBandStr),
-          gender: genderMap[profileData.gender] || '',
-          nationality: nationalityMap[profileData.nationality] || 'Warganegara',
-          colorblind: !!profileData.colorblind,
-          bumiputera: isBumiputera(profileData),   // Bumi coverage Sprint B
-        })
-
-        // Map STPM eligible courses to EligibleCourse format
-        for (const prog of stpmData.eligible_courses) {
-          allIds.add(prog.course_id)
-          allMap.set(prog.course_id, {
-            course_id: prog.course_id,
-            course_name: prog.course_name,
-            level: 'Ijazah Sarjana Muda',
-            field: '',
-            field_key: prog.field_key || '',
-            source_type: 'ua',
-            merit_cutoff: prog.merit_score,
-            student_merit: null,
-            merit_label: null,
-            merit_color: null,
-          })
-        }
-      }
-
+      const { ids: allIds, map: allMap } = await loadEligibleCourses()
       setEligibleIds(allIds)
       setEligibleMap(allMap)
     } catch {
@@ -331,25 +272,56 @@ function SearchPageInner() {
     stpm: 'Tingkatan 6',
   }
 
+  // One list of facets for BOTH faces: the desktop pills and the phone sheet's chip groups.
+  const typeOptions = (filters?.source_types ?? []).filter(t => t !== 'tvet').sort((a, b) =>
+    (SOURCE_LABELS[a] ?? a).localeCompare(SOURCE_LABELS[b] ?? b, 'ms'))
+  const alirans = filters?.alirans ?? []
+  const fieldKeys = taxonomyLoaded
+    ? [...fieldOptions].sort((a, b) => a.label.localeCompare(b.label, 'ms')).map(f => f.key)
+    : (filters?.fields ?? [])
+  const fieldLabels = taxonomyLoaded ? Object.fromEntries(fieldOptions.map(f => [f.key, f.label])) : undefined
+  const option = (labels?: Record<string, string>) => (value: string) => ({ value, label: labels?.[value] ?? value })
+  const facets: FacetGroup[] = [
+    { key: 'qualification', title: t('search.qualification'), value: qualification, onChange: setQualification,
+      options: ['SPM', 'STPM'].map(option()) },
+    { key: 'type', title: t('search.allTypes'), value: sourceType, onChange: handleSourceTypeChange,
+      options: typeOptions.map(option(SOURCE_LABELS)) },
+    ...(sourceType === 'pismp' && alirans.length > 0 ? [{
+      key: 'aliran', title: t('search.allAlirans'), value: aliran, onChange: setAliran,
+      options: alirans.map(a => ({ value: a.value, label: a.label })) }] : []),
+    { key: 'level', title: t('search.allLevels'), value: level, onChange: setLevel,
+      options: (filters?.levels ?? []).map(option()) },
+    { key: 'state', title: t('search.allStates'), value: state, onChange: setState, collapseAfter: 6,
+      options: (filters?.states ?? []).map(option()) },
+    { key: 'field', title: t('search.allFields'), value: field, onChange: setField, collapseAfter: 6,
+      options: fieldKeys.map(option(fieldLabels)) },
+  ]
+  // The phone bar's "Filters · N" and its removable chips: every picked facet (not the words).
+  const picked = facets.filter(f => f.value).map(f => ({
+    key: f.key, label: f.options.find(o => o.value === f.value)?.label ?? f.value, clear: () => f.onChange(''),
+  }))
+
   return (
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-5 sm:px-6 md:py-8">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <h1 className="text-2xl font-bold text-ground-900 mb-1">
             {t('search.title')}
           </h1>
-          <p className="text-ground-600 text-sm">
+          {/* A phone spends its first screen on the search box and results (Mobile M3). */}
+          <p className="hidden text-ground-600 text-sm sm:block">
             {t('search.subtitle')}
           </p>
         </div>
 
         {/* Search + Filter container */}
-        <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-4 mb-4">
-          {/* Search bar */}
-          <div className="relative mb-3">
+        <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-3 mb-4 md:p-4">
+          {/* Search bar — on a phone with the Filters button beside it */}
+          <div className="mb-3 flex gap-2">
+          <div className="relative min-w-0 flex-1">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ground-400"
               fill="none"
@@ -371,14 +343,57 @@ function SearchPageInner() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
+          {/* Phone: the filters live in a sheet (Mobile M3). The count is every picked facet. */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-haspopup="dialog"
+            className="inline-flex h-12 shrink-0 items-center gap-2 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm font-medium text-ground-700 hover:bg-ground-50 md:hidden"
+          >
+            <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            {t('discovery.filters')}
+            {picked.length > 0 && (
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-fill px-1.5 text-xs font-semibold text-brand-fill-ink">
+                {picked.length}
+              </span>
+            )}
+          </button>
+          </div>
+
+          {/* Phone: what is picked, each removable with one tap (44 px), wrapping — never sideways. */}
+          {picked.length > 0 && (
+            <ul aria-label={t('discovery.activeFilters')} className="-mt-1 mb-2 flex flex-wrap gap-x-2 md:hidden">
+              {picked.map(p => (
+                <li key={p.key} className="min-w-0 max-w-full">
+                  <button
+                    type="button"
+                    onClick={p.clear}
+                    aria-label={t('discovery.removeFilter', { name: p.label })}
+                    className="inline-flex min-h-11 max-w-full items-center"
+                  >
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-brand-shape bg-primary-50 py-1 pl-3 pr-2 text-sm font-medium text-primary-700">
+                      <span className="min-w-0 truncate">{p.label}</span>
+                      <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* Filter row */}
           <div className="flex flex-wrap items-center gap-2">
+          {/* The desktop's pills; a phone has the sheet above instead (Mobile M3). */}
+          <div className="hidden md:contents">
           {/* Qualification filter — toggle buttons */}
           <div className="flex rounded-lg border border-ground-200 overflow-hidden">
             <button
               onClick={() => setQualification(qualification === 'SPM' ? '' : 'SPM')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`min-h-11 px-3 py-1.5 text-sm font-medium transition-colors ${
                 qualification === 'SPM'
                   ? 'bg-brand-fill text-brand-fill-ink'
                   : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
@@ -388,7 +403,7 @@ function SearchPageInner() {
             </button>
             <button
               onClick={() => setQualification(qualification === 'STPM' ? '' : 'STPM')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-ground-200 ${
+              className={`min-h-11 px-3 py-1.5 text-sm font-medium transition-colors border-l border-ground-200 ${
                 qualification === 'STPM'
                   ? 'bg-brand-fill text-brand-fill-ink'
                   : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
@@ -401,20 +416,18 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allTypes')}
             value={sourceType}
-            options={(filters?.source_types ?? []).filter(t => t !== 'tvet').sort((a, b) =>
-              (SOURCE_LABELS[a] ?? a).localeCompare(SOURCE_LABELS[b] ?? b, 'ms')
-            )}
+            options={typeOptions}
             optionLabels={SOURCE_LABELS}
             onChange={handleSourceTypeChange}
           />
 
           {/* Aliran (school type) — PISMP/IPGM only */}
-          {sourceType === 'pismp' && (filters?.alirans?.length ?? 0) > 0 && (
+          {sourceType === 'pismp' && alirans.length > 0 && (
             <FilterPill
               label={t('search.allAlirans')}
               value={aliran}
-              options={(filters?.alirans ?? []).map(a => a.value)}
-              optionLabels={Object.fromEntries((filters?.alirans ?? []).map(a => [a.value, a.label]))}
+              options={alirans.map(a => a.value)}
+              optionLabels={Object.fromEntries(alirans.map(a => [a.value, a.label]))}
               onChange={setAliran}
             />
           )}
@@ -436,8 +449,8 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allFields')}
             value={field}
-            options={taxonomyLoaded ? [...fieldOptions].sort((a, b) => a.label.localeCompare(b.label, 'ms')).map(f => f.key) : (filters?.fields ?? [])}
-            optionLabels={taxonomyLoaded ? Object.fromEntries(fieldOptions.map(f => [f.key, f.label])) : undefined}
+            options={fieldKeys}
+            optionLabels={fieldLabels}
             onChange={setField}
           />
 
@@ -445,7 +458,7 @@ function SearchPageInner() {
           <button
             onClick={clearAllFilters}
             disabled={!hasActiveFilters}
-            className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-default"
+            className="min-h-11 px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-default"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -455,8 +468,10 @@ function SearchPageInner() {
 
           {/* Spacer — pushes eligibility toggle right on desktop */}
           <div className="flex-1 min-w-0" />
+          </div>
 
-          {/* Eligibility toggle — prompts login if not authenticated.
+          {/* Eligibility toggle — prompts login if not authenticated. On a phone it stays HERE, in
+              the bar, not in the filter sheet: a signed-out tap opens the sign-in sheet.
               ⚠ IT MAY SHRINK AND ITS TEXT WRAPS ON PURPOSE (TD-312). It was `flex-shrink-0`, so in
               Tamil its one-line description made /search 375 px wide on a 360 px phone. Only the
               switch itself keeps its size. `navLayout.test.ts` pins these classes. */}
@@ -469,7 +484,8 @@ function SearchPageInner() {
             type="button"
             onClick={handleEligibleToggle}
             disabled={eligibleLoading}
-            className="flex items-center gap-2 min-w-0 max-w-full cursor-pointer disabled:opacity-60"
+            aria-pressed={eligibleOnly}
+            className="flex min-h-11 items-center gap-2 min-w-0 max-w-full cursor-pointer disabled:opacity-60"
           >
             <div className="relative inline-flex items-center shrink-0">
               <div className={clsx(
@@ -489,6 +505,16 @@ function SearchPageInner() {
           )}
           </div>
         </div>
+
+        <SearchFilterSheet
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          groups={facets}
+          resultCount={isLoading ? null : displayedCourses.length}
+          // The sheet's Clear clears what the sheet holds — not the search words or the switch.
+          onClear={() => picked.forEach(p => p.clear())}
+          canClear={picked.length > 0}
+        />
 
         {/* Results meta */}
         <div className="mb-4">

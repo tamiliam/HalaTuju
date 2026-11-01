@@ -189,7 +189,9 @@ describe('other rows that must fit a 360 px phone (TD-310 review)', () => {
       /onClick=\{handleEligibleToggle\}[\s\S]*?className="([^"]+)"\s*>\s*<div className="([^"]+)">[\s\S]*?<div className="([^"]+)">\s*<span[^>]*>\{t\('search\.eligibleOnly'\)\}/)
     expect(toggle).not.toBeNull()
     const [, button, knob, text] = toggle!
-    expect(classes(button)).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full']))
+    // Mobile M3: it is also a 44 px target, and on a phone it is the ONE control left in this row
+    // (the pills went into the filter sheet — discoveryLayout.test.ts holds that half).
+    expect(classes(button)).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full', 'min-h-11']))
     expect(classes(button)).not.toContain('flex-shrink-0')
     expect(classes(button)).not.toContain('shrink-0')
     expect(classes(knob)).toContain('shrink-0')

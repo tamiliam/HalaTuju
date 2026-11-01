@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { EligibleCourse, RankedCourse } from '@/lib/api'
 import { TYPE_LABELS, institutionTypeChip, LEVEL_CHIP } from '@/lib/courseBadges'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
+import { useT } from '@/lib/i18n'
 
 /** Build the detail page URL for a course. */
 function getCourseHref(courseId: string, sourceType?: string, qualification?: string): string {
@@ -28,6 +29,7 @@ interface CourseCardProps {
 }
 
 export default function CourseCard({ course, rank, isSaved, onToggleSave, institutionName, institutionState, institutionCount }: CourseCardProps) {
+  const { t } = useT()
   const { getImageUrl, getFieldName } = useFieldTaxonomy()
   const imageUrl = getImageUrl(course.field_key)
   const fieldLabel = getFieldName(course.field_key) || 'View course details'
@@ -58,17 +60,21 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           </div>
         )}
 
-        {/* Save button overlay — not for pathway entries */}
+        {/* Save button overlay — not for pathway entries. A 44 × 44 target (Mobile M3; it was 28)
+            around the same 32 px round face, and named in the student's language. */}
         {onToggleSave && !course.course_id.startsWith('pathway-') && (
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               onToggleSave(course.course_id)
             }}
-            className="absolute top-2 right-2 p-1.5 bg-ground-0/80 backdrop-blur-sm rounded-full hover:bg-ground-0 transition-colors"
-            aria-label={isSaved ? 'Remove from saved' : 'Save course'}
+            className="group absolute top-0.5 right-0.5 inline-flex h-11 w-11 items-center justify-center rounded-full"
+            aria-label={isSaved ? t('saved.remove') : t('courseDetail.saveCourse')}
+            aria-pressed={isSaved}
           >
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ground-0/80 backdrop-blur-sm transition-colors group-hover:bg-ground-0">
             <svg
               className={`w-4 h-4 ${isSaved ? 'text-primary-600 fill-brand-shape' : 'text-ground-500'}`}
               viewBox="0 0 24 24"
@@ -82,6 +88,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
                 d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
               />
             </svg>
+            </span>
           </button>
         )}
       </div>

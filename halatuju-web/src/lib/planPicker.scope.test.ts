@@ -25,7 +25,8 @@ const MAY_ASK: Record<string, string> = {
   'src/lib/api/stpm.ts': 'declares the STPM check and search',
   'src/lib/api/calculations.ts': 'declares calculatePathways',
   'src/app/dashboard/page.tsx': 'course guide: the results dashboard',
-  'src/app/search/page.tsx': 'course guide: search and its own "eligible only"',
+  // Mobile M3: search's own reader moved, verbatim, out of app/search/page.tsx into this leaf.
+  'src/lib/searchEligibility.ts': 'course guide: search and its own "eligible only"',
   'src/app/pathway/matric/page.tsx': 'course guide: the matriculation page',
   'src/app/pathway/stpm/page.tsx': 'course guide: the Form 6 page',
   'src/components/HigherRouteDegrees.tsx': "course guide: the third route's degree browse",
