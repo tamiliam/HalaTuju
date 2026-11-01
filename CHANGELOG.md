@@ -47,10 +47,13 @@ no API change.
   the one-row header, the onboarding header and the grade rows; `theme.test.ts` and `AppHeader.bursary.test.tsx`
   follow the header's new shape.
 
-## An empty pick is filled from the student's own offer letter (2026-11-01, #202)
+## An empty pick is filled from the student's own offer letter (2026-11-01, #202) — LIVE 2026-11-01 (main b19577ea; api-01227-drx)
 
 Owner ruling, verbatim: "That's not a decision at check 1. Its role is to get the facts as they are. The only
-restrictions are imposed in the gift rules." Not deployed; no migration; no MODEL_VERSION bump.
+restrictions are imposed in the gift rules." No migration; no MODEL_VERSION bump. Reviewed (round 6, four
+should-fix items fixed in b19577ea). **Applied on live 2026-11-01 (owner yes):** `link_offer_courses --apply` filled
+#202 only → UW6442001 Sarjana Muda Sains Kimia dengan Kepujian, Universiti Malaysia Sarawak, pathway university;
+profile followed (its plan was empty).
 
 - `services/offer_link.fill_empty_pick`: a `chosen_programme` with no course id and no course name is filled from the
   live, own, non-fake letter's `pinned_match` (one course, one campus, the letter's level) — course id, catalogue
