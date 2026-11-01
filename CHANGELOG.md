@@ -39,6 +39,8 @@ rollback in its docstring).** No new table. Release order: 0198 by hand, then AP
 - **The student's own Mentoring tab is unchanged**: a mentor's meeting appears as date + how only.
 - Guide (org admin, general admin) and FAQ updated for mentors. Mobile: both pages classed **must**
   (`mobileClass.ts`, M6).
+- Review fixes: the mentor sees the student's CURRENT contact email (the copy taken at submit only as a fallback);
+  a concern on a closed file shows no chip and is not in the "Mentor concerned" filter (it can no longer be handled).
 
 ## Mobile M2 — one student header, onboarding header, grade rows (not yet live)
 

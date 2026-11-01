@@ -186,7 +186,7 @@ def filter_rows(qs, *, substate='', on_hold=False, search='', below=None, overdu
     elif mentoring == 'asked_for_help':
         qs = qs.filter(ASKED_FOR_HELP_Q)
     elif mentoring == 'mentor_concerned':
-        qs = qs.filter(has_open_concern=True)
+        qs = qs.filter(maintenance_scope.in_maintenance_q(), has_open_concern=True)
     if below is not None:
         qs = qs.filter(below)
     if overdue is not None:
@@ -300,7 +300,8 @@ def rows(apps):
             'next_due': app.next_due if live else None,
             'mentor': app.mentor_name or None,
             'asked_for_help': _asked(app),
-            'mentor_concerned': bool(app.has_open_concern),
+            # A closed file is read-only, so its concern cannot be handled: no chip (7c review).
+            'mentor_concerned': live and bool(app.has_open_concern),
             'last_activity_at': app.last_activity_at,
         })
     return out

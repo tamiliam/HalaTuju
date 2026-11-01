@@ -188,7 +188,7 @@ class TestWhatTheMentorIsServed(_Base):
         self.assertEqual(set(body), {'id', 'name', 'course', 'institution', 'email', 'phone', 'since',
                                      'asked_for_help', 'latest_result', 'standing', 'organisation', 'meetings'})
         self.assertEqual((body['email'], body['phone'], body['since']),
-                         (self.app.notify_email, '0172223344', timezone.localdate().isoformat()))
+                         ('aisyah@example.test', '0172223344', timezone.localdate().isoformat()))
         # The LATEST accepted result only, with its term; a pending one never shows.
         self.assertEqual(body['latest_result'], {'cgpa': '3.21', 'semester': 'Sem 2'})
         self.assertEqual(body['standing'], 'performing')
@@ -214,6 +214,18 @@ class TestWhatTheMentorIsServed(_Base):
         mentoring.assign(self.org_admin, self.app, self.kavitha, email_student=False)
         meetings = self.mentor().get(page(self.app.id)).json()['meetings']
         self.assertEqual(meetings, [])
+
+
+class TestTheStudentEmailIsTheCurrentOne(_Base):
+    """7c review: the mentor reaches the student's CURRENT contact address, never the copy taken at
+    submit; that copy is used only when the profile has none."""
+
+    def test_contact_email_first_then_the_submit_copy(self):
+        from apps.scholarship.models import ScholarshipApplication
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(notify_email='old@example.test')
+        self.assertEqual(self.mentor().get(page(self.app.id)).json()['email'], 'aisyah@example.test')
+        type(self.app.profile).objects.filter(pk=self.app.profile.pk).update(contact_email='')
+        self.assertEqual(self.mentor().get(page(self.app.id)).json()['email'], 'old@example.test')
 
 
 class TestTheMentorLogsAMeeting(_Base):
@@ -415,6 +427,11 @@ class TestTheConcern(_Base):
         closure.close_application(self.app, closure_reason='graduated', by_email=self.org_admin.email)
         r = self.handle()
         self.assertEqual((r.status_code, r.json()['code']), (409, 'file_closed'))
+        # 7c review: a concern that can no longer be handled shows no chip on the Closed list.
+        closed = self.scholars(closed='1')
+        rows = {r['id']: r for r in closed['results']}
+        self.assertIs(rows[self.app.id]['mentor_concerned'], False)
+        self.assertEqual(self.scholars(mentoring='mentor_concerned')['results'], [])
 
 
 class TestTheMentorMethodsAreTheListedOnes(TestCase):

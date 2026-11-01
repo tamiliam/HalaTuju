@@ -74,7 +74,9 @@ def _student_bits(app):
         'name': getattr(prof, 'name', '') or '',
         'course': card_display.resolve_course(app),
         'institution': card_display.resolve_institution(app),
-        'email': (app.notify_email or getattr(prof, 'contact_email', '') or '').strip(),
+        # The student's CURRENT contact address first; `notify_email` is the copy taken at submit
+        # (7c review: a changed address must not send the mentor to an old one).
+        'email': (getattr(prof, 'contact_email', '') or app.notify_email or '').strip(),
         'phone': (getattr(prof, 'contact_phone', '') or '').strip(),
     }
 
