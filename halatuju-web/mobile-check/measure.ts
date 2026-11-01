@@ -15,8 +15,11 @@
  *     makes iPhone zoom on tap). Checkbox, radio, file, range, colour and button inputs are not
  *     text entry and are skipped.
  *  3. smallTargets — visible controls whose box is under 44 × 44 CSS px: links with an href,
- *     buttons, `[role=button]`, selects, `summary`, and checkboxes/radios — for those the LABEL is
- *     measured when they have one, because the label is what a thumb hits. EXCLUDED: an inline
+ *     buttons, `[role=button]`, selects, `summary`, and checkboxes/radios/FILE inputs — for those the
+ *     LABEL is measured when they have one, because the label is what a thumb hits. (File inputs
+ *     since Mobile M4: an `sr-only` file input is invisible, so the label that opens the picker —
+ *     "Choose file", "Replace", 20 px text links on the documents tab — was never measured at all.
+ *     Counting it raised the documents cells for an honest reason; decisions.md.) EXCLUDED: an inline
  *     link inside running text (display `inline` and its block holds more words than the link),
  *     which the standard excepts. The element's own box is measured; a hit area enlarged with a
  *     pseudo-element would not be seen, so the standard asks for padding instead.
@@ -107,7 +110,8 @@ export function measurePage(scopeSelector: string): Measurement {
   // 3. Tap targets under 44 × 44.
   const targets = new Set<Element>()
   for (const el of within(
-    'a[href], button, [role="button"], select, summary, input[type="checkbox"], input[type="radio"]')) {
+    'a[href], button, [role="button"], select, summary, input[type="checkbox"], input[type="radio"], '
+    + 'input[type="file"]')) {
     if (el instanceof HTMLInputElement) {
       const label = el.closest('label') ?? (el.id ? document.querySelector(`label[for="${CSS.escape(el.id)}"]`) : null)
       targets.add(label ?? el)

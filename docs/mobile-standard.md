@@ -147,15 +147,30 @@ Three kinds of check, from cheapest to most human:
 ### 9. Files: camera-friendly pickers, PDFs full-screen
 - **Why:** some phones will not open the picker for a `hidden` input; a PDF in an iframe shows only
   page one on iPhone, with no zoom.
-- **Checked by:** static guard (`type="file"` inputs hidden with `hidden`) and review (PDF iframes).
-- **Copy this:** `src/components/ScholarshipDocuments/cards.tsx` — `sr-only` input, big button,
-  `accept="image/*,application/pdf"`. PDFs open full-screen or in a new tab on phones.
+- **Checked by:** static guard (`type="file"` inputs hidden with `hidden`; no `capture` on any file input — it
+  forces the camera and refuses the PDF she downloaded), mobile-check (since M4 it measures the LABEL that opens a
+  file picker, which an `sr-only` input hid) and review (PDF iframes).
+- **Copy this:** `src/components/ScholarshipDocuments/cards.tsx` — `sr-only` input, a 48 px "Take a photo or choose a
+  file" button on an empty card, full-width 44 px Replace and Remove under a file, Remove ASKING in a sheet first
+  (`ScholarshipDocuments/RemoveConfirm.tsx`, lazy, with the phone's own confirm as its fallback), busy per card, and
+  the early size / format refusal from `src/lib/uploadCheck.ts`. A long document (the award agreement) opens in a
+  tall reader sheet, not a scroll box in the page (`src/components/scholarship/AwardContract.tsx`). PDFs open
+  full-screen or in a new tab on phones.
 
 ### 10. Long forms keep their progress
 - **Why:** iOS kills a background tab while a student checks WhatsApp or the camera; everything typed is lost.
-- **Checked by:** review (the apply draft is decided in M4).
-- **Copy this:** keep the main action reachable with a sticky bottom bar
-  (`src/components/admin/SaveBar.tsx`); save a draft as the student goes.
+- **Checked by:** static guard (`mobileStandard.test.ts`, rule 10: the apply page keeps, restores and clears its
+  draft; its submit sends nothing while one is in flight and Enter before the last step is Next; Back / Continue is
+  a sticky bar clear of the home bar) and the draft's own tests (`applyDraft.test.ts`, `page.draft.test.tsx`).
+- **Copy this (Mobile M4, owner: this tab only):** `src/lib/applyDraft.ts` — the form in the TAB's `sessionStorage`,
+  never the device's: bound to the user id, the programme, a version and 24 h (anything else is deleted on read);
+  NEVER the IC, a typed signature or a consent (given afresh where they are used); written 0.5 s after a change and
+  at once on `visibilitychange`→hidden / `pagehide` (iOS reclaims a hidden tab and a timer may never fire); cleared
+  on submit and by every sign-out path. Tell her, quietly: "Saved on this device only · nothing is sent until you
+  submit" (`ApplyProgress`). A form whose answers the SERVER already keeps (the award page's quiz and parent PIN)
+  reads them back instead — never a second copy on the phone. One step per screen, a step line instead of an icon
+  tab bar, and the main action in a sticky bottom bar (`src/components/scholarship/ApplyStepper.tsx`; the admin
+  pattern is `src/components/admin/SaveBar.tsx`).
 
 ### 11. One-thumb navigation
 - **Why:** every shell needs a phone navigation that fits — in Tamil, at 360 px.

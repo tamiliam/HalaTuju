@@ -1,5 +1,55 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M4: the apply form keeps a draft in THIS TAB only; the award page reads back what the server holds as done; mobile-check counts a file picker's label — 2026-11-01 (owner rulings, Mobile M4)
+
+**1. Where the half-filled apply form is kept — this tab's sessionStorage only (owner: option 1).**
+**Context:** the apply form commits nothing until submit (2026-05-24, "Commit-on-submit"); on a phone an iOS tab kill
+(WhatsApp, the camera, a payslip) threw away five steps of typing. **Decision:** `lib/applyDraft.ts` keeps the form in
+the tab's `sessionStorage` under `halatuju_apply_draft`. (a) **What:** the form MINUS the IC number, the typed
+declaration signature and the consent switch — the IC comes back from the profile, the signature and the consent are
+always given afresh in the session that submits. (b) **Bound to** her user id (`session.user.id`), the programme code,
+a format version and 24 hours; another user id, an old format, an unreadable value or an older draft is DELETED on
+read; her own draft for another programme is kept but not shown (the chooser's "Change"). (c) **Written** 0.5 s after a
+change and AT ONCE on `visibilitychange`→hidden / `pagehide`, only once she has changed something. (d) **Cleared** on a
+successful submit (before the redirect), when the server says already applied / the programme closed / sends her away,
+on sign-out (`clearAll`), on any `SIGNED_OUT` (`clearStudentTab`), and by the browser when the tab closes. (e) **Never
+sent:** the module imports nothing that talks to the network (tested). (f) The "edit my results" detour's whole-form
+stash IS this draft now (one key; the old `halatuju_apply_stash` is deleted on sight). **This NARROWS the privacy fix of
+the same day** (CHANGELOG, "Mobile M4, part 0"): the dashboard's `abandonApplyDetour` now drops only the return marker,
+not the draft — the draft is id-bound and can no longer pre-fill anyone else's form, and leaving the form must not throw
+her typing away. **Alternatives:** (2) `localStorage` until submit — survives closing the browser, but income and the
+parent's phone would stay on a shared phone after a session that simply expired; (3) a server draft — survives a phone
+change, but a new data model and the reverse of commit-on-submit. **Revisit if:** students report losing a form after
+the BROWSER (not the tab) was killed — Safari usually restores a tab's sessionStorage, not always (check on a real iPhone
+in M8); or a phone change mid-form becomes common (then the server draft).
+
+**2. The award page skips what the server already holds as done (owner: yes).** `GET /scholarship/award/` now carries
+two read-only booleans in `bursary_preview` (`signing_progress.py`): `comprehension_passed` — the quiz was passed
+on THIS template (`comprehension_template_id == template.id`, the rule `sign_agreement` enforces as
+`comprehension_stale`) — and `guarantor_phone_verified` — a PIN check inside `GUARANTOR_PHONE_VERIFY_TTL_SECONDS`
+(30 min) for the number on file NOW (`guarantor_phone_unverified` / `guarantor_phone_changed`). A reload no longer
+retakes the 8 checkpoints or sends the parent a second, paid SMS. Each flag is EXACTLY the signature's rule, so a
+skipped step can never be refused at signing (pytest asserts the flag and the signing outcome together); they carry no
+number and no time. The typed signature, the guarantor's name and IC and the agree ticks are NOT kept across a reload
+— a signature is given in the session that signs.
+
+**3. The agreement on a phone, and Decline.** The server's print-layout HTML (11 px, 9 px notes) opens in a reader sheet
+behind a phone stylesheet that is PREPENDED to it (`AwardContract.phoneContractHtml`); the server's HTML follows byte
+for byte (tested), inside `sandbox=""`. Signing still re-renders, hashes and stamps the agreement on the server — the
+preview is never the record. Decline asks in a `Sheet` (it was `window.confirm`), Cancel focused first; one in-flight
+latch (`acting`) means two taps in the same frame send ONE accept, signature or decline.
+
+**4. mobile-check counts the label of a FILE input (`measure.ts`).** An `sr-only` file input is invisible, so the label
+that opens the picker — "Choose file" / "Replace", ~20 px text links — was never measured. Counting it is the reader
+getting MORE HONEST, so cells it raised were allowed to rise for that reason alone (`MOBILE_ALLOW_WORSE=1`, those cells
+only), and the 44 px buttons then brought them down. A floor may rise only when the reader got more honest, never
+because a screen got worse.
+
+**5. Bytes.** `/scholarship/apply` had 0.59 kB of room; the draft and the sticky bar cost ~1 kB. Paid for by: the apply
+form's School field loading its suggesting component on mount (`LazySchoolSelect`, a plain text field until it arrives
+— the typed text was always the value), the draft's peek in its own leaf, the remove sheet's words in the documents
+slice (`documentsTab.card.*`), and five dead tab-bar strings deleted. No budget was raised.
+
 ## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
 
 **Context:** 7a made mentors their own login and refused any address that already had an admin sign-in

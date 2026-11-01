@@ -72,7 +72,7 @@ export function AwardDeclineSheet({ busy, onCancel, onConfirm }: {
   const cancel = useRef<HTMLButtonElement>(null)
   return (
     <Sheet open size="sm" role="alertdialog" busy={busy} onClose={onCancel} testId="award-decline" initialFocus={cancel}
-      title={t('scholarship.award.confirmed.decline')} description={t('scholarship.award.declineConfirm')}
+      title={t('scholarship.award.confirmed.decline')}
       footer={<>
         <button type="button" onClick={onConfirm} disabled={busy}
           className="min-h-12 w-full rounded-xl border border-critical-200 px-4 font-semibold text-critical-600 hover:bg-critical-50 disabled:opacity-50">
@@ -82,7 +82,7 @@ export function AwardDeclineSheet({ busy, onCancel, onConfirm }: {
           {t('scholarship.award.guardian.cancel')}
         </button>
       </>}>
-      {null}
+      <p className="text-ground-700">{t('scholarship.award.declineConfirm')}</p>
     </Sheet>
   )
 }

@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M4 — scholarship apply, documents, award on a phone (2026-11-01, not yet pushed)
+
+Owner approved the M4 mock-ups (apply one step per screen, document cards, award reader) and two rulings on
+2026-11-01: the apply draft is kept in THIS TAB only, and a reload of the award page skips what the server already
+holds as done (decisions.md, the Mobile M4 entry). Consent / PII / money / identity: adversarial review before push.
+
+- **Apply form keeps a draft** (`src/lib/applyDraft.ts`): the half-filled form survives an iOS tab kill, the "edit my
+  results" detour and a trip to Home — in this tab's sessionStorage only, bound to her user id, the programme, a
+  version and 24 h, never the IC, the typed signature or the consent; written on change and at once when the tab is
+  hidden; deleted on submit, already-applied / closed, sign-out and any SIGNED_OUT. The detour's whole-form stash is
+  gone (one key). The dashboard's abandoned-detour clean-up now drops only the return marker (the draft is id-bound).
+- **Apply form on a phone** (`src/components/scholarship/ApplyStepper.tsx`): one step per screen, "Step n/5 · <step>"
+  with five bars and "Saved on this device only · nothing is sent until you submit", a sticky Back / Continue bar
+  clear of the home bar. The 6 × 56 px icon tab bar with 10 px labels is gone (five dead strings deleted).
+- **Submit doors**: a press while a submit is in flight sends nothing; Enter / Go on a phone keyboard before the last
+  step means Next (it used to submit the whole form).
+- **Document cards**: full-width 44 px Replace / Remove, a 48 px "Take a photo or choose a file" on an empty card
+  (never `capture`), Remove ASKS in a sheet first (lazy, the phone's own confirm as its fallback) and sends ONE delete;
+  uploads busy per card. The income wizard's answer pills are 44 px.
+- **Action Centre**: the early size / format refusal the documents tab has (`src/lib/uploadCheck.ts`, drift-tested
+  against the API allowlist); the Tamil "we are looking at this" chip wraps (it pushed the page 41 px sideways at
+  360); 44 px buttons (also on the post-award bank and Vircle cards).
+- **Award page**: the agreement opens in a tall reader sheet on a phone (a phone stylesheet in front of the server's
+  HTML, which is unchanged); particulars stacked; a sticky "Sign and accept"; Decline asks in a sheet (was the
+  browser's confirm); Decline, Resend PIN and the agree rows are 44 px; one in-flight latch for accept / sign /
+  decline. **API:** `GET /scholarship/award/` → `bursary_preview.comprehension_passed` and
+  `.guarantor_phone_verified` (`signing_progress.py`, read-only, the signature's own rules), so a reload skips a
+  passed quiz and a still-valid parent PIN.
+- **mobile-check** measures the label of a file input (it hid the 20 px Choose / Replace links); sandbox surfaces
+  `apply-draft-restored`, `documents-remove`, `award-sign-adult`, `award-sign-minor`, `award-plain-minor`
+  (synthetic sign-in, `src/sandbox/scholarshipM4Surfaces.tsx`).
+- **Bytes**: no budget raised. `/scholarship/apply` 186.410 → 186.287 kB (School field's suggester loads on mount,
+  `LazySchoolSelect`), `/scholarship/application` 210.201 → 210.611, `/profile` 196.207 → 196.173, median 147.639 →
+  147.669.
+- New TD-460 (income wizard writes on open; silent save failure), TD-461 (the post-shortlist wizard's tab bar),
+  TD-462 (bank-statement upload refusal); TD-458 updated (the draft closes its form half).
+
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 
 - **The bug:** the apply form stashes the WHOLE form (IC, household income, parent name and phone, the typed

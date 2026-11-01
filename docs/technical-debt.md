@@ -7335,3 +7335,37 @@ refresh failure) and `AuthGateModal` uploads them into the NEXT account that sig
 not wiped on `SIGNED_OUT` on purpose, because a signed-out visitor's grades live only there — the fix needs an owner
 of the data, e.g. tag them with the user id); (3) a duplicated tab copies sessionStorage. **Trigger:** Mobile M4 (the
 apply draft keyed to the user id closes most of (2) for the form). *(B · M)*
+
+**Mobile M4 update (2026-11-01).** The apply DRAFT (`lib/applyDraft.ts`) is bound to the user id, the programme, a
+format version and 24 hours, and a mismatched user id DELETES it on read. That closes the FORM half of (2) and (3): a
+session that ends without the button, or a duplicated tab, can no longer hand the half-filled form to the next person —
+another user id reads nothing and the draft is gone; and the IC, the typed signature and the consent are never stored
+at all. Still open: (1) the back-forward cache (not touched by M4); (2) for the GRADES and profile in localStorage
+(not the form); (3) for anything else in the tab's sessionStorage (the return marker, the programme code — no PII).
+
+### [TD-460] The income wizard writes on open, and a failed answer save is silent - medium
+
+**Raised 2026-11-01 by Mobile M4** (flagged for the adversarial review; behaviour NOT changed in M4). In
+`components/ScholarshipDocuments/IncomeWizard.tsx`: (a) on mount, when the application has no income route / earner /
+working members yet, the wizard WRITES its pre-filled guesses (`updateScholarshipDetails` with `income_route`,
+`income_earner`, `income_working_members`) without the student tapping anything; (b) every answer pill saves through
+`save()`, whose failure is swallowed ("soft — local state already updated, save retries on the next change"), so a
+student who answers once on a bad connection sees her answer while the server holds the old one. Both feed the
+household-income route engine (money: who is means-tested how). Fix: show "Not saved — tap again" on a failed save,
+and decide (owner) whether a pre-fill may be stored before the student confirms it. *(M · S)*
+
+### [TD-461] The post-shortlist step wizard still has the 10 px icon tab bar - low
+
+**Raised 2026-11-01 by Mobile M4.** M4 replaced the APPLY form's 6 × 56 px bottom tab bar (10 px labels) with a step
+line and a sticky Back / Continue bar. `components/ScholarshipNextSteps.tsx` (the shortlisted student's five steps:
+story, funding, documents, consent, review) keeps the same bar, and its `-mx-6` overflows the sandbox's narrower
+padding by 8 px (`sandbox:application-steps`, mobile-check). It saves each step to the server, so the iOS tab-kill loss
+is only the unsaved step. Fix: reuse `ApplyStepper`'s pattern — but the bar there is also how a student JUMPS to the
+Documents step from an Action Centre query, so it needs its own design (Stitch). *(B · M)*
+
+### [TD-462] The bank-statement upload has no early size / format refusal - low
+
+**Raised 2026-11-01 by Mobile M4.** The Action Centre now refuses, before uploading, a file the server would refuse
+(`lib/uploadCheck.ts`, the documents tab's rule). The post-award bank-statement card
+(`components/scholarship/PostAwardTasks.tsx`, a lazy chunk) still sends any file and lets the server refuse it.
+Fix: the same `uploadRefusal` call before `signUploadDocument`. *(B · S)*

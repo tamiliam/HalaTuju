@@ -31,7 +31,6 @@ export default function RemoveConfirm({ name, busy, onCancel, onConfirm }: Remov
     <Sheet open onClose={onCancel} busy={busy} role="alertdialog" tone="critical" size="sm"
       initialFocus={keep} testId="remove-confirm"
       title={t('documentsTab.card.removeTitle')}
-      description={t('documentsTab.card.removeBody', { name })}
       footer={<>
         <button type="button" onClick={onConfirm} disabled={busy}
           className="min-h-12 w-full rounded-xl bg-critical-fill px-4 font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
@@ -42,7 +41,8 @@ export default function RemoveConfirm({ name, busy, onCancel, onConfirm }: Remov
           {t('documentsTab.card.keep')}
         </button>
       </>}>
-      {null}
+      {/* The question in the BODY, not the header's description: a sheet with an empty body draws a gap. */}
+      <p className="text-ground-700">{t('documentsTab.card.removeBody', { name })}</p>
     </Sheet>
   )
 }

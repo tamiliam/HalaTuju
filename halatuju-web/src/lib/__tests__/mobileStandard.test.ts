@@ -203,6 +203,73 @@ describe('rule 10 — a phone field never autofills the international number', (
   })
 })
 
+// ── Rule 9 (Mobile M4): a file picker never forces the camera ─────────────────────────────────
+/**
+ * `capture` on a file input makes a phone open the CAMERA only — no photo library, no Files — so a
+ * student could not upload the PDF payslip or EPF statement she downloaded. The phone's own chooser
+ * already offers "Take Photo". Positive guard: none, anywhere.
+ */
+describe('rule 9 — a file input never forces the camera', () => {
+  test('no `capture` on any file input', () => {
+    const offenders = TSX.flatMap((f) => openTags(f.code, 'input')
+      .filter((tag) => /\bcapture\b/.test(tag.attrs))
+      .map((tag) => where(f, tag.start, '<input … capture')))
+    ratchet('file inputs that force the camera', offenders, 0)
+  })
+})
+
+// ── Rule 10 (Mobile M4): the apply form keeps its progress, and a press sends one answer ──────
+/**
+ * The apply form is the long form rule 10 was written for. Its draft lives in `lib/applyDraft.ts`
+ * (owner: this tab only — what it holds and when it goes is pinned in `applyDraft.test.ts`). These
+ * read the PAGE, so a refactor that drops the draft or a door's guard turns this red, and they read
+ * BOTH places the furniture lives (the page and `ApplyStepper`) — lessons.md: when code moves, the
+ * guard follows it AND keeps watching where it must not come back.
+ */
+describe('rule 10 — the apply form keeps its progress', () => {
+  const page = readWeb('src/app/scholarship/apply/page.tsx', 'the apply form whose draft and doors rule 10 pins')
+  const stepper = readWeb('src/components/scholarship/ApplyStepper.tsx', 'where the Back / Continue bar moved (Mobile M4)')
+
+  test('the page keeps a draft, restores it, and deletes it once sent', () => {
+    expect(page).toMatch(/useApplyDraft\(form, uid, gift\.code, tab,/)
+    expect(page).toMatch(/readApplyDraft\(\{ uid, programme: gift\.code \}\)/)
+    expect(page).toMatch(/await submitScholarshipApplication\([^)]*\)\s*\n\s*setSent\(true\); clearApplyDraft\(\)/)
+  })
+
+  test('the submit handler sends nothing while a submit is in flight, and Enter before the end is Next', () => {
+    const handler = page.slice(page.indexOf('const handleSubmit'), page.indexOf('const payload'))
+    expect(handler).toMatch(/if \(submitting\) return/)
+    expect(handler).toMatch(/if \(tab !== TAB_ORDER\[TAB_ORDER\.length - 1\]\) \{ goNext\(\); return \}/)
+  })
+
+  test('Back / Continue is a sticky phone bar clear of the home bar — and the old icon tab bar is gone', () => {
+    expect(stepper).toMatch(/sticky bottom-0[^"]*pb-\[max\(0\.75rem,env\(safe-area-inset-bottom\)\)\]/)
+    expect(page).toContain('<ApplyFooter')
+    expect(page).not.toMatch(/text-\[10px\]/)          // the 6 × 56 px bar's labels must not come back
+    expect(page).not.toMatch(/function TabIcon/)
+  })
+})
+
+/**
+ * The student's consent / money screens never ask with the browser's own `confirm` (a box that
+ * looks like a phishing prompt on a phone, and cannot be styled, translated or tested as a sheet):
+ * they ask in the shared `Sheet`. ONE exemption, named: the documents tab's fallback when the remove
+ * sheet's lazy chunk cannot load (lessons.md: a lazy way out needs an eager one).
+ */
+const CONFIRM_EXEMPT: Record<string, string> = {
+  'src/components/ScholarshipDocuments.tsx': 'the remove sheet is lazy; if its chunk fails, this asks instead',
+}
+describe('student scholarship screens ask in a Sheet, never window.confirm', () => {
+  test('no window.confirm in the student scholarship screens (one named fallback)', () => {
+    const student = FILES.filter((f) => /^src\/(app\/scholarship\/|components\/(Scholarship|ActionCentre|scholarship\/))/.test(f.rel))
+    expect(student.length).toBeGreaterThanOrEqual(20)
+    const offenders = student.filter((f) => /window\.confirm\(/.test(blankComments(f.code)) && !(f.rel in CONFIRM_EXEMPT))
+      .map((f) => `${f.rel}: window.confirm`)
+    expect(offenders).toEqual([])
+    for (const rel of Object.keys(CONFIRM_EXEMPT)) expect(readWeb(rel, 'a named exemption must still exist')).toContain('window.confirm(')
+  })
+})
+
 // ── Rule 5: one shared Sheet, no hand-rolled overlays ─────────────────────────────────────────
 /**
  * Every hand-rolled `fixed inset-0` overlay re-decided max height, inner scroll, the close target
