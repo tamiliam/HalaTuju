@@ -30,8 +30,8 @@ jest.mock('@/lib/auth-context', () => ({
   useAuth: () => ({ ...mockAuth, isAnonymous: false, showAuthGate: mockShowAuthGate }),
 }))
 jest.mock('@/lib/useProfileCompleteness', () => ({ useProfileCompleteness: () => ({ incompleteCount: 2 }) }))
-const mockSignOut = jest.fn(() => Promise.resolve())
-jest.mock('@/lib/supabase', () => ({ signOut: () => mockSignOut() }))
+const mockSignOut = jest.fn(() => Promise.resolve({ error: null }))
+jest.mock('@/lib/supabase', () => ({ signOut: () => mockSignOut(), getSupabase: () => ({ auth: { stopAutoRefresh: jest.fn() } }) }))
 jest.mock('@/components/ToastContext', () => ({ useToast: () => ({ showToast: jest.fn() }) }))
 jest.mock('@/components/BrandLogo', () => () => null)
 // The desktop Log in ▾ / Sign Up pair (its own guard is navLayout.test.ts); out of the way so the

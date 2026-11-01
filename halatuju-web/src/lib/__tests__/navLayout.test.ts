@@ -55,13 +55,22 @@ describe('one student header, one row on a phone (Mobile M2; was TD-310)', () =>
     expect(classes(classOf(phone, /<div/))).toEqual(expect.arrayContaining(['shrink-0', 'lg:hidden']))
     expect(phone).not.toMatch(/<AuthButtons\b/)
     expect(phone).not.toMatch(/header\.signUp/)
+    // Signed out, the one action is `logIn` (the student gate, or the sponsor login on /sponsor*).
+    expect(phone).toMatch(/\) : logIn\}/)
     // "Log in" never breaks onto two lines, and both controls are 44 px targets.
-    const login = phone.match(/className="([^"]+)"\s*>\s*\{t\('header\.login\.label'\)\}/)
+    const login = header.match(/const LOG_IN = '([^']+)'/)
     expect(login).not.toBeNull()
     expect(classes(login![1])).toEqual(expect.arrayContaining(['whitespace-nowrap', 'min-h-11']))
+    expect((header.match(/className=\{LOG_IN\}>\{t\('header\.login\.label'\)\}/g) ?? []).length).toBe(2)
     const menu = phone.match(/aria-label=\{t\('common\.menu'\)\}[\s\S]*?className="([^"]+)"/)
     expect(menu).not.toBeNull()
     expect(classes(menu![1])).toEqual(expect.arrayContaining(['h-11', 'w-11']))
+  })
+
+  it('before the desktop row arrives its 44 px height is already reserved (no 4 px jump)', () => {
+    const slot = header.match(/<div className="([^"]*lg:flex[^"]*)"\s*onPointerEnter=\{fallback/)
+    expect(slot).not.toBeNull()
+    expect(classes(slot![1])).toEqual(expect.arrayContaining(['min-h-11', 'hidden', 'lg:flex']))
   })
 
   it('the bar never imports the menus\' heavy parts — they load on the first open', () => {

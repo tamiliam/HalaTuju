@@ -55,6 +55,16 @@ export interface AuthOnlyClient {
   auth: InstanceType<typeof AuthClient>
 }
 
+/**
+ * supabase-js's default storage key for a project URL — `sb-<project ref>-auth-token`, where every
+ * signed-in STUDENT's session lives (the admin and sponsor clients pass their own). One function, so
+ * the student sign-out can remove exactly this key when the server could not be reached
+ * (`lib/studentSignOut.ts`) and can never drift from the key the client writes.
+ */
+export function defaultStorageKey(projectUrl: URL | string): string {
+  return `sb-${new URL(projectUrl).hostname.split('.')[0]}-auth-token`
+}
+
 /** `createClient(url, key, { auth: options })`, minus everything that is not `.auth`. */
 export function createAuthOnlyClient(
   supabaseUrl: string,
@@ -81,7 +91,7 @@ export function createAuthOnlyClient(
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: `sb-${baseUrl.hostname.split('.')[0]}-auth-token`,
+    storageKey: defaultStorageKey(baseUrl),
     ...options,
   }
   const headers = { 'X-Client-Info': `supabase-js-${JS_ENV}/${SUPABASE_JS_VERSION}` }

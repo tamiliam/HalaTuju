@@ -7289,3 +7289,12 @@ named blocker is gone. Not adopted in M2: the flag changes every `hover:` on tou
 reveal that relies on hover (`group-hover:block`, `hover:` that shows content or a control, `peer-hover`), give each
 a tap path, then turn the flag on and re-run mobile-check. **Fix:** grep `group-hover:` / `hover:block` / `hover:flex` /
 `hover:opacity-100` across `src`, fix each, adopt the flag in `tailwind.config`. *(B · S)*
+
+### [TD-454] A Google-signed-in student without a verified NRIC sees the signed-out header - low
+
+**Raised 2026-11-01 by the Mobile M2 review, pre-existing.** `AppHeader` keys "signed in" off `isAuthenticated`,
+which is true only once the NRIC is verified. A student who signed in with Google but has not finished the NRIC step
+(`status === 'needs-nric'`) sees Log in, the Sign up item and the three logins, and no Log out — the old header did the
+same. Tapping Log in opens the gate, which resumes her NRIC step, so nothing is lost, but she cannot sign out from the
+header on a shared phone. **Fix:** treat `hasSession && !isAnonymous` as signed in for the header's Log out (and her
+name), keep the account-only links gated on `isAuthenticated`; a test for the needs-nric state. *(B · S)*

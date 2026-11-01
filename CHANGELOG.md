@@ -28,6 +28,17 @@ no API change.
 - **Grade rows:** the STPM row restacks on a phone (`StpmSubjectRow`: subject + remove, then grade + "counts" tag);
   every remove/clear button and every subject/grade picker on the grades steps is 44 px; the SPM stream buttons stack icon over label on a phone; SPM grade buttons,
   the SPM-prerequisite stream pills and the MUET bands are 44 px tall on phones.
+- **Review fixes (adversarial review, before the push):** (1) if the menus' chunk cannot load (a tab open across a
+  deploy), the bar keeps an eager fallback — Log in signed out (student gate; sponsor login on `/sponsor*`), Log out
+  signed in — on phones beside the menu button and on desktop in place of the nav row; the menu button resets
+  `aria-expanded` and the next tap or hover tries again. (2) **A failed sign-out no longer leaves her signed in:**
+  auth-js keeps the stored session when the server cannot be reached, so the one sign-out helper
+  (`lib/studentSignOut.ts`, eager) now forgets it on the device (`dropStudentSession`: stops the refresh timer, removes
+  the student client's `sb-<ref>-auth-token` keys, named by the new `defaultStorageKey`), wipes the `halatuju_` keys
+  before AND after, keeps the admin and sponsor sessions, and reloads. (3) The desktop slot reserves the nav row's 44 px
+  before it loads, so desktop pages no longer jump 4 px. Accepted as is: signed-out "My Profile" is gone (Log in →
+  Student opens the same gate); About is only in the footer; a Google-signed-in student without a verified NRIC sees
+  the signed-out header (pre-existing, TD-454).
 - **Sandbox + mobile-check:** `header-signed-out`, `header-signed-out-menu`, `header-signed-in-menu`,
   `header-signed-in-menu-bursary`, `onboarding-stepper`, `stpm-grade-rows` (signed-in ones use a synthetic
   `AuthContext`, never a real sign-in).

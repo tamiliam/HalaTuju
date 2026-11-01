@@ -27,12 +27,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { BURSARY_FILE_EVENT, hasBursaryFile, hasGrades } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
-import type { NavGroup, NavLink, Who } from './StudentMenus'
+import { signOutStudent } from '@/lib/studentSignOut'
+import type { Who } from './StudentMenus'
 
 type Menus = typeof import('./StudentMenus')
 
@@ -45,29 +45,27 @@ export default function AppHeader({ defaultMenuOpen = false }: {
 }) {
   const { t } = useT()
   const pathname = usePathname()
-  const router = useRouter()
   const { session, isAuthenticated, showAuthGate } = useAuth()
   const { incompleteCount } = useProfileCompleteness()
   const [menuOpen, setMenuOpen] = useState(defaultMenuOpen)
   const [menus, setMenus] = useState<Menus | null>(null)
   const started = useRef(false)
 
-  // "My Bursary" joins the BrightPath list only for a student with a file — a display hint the pages
-  // that read her applications leave behind (`rememberBursaryFile`), read after mount so the server
-  // render and the first paint agree. Never a gate: the hub's endpoint 404s a student with no file.
-  const [bursary, setBursary] = useState(false)
-  useEffect(() => {
-    const read = () => setBursary(isAuthenticated && hasBursaryFile())
-    read()
-    window.addEventListener(BURSARY_FILE_EVENT, read)
-    return () => window.removeEventListener(BURSARY_FILE_EVENT, read)
-  }, [isAuthenticated, pathname])
-
-  // The menus' chunk, fetched once. A failed fetch leaves the phone bar as it is (Log in still works).
+  // The menus' chunk, fetched once. ⚠ IT CAN FAIL — a tab open across a deploy asks for a chunk that
+  // no longer exists, and a phone fetches it on the first tap, maybe hours later. Then `failed`: the
+  // menu closes again (no sheet will come, and `aria-expanded` must not say otherwise) and the bar
+  // draws its small EAGER fallback — Log in signed out, Log out signed in (the same safe sign-out the
+  // menus use) — on phones beside the menu button and on desktop in place of the nav row. The next
+  // tap or hover tries the chunk again.
+  const [failed, setFailed] = useState(false)
   const load = useCallback(() => {
     if (started.current) return
     started.current = true
-    import('./StudentMenus').then((m) => setMenus(m)).catch(() => { started.current = false })
+    import('./StudentMenus').then((m) => { setFailed(false); setMenus(m) }).catch(() => {
+      started.current = false
+      setFailed(true)
+      setMenuOpen(false)
+    })
   }, [])
   useEffect(() => { if (menuOpen) load() }, [menuOpen, load])
   // A desktop-wide screen needs the chunk at once (it draws the nav row). No `matchMedia` (a test
@@ -81,29 +79,7 @@ export default function AppHeader({ defaultMenuOpen = false }: {
   }, [load])
   useEffect(() => { setMenuOpen((open) => open && defaultMenuOpen) }, [pathname, defaultMenuOpen])
 
-  // Signed out, an account-only page opens the sign-in gate (or, with no results yet, onboarding).
-  const onGate = (l: NavLink) => (hasGrades() ? showAuthGate(l.gate ?? 'profile') : router.push('/onboarding/exam-type'))
   const studentLogin = () => showAuthGate('profile')
-
-  const b40Links: NavLink[] = [
-    { href: '/scholarship', label: t('scholarship.subnav.apply') },
-    ...(bursary ? [{ href: '/scholarship/bursary', label: t('scholarship.subnav.bursary') }] : []),
-    { href: '/sponsor', label: t('scholarship.subnav.sponsor') },
-  ]
-  const mainLinks: NavLink[] = [
-    { href: '/dashboard', label: t('common.dashboard') },
-    { href: '/search', label: t('search.nav') },
-    { href: '/saved', label: t('common.saved'), gate: isAuthenticated ? undefined : 'save' },
-  ]
-  const accountLinks: NavLink[] = [
-    { href: '/profile', label: t('header.myProfile'), badge: incompleteCount || undefined },
-    { href: '/settings', label: t('common.settings') },
-  ]
-  const phoneGroups: NavGroup[] = [
-    { label: t('common.appName'), links: mainLinks },
-    { label: t('scholarship.nav'), links: b40Links },
-    ...(isAuthenticated ? [{ links: accountLinks }] : []),
-  ]
 
   const meta = session?.user?.user_metadata
   const name: string = meta?.full_name || meta?.name || ''
@@ -112,6 +88,23 @@ export default function AppHeader({ defaultMenuOpen = false }: {
     contact: session?.user?.email || session?.user?.phone || '',
     initials: name ? name.split(/\s+/).filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?',
   } : null
+
+  const LOG_IN = 'inline-flex min-h-11 items-center whitespace-nowrap rounded-lg border border-primary-600 px-3 text-sm font-medium text-primary-700 hover:bg-primary-50'
+  const logIn = pathname?.startsWith('/sponsor') ? (
+    // On the sponsor side (the signed-out sponsor landing) "Log in" is the SPONSOR's door:
+    // the student gate there would greet a returning sponsor with the student sign-in.
+    <Link href="/sponsor/login" className={LOG_IN}>{t('header.login.label')}</Link>
+  ) : (
+    <button type="button" onClick={studentLogin} className={LOG_IN}>{t('header.login.label')}</button>
+  )
+  // The menus' chunk failed: Log out must still be reachable (the same safe sign-out as the menus).
+  const logOut = (
+    <button type="button" onClick={() => { void signOutStudent() }}
+      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium text-critical-600 hover:bg-critical-50">
+      {t('header.logout')}
+    </button>
+  )
+  const fallback = failed && !menus
 
   return (
     <header className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
@@ -122,9 +115,16 @@ export default function AppHeader({ defaultMenuOpen = false }: {
         </Link>
 
         {menus ? (
-          <menus.DesktopBar pathname={pathname} mainLinks={mainLinks} b40Links={b40Links}
-            accountLinks={accountLinks} who={who} incompleteCount={incompleteCount} onGate={onGate} />
-        ) : <div className="hidden flex-1 lg:block" />}
+          <menus.DesktopBar who={who} incompleteCount={incompleteCount} />
+        ) : (
+          // ⚠ `min-h-11`: the desktop row's 44 px items, reserved before they arrive, so the bar does
+          // not grow 4 px under every desktop page when the chunk lands. A pointer here retries a
+          // failed chunk; meanwhile the fallback keeps the way in (or out).
+          <div className="hidden min-h-11 flex-1 items-center justify-end gap-2 lg:flex"
+            onPointerEnter={fallback ? load : undefined}>
+            {fallback && (who ? logOut : logIn)}
+          </div>
+        )}
 
         {/* Phone right side: one action, then the menu. */}
         <div className="ml-auto flex shrink-0 items-center gap-2 lg:hidden">
@@ -140,19 +140,8 @@ export default function AppHeader({ defaultMenuOpen = false }: {
                 </span>
               )}
             </Link>
-          ) : pathname?.startsWith('/sponsor') ? (
-            // On the sponsor side (the signed-out sponsor landing) "Log in" is the SPONSOR's door:
-            // the student gate there would greet a returning sponsor with the student sign-in.
-            <Link href="/sponsor/login"
-              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg border border-primary-600 px-3 text-sm font-medium text-primary-700 hover:bg-primary-50">
-              {t('header.login.label')}
-            </Link>
-          ) : (
-            <button type="button" onClick={studentLogin}
-              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg border border-primary-600 px-3 text-sm font-medium text-primary-700 hover:bg-primary-50">
-              {t('header.login.label')}
-            </button>
-          )}
+          ) : logIn}
+          {fallback && who && logOut}
           <button type="button" aria-label={t('common.menu')} aria-expanded={menuOpen} aria-haspopup="dialog"
             onClick={() => setMenuOpen(true)} onPointerEnter={load} onFocus={load}
             className="flex h-11 w-11 items-center justify-center rounded-lg text-ground-600 hover:bg-ground-50">
@@ -164,8 +153,7 @@ export default function AppHeader({ defaultMenuOpen = false }: {
       </div>
 
       {menus && (
-        <menus.PhoneMenu open={menuOpen} onClose={() => setMenuOpen(false)} pathname={pathname}
-          groups={phoneGroups} who={who} onGate={onGate} onStudentLogin={studentLogin} />
+        <menus.PhoneMenu open={menuOpen} onClose={() => setMenuOpen(false)} who={who} incompleteCount={incompleteCount} />
       )}
     </header>
   )

@@ -48,6 +48,16 @@ the route median and pushed it 0.4 kB over its 148 kB budget. The cost: on a des
 after the logo (one small, usually cached chunk; the bar's height does not move). The `Sheet` costs nothing:
 `AuthGateModal` already carries it on every route. No new string: every label is an existing core key.
 
+**Review fixes and what was accepted (adversarial review, 2026-11-01).** A lazy chunk can fail (a tab open across a
+deploy, a phone fetching it hours later), so the eager bar carries a fallback: Log in signed out, Log out signed in,
+and a retry on the next tap or hover; the menu never claims to be open when nothing opened. Sign-out lives in ONE
+eager helper (`lib/studentSignOut.ts`) because auth-js 2.95 keeps the stored session when its sign-out request fails
+and has no public "forget locally" call: on `{ error }` or a throw we stop the refresh timer and remove the student
+client's own storage keys (`defaultStorageKey`, shared with the client factory so they cannot drift). The desktop slot
+reserves 44 px so the row's arrival moves nothing. Accepted as is: no signed-out "My Profile" (Log in → Student is the
+same gate); About only in the footer; the signed-out header for a Google-signed-in student without a verified NRIC
+(pre-existing — TD-454).
+
 **Onboarding header.** The five onboarding pages each carried a copy of logo + `ProgressStepper` in a row; in
 MALAY ("Langkah 2 daripada 3" + bars = 268 px) it squeezed the logo to 74 px at 390 and 44 px at 360 — Tamil and
 English fitted. One `FlowHeader` now: the logo `shrink-0`, the step words stacked OVER smaller bars (the indicator

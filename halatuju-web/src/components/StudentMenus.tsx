@@ -18,17 +18,18 @@
  *   - `AccountPanel` — from `lg`, the avatar's dropdown: profile, settings, theme, language, log out.
  *   - `DisplayPanel` — from `lg` and signed out, the theme + language dropdown.
  *
- * The rows are built by AppHeader (`NavGroup[]`) and handed in, so the desktop nav row and the
- * phone list can never disagree about what exists.
+ * The rows are built once, by `useStudentNav` below, for both the desktop row and the phone list,
+ * so the two can never disagree about what exists.
  */
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Sheet from '@/components/Sheet'
 import AuthButtons from '@/components/AuthButtons'
 import { useToast } from '@/components/ToastContext'
-import { signOut } from '@/lib/supabase'
-import { clearAll } from '@/lib/storage'
+import { signOutStudent } from '@/lib/studentSignOut'
+import { useAuth } from '@/lib/auth-context'
+import { BURSARY_FILE_EVENT, hasBursaryFile, hasGrades } from '@/lib/storage'
 import { useT, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 import {
   DEFAULT_MODE, THEME_MODES, applyTheme, devicePrefersDark, readStoredMode, resolveTheme,
@@ -54,17 +55,6 @@ export interface Who {
   name: string
   contact: string
   initials: string
-}
-
-/**
- * Sign out: wipe every `halatuju_` key the student's device holds (her grades, profile, the bursary
- * hint — `clearAll` keeps the admin and sponsor sessions, which are other people's), end the
- * Supabase session, and start again from Home with a full load so no screen keeps her data in memory.
- */
-export async function signOutStudent(): Promise<void> {
-  clearAll()
-  await signOut()
-  window.location.href = '/'
 }
 
 const ROW = 'flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium'
@@ -192,19 +182,62 @@ function DisplayControls() {
   )
 }
 
+/**
+ * What the student header offers, built HERE rather than in AppHeader (Mobile M2 review): the lists,
+ * the "My Bursary" hint and the gate for account-only pages ride in this lazy chunk, not in the eager
+ * bar every student route downloads — that room paid for the bar's chunk-failure fallback.
+ *
+ * "My Bursary" joins the BrightPath list only for a student with a file — a display hint the pages
+ * that read her applications leave behind (`rememberBursaryFile`), re-read on every navigation and
+ * the moment a page writes it. Never a gate: the hub's endpoint 404s a student with no file.
+ */
+function useStudentNav(incompleteCount: number) {
+  const { t } = useT()
+  const pathname = usePathname()
+  const router = useRouter()
+  const { isAuthenticated, showAuthGate } = useAuth()
+  const [bursary, setBursary] = useState(false)
+  useEffect(() => {
+    const read = () => setBursary(isAuthenticated && hasBursaryFile())
+    read()
+    window.addEventListener(BURSARY_FILE_EVENT, read)
+    return () => window.removeEventListener(BURSARY_FILE_EVENT, read)
+  }, [isAuthenticated, pathname])
+  const b40Links: NavLink[] = [
+    { href: '/scholarship', label: t('scholarship.subnav.apply') },
+    ...(bursary ? [{ href: '/scholarship/bursary', label: t('scholarship.subnav.bursary') }] : []),
+    { href: '/sponsor', label: t('scholarship.subnav.sponsor') },
+  ]
+  const mainLinks: NavLink[] = [
+    { href: '/dashboard', label: t('common.dashboard') },
+    { href: '/search', label: t('search.nav') },
+    { href: '/saved', label: t('common.saved'), gate: isAuthenticated ? undefined : 'save' },
+  ]
+  const accountLinks: NavLink[] = [
+    { href: '/profile', label: t('header.myProfile'), badge: incompleteCount || undefined },
+    { href: '/settings', label: t('common.settings') },
+  ]
+  // Signed out, an account-only page opens the sign-in gate (or, with no results yet, onboarding).
+  const onGate = (l: NavLink) => (hasGrades() ? showAuthGate(l.gate ?? 'profile') : router.push('/onboarding/exam-type'))
+  return { pathname, b40Links, mainLinks, accountLinks, onGate, studentLogin: () => showAuthGate('profile') }
+}
+
 export interface PhoneMenuProps {
   open: boolean
   onClose: () => void
-  pathname: string | null
-  groups: NavGroup[]
   /** Signed in: who she is (heads the sheet). Signed out: null. */
   who: Who | null
-  onGate: (l: NavLink) => void
-  onStudentLogin: () => void
+  incompleteCount: number
 }
 
-export function PhoneMenu({ open, onClose, pathname, groups, who, onGate, onStudentLogin }: PhoneMenuProps) {
+export function PhoneMenu({ open, onClose, who, incompleteCount }: PhoneMenuProps) {
   const { t } = useT()
+  const { pathname, b40Links, mainLinks, accountLinks, onGate, studentLogin: onStudentLogin } = useStudentNav(incompleteCount)
+  const groups: NavGroup[] = [
+    { label: t('common.appName'), links: mainLinks },
+    { label: t('scholarship.nav'), links: b40Links },
+    ...(who ? [{ links: accountLinks }] : []),
+  ]
   const router = useRouter()
   // Focus opens on the FIRST ITEM — Sign up, or Dashboard — never on a field (there is none) and
   // never on the ×: a keyboard user lands where the list starts.
@@ -329,16 +362,9 @@ function Chevron({ open, className = 'h-4 w-4 text-ground-400' }: { open: boolea
  * `hoverOnlyWhenSupported`. Now every dropdown here is a button with `aria-expanded` whose list
  * exists only while open, closing on a second click, a click or tap outside, Escape or navigation.
  */
-export function DesktopBar({ pathname, mainLinks, b40Links, accountLinks, who, incompleteCount, onGate }: {
-  pathname: string | null
-  mainLinks: NavLink[]
-  b40Links: NavLink[]
-  accountLinks: NavLink[]
-  who: Who | null
-  incompleteCount: number
-  onGate: (l: NavLink) => void
-}) {
+export function DesktopBar({ who, incompleteCount }: { who: Who | null; incompleteCount: number }) {
   const { t } = useT()
+  const { pathname, b40Links, mainLinks, accountLinks, onGate } = useStudentNav(incompleteCount)
   const [drop, setDrop] = useState<null | 'b40' | 'account' | 'display'>(null)
   const root = useRef<HTMLDivElement>(null)
 
