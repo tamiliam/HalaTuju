@@ -1,0 +1,157 @@
+{
+ "about": "Offer letters read exactly - the held-out split. Keys only (PII-free). Made by offer_split.py; re-derive with --check. Every key not listed is dev.",
+ "deterministic_unseen": 19,
+ "heldout": [
+  "offer_letter__a106__d2247",
+  "offer_letter__a106__d2380",
+  "offer_letter__a118__d2088",
+  "offer_letter__a123__d2171",
+  "offer_letter__a124__d2265",
+  "offer_letter__a127__d2224",
+  "offer_letter__a127__d2236",
+  "offer_letter__a128__d2199",
+  "offer_letter__a129__d2282",
+  "offer_letter__a138__d2343",
+  "offer_letter__a13__d1995",
+  "offer_letter__a140__d2304",
+  "offer_letter__a161__d2418",
+  "offer_letter__a169__d2616",
+  "offer_letter__a171__d2594",
+  "offer_letter__a177__d3729",
+  "offer_letter__a179__d2811",
+  "offer_letter__a184__d2581",
+  "offer_letter__a185__d2491",
+  "offer_letter__a187__d2511",
+  "offer_letter__a187__d4271",
+  "offer_letter__a188__d2606",
+  "offer_letter__a189__d2592",
+  "offer_letter__a196__d3749",
+  "offer_letter__a199__d2625",
+  "offer_letter__a204__d2743",
+  "offer_letter__a205__d2929",
+  "offer_letter__a207__d2650",
+  "offer_letter__a212__d2651",
+  "offer_letter__a220__d2732",
+  "offer_letter__a224__d2737",
+  "offer_letter__a226__d2800",
+  "offer_letter__a227__d4114",
+  "offer_letter__a228__d3466",
+  "offer_letter__a228__d3469",
+  "offer_letter__a235__d2956",
+  "offer_letter__a241__d4493",
+  "offer_letter__a242__d4432",
+  "offer_letter__a243__d3750",
+  "offer_letter__a246__d3214",
+  "offer_letter__a252__d3448",
+  "offer_letter__a254__d2984",
+  "offer_letter__a257__d3010",
+  "offer_letter__a258__d3060",
+  "offer_letter__a261__d3108",
+  "offer_letter__a262__d3604",
+  "offer_letter__a264__d3567",
+  "offer_letter__a265__d3087",
+  "offer_letter__a265__d3223",
+  "offer_letter__a268__d3328",
+  "offer_letter__a273__d3741",
+  "offer_letter__a276__d3094",
+  "offer_letter__a277__d3430",
+  "offer_letter__a278__d3225",
+  "offer_letter__a279__d4178",
+  "offer_letter__a282__d3128",
+  "offer_letter__a284__d4070",
+  "offer_letter__a284__d4071",
+  "offer_letter__a289__d3259",
+  "offer_letter__a290__d3177",
+  "offer_letter__a297__d4410",
+  "offer_letter__a304__d3452",
+  "offer_letter__a305__d3307",
+  "offer_letter__a306__d4572",
+  "offer_letter__a317__d3571",
+  "offer_letter__a320__d3350",
+  "offer_letter__a329__d3494",
+  "offer_letter__a342__d3645",
+  "offer_letter__a343__d4075",
+  "offer_letter__a344__d3626",
+  "offer_letter__a346__d4587",
+  "offer_letter__a347__d3690",
+  "offer_letter__a349__d3668",
+  "offer_letter__a359__d4529",
+  "offer_letter__a360__d4287",
+  "offer_letter__a361__d3713",
+  "offer_letter__a365__d4521",
+  "offer_letter__a367__d3910",
+  "offer_letter__a370__d3892",
+  "offer_letter__a376__d3793",
+  "offer_letter__a392__d4464",
+  "offer_letter__a396__d3953",
+  "offer_letter__a399__d4004",
+  "offer_letter__a400__d4023",
+  "offer_letter__a405__d4024",
+  "offer_letter__a413__d4518",
+  "offer_letter__a418__d4381",
+  "offer_letter__a435__d4460",
+  "offer_letter__a43__d2048",
+  "offer_letter__a73__d2259"
+ ],
+ "heldout_count": 90,
+ "letters": 287,
+ "pool": 174,
+ "rule": "pool = letters not in the old corpus (fixtures/offer_letter, by doc id) whose stored read is the AI reader's (capture ai; deterministic locks are covered by the parse checks); strata = (family, programme); quota = TARGET shared by largest remainder, min 1 for a stratum of 2+; draw = random.Random('SEED:family:programme').sample(sorted keys, quota); dev = every other key",
+ "seed": 20261101,
+ "seen_before": 94,
+ "strata": {
+  "matriculation|bpb-sabah-2026": {
+   "heldout": 3,
+   "pool": 6
+  },
+  "matriculation|brightpath-flagship": {
+   "heldout": 4,
+   "pool": 7
+  },
+  "other_university|bpb-sabah-2026": {
+   "heldout": 54,
+   "pool": 105
+  },
+  "other_university|brightpath-flagship": {
+   "heldout": 3,
+   "pool": 5
+  },
+  "other|bpb-sabah-2026": {
+   "heldout": 1,
+   "pool": 1
+  },
+  "pismp|bpb-gss-ipoh-2026": {
+   "heldout": 1,
+   "pool": 1
+  },
+  "pismp|bpb-sabah-2026": {
+   "heldout": 0,
+   "pool": 1
+  },
+  "pismp|brightpath-flagship": {
+   "heldout": 4,
+   "pool": 8
+  },
+  "polytechnic|bpb-sabah-2026": {
+   "heldout": 7,
+   "pool": 14
+  },
+  "stpm|bpb-sabah-2026": {
+   "heldout": 1,
+   "pool": 2
+  },
+  "stpm|brightpath-flagship": {
+   "heldout": 3,
+   "pool": 5
+  },
+  "tvet|bpb-sabah-2026": {
+   "heldout": 0,
+   "pool": 1
+  },
+  "uitm|bpb-sabah-2026": {
+   "heldout": 9,
+   "pool": 18
+  }
+ },
+ "target": 90
+}
