@@ -135,14 +135,14 @@ class TestSample(_Base):
 
 
 class TestPage(_Base):
-    def _build(self):
+    def _build(self, *extra):
         self.c.letter(_key(1), _answer(unsure_fields=['candidate_nric']))
         self.c.letter(_key(2), _answer(stream=SECRET_STREAM, offer_date=None), ext='jpg',
                       body=b'\xff\xd8\xff invented')
         self.c.letter(_key(3), _answer(), ext='png', body=b'')        # empty file
         self.c.letter(_key(4), _answer(), ext=None)                   # no file at all
         self.c.letter(_key(5), _answer(), ext='pdf', body=b'garbage')  # damaged
-        rc, out = _run(self.argv())
+        rc, out = _run(self.argv(*extra))
         self.assertEqual(rc, 0, out)
         return out, self.c.page()
 
@@ -152,11 +152,38 @@ class TestPage(_Base):
         for i in range(1, 6):
             self.assertEqual(page.count(f'data-key="{_key(i)}"'), 1)
         self.assertIn('<button type="button" id="save">Save my answers</button>', page)
-        self.assertIn(orp.INSTRUCTION, page)
-        self.assertIn('0 of 5 done', page)
         self.assertIn(orp.RESULTS_NAME, page)
         self.assertIn('localStorage', page)
         self.assertIn('new Blob', page)
+
+    def test_every_line_starts_right_by_default(self):
+        _, page = self._build()
+        self.assertIn(orp.INSTRUCTION, page)
+        self.assertIn('Every line is already marked Right.', page)
+        self.assertIn('0 of 5 letters looked at or changed', page)
+        self.assertIn('var MODE = "prefilled"', page)
+        rights = page.count('value="right"')
+        self.assertGreater(rights, 0)
+        self.assertEqual(page.count('value="right" checked'), rights)
+        self.assertNotIn('value="wrong" checked', page)
+        self.assertIn('looked_at', page)                              # saved per letter
+
+    def test_blank_flag_keeps_the_old_page(self):
+        _, page = self._build('--blank')
+        self.assertIn(orp.INSTRUCTION_BLANK, page)
+        self.assertNotIn(orp.INSTRUCTION, page)
+        self.assertIn('0 of 5 done', page)
+        self.assertIn('var MODE = "blank"', page)
+        self.assertNotIn(' checked>', page)
+
+    def test_an_earlier_saved_tick_wins_over_the_default(self):
+        """restore() runs after the defaults are in the HTML and sets the saved verdict;
+        an untouched (not_checked) saved line leaves the default alone."""
+        _, page = self._build()
+        restore = page[page.index('function restore()'):page.index('restore();\n  refresh();')]
+        self.assertIn('r.checked = (r.value === f.verdict)', restore)
+        self.assertIn('f.verdict !== "right" && f.verdict !== "wrong"', restore)
+        self.assertLess(page.index('value="right" checked'), page.index('function restore()'))
 
     def test_documents_load_by_relative_path_and_problems_are_plain_words(self):
         _, page = self._build()
