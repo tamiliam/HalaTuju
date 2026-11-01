@@ -50,6 +50,7 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { setOnboardingReturn } from '@/lib/scholarship'
+import { uploadRefusal } from '@/lib/uploadCheck'; import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
@@ -85,6 +86,7 @@ function ActionCard({
   incomeRoute = '',
   incomeEarner = '',
   showClusterCoach = true,
+  limits = limitsFrom(null),
 }: {
   item: ResolutionItem
   token: string | null
@@ -108,6 +110,7 @@ function ActionCard({
   /** One cluster coach per earner: true only on the FIRST open income task of a member, so
    *  two tasks for the same earner don't render duplicate coaches. */
   showClusterCoach?: boolean
+  limits?: ResolvedDocumentLimits   // the served upload limits: the docs tab's early refusal (Mobile M4)
 }) {
   const { t, locale } = useT()
   const src = titleSourceFor(item)
@@ -178,13 +181,13 @@ function ActionCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs, isClusterTask, item.doc_type])
 
-  // doc: upload the named doc_type, run its scan, then re-fetch the tickets. A clean
-  // scan resolves the task server-side (this card unmounts); a mismatch keeps it open
-  // and surfaces Gopal's advice for a clean re-upload.
+  // doc: refuse a file the server would (too big / not a photo or PDF — Mobile M4), else upload the named
+  // doc_type, run its scan, re-fetch the tickets. A clean scan resolves the task server-side (this card
+  // unmounts); a mismatch keeps it open and surfaces Gopal's advice for a clean re-upload.
   const onFile = async (file: File) => {
-    if (!token) return
-    setBusy(true)
-    setError(null)
+    const refusal = uploadRefusal(file, limits)
+    if (!token || refusal) { setError(refusal ? t(refusal.key, refusal.params) : null); return }
+    setBusy(true); setError(null)
     try {
       const { upload_url, storage_path } = await signUploadDocument(item.doc_type, { token })
       await uploadFileToSignedUrl(upload_url, file)
@@ -317,9 +320,9 @@ function ActionCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
               <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
-              <span className="shrink-0 rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800">
+              <span className="max-w-full rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800">
                 {t('scholarship.actionCentre.officerHold.chip')}
               </span>
             </div>
@@ -355,7 +358,7 @@ function ActionCard({
           <div className="mt-4">
             {item.kind === 'doc' && (
               <>
-                <label className={`block w-full cursor-pointer rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
+                <label className={`flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
                   {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
                   <input
                     type="file"
@@ -410,7 +413,7 @@ function ActionCard({
             {routesToPicker && (
               <a
                 href={pickerHref}
-                className="block w-full rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
+                className="flex min-h-11 w-full items-center justify-center rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
               >
                 {t(isPismpSwitch
                   ? 'scholarship.actionCentre.confirmPathwaySwitchOnProfile'
@@ -422,7 +425,7 @@ function ActionCard({
               <a
                 href={onboardingAsk.path}
                 onClick={() => setOnboardingReturn('/scholarship/application')}
-                className="block w-full rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
+                className="flex min-h-11 w-full items-center justify-center rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
               >
                 {t(onboardingAsk.buttonKey)}
               </a>
@@ -443,7 +446,7 @@ function ActionCard({
                   type="button"
                   onClick={onSend}
                   disabled={busy || !text.trim()}
-                  className="w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
+                  className="min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
                 >
                   {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.send')}
                 </button>
@@ -458,7 +461,7 @@ function ActionCard({
                 type="button"
                 onClick={onAffirm}
                 disabled={busy}
-                className="w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
               >
                 {busy ? t('scholarship.actionCentre.sending')
                   : t(item.code === 'household_size_confirm'
@@ -475,7 +478,7 @@ function ActionCard({
               <button
                 type="button"
                 onClick={() => onConfirm(confirmTargetFor(item.fact))}
-                className="w-full rounded-xl border border-brand-shape px-4 py-2.5 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+                className="min-h-11 w-full rounded-xl border border-brand-shape px-4 py-2.5 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
               >
                 {t('scholarship.actionCentre.review')}
               </button>
@@ -537,6 +540,7 @@ export default function ActionCentre({
   // read the earner's cluster (audit #15). Fetched alongside the tickets; refreshed on every
   // resolve so an upload re-reads the cluster.
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
+  const [limits, setLimits] = useState<ResolvedDocumentLimits>(() => limitsFrom(null))
   const [loaded, setLoaded] = useState(false)
 
   const fetchItems = useCallback(async () => {
@@ -550,6 +554,7 @@ export default function ActionCentre({
       setResolved(r.resolved)
       setSetAside(r.set_aside ?? [])
       setDocs(d.documents)
+      setLimits(limitsFrom('limits' in d ? d.limits : null))
     } catch {
       // Treat a fetch failure as "nothing to show" — the Action Centre is
       // additive; it must never block the rest of the page.
@@ -677,6 +682,7 @@ export default function ActionCentre({
                 onConfirm={(target) => onConfirm?.(target)}
                 formLocked={formLocked}
                 docs={docs}
+                limits={limits}
                 incomeRoute={incomeRoute}
                 incomeEarner={incomeEarner}
                 showClusterCoach={

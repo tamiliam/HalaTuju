@@ -1074,11 +1074,6 @@
         "support": "Support I Need"
       },
       "tab": {
-        "personal": "About",
-        "family": "Family",
-        "results": "Results",
-        "plans": "Plans",
-        "support": "Support",
         "home": "Home"
       },
       "fromProfile": "From your HalaTuju profile",
@@ -1107,7 +1102,7 @@
       "statePlaceholder": "Select your state",
       "callLangPlaceholder": "Choose a language",
       "parentHeading": "Parent / guardian",
-      "commitNote": "Nothing is saved until you submit your application.",
+      "commitNote": "Saved on this device only · nothing is sent until you submit.",
       "org": {
         "halatuju": "Halatuju.xyz",
         "social": "Facebook / WhatsApp",
@@ -2619,6 +2614,7 @@
         "institution": "Institution",
         "course": "Course",
         "documentTitle": "The agreement",
+        "readFull": "Read the full agreement",
         "student": {
           "title": "Your signature",
           "intro": "By signing you confirm you have read and agree to this agreement.",
@@ -8587,6 +8583,12 @@
     "stopsMentoring": "Their mentoring ends: their scholars are left without a mentor."
   },
   "documentsTab": {
+    "card": {
+      "choose": "Take a photo or choose a file",
+      "removeTitle": "Remove this file?",
+      "removeBody": "{name} will be removed from your application. You can upload it again at any time.",
+      "keep": "Keep it"
+    },
     "higher": {
       "typeLabel": "Type of results:",
       "change": "Change",

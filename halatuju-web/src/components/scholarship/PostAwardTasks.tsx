@@ -131,7 +131,7 @@ export function BankDetailsTask({
 
           <div className="mt-4 space-y-4">
             {/* Step 1: upload the statement */}
-            <label className={`block w-full cursor-pointer rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
+            <label className={`flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-brand-fill px-4 py-2.5 text-center text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover focus-within:ring-2 focus-within:ring-info-500 focus-within:ring-offset-2 ${busy ? 'opacity-50' : ''}`}>
               {busy && !uploaded ? t('scholarship.actionCentre.uploading')
                 : uploaded ? t('scholarship.actionCentre.bank.reupload')
                 : t('scholarship.actionCentre.bank.upload')}
@@ -165,7 +165,7 @@ export function BankDetailsTask({
                 </div>
                 <button
                   type="button" onClick={onSave} disabled={!canSave}
-                  className="w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
+                  className="min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
                 >
                   {busy ? t('scholarship.actionCentre.bank.saving') : t('scholarship.actionCentre.bank.save')}
                 </button>
@@ -297,7 +297,7 @@ export function VircleTask({
 
           <button
             type="button" onClick={onConfirmDone} disabled={!valid || !installed || busy}
-            className="mt-3 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
+            className="mt-3 min-h-11 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
           >
             {busy ? t('scholarship.actionCentre.vircle.confirming') : t('scholarship.actionCentre.vircle.confirm')}
           </button>

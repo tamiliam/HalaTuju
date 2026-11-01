@@ -16,7 +16,7 @@
  * key follow its code — a DECLARED move, in the `_moved` array of `code-standards.json` — so the
  * two entries travelled with the wizard and bought nothing on the way.
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, type ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 import {
   signUploadDocument,
@@ -34,21 +34,35 @@ import { isTertiary } from '@/lib/qualification'
 // The tab's own words (`documentsTab.*`) ride in THIS chunk, not in every route's core catalogue.
 import '@/lib/messagesDocuments'
 
+import { uploadRefusal } from '@/lib/uploadCheck'
 import {
   docKey,
-  isAcceptedUpload,
   CollapsibleSection,
   SingleDocCard,
   IncomeProofCard,
 } from './ScholarshipDocuments/cards'
 import IncomeWizard from './ScholarshipDocuments/IncomeWizard'
+import type { RemoveConfirmProps } from './ScholarshipDocuments/RemoveConfirm'
 
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ScholarshipDocuments({ token, onChange, app }: { token: string | null; onChange?: () => void; app?: ScholarshipApplication | null }) {
   const { t, locale } = useT()
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
-  const [busyType, setBusyType] = useState<string | null>(null)
+  // Mobile M4: busy PER CARD — the keys with an upload in flight. One shared key let a second upload
+  // clear the first card's "Uploading…" while its file was still on the way.
+  const [busyKeys, setBusyKeys] = useState<ReadonlySet<string>>(() => new Set())
+  const markBusy = (key: string, on: boolean) => setBusyKeys((prev) => {
+    const next = new Set(prev)
+    if (on) next.add(key); else next.delete(key)
+    return next
+  })
+  // Remove (Mobile M4): ASK first (a sheet), then ONE call however many taps — `removingRef` is the
+  // in-flight latch, read synchronously, so a double tap cannot send two deletes.
+  const [removing, setRemoving] = useState<ApplicantDocument | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const removingRef = useRef(false)
+  const [Confirm, setConfirm] = useState<ComponentType<RemoveConfirmProps> | null>(null)
   const [error, setError] = useState<string | null>(null)
   // S17: minors get an additional Required card (parent_ic). is_minor is derived
   // backend-side from the profile's NRIC year and surfaced on the consent status
@@ -84,17 +98,12 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
 
   const handleUpload = async (docType: string, file: File, member = '') => {
     if (!token) return
-    // Guardrail: per-file size cap — instant feedback, no wasted upload.
-    if (file.size > limits.maxDocSizeBytes) {
-      setError(t('scholarship.docs.file_too_large', { mb: String(limits.maxDocSizeMb) }))
-      return
-    }
-    // Guardrail: images + PDF only (TD-080) — instant feedback, mirrors the API allowlist.
-    if (!isAcceptedUpload(file)) {
-      setError(t('scholarship.docs.unsupportedFormat'))
-      return
-    }
-    setBusyType(docKey(docType, member))
+    // Guardrails: the served size cap and images + PDF only (TD-080) — instant feedback, no wasted
+    // upload. One rule with the Action Centre (`@/lib/uploadCheck`).
+    const refusal = uploadRefusal(file, limits)
+    if (refusal) { setError(t(refusal.key, refusal.params)); return }
+    const key = docKey(docType, member)
+    markBusy(key, true)
     setError(null)
     try {
       const { upload_url, storage_path } = await signUploadDocument(docType, { token })
@@ -120,19 +129,41 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
         : t('scholarship.docs.uploadError'),
       )
     } finally {
-      setBusyType(null)
+      markBusy(key, false)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!token) return
+  // The delete itself — reached only through a confirmation. One call: the latch is taken before the
+  // first await and given back only when the server has answered.
+  const deleteNow = async (id: number) => {
+    if (!token || removingRef.current) return
+    removingRef.current = true
+    setDeleting(true)
     try {
       await deleteDocument(id, { token })
       await refresh()
       onChange?.()
     } catch {
       setError(t('scholarship.docs.deleteError'))
+    } finally {
+      removingRef.current = false
+      setDeleting(false)
+      setRemoving(null)
     }
+  }
+
+  // A card's Remove: open the confirm sheet. The sheet is a LAZY chunk (this tab rides on
+  // /scholarship/application, the tightest bundle line) — and a lazy chunk that carries a way OUT
+  // needs an eager fallback (lessons.md, Mobile M2): if it cannot load (a deploy between page load and
+  // the tap), the phone's own confirm asks instead. Never a delete without a question.
+  const handleDelete = (id: number) => {
+    const doc = docs.find((d) => d.id === id)
+    if (!doc || removingRef.current) return
+    import('./ScholarshipDocuments/RemoveConfirm')
+      .then((m) => { setConfirm(() => m.default); setRemoving(doc) })
+      .catch(() => {
+        if (window.confirm(t('documentsTab.card.removeTitle'))) void deleteNow(id)
+      })
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
@@ -141,7 +172,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       key={docKey(docType, extra.member)}
       docType={docType}
       docs={docs}
-      busyType={busyType}
+      busyKeys={busyKeys}
       onUpload={handleUpload}
       onDelete={handleDelete}
       t={t}
@@ -251,7 +282,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           <div className="space-y-3">
             <IncomeProofCard
               docs={docs}
-              busyType={busyType}
+              busyKeys={busyKeys}
               onUpload={handleUpload}
               onDelete={handleDelete}
               t={t}
@@ -294,6 +325,11 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       )}
 
       {error && <p className="text-critical-600 text-sm">{error}</p>}
+
+      {Confirm && removing && (
+        <Confirm name={removing.original_filename || t(`scholarship.docs.type.${removing.doc_type}`)}
+          busy={deleting} onCancel={() => setRemoving(null)} onConfirm={() => void deleteNow(removing.id)} />
+      )}
     </div>
   )
 }

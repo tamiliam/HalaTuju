@@ -1074,11 +1074,6 @@
         "support": "Bantuan Yang Saya Perlukan"
       },
       "tab": {
-        "personal": "Diri",
-        "family": "Keluarga",
-        "results": "Keputusan",
-        "plans": "Rancangan",
-        "support": "Bantuan",
         "home": "Utama"
       },
       "fromProfile": "Daripada profil HalaTuju anda",
@@ -1107,7 +1102,7 @@
       "statePlaceholder": "Pilih negeri anda",
       "callLangPlaceholder": "Pilih bahasa",
       "parentHeading": "Ibu bapa / penjaga",
-      "commitNote": "Tiada apa-apa disimpan sehingga anda menghantar permohonan.",
+      "commitNote": "Disimpan pada peranti ini sahaja · tiada apa-apa dihantar sehingga anda serahkan permohonan.",
       "org": {
         "halatuju": "Halatuju.xyz",
         "social": "Facebook / WhatsApp",
@@ -2619,6 +2614,7 @@
         "institution": "Institusi",
         "course": "Kursus",
         "documentTitle": "Perjanjian",
+        "readFull": "Baca perjanjian penuh",
         "student": {
           "title": "Tandatangan anda",
           "intro": "Dengan menandatangani, anda mengesahkan bahawa anda telah membaca dan bersetuju dengan perjanjian ini.",
@@ -8587,6 +8583,12 @@
     "stopsMentoring": "Bimbingan mereka tamat: penerima biasiswa mereka tidak lagi mempunyai mentor."
   },
   "documentsTab": {
+    "card": {
+      "choose": "Ambil foto atau pilih fail",
+      "removeTitle": "Buang fail ini?",
+      "removeBody": "{name} akan dibuang daripada permohonan anda. Anda boleh memuat naiknya semula pada bila-bila masa.",
+      "keep": "Simpan"
+    },
     "higher": {
       "typeLabel": "Jenis keputusan:",
       "change": "Tukar",

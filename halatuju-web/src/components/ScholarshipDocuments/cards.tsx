@@ -35,28 +35,39 @@ export function docKey(docType: string, member = ''): string {
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
-// Accept images + PDF only (mirrors the API allowlist; the file picker's `accept`
-// is just a hint, so re-check here). Rejects video/other junk (TD-080).
-const _ACCEPTED_UPLOAD_EXT = /\.(pdf|jpe?g|png|gif|bmp|webp|tiff?|heic|heif)$/i
-export function isAcceptedUpload(file: File): boolean {
-  const mime = (file.type || '').toLowerCase()
-  if (mime.startsWith('image/') || mime === 'application/pdf') return true
-  return _ACCEPTED_UPLOAD_EXT.test(file.name || '')
-}
+// Accept images + PDF only (TD-080) — the rule moved to the leaf `@/lib/uploadCheck` (Mobile M4) so
+// the Action Centre refuses the same files before uploading them; re-exported for existing imports.
+export { isAcceptedUpload } from '@/lib/uploadCheck'
+
+// Mobile M4: the trigger is a BUTTON, never a 20 px text link — `primary` (the empty card: the camera
+// glyph, full width, 48 px) or `outline` (Replace, 44 px). The phone's own chooser opens: on an iPhone
+// it offers Take Photo, Photo Library or Choose File. Never `capture` — that forces the camera and
+// would refuse the PDF a student downloaded.
+const TRIGGER_FACE = {
+  primary: 'min-h-12 w-full bg-brand-fill text-brand-fill-ink font-semibold hover:bg-brand-fill-hover',
+  outline: 'min-h-11 border border-brand-shape text-primary-600 font-medium hover:bg-primary-50',
+} as const
 
 function UploadTrigger({
   docType,
   busy,
   onUpload,
   label,
+  variant = 'outline',
 }: {
   docType: string
   busy: boolean
   onUpload: (docType: string, file: File) => void
   label: string
+  variant?: keyof typeof TRIGGER_FACE
 }) {
   return (
-    <label className="text-sm text-primary-600 cursor-pointer hover:underline shrink-0">
+    <label className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-sm focus-within:ring-2 focus-within:ring-info-500 ${TRIGGER_FACE[variant]} ${busy ? 'opacity-50' : ''}`}>
+      {variant === 'primary' && (
+        <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h3l2-3h8l2 3h3v11H3z" /><circle cx="12" cy="13" r="3.5" />
+        </svg>
+      )}
       {label}
       <input
         type="file"
@@ -79,10 +90,10 @@ function UploadTrigger({
   )
 }
 
-// An uploaded file as one tidy bordered row: icon + name + size on the left, the actions
-// grouped on the right so they line up instead of stacking on separate lines. THE one file
-// presentation for every document card — `onUpload` omitted (a card holding more than one
-// file) simply drops Replace, so the rows still look the same.
+// An uploaded file as one tidy bordered row (icon + name + size, the name opening the file), with
+// its actions as full-width 44 px buttons underneath (Mobile M4). THE one file presentation for
+// every document card — `onUpload` omitted (a card holding more than one file) simply drops
+// Replace, so the rows still look the same.
 function FileChip({
   doc,
   docType,
@@ -99,7 +110,8 @@ function FileChip({
   t: (key: string) => string
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ground-200 bg-ground-50/60 px-3 py-2.5">
+    <div>
+    <div className="flex min-h-11 items-center rounded-lg border border-ground-200 bg-ground-50/60 px-3 py-2">
       <span className="flex min-w-0 items-center gap-2 text-sm text-ground-600">
         <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
@@ -107,7 +119,7 @@ function FileChip({
         </svg>
         <span className="truncate">
           {doc.download_url ? (
-            <a href={doc.download_url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+            <a href={doc.download_url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-primary-600 hover:underline">
               {doc.original_filename || doc.doc_type}
             </a>
           ) : (
@@ -116,15 +128,19 @@ function FileChip({
           {doc.size ? <span className="text-ground-400"> · {formatFileSize(doc.size)}</span> : null}
         </span>
       </span>
-      <span className="flex shrink-0 items-center gap-4">
+    </div>
+      {/* Mobile M4: two full-width 44 px buttons, never 20 px links side by side. Remove ASKS first
+          (the parent's confirm sheet) and is off while this card uploads. */}
+      <div className={`mt-2 grid gap-2 ${onUpload ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {onUpload && (
           <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
             label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
         )}
-        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-600 hover:underline">
+        <button type="button" onClick={() => onDelete(doc.id)} disabled={busy}
+          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-critical-200 px-4 text-sm font-medium text-critical-600 hover:bg-critical-50 disabled:opacity-50">
           {t('scholarship.docs.remove')}
         </button>
-      </span>
+      </div>
     </div>
   )
 }
@@ -229,7 +245,7 @@ export function CollapsibleSection({
 export function SingleDocCard({
   docType,
   docs,
-  busyType,
+  busyKeys,
   onUpload,
   onDelete,
   t,
@@ -248,7 +264,7 @@ export function SingleDocCard({
 }: {
   docType: string
   docs: ApplicantDocument[]
-  busyType: string | null
+  busyKeys: ReadonlySet<string>
   onUpload: (docType: string, file: File, member?: string) => void
   onDelete: (id: number) => void
   t: (key: string) => string
@@ -272,7 +288,8 @@ export function SingleDocCard({
   onChanged?: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const busy = busyType === docKey(docType, member)
+  // Busy is PER CARD (Mobile M4): two uploads at once each keep their own "Uploading…".
+  const busy = busyKeys.has(docKey(docType, member))
   // Member-scoped income docs match on the (type, member) pair so each earner's card shows only
   // their file; STR cards also accept the legacy untagged copy during the slot backfill.
   const existing = docs.filter((d) => d.doc_type === docType
@@ -402,25 +419,27 @@ export function SingleDocCard({
           </p>
           {higherKind !== undefined && <LazyKindLine kind={higherKind} spmOnly={higherSpmOnly} />}
         </div>
-        {/* With one file, Replace lives in the chip below (beside the file it replaces); the
-            header trigger shows only to CHOOSE a first file, or to replace when the card
-            happens to hold more than one and no single row owns the action. */}
-        {layout !== 'chip' && (
+      </div>
+      {fileBlock}
+      {/* With one file, Replace lives under it (beside Remove). Otherwise ONE full-width button: CHOOSE a
+          first file (the big camera-friendly one), or Replace when the card holds more than one. */}
+      {layout !== 'chip' && (
+        <div className="mt-3 flex">
           <UploadTrigger
             docType={docType}
             busy={busy}
             onUpload={onPick}
+            variant={existing.length > 0 ? 'outline' : 'primary'}
             label={
               busy
                 ? t('scholarship.docs.uploading')
                 : existing.length > 0
                 ? t('scholarship.docs.replace')
-                : t('scholarship.docs.choose')
+                : t('documentsTab.card.choose')
             }
           />
-        )}
-      </div>
-      {fileBlock}
+        </div>
+      )}
       {checks}
     </div>
   )
@@ -430,7 +449,7 @@ export function SingleDocCard({
 
 export function IncomeProofCard({
   docs,
-  busyType,
+  busyKeys,
   onUpload,
   onDelete,
   t,
@@ -438,7 +457,7 @@ export function IncomeProofCard({
   lang,
 }: {
   docs: ApplicantDocument[]
-  busyType: string | null
+  busyKeys: ReadonlySet<string>
   onUpload: (docType: string, file: File) => void
   onDelete: (id: number) => void
   t: (key: string) => string
@@ -448,7 +467,7 @@ export function IncomeProofCard({
   const incomeTypes = [...INCOME_PROOF_TYPES] as string[]
   const existing = docs.filter((d) => incomeTypes.includes(d.doc_type))
   const [activeType, setActiveType] = useState<string>(INCOME_PROOF_TYPES[0])
-  const busy = busyType === activeType
+  const busy = busyKeys.has(activeType)
 
   return (
     <div className="border rounded-lg p-3">
@@ -465,8 +484,9 @@ export function IncomeProofCard({
             {INCOME_PROOF_TYPES.map((dt) => (
               <button
                 key={dt}
+                type="button"
                 onClick={() => setActiveType(dt)}
-                className={`text-xs px-2 py-1 rounded border transition-colors ${
+                className={`min-h-11 text-sm px-3 rounded-lg border transition-colors ${
                   activeType === dt
                     ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                     : 'text-ground-600 border-ground-300 hover:border-primary-400'
@@ -477,12 +497,15 @@ export function IncomeProofCard({
             ))}
           </div>
         </div>
+      </div>
+      <div className="mt-3 flex">
         <UploadTrigger
           docType={activeType}
           busy={busy}
           onUpload={onUpload}
+          variant="primary"
           label={
-            busy ? t('scholarship.docs.uploading') : t('scholarship.docs.choose')
+            busy ? t('scholarship.docs.uploading') : t('documentsTab.card.choose')
           }
         />
       </div>
@@ -512,8 +535,9 @@ export function IncomeProofCard({
                   ) : null}
                 </span>
                 <button
+                  type="button"
                   onClick={() => onDelete(d.id)}
-                  className="text-critical-600 hover:underline ml-2 shrink-0"
+                  className="ml-2 inline-flex min-h-11 shrink-0 items-center rounded-xl border border-critical-200 px-3 text-sm font-medium text-critical-600 hover:bg-critical-50"
                 >
                   {t('scholarship.docs.remove')}
                 </button>

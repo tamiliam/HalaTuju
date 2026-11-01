@@ -1,7 +1,7 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -18,6 +18,7 @@ import {
 } from '@/lib/api'
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
 import Sheet from '@/components/Sheet'
+import { AwardContractReader, AwardDeclineSheet } from '@/components/scholarship/AwardContract'
 
 /** Guardian relationship codes — must match Consent.GUARDIAN_RELATIONSHIPS on
  *  the backend (mirrors ScholarshipConsent's list). */
@@ -55,6 +56,10 @@ export default function ScholarshipAwardPage() {
   const [justSigned, setJustSigned] = useState(false)
   // The student must pass the comprehension quiz ("Understand" step) before the signing form.
   const [comprehensionPassed, setComprehensionPassed] = useState(false)
+  const [declining, setDeclining] = useState(false)   // the decline question's sheet (Mobile M4)
+  // ONE accept / sign / decline at a time (Mobile M4): read synchronously, so two taps in the same frame
+  // (before `submitting` re-renders the button disabled) cannot send two answers to the award.
+  const acting = useRef(false)
 
   // Guardian modal (minors, plain flow only — used when there's no agreement)
   const [showGuardian, setShowGuardian] = useState(false)
@@ -98,6 +103,10 @@ export default function ScholarshipAwardPage() {
         setPreview(res.bursary_preview ?? null)
         setUnavailable(!!res.bursary_unavailable)
         setSigned(res.bursary_agreement ?? null)
+        // Mobile M4 (owner): a reload skips what the SERVER already holds as done — the quiz on THIS
+        // template, a parent PIN still inside its window — the exact rules the signature checks.
+        if (res.bursary_preview?.comprehension_passed) setComprehensionPassed(true)
+        if (res.bursary_preview?.guarantor_phone_verified) setPhoneVerified(true)
       })
       .catch(() => { if (active) setOffer(null) })
       .finally(() => { if (active) setLoading(false) })
@@ -179,7 +188,8 @@ export default function ScholarshipAwardPage() {
 
   // The plain (flag-off) acceptance — unchanged behaviour.
   async function acceptPlain(guardian?: { name: string; relationship: string; nric: string }) {
-    if (!token) return
+    if (!token || acting.current) return
+    acting.current = true
     setSubmitting(true)
     setError(null)
     try {
@@ -200,7 +210,7 @@ export default function ScholarshipAwardPage() {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
     } finally {
-      setSubmitting(false)
+      acting.current = false; setSubmitting(false)
     }
   }
 
@@ -218,7 +228,8 @@ export default function ScholarshipAwardPage() {
   // The bursary SIGNING acceptance — student typed-name (adult) + the guarantor surety.
   async function signAndAccept(e: React.FormEvent) {
     e.preventDefault()
-    if (!token) return
+    if (!token || acting.current) return
+    acting.current = true
     setSubmitting(true)
     setError(null)
     try {
@@ -251,13 +262,14 @@ export default function ScholarshipAwardPage() {
       // The PIN no longer vouches for the number on file (changed, or gone stale): show the PIN step again.
       if (code === 'guarantor_phone_changed' || code === 'guarantor_phone_unverified') { setPhoneVerified(false); setPinSent(false); setPinCode('') }
     } finally {
-      setSubmitting(false)
+      acting.current = false; setSubmitting(false)
     }
   }
 
+  // Reached only from the decline sheet's own button (Mobile M4: a Sheet, not the browser's confirm).
   async function decline() {
-    if (!token) return
-    if (!window.confirm(t('scholarship.award.declineConfirm'))) return
+    if (!token || acting.current) return
+    acting.current = true
     setSubmitting(true)
     setError(null)
     try {
@@ -266,10 +278,14 @@ export default function ScholarshipAwardPage() {
     } catch (e) {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
+      setDeclining(false)
     } finally {
-      setSubmitting(false)
+      acting.current = false; setSubmitting(false)
     }
   }
+  const declineSheet = declining && (
+    <AwardDeclineSheet busy={submitting} onCancel={() => setDeclining(false)} onConfirm={() => void decline()} />
+  )
 
   if (status === 'loading' || loading) {
     return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
@@ -395,22 +411,9 @@ export default function ScholarshipAwardPage() {
           </dl>
         </div>
 
-        {/* The full agreement body — server-rendered HTML (inline CSS, no donor data).
-            Rendered inside a SANDBOXED iframe (sandbox="" → no allow-scripts): the
-            document is isolated from the host page and cannot run scripts, so even
-            though the HTML is trusted (our own backend, server-side-escaped, inline
-            CSS only) there is no XSS path into the app. Constrained + scrollable. */}
-        <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ground-500">
-            {t('scholarship.award.bursary.documentTitle')}
-          </h2>
-          <iframe
-            title={t('scholarship.award.bursary.documentTitle')}
-            sandbox=""
-            srcDoc={preview.rendered_html}
-            className="h-[28rem] w-full rounded-2xl border bg-ground-0 shadow-inner"
-          />
-        </div>
+        {/* The full agreement — server-rendered HTML in a SANDBOXED frame (no script, no way into the
+            page). On a phone, a button opens it in a tall reader sheet; its text is never changed. */}
+        <AwardContractReader html={preview.rendered_html} />
 
         {error && <InfoBox kind="block">{error}</InfoBox>}
 
@@ -444,10 +447,10 @@ export default function ScholarshipAwardPage() {
             </div>
           )}
 
-          <label className="mt-4 flex items-start gap-3">
+          <label className="mt-4 flex min-h-11 items-start gap-3 py-1">
             <input
               type="checkbox"
-              className="mt-1 h-4 w-4"
+              className="mt-0.5 h-5 w-5 shrink-0"
               checked={studentAgreed}
               onChange={(e) => setStudentAgreed(e.target.checked)}
             />
@@ -552,7 +555,7 @@ export default function ScholarshipAwardPage() {
                   type="button"
                   onClick={sendPin}
                   disabled={pinBusy}
-                  className="text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
+                  className="min-h-11 text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
                 >
                   {t('scholarship.award.bursary.guarantor.pin.resend')}
                 </button>
@@ -562,10 +565,10 @@ export default function ScholarshipAwardPage() {
             {pinError && <p className="mt-2 text-sm text-critical-600">{pinError}</p>}
           </div>
 
-          <label className="mt-4 flex items-start gap-3">
+          <label className="mt-4 flex min-h-11 items-start gap-3 py-1">
             <input
               type="checkbox"
-              className="mt-1 h-4 w-4"
+              className="mt-0.5 h-5 w-5 shrink-0"
               checked={guarantorAgreed}
               onChange={(e) => setGuarantorAgreed(e.target.checked)}
             />
@@ -577,21 +580,18 @@ export default function ScholarshipAwardPage() {
           <p className="text-sm text-ground-500">{t('scholarship.award.confirmed.acceptBy', { date: deadline })}</p>
         )}
 
-        <div className="space-y-3">
-          <button type="submit" disabled={!canSubmit} className="btn-primary w-full disabled:opacity-50">
+        <div className="sticky bottom-0 z-10 -mx-6 space-y-1 border-t border-ground-200 bg-ground-0 px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0">
+          <button type="submit" disabled={!canSubmit} className="btn-primary min-h-12 w-full disabled:opacity-50">
             {submitting ? t('scholarship.award.bursary.signing') : t('scholarship.award.bursary.signSubmit')}
           </button>
-          <button
-            type="button"
-            onClick={decline}
-            disabled={submitting}
-            className="block w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
-          >
+          <button type="button" onClick={() => setDeclining(true)} disabled={submitting}
+            className="block min-h-11 w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50">
             {t('scholarship.award.confirmed.decline')}
           </button>
         </div>
 
         <p className="text-xs text-ground-400">{t('scholarship.award.confirmed.heldNote')}</p>
+        {declineSheet}
       </form>
     )
   }
@@ -630,14 +630,11 @@ export default function ScholarshipAwardPage() {
       >
         {submitting ? t('scholarship.award.confirmed.accepting') : t('scholarship.award.confirmed.accept')}
       </button>
-      <button
-        type="button"
-        onClick={decline}
-        disabled={submitting}
-        className="mt-3 block w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
-      >
+      <button type="button" onClick={() => setDeclining(true)} disabled={submitting}
+        className="mt-3 block min-h-11 w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50">
         {t('scholarship.award.confirmed.decline')}
       </button>
+      {declineSheet}
 
       <p className="mt-6 text-xs text-ground-400">{t('scholarship.award.confirmed.heldNote')}</p>
 
@@ -660,7 +657,7 @@ export default function ScholarshipAwardPage() {
               type="button"
               onClick={() => { setShowGuardian(false); setError(null) }}
               disabled={submitting}
-              className="rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
+              className="min-h-11 rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
             >
               {t('scholarship.award.guardian.cancel')}
             </button>

@@ -77,7 +77,7 @@ function Pills({
           key={o.value}
           type="button"
           onClick={() => onPick(o.value)}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+          className={`min-h-11 text-sm px-4 py-2 rounded-full border transition-colors ${
             selected === o.value
               ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
               : 'text-ground-600 border-ground-300 hover:border-primary-400'
@@ -416,7 +416,7 @@ export default function IncomeWizard({
               const on = members.includes(m)
               return (
                 <button key={m} type="button" onClick={() => toggleMember(m)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  className={`min-h-11 text-sm px-4 py-2 rounded-full border transition-colors ${
                     on ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                        : 'text-ground-600 border-ground-300 hover:border-primary-400'}`}>
                   {on ? '✓ ' : ''}{iq(`member.${m}`)}

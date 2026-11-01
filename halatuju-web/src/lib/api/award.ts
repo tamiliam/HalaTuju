@@ -35,6 +35,11 @@ export interface BursaryPreview {
   foundation_signatory_name: string
   foundation_signatory_title: string
   rendered_html: string   // the full agreement body (server-rendered HTML; carries the DRAFT banner)
+  /** Mobile M4: what she has ALREADY done towards signing, read back so a reload skips it. Each is the
+   *  exact rule the signature enforces (`signing_progress.py`): the quiz passed on THIS template,
+   *  and a parent PIN check still inside its window for the number on file. Absent on an older API. */
+  comprehension_passed?: boolean
+  guarantor_phone_verified?: boolean
 }
 
 /** A signed (or part-signed) agreement: derived status + frozen particulars + the
