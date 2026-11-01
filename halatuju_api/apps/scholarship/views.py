@@ -2356,6 +2356,7 @@ class StudentAwardView(APIView):
         from django.conf import settings as _settings
         if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False) and app:
             from . import bursary, contract_scope, contracts
+            from .signing_progress import signing_progress
             existing = getattr(app, 'bursary_agreement', None)
             template = contract_scope.template_for_application(app) if existing is None else None
             if existing is not None:
@@ -2387,6 +2388,9 @@ class StudentAwardView(APIView):
                     'foundation_signatory_name': p['foundation_signatory_name'],
                     'foundation_signatory_title': p['foundation_signatory_title'],
                     'rendered_html': preview_html,
+                    # Mobile M4: what she has already done, so a reload skips it (read-only; each
+                    # flag is the exact rule the signature enforces — signing_progress.py).
+                    **signing_progress(app, template),
                 }
         return Response(payload)
 
