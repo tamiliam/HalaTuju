@@ -1196,10 +1196,11 @@ printed, hostel/venue in neither (`reporting_venue`), `issuer` unchanged; it als
 (#175). Before S4 pushes, the matcher must read `campus` and join it with `institution` for per-campus families
 (poly / KK / IPG / IKBN / IKM / KKTM) in `match_offer_course`, `letter_place`, `CampusReader` (fed from
 `pathway_engine.student_offer_check`). S4 sends a realign/link/tick dry run first and waits for this change.
-**BUILT 2026-11-02 (branch `claude/gallant-rubin-7vxwjz`, NOT LIVE):** `offer_course_match.letter_institution` is the
-one join; `student_offer_check` and `align_institution_to_catalogue` read through it (`test_offer_campus_split.py`).
-Next: adversarial review → owner's yes → api deploy → tell S4 it may send its dry run. ⚠ `pathway_engine.py` is now
-AT its line allowance (633).
+**DONE 2026-11-02, pushed to main (api only, no migration; confirm the build + revision):**
+`offer_course_match.letter_institution` is the one join (SPACE-joined, the pre-S4 shape — a ", " join hid clashes,
+review 2026-11-02); `student_offer_check`, `align_institution_to_catalogue` and `offer_reporting_bonus` read the campus
+(`test_offer_campus_split.py`). Once the revision serves, S4 may send its realign/link/tick dry run.
+⚠ `pathway_engine.py` is now AT its line allowance (633).
 Owner rules to keep: Check 1 records facts, only gift rules restrict; a reviewer judges a stale intake (#202).
 Open debt: TD-447–449, TD-451, TD-452.
 

@@ -7,11 +7,15 @@ All notable changes to this project will be documented in this file.
 - Offer reader S4 will store `institution` = name only and a new `campus` = the campus as printed. The catalogue keeps
   one row per campus for poly / KK / IPG / IKBN / IKM / KKTM, so the matcher must see both or a multi-campus pin drops.
 - `offer_course_match.letter_institution(institution, campus)` is THE one join ("KOLEJ KOMUNITI" + "KANGAR" →
-  "KOLEJ KOMUNITI, KANGAR"; nothing repeated; a pre-S4 read with no `campus` comes back unchanged).
+  "KOLEJ KOMUNITI KANGAR", the pre-S4 shape; nothing repeated; a bracketed "(KANGAR)" kept; a pre-S4 read with no
+  `campus` comes back unchanged).
   `pathway_engine.student_offer_check` reads through it, so `match_offer_course`, `letter_place`, `CampusReader`, the
   ticks, realign, link and confirm all get the rejoined line; `align_institution_to_catalogue` (the one raw reader) too.
-- Tests: `tests/test_offer_campus_split.py` (8; the name alone pins no KK campus, the join pins Kangar / Arau / IKM
-  Lumut; UiTM Perlis still never UniMAP). API gate: 11,469 passed / 3 skipped.
+- Adversarial review (2026-11-02): no wrong pin found; a ", " join hid real clashes (the exact-name test keeps
+  punctuation, so a split KK line against a poly / UPM course read "unknown", not "clash") → space join; a bracketed
+  campus was dropped → kept; `offer_reporting_bonus`'s private-arm haystack now reads `campus` too.
+- Tests: `tests/test_offer_campus_split.py` (9; the name alone pins no KK campus, the join pins Kangar / Arau / IKM
+  Lumut; UiTM Perlis still never UniMAP; a split line's clash stays a clash). API gate: 11,470 passed / 3 skipped.
 - Release: api only, before S4 pushes. S4 then sends its realign / link / tick dry run on the new reads.
 
 ## Route-aware exam-year colours in the cockpit (2026-11-01) — LIVE 2026-11-02 (main 49e50778; web built, api build at hand-over)

@@ -30,15 +30,16 @@ def _offer(app, fields):
 
 class TheJoinTest(TestCase):
     def test_a_campus_is_joined_on_once(self):
-        self.assertEqual(letter_institution('KOLEJ KOMUNITI', 'KANGAR'), 'KOLEJ KOMUNITI, KANGAR')
+        self.assertEqual(letter_institution('KOLEJ KOMUNITI', 'KANGAR'), 'KOLEJ KOMUNITI KANGAR')
         self.assertEqual(letter_institution('UNIVERSITI TEKNOLOGI MARA', 'CAWANGAN SABAH, KAMPUS KOTA KINABALU'),
-                         'UNIVERSITI TEKNOLOGI MARA, CAWANGAN SABAH, KAMPUS KOTA KINABALU')
+                         'UNIVERSITI TEKNOLOGI MARA CAWANGAN SABAH, KAMPUS KOTA KINABALU')
+        self.assertEqual(letter_institution('KOLEJ KOMUNITI', '(KANGAR)'), 'KOLEJ KOMUNITI KANGAR')
 
     def test_nothing_is_repeated(self):
         self.assertEqual(letter_institution('Kolej Komuniti Kangar', 'Kangar'), 'Kolej Komuniti Kangar')
         self.assertEqual(letter_institution('Kolej Komuniti', 'KOLEJ KOMUNITI KANGAR'), 'KOLEJ KOMUNITI KANGAR')
         # A campus word that is only PART of a word of the name is not "inside" it.
-        self.assertEqual(letter_institution('Politeknik Arau', 'Ara'), 'Politeknik Arau, Ara')
+        self.assertEqual(letter_institution('Politeknik Arau', 'Ara'), 'Politeknik Arau Ara')
 
     def test_a_pre_s4_read_is_unchanged(self):
         for campus in (None, '', '   '):
@@ -76,6 +77,27 @@ class MultiCampusPinsSurviveTheSplitTest(TestCase):
                          'UE6343001')
 
 
+class AClashStaysAClashTest(TestCase):
+    """Review 2026-11-02: a ", " join hid a real clash — the exact-name test keeps punctuation."""
+
+    @classmethod
+    def setUpTestData(cls):
+        seed_realign_catalogue()
+
+    def test_a_split_kk_line_against_another_place_is_still_a_clash(self):
+        from apps.scholarship.offer_pathway import institution_agreement
+        upm = 'Universiti Putra Malaysia'
+        for inst, camp in (('KOLEJ KOMUNITI', 'KANGAR'), ('POLITEKNIK', 'UNGKU OMAR')):
+            line = letter_institution(inst, camp)
+            with self.subTest(line=line):
+                self.assertEqual(institution_agreement('UP4310001', upm, line, ''),
+                                 institution_agreement('UP4310001', upm, f'{inst} {camp}', ''))
+                self.assertEqual(institution_agreement('UP4310001', upm, line, ''), 'clash')
+                self.assertEqual(letter_place('UP4310001', line, 'UNIVERSITI PUTRA MALAYSIA'), line)
+        self.assertEqual(institution_agreement('RA-POLY-DPM', 'Politeknik Ungku Omar',
+                                               letter_institution('KOLEJ KOMUNITI', 'KANGAR'), ''), 'clash')
+
+
 class TheOfferCheckFeedsTheJoinTest(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -86,7 +108,7 @@ class TheOfferCheckFeedsTheJoinTest(TestCase):
         chk = student_offer_check(_offer(app, {
             'programme': 'DIPLOMA PELANCONGAN', 'institution': 'KOLEJ KOMUNITI', 'campus': 'KANGAR',
             'issuer': 'JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI'}))
-        self.assertEqual(chk['institution'], 'KOLEJ KOMUNITI, KANGAR')
+        self.assertEqual(chk['institution'], 'KOLEJ KOMUNITI KANGAR')
         reason, match = pinned_match(chk['programme'], chk['institution'], chk['issuer'])
         self.assertEqual((reason, match['institution']), ('', 'Kolej Komuniti Kangar'))
 

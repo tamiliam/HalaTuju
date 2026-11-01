@@ -306,7 +306,7 @@ def offer_reporting_bonus(doc) -> bool:
     present = auth.get('present') if isinstance(auth.get('present'), list) else []
     if issuer_sig not in present:
         return False                                    # gate 2: public issuer actually on the page
-    haystack = ' '.join(((f.get('issuer') or ''), (f.get('institution') or ''))).upper()
+    haystack = ' '.join(str(f.get(k) or '') for k in ('issuer', 'institution', 'campus')).upper()
     if 'SDN' in haystack and 'BHD' in haystack:
         return False                                    # gate 3: a private company is never a UA
     # gate 3b (owner 2026-07-10): a public university's PRIVATE continuing-education arm (UTM SPACE,

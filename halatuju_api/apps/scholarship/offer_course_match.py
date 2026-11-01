@@ -68,14 +68,18 @@ def letter_institution(institution: str, campus: str = '') -> str:
     a multi-campus pin drops. THE one join, read by ``pathway_engine.student_offer_check`` (which feeds
     ``match_offer_course``, ``letter_place`` and ``CampusReader``) and by any raw reader of the stored
     fields. A campus already inside the name (or the reverse) is not repeated; a pre-S4 read has no
-    ``campus`` key, so its line is returned unchanged."""
-    inst, camp = ' '.join((institution or '').split()), ' '.join((campus or '').split())
-    pi, pc = f' {_plain_words(inst)} ', f' {_plain_words(camp)} '
+    ``campus`` key, so its line is returned unchanged. Joined with a SPACE, the pre-S4 shape: the
+    exact-name test (``_names_another_institution``) keeps punctuation, so ", " turned a real clash
+    ("KOLEJ KOMUNITI" + "KANGAR" against a polytechnic course) into "unknown" (review 2026-11-02).
+    A bracketed campus "(KANGAR)" loses its brackets — the readers drop a parenthetical whole."""
+    inst = ' '.join((institution or '').split())
+    camp = ' '.join(re.sub(r'[()]', ' ', campus or '').split())
+    pi, pc = (f' {" ".join(re.findall(r"[a-z0-9]+", v.lower()))} ' for v in (inst, camp))
     if not pc.strip() or pc in pi:
         return inst
     if not pi.strip() or pi in pc:
         return camp
-    return f'{inst}, {camp}'
+    return f'{inst} {camp}'
 
 
 def catalogue_name(name: str) -> str:
