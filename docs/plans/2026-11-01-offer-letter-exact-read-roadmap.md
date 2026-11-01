@@ -245,6 +245,19 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   Label "is this a real offer letter?" (yes / conditional / portal page / private) so genuineness is scored too.
 - **Acceptance:** a ranked list of failure kinds with counts; each tagged "old read" or "today's reader too".
 - **Owner:** yes to ~US$0.15 of Vision (likely free); spot-check ~15 dev answers.
+- **DONE 2026-11-01.** 126 dev answers (the AI-read dev letters); 216 letters answered in all. Vision: 106 page calls
+  (~US$0.16, inside the free tier, via gcloud ADC); every letter now has free text. Replay of today's free readers:
+  51 of 287 lock, 235 fall back to Gemini, 1 no text; of the 71 stored deterministic reads, **21 would now fall back**
+  (15 STPM photos + 1 poly photo rejected by a newer parser safety check; 5 matric text PDFs with no name/IC found)
+  - a live re-read (S7) must not lose them. Known-format letters read by AI: 38, only 1 locks today (21 layout
+  variants, 14 photo noise, 2 other) - S5's first job.
+  **Scores under the S2 rules** (institution and campus split, intake labels): held-out 19/90 fully exact (21.1%),
+  dev 31/126 (24.6%). Held-out right %: NRIC 98.9, reporting date 96.7, name 94.4, intake 81.1, programme 73.3,
+  institution 46.7 (campus missing on every letter that prints one - the reader has no campus field yet).
+  **Top failure kinds (216 letters):** institution = reporting venue 35; institution names a campus / branch the
+  line does not 33; programme keeps a code 24; institution adds to the line 22; real offer judged not genuine 19;
+  known format not locked 18; PISMP programme wrapper 16; programme adds words 16; intake drops Semester 11.
+  **Owner's offer check (47 letters):** our is-it-an-offer labels 47/47 right; 8 live genuineness calls wrong (below).
 
 ### S3 — Today's AI reader, measured (low, ~4 h; paid)
 - **Goal:** today's Gemini read scored on the dev set, and its true cost per letter.
@@ -296,6 +309,21 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Owner:** adversarial review (identity fields); deploy go.
 
 ### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional)
+- **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
+  1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
+  2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
+     `not_offer_letter` - it is not an offer from a public institution. Today's calls on these are right.
+  3. An admission printout / portal page is `suspect`, never `not_offer_letter` - we cannot say outright it is
+     not an offer.
+  4. A confirmation-of-studies letter from a public institution with no private wing (UMS, polytechnics) is an
+     acceptable alternative to an offer letter. Where the university has a private wing (UM, UKM...) confirm the
+     student is on the government programme.
+  5. Real offers from public skills institutes (IKBN, IKM) were called `not_offer_letter` - WRONG today (2 letters).
+  6. A TVET slip that is not an offer letter is `suspect`, not a fail.
+  7. A private-college conditional offer (e.g. Kolej UNITAR) is `not_offer_letter`, not `suspect`.
+  S6 is therefore confirmed in scope: rules 3-7 are the proven wrong calls to fix. The reading label
+  (`is_offer_letter` in the answers) stays a DOCUMENT label (offer / portal page / not an offer); the bursary
+  decision above is a separate layer.
 - **Goal:** real letters that the scorer rejects (e.g. some of the 14 polytechnic not_offer_letter) score genuine.
 - **Scope:** `genuineness/results_doc.py`, `MODEL_VERSION` bump + History line, tests from real wording.
 - **Acceptance:** every letter labelled real and from a supported issuer scores genuine on dev and held-out;
