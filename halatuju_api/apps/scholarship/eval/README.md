@@ -143,7 +143,9 @@ Committed tests: `tests/test_offer_read_scorer.py` (synthetic twins only).
 `<eval-dir>/review_s1.html`, inside the gitignored corpus folder (it shows real student data:
 never publish or commit it; it refuses a tracked folder). It samples the held-out letters whose
 answer has `unsure_fields` plus a seeded 20 of the rest (`--random N`), shows each document beside
-its answer with Right / Wrong per line, keeps progress in the browser, and "Save my answers"
+its answer with Right / Wrong per line — every line starts Right, so the owner changes only the
+wrong ones (`--blank` starts with nothing ticked) — keeps progress in the browser (an earlier tick
+wins over the default), and "Save my answers"
 downloads `offer_review_results.json`. `--apply <that file>` prints counts only (letters checked,
 lines wrong per field) and changes no answer file — the lead decides. Tests:
 `tests/test_offer_review_page.py` (synthetic twins).
