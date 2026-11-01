@@ -92,12 +92,12 @@ Every key present; a field the letter does not print is JSON `null`, explicitly:
 | Key | What to write |
 |-----|---------------|
 | `candidate_name`, `candidate_nric` | as printed |
-| `institution_as_printed` | the college / campus / school line, exactly as printed |
-| `institution_campus` | the campus a person would pick from that line (may be `null`; not scored — kept for the campus matcher, TD-451/452) |
+| `institution_as_printed` | the institution's **name only**, as printed (owner, 2026-11-01: the institution and the campus are TWO fields) |
+| `institution_campus` | the campus / branch, as printed, or `null`. One printed line holding both is split: "UiTM KAMPUS KOTA KINABALU" → `institution_as_printed` "UiTM", `institution_campus` "KAMPUS KOTA KINABALU". Scored, not core |
 | `programme` | the programme / course title, as printed. **PISMP: the degree title** ("IJAZAH SARJANA MUDA PERGURUAN"), the same as any other university course (owner, 2026-11-01) — the Bidang goes in `specialisation` |
 | `stream` | STPM "Bidang" / matriculation "Jurusan" (`null` for other families) |
 | `specialisation` | PISMP "Bidang Pengkhususan" (`null` for other families) |
-| `intake` | the session / intake **as printed, with its label** ("SESI 1-2026/2027", "SESI AKADEMIK 2026/2027", "INTAKE AUGUST 2025", "AMBILAN 2026" — owner, 2026-11-01). The scorer drops the label when it compares, so label or no label scores the same; S1 answers written before the ruling without the label were left as they are, and every new answer keeps it |
+| `intake` | the session / intake **as printed, with its label** ("SESI 1-2026/2027", "SESI AKADEMIK 2026/2027", "INTAKE AUGUST 2025", "JUNE 2026 INTAKE", "AMBILAN 2026" — owner, 2026-11-01). The scorer drops the label when it compares, so label or no label scores the same; S1 answers written before the ruling without the label were left as they are, and every new answer keeps it. "SEMESTER 1" / "SEMESTER PERTAMA" is part of the intake, not a label — keep it |
 | `reporting_date` | the report / registration date (a range: its first day) |
 | `offer_date` | the issue date (not the print date) |
 | `issuer` | the body that issued the letter |
@@ -112,13 +112,22 @@ Every key present; a field the letter does not print is JSON `null`, explicitly:
 `--read file:<suffix>` reads `snapshots/<key><suffix>`, for S3's fresh reads) with the answer, per
 core field — name, nric, institution, programme (STPM/matric: the stream; every other family,
 PISMP included: the programme), intake, reporting_date — as **exact / blank_correct /
-missing / wrong / extra**; offer_date, issuer and specialisation (vs the read's
-`bidang_pengkhususan`) are scored but not core — specialisation only on letters whose answer has
-one, and its `right` % is over those (the `of` column). A letter is **fully
+missing / wrong / extra**; the institution is the answer's `institution_as_printed` (the name
+only) vs the read's `institution`. offer_date, issuer, campus and specialisation (vs the read's
+`bidang_pengkhususan`) are scored but not core. **campus** is the answer's `institution_campus`
+vs the read's `campus`, on every letter (no campus printed and none read = blank_correct);
+today's reader has no `campus` field, so every printed campus scores `missing` — the honest
+baseline — and a read that joins the campus into the institution gets the (core) institution
+`wrong`. specialisation only on letters whose answer has one, and its `right` % is over those
+(the `of` column). A letter is **fully
 exact** when every core field is exact or blank_correct. Tidying only — case, spacing,
 punctuation, accents, NRIC digits, dates to `D Mon YYYY` (Malay/English months, numeric dates),
-an intake label (and a "Tahun" before a 4-digit year) dropped, one trailing bracketed acronym on
-the institution dropped ("… (UniSZA)" = "…"; a bracket mid-line stays) — and **no fuzzy matching**: one letter different is `wrong`. Reports the
+an intake label — Sesi / Sesi Akademik / Sesi Mula / Session / Academic Session / Ambilan /
+Pengambilan / Intake — dropped at the start **or the end** ("JUNE 2026 INTAKE" = "INTAKE JUNE
+2026" = "JUNE 2026"; a label mid-line stays), and a "Tahun" before a 4-digit year; "SEMESTER 1"
+and a session number stay (polytechnic "SESI I : 2026/2027" is "I 2026/2027", not "2026/2027"),
+one trailing bracketed acronym on the institution and the campus dropped ("… (UniSZA)" = "…"; a
+bracket mid-line stays) — and **no fuzzy matching**: one letter different is `wrong`. Reports the
 totals, per field, and by family, input kind (pdf / photo), capture, programme, split and answer
 kind, the letters not fully exact (keys + field names), and — whatever the split, with or without
 answers — the **known-format-AI count**: STPM / matriculation / polytechnic letters whose stored
@@ -169,7 +178,9 @@ today, and the stored Exact reads today's parser would now defer. The scorer rea
 `--read file:.replay.json`. `offer_failure_map.py --split dev` (or heldout / all, `--read`,
 `--keys`, `--json`) prints per core field wrong / missing / extra, by family, pages, input kind,
 stored capture, stored reader version and stored genuineness version, and a **ranked list of failure
-kinds** (institution = reporting venue, programme keeps a code, intake drops Semester, reporting date
+kinds** (institution = reporting venue, institution joins the campus — the answer's name and
+campus are two fields, so a read holding both in `institution` is that kind —, programme keeps a
+code, intake drops Semester, reporting date
 only on page 2+, known format not locked, real offer judged not genuine, …), each tagged against
 today's free readers: `old read` (a re-read fixes it), `today too`, or `ai, S3` (still Gemini today —
 S3 measures it). Every kind's rule is in its docstring. Counts and keys only, never a value. Tests:

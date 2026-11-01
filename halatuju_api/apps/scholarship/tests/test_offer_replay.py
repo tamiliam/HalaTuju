@@ -249,15 +249,38 @@ class TestFailureKinds(SimpleTestCase):
         self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Bahagian Matrikulasi'},
                                     _answer(issuer='Bahagian Matrikulasi')), 'institution = issuer')
         self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Kolej Matrikulasi'}),
-                         'institution keeps part of the line')
+                         'institution keeps part of the name')
         self.assertEqual(self._kind('institution', 'wrong', {'institution': SECRET_COLLEGE + ' Perlak'}),
-                         'institution adds to the line')
+                         'institution adds to the name')
         self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Kampus Perlak'},
                                     _answer(institution_as_printed='Universiti Qorvane')),
-                         'institution names a campus / branch / college the line does not')
+                         'institution names a campus / branch / college the answer does not')
         self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Universiti Qorvane'},
-                                    _answer(institution_as_printed='Kampus Qorvane Perlak')),
-                         'institution = the university, the line names a campus / college')
+                                    _answer(institution_as_printed='Kolej Qorvane Perlak')),
+                         'institution = a university, the name is not')
+
+    def test_institution_kinds_with_the_campus_a_field_of_its_own(self):
+        # owner 2026-11-01: the name and the campus are two answer fields
+        ans = _answer(institution_as_printed='UQP', institution_campus='Kampus Kota Perlak')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'UQP Kampus Kota Perlak'}, ans),
+                         'institution joins the campus')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Kampus Kota Perlak, UQP'}, ans),
+                         'institution joins the campus')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'KAMPUS KOTA PERLAK'}, ans),
+                         'institution = the campus')
+        # another campus than the answer's: not "joins", a campus the answer does not have
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'UQP Kampus Lain'}, ans),
+                         'institution adds to the name')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Kolej Lain'}, ans),
+                         'institution names a campus / branch / college the answer does not')
+        # the campus's words already in the name: containing them is not joining
+        ans = _answer(institution_as_printed='Universiti Qorvane Perlak', institution_campus='Perlak')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Universiti Qorvane Perlak Utara'},
+                                    ans), 'institution adds to the name')
+        # a campus word the answer's campus has is not counted against the read: no rule fits
+        ans = _answer(institution_as_printed='Universiti Qorvane', institution_campus='Kampus Utara')
+        self.assertEqual(self._kind('institution', 'wrong', {'institution': 'Kampus Selatan'}, ans),
+                         'institution wrong')
 
     def test_programme_kinds(self):
         ans = _answer(programme='Diploma Qorvane')
@@ -352,7 +375,7 @@ class TestFailureMapRun(SimpleTestCase):
         self.assertEqual(m['grid']['institution'], {'wrong': 2, 'missing': 0, 'extra': 0})
         kinds = {k['kind']: k for k in m['kinds']}
         self.assertEqual(kinds['institution = reporting venue']['tags'], {'old read': 1})
-        self.assertEqual(kinds['institution names a campus / branch / college the line does not']['tags'],
+        self.assertEqual(kinds['institution names a campus / branch / college the answer does not']['tags'],
                          {'ai, S3': 1})
         self.assertEqual(m['by']['input_kind']['text_pdf']['institution']['wrong'], 1)
         self.assertEqual(m['by']['stored_reader_version']['ai unversioned']['letters'], 2)

@@ -93,6 +93,48 @@ class TestTidying(SimpleTestCase):
         self.assertEqual(orc.tidy_intake('TAHUN 2031'), '2031')
         self.assertEqual(orc.tidy_intake('Sesi Tahun 2031/2032'), orc.tidy_intake('2031/2032'))
 
+    def test_intake_label_at_the_end_or_the_start_is_the_same_as_none(self):
+        bare = orc.tidy_intake('June 2031')
+        self.assertEqual(bare, 'JUN 2031')
+        for raw in ('JUNE 2031 INTAKE', 'INTAKE JUNE 2031', 'June 2031 Intake', 'Pengambilan Jun 2031',
+                    'JUN 2031 PENGAMBILAN', 'Ambilan Jun 2031', 'Jun 2031 Ambilan', 'SESI MULA: JUN 2031',
+                    'Sesi Mula Jun 2031', 'Session June 2031', 'June 2031 Session',
+                    'Sesi Pengambilan Jun 2031', 'Intake: June 2031.'):
+            with self.subTest(raw=raw):
+                self.assertEqual(orc.tidy_intake(raw), bare)
+        self.assertEqual(orc.tidy_intake('Pengambilan Tahun 2031'), '2031')
+        self.assertEqual(orc.tidy_intake('2031/2032 Sesi Akademik'), orc.tidy_intake('2031/2032'))
+
+    def test_intake_label_mid_line_or_alone_stays(self):
+        self.assertEqual(orc.tidy_intake('June Intake 2031'), 'JUN INTAKE 2031')
+        self.assertNotEqual(orc.tidy_intake('June Intake 2031'), orc.tidy_intake('June 2031'))
+        self.assertEqual(orc.tidy_intake('Intake'), 'INTAKE')
+        self.assertEqual(orc.tidy_intake('Pengambilan'), 'PENGAMBILAN')
+        # "MULA" alone is no label; "PENGAMBILAN" is not read as "AMBILAN" inside a word
+        self.assertEqual(orc.tidy_intake('Mula Jun 2031'), 'MULA JUN 2031')
+        self.assertEqual(orc.tidy_intake('Jun 2031 Mengambilan'), 'JUN 2031 MENGAMBILAN')
+
+    def test_intake_semester_is_content_not_a_label(self):
+        # owner 2026-11-01: intake as printed; a read that drops the Semester is a real miss
+        for raw in ('Semester 1 Sesi 2031/2032', 'SEMESTER PERTAMA SESI 2031/2032',
+                    'Sesi 2031/2032 Semester 1'):
+            with self.subTest(raw=raw):
+                self.assertNotEqual(orc.tidy_intake(raw), orc.tidy_intake('2031/2032'))
+        self.assertEqual(orc.tidy_intake('Semester 1 Sesi 2031/2032'), 'SEMESTER 1 SESI 2031 2032')
+        out = orc.score_letter(_answer(intake='SEMESTER 1 SESI 2031/2032'),
+                               _read(intake='Sesi 2031/2032'), 'polytechnic')
+        self.assertEqual(out['intake'], 'wrong')
+
+    def test_polytechnic_session_number_is_content(self):
+        # "SESI I : 2031/2032": the label goes, the session number "I" stays
+        self.assertEqual(orc.tidy_intake('SESI I : 2031/2032'), 'I 2031 2032')
+        self.assertEqual(orc.tidy_intake('SESI I : 2031/2032'), orc.tidy_intake('I 2031/2032'))
+        self.assertNotEqual(orc.tidy_intake('SESI I : 2031/2032'), orc.tidy_intake('2031/2032'))
+        self.assertNotEqual(orc.tidy_intake('SESI I : 2031/2032'), orc.tidy_intake('SESI II : 2031/2032'))
+        out = orc.score_letter(_answer(intake='SESI I : 2031/2032'), _read(intake='2031/2032'),
+                               'polytechnic')
+        self.assertEqual(out['intake'], 'wrong')
+
     def test_intake_tahun_without_a_following_year_stays(self):
         self.assertEqual(orc.tidy_intake('Tahun Satu'), 'TAHUN SATU')
         self.assertEqual(orc.tidy_intake('Tahun 1'), 'TAHUN 1')
@@ -208,6 +250,35 @@ class TestOutcomes(SimpleTestCase):
         self.assertNotIn('specialisation',
                          orc.score_letter(_answer(), _read(bidang_pengkhususan='X'), 'pismp'))
 
+    def test_campus_is_its_own_scored_not_core_field(self):
+        # owner 2026-11-01: the institution's name and its campus are two answer fields
+        ans = _answer(institution_as_printed='UZP', institution_campus='Kampus Kota Perlak')
+        out = orc.score_letter(ans, _read(institution='UZP', campus='KAMPUS KOTA PERLAK'), 'uitm')
+        self.assertEqual((out['institution'], out['campus']), ('exact', 'exact'))
+        self.assertTrue(orc.fully_exact(out))
+        # today's reader has no campus field: a printed campus is missing, and that is not core
+        out = orc.score_letter(ans, _read(institution='UZP'), 'uitm')
+        self.assertEqual((out['institution'], out['campus']), ('exact', 'missing'))
+        self.assertTrue(orc.fully_exact(out))
+        # a read that joins the campus into the institution gets the (core) institution wrong
+        out = orc.score_letter(ans, _read(institution='UZP Kampus Kota Perlak'), 'uitm')
+        self.assertEqual((out['institution'], out['campus']), ('wrong', 'missing'))
+        self.assertFalse(orc.fully_exact(out))
+        out = orc.score_letter(ans, _read(institution='UZP', campus='Kampus Lain'), 'uitm')
+        self.assertEqual(out['campus'], 'wrong')
+
+    def test_campus_is_scored_on_every_letter_with_the_institution_tidying(self):
+        out = orc.score_letter(_answer(), _read(), 'polytechnic')
+        self.assertEqual(out['campus'], 'blank_correct')               # no campus, none read
+        out = orc.score_letter(_answer(), _read(campus='Kampus Perlak'), 'polytechnic')
+        self.assertEqual(out['campus'], 'extra')
+        self.assertTrue(orc.fully_exact(out))
+        ans = _answer(institution_campus='Kampus Kota Perlak (KKP)')
+        self.assertEqual(orc.score_letter(ans, _read(campus='kampus kota perlak'), 'uitm')['campus'],
+                         'exact')
+        self.assertEqual(orc.score_letter(ans, _read(campus='Kampus Kota Perlak Utara'),
+                                          'uitm')['campus'], 'wrong')
+
     def test_specialisation_percent_is_over_the_letters_scored_on_it(self):
         scored = [{'outcomes': orc.score_letter(_answer(specialisation='Pendidikan Qorvane'),
                                                 _read(bidang_pengkhususan='Pendidikan Qorvane'),
@@ -220,6 +291,7 @@ class TestOutcomes(SimpleTestCase):
             orc._print_fields(tally, ('issuer', 'specialisation'))
         self.assertRegex(out.getvalue(), r'specialisation\s+1\s+0\s+0\s+0\s+0\s+100\.0%\s+1')
         self.assertRegex(out.getvalue(), r'issuer\s+0\s+2\s+0\s+0\s+0\s+100\.0%\s+2')
+        self.assertEqual(sum(tally['fields']['campus'].values()), 2)     # every letter
 
 
 class TestAnswerFormatAndFamily(SimpleTestCase):
@@ -302,7 +374,8 @@ class TestScorerRun(SimpleTestCase):
         self._tmp.cleanup()
 
     def _three_letters(self):
-        self.c.letter('offer_letter__a1__d11', _read(), answer=_answer())
+        self.c.letter('offer_letter__a1__d11', _read(),
+                      answer=_answer(institution_campus='Kampus Zantharion Utara'))
         self.c.letter('offer_letter__a2__d12', _read(candidate_nric=''), answer=_answer(),
                       ext='jpg', programme='prog-b')
         self.c.letter('offer_letter__a3__d13', _read(), capture='deterministic', seen='stpm')
