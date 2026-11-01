@@ -3389,10 +3389,12 @@
         "platform": "Platform",
         "organisation": "Organisasi",
         "programme": "Program",
-        "utility": "Akaun"
+        "utility": "Akaun",
+        "mentoring": "Bimbingan mentor"
       },
       "invitations": "Jemputan",
-      "orgSettings": "Tetapan"
+      "orgSettings": "Tetapan",
+      "myStudents": "Pelajar saya"
     },
     "reviewers": {
       "title": "Penilai",
@@ -6373,7 +6375,8 @@
         "overdue": "Keputusan lewat",
         "closed": "Ditutup",
         "noMentor": "Tiada mentor",
-        "askedForHelp": "Minta bantuan"
+        "askedForHelp": "Minta bantuan",
+        "mentorConcerned": "Mentor bimbang"
       },
       "col": {
         "name": "Nama",
@@ -6489,7 +6492,11 @@
           "award_reverted": "Bimbingan oleh {mentor} ditamatkan: anugerah telah dibatalkan"
         },
         "session_logged": "Pertemuan mentor direkodkan: {mode}, {minutes} min",
-        "session_logged_no_minutes": "Pertemuan mentor direkodkan: {mode}"
+        "session_logged_no_minutes": "Pertemuan mentor direkodkan: {mode}",
+        "mentor_concern_raised": "{mentor} memberitahu pasukan tentang kebimbangan terhadap penerima biasiswa ini",
+        "mentor_concern_handled": "Kebimbangan mentor ditandakan sebagai sudah ditangani",
+        "session_logged_by_mentor": "Pertemuan direkodkan oleh mentor: {mode}, {minutes} min",
+        "session_logged_by_mentor_no_minutes": "Pertemuan direkodkan oleh mentor: {mode}"
       },
       "control": {
         "title": "Kawalan penyelenggaraan",
@@ -6731,7 +6738,8 @@
           "none": "Belum ada pertemuan direkodkan.",
           "minutesShort": "{count} min",
           "withBy": "Bersama {mentor} · direkod oleh {name}",
-          "nextStepLine": "Langkah seterusnya: {step}"
+          "nextStepLine": "Langkah seterusnya: {step}",
+          "withByMentor": "Bersama {mentor} · direkod oleh {mentor} (mentor)"
         },
         "mode": {
           "in_person": "Bersemuka",
@@ -6746,7 +6754,8 @@
           "assigned": "{name} kini mentor.",
           "assignedEmailed": "{name} kini mentor. E-mel telah dihantar kepada pelajar.",
           "ended": "Bimbingan oleh {name} telah ditamatkan.",
-          "logged": "Pertemuan disimpan."
+          "logged": "Pertemuan disimpan.",
+          "handled": "Ditandakan sudah ditangani."
         },
         "error": {
           "mentor_not_found": "Mentor itu tidak ditemui dalam organisasi ini.",
@@ -6764,10 +6773,16 @@
           "bad_minutes": "Minit mestilah nombor bulat melebihi 0.",
           "notes_required": "Tulis sedikit tentang pertemuan itu.",
           "generic": "Itu tidak berjaya. Sila cuba lagi."
+        },
+        "concern": {
+          "open": "Mentor bimbang tentang penerima biasiswa ini. Belum ditangani: {count} (terkini {date}).",
+          "handle": "Tandakan sudah ditangani",
+          "handled": "Kebimbangan ditangani oleh {name} pada {date}"
         }
       },
       "askedForHelp": "Minta bantuan",
-      "askedForHelpNote": "\"Minta bantuan\" bermaksud pelajar menjawab ya atau tidak pasti untuk bantuan permohonan universiti atau biasiswa semasa memohon, atau staf menandakan mereka untuk bimbingan mentor. Mentor dan pertemuan tidak pernah dikongsi dengan penaja atau rakan kongsi."
+      "askedForHelpNote": "\"Minta bantuan\" bermaksud pelajar menjawab ya atau tidak pasti untuk bantuan permohonan universiti atau biasiswa semasa memohon, atau staf menandakan mereka untuk bimbingan mentor. Mentor dan pertemuan tidak pernah dikongsi dengan penaja atau rakan kongsi.",
+      "mentorConcerned": "Mentor bimbang"
     },
     "contracts": {
       "title": "Templat kontrak",
@@ -8493,6 +8508,50 @@
       "seeInvitations": "lihat Jemputan",
       "emptyNone": "Belum ada mentor. Jemput seorang dengan \"Jemput mentor\".",
       "emptyNoneRead": "Belum ada mentor."
+    },
+    "myStudents": {
+      "title": "Pelajar saya",
+      "subtitle": "Pelajar yang {org} minta anda bimbing. Rekod setiap pertemuan supaya pasukan dapat mengikuti perkembangan mereka.",
+      "theOrganisation": "organisasi",
+      "mentorsOnly": "Halaman ini untuk mentor.",
+      "loadFailed": "Pelajar anda tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.",
+      "emptyTitle": "Belum ada pelajar",
+      "emptyBody": "{org} akan menghantar e-mel kepada pelajar apabila anda ditetapkan. Sila kemas kini profil anda — pelajar melihat bidang, bahasa dan maklumat Tentang anda.",
+      "footnote": "Anda hanya melihat pelajar semasa anda. Apabila bimbingan tamat, pelajar itu keluar dari senarai ini; pertemuan anda kekal dalam fail mereka untuk pasukan.",
+      "since": "Pelajar anda sejak {date}",
+      "meetings": "{count} pertemuan",
+      "noMeetings": "Belum ada pertemuan",
+      "noMeetingsYet": "Belum ada pertemuan.",
+      "last": "terakhir {date}",
+      "cgpa": "PNGK {cgpa}",
+      "log": "Rekod pertemuan",
+      "open": "Buka",
+      "call": "Telefon",
+      "email": "E-mel",
+      "back": "← Pelajar saya",
+      "notYours": "Pelajar ini bukan salah seorang pelajar semasa anda.",
+      "latest": "Keputusan terkini",
+      "term": "{term} · diterima oleh {org}",
+      "askedTitle": "Semasa memohon, meminta bantuan untuk",
+      "askedNothing": "Tiada yang khusus.",
+      "notShown": "Tidak ditunjukkan kepada anda: wang, dokumen, butiran keluarga, surat.",
+      "meetingsTitle": "Pertemuan",
+      "byYou": "Direkod oleh anda",
+      "byTeam": "Direkod oleh pasukan {org} · catatan mereka tidak ditunjukkan kepada anda",
+      "meetingsNote": "Anda melihat catatan anda sendiri sepenuhnya. Pertemuan yang direkod oleh pasukan hanya menunjukkan tarikh dan caranya. Pertemuan yang disimpan tidak boleh diubah — rekod yang baharu untuk membetulkan sesuatu.",
+      "toldTeam": "Anda memberitahu pasukan tentang kebimbangan anda",
+      "saved": "Pertemuan disimpan.",
+      "savedConcern": "Pertemuan disimpan. Pasukan telah dimaklumkan tentang kebimbangan anda.",
+      "form": {
+        "date": "Tarikh (HH-BB-TTTT)",
+        "how": "Cara",
+        "minutes": "Minit (pilihan)",
+        "notes": "Catatan (pasukan {org} boleh membacanya; pelajar tidak boleh)",
+        "theTeam": "organisasi",
+        "nextStep": "Langkah seterusnya (pilihan)",
+        "worried": "Beritahu pasukan bahawa saya bimbang tentang pelajar ini (fail pelajar akan ditandakan)",
+        "noEdit": "Pertemuan yang disimpan tidak boleh diubah."
+      }
     }
   },
   "documentsTab": {

@@ -3,7 +3,8 @@
 
 - `AdminScholarMentoringView` — `GET admin/scholarship/scholars/<pk>/mentoring/`;
 - `AdminScholarMentoringActionView` — `POST .../mentoring/assign/` `{mentor_id, reason, email_student}`
-  and `POST .../mentoring/end/` `{reason}`;
+  and `POST .../mentoring/end/` `{reason}`, and (S7c) `POST .../mentoring/handle-concern/` — "Mark as
+  handled": every open concern the mentor raised on this file (idempotent);
 - `AdminScholarMentoringSessionsView` — `POST .../mentoring/sessions/` `{met_on, mode, minutes, notes,
   next_step}`.
 
@@ -67,7 +68,7 @@ class AdminScholarMentoringActionView(_MentoringBase):
     `emailed` on an assign). Refusals as `mentoring.MentoringError` codes: 403 forbidden; 404;
     409 file_closed / already_assigned / conflict / no_mentor; 400 mentor_not_found /
     mentor_inactive / own_application / too_long / bad_request."""
-    ACTIONS = ('assign', 'end')
+    ACTIONS = ('assign', 'end', 'handle-concern')
 
     def post(self, request, pk, action):
         if action not in self.ACTIONS:
@@ -87,8 +88,10 @@ class AdminScholarMentoringActionView(_MentoringBase):
                 email = data.get('email_student', True)
                 _row, emailed = mentoring.assign(admin, app, mentor, reason=reason,
                                                  email_student=email is not False)
-            else:
+            elif action == 'end':
                 mentoring.end(admin, app, reason=reason)
+            else:
+                mentoring.handle_concern(admin, app)
         except mentoring.MentoringError as e:
             return _mentoring_refusal(e.code)
         payload = mentoring_read.file_payload(admin, app)

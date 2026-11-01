@@ -67,6 +67,43 @@ in two columns (the brand spans both) and lose their 8 px gaps.
 mobile-check now opens `/stpm/UP6523001`, and `/course/stpm-sains` beside `/course/POLY-DIP-019`
 (`alsoVisit`, its own baseline id `<route>=<url>`).
 
+## Mentors see their current students and log their own meetings; a worry flag reaches staff — 2026-11-01 (owner rulings, student maintenance S7c)
+
+**Context:** 7a gave mentors a sign-in and a profile; 7b gave staff the assignments and meetings. A mentor still
+saw nothing of their students and could not record a meeting.
+
+**Decision:** (1) **A signed-in mentor sees ONLY their CURRENT students** — an open `MentorAssignment` of their
+own mentor row, on a file of the mentor's own organisation that is in maintenance. When mentoring ends the student
+leaves the list and every per-student door answers 404 for that mentor; so do another mentor's student, another
+organisation's file, an unknown id and the mentor's own application (`mentoring.is_the_student`, read at every
+read). A deactivated mentor is refused (the login is off). (2) **Per student the mentor sees** the name; programme
+and institution as the scholar file derives them (no year of study — the file derives none); the student's email
+and phone; "your student since"; what they asked for help with when applying; and the LATEST accepted result only —
+CGPA with its term and the standing — or "No result yet". **Never** money, documents, slips, family or income,
+letters, the contract, other mentors, history, staff notes, the activity log or a photo (an allowlist, tested).
+(3) **Meetings on the mentor's page** are those of THEIR current assignment, newest first: the ones they logged in
+full; the ones staff logged as date + how only ("Logged by the <organisation> team · their notes are not shown to
+you"). (4) **The mentor logs a meeting** with 7b's validation (not in the future, not before the assignment
+started, minutes 1–1440, notes required, next step optional), under 7b's row lock with the assignment re-checked
+inside the transaction — a staff End racing the log wins. **Saved meetings are never edited**, by anyone. Staff
+read the mentor's notes; the student never sees notes. `logged_by_mentor` is set by the mentor's write, never
+inferred from an email. (5) **The worry flag:** the log form's site Toggle "Tell the team I am worried about this
+student" puts a concern on the meeting; staff see "Mentor concerned" on that meeting, at the top of the Mentoring
+tab and on the Scholars row, with a "Mentor concerned · n" filter; super / org_admin / admin of the organisation
+clear it with "Mark as handled" (who and when stored, an activity line) — idempotent, and a new concern raises it
+again. A closed file is read-only here too (409). (6) **No email** to anyone when a mentor logs a meeting or raises
+a concern. The file's activity gets `session_logged` (by the mentor) and `mentor_concern_raised` /
+`mentor_concern_handled` (staff-only lines); reviewer and QC never see them (7b's timeline rule). (7) **Navigation:**
+a mentor sees "My students" and "Profile" only and lands on My students (no profile hold — the reviewer's hold is
+reviewer-only and nothing holds an incomplete mentor profile today). Both pages are Mobile **must**; the log form is
+the shared Sheet. (8) Staff's Mentoring tab reads a mentor's meeting "logged by <name> (mentor)".
+
+**Alternatives considered:** the meeting form inline on the desktop page (the desktop board) — the shared Sheet
+is used at every width instead (a centred dialog from `md`), one form and one set of tests; minutes on a
+staff-logged meeting (the board showed them) — left out, the ruling says date + how only.
+
+**Revisit if:** a mentor needs a history of an earlier mentoring of the same student, or a concern needs a reply.
+
 ## Mobile M2: one student header; the phone menu is the shared Sheet; BrightPath opens on a click (2026-11-01)
 
 **Owner (2026-11-01), approving Stitch M2a / M2b / M2c2 / M2d2:** the signed-out phone bar shows **Log in**

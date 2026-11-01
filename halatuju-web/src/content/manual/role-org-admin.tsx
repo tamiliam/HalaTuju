@@ -86,7 +86,13 @@ export const roleOrgAdmin: ManualChapter = {
         <strong> Asked for help</strong> (the student asked for help with university or scholarship applications,
         or was flagged for mentoring). &ldquo;You have a mentor&rdquo; is under <strong>Student communications
         &rarr; Mentoring</strong>, where you can switch it off or change its wording. Mentors and meetings never
-        reach sponsors or partners.</p></>
+        reach sponsors or partners.</p>
+        <p className="mt-2"><strong>For mentors:</strong> a mentor signs in to <strong>My students</strong>, their
+        current students only, and logs their own meetings there. On the Mentoring tab you read their notes, and
+        the meeting says &ldquo;logged by &hellip; (mentor)&rdquo;. If the mentor says they are worried, the
+        scholar shows <strong>Mentor concerned</strong> on the tab and on the Scholars list, which has a filter of
+        that name. <strong>Mark as handled</strong> clears it, and a new concern raises it again. Nobody is
+        emailed when a mentor logs a meeting.</p></>
       ),
     },
     {

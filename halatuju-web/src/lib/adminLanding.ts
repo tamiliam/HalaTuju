@@ -56,7 +56,7 @@ type OutsiderRole = (typeof OUTSIDER_ROLES)[number]
  * page mounts. Every staff page would otherwise mount and fire staff fetches the server refuses
  * (deny by default): a typed URL, an old bookmark or a staff link must land somewhere real, not on
  * a page of 403s. The registry answers (`canAccess`): an unregistered route is NOT blocked, the
- * module rule. Only these two roles are held here; a mentor's landing is `/admin/profile`.
+ * module rule. Only these two roles are held here; a mentor's landing is My students (S7c).
  */
 export function outsiderMustLeave(role: AdminRoleLike | null | undefined, pathname: string): boolean {
   const r = role?.role

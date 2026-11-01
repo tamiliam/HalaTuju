@@ -144,6 +144,9 @@ from .mentors import AdminMentorActionView, AdminMentorView, AdminMentorsView   
 from .mentoring import (   # S7b: the scholar file's Mentoring tab
     AdminScholarMentoringActionView, AdminScholarMentoringSessionsView, AdminScholarMentoringView,
 )
+from .mentor_students import (   # S7c: a mentor's own students
+    AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
+)
 from .reviewers import (
     _REVIEWER_OPEN_STATUSES, _REVIEWER_PROGRESSED_STATUSES, _REVIEW_FLUENCY, _ReviewersBase,
     _median_days, _reviewer_dict, _reviewer_languages, _reviewer_workloads,

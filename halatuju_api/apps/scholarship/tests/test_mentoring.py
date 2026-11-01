@@ -606,8 +606,9 @@ class TestReviewFix2TheTimelineKeepsMentorsFromOtherRoles(_Base):
                 self.assertEqual(body['count'], len(body['results']))
                 self.assertNotIn('Kavitha', json.dumps(body))
         own = authed_client(self.org_admin).get(url).json()
+        # The four 7b lines (S7c's concern lines are proven in `test_mentor_desk.py`).
         self.assertEqual(sorted({r['event'] for r in own['results']} & set(mentoring.EVENTS)),
-                         sorted(mentoring.EVENTS))
+                         sorted(['mentor_assigned', 'mentor_changed', 'mentor_ended', 'session_logged']))
 
 
 class TestReviewFix3AssignRacesDeactivate(_Base):

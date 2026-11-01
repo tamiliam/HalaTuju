@@ -51,7 +51,9 @@ export const roleAdminGeneral: ManualChapter = {
         <strong> Mentoring</strong> tab is where you assign, change or end a student&rsquo;s mentor and log their
         meetings (notes are for staff only; the student is emailed &ldquo;You have a mentor&rdquo; if you leave
         that on, and the mentor is never emailed); the list&rsquo;s <strong>No mentor</strong> and <strong>Asked
-        for help</strong> filters find who needs one.</>
+        for help</strong> filters find who needs one. Mentors log their own meetings too, and when a mentor is
+        worried the scholar shows <strong>Mentor concerned</strong>: read the meeting, then press <strong>Mark as
+        handled</strong>.</>
       ),
     },
     {

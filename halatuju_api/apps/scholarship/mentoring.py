@@ -6,7 +6,10 @@ HTTP shapes are `views_admin/mentoring.py` (staff) and `views_bursary.py` (the s
 
 - WHO ACTS (`may_act`): the roles that may read the Mentors roster — a super, an organisation admin, an
   admin — inside the organisation fence (`views_admin/mentoring.py` 404s another organisation's file).
-  A reviewer, QC, finance, a source user and a mentor are refused (mentors see their students in 7c).
+  A reviewer, QC, finance, a source user and a mentor are refused (a mentor has its own door since
+  7c: `mentor_desk.py`, which reuses `clean_meeting` / `write_session` below).
+- S7c CONCERNS: a mentor's meeting may carry a concern; staff (these same roles) clear every open one
+  on a file with `handle_concern` (idempotent; a later concern is open again).
 - ONE MENTOR AT A TIME. `assign` ends the open assignment (it stays, the history) and starts the new
   one in ONE transaction, holding a row lock on the application; a partial unique index
   (`mentor_assignment_one_open`) refuses a second open row even if two requests race past the lock.
@@ -55,7 +58,8 @@ from . import activity
 from .maintenance_scope import is_in_maintenance
 from .models import MentorAssignment, MentoringSession, Mentor, ScholarshipApplication
 from .models.activity import (
-    EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED,
+    EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_CONCERN_HANDLED, EVENT_MENTOR_CONCERN_RAISED,
+    EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED,
 )
 
 logger = logging.getLogger('apps.scholarship.mentoring')
@@ -70,8 +74,10 @@ REASON_REVERTED = 'Award reverted'
 #: The `cause` on a `mentor_ended` activity row.
 CAUSE_STAFF, CAUSE_DEACTIVATED, CAUSE_CLOSED = 'staff', 'mentor_deactivated', 'file_closed'
 CAUSE_IS_STUDENT, CAUSE_REVERTED = 'mentor_is_student', 'award_reverted'
-#: The activity events a role outside `may_act` is never served (they name the mentor; review fix 2).
-EVENTS = (EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED)
+#: The activity events a role outside `may_act` is never served (they name the mentor; review fix 2) —
+#: S7c adds the concern raised / handled lines.
+EVENTS = (EVENT_MENTOR_ASSIGNED, EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_SESSION_LOGGED,
+          EVENT_MENTOR_CONCERN_RAISED, EVENT_MENTOR_CONCERN_HANDLED)
 
 MODES = tuple(code for code, _ in MentoringSession.MODE_CHOICES)
 NOTES_MAX = 5000
@@ -426,10 +432,10 @@ def _parse_minutes(value):
     return n
 
 
-def log_session(caller, application, *, met_on, mode, minutes=None, notes='', next_step=''):
-    """Log one meeting with the CURRENT mentor. Refusals: forbidden, not_found, file_closed, bad_date,
-    future_date, bad_mode, bad_minutes, notes_required, too_long, no_mentor, before_assignment."""
-    _check_caller(caller, application)
+def clean_meeting(*, met_on, mode, minutes=None, notes='', next_step=''):
+    """THE meeting validation, for staff (`log_session`) and the mentor (`mentor_desk`) alike:
+    ``(day, mode, minutes, notes, next_step)``. Refusals: bad_date, future_date, bad_mode, bad_minutes,
+    notes_required, too_long. (`before_assignment` needs the assignment: `write_session`.)"""
     day = _parse_day(met_on)
     if day is None:
         raise MentoringError('bad_date')
@@ -444,6 +450,33 @@ def log_session(caller, application, *, met_on, mode, minutes=None, notes='', ne
         raise MentoringError('notes_required')
     if len(notes) > NOTES_MAX or len(next_step) > NEXT_STEP_MAX:
         raise MentoringError('too_long')
+    return day, mode, mins, notes, next_step
+
+
+def write_session(row, current, meeting, *, by, by_mentor=False, concern=False):
+    """Write ONE meeting on the open assignment ``current`` of the LOCKED application ``row`` (the
+    caller's transaction) and log it: `session_logged` (`by_mentor` in its meta when the mentor
+    logged it). ``meeting`` is `clean_meeting`'s answer. Refuses `before_assignment`."""
+    day, mode, mins, notes, next_step = meeting
+    if day < timezone.localdate(current.started_at):
+        raise MentoringError('before_assignment')
+    session = MentoringSession.objects.create(
+        application=row, mentor_id=current.mentor_id, assignment=current, met_on=day, mode=mode,
+        minutes=mins, notes=notes, next_step=next_step, logged_by_email=by,
+        logged_by_mentor=bool(by_mentor), concern=bool(concern))
+    meta = {'mentor_id': current.mentor_id, 'mentor': mentor_name(current.mentor), 'mode': mode,
+            'minutes': mins, 'met_on': day.isoformat()}
+    if by_mentor:
+        meta['by_mentor'] = True
+    activity.log_event(row, EVENT_SESSION_LOGGED, actor_email=by, meta=meta)
+    return session
+
+
+def log_session(caller, application, *, met_on, mode, minutes=None, notes='', next_step=''):
+    """STAFF log one meeting with the CURRENT mentor. Refusals: forbidden, not_found, file_closed, bad_date,
+    future_date, bad_mode, bad_minutes, notes_required, too_long, no_mentor, before_assignment."""
+    _check_caller(caller, application)
+    meeting = clean_meeting(met_on=met_on, mode=mode, minutes=minutes, notes=notes, next_step=next_step)
     by = (caller.email or '')[:254]
     with transaction.atomic():
         row, current = _locked_open(application)
@@ -451,15 +484,28 @@ def log_session(caller, application, *, met_on, mode, minutes=None, notes='', ne
             raise MentoringError('file_closed')
         if current is None:
             raise MentoringError('no_mentor')
-        if day < timezone.localdate(current.started_at):
-            raise MentoringError('before_assignment')
-        session = MentoringSession.objects.create(
-            application=row, mentor_id=current.mentor_id, assignment=current, met_on=day, mode=mode,
-            minutes=mins, notes=notes, next_step=next_step, logged_by_email=by)
-        activity.log_event(row, EVENT_SESSION_LOGGED, actor_email=by, meta={
-            'mentor_id': current.mentor_id, 'mentor': mentor_name(current.mentor), 'mode': mode,
-            'minutes': mins, 'met_on': day.isoformat()})
-    return session
+        return write_session(row, current, meeting, by=by)
+
+
+def handle_concern(caller, application):
+    """S7c — staff's "Mark as handled": every OPEN concern on this file is stamped handled (who, when)
+    and one `mentor_concern_handled` line is logged. IDEMPOTENT: nothing open → nothing written, 0.
+    A later concern (a new meeting) is open again. Refusals: forbidden, not_found, file_closed."""
+    _check_caller(caller, application)
+    by = (caller.email or '')[:254]
+    with transaction.atomic():
+        row, _current = _locked_open(application)
+        if not is_in_maintenance(row):
+            raise MentoringError('file_closed')
+        n = MentoringSession.objects.filter(application_id=row.pk, concern=True,
+                                            concern_handled_at__isnull=True).update(
+            concern_handled_at=timezone.now(), concern_handled_by_email=by)
+        if n:
+            activity.log_event(row, EVENT_MENTOR_CONCERN_HANDLED, actor_email=by, meta={'count': n},
+                               internal=True)
+    if n:
+        logger.info('AUDIT mentor_concern_handled app=%s count=%s by=%s', application.pk, n, by)
+    return n
 
 
 # ── the email ────────────────────────────────────────────────────────────────────────────────

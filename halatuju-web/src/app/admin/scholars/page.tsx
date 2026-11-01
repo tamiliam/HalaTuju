@@ -12,7 +12,7 @@
 // server (`standing=below_minimum`); "Results overdue" (S4b) asks `standing=results_overdue`.
 // ⚠ S7b: the Mentor column, the "No mentor" / "Asked for help" pills and the row's "Asked for help"
 // chip are for the roles that see mentors (`MENTORING_ROLES`); the server leaves those keys out for
-// the rest, and ignores the filter.
+// the rest, and ignores the filter. S7c adds the "Mentor concerned" chip and pill on the same terms.
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -36,7 +36,7 @@ import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 const SourceScholars = lazySource(() => import('@/components/source/SourceScholars').then((m) => m.default))
 
 type Filter = 'all' | 'on_track' | 'probation' | 'on_hold' | 'ready_to_close' | 'closed'
-  | 'underperforming' | 'overdue' | 'noMentor' | 'askedForHelp'
+  | 'underperforming' | 'overdue' | 'noMentor' | 'askedForHelp' | 'mentorConcerned'
 type SortKey = 'name' | 'cgpa' | 'due' | 'activity'
 
 const FIRST_DIR: Record<SortKey, SortDir> = { name: 'asc', cgpa: 'desc', due: 'asc', activity: 'desc' }
@@ -88,7 +88,8 @@ function StaffScholarsPage() {
     getScholars({
       programme, closed: filter === 'closed', substate, search,
       standing: filter === 'underperforming' ? 'below_minimum' : filter === 'overdue' ? 'results_overdue' : '',
-      mentoring: filter === 'noMentor' ? 'no_mentor' : filter === 'askedForHelp' ? 'asked_for_help' : '',
+      mentoring: filter === 'noMentor' ? 'no_mentor' : filter === 'askedForHelp' ? 'asked_for_help'
+        : filter === 'mentorConcerned' ? 'mentor_concerned' : '',
       sort: `${sort.dir === 'desc' ? '-' : ''}${sort.key}`, page, page_size: pageSize,
     }, { token })
       .then((d) => { if (ticket === latest.current) setData(d) })
@@ -119,6 +120,7 @@ function StaffScholarsPage() {
     ...(seesMentors ? [
       { key: 'noMentor' as const, labelKey: 'admin.scholars.filter.noMentor', count: s?.no_mentor },
       { key: 'askedForHelp' as const, labelKey: 'admin.scholars.filter.askedForHelp', count: s?.asked_for_help },
+      { key: 'mentorConcerned' as const, labelKey: 'admin.scholars.filter.mentorConcerned', count: s?.mentor_concerned },
     ] : []),
     { key: 'closed', labelKey: 'admin.scholars.filter.closed', count: s?.closed },
   ]
@@ -174,6 +176,7 @@ function StaffScholarsPage() {
             <div className="flex items-start justify-between gap-3">
               <span className="text-sm font-semibold text-primary-600">
                 {r.name || '—'}{r.asked_for_help && <HelpChip text={t('admin.scholars.askedForHelp')} />}
+                {r.mentor_concerned && <ConcernChip text={t('admin.scholars.mentorConcerned')} />}
               </span>
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                 r.status === 'closed' ? 'bg-ground-100 text-ground-600' : SUBSTATE_TONE[r.maintenance_substate]}`}>
@@ -217,6 +220,7 @@ function StaffScholarsPage() {
                     {r.name || '—'}
                   </Link>
                   {r.asked_for_help && <HelpChip text={t('admin.scholars.askedForHelp')} />}
+                  {r.mentor_concerned && <ConcernChip text={t('admin.scholars.mentorConcerned')} />}
                   <div className="text-xs text-ground-500">#{r.id}</div>
                 </td>
                 <td className="px-4 py-3 text-ground-700">
@@ -278,6 +282,16 @@ function HelpChip({ text }: { text: string }) {
   return (
     <span className="ml-1.5 whitespace-nowrap rounded-full bg-caution-50 px-2 py-0.5 text-[11px] font-medium text-caution-800"
       data-testid="asked-for-help">
+      {text}
+    </span>
+  )
+}
+
+/** S7c: "Mentor concerned" beside a scholar's name — the mentor raised a concern staff have not handled. */
+function ConcernChip({ text }: { text: string }) {
+  return (
+    <span className="ml-1.5 whitespace-nowrap rounded-full bg-critical-50 px-2 py-0.5 text-[11px] font-medium text-critical-700"
+      data-testid="mentor-concerned">
       {text}
     </span>
   )

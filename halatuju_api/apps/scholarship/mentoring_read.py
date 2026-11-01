@@ -1,5 +1,6 @@
 """Mentoring — the READERS (student maintenance Sprint 7b, 2026-11-01): the staff Mentoring tab's
-payload, the student's own tab and whether it shows, and "asked for help". Moved verbatim out of
+payload, the student's own tab and whether it shows, and "asked for help". (The MENTOR's own reader is
+`mentor_desk.py`, S7c.) Moved verbatim out of
 `mentoring.py` (which holds every RULE and every write) to keep both under the 600-line standard.
 
 ⚠ READS NEVER WRITE. A current mentor who is, by now, the student (`mentoring.current_is_the_student`)
@@ -50,7 +51,7 @@ def file_payload(caller, application):
     mentors.update({s.mentor_id: s.mentor for s in sessions})
     facts = mentor_facts(mentors.values())
     people = _people([r.started_by_email for r in rows] + [r.ended_by_email for r in rows]
-                     + [s.logged_by_email for s in sessions])
+                     + [s.logged_by_email for s in sessions] + [s.concern_handled_by_email for s in sessions])
     counts, last = {}, {}
     for s in sessions:
         if s.assignment_id:
@@ -80,14 +81,29 @@ def file_payload(caller, application):
         'meetings': [{'id': s.pk, 'met_on': s.met_on, 'mode': s.mode, 'minutes': s.minutes,
                       'notes': s.notes, 'next_step': s.next_step,
                       'mentor_name': (facts.get(s.mentor_id) or {}).get('name', ''),
-                      'logged_by': _who(people, s.logged_by_email), 'created_at': s.created_at}
+                      'logged_by': _who(people, s.logged_by_email), 'created_at': s.created_at,
+                      # S7c: the mentor logged it ("logged by <name> (mentor)"), and its concern.
+                      'logged_by_mentor': s.logged_by_mentor, 'concern': s.concern,
+                      'concern_handled_at': s.concern_handled_at,
+                      'concern_handled_by': (_who(people, s.concern_handled_by_email)
+                                             if s.concern_handled_at else None)}
                      for s in sessions],
+        # S7c: the open concerns ("Mentor concerned" at the top; "Mark as handled" clears them all).
+        'concern': _open_concern(sessions),
         'asked_for_help': help_asked(application),
         'assignable': assignable_mentors(application) if can_act else [],
         'can_act': can_act,
         'file_closed': not is_in_maintenance(application),
         'email_switch_on': email_switch_on(application),
     }
+
+
+def _open_concern(sessions):
+    """``{count, raised_at}`` of the file's concerns not yet handled (the newest raise), or None."""
+    open_ = [s for s in sessions if s.concern and s.concern_handled_at is None]
+    if not open_:
+        return None
+    return {'count': len(open_), 'raised_at': max(s.created_at for s in open_)}
 
 
 def tab_shown(application):

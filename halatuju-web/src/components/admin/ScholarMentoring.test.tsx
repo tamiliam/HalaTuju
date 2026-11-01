@@ -148,3 +148,47 @@ it('review fix: a current mentor who turns out to be the student is flagged for 
   expect((await screen.findByTestId('mentoring-is-student')).textContent).toBe(`${K}.current.isStudent`)
   expect(within(screen.getByTestId('mentoring-current')).getByText(`${K}.end.open`)).toBeTruthy()
 })
+
+describe('S7c: meetings the mentor logged, and the concern', () => {
+  const MENTOR_MEETING = { ...WITH.meetings[0], id: 6, notes: 'Worried about Financial Accounting.',
+    logged_by: { email: 'kavitha@example.org', name: 'Kavitha Raman', role: 'mentor' },
+    logged_by_mentor: true, concern: true, concern_handled_at: null, concern_handled_by: null }
+  const CONCERNED: api.ScholarMentoring = {
+    ...WITH, meetings: [MENTOR_MEETING, WITH.meetings[0]], concern: { count: 1, raised_at: '2026-10-30T00:00:00Z' },
+  }
+
+  it('reads "logged by <name> (mentor)", shows the chip on that meeting and at the top', async () => {
+    mockApi.getScholarMentoring.mockResolvedValue(CONCERNED)
+    render(<ScholarMentoring id={104} token="tok" />)
+    const top = await screen.findByTestId('mentoring-concern')
+    expect(within(top).getByTestId('mentor-concerned-chip')).toBeTruthy()
+    expect(top.textContent).toContain(`${K}.concern.open`)
+    const meeting = screen.getByTestId('mentoring-meeting-6')
+    expect(meeting.textContent).toContain(`${K}.meetings.withByMentor|{"mentor":"Kavitha Raman"}`)
+    expect(within(meeting).getByTestId('mentor-concerned-chip')).toBeTruthy()
+    // The staff-logged one keeps its own line.
+    expect(screen.getByTestId('mentoring-meeting-5').textContent).toContain(`${K}.meetings.withBy|`)
+  })
+
+  it('"Mark as handled" asks the server and the chip goes', async () => {
+    mockApi.getScholarMentoring.mockResolvedValue(CONCERNED)
+    mockApi.handleMentorConcern.mockResolvedValue({
+      ...CONCERNED, concern: null,
+      meetings: [{ ...MENTOR_MEETING, concern_handled_at: '2026-10-31T00:00:00Z', concern_handled_by: STAFF },
+        WITH.meetings[0]],
+    })
+    render(<ScholarMentoring id={104} token="tok" />)
+    fireEvent.click(await screen.findByTestId('mentoring-handle-concern'))
+    await waitFor(() => expect(mockApi.handleMentorConcern).toHaveBeenCalledWith(104, { token: 'tok' }))
+    await waitFor(() => expect(screen.queryByTestId('mentoring-concern')).toBeNull())
+    expect(screen.getByTestId('mentoring-meeting-concern-6').textContent).toContain(`${K}.concern.handled`)
+    expect(screen.queryByTestId('mentor-concerned-chip')).toBeNull()
+  })
+
+  it('a closed file shows the concern with no button', async () => {
+    mockApi.getScholarMentoring.mockResolvedValue({ ...CONCERNED, can_act: false, file_closed: true })
+    render(<ScholarMentoring id={104} token="tok" />)
+    await screen.findByTestId('mentoring-concern')
+    expect(screen.queryByTestId('mentoring-handle-concern')).toBeNull()
+  })
+})

@@ -3389,10 +3389,12 @@
         "platform": "Platform",
         "organisation": "Organisation",
         "programme": "Programme",
-        "utility": "Account"
+        "utility": "Account",
+        "mentoring": "Mentoring"
       },
       "invitations": "Invitations",
-      "orgSettings": "Settings"
+      "orgSettings": "Settings",
+      "myStudents": "My students"
     },
     "reviewers": {
       "title": "Reviewers",
@@ -6373,7 +6375,8 @@
         "overdue": "Results overdue",
         "closed": "Closed",
         "noMentor": "No mentor",
-        "askedForHelp": "Asked for help"
+        "askedForHelp": "Asked for help",
+        "mentorConcerned": "Mentor concerned"
       },
       "col": {
         "name": "Name",
@@ -6489,7 +6492,11 @@
           "award_reverted": "Mentoring with {mentor} ended: the award was reverted"
         },
         "session_logged": "Mentoring meeting logged: {mode}, {minutes} min",
-        "session_logged_no_minutes": "Mentoring meeting logged: {mode}"
+        "session_logged_no_minutes": "Mentoring meeting logged: {mode}",
+        "mentor_concern_raised": "{mentor} told the team they are worried about this scholar",
+        "mentor_concern_handled": "Mentor concern marked as handled",
+        "session_logged_by_mentor": "Mentoring meeting logged by the mentor: {mode}, {minutes} min",
+        "session_logged_by_mentor_no_minutes": "Mentoring meeting logged by the mentor: {mode}"
       },
       "control": {
         "title": "Maintenance controls",
@@ -6731,7 +6738,8 @@
           "none": "No meetings logged yet.",
           "minutesShort": "{count} min",
           "withBy": "With {mentor} · logged by {name}",
-          "nextStepLine": "Next step: {step}"
+          "nextStepLine": "Next step: {step}",
+          "withByMentor": "With {mentor} · logged by {mentor} (mentor)"
         },
         "mode": {
           "in_person": "In person",
@@ -6746,7 +6754,8 @@
           "assigned": "{name} is now the mentor.",
           "assignedEmailed": "{name} is now the mentor. The student was emailed.",
           "ended": "Mentoring with {name} has ended.",
-          "logged": "Meeting saved."
+          "logged": "Meeting saved.",
+          "handled": "Marked as handled."
         },
         "error": {
           "mentor_not_found": "That mentor cannot be found in this organisation.",
@@ -6764,10 +6773,16 @@
           "bad_minutes": "Minutes must be a whole number above 0.",
           "notes_required": "Write a few words about the meeting.",
           "generic": "That did not go through. Please try again."
+        },
+        "concern": {
+          "open": "The mentor is worried about this scholar. Not yet handled: {count} (latest {date}).",
+          "handle": "Mark as handled",
+          "handled": "Concern handled by {name} on {date}"
         }
       },
       "askedForHelp": "Asked for help",
-      "askedForHelpNote": "\"Asked for help\" means the student said yes or not sure to help with university or scholarship applications when applying, or staff flagged them for mentoring. Mentors and meetings never reach sponsors or partners."
+      "askedForHelpNote": "\"Asked for help\" means the student said yes or not sure to help with university or scholarship applications when applying, or staff flagged them for mentoring. Mentors and meetings never reach sponsors or partners.",
+      "mentorConcerned": "Mentor concerned"
     },
     "contracts": {
       "title": "Contract templates",
@@ -8493,6 +8508,50 @@
       "seeInvitations": "see Invitations",
       "emptyNone": "No mentors yet. Invite one with \"Invite a mentor\".",
       "emptyNoneRead": "No mentors yet."
+    },
+    "myStudents": {
+      "title": "My students",
+      "subtitle": "The students {org} has asked you to mentor. Log each meeting so the team can follow how they are doing.",
+      "theOrganisation": "the organisation",
+      "mentorsOnly": "This page is for mentors.",
+      "loadFailed": "Your students could not be loaded. Reload the page to try again.",
+      "emptyTitle": "No students yet",
+      "emptyBody": "{org} will email the student when you are assigned. Please keep your profile up to date — students see your area, languages and About.",
+      "footnote": "You see your current students only. When mentoring ends, the student leaves this list; your meetings stay on their file for the team.",
+      "since": "Your student since {date}",
+      "meetings": "{count} meetings",
+      "noMeetings": "No meetings yet",
+      "noMeetingsYet": "No meetings yet.",
+      "last": "last {date}",
+      "cgpa": "CGPA {cgpa}",
+      "log": "Log a meeting",
+      "open": "Open",
+      "call": "Call",
+      "email": "Email",
+      "back": "← My students",
+      "notYours": "This student is not one of your current students.",
+      "latest": "Latest result",
+      "term": "{term} · accepted by {org}",
+      "askedTitle": "When applying, asked for help with",
+      "askedNothing": "Nothing in particular.",
+      "notShown": "Not shown to you: money, documents, family details, letters.",
+      "meetingsTitle": "Meetings",
+      "byYou": "Logged by you",
+      "byTeam": "Logged by the {org} team · their notes are not shown to you",
+      "meetingsNote": "You see your own notes in full. A meeting the team logged shows its date and how only. Saved meetings cannot be edited — log a new one to correct something.",
+      "toldTeam": "You told the team you are worried",
+      "saved": "Meeting saved.",
+      "savedConcern": "Meeting saved. The team has been told you are worried.",
+      "form": {
+        "date": "Date (DD-MM-YYYY)",
+        "how": "How",
+        "minutes": "Minutes (optional)",
+        "notes": "Notes (the {org} team can read these; the student cannot)",
+        "theTeam": "the organisation",
+        "nextStep": "Next step (optional)",
+        "worried": "Tell the team I am worried about this student (they get a flag on the file)",
+        "noEdit": "A saved meeting cannot be edited."
+      }
     }
   },
   "documentsTab": {

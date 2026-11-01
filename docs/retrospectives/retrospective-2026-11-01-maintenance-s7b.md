@@ -46,5 +46,14 @@ at send), two disagreeing edit gates, and a Reactivate that still sent an invita
 mentor invite on the Mentors page because the board drew it there, while every sibling (sources, sponsors, staff)
 invites from Invitations. Check the sibling surfaces before trusting a single board.
 
+## Sprint 7c (same day) — mentors see their students and log meetings
+LIVE main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first. Owner rulings: the mentor sees the student's email and phone and the latest result only; a worry
+flag reaches staff, who mark it handled. Design approved first (MentorStudents / MentorStudentFile / MentorPhone
+boards). The adversarial review found no horizontal access path (the mentor desk is an allowlist over the mentor's
+OWN open assignments, fenced to their organisation's live files, never their own application); two small fixes: the
+student's CURRENT contact email (the submit-time copy can be stale), and no concern chip on a closed file (it can no
+longer be handled). pytest 11417, jest 5934. **Lesson:** a copied field (`notify_email`) is a snapshot — a reader that
+needs the live value must read the source, not the copy.
+
 ## Next
 Sprint 8 (Announcements) or 7c (mentors see their students and log meetings), on the owner's choice.

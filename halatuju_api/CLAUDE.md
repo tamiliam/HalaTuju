@@ -1143,6 +1143,16 @@ on every student page incl. Home; its menus, desktop row, nav lists and theme/la
 (forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. M3 is
 Stitch-first (search filters in a sheet, course page scroll trap, saved compare on phones).
 
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7c LIVE (main e5bf699c; api-01228-98t, web-01054-7mz; 0198 applied by hand first) — mentors see their students and log meetings
+
+**Next free migration numbers: scholarship 0199, courses 0091.** 0198 = `0198_mentor_logs_meetings` (four
+additive columns on `mentoring_sessions`, defaults kept in the database): **MIGRATE FIRST by hand** (DDL, pre-check,
+ledger row and rollback in its docstring), then API, then web. A mentor's own door is `apps/scholarship/mentor_desk.py`
++ `views_admin/mentor_students.py` (`admin/mentor/students/`, `<id>/`, `<id>/sessions/` — the only 7c additions to
+`mentor_methods`, pinned by `test_mentor_desk.TestTheMentorMethodsAreTheListedOnes`); the meeting rule is 7b's
+`mentoring.clean_meeting` / `write_session`; staff clear a concern with `POST .../mentoring/handle-concern/`. Web:
+`/admin/my-students` (+ `/[id]`, Mobile must), the `mentoring` nav scope (mentor only, their landing).
+
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7b LIVE (main 7dc9c15d; api-01224-s6w, web-01047-lvq; 0196 applied by hand, ledger row in)
 
 Mentoring: `MentorAssignment` / `MentoringSession` (scholarship **0196_mentoring — MIGRATE FIRST by hand**, DDL +
@@ -1154,7 +1164,8 @@ and closing a file end open assignments. **Next free migration numbers: scholars
 (0197 = the S7b follow-up's `0197_invite_mentor_template`, choices only: the ledger row by hand before the push,
 then `seed-partner-emails` after the deploy so the editable mentor letter has its row) — LIVE 2026-11-01 (main 23ec0494; api-01226-p5d, web-01052-v94; 0197 ledger row by hand, `invite_mentor` seeded):
 mentors are invited on Invitations → Mentor; the Mentors page manages arrived mentors (Mentors · Emails · Terms).
-NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings.
+NEXT: Sprint 8 (Announcements) or 7c, on the owner's choice. Later: 7c — mentors see their students and log meetings
+*(superseded: 7c built — see the state block above; scholarship 0198 claimed, next free 0199)*.
 
 ### ⚠ STATE AT 2026-11-01 — OFFER REALIGNMENT + DATE RULE + OFFER LINK LIVE (main 9969c1f3; api-01225-fxd; no migration)
 

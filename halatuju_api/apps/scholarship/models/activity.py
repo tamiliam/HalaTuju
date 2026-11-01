@@ -28,7 +28,9 @@ EVENT_LETTER_ACKNOWLEDGED = 'letter_acknowledged'   # WIRED: letters.acknowledge
 EVENT_MENTOR_ASSIGNED = 'mentor_assigned'       # WIRED: mentoring.assign (S7b, the first mentor)
 EVENT_MENTOR_CHANGED = 'mentor_changed'         # WIRED: mentoring.assign (S7b, a change)
 EVENT_MENTOR_ENDED = 'mentor_ended'             # WIRED: mentoring.end / end_for_mentor / end_for_closure (S7b)
-EVENT_SESSION_LOGGED = 'session_logged'         # WIRED: mentoring.log_session (S7b)
+EVENT_SESSION_LOGGED = 'session_logged'         # WIRED: mentoring.log_session (S7b), mentor_desk.log_own_session (S7c)
+EVENT_MENTOR_CONCERN_RAISED = 'mentor_concern_raised'     # WIRED: mentor_desk.log_own_session (S7c)
+EVENT_MENTOR_CONCERN_HANDLED = 'mentor_concern_handled'   # WIRED: mentoring.handle_concern (S7c)
 EVENT_PAYMENT_RELEASED = 'payment_released'     # WIRED: payments.complete, disbursement.release_tranche
 EVENT_CLOSED = 'closed'                         # WIRED: closure.close_application
 EVENT_RESULTS_OVERDUE = 'results_overdue'       # WIRED: results_expectations.flag_overdue (S4b)
@@ -36,7 +38,7 @@ EVENTS = (
     EVENT_SUBSTATE_CHANGED, EVENT_RESULT_SUBMITTED, EVENT_RESULT_REVIEWED, EVENT_LETTER_ISSUED,
     EVENT_MENTOR_ASSIGNED, EVENT_SESSION_LOGGED, EVENT_PAYMENT_RELEASED, EVENT_CLOSED,
     EVENT_RESULTS_OVERDUE, EVENT_LETTER_WITHDRAWN, EVENT_LETTER_ACKNOWLEDGED,
-    EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED,
+    EVENT_MENTOR_CHANGED, EVENT_MENTOR_ENDED, EVENT_MENTOR_CONCERN_RAISED, EVENT_MENTOR_CONCERN_HANDLED,
 )
 
 
