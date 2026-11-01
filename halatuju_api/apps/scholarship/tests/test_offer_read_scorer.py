@@ -171,17 +171,55 @@ class TestOutcomes(SimpleTestCase):
         self.assertEqual(extra['intake'], 'extra')
         self.assertFalse(orc.fully_exact(extra))
 
-    def test_programme_is_the_stream_for_stpm_and_matric_and_the_specialisation_for_pismp(self):
+    def test_programme_is_the_stream_for_stpm_and_matric_and_the_programme_elsewhere(self):
         ans = _answer(programme='Tingkatan Enam', stream='Sains Sosial')
         for fam in ('stpm', 'matriculation'):
             self.assertEqual(orc.score_letter(ans, _read(programme='', stream='SAINS SOSIAL'),
                                               fam)['programme'], 'exact')
             self.assertEqual(orc.score_letter(ans, _read(programme='Tingkatan Enam', stream=''),
                                               fam)['programme'], 'missing')
-        ans = _answer(programme='PISMP', specialisation='Pendidikan Qorvane')
-        self.assertEqual(orc.score_letter(ans, _read(bidang_pengkhususan='pendidikan qorvane'),
-                                          'pismp')['programme'], 'exact')
         self.assertEqual(orc.score_letter(_answer(), _read(), 'uitm')['programme'], 'exact')
+
+    def test_pismp_programme_is_the_degree_title_not_the_specialisation(self):
+        # owner 2026-11-01: PISMP's programme is the degree title, like any university course
+        ans = _answer(programme='Ijazah Sarjana Muda Qorvane', specialisation='Pendidikan Qorvane')
+        out = orc.score_letter(ans, _read(programme='IJAZAH SARJANA MUDA QORVANE',
+                                          bidang_pengkhususan='pendidikan qorvane'), 'pismp')
+        self.assertEqual((out['programme'], out['specialisation']), ('exact', 'exact'))
+        out = orc.score_letter(ans, _read(programme='Program Ijazah Sarjana Muda Qorvane (PISMQ)',
+                                          bidang_pengkhususan='pendidikan qorvane'), 'pismp')
+        self.assertEqual((out['programme'], out['specialisation']), ('wrong', 'exact'))
+        # the specialisation read right no longer rescues a programme read wrong
+        out = orc.score_letter(ans, _read(programme='Pendidikan Qorvane',
+                                          bidang_pengkhususan='pendidikan qorvane'), 'pismp')
+        self.assertEqual(out['programme'], 'wrong')
+        self.assertFalse(orc.fully_exact(out))
+
+    def test_specialisation_is_scored_not_core_wherever_the_answer_has_one(self):
+        ans = _answer(specialisation='Pendidikan Qorvane')
+        for fam in ('pismp', 'other_university', 'polytechnic'):
+            with self.subTest(fam=fam):
+                out = orc.score_letter(ans, _read(bidang_pengkhususan=''), fam)
+                self.assertEqual(out['specialisation'], 'missing')
+                self.assertTrue(orc.fully_exact(out))        # not core
+                out = orc.score_letter(ans, _read(bidang_pengkhususan='Pendidikan Zorbex'), fam)
+                self.assertEqual(out['specialisation'], 'wrong')
+        # no specialisation in the answer: not scored at all (no blank_correct, no extra)
+        self.assertNotIn('specialisation',
+                         orc.score_letter(_answer(), _read(bidang_pengkhususan='X'), 'pismp'))
+
+    def test_specialisation_percent_is_over_the_letters_scored_on_it(self):
+        scored = [{'outcomes': orc.score_letter(_answer(specialisation='Pendidikan Qorvane'),
+                                                _read(bidang_pengkhususan='Pendidikan Qorvane'),
+                                                'pismp'), 'fully_exact': True},
+                  {'outcomes': orc.score_letter(_answer(), _read(), 'uitm'), 'fully_exact': True}]
+        tally = orc._tally(scored)
+        self.assertEqual(sum(tally['fields']['specialisation'].values()), 1)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            orc._print_fields(tally, ('issuer', 'specialisation'))
+        self.assertRegex(out.getvalue(), r'specialisation\s+1\s+0\s+0\s+0\s+0\s+100\.0%\s+1')
+        self.assertRegex(out.getvalue(), r'issuer\s+0\s+2\s+0\s+0\s+0\s+100\.0%\s+2')
 
 
 class TestAnswerFormatAndFamily(SimpleTestCase):

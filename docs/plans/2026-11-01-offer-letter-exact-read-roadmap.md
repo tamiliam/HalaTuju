@@ -206,6 +206,34 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   per-field exact / missing / wrong — by family, input kind and programme; identical on re-run; prints no value;
   owner's spot-check done and its error rate written down; baseline recorded in this roadmap.
 - **Owner:** decisions D1–D3; spot-check ~15 held-out answers. No paid call. No deploy.
+- **Baseline (2026-11-01, stored reads, held-out 90).** Fully exact **21 of 90 (23.3 %)**. Right per core
+  field: name 94.4 % · NRIC 98.9 % · institution 51.1 % · programme 73.3 % · intake 81.1 % · reporting date
+  96.7 %. Not core: offer date 95.6 % · issuer 21.1 % · specialisation 4 of 4 (100 %; scored only where the
+  answer has one). Identical on re-run; no value printed. (Before the owner's rulings below it read 22 of 90:
+  the PISMP programme rule moves 4 PISMP programmes to wrong — the stored reads carry "PROGRAM … (PISMP)", not
+  the degree title as printed — and the a405 reporting date became an extra.)
+- **Owner spot-check (2026-11-01).** 32 held-out answers checked. Core-field labelling errors found: **1**
+  (a405 reporting date — the printed date is a commencement date, not a reporting date; now null).
+  Is-it-an-offer lines marked wrong: **3** (a13, a367, a413) plus a405 (a scope remark, see below); only a413's
+  answer changed (yes → unsure: may not be post-secondary, MOE not MOHE). On a13 and a367 the answer already
+  said yes and the owner agrees they are private-college offers — the "wrong" is against the stored genuineness
+  verdict, which calls both `not_offer_letter` (an S6 input). a405 stays yes (a master's offer: outside the
+  bursary's scope is an eligibility matter, not reading). The 14 intake and 2 PISMP programme corrections were
+  **conventions, not errors**: intake keeps its label as printed (the scorer already drops it, so no score
+  moved); PISMP's programme is the degree title, as for any university (the specialisation stays recorded,
+  scored as a not-core field). The other 3 held-out PISMP answers were checked against the letter: 2 set to the
+  degree title, 1 is not an offer (no programme).
+- **Owner notes from the S1 check:**
+  (a) the reporting date can be on page 2, or on an e-registration slip that sits in front of the offer →
+  supports S4 (multi-page);
+  (b) an offer with no offer date may be suspect → an S6 genuineness input;
+  (c) when the reporting date is missing, Check 2 could ask the student for it (even an estimate) → a product
+  idea for the owner, outside this arc;
+  (d) postgraduate offers are outside bursary scope → an eligibility check, outside this arc;
+  (e) the stored genuineness verdict calls 2 private-college offers (and the postgraduate one) not an offer
+  letter, while the labellers had them right → in S2, the owner's check covers every not-offer answer AND every
+  letter the stored genuineness calls not an offer;
+  (f) dates are read without weekday or time (the scorer already ignores them).
 
 ### S2 — Dev-set answers and the failure map (low–medium, ~6 h + owner ~30 min)
 - **Goal:** know which failures matter most, and which are old reads versus today's reader.
@@ -228,6 +256,10 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Owner:** yes to ≈ RM3–9 (dev set, one pass).
 
 ### S4 — Reader round 1: traceability and what Gemini sees (medium–high, ~10 h; production code)
+- **Matcher contract (Cockpit session, 2026-11-01):** the offer matcher reads `fields.programme`, `fields.institution`,
+  `fields.issuer` and `authenticity.status`. Any change to what those carry (e.g. the institution line instead of
+  the reporting venue — the S1 baseline's biggest gap) is flagged to the session that owns the matcher BEFORE the
+  push, with the dry-run of realign / link on the new reads (rule 5).
 - **Goal:** fix the biggest S2 failure kinds that come from the AI read's inputs and prompt.
 - **Scope (expected, confirmed by S2):** an offer reader version stamped on every read (AI and deterministic);
   Gemini sees up to 3 pages, and the text layer beside the image for a digital PDF; prompt fixes for the top

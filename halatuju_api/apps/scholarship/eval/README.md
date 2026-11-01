@@ -94,10 +94,10 @@ Every key present; a field the letter does not print is JSON `null`, explicitly:
 | `candidate_name`, `candidate_nric` | as printed |
 | `institution_as_printed` | the college / campus / school line, exactly as printed |
 | `institution_campus` | the campus a person would pick from that line (may be `null`; not scored — kept for the campus matcher, TD-451/452) |
-| `programme` | the programme / course title, as printed |
+| `programme` | the programme / course title, as printed. **PISMP: the degree title** ("IJAZAH SARJANA MUDA PERGURUAN"), the same as any other university course (owner, 2026-11-01) — the Bidang goes in `specialisation` |
 | `stream` | STPM "Bidang" / matriculation "Jurusan" (`null` for other families) |
 | `specialisation` | PISMP "Bidang Pengkhususan" (`null` for other families) |
-| `intake` | the session / intake, without its label |
+| `intake` | the session / intake **as printed, with its label** ("SESI 1-2026/2027", "SESI AKADEMIK 2026/2027", "INTAKE AUGUST 2025", "AMBILAN 2026" — owner, 2026-11-01). The scorer drops the label when it compares, so label or no label scores the same; S1 answers written before the ruling without the label were left as they are, and every new answer keeps it |
 | `reporting_date` | the report / registration date (a range: its first day) |
 | `offer_date` | the issue date (not the print date) |
 | `issuer` | the body that issued the letter |
@@ -110,9 +110,11 @@ Every key present; a field the letter does not print is JSON `null`, explicitly:
 
 **The scorer** `offer_read_check.py` compares a read (default the stored `vision_fields.fields`;
 `--read file:<suffix>` reads `snapshots/<key><suffix>`, for S3's fresh reads) with the answer, per
-core field — name, nric, institution, programme (STPM/matric: the stream; PISMP: the
-specialisation; else the programme), intake, reporting_date — as **exact / blank_correct /
-missing / wrong / extra**; offer_date and issuer are scored but not core. A letter is **fully
+core field — name, nric, institution, programme (STPM/matric: the stream; every other family,
+PISMP included: the programme), intake, reporting_date — as **exact / blank_correct /
+missing / wrong / extra**; offer_date, issuer and specialisation (vs the read's
+`bidang_pengkhususan`) are scored but not core — specialisation only on letters whose answer has
+one, and its `right` % is over those (the `of` column). A letter is **fully
 exact** when every core field is exact or blank_correct. Tidying only — case, spacing,
 punctuation, accents, NRIC digits, dates to `D Mon YYYY` (Malay/English months, numeric dates),
 an intake label (and a "Tahun" before a 4-digit year) dropped, one trailing bracketed acronym on

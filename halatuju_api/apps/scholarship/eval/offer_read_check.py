@@ -13,10 +13,12 @@ Every key below must be present; a field the letter does not print is JSON `null
   institution_as_printed  the college / campus / school line, exactly as printed (read accuracy)
   institution_campus      the campus a person would pick from that line (may be null) — not scored;
                           kept so the campus matcher (TD-451/452) can be measured later
-  programme               the programme / course title, as printed
+  programme               the programme / course title, as printed; PISMP: the degree title
+                          ("Ijazah Sarjana Muda Perguruan"), as for any university (owner 2026-11-01)
   stream                  STPM "Bidang" or matriculation "Jurusan" (null for other families)
   specialisation          PISMP "Bidang Pengkhususan" (null for other families)
-  intake                  the session / intake, as printed (without its label)
+  intake                  the session / intake, as printed WITH its label (owner 2026-11-01:
+                          "Sesi 1-2026/2027", "Ambilan 2026"); the scorer drops the label
   reporting_date          the report / registration date (a range: its first day)
   offer_date              the date the letter was issued (not the print date)
   issuer                  the body that issued the letter
@@ -30,9 +32,11 @@ Every key below must be present; a field the letter does not print is JSON `null
                           the stored read (`authenticity.doc_seen`, UiTM by its name)
 
 THE SCORE. Core fields (decision D2): name, nric, institution, programme, intake, reporting_date.
-`programme` is family-specific: STPM / matriculation → `stream` vs the read's `stream`; PISMP →
-`specialisation` vs the read's `bidang_pengkhususan`; every other family → `programme` vs the
-read's `programme`. offer_date and issuer are scored too but are NOT core. Per field:
+`programme` is family-specific: STPM / matriculation → `stream` vs the read's `stream`; every
+other family, PISMP included → `programme` vs the read's `programme` (owner 2026-11-01: PISMP's
+programme is the degree title). offer_date, issuer and specialisation are scored too but are NOT
+core; specialisation (vs the read's `bidang_pengkhususan`) only on letters whose answer has one,
+and its % is over those letters. Per field:
 
   exact          both present and equal after tidying
   blank_correct  the letter does not print it (answer null) and the read is blank
@@ -99,7 +103,8 @@ FAMILIES = ('stpm', 'matriculation', 'polytechnic', 'pismp', 'uitm', 'other_univ
 #: The families the fixed-format reader (`offer_parse.parse_govt_offer`) handles.
 KNOWN_FORMAT_FAMILIES = ('stpm', 'matriculation', 'polytechnic')
 CORE = ('name', 'nric', 'institution', 'programme', 'intake', 'reporting_date')
-NOT_CORE = ('offer_date', 'issuer')
+#: Scored, not in "fully exact". `specialisation` is scored only where the answer has one.
+NOT_CORE = ('offer_date', 'issuer', 'specialisation')
 OUTCOMES = ('exact', 'blank_correct', 'missing', 'wrong', 'extra')
 RIGHT = ('exact', 'blank_correct')
 
@@ -249,13 +254,16 @@ def read_source(spec):
 
 # ── Scoring ──────────────────────────────────────────────────────────────────────────────────
 def _pairs(answer, read, family):
-    """{scored field: (answer value, read value, tidy)}."""
+    """{scored field: (answer value, read value, tidy)}. `specialisation` only when the answer
+    has one (owner 2026-11-01: PISMP's programme is the degree title, its Bidang is scored apart)."""
     if family in ('stpm', 'matriculation'):
         prog = (answer.get('stream'), read.get('stream'))
-    elif family == 'pismp':
-        prog = (answer.get('specialisation'), read.get('bidang_pengkhususan'))
     else:
         prog = (answer.get('programme'), read.get('programme'))
+    spec = {}
+    if answer.get('specialisation') is not None:
+        spec = {'specialisation': (answer['specialisation'], read.get('bidang_pengkhususan'),
+                                   tidy_text)}
     return {
         'name': (answer.get('candidate_name'), read.get('candidate_name'), tidy_text),
         'nric': (answer.get('candidate_nric'), read.get('candidate_nric'), tidy_nric),
@@ -266,6 +274,7 @@ def _pairs(answer, read, family):
         'reporting_date': (answer.get('reporting_date'), read.get('reporting_date'), tidy_date),
         'offer_date': (answer.get('offer_date'), read.get('offer_date'), tidy_date),
         'issuer': (answer.get('issuer'), read.get('issuer'), tidy_text),
+        **spec,
     }
 
 
@@ -280,7 +289,8 @@ def field_outcome(expected, got, tidy):
 
 
 def score_letter(answer, read, family):
-    """{field: outcome} for every core and not-core field."""
+    """{field: outcome} for every core and not-core field (`specialisation` only when the
+    answer has one)."""
     return {f: field_outcome(e, g, t) for f, (e, g, t) in _pairs(answer, read or {}, family).items()}
 
 
@@ -423,12 +433,14 @@ def _pct(n, d):
 
 
 def _print_fields(tally, fields):
-    print(f"  {'field':<15}" + ''.join(f'{o:>14}' for o in OUTCOMES) + f"{'right':>9}")
+    """`right` is over the letters the field was scored on (`of`): every letter, except
+    `specialisation` (only letters whose answer has one)."""
+    print(f"  {'field':<15}" + ''.join(f'{o:>14}' for o in OUTCOMES) + f"{'right':>9}{'of':>6}")
     for f in fields:
         c = tally['fields'][f]
-        right = c['exact'] + c['blank_correct']
+        right, scored = c['exact'] + c['blank_correct'], sum(c.values())
         print(f'  {f:<15}' + ''.join(f'{c[o]:>14}' for o in OUTCOMES)
-              + f"{_pct(right, tally['letters']):>9}")
+              + f"{_pct(right, scored):>9}{scored:>6}")
 
 
 def _print_groups(dim, groups):
