@@ -478,6 +478,18 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Named case (2026-11-02, from the S4 money reach):** app 329, doc 3494 — a two-page photo (a TVETMARA
   confirmation and a MARA / IKM offer) scored `not_offer_letter` against the POLYTECHNIC fingerprint, though it IS
   an offer. It must score as an offer (public skills institutes are public offers, ruling 5).
+- **Owner ruling 2026-11-02 — what a chip colour MEANS (the reviewer reads the chips):** green = fine, nothing to
+  do; yellow = the reviewer should look (an edge case, or judgement needed); red = something is WRONG with the
+  letter. Applied to the offer chips (S6 audits EVERY offer chip against this, every door first):
+  - **Pathway:** green = the letter matches the student's choice, OR the student declared nothing and a GENUINE offer
+    set it (`chosen_programme.source == 'offer_letter_auto'` on an empty declaration — today `_declared_pathway`
+    drops that pick, so the tick reads `unknown`, painted red); yellow = the letter differs from the choice (the
+    Check 2 `pathway_confirm` query) or nothing to compare; **never red** (a different pathway is not a fault in
+    the letter).
+  - **Official:** green = genuine; yellow = suspect (e.g. a portal page); red = not_offer_letter.
+  - **Name / IC:** green = match; yellow = partial or unreadable; red = mismatch (another person).
+  - **Reporting date:** green = read; yellow = not printed.
+  App 329 after S6: Pathway green (declared nothing, the offer set it) and Official green (the genuineness fix).
 - **Scope:** `genuineness/results_doc.py`, `MODEL_VERSION` bump + History line, tests from real wording.
 - **Acceptance:** every letter labelled real and from a supported issuer scores genuine on dev and held-out;
   every rejected-rightly letter stays rejected. Dry run on live stored data first.
