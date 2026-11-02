@@ -57,7 +57,7 @@ Reviewers). Mentors live on a separate page.
 ## Sprints (each: design approved first; Opus builder, lead verifies; adversarial review; en/ms/ta; owner "yes" before push)
 
 **T1 — Hats plumbing, no visible change except Rohini** (high; ~35 files; migration only if a stored field is needed)
-- **Status: BUILT 2026-11-03, not live.** Owner ruling option B: a key seat opens the organisation READ pages
+- **Status: LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr).** Owner ruling option B: a key seat opens the organisation READ pages
   only; the landing stays on the first hat. `apps/courses/staff_tables.py`; decisions.md 2026-11-03; no migration.
 - One predicate per table: `in_admins(a)`, `in_reviewers(a)`, `in_mentors(a)` (= `mentors_now`), derived from keys +
   lead tier + mentor link (prefer DERIVED over a new column; the 0123 / no-backfill lesson).

@@ -1158,7 +1158,7 @@ of My Account (`DisplaySegments.tsx`, `SponsorLogOut.tsx`); every pinned bar on 
 `data-page-bar` (guarded); funding = sticky fund bar + one `dismissible={false}` confirm Sheet with a ref lock.
 NEXT: M6 admin + reviewer cockpit (may split), M7, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 BUILT, NOT LIVE (hats plumbing; no migration)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md`; ruling decisions.md 2026-11-03 (option B). A person's
 TABLES (Admins / Reviewers / Mentors) are DERIVED in `apps/courses/staff_tables.py` (a leaf; never stored):

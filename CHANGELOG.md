@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T1 — hats plumbing (not yet live)
+## Team tables T1 — hats plumbing (LIVE 2026-11-03; main 83cddf96; api-01239-5jr, web-01067-6fr)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T1). Owner ruling 2026-11-03 (option B; decisions.md the same
 day). No migration, no stored field, no backfill.
