@@ -160,7 +160,22 @@ owner check page for the 71 stored Exact reads; the owner marked every field rig
   `tidy_date` compares both shapes as one date. **L1** a labelled IC must not be followed by a 13th digit. **L2** the
   AI-only keys (`candidate_address`, `reporting_venue`, `aliran`, `bidang_pengkhususan`, `elektif`) are written blank
   under an Exact read. `exact_read` is the eval's entry (what production derives, passed in). Dev unchanged (86
-  EXACT, 0 WRONG, 0 control locks, pipeline 92/126).
+  EXACT, 0 WRONG, 0 control locks, pipeline 92/126). Honest note: `identity_disagree` rarely fires — on a normal
+  digital PDF page 1 is the start of the whole layer, so both reads find the same first identity; it guards the
+  odd file, it is not a measured fix.
+- **Second adversarial review — fixes (each with a synthetic test):** the three family readers moved verbatim to
+  `offer_parse_families.py` first (moves-only commit; `offer_parse.py` was at 551 of 560). The matric name above
+  "K/P:" is read by STRUCTURE: the line right above must pass the name shape on its own with no place or letter
+  word (Kuala Lumpur, Wilayah Persekutuan, Johor Bahru, Kota Kinabalu, Pengarah, Kepada, Lampiran …); it joins the
+  line before only when that line ends on its parentage marker; a line with no marker under a name-like line is a
+  wrapped tail and reads no name — every doubt goes to the AI reader. The block reader caps label lines (40) and
+  only moves forward ("Program" x 8,000 was 3.4 s). IC digits are ASCII 0-9 only (`\d` let fullwidth / Arabic-Indic
+  digits lock an IC), and no 13th digit may follow, even one space or dash away. A stored reporting date that is
+  not text never raises in the merge. A PDF whose bytes are absent never locks (no page 1 to read). Wider portal
+  tells ("Tahniah," / "TAHNIAH." + "anda ditawarkan" / "layak", "S E M A K A N", "Semakan_Keputusan", "Semakan
+  Tawaran", "Tarikh / Portal Semakan", wider spacing in "Sila Cetak" / "Layak Menerima"), zero-width characters
+  stripped before any match; a bare "semakan" is no tell (a real polytechnic letter says it). Dev unchanged (86
+  EXACT, 96 corpus locks, 0 WRONG, 0 control locks, pipeline 92/126), so held-out was not re-run.
 - Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
   `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
   `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.

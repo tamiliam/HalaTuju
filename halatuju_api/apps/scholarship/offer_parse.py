@@ -21,8 +21,11 @@ from __future__ import annotations
 
 import re
 
-_IC = r'(\d{6}[- ]?\d{2}[- ]?\d{4})'
-_NRIC_RE = re.compile(r'(?<!\d)' + _IC + r'(?!\d)')
+#: An IC is ASCII digits only (second review: a fullwidth or Arabic-Indic digit matched `\d` and locked
+#: an IC). `_IC_END`: no further digit after the twelve, even one space / dash away ("080923-06-0355-1").
+_IC = r'([0-9]{6}[- ]?[0-9]{2}[- ]?[0-9]{4})'
+_IC_END = r'(?![ \t-]?\d)'
+_NRIC_RE = re.compile(r'(?<!\d)(?<!\d[ \t-])' + _IC + _IC_END)
 _MALAY_MONTH = (r'(?:JAN\w*|FEB\w*|MAC\w*|APR\w*|MEI|JUN\w*|JUL\w*|OGOS?|OKT\w*|NOV\w*|DIS\w*|'
                 r'MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPT?\w*|OCTOBER|DECEMBER)')
 _DMY_RE = re.compile(r'(\d{1,2}\s+' + _MALAY_MONTH + r'\s+20\d{2})', re.IGNORECASE)
@@ -44,18 +47,19 @@ _NOT_NAME = re.compile(r'\b(MALAYSIA|PUTRAJAYA|KEMENTERIAN|PENDIDIKAN|BAHAGIAN|M
 
 
 def _decimal_digits(s: str) -> str:
-    """Every DECIMAL digit in `s`, in order. '' for a blank.
+    """Every ASCII digit 0-9 in `s`, in order. '' for a blank.
 
     ⚠ NOT `text.digits_only`, and not a candidate to become it. That one filters on
-    `str.isdigit()`, which also admits superscripts and other digit-LIKE characters; this one
-    filters on `\\d`, which does not. The input here is raw OCR text on its way to becoming an
+    `str.isdigit()`, which also admits superscripts and other digit-LIKE characters; this one keeps
+    ASCII 0-9 only — not even `\\d`, which in Python also matches fullwidth and Arabic-Indic digits
+    (S5 second review: such a digit locked an IC). The input here is raw OCR text on its way to becoming an
     NRIC, and the difference is not academic: a stray `³` in a scan would be KEPT by the other
     rule, could carry the string to twelve characters, and would be written onto an application
     as part of somebody's identity number. Dropping it is the only safe answer for this caller.
 
     Code health H7 merged the other two copies of `_digits` and deliberately left this one.
     """
-    return re.sub(r'\D', '', s or '')
+    return re.sub(r'[^0-9]', '', s or '')
 
 
 def _norm_nric(raw: str) -> str:
@@ -122,7 +126,18 @@ _TITLE = {
                                 r'KEPUTUSAN\s{1,3}PERTUKARAN\s{1,3}PROGRAM)', re.M),
     'polytechnic': re.compile(r'^[ \t]{0,8}SURAT\s{1,3}TAWARAN\s{1,3}PENGAJIAN', re.M),
 }
-_PORTAL_TELL = re.compile(r'\bSEMAKAN\b|\bLAYAK\s{1,3}MENERIMA\b|\bSILA\s{1,3}CETAK\b|\bTAHNIAH\s{0,3}!', re.I)
+#: Second review: also "Tahniah," / "TAHNIAH." + "anda ditawarkan" / "layak", a spaced or underscored
+#: "S E M A K A N" / "Semakan_Keputusan", and wider whitespace. A real polytechnic letter's "Tahniah dan
+#: sukacita dimaklumkan" is no tell.
+#: "Semakan" alone is NOT a tell — a real polytechnic letter says it in its body ("skrin semakan"); the
+#: portal's own phrases are (measured on the corpus, 2026-11-03).
+_PORTAL_TELL = re.compile(r'(?<![A-Z])S[\s_]{1,2}E[\s_]{1,2}M[\s_]{1,2}A[\s_]{1,2}K[\s_]{1,2}A[\s_]{1,2}N(?![A-Z])|'
+                          r'\bSEMAKAN[\s_]{1,3}(?:KEPUTUSAN|TAWARAN|STATUS|PANGGILAN)\b|'
+                          r'\b(?:TARIKH|PORTAL)[\s_]{1,3}SEMAKAN\b|^[ \t]{0,8}SEMAKAN[ \t]{0,8}$|'
+                          r'\bLAYAK\s{1,5}MENERIMA\b|\bSILA[\s_]{1,5}CETAK\b|\bTAHNIAH\s{0,3}!|'
+                          r'\bTAHNIAH\s{0,3}[,.]\s{0,5}(?:ANDA\s{1,5})?(?:DITAWARKAN|LAYAK)\b', re.I | re.M)
+#: Zero-width characters a pasted or exported page can hide inside a word (stripped before any match).
+_ZERO_WIDTH = re.compile('[\u200b\u200c\u200d\ufeff]')
 
 
 def _name_ok(name: str) -> bool:
@@ -150,6 +165,8 @@ def _label(pattern):
                       + r')(?![A-Za-z])(?P<colon>[ \t]{0,5}:)?(?P<tail>.*)$', re.IGNORECASE)
 
 
+#: More label lines than any offer's info block prints (the longest has 8).
+MAX_BLOCK_LABELS = 40
 _CLAUSE_ONLY = re.compile(r'^\s*\(?\d+(?:\.\d+)*\)?\.?\s*$')
 
 
@@ -206,17 +223,24 @@ def _read_block(lines, spec, fillers=(), wraps=(), max_skip=8):
     value line after it that has the label's shape. A line with the shape of a LATER label means this
     label has no value (it stays ''); a line with no label's shape is skipped (an address line under
     an institution), at most `max_skip` of them. A key in ``wraps`` takes the next line too when
-    that line is its wrapped end (`_wrapped`)."""
+    that line is its wrapped end (`_wrapped`). A real block holds a handful of labels: past
+    `MAX_BLOCK_LABELS` label lines it is not an offer's block and reads as nothing (second review: the
+    scan was quadratic on "Program" x 8,000). Each label is tried once, and the scan only moves forward."""
     toks = _tokens(lines, spec, fillers)
     shape = {k: s for k, _p, s in spec}
     order = [(i, k) for i, (t, k) in enumerate(toks) if t == 'L']
+    if len(order) > MAX_BLOCK_LABELS:
+        return {}
     vals = [(i, v) for i, (t, v) in enumerate(toks) if t == 'V']
-    out, cur = {}, 0
+    out, cur, tried = {}, 0, set()
     for n, (pos, key) in enumerate(order):
-        if key in out:                          # a label printed twice is read once
+        if key in tried:                        # a label printed twice is read once
             continue
+        tried.add(key)
         later = [shape[k] for _p, k in order[n + 1:] if k != key]
-        j = next((j for j, (vi, _v) in enumerate(vals) if j >= cur and vi > pos), len(vals))
+        j = cur
+        while j < len(vals) and vals[j][0] < pos:
+            j += 1
         for j in range(j, min(len(vals), j + max_skip + 1)):
             v = vals[j][1]
             if shape[key](v):
@@ -330,8 +354,8 @@ def diagnose(text: str, page1_text: str = None) -> dict:
     ``page1_text`` is a digital PDF's page-1 text layer, given ONLY when ``text`` is that PDF's own text
     layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
     two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``)."""
-    text = _SPACES.sub(' ', text or '')         # a text layer's no-break spaces read as spaces
-    page1_text = _SPACES.sub(' ', page1_text or '')
+    text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', text or ''))   # no-break spaces as spaces; no zero-width
+    page1_text = _SPACES.sub(' ', _ZERO_WIDTH.sub('', page1_text or ''))
     up = text.upper()
     fam = _detect(up)
     out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,

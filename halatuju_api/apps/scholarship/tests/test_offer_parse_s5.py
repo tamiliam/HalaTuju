@@ -322,3 +322,61 @@ class TestReviewFixes(SimpleTestCase):
         stpm = diagnose(STPM_SIX.replace('130405100211', '1304051002111'))
         self.assertNotEqual(stpm['fields']['candidate_nric'], '130405-10-0211')
 
+
+def _above_kp(text):
+    """MATRIC_SPLIT with ``text`` as the lines above "K/P:" (in place of the name)."""
+    return MATRIC_SPLIT.replace('VELKORAN\n', text)
+
+
+class TestSecondReview(SimpleTestCase):
+    """The second adversarial review (2026-11-03): items 1-3, 6, 7."""
+
+    def test_1_a_place_or_letter_word_above_the_ic_is_no_name(self):
+        for line in ('KUALA LUMPUR', 'WILAYAH PERSEKUTUAN', 'W.P. KUALA LUMPUR', 'JOHOR BAHRU', 'KOTA KINABALU',
+                     'BANDAR BARU BANGI', 'SERI KEMBANGAN', 'PENGARAH', 'KEPADA', 'LAMPIRAN', 'PERHATIAN',
+                     'MAKLUMAT PENTING', 'URUSETIA', 'CAWANGAN', 'BUTIRAN', 'ASAL'):
+            self.assertIsNone(parse_govt_offer(_above_kp(line + '\n')), line)
+
+    def test_1_the_tail_is_tested_on_its_own_before_a_join(self):
+        self.assertIsNone(parse_govt_offer(_above_kp('ALI BIN\nPERAK\n')))
+        self.assertIsNone(parse_govt_offer(_above_kp('ALI A/L\nKUALA LUMPUR\n')))
+        self.assertEqual(parse_govt_offer(_above_kp('ALI BIN\nZENTARO\n'))['candidate_name'], 'ALI BIN ZENTARO')
+
+    def test_1_a_tail_wrapped_without_its_marker_is_no_name(self):
+        self.assertIsNone(parse_govt_offer(_above_kp('NUR AISYAH BINTI ABDUL\nRAHMAN\n')))
+        self.assertIsNone(parse_govt_offer(_above_kp('NUR AISYAH BINTI ZEN\nABDUL RAHMAN\n')))
+
+    def test_1_a_name_with_its_marker_or_after_a_non_name_line_still_locks(self):
+        self.assertEqual(parse_govt_offer(_above_kp('ZARA BINTI QUENTIN\n'))['candidate_name'], 'ZARA BINTI QUENTIN')
+        self.assertEqual(parse_govt_offer(_above_kp('TAN WEI MING\n'))['candidate_name'], 'TAN WEI MING')
+        self.assertEqual(parse_govt_offer(MATRIC_SPLIT)['candidate_name'], 'VELKORAN')   # above it: a date
+
+    def test_2_a_long_run_of_labels_is_fast_and_reads_nothing(self):
+        import time
+        start = time.perf_counter()
+        self.assertIsNone(parse_govt_offer(POLY_NOISY.replace('Program\n', 'Program\nzz\n' * 8000)))
+        self.assertLess(time.perf_counter() - start, 1.0)
+
+    def test_3_non_ascii_digits_are_never_an_ic(self):
+        wide = '１３０９２３０６０３５５'                                    # fullwidth
+        arabic = ''.join(chr(0x0660 + int(c)) for c in '130923060355')      # Arabic-Indic
+        for ic in (wide, arabic):
+            d = diagnose(MATRIC_SPLIT.replace('130923060355', ic))
+            self.assertEqual(d['fields']['candidate_nric'], '')
+
+    def test_6_a_separated_thirteenth_digit_is_no_ic(self):
+        for ic in ('130923 06 0355 1', '130923-06-0355-1'):
+            d = diagnose(MATRIC_SPLIT.replace('130923060355', ic))
+            self.assertEqual(d['fields']['candidate_nric'], '', ic)
+
+    def test_7_wider_portal_tells_and_zero_width_characters(self):
+        for page in ('Tahniah, anda ditawarkan\n' + MATRIC_SPLIT, 'TAHNIAH. Anda layak\n' + MATRIC_SPLIT,
+                     MATRIC_SPLIT + 'SILA   CETAK\n', MATRIC_SPLIT + 'LAYAK\n MENERIMA\n',
+                     'S E M A K A N\n' + MATRIC_SPLIT, 'Semakan_Keputusan\n' + MATRIC_SPLIT,
+                     MATRIC_SPLIT + 'Sila​ Cetak\n', MATRIC_SPLIT + 'SEM‍AKAN KEPUTUSAN\n'):
+            self.assertIsNone(parse_govt_offer(page), page[:30])
+        # a real letter's "Tahniah dan sukacita" and a body "semakan" are no tells
+        self.assertIsNotNone(parse_govt_offer(POLY_NOISY + 'Tahniah dan sukacita dimaklumkan\nrujuk skrin semakan\n'))
+        # a zero-width character inside the title no longer hides it
+        self.assertIsNotNone(parse_govt_offer(MATRIC_SPLIT.replace('KEPUTUSAN PERTUKARAN', 'KEPUTUSAN​ PERTUKARAN')))
+

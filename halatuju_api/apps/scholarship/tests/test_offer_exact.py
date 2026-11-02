@@ -110,6 +110,17 @@ class TestTheMerge(SimpleTestCase):
         for k in ('candidate_address', 'reporting_venue', 'aliran', 'bidang_pengkhususan', 'elektif'):
             self.assertEqual(f[k], '', k)
 
+    def test_4_a_stored_reporting_date_that_is_not_text_never_raises(self):
+        for bad in (None, 20310601, ['8 Jun 2031'], {'d': 1}):
+            f = merge_over({'reporting_date': bad}, {'reporting_date': '8 Jun 2031', 'reporting_date_label': 'x'})
+            self.assertEqual(f['reporting_date'], '8 Jun 2031')
+        f = merge_over({'reporting_date': 20310601}, {'reporting_date': '31/02/2031', 'reporting_date_label': 'x'})
+        self.assertEqual(f['reporting_date'], '31/02/2031')
+
+    def test_5_a_pdf_with_no_bytes_never_reads_the_whole_layer_as_page_one(self):
+        self.assertIsNone(exact_offer_read(matric(), image=None, content_type='application/pdf'))
+        self.assertIsNotNone(exact_offer_read(matric(), image=None, content_type='image/png'))
+
     def test_no_prior_read(self):
         self.assertEqual(merge_over(None, {})['campus'], '')
 

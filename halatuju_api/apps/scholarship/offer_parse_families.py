@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from .offer_parse import (_IC, _NOT_WRAP, _STREAM_SHAPE, _TITLE, _date_shape, _first_ic_anywhere, _has,
+from .offer_parse import (_IC, _IC_END, _NOT_WRAP, _STREAM_SHAPE, _TITLE, _date_shape, _first_ic_anywhere, _has,
                           _label, _name_ok, _norm_nric, _read_block, _starts, first_date)
 
 
@@ -36,7 +36,7 @@ def _identity_stpm(lines):
             name = m.group(1).strip(' :') or next((x.strip() for x in lines[i + 1:] if x.strip()), '')
             break
     for ln in lines:
-        m = re.match(r'\s*No\.?\s{0,3}Kad\s{0,3}Pengenalan[ \t]{0,3}:?[ \t]{0,3}' + _IC + r'(?!\d)', ln, re.IGNORECASE)
+        m = re.match(r'\s*No\.?\s{0,3}Kad\s{0,3}Pengenalan[ \t]{0,3}:?[ \t]{0,3}' + _IC + _IC_END, ln, re.IGNORECASE)
         if m:
             return name, _norm_nric(m.group(1)), 'label'
     return name, _first_ic_anywhere(lines), 'other'
@@ -78,10 +78,36 @@ _MATRIC_GLUE = [r'K\s*/\s*P\s*:', r'NO\.?\s*MATRIK\b', r'Jurusan\s*:', r'Aliran\
                 r'Yuran\s+Pendaftaran\s*:', r'Tarikh\s*:', r'Rujukan\s+Kami', r'TAWARAN\s+KEMASUKAN', r'Saudara']
 
 
-#: A word that sits above "K/P:" on a letter but is never a name: a state, a stamp, an office (review M3).
-_NOT_NAME_LINE = re.compile(r'^(?:SEGERA|SULIT|RAHSIA|TERHAD|KPM|PERSENDIRIAN|PERINGATAN|MAKLUMAN)$')
+#: A word that sits above "K/P:" on a letter but is never part of a name: a state, a town, a stamp, an
+#: office, a letter word (reviews M3 + second review, 2026-11-03).
+_NOT_NAME_WORD = re.compile(r'^(?:SEGERA|SULIT|RAHSIA|TERHAD|KPM|PERSENDIRIAN|PERINGATAN|MAKLUMAN|PENGARAH|KEPADA|'
+                            r'LAMPIRAN|PERHATIAN|MAKLUMAT|PENTING|URUSETIA|CAWANGAN|BUTIRAN|ASAL|KUALA|LUMPUR|'
+                            r'WILAYAH|PERSEKUTUAN|W\.?P\.?|BAHRU|BHARU|KOTA|KINABALU|BANGI|KEMBANGAN|SERI|BARU|'
+                            r'SHAH|ALAM|PETALING|JAYA|IPOH|KUANTAN|SEREMBAN|KUCHING|MIRI|SANDAKAN|TAWAU)$')
 #: A name line that ends on its parentage marker continues on the next line ("…HAKIM BIN" / "ABDULLAH").
 _ENDS_MARKER = re.compile(r'\b(?:BIN|BINTI|BT|BTE|A\s*/\s*[LP]|ANAK|AK)$', re.IGNORECASE)
+_HAS_MARKER = re.compile(r'\b(?:BIN|BINTI|BT|BTE|A\s*/\s*[LP]|ANAK|AK)\b', re.IGNORECASE)
+
+
+def _blocked(line):
+    return any(_NOT_WRAP.match(w) or _NOT_NAME_WORD.match(w) for w in line.upper().split())
+
+
+def _matric_name(above):
+    """The name from the (at most two) lines above "K/P:", by STRUCTURE (second review): the line right
+    above must pass the name shape ON ITS OWN with no place / letter word; it is joined to the line before
+    only when that line ends on a parentage marker; a line that ends on its marker is cut (no name). A
+    line WITHOUT a marker under a name-like line is a wrapped tail ("…BINTI ABDUL" / "RAHMAN"): no name. A
+    wrong name is a false wrong-person red; no name only sends the letter to the AI reader."""
+    tail = above[-1] if above else ''
+    prev = above[-2] if len(above) == 2 else ''
+    if not tail or _blocked(tail) or not _name_ok(tail) or _ENDS_MARKER.search(tail):
+        return ''
+    if prev and _ENDS_MARKER.search(prev):
+        return f'{prev} {tail}' if _name_ok(prev) and not _blocked(prev) else ''
+    if _HAS_MARKER.search(tail):
+        return tail
+    return '' if prev and _name_ok(prev) and not _blocked(prev) else tail
 
 
 def _identity_matric(lines):
@@ -91,15 +117,9 @@ def _identity_matric(lines):
     joined ("…HAKIM BIN" + "ABDULLAH"); a name line that itself ENDS on the marker (its tail lost) is
     no name. A wrong name is a false wrong-person red, so every doubt reads no name (→ no lock)."""
     for i, ln in enumerate(lines):
-        m = re.match(r'\s*K\s{0,3}/\s{0,3}P[ \t]{0,3}:?[ \t]{0,3}' + _IC + r'(?!\d)', ln, re.IGNORECASE)
+        m = re.match(r'\s*K\s{0,3}/\s{0,3}P[ \t]{0,3}:?[ \t]{0,3}' + _IC + _IC_END, ln, re.IGNORECASE)
         if m:
-            above = [x.strip() for x in lines[:i] if x.strip()][-2:]
-            name = above[-1] if above else ''
-            if len(above) == 2 and _ENDS_MARKER.search(above[0]) and _name_ok(above[0]):
-                name = f'{above[0]} {name}'
-            ok = (_name_ok(name) and not _ENDS_MARKER.search(name)
-                  and not all(_NOT_WRAP.match(w) or _NOT_NAME_LINE.match(w) for w in name.upper().split()))
-            return (name if ok else ''), _norm_nric(m.group(1)), 'label'
+            return _matric_name([x.strip() for x in lines[:i] if x.strip()][-2:]), _norm_nric(m.group(1)), 'label'
     return '', _first_ic_anywhere(lines), 'other'
 
 

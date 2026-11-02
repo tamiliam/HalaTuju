@@ -51,8 +51,10 @@ def page1_text_layer(image, content_type='') -> str:
 
 
 def _reads(date) -> bool:
+    """True when `pathway_engine.parse_reporting_date` reads ``date`` (a stored value that is not a string
+    — a damaged record — reads as no date, never an exception up through `vision`)."""
     from .pathway_engine import parse_reporting_date
-    return parse_reporting_date(date) is not None
+    return isinstance(date, str) and parse_reporting_date(date) is not None
 
 
 def merge_over(prior_fields, govt: dict) -> dict:
@@ -95,6 +97,8 @@ def exact_offer_read(text, *, prior=None, image=None, content_type='', profile_n
     """Production's Exact read → ``{fields, warnings, error, capture, offer_reader_inputs}``, or None (→ AI).
     ``text`` came from the PDF's text layer exactly when it IS that layer (`vision.ocr_document_full`'s
     rule); ``page1_ocr`` is accepted for `vision._offer_context`'s shape and not read."""
+    if image is None and 'pdf' in (content_type or '').lower():
+        return None                              # a PDF whose bytes are not here: no page 1 to read (H2)
     layer, page1 = pdf_layers(image, content_type)
     from_layer = bool(layer.strip()) and layer.strip() == (text or '').strip()
     return exact_read(text, from_text_layer=from_layer, page1_layer=page1, prior=prior, profile_nric=profile_nric)
