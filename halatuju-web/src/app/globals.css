@@ -725,7 +725,7 @@
     }
   }
 }
-/* THE SPONSOR'S FALLBACK (Mobile M5 review). Without `:has()` the student keeps her header menu, but the
+/* THE SPONSOR'S FALLBACK (Mobile M5 review). Without `:has()` the student keeps the header menu, but the
    sponsor's phone header is the logo alone: the tab bar is the ONLY way to My Account and Log out (a shared
    phone). So there, the sponsor bar is drawn IN THE FLOW at the end of the page — never fixed, so it can
    never cover a page's own bar it cannot give way to — and a sponsor reaches it by scrolling to the end. */
