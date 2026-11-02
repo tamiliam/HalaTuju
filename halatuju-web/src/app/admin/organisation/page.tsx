@@ -110,21 +110,21 @@ export default function OrganisationOverviewPage() {
       <PageHeader title={orgName || t('admin.nav.group.organisation')}
         subtitle={t('admin.orgPage.sub')} />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid max-md:divide-y max-md:divide-ground-100 max-md:border-y max-md:border-ground-100 md:grid-cols-2 md:gap-3 lg:grid-cols-3">
         {tiles.map((tile) => {
           const body = (
             <>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ground-500">{tile.k}</p>
+              <p className="text-xs md:text-[11px] font-semibold uppercase tracking-wider text-ground-500">{tile.k}</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums text-ground-900">{tile.v}</p>
               <p className="mt-0.5 text-xs text-ground-400">{tile.d || ' '}</p>
             </>
           )
           return tile.href
             ? <Link key={tile.k} href={tile.href}
-                className="rounded-xl border bg-ground-0 p-4 shadow-sm transition-colors hover:border-primary-300">
+                className="block py-3 md:rounded-xl md:border md:bg-ground-0 md:p-4 md:shadow-sm md:transition-colors md:hover:border-primary-300">
                 {body}
               </Link>
-            : <div key={tile.k} className="rounded-xl border bg-ground-0 p-4 shadow-sm">{body}</div>
+            : <div key={tile.k} className="py-3 md:rounded-xl md:border md:bg-ground-0 md:p-4 md:shadow-sm">{body}</div>
         })}
       </div>
 
@@ -134,7 +134,7 @@ export default function OrganisationOverviewPage() {
             {t('admin.orgPage.needsAttention')}
           </p>
           <Link href={hrefOf('sponsors')!}
-            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-caution-800 hover:underline">
+            className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-caution-800 hover:underline md:min-h-0">
             <Icon name="sponsors" size={15} />
             {t('admin.shell.attn.sponsors', { count: String(pendingSponsors) })}
           </Link>

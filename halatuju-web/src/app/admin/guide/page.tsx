@@ -36,7 +36,7 @@ function ManualImage({ src, alt, float }: { src: string; alt?: string; float?: b
     return (
       <div className={`${cls} border-dashed border-ground-300 bg-ground-50 px-4 py-8 text-center`}>
         <p className="text-xs font-medium text-ground-400">Screenshot coming soon</p>
-        {alt && <p className="mt-1 text-[11px] text-ground-400">{alt}</p>}
+        {alt && <p className="mt-1 text-xs text-ground-400">{alt}</p>}
       </div>
     )
   }
@@ -92,8 +92,24 @@ export default function AdminManualPage() {
 
   return (
     <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8">
+      {/* Mobile M6a: on a phone the chapter list is ONE 44 px chooser above the chapter, not ~20 rows to
+          scroll past before reading; from `md` the list is unchanged. Same chapters, same openChapter. */}
+      <label className="mb-5 block md:hidden">
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ground-500">Manual</span>
+        <select value={chapter.slug} onChange={(e) => openChapter(e.target.value)} data-guide-chooser
+          className="min-h-11 w-full rounded-lg border border-ground-300 bg-ground-0 px-3 text-ground-800">
+          {groups.map((g) => {
+            const items = chapters.filter((c) => c.group === g)
+            return items.length === 0 ? null : (
+              <optgroup key={g} label={GROUP_LABEL[g]}>
+                {items.map((c) => <option key={c.slug} value={c.slug}>{c.title}</option>)}
+              </optgroup>
+            )
+          })}
+        </select>
+      </label>
       {/* Sidebar */}
-      <aside className="mb-6 lg:mb-0 lg:sticky lg:top-6 lg:self-start">
+      <aside className="mb-6 max-md:hidden lg:mb-0 lg:sticky lg:top-6 lg:self-start">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ground-400">Manual</p>
         <nav className="space-y-4">
           {groups.map((g) => {
@@ -101,7 +117,7 @@ export default function AdminManualPage() {
             if (items.length === 0) return null
             return (
               <div key={g}>
-                <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{GROUP_LABEL[g]}</p>
+                <p className="mb-1 px-2 text-xs lg:text-[11px] font-semibold uppercase tracking-wider text-ground-400">{GROUP_LABEL[g]}</p>
                 <ul className="space-y-0.5">
                   {items.map((c) => (
                     <li key={c.slug}>
@@ -122,7 +138,7 @@ export default function AdminManualPage() {
 
       {/* Chapter */}
       <div className="min-w-0 max-w-3xl">
-        <nav className="mb-2 text-xs text-ground-400">
+        <nav className="mb-2 break-words text-xs text-ground-500">
           Manual <span className="mx-1">/</span> {GROUP_LABEL[chapter.group]}
           <span className="mx-1">/</span> <span className="text-ground-600">{chapter.title}</span>
         </nav>
@@ -160,18 +176,18 @@ export default function AdminManualPage() {
         </div>
 
         {/* Prev / next */}
-        <div className="mt-10 flex items-center justify-between border-t border-ground-100 pt-4 text-sm">
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-2 border-t border-ground-100 pt-4 text-sm">
           {prev ? (
-            <button type="button" onClick={() => openChapter(prev.slug)} className="text-primary-600 hover:underline">
+            <button type="button" onClick={() => openChapter(prev.slug)} className="inline-flex min-h-11 min-w-11 items-center text-left text-primary-600 hover:underline">
               ← {prev.title}
             </button>
           ) : <span />}
           {next ? (
-            <button type="button" onClick={() => openChapter(next.slug)} className="text-primary-600 hover:underline">
+            <button type="button" onClick={() => openChapter(next.slug)} className="inline-flex min-h-11 min-w-11 items-center text-left text-primary-600 hover:underline">
               {next.title} →
             </button>
           ) : (
-            <Link href="/admin/faq" className="text-primary-600 hover:underline">Questions? See the FAQ →</Link>
+            <Link href="/admin/faq" className="inline-flex min-h-11 min-w-11 items-center text-left text-primary-600 hover:underline">Questions? See the FAQ →</Link>
           )}
         </div>
       </div>

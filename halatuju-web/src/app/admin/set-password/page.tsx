@@ -74,14 +74,15 @@ export default function AdminSetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center">
-      <div className="w-full max-w-md px-6">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-8 md:py-0">
+      <div className="w-full max-w-md px-4 md:px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-primary-600">Partner</span>
         </div>
 
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+        {/* Mobile M6a (rule 15): no card on a phone; the form sits on the 16 px gutter. */}
+        <div className="md:bg-ground-0 md:rounded-2xl md:border md:border-ground-200 md:p-8 md:shadow-sm">
           <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">{t('admin.setPasswordTitle')}</h1>
           <p className="text-ground-600 text-center mb-8">{t('admin.setPasswordSubtitle')}</p>
 
@@ -92,7 +93,7 @@ export default function AdminSetPasswordPage() {
               <div className="bg-caution-50 border border-caution-200 rounded-lg p-4 mb-6">
                 <p className="text-caution-700 text-sm">{t('admin.setPasswordNoLink')}</p>
               </div>
-              <a href="/admin/login" className="text-primary-600 hover:underline text-sm">
+              <a href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline text-sm">
                 {t('login.backToLogin')}
               </a>
             </div>
@@ -113,7 +114,7 @@ export default function AdminSetPasswordPage() {
                     <input
                       type="text" value={email} readOnly name="username" autoComplete="username"
                       aria-label={t('admin.emailLabel')}
-                      className="w-full px-3 py-2 border border-ground-200 rounded-lg bg-ground-50 text-ground-700"
+                      className="w-full min-h-12 px-3 py-2 border border-ground-200 rounded-lg bg-ground-50 text-ground-700"
                     />
                   </div>
                 )}
@@ -125,7 +126,7 @@ export default function AdminSetPasswordPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('admin.newPasswordHint')}
                     autoComplete="new-password"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
@@ -136,7 +137,7 @@ export default function AdminSetPasswordPage() {
                     value={password2}
                     onChange={(e) => setPassword2(e.target.value)}
                     autoComplete="new-password"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>

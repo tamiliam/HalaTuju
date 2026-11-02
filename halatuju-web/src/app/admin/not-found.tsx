@@ -42,7 +42,7 @@ export default function AdminNotFound() {
       <p className="text-ground-500 text-sm mb-6">{t('errors.pageNotFoundDesc')}</p>
       <Link
         href={adminLanding(role ?? {})}
-        className="inline-block px-5 py-2.5 bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-ink text-sm font-medium rounded-lg transition-colors"
+        className="inline-flex min-h-11 items-center px-5 py-2.5 bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-ink text-sm font-medium rounded-lg transition-colors"
       >
         {t('errors.backToConsole')}
       </Link>

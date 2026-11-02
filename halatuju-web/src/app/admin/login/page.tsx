@@ -147,14 +147,15 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center">
-      <div className="w-full max-w-md px-6">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-8 md:py-0">
+      <div className="w-full max-w-md px-4 md:px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-primary-600">Partner</span>
         </div>
 
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+        {/* Mobile M6a (rule 15): no card on a phone; the form sits on the 16 px gutter. */}
+        <div className="md:bg-ground-0 md:rounded-2xl md:border md:border-ground-200 md:p-8 md:shadow-sm">
           {step === 'login' && (
             <>
               <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">
@@ -185,7 +186,7 @@ export default function AdminLoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@organisation.com"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
@@ -196,7 +197,7 @@ export default function AdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('admin.enterPassword')}
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
@@ -211,7 +212,7 @@ export default function AdminLoginPage() {
 
               <button
                 onClick={() => { setStep('forgot'); setError(null) }}
-                className="w-full text-sm text-ground-500 hover:text-ground-700 mb-6"
+                className="w-full min-h-11 text-sm text-ground-500 hover:text-ground-700 mb-4"
               >
                 {t('admin.forgotPassword')}
               </button>
@@ -258,7 +259,7 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@organisation.com"
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                  className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                   required
                 />
                 <button
@@ -271,7 +272,7 @@ export default function AdminLoginPage() {
                 <button
                   type="button"
                   onClick={() => { setStep('login'); setError(null) }}
-                  className="w-full text-sm text-ground-500 hover:text-ground-700"
+                  className="w-full min-h-11 text-sm text-ground-500 hover:text-ground-700"
                 >
                   {t('login.backToLogin')}
                 </button>
@@ -287,7 +288,7 @@ export default function AdminLoginPage() {
               </p>
               <button
                 onClick={() => { setStep('login'); setError(null) }}
-                className="text-primary-600 hover:underline text-sm"
+                className="inline-flex min-h-11 items-center text-primary-600 hover:underline text-sm"
               >
                 {t('login.backToLogin')}
               </button>
@@ -296,7 +297,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">
+          <Link href="/" className="inline-flex min-h-11 items-center text-sm text-ground-500 hover:text-primary-600 transition-colors">
             {t('admin.backToHome')}
           </Link>
         </div>

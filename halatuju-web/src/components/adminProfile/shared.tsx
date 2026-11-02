@@ -86,7 +86,8 @@ export interface ProfileState {
 
 export type CardProps = { state: ProfileState }
 
-export const CARD = 'bg-ground-0 rounded-xl p-6 shadow-sm border space-y-4'
+// Rule 15 (Mobile M6a): a full-width SECTION on a phone (no box, a hairline under it), the card from `md`.
+export const CARD = 'space-y-4 border-b border-ground-100 py-4 md:rounded-xl md:border md:bg-ground-0 md:p-6 md:shadow-sm'
 export const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 export const labelCls = 'block text-sm text-ground-600 mb-1'
 export const readOnlyCls = `${inputCls} bg-ground-50 text-ground-500`

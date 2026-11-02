@@ -116,12 +116,12 @@ export default function AdminAuthCallbackPage() {
   if (error) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="px-4 text-center">
           <p className="text-critical-600 mb-4">{error}</p>
           {detail && (
-            <p className="mb-4 font-mono text-xs text-ground-400">{detail}</p>
+            <p className="mb-4 break-all font-mono text-xs text-ground-400">{detail}</p>
           )}
-          <a href="/admin/login" className="text-primary-600 hover:underline">
+          <a href="/admin/login" className="inline-flex min-h-11 items-center text-primary-600 hover:underline">
             {t('login.backToLogin')}
           </a>
         </div>
