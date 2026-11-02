@@ -8,11 +8,13 @@ import {
   type MyModule, type MyModuleCard,
 } from '@/lib/api/bursaryGrowth'
 import { linkify } from './BursaryNews'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 const P = 'bursaryTabs.growth'
-/** ⚠ ONE BOX LEVEL ON A PHONE (mobile standard, rule 15): below `sm` a module is a full-width section (no border,
- *  no radius, the page's 16 px gutter kept inside); from `sm` it is a card. Nothing inside is a bordered box. */
-const SECTION = '-mx-4 bg-ground-0 px-4 py-5 sm:mx-0 sm:rounded-2xl sm:p-5 sm:shadow-sm'
+/** ⚠ ONE BOX LEVEL ON A PHONE (mobile standard, rule 15): below `md` a module, a lesson and the task are plain
+ *  full-width sections divided by a hairline, like every other My Bursary section (`PHONE_SECTION_FLAT`, Mobile
+ *  M4c); from `md` each is a card. Nothing inside is a box — the controls are buttons, the notes coloured text. */
+const SECTION = PHONE_SECTION_FLAT
 const PRIMARY = 'h-12 w-full rounded-lg bg-brand-fill text-base font-semibold text-brand-fill-ink disabled:opacity-60'
 const LINK = 'inline-flex min-h-11 items-center text-sm font-medium text-primary-600 hover:underline'
 const FIELD = 'w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-base text-ground-900'
