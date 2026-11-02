@@ -129,7 +129,7 @@ export default function StudentDetailPage() {
                 <h1 className="mt-2 text-xl font-bold text-ground-900 leading-snug">
                   {detail.course && detail.course_href ? (
                     <a href={detail.course_href} target="_blank" rel="noreferrer"
-                       className="hover:text-primary-600 hover:underline">{detail.course}</a>
+                       className="inline-block -my-2.5 py-2.5 hover:text-primary-600 hover:underline">{detail.course}</a>
                   ) : (detail.course || detail.field || detail.ref)}
                 </h1>
                 {detail.institution && <p className="text-sm text-ground-500 mt-0.5">{detail.institution}</p>}
