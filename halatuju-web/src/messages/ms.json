@@ -5112,7 +5112,10 @@
         "refiledSpmTeam": "Dipindahkan dari kad keputusan pengajian tinggi ke slip keputusan SPM oleh pasukan HalaTuju pada {date}.",
         "teamSplitSpm": "Pada {date} pasukan HalaTuju memisahkan muat naik gabungan: hlm. {pages} difailkan sebagai slip keputusan SPM.",
         "teamSplitHigher": "Pada {date} pasukan HalaTuju memisahkan muat naik gabungan: hlm. {pages} difailkan dalam kad keputusan {kind}."
-      }
+      },
+      "filters": "Penapis",
+      "sortLabel": "Isih",
+      "sortNewest": "Terbaru dahulu"
     },
     "students": "Pelajar",
     "invite": "Jemputan",

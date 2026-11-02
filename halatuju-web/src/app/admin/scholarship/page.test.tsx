@@ -116,7 +116,7 @@ describe('the Source filter and tooltips read the registry', () => {
       { code: 'smc', name: 'Sri Murugan Centre', show_in_apply: true },
     ] } as unknown as Awaited<ReturnType<typeof api.getSourceNames>>)
     render(<AdminScholarshipList />)
-    const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+    const filter = await screen.findByLabelText('admin.scholarship.allSources') as HTMLSelectElement
     await waitFor(() => expect(Array.from(filter.options).map((o) => o.value))
       .toEqual(['', 'smc', 'tara', 'halatuju', 'social', 'other']))
     expect(Array.from(filter.options).map((o) => o.textContent)).toEqual([
@@ -154,7 +154,7 @@ describe('the Source filter and tooltips read the registry', () => {
   it('a failed names read still gets the fixed three', async () => {
     mockApi.getSourceNames.mockRejectedValue(new Error('500'))
     render(<AdminScholarshipList />)
-    const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+    const filter = await screen.findByLabelText('admin.scholarship.allSources') as HTMLSelectElement
     await waitFor(() => expect(mockApi.getSourceNames).toHaveBeenCalled())
     expect(Array.from(filter.options).map((o) => o.value)).toEqual(['', 'halatuju', 'social', 'other'])
   })
@@ -166,7 +166,7 @@ describe('the Source filter and tooltips read the registry', () => {
     for (const role of ['reviewer', 'qc']) {
       authRole = { role }
       const { unmount } = render(<AdminScholarshipList />)
-      const filter = await screen.findByTitle('admin.scholarship.allSources') as HTMLSelectElement
+      const filter = await screen.findByLabelText('admin.scholarship.allSources') as HTMLSelectElement
       await waitFor(() => expect(Array.from(filter.options).map((o) => o.value))
         .toEqual(['', 'smc', 'halatuju', 'social', 'other']))
       unmount()
@@ -185,7 +185,7 @@ describe('the Source filter follows the chosen gift (request #41)', () => {
   const names = (...codes: string[]) => ({ sources: codes.map((c) => ({ code: c, name: c.toUpperCase() })) }) as Names
   const SABAH = { chosen: 'bp-sabah', programme: { code: 'bp-sabah', name: 'Sabah' } }
   const FLAGSHIP = { chosen: 'bp-flagship', programme: { code: 'bp-flagship', name: 'Flagship' } }
-  const filter = () => screen.getByTitle('admin.scholarship.allSources') as HTMLSelectElement
+  const filter = () => screen.getByLabelText('admin.scholarship.allSources') as HTMLSelectElement
   const lastListSource = () => mockApi.getScholarshipApplications.mock.calls.at(-1)?.[0]?.source
 
   it('asks for the chosen gift\'s names, and for every source when none is chosen', async () => {

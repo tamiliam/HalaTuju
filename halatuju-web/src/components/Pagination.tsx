@@ -65,7 +65,7 @@ export function Pagination({
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
+          className="inline-flex h-11 w-11 items-center justify-center text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label={t('admin.previous')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -76,7 +76,7 @@ export function Pagination({
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
+          className="inline-flex h-11 w-11 items-center justify-center text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label={t('admin.next')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

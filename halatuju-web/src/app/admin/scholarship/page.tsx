@@ -10,6 +10,8 @@ import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import TableFrame from '@/components/admin/TableFrame'
+import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
+import { bucketBadge, orderReviewersFor, SPECIFIC_CALL_LANGS, type Reviewer } from '@/lib/assignOptions'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
@@ -28,28 +30,6 @@ import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from 
 
 const SourceApplications = lazySource(
   () => import('@/components/source/SourceApplications').then((m) => m.default))
-
-const bucketBadge = (b: string) =>
-  b === 'A' ? 'bg-positive-100 text-positive-700'
-    : b === 'B' ? 'bg-caution-100 text-caution-700'
-      : 'bg-ground-100 text-ground-500'
-
-// ── Reviewer language matching (assignment dropdown) ───────────────────────────
-// The "Prefers …" note shows only for a SPECIFIC preferred call language (en/ms/ta — 'mixed'/''
-// show nothing). Its displayed name reuses the shared scholarship.apply.callLang.* keys so it
-// reads "Prefers Tamil", never a bare code; the dropdown options show ✓/⚠ + the reviewer's name
-// only — the language-code suffix was dropped (owner 2026-07-16).
-const SPECIFIC_CALL_LANGS = new Set(['en', 'ms', 'ta'])
-type Reviewer = { id: number; name: string; role: string; languages: string[]; assignable?: boolean }
-/** Order reviewers for a student's preferred call language: when it's a specific language
- *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
- *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
-function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Reviewer; match: boolean; specific: boolean }> {
-  const specific = lang === 'en' || lang === 'ms' || lang === 'ta'
-  const out = reviewers.map((rv) => ({ rv, match: specific ? rv.languages.includes(lang) : true, specific }))
-  if (specific) out.sort((a, b) => Number(b.match) - Number(a.match) || a.rv.name.localeCompare(b.rv.name))
-  return out
-}
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
@@ -124,7 +104,7 @@ function StaffScholarshipList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
   // Column sorting (server-side). '' = default (newest submitted first).
-  type SortKey = 'name' | 'merit' | 'source' | 'status' | 'submitted' | 'assigned'
+  type SortKey = CaseSortKey
   const [sort, setSort] = useState<'' | SortKey>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
@@ -277,43 +257,22 @@ function StaffScholarshipList() {
   // "you may not see this" for a frame and then the table is worse than a blank moment.
   if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
-  return (
-    <div>
-      <h1 className="text-xl sm:text-2xl font-bold">
-        {programme
-          ? t('admin.scholarship.title', { programmeName: programme.name })
-          : t('admin.scholarship.titleAll')}
-      </h1>
-      <p className="text-sm text-ground-500 mt-1 mb-4">
-        {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
-      </p>
-
-      {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
-
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">
-          <svg className="w-4 h-4 text-ground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('admin.searchPlaceholder')}
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent"
-          />
-        </div>
+  // The filters, ONCE (Mobile M6a): the desktop row and the phone Sheet both draw this, on the same state.
+  // Each select is NAMED by its own "all" option (aria-label): a title= tooltip needs a hover a phone has not.
+  const filterControls = (
+    <>
         <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm w-40 truncate" title={t('admin.scholarship.allSources')}>
+          aria-label={t('admin.scholarship.allSources')}
+          className="border rounded-lg px-3 py-2 text-sm w-40 truncate">
           <option value="">{t('admin.scholarship.allSources')}</option>
           {sourceFilterCodes.map((code) => <option key={code} value={code}>{sourceTitle(code)}</option>)}
         </select>
-        <select value={bucket} onChange={(e) => changeFilter(setBucket)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={bucket} onChange={(e) => changeFilter(setBucket)(e.target.value)} aria-label={t('admin.scholarship.allBuckets')} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allBuckets')}</option>
           <option value="A">Bucket A</option>
           <option value="B">Bucket B</option>
         </select>
-        <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} aria-label={t('admin.scholarship.allStatuses')} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
           {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{t(statusLabelKey(s))}</option>)}
         </select>
@@ -321,7 +280,7 @@ function StaffScholarshipList() {
           // Admin/super view this filter (it's hidden for reviewers, whose list is self-scoped).
           // "Assigned to me" is dropped — applicants are assigned to reviewers, not to admins —
           // and replaced with each active reviewer, so an admin can filter by who's reviewing.
-          <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+          <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} aria-label={t('admin.scholarship.allAssignees')} className="border rounded-lg px-3 py-2 text-sm">
             <option value="">{t('admin.scholarship.allAssignees')}</option>
             <option value="none">{t('admin.scholarship.unassigned')}</option>
             {reviewers.length > 0 && (
@@ -348,6 +307,45 @@ function StaffScholarshipList() {
             {t('admin.scholarship.call.needs')}
           </button>
         )}
+    </>
+  )
+  const activeFilters = [source, bucket, statusF, assignedF].filter(Boolean).length + (parentCallF ? 1 : 0)
+
+  return (
+    <div>
+      <h1 className="text-xl sm:text-2xl font-bold">
+        {programme
+          ? t('admin.scholarship.title', { programmeName: programme.name })
+          : t('admin.scholarship.titleAll')}
+      </h1>
+      <p className="text-sm text-ground-500 mt-1 mb-4">
+        {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
+      </p>
+
+      {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
+
+      {/* ⚠ ONE SET OF FILTERS, TWO PLACES (Mobile M6a). From `md` they sit in the row as they always
+          did; on a phone the search stays on the page and the rest open in the shared Sheet behind
+          "Filters", with Sort beside it (the table's sortable headers are desktop-only). Both read and
+          write the SAME state, so a filter set on one shows on the other. */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative w-full md:w-auto md:flex-none md:min-w-[180px] lg:w-64">
+          <svg className="w-4 h-4 text-ground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('admin.searchPlaceholder')}
+            aria-label={t('admin.searchPlaceholder')}
+            className="w-full border rounded-lg pl-9 pr-3 py-2 max-md:min-h-11 text-sm bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent"
+          />
+        </div>
+        <CaseListPhoneTools filters={filterControls} activeFilters={activeFilters} sort={sort} sortDir={sortDir}
+          canAssign={canAssign} count={data ? data.count : null}
+          onSort={(key, dir) => { setSort(key); setSortDir(dir); setPage(1) }} />
+        <div className="hidden md:contents">{filterControls}</div>
       </div>
 
       {error && <div className="text-critical-600">{error}</div>}
@@ -368,47 +366,56 @@ function StaffScholarshipList() {
             than simplified, because a phone select that offers an assignment the server refuses
             ('not_ready') is worse than no control. If that logic ever changes, it changes in
             both places; the alternative is a shared component, which is the next refactor if a
-            third caller appears. */}
-        <div className="space-y-2.5 md:hidden" data-testid="application-cards">
+            third caller appears.
+
+            Mobile M6a (rule 15, owner-approved mock-up): ROWS, not cards — hairlines between them on the
+            16 px gutter — and the WHOLE row opens the case (name, status, merit, source and date are one
+            link), with a chevron saying so. The Assign control stays OUTSIDE that link, under the row,
+            with every rule it had; why it is asleep is now written under it (a title= needs a hover),
+            and an assign error shows here as it does in the table. 12 px is the smallest text. */}
+        <div className="divide-y divide-ground-100 border-y border-ground-100 md:hidden" data-testid="application-cards">
           {apps.map((a) => {
             const s = displayStatus(a)
             const blocked = a.assignable === false
               || (a.assigned_to_id == null && a.ready_for_assignment === false)
             return (
-              <div key={a.id}
-                className="rounded-xl border border-ground-200 border-l-[3px] border-l-blue-500 bg-ground-0 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <Link href={`/admin/scholarship/${a.id}`}
-                    className="text-sm font-semibold text-primary-600 hover:underline">
+              <div key={a.id} data-app-row>
+                <Link href={`/admin/scholarship/${a.id}`} data-row-link
+                  className="flex min-h-11 items-center gap-2 py-3 text-ground-900 active:bg-ground-50">
+                <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                  <span className="min-w-0 grow basis-40 break-words text-[15px] font-semibold">
                     {a.name || '—'}
-                  </Link>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusTone(s)}`}>
+                  </span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)}`}>
                     {t(statusLabelKey(s))}
                   </span>
-                </div>
+                </span>
 
-                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${bucketBadge(a.bucket)}`}>
+                <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
+                  <span className={`rounded-full px-2 py-0.5 font-semibold ${bucketBadge(a.bucket)}`}>
                     {a.bucket || '—'}
                   </span>
-                  <span className="text-[11px] text-ground-600">{isThirdRoute(a.qualification) ? t(`admin.scholarship.qualificationLabel.${a.qualification}`) : a.qualification?.toUpperCase()}</span>
-                  <span className="text-[11px] text-ground-500">·</span>
-                  <span className="text-[11px] text-ground-700">
+                  <span className="text-ground-600">{isThirdRoute(a.qualification) ? t(`admin.scholarship.qualificationLabel.${a.qualification}`) : a.qualification?.toUpperCase()}</span>
+                  <span className="text-ground-500">·</span>
+                  <span className="text-ground-700">
                     {t('admin.scholarship.merit')} <span className="font-medium">{a.merit_score ?? '—'}</span>
                   </span>
-                </div>
+                </span>
 
-                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-500">
-                  <span title={sourceTitle(a.referral_source)}>
-                    {referralAcronym(a.referral_source, sourceNames[a.referral_source ?? '']) || '—'}
-                  </span>
+                {/* The source by its full name: what the table's hover title says, written out. */}
+                <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ground-500">
+                  <span className="break-words">{a.referral_source ? sourceTitle(a.referral_source) : '—'}</span>
                   <span>{formatDate(a.submitted_at)}</span>
-                </div>
+                </span>
+                </span>
+                <svg aria-hidden className="h-5 w-5 shrink-0 text-ground-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m9 6 6 6-6 6" /></svg>
+                </Link>
 
                 {canAssign && (
-                  <div className="mt-2 border-t border-ground-100 pt-2">
+                  <div className="pb-3">
                     {SPECIFIC_CALL_LANGS.has(a.call_language) && (
-                      <p className="mb-1 text-[11px] text-ground-500">
+                      <p className="mb-1 text-xs text-ground-500">
                         {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
                       </p>
                     )}
@@ -416,13 +423,8 @@ function StaffScholarshipList() {
                       value={a.assigned_to_id ?? ''}
                       onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
                       disabled={blocked}
-                      title={a.assignable === false
-                        ? t('admin.scholarship.assign.error.not_assignable')
-                        : (a.assigned_to_id == null && a.ready_for_assignment === false)
-                          ? t('admin.scholarship.assign.error.not_ready')
-                          : undefined}
                       aria-label={t('admin.scholarship.assigned')}
-                      className="w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
+                      className="min-h-11 w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
                     >
                       <option value="">{t('admin.scholarship.unassigned')}</option>
                       {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
@@ -437,6 +439,15 @@ function StaffScholarshipList() {
                         </option>
                       ))}
                     </select>
+                    {/* Why it is asleep: the SAME two reasons the table's title gives, written out. */}
+                    {blocked && (
+                      <p className="mt-1 text-xs text-ground-500" data-assign-reason>
+                        {a.assignable === false
+                          ? t('admin.scholarship.assign.error.not_assignable')
+                          : t('admin.scholarship.assign.error.not_ready')}
+                      </p>
+                    )}
+                    {assignNote[a.id] && <p className="mt-1 text-xs text-critical-600">{assignNote[a.id]}</p>}
                   </div>
                 )}
               </div>
