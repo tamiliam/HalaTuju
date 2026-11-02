@@ -22,6 +22,7 @@ import { defaultChapterSlug, manualPerms, manualRole, visibleChapters } from '@/
 import { ADMIN_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessBefore.json')
+const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBefore.json')
 const WRITE = !!process.env.T1_WRITE_MATRIX
 
 const ALL = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'payments_check',
@@ -54,6 +55,16 @@ export const SHAPES: Record<string, Payload> = {
   mentor: { role: 'mentor', permissions: [], mentoring: true, tables: ['mentors'] },
   partner: { role: 'partner', permissions: [], tables: [] },
   source_partner: { role: 'source_partner', permissions: [], tables: [] },
+  // ── MIXED KEYS (T1 review, 2026-11-03): no live row; they pin the derivation where it could go wrong.
+  // Their BEFORE rows are in their OWN fixture (`MIXED_FIXTURE`), measured on the pre-T1 navigation.ts and
+  // staffPermissions.ts (faacf681), so the first fixture stays exactly as it was made.
+  qc_spending: { role: 'qc', permissions: ['see_all', 'qc', 'spending'], tables: ['admins', 'reviewers'] },
+  reviewer_payments_check: { role: 'reviewer', permissions: ['review', 'payments_check'],
+    tables: ['admins', 'reviewers'] },
+  finance_custom: { role: 'finance', permissions: ['review', 'payments_approve'], tables: ['admins', 'reviewers'] },
+  reviewer_mentor: { role: 'reviewer', permissions: ['review'], mentoring: true, tables: ['reviewers', 'mentors'] },
+  admin_mentor: { role: 'admin', permissions: ['see_all', 'spending', 'payments_prepare'], mentoring: true,
+    tables: ['admins', 'mentors'] },
 }
 
 /** THE ONLY CELLS T1 MAY MOVE: {shape: {cell: [before, after]}}. Owner ruling 2026-11-03 (option B): the
@@ -63,14 +74,22 @@ export const SHAPES: Record<string, Payload> = {
 const REVIEWER_MENU = ['programmeOverview:show', 'applications:show', 'scholars:show', 'spending:show',
   'profile:show', 'guide:show', 'faq:show']
 const ORG_READ_ROWS = ['administration:show', 'staff:show', 'reviewers:show', 'sponsors:show']
-const ROHINI_MENU: [unknown, unknown] = [REVIEWER_MENU, [...ORG_READ_ROWS, ...REVIEWER_MENU]]
-const EXPECTED_CHANGES: Record<string, Record<string, [unknown, unknown]>> = {
-  reviewer_admin_keys: {
-    menu: ROHINI_MENU, menuNoGift: ROHINI_MENU, menuNothingProbed: ROHINI_MENU,
-    ...Object.fromEntries(['/admin/organisation', '/admin/administration', '/admin/organisation/programmes',
-      '/admin/organisation/staff', '/admin/invite', '/admin/organisation/reviewers', '/admin/sponsors']
-      .map((href) => [`open ${href}`, [false, true]])),
-  },
+const ORG_READ_HREFS = ['/admin/organisation', '/admin/administration', '/admin/organisation/programmes',
+  '/admin/organisation/staff', '/admin/invite', '/admin/organisation/reviewers', '/admin/sponsors']
+/** The shapes seated at Admins by KEYS, not role: each gains exactly the organisation READ rows (they lead
+ *  the menu: the Organisation group comes before Programme) and nothing else. */
+const KEY_SEATED = ['reviewer_admin_keys', 'qc_spending', 'reviewer_payments_check']
+const MENUS = ['menu', 'menuNoGift', 'menuNothingProbed'] as const
+function expectedChanges(before: Record<string, Record<string, unknown>>) {
+  const out: Record<string, Record<string, [unknown, unknown]>> = {}
+  for (const shape of KEY_SEATED) {
+    const was = before[shape]
+    out[shape] = {
+      ...Object.fromEntries(MENUS.map((m) => [m, [was[m], [...ORG_READ_ROWS, ...(was[m] as string[])]]])),
+      ...Object.fromEntries(ORG_READ_HREFS.map((href) => [`open ${href}`, [false, true]])),
+    }
+  }
+  return out
 }
 
 /** `canAccess` with the served `tables` (T1's fifth argument; the code before T1 ignored it). */
@@ -111,7 +130,20 @@ describe('Team tables T1: the console access matrix', () => {
     return
   }
 
-  const before = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
+  const first = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
+  const mixed = JSON.parse(fs.readFileSync(MIXED_FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
+  const before = { ...first, ...mixed }
+  const EXPECTED_CHANGES = expectedChanges(before)
+
+  it('the two fixtures never overlap, and the key-seated shapes are what the rule says', () => {
+    expect(Object.keys(first).filter((k) => k in mixed)).toEqual([])
+    // `staff_tables`: a TEAM role that is not itself an Admins label, holding an admin key (see_all
+    // beside qc does not count) — and Rohini's original row moved exactly this way.
+    const seated = Object.entries(SHAPES).filter(([, p]) =>
+      ['reviewer', 'qc'].includes(p.role) && adminKeysHeld(p.permissions).length > 0).map(([k]) => k)
+    expect(seated.sort()).toEqual([...KEY_SEATED].sort())
+    expect(before.reviewer_admin_keys.menu).toEqual(REVIEWER_MENU)
+  })
 
   it('covers every shape the fixture has, and no other', () => {
     expect(Object.keys(measured).sort()).toEqual(Object.keys(before).sort())

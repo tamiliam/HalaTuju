@@ -58,8 +58,6 @@ TASK_KINDS = ('none', 'reflection', 'upload')
 #: YouTube or Vimeo only (owner ruling): shown as a link that opens a new tab, never embedded.
 VIDEO_HOSTS = frozenset({'youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be',
                          'vimeo.com', 'www.vimeo.com', 'player.vimeo.com'})
-#: Who may make one (owner, 2026-11-02 — Sprint 9's `may_make` shape). Every other role is refused.
-MAKER_ROLES = ('org_admin', 'admin')
 ACTIONS = ('publish', 'draft')
 EMAIL_KEY = 'module_published'
 MYT = ZoneInfo('Asia/Kuala_Lumpur')
@@ -73,7 +71,8 @@ class DevelopmentError(Exception):
 
 def may_make(admin):
     """THE gate for every staff module door. A super, an organisation admin, an admin."""
-    # Team tables T1: MAKER_ROLES, or the Admins table by an admin-work key (`staff_tables`).
+    # Who may make one (owner, 2026-11-02): ONE home since Team tables T1 — `staff_tables.ADMIN_WORK_ROLES`
+    # (org_admin, admin), or the Admins table by an admin-work key. Everybody else is refused.
     from apps.courses import staff_tables
     return staff_tables.may_do_admin_work(admin)
 

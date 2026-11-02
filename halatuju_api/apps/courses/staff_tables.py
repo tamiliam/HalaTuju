@@ -123,7 +123,7 @@ def may_read_org(admin):
 #: READ key. Opening writes on a read key would make "see everything" mean "post, edit and assign", so a
 #: person seated at the Admins table by keys does not reach them yet. A future key (e.g. `announcements`,
 #: `sources`) opens them by being named here — `('see_all',)` would reproduce the presets exactly too.
-ADMIN_WORK_ROLES = ('org_admin', 'admin')
+ADMIN_WORK_ROLES = ('org_admin', 'admin')   # THE one home (announcements / surveys / development read it)
 ADMIN_WORK_KEYS = ()
 
 

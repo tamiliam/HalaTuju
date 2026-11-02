@@ -135,7 +135,8 @@ class PageGate(TestCase):
 
     def test_an_action_key_alone_opens_no_admin_work(self):
         # payments_approve / spending are ACTIONS: they open the organisation READ pages (Finance does
-        # today), never the admin-work pages (announcements, sources, …), which need see_all.
+        # today), never the admin-work pages (announcements, sources, …): `ADMIN_WORK_KEYS` is EMPTY
+        # (owner ruling B, 2026-11-03), so no key opens those — only the org_admin / admin roles do.
         for keys in (['review', 'payments_approve'], ['review', 'spending'], ['review', 'payments_prepare']):
             a = make_admin('reviewer', owning_org=self.org, permissions=keys)
             self.assertTrue(st.may_read_org(a), keys)

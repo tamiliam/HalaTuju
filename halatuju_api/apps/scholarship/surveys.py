@@ -64,8 +64,6 @@ SHORT_MAX = 300
 LONG_MAX = 3000
 KINDS = ('one', 'many', 'rating', 'yes_no', 'short', 'long')
 CHOICE_KINDS = ('one', 'many')
-#: Who may make one (owner, 2026-11-02 — Sprint 8's `may_post` shape). Every other role is refused.
-MAKER_ROLES = ('org_admin', 'admin')
 ACTIONS = ('publish', 'draft')
 EMAIL_KEY = 'survey_open'
 MYT = ZoneInfo('Asia/Kuala_Lumpur')
@@ -79,7 +77,8 @@ class SurveyError(Exception):
 
 def may_make(admin):
     """THE gate for every staff survey door. A super, an organisation admin, an admin."""
-    # Team tables T1: MAKER_ROLES, or the Admins table by an admin-work key (`staff_tables`).
+    # Who may make one (owner, 2026-11-02): ONE home since Team tables T1 — `staff_tables.ADMIN_WORK_ROLES`
+    # (org_admin, admin), or the Admins table by an admin-work key. Everybody else is refused.
     from apps.courses import staff_tables
     return staff_tables.may_do_admin_work(admin)
 

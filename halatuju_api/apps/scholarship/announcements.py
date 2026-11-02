@@ -38,8 +38,6 @@ logger = logging.getLogger('apps.scholarship.announcements')
 
 TITLE_MAX = 150
 BODY_MAX = 5000
-#: Who may post (owner, 2026-11-01). Reviewer, QC, finance, partner, source and mentor are refused.
-POSTER_ROLES = ('org_admin', 'admin')
 ACTIONS = ('publish', 'schedule', 'draft')
 EMAIL_KEY = 'announcement'
 #: How many ids one "mark read" may carry (her tab never shows more than this many at once).
@@ -54,7 +52,8 @@ class AnnouncementError(Exception):
 
 def may_post(admin):
     """THE gate for every staff announcement door. A super, an organisation admin, an admin."""
-    # Team tables T1: POSTER_ROLES, or the Admins table by an admin-work key (`staff_tables`).
+    # Who may post (owner, 2026-11-01): ONE home since Team tables T1 — `staff_tables.ADMIN_WORK_ROLES`
+    # (org_admin, admin), or the Admins table by an admin-work key. Everybody else is refused.
     from apps.courses import staff_tables
     return staff_tables.may_do_admin_work(admin)
 

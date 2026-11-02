@@ -31,6 +31,12 @@ day). No migration, no stored field, no backfill.
   `halatuju-web/src/lib/__tests__/teamTablesMatrix.test.ts` (menu, page guards, landing, Guide x 13 payloads);
   `MenuAndEndpointAgree` checks the two halves against each other. Only the declared reviewer-with-admin-keys
   cells moved.
+- **Review follow-up:** five MIXED-KEY shapes join both matrices with their own BEFORE fixtures (from faacf681):
+  QC + `spending` and a reviewer with only `payments_check` gain exactly the organisation READ cells; Finance with
+  a custom set, a reviewer who mentors and an admin who mentors move nowhere — and a test asserts the declared
+  changes are what `staff_tables` says. Her credit sign is refused at `admin_signed` and `finance_checked` with
+  nothing changed. The announcement / survey / development role lists now have ONE home,
+  `staff_tables.ADMIN_WORK_ROLES`.
 
 ## Mobile M5 — the sponsor portal on phones (2026-11-03, not yet pushed)
 

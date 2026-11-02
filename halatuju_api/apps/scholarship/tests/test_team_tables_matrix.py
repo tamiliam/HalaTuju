@@ -40,7 +40,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.scholarship import sponsorship as credit_service
-from apps.scholarship.models import Mentor, Sponsor, SponsorProgrammeMembership
+from apps.scholarship.models import Donation, Mentor, Sponsor, SponsorProgrammeMembership
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort, make_org,
     make_programme, make_source,
@@ -48,6 +48,7 @@ from apps.scholarship.tests.factories import (
 from apps.scholarship.tests.source_walk import read_source
 
 FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_before.json'
+MIXED_FIXTURE = Path(__file__).parent / 'fixtures' / 'team_tables_access_mixed_before.json'
 WRITE = os.environ.get('T1_WRITE_MATRIX', '')
 #: `T1_WRITE_MATRIX=1` writes the fixture; any other value is a FILE to write the measured matrix to (to
 #: read a diff), which leaves the fixture alone.
@@ -72,7 +73,17 @@ SHAPES = {
     'mentor_inactive':      {'role': 'mentor', 'is_active': False, 'mentor_deactivated': True},
     'partner':              {'role': 'partner'},
     'source_partner':       {'role': 'source_partner'},
+    # ── MIXED KEYS (T1 review, 2026-11-03). No live row has these shapes; they pin the derivation where it
+    # could go wrong. Their BEFORE rows are in their OWN fixture (`MIXED_FIXTURE`), generated on faacf681
+    # exactly as the first one was, so the original fixture stays as it was made.
+    'qc_spending':          {'role': 'qc', 'permissions': ['see_all', 'qc', 'spending']},
+    'reviewer_payments_check': {'role': 'reviewer', 'permissions': ['review', 'payments_check']},
+    'finance_custom':       {'role': 'finance', 'permissions': ['payments_approve', 'review']},
+    'reviewer_mentor':      {'role': 'reviewer', 'mentor': True},
+    'admin_mentor':         {'role': 'admin', 'mentor': True},
 }
+#: The shapes whose BEFORE rows live in `MIXED_FIXTURE`.
+MIXED_SHAPES = ('qc_spending', 'reviewer_payments_check', 'finance_custom', 'reviewer_mentor', 'admin_mentor')
 
 #: THE ONLY CELLS T1 MAY MOVE: {shape: {probe: (before, after)}}. Owner ruling 2026-11-03 (option B): a
 #: person at the Admins table by KEYS reaches the organisation READ pages (`staff_tables.may_read_org`) and
@@ -95,6 +106,11 @@ _ROHINI_GAINS = {
 }
 EXPECTED_CHANGES = {
     'reviewer_admin_keys': _ROHINI_GAINS,
+    # Mixed keys: `spending` seats a QC at Admins (the `see_all` beside `qc` does not), and so does
+    # `payments_check` alone — each gains exactly the organisation READ pages, nothing else. A finance row
+    # with a custom set, and a reviewer / admin who also mentors, move NOWHERE.
+    'qc_spending': _ROHINI_GAINS,
+    'reviewer_payments_check': _ROHINI_GAINS,
     'reviewer_admin_keys_other_org': {**_ROHINI_GAINS,
                                       'GET api/v1/admin/reviewers/<int:pk>/': (403, 404)},
 }
@@ -193,6 +209,25 @@ class AccessMatrix(TestCase):
                 return obj.pk
         return MISSING
 
+    def test_the_declared_changes_are_what_staff_tables_says(self):
+        """EXPECTED_CHANGES is not a list typed by hand and trusted: for every shape, a person whose KEYS
+        (not role) seat them at the Admins table gains exactly the organisation READ cells, and nobody
+        else moves; no shape gains an admin-WORK page (ADMIN_WORK_KEYS is empty, ruling B)."""
+        from apps.courses import staff_tables as st
+        for shape, person in self.people.items():
+            by_role = person.is_super or person.role in st.ORG_READ_ROLES
+            gains_read = st.may_read_org(person) and not by_role
+            self.assertEqual(st.may_do_admin_work(person),
+                             person.is_super or person.role in st.ADMIN_WORK_ROLES, shape)
+            declared = set(EXPECTED_CHANGES.get(shape, {}))
+            self.assertEqual(declared, set(_ROHINI_GAINS) if gains_read else set(), shape)
+        # …and the mixed shapes sit where the derivation says.
+        self.assertEqual(st.tables(self.people['qc_spending']), ('admins', 'reviewers'))
+        self.assertEqual(st.tables(self.people['reviewer_payments_check']), ('admins', 'reviewers'))
+        self.assertEqual(st.tables(self.people['finance_custom']), ('admins', 'reviewers'))
+        self.assertEqual(st.tables(self.people['reviewer_mentor']), ('reviewers', 'mentors'))
+        self.assertEqual(st.tables(self.people['admin_mentor']), ('admins', 'mentors'))
+
     def measure(self, shape):
         """`{"METHOD route": status}` for one person."""
         admin = self.people[shape]
@@ -211,6 +246,13 @@ class AccessMatrix(TestCase):
         return cells
 
 
+def _before():
+    """Every shape's BEFORE row: the original fixture and the mixed-keys one (never overlapping)."""
+    first, mixed = json.loads(FIXTURE.read_text()), json.loads(MIXED_FIXTURE.read_text())
+    assert not set(first) & set(mixed)
+    return {**first, **mixed}
+
+
 def _shape_test(shape):
     def test(self):
         cells = self.measure(shape)
@@ -219,7 +261,7 @@ def _shape_test(shape):
             data[shape] = cells
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
-        before = json.loads(FIXTURE.read_text())[shape]
+        before = _before()[shape]
         expected = dict(before)
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
@@ -272,6 +314,37 @@ class CreditDoors(TestCase):
         draft.refresh_from_db()
         self.assertEqual(draft.status, 'draft')
 
+    def _refused_sign(self, credit):
+        """She signs `credit` over the wire: 400 `wrong_role`, and the credit is exactly as it was."""
+        before = Donation.objects.filter(pk=credit.pk).values().get()
+        r = authed_client(self.rohini).post(f'/api/v1/admin/scholarship/credits/{credit.pk}/sign/',
+                                            {'typed_name': self.rohini.name}, format='json')
+        self.assertEqual((r.status_code, r.json().get('code')), (400, 'wrong_role'))
+        self.assertEqual(Donation.objects.filter(pk=credit.pk).values().get(), before)
+
+    def test_she_cannot_sign_a_credit_at_any_later_step(self):
+        # admin_signed, the finance check dormant: the next step is the organisation admin's countersign.
+        credit = credit_service.record_admin_credit(sponsor=self.sponsor, programme=self.programme,
+                                                    amount=Decimal('100'), external_reference='T1-3',
+                                                    admin=self.maker)
+        credit_service.sign_admin_credit(credit, self.maker, self.maker.name)
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_ADMIN_SIGNED)
+        self._refused_sign(credit)
+        # finance_checked (an active finance admin arms the check): the next step is the countersign.
+        finance = make_admin('finance', owning_org=self.org)
+        credit = credit_service.record_admin_credit(sponsor=self.sponsor, programme=self.programme,
+                                                    amount=Decimal('100'), external_reference='T1-4',
+                                                    admin=self.maker)
+        credit_service.sign_admin_credit(credit, self.maker, self.maker.name)
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_ADMIN_SIGNED)
+        self._refused_sign(credit)                     # the finance step is not hers either
+        credit_service.sign_admin_credit(credit, finance, finance.name)
+        credit.refresh_from_db()
+        self.assertEqual(credit.status, Donation.STATUS_FINANCE_CHECKED)
+        self._refused_sign(credit)
+
     def test_she_keeps_her_reviewer_seat_and_gains_no_write_page(self):
         from apps.courses import staff_tables
         self.assertEqual(staff_tables.tables(self.rohini), ('admins', 'reviewers'))
@@ -310,11 +383,13 @@ SOURCE_PAGE_ENDPOINT = {
     '/admin/scholars': 'GET api/v1/admin/source/scholars/',
     '/admin/programme/overview': 'GET api/v1/admin/source/overview/',
 }
-WEB_FIXTURE = (Path(__file__).resolve().parents[4] / 'halatuju-web' / 'src' / 'lib' / '__tests__' / 'fixtures'
-               / 'teamTablesAccessBefore.json')
-#: The web rows T1 opens for the reviewer with admin keys (`teamTablesMatrix.test.ts` EXPECTED_CHANGES).
-WEB_T1_OPENS = {'reviewer_admin_keys': ('/admin/organisation/staff', '/admin/organisation/reviewers',
-                                        '/admin/sponsors')}
+WEB_FIXTURES = (Path(__file__).resolve().parents[4] / 'halatuju-web' / 'src' / 'lib' / '__tests__' / 'fixtures')
+WEB_FIXTURE = WEB_FIXTURES / 'teamTablesAccessBefore.json'
+WEB_MIXED_FIXTURE = WEB_FIXTURES / 'teamTablesAccessMixedBefore.json'
+#: The web rows T1 opens for a person seated at Admins by keys (`teamTablesMatrix.test.ts` KEY_SEATED).
+_ORG_READ_PAGES = ('/admin/organisation/staff', '/admin/organisation/reviewers', '/admin/sponsors')
+WEB_T1_OPENS = {shape: _ORG_READ_PAGES
+                for shape in ('reviewer_admin_keys', 'qc_spending', 'reviewer_payments_check')}
 
 
 class MenuAndEndpointAgree(TestCase):
@@ -322,10 +397,11 @@ class MenuAndEndpointAgree(TestCase):
     hides is refused there — for every shape both matrices hold, on the declared AFTER state of each."""
 
     def test_they_agree(self):
-        web = json.loads(read_source(WEB_FIXTURE, 'the web half of the T1 access matrix; the menu and '
-                                                  'the endpoints must agree for every shape'))
-        api = json.loads(FIXTURE.read_text())
+        why = 'the web half of the T1 access matrix; the menu and the endpoints must agree for every shape'
+        web = {**json.loads(read_source(WEB_FIXTURE, why)), **json.loads(read_source(WEB_MIXED_FIXTURE, why))}
+        api = _before()
         problems = []
+        self.assertTrue(set(MIXED_SHAPES) <= set(web) & set(api))
         for shape in sorted(set(web) & set(api)):
             cells = {**api[shape], **{p: now for p, (_, now) in EXPECTED_CHANGES.get(shape, {}).items()}}
             opens = WEB_T1_OPENS.get(shape, ())
