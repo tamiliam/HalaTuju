@@ -708,10 +708,10 @@ def student_slip_check(doc) -> dict:
     # stay silent rather than add a confident, false fact on top of it.
     em = re.search(r'\b(20\d{2})\b', exam) if _is_spm_exam(exam) else None
     exam_year = em.group(1) if em else ''             # soft data point — surfaced, not gated
-    # Currency vs the application's cohort: the expected SPM for an intake-year cohort was sat the
-    # YEAR BEFORE (cohort − 1). 'current' → green, 'off' → amber, '' → no signal (no year / no cohort).
-    _cy = getattr(getattr(getattr(doc, 'application', None), 'cohort', None), 'year', None)
-    exam_year_status = ('current' if exam_year == str(_cy - 1) else 'off') if (exam_year and _cy) else ''
+    # Currency vs the cohort, ROUTE-AWARE (owner 2026-11-01, `exam_years`): SPM C−1 straight from SPM,
+    # C−3 after STPM, C−2 after matriculation / asasi, C−4 after a diploma. 'current' / 'off' / ''.
+    from .exam_years import year_status
+    exam_year_status = year_status(getattr(doc, 'application', None), 'spm', exam_year)
     skew = f.get('skew_angle')                        # the photo's measured tilt (deterministic read only)
     was_skewed = isinstance(skew, (int, float)) and abs(skew) >= 25.0
 

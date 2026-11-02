@@ -38,6 +38,38 @@ holds as done (decisions.md, the Mobile M4 entry). Consent / PII / money / ident
   147.669.
 - New TD-460 (income wizard writes on open; silent save failure), TD-461 (the post-shortlist wizard's tab bar),
   TD-462 (bank-statement upload refusal); TD-458 updated (the draft closes its form half).
+## Offer matcher reads the S4 campus field (2026-11-02) — BUILT, NOT LIVE (no migration)
+
+- Offer reader S4 will store `institution` = name only and a new `campus` = the campus as printed. The catalogue keeps
+  one row per campus for poly / KK / IPG / IKBN / IKM / KKTM, so the matcher must see both or a multi-campus pin drops.
+- `offer_course_match.letter_institution(institution, campus)` is THE one join ("KOLEJ KOMUNITI" + "KANGAR" →
+  "KOLEJ KOMUNITI KANGAR", the pre-S4 shape; nothing repeated; a bracketed "(KANGAR)" kept; a pre-S4 read with no
+  `campus` comes back unchanged).
+  `pathway_engine.student_offer_check` reads through it, so `match_offer_course`, `letter_place`, `CampusReader`, the
+  ticks, realign, link and confirm all get the rejoined line; `align_institution_to_catalogue` (the one raw reader) too.
+- Adversarial review (2026-11-02): no wrong pin found; a ", " join hid real clashes (the exact-name test keeps
+  punctuation, so a split KK line against a poly / UPM course read "unknown", not "clash") → space join; a bracketed
+  campus was dropped → kept; `offer_reporting_bonus`'s private-arm haystack now reads `campus` too.
+- Tests: `tests/test_offer_campus_split.py` (9; the name alone pins no KK campus, the join pins Kangar / Arau / IKM
+  Lumut; UiTM Perlis still never UniMAP; a split line's clash stays a clash). API gate: 11,470 passed / 3 skipped.
+- Release: api only, before S4 pushes. S4 then sends its realign / link / tick dry run on the new reads.
+
+## Route-aware exam-year colours in the cockpit (2026-11-01) — LIVE 2026-11-02 (main 49e50778; web built, api build at hand-over)
+
+Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not deployed; no migration.
+
+- New `apps/scholarship/exam_years.py`: ONE function for the expected exam year(s) per document kind, by the route
+  the student holds (`results_route.held`). The SPM slip check (`academic_engine.student_slip_check`) and the
+  higher-results check (`higher_results.student_higher_check`, new `exam_year` / `exam_year_status`) both read it.
+  An unknown route keeps the old SPM C−1 rule.
+- Only STPM results carry a readable year (the exact read's `exam_year`, else the year in "SIJIL TINGGI
+  PERSEKOLAHAN MALAYSIA 2025"); matriculation, asasi and diploma transcripts store none, so they stay uncoloured.
+- Web: the Documents drawer shows a coloured "STPM {year}" chip on a higher-results document, read from the served
+  status, as it does "SPM {year}" (new string `admin.scholarship.docsDrawer.stpmExamYear` in en / ms / ta — the
+  Malay and Tamil are the same "STPM {year}", for Sol).
+- Nothing that decides, queries or pays reads `exam_year_status` (the Check-2 "exam year unknown" ask reads
+  `exam_year` only).
+- Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
 
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 

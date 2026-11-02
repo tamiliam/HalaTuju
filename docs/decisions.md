@@ -41,14 +41,36 @@ latch (`acting`) means two taps in the same frame send ONE accept, signature or 
 
 **4. mobile-check counts the label of a FILE input (`measure.ts`).** An `sr-only` file input is invisible, so the label
 that opens the picker — "Choose file" / "Replace", ~20 px text links — was never measured. Counting it is the reader
-getting MORE HONEST, so cells it raised were allowed to rise for that reason alone (`MOBILE_ALLOW_WORSE=1`, those cells
-only), and the 44 px buttons then brought them down. A floor may rise only when the reader got more honest, never
-because a screen got worse.
+getting MORE HONEST — a floor may rise only for that reason, never because a screen got worse. In M4 no cell rose at
+all: the same change put 44 px buttons on every such label, so the run went straight to 18 cells better and none worse,
+and `MOBILE_ALLOW_WORSE=1` was not needed.
 
 **5. Bytes.** `/scholarship/apply` had 0.59 kB of room; the draft and the sticky bar cost ~1 kB. Paid for by: the apply
 form's School field loading its suggesting component on mount (`LazySchoolSelect`, a plain text field until it arrives
 — the typed text was always the value), the draft's peek in its own leaf, the remove sheet's words in the documents
 slice (`documentsTab.card.*`), and five dead tab-bar strings deleted. No budget was raised.
+## Exam-year colours follow the route the student holds (owner, 2026-11-01)
+
+**Decision.** The cockpit colours an exam year green when it is the year this route expects for the cohort year C,
+amber otherwise; the route is the results the student holds (`results_route.held`). ONE server rule,
+`exam_years.expected_years`, serves every year chip:
+
+| Route (results held) | Green — anything else amber |
+|---|---|
+| none / SPM only (straight from SPM) | SPM C−1 |
+| STPM | STPM C−1; SPM C−3 |
+| Matriculation | Matriculation C; SPM C−2 |
+| Asasi (as matriculation) | Asasi C; SPM C−2 |
+| Diploma (polytechnic / diploma) | Diploma C−1 or C; SPM C−4 |
+
+For C = 2026: SPM 2025; STPM 2025 + SPM 2023; Matriculation 2026 + SPM 2024; Asasi 2026 + SPM 2024; Diploma 2025 or
+2026 + SPM 2022. An unknown route keeps the old SPM C−1 rule. A kind with no readable year (matriculation, asasi,
+diploma transcripts today) gets no colour. The offer letter's intake rule (intake = C) is unchanged.
+
+**Why.** A student who did STPM sat SPM three years before her cohort; amber on her correct slip was noise the
+officer learned to ignore. Display only: no verdict, query or money reader consumes the status.
+
+**Revisit if:** a transcript starts carrying a readable year (colour it by the same table), or a route's timing changes.
 
 ## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
 

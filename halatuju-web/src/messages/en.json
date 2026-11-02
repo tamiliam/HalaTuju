@@ -4945,6 +4945,7 @@
         "view": "View",
         "rerun": "Re-run",
         "examYear": "SPM {year}",
+        "stpmExamYear": "STPM {year}",
         "intakeYear": "Intake {year}",
         "sgdConverted": "Converted from S${sgd} at {rate} = RM {myr}",
         "viewer": {

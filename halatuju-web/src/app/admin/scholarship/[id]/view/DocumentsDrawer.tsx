@@ -105,6 +105,9 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
             if (d.doc_type === 'results_slip' && d.academic_check?.exam_year)
               return { text: t('admin.scholarship.docsDrawer.examYear', { year: d.academic_check.exam_year }),
                        status: d.academic_check.exam_year_status || '' }
+            if (d.doc_type === 'higher_results' && d.higher_check?.exam_year)
+              return { text: t('admin.scholarship.docsDrawer.stpmExamYear', { year: d.higher_check.exam_year }),
+                       status: d.higher_check.exam_year_status || '' }
             if (d.doc_type === 'offer_letter' && d.pathway_check?.intake_year)
               return { text: t('admin.scholarship.docsDrawer.intakeYear', { year: d.pathway_check.intake_year }),
                        status: d.pathway_check.intake_year_status || '' }

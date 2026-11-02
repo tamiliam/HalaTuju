@@ -4945,6 +4945,7 @@
         "view": "Lihat",
         "rerun": "Jalankan semula",
         "examYear": "SPM {year}",
+        "stpmExamYear": "STPM {year}",
         "intakeYear": "Ambilan {year}",
         "sgdConverted": "Ditukar daripada S${sgd} pada kadar {rate} = RM {myr}",
         "viewer": {
