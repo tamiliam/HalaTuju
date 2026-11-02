@@ -50,7 +50,7 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { setOnboardingReturn } from '@/lib/scholarship'
-import { uploadRefusal } from '@/lib/uploadCheck'; import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'; import { PHONE_SECTION } from '@/lib/phoneSection'
+import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
@@ -86,7 +86,7 @@ function ActionCard({
   incomeRoute = '',
   incomeEarner = '',
   showClusterCoach = true,
-  limits = limitsFrom(null),
+  limits = null,
 }: {
   item: ResolutionItem
   token: string | null
@@ -110,7 +110,7 @@ function ActionCard({
   /** One cluster coach per earner: true only on the FIRST open income task of a member, so
    *  two tasks for the same earner don't render duplicate coaches. */
   showClusterCoach?: boolean
-  limits?: ResolvedDocumentLimits   // the served upload limits: the docs tab's early refusal (Mobile M4)
+  limits?: DocumentLimits | null   // served upload limits; the docs tab's early refusal, loaded on a pick (M4)
 }) {
   const { t, locale } = useT()
   const src = titleSourceFor(item)
@@ -185,7 +185,7 @@ function ActionCard({
   // doc_type, run its scan, re-fetch the tickets. A clean scan resolves the task server-side (this card
   // unmounts); a mismatch keeps it open and surfaces Gopal's advice for a clean re-upload.
   const onFile = async (file: File) => {
-    const refusal = uploadRefusal(file, limits)
+    const refusal = await import('@/lib/uploadCheck').then((m) => m.refusalFor(file, limits), () => null)
     if (!token || refusal) { setError(refusal ? t(refusal.key, refusal.params) : null); return }
     setBusy(true); setError(null)
     try {
@@ -540,7 +540,7 @@ export default function ActionCentre({
   // read the earner's cluster (audit #15). Fetched alongside the tickets; refreshed on every
   // resolve so an upload re-reads the cluster.
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
-  const [limits, setLimits] = useState<ResolvedDocumentLimits>(() => limitsFrom(null))
+  const [limits, setLimits] = useState<DocumentLimits | null>(null)
   const [loaded, setLoaded] = useState(false)
 
   const fetchItems = useCallback(async () => {
@@ -554,7 +554,7 @@ export default function ActionCentre({
       setResolved(r.resolved)
       setSetAside(r.set_aside ?? [])
       setDocs(d.documents)
-      setLimits(limitsFrom('limits' in d ? d.limits : null))
+      setLimits('limits' in d ? d.limits ?? null : null)
     } catch {
       // Treat a fetch failure as "nothing to show" — the Action Centre is
       // additive; it must never block the rest of the page.
