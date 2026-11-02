@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-03 | d16399a | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 11 | 183 | 0 | 0 | ok | ok |
 | 2026-11-02 | 688a1a4 | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 180 | 0 | 0 | ok | ok |
 | 2026-11-02 | cef8e42 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 176 | 0 | 0 | ok | ok |
 | 2026-11-02 | 8642330 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 175 | 0 | 0 | ok | ok |
@@ -122,7 +123,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-02, 688a1a4, window 2026-08-04 onward)
+## Latest run (2026-11-03, d16399a, window 2026-08-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -139,7 +140,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 278 fix / 278 feat commits since 2026-08-04
+- 283 fix / 282 feat commits since 2026-08-05
 
 ### Files over 1000 lines
 - `2441  halatuju_api/apps/scholarship/views.py`
@@ -203,10 +204,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 42 of 363 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 42 of 368 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 464 entries have a defining line; 180 carry no resolution marker on it
+- 467 entries have a defining line; 183 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -234,7 +235,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at cef8e42
+- budgets no looser than at 688a1a4
 
 ### tsc
 - 0 errors in 0 files
@@ -242,11 +243,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7289
+- Total keys per locale: 7541
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-03 (d16399a, Mobile-native M5 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since 688a1a4 holds Mobile M5 (web only) and
+Sprint 10's close. Moved: `td_open` 180 -> 183 (TD-467 Sprint 10; TD-469, TD-470 M5 leftovers — TD-470 is the apply
+route's first-load room); `guard%` 12 -> 11 with the denominator (five new web test files, M5's behaviour tests among
+them). **Accepted.**
 
 ### 2026-11-01 (9969c1f, offer date rule + offer link close) — 0 FAIL
 

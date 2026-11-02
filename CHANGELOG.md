@@ -38,7 +38,7 @@ day). No migration, no stored field, no backfill.
   nothing changed. The announcement / survey / development role lists now have ONE home,
   `staff_tables.ADMIN_WORK_ROLES`.
 
-## Mobile M5 — the sponsor portal on phones (2026-11-03, not yet pushed)
+## Mobile M5 — the sponsor portal on phones — LIVE 2026-11-03 (main d16399a9, web-01066-pls)
 
 Owner approved the HTML mock-ups, three tabs with the theme, the language and Log out in My Account on a phone, and a
 sticky fund bar with a confirm that cannot be swiped away (decisions.md, the Mobile M5 entry). Before: the portal's
@@ -60,7 +60,7 @@ scrolled sideways on a phone.
 - **Rule 15 across the portal**: My Giving, one pool student, a supported student, My Account and Trust are
   full-width sections on a 16 px gutter (the cards they were from `md`); the students you support are rows; the
   journey tracker is a stepped line with ONE 12 px line naming the stage (`JourneyLine.tsx`; was 9 px / 11 px words
-  under four dots); every 9-11 px label is 12 px, `SpendingCard`'s figure labels included (shared: her My Bursary's
+  under four dots); every 9-11 px label is 12 px, `SpendingCard`'s figure labels included (shared: the student's My Bursary
   spending labels are 12 px too).
 - **Students**: on a phone one 44 px "Filters" button (with the number in use) opens a Sheet of 44 px chips per facet
   (`SponsorFilterSheet.tsx`) — the same state and facet lists as the desktop's selects; the footer counts the students

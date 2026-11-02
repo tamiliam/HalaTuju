@@ -7456,3 +7456,11 @@ language only on the public pages. Add `LanguageSelector` to the desktop row or 
 width (an owner call: "desktop top row unchanged" was the M5 ruling). (2) ~~The portal's Sheets paint in Lexend~~ —
 CLOSED in the M5 review: `.font-sponsor` (globals.css) on the fund confirm and the filter Sheet, guarded. (3) The admin-side sponsor screens
 (`sponsors/SponsorEmailsCard.tsx`, `sponsors/terms/*`) keep 10-11 px labels — M7's sweep. *(B · S)*
+
+### [TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium
+
+**Raised 2026-11-03 at the Mobile M5 close** (measured by the Maintenance session on clean main d16399a9): 186.809 kB
+against the 187 kB line — under the 0.25 kB near-line rule (it had 0.262 before M5). The likely source is the shared
+chunk M5 touched (`StudentMenus` → `DisplaySegments`); not yet traced. **Fix:** find the M5 weight on this route and
+lazy-load or trim it until the route has ≥ 0.25 kB of room; never raise the line. Do it before any change adds weight
+to the apply route. *(W · S)*
