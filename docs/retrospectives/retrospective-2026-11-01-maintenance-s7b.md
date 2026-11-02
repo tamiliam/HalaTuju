@@ -88,3 +88,16 @@ off marked everyone "reminded" for ever. pytest 11564, jest 6118, median 145.385
 **Lesson:** a new lazy screen that imports the admin auth PROVIDER drags `admin-supabase` into more chunks, and
 webpack then regrouped shared chunks onto every student route (+0.9 kB) although no survey code was there. Lazy
 screens that only read the session import `useAdminAuth` from the leaf `src/lib/adminAuthCore.ts`.
+
+## Sprint 10 (2026-11-02) — development modules (the roadmap's last sprint)
+LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK). Org admins and admins make modules (ordered lessons: text plus one YouTube/Vimeo link or one
+PDF/image in the private bucket; one task: none, a reflection or an upload) for all funded scholars or one
+programme, with an optional due date. Scholars read each lesson on My Bursary → Growth, then send the task; staff
+review it with a comment; the scholar's current mentor sees progress on My students. Optional; never touches money
+or standing. Optional publish email and due-date reminder behind the `module_published` switch. Review found no
+security hole; four smaller fixes went in before the push (mentor links signed on the tap, no upsert on Growth
+uploads, upload signing has the send checks, the Remind button never writes `switched_off`). TD-467 raised
+(bucket-level type/size limits for every upload flow). pytest 11834, jest 6144, median 145.235 kB.
+**Lesson:** each new lazy chunk adds an entry to webpack's runtime chunk map, which EVERY route loads; on a route
+near its line that alone can trip the near-line rule. Fold sibling lazy screens into one chunk (`surveys/screens.ts`,
+`development/screens.ts`, `bursary/tabScreens.ts`) instead of raising a budget.

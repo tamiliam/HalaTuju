@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 10 — development modules (not yet live)
+## Student maintenance Sprint 10 — development modules — LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK)
 
 Owner rulings and the approved ModulesAdmin / ModuleStudent / ModuleProgress boards, 2026-11-02 (decisions.md, the
 S10 entry). **scholarship 0201_development_modules — migrate first, by hand** (DDL, RLS, pre-check, ledger row and
