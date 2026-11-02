@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 9 — surveys (not yet live)
+## Student maintenance Sprint 9 — surveys — LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK)
 
 Owner rulings and the approved SurveysAdmin / SurveyStudent / SurveyResults boards, 2026-11-02 (decisions.md, the S9
 entry). **scholarship 0200_surveys — migrate first, by hand** (DDL, RLS, pre-check, ledger row and rollback in its

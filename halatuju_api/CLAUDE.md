@@ -1149,7 +1149,7 @@ level on phones (16 px gutter, sections not cards, no bordered box in a box); th
 quiz / valid PIN (`signing_progress.py`). NEXT (owner, 2026-11-02): a context-aware student bottom tab bar + the
 rule-15 sweep of the other student pages, mock-up first (Stitch has failed three sprints running).
 
-### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 9 BUILT, NOT LIVE — surveys
+### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 9 LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK) — surveys
 
 **Next free migration numbers: scholarship 0201, courses 0092.** **scholarship 0200_surveys — MIGRATE FIRST by hand**
 (five new tables `surveys`, `survey_questions`, `survey_responses`, `survey_answers`, `survey_emails`, each RLS + one
@@ -1168,6 +1168,8 @@ gains the switchable `survey_open` kind under News (ONE wording for the opening 
 (lazy `ScholarSurveys`), the bursary Surveys tab (lazy, `bursaryTabs.surveys`). ⚠ A lazy admin screen that only
 reads the session imports `useAdminAuth` from the leaf `src/lib/adminAuthCore.ts` (the provider module drags
 `admin-supabase` in, and enough such chunks regroup webpack's shared chunks onto every student route).
+**NEXT (maintenance stream): Sprint 10 — development modules, design first; then the parked Team tables T1–T4
+(`docs/plans/2026-11-01-team-tables-roadmap.md`) only on the owner's word.**
 
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200) — announcements
 

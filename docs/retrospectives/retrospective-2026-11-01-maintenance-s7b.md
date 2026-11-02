@@ -76,3 +76,15 @@ Bursary → News with an unread badge; optional email claimed once per scholar b
 untouched in the worktree. Review found no hole (five low notes, recorded in decisions.md). pytest 11499, jest 6012.
 **Lesson:** a new cron job is two deploy steps — the code AND the Scheduler job; the health light going red is the
 reminder, but name the job in the push plan so it is never left out.
+
+## Sprint 9 (2026-11-02) — surveys
+LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK). Org admins and admins make surveys (six question types, up to 30) for all funded scholars or one
+programme; dates give the status; the questions lock at the first answer; scholars answer on My Bursary → Surveys
+and can change their answers until it closes; Results with who answered, Not answered + Remind, CSV with formula
+cells escaped; the scholar file's Surveys tab. Optional opening email and 3-days-before reminder, claimed once per
+scholar per kind, behind the `survey_open` switch, metered. Review found two real holes, fixed before the push with
+a test each: a published survey could be emptied and then frozen by one blank answer, and Remind with the switch
+off marked everyone "reminded" for ever. pytest 11564, jest 6118, median 145.385 kB (budget 147).
+**Lesson:** a new lazy screen that imports the admin auth PROVIDER drags `admin-supabase` into more chunks, and
+webpack then regrouped shared chunks onto every student route (+0.9 kB) although no survey code was there. Lazy
+screens that only read the session import `useAdminAuth` from the leaf `src/lib/adminAuthCore.ts`.
