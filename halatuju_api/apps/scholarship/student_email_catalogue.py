@@ -143,6 +143,10 @@ CATALOGUE = (
     # the hourly `announcement-emails` job only when staff asked for it; the organisation words the
     # wrapper, the announcement's own text goes in as written.
     _E('announcement', 'news', switchable=True, tracked='log', editable=True),
+    # SWITCHABLE (owner ruling, 2026-11-02): the survey is on My Bursary -> Surveys either way. ONE switch
+    # and ONE wording for both survey emails — "it is open" and, 3 days before it closes, the reminder to
+    # those who have not answered — sent by the hourly `survey-emails` job only when staff asked for each.
+    _E('survey_open', 'news', switchable=True, tracked='log', editable=True),
     # ── Closure ─────────────────────────────────────────────────────────────────────────────
     _E('closed_by_officer', 'closure', ('send_application_closed_email',), status='closed',
        lock='closure_notice', wording=('student_reminders', 'CLOSED_SUBJECTS', 'CLOSED_BY_OFFICER_BODIES')),

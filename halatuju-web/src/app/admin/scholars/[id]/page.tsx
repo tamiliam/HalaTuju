@@ -3,7 +3,8 @@
 // canvas, 2026-10-29 (file artboard).
 //
 // ⚠ A SHELL, HONESTLY: only what exists is shown. The header and the Overview's cards read the
-// server's payload; Surveys (later) says calmly that it is coming — never sample data. S7b: the
+// server's payload. S9: the Surveys card and tab (its own chunk, `ScholarSurveys`) are drawn only for
+// the survey makers' roles (super, org_admin, admin — the server refuses the rest). S7b: the
 // Mentoring tab (its own chunk, `ScholarMentoring`) and the Overview's mentor card are drawn only for
 // the roles that see mentors (`MENTORING_ROLES`; the server leaves the keys out for the rest). The Money
 // and Contract TABS (S5a) read their own endpoints: releases, spending (with the `spending` permission
@@ -34,10 +35,13 @@ import { statusLabelKey, statusTone } from '@/lib/applicationStatus'
 import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
+import { MAKER_ROLES as SURVEY_ROLES } from '@/components/surveys/shared'
 
 const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
 // S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
 const ScholarMentoring = lazySource(() => import('@/components/admin/ScholarMentoring').then((m) => m.default))
+// S9: the Surveys tab, likewise.
+const ScholarSurveys = lazySource(() => import('@/components/admin/ScholarSurveys').then((m) => m.default))
 
 type Tab = 'overview' | 'results' | 'money' | 'contract' | 'letters' | 'mentoring' | 'surveys' | 'activity'
 const TABS: readonly PanelTab<Tab>[] = [
@@ -115,7 +119,8 @@ function StaffScholarFile() {
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!file) return <RecordState loading={loading} />
   const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
-  const tabs = seesMentors ? TABS : TABS.filter((x) => x.key !== 'mentoring')
+  const seesSurveys = SURVEY_ROLES.includes(effectiveRole(role))
+  const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors) && (x.key !== 'surveys' || seesSurveys))
   const help = file.asked_for_help
   const helpWhat = help ? [help.university && t('admin.scholars.mentoring.help.university'),
     help.scholarship && t('admin.scholars.mentoring.help.scholarship')].filter(Boolean)
@@ -237,9 +242,12 @@ function StaffScholarFile() {
       </button>
     </Card>
   )
-  const later = (key: 'surveys') => (
-    <Card title={t(`admin.scholars.card.${key}`)} testId={`card-${key}`}>
-      <Later text={t(`admin.scholars.later.${key}`)} />
+  const surveysCard = (
+    <Card title={t('admin.scholars.card.surveys')} testId="card-surveys">
+      <p className="text-sm text-ground-600">{t('admin.scholars.surveys.card')}</p>
+      <button type="button" onClick={() => setTab('surveys')} className="self-start text-sm text-primary-600 hover:underline">
+        {t('admin.scholars.surveys.open')}
+      </button>
     </Card>
   )
 
@@ -294,7 +302,7 @@ function StaffScholarFile() {
         <div className="flex flex-wrap items-start gap-5">
           <section aria-label={t('admin.scholars.file.summary')}
             className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-4 md:grid-cols-2">
-            {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{later('surveys')}
+            {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{seesSurveys && surveysCard}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">
             <ScholarActivity key={reloads} id={file.id} token={token} compact readOnly={!file.in_maintenance} />
@@ -323,7 +331,7 @@ function StaffScholarFile() {
         </div>
       )}
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
-      {tab === 'surveys' && <div className="max-w-xl">{later('surveys')}</div>}
+      {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>
   )

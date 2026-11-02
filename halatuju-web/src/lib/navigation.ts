@@ -367,6 +367,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // (`announcements.may_post`). No `needsProgramme`: an announcement belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+      { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },

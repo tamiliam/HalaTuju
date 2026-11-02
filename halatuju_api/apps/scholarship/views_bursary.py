@@ -72,7 +72,16 @@ def summary_payload(app):
         'mentoring_tab': _mentoring_tab(app),
         # S8: whether the News tab shows (at least one announcement is hers) and how many she has not seen.
         **_news(app),
+        # S9: whether the Surveys tab shows (an open one for her, or one she answered) and how many open
+        # ones she has not answered yet (the red number).
+        **_surveys(app),
     }
+
+
+def _surveys(app):
+    from .surveys import tab_state
+    shown, to_answer = tab_state(app)
+    return {'surveys_tab': shown, 'surveys_to_answer': to_answer}
 
 
 def _news(app):
@@ -253,3 +262,45 @@ class BursaryNewsReadView(APIView):
         except AnnouncementError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'marked': marked, 'unread': tab_state(app)[1]})
+
+
+# ── Her Surveys (student maintenance S9, 2026-11-02) ──────────────────────────────────────────────────
+# Her OWN file only. What she sees is `surveys.student_surveys` (an allowlist): her questions and her own
+# answers — never who wrote it, the audience, a count or anybody else's answer.
+class BursarySurveysView(APIView):
+    """GET scholarship/bursary/surveys/ — the open surveys for her (answered or not) and the closed ones she
+    answered (read-only), each with her questions and her answers."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .surveys import student_surveys
+        return Response(student_surveys(app))
+
+
+class BursarySurveyAnswersView(APIView):
+    """POST scholarship/bursary/surveys/<pk>/answers/ `{answers: {question_id: value}}` — send, or change, her
+    answers while the survey is open. A survey she may not see is 404 (never a refusal that confirms it
+    exists); a closed one is 409 `survey_closed`; a bad value is 400 with the question's id in `detail`."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .surveys import SurveyError, student_surveys, submit, tab_state
+        answers = request.data.get('answers') if isinstance(request.data, dict) else None
+        try:
+            submit(app, pk, answers)
+        except SurveyError as e:
+            if e.code == 'not_found':
+                return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+            code = status.HTTP_409_CONFLICT if e.code == 'survey_closed' else status.HTTP_400_BAD_REQUEST
+            body = {'error': e.code, 'code': e.code}
+            if e.detail is not None:
+                body['detail'] = e.detail
+            return Response(body, status=code)
+        mine = next((x for x in student_surveys(app)['surveys'] if x['id'] == pk), None)
+        return Response({'survey': mine, 'to_answer': tab_state(app)[1]})

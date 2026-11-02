@@ -9,7 +9,10 @@ Three kinds, each in the student's language (en / ms / ta), each the ORGANISATIO
 S6b added ``letter_issued`` (a formal letter, locked) and S7b ``mentor_assigned`` ("You have a mentor",
 switchable, sent by `mentoring.assign` to the student only). S8 added ``announcement`` (switchable, sent by the
 hourly `announcement-emails` job): the organisation words the WRAPPER; the announcement's own title and
-message are inserted as staff wrote them (`announcement_title`, `announcement_body`).
+message are inserted as staff wrote them (`announcement_title`, `announcement_body`). S9 added ``survey_open``
+(switchable, sent by the hourly `survey-emails` job): ONE wording for both survey emails — the opening one and
+the reminder — the difference carried by `{survey_note}`, a line the code fills in her language
+(`survey_emails.NOTES`).
 
 WHERE THE WORDS LIVE. The platform's default wording is HERE, in code (``DEFAULTS``). An organisation
 that edits a letter (Organisation → Settings → Student communications) gets its own
@@ -34,7 +37,8 @@ from django.db import transaction
 from . import email_templates
 from .models import StudentEmailTemplate
 
-KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned', 'announcement')
+KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned', 'announcement',
+         'survey_open')
 #: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
 #: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
 PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
@@ -52,6 +56,9 @@ PLACEHOLDERS = {
     'mentor_assigned': _COMMON + ('mentor_name', 'mentor_area', 'mentor_languages', 'mentor_contact'),
     # S8: the announcement as staff wrote it; `{link}` opens My Bursary on its News tab.
     'announcement': _COMMON + ('announcement_title', 'announcement_body'),
+    # S9: the survey as staff named it, its closing day, and the line that says "new" or "a reminder";
+    # `{link}` opens My Bursary on its Surveys tab.
+    'survey_open': _COMMON + ('survey_title', 'closes_on', 'survey_note'),
 }
 
 DEFAULTS = {
@@ -163,6 +170,22 @@ DEFAULTS = {
                '\n\n{announcement_body}\n\nஇதையும் முந்தைய செய்திகளையும் எனது உதவித்தொகை பக்கத்தின் '
                '"செய்திகள்" பகுதியில் மீண்டும் படிக்கலாம்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு '
                'எழுதுங்கள்.\n\n{signoff}'),
+    },
+    # S9: a survey for her — the opening email and, 3 days before it closes, the reminder (the same
+    # wording; `{survey_note}` says which). Switchable: the survey is on My Bursary -> Surveys either way.
+    'survey_open': {
+        'en': ('{programme}: {survey_title}',
+               'Dear {name},\n\n{survey_note}\n\n{survey_title}\n\nYou can answer it on your My Bursary page, '
+               'under Surveys, until {closes_on}:\n{link}\n\nYour answers go to the {programme} team. If you '
+               'have a question, write to {support}.\n\n{signoff}'),
+        'ms': ('{programme}: {survey_title}',
+               'Salam {name},\n\n{survey_note}\n\n{survey_title}\n\nAnda boleh menjawabnya di halaman Biasiswa '
+               'Saya, di bawah Tinjauan, sehingga {closes_on}:\n{link}\n\nJawapan anda dihantar kepada pasukan '
+               '{programme}. Jika ada pertanyaan, tulis kepada {support}.\n\n{signoff}'),
+        'ta': ('{programme}: {survey_title}',
+               'அன்புள்ள {name},\n\n{survey_note}\n\n{survey_title}\n\nஎனது உதவித்தொகை பக்கத்தின் '
+               '"கணக்கெடுப்புகள்" பகுதியில் {closes_on} வரை இதற்குப் பதிலளிக்கலாம்:\n{link}\n\nஉங்கள் பதில்கள் '
+               '{programme} குழுவுக்குச் செல்லும். கேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.\n\n{signoff}'),
     },
 }
 

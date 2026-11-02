@@ -1,8 +1,6 @@
 'use client'
 
 import {
-  createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
@@ -11,57 +9,11 @@ import {
 } from 'react'
 import { getAdminSession, getAdminSupabase } from '@/lib/admin-supabase'
 import type { Session } from '@supabase/supabase-js'
+import { AdminAuthContext, useAdminAuth, type AdminAuthContextValue, type AdminRole } from '@/lib/adminAuthCore'
 
-interface AdminRole {
-  is_admin: boolean
-  is_super_admin: boolean
-  role?: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner' | 'mentor'
-  admin_id?: number | null
-  org_name: string | null
-  // The B40 tenant this staff member administers (their access boundary) — NOT the
-  // referral org. The Administration panel's org section keys off these.
-  owning_org_id?: number | null
-  owning_org_name?: string | null
-  admin_name: string
-  /** False only for a reviewer who hasn't filled their compulsory profile fields yet — the
-   *  admin layout then holds them on /admin/profile until it flips true. True for everyone else. */
-  reviewer_profile_complete?: boolean
-  /** The caller's org-resolved temp-password TTL (Org Config Sprint C). The login gate reads
-   *  THIS — never a hard-coded mirror of the platform's 7. */
-  temp_password_ttl_days?: number
-  /** Request #39: the staff permissions the server RESOLVED for this person (never null when
-   *  served), the preset they came from, and whether they were customised. Read with
-   *  `staffPermissions.hasPerm`; the server stays the fence. */
-  permissions?: string[]
-  preset?: string
-  custom?: boolean
-  /** Source sign-in S1: the referral source a `source_partner` signs in for; null for every
-   *  other role (absent on a payload from before S1). */
-  source_id?: number | null
-  source_name?: string | null
-  /** S7d: a STAFF member who also mentors NOW (an active mentor record) — My students joins their
-   *  menu and the profile gains the mentoring bits. False / absent for everybody else (a mentor login
-   *  reads its `role`). */
-  mentoring?: boolean
-}
-
-interface AdminAuthContextValue {
-  session: Session | null
-  token: string | null
-  isLoading: boolean
-  isAdminAuthenticated: boolean
-  role: AdminRole | null
-  refreshRole: () => Promise<void>
-  /** Common profile S2: the signed-in person's photo (a ~1-hour signed URL) for the header, or null.
-   *  Read from `admin/me/` ONCE per session — never from `admin/role/`, which signs nothing. */
-  photoUrl: string | null
-  /** The Profile page sets it after an upload or a removal, so the header follows at once. */
-  setPhotoUrl: (url: string | null) => void
-}
-
-// Exported for the sandbox harness ONLY (src/sandbox), which supplies a canned admin session to
-// render admin pages without Supabase. App code must go through `AdminAuthProvider`.
-export const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
+// The context and its hook live in the leaf `adminAuthCore` (no Supabase client); re-exported so the
+// sandbox harness and every importer are unchanged.
+export { AdminAuthContext, useAdminAuth }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -156,10 +108,4 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   return (
     <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>
   )
-}
-
-export function useAdminAuth() {
-  const ctx = useContext(AdminAuthContext)
-  if (!ctx) throw new Error('useAdminAuth must be used within AdminAuthProvider')
-  return ctx
 }

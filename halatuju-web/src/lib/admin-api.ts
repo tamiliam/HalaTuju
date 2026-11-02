@@ -77,6 +77,17 @@ export type {
   AnnouncementsPayload,
 } from './admin-api/announcements'
 
+// Programme -> Surveys, and the scholar file's Surveys tab (student maintenance S9).
+export {
+  closeSurvey, createSurvey, deleteSurvey, fetchSurveyCsv, getScholarSurveys, getSurveyResults, getSurveys,
+  remindSurvey, updateSurvey,
+} from './admin-api/surveys'
+export type {
+  AnswerValue, QuestionKind, ScholarSurveys, SurveyAction, SurveyAudience, SurveyInput, SurveyLimits,
+  SurveyQuestionInput, SurveyQuestionRow, SurveyResults, SurveyRow, SurveyStatus, SurveySummaryItem, SurveyWho,
+  SurveysPayload,
+} from './admin-api/surveys'
+
 // A mentor's own students (student maintenance S7c).
 export { getMyStudent, getMyStudents, logMyMeeting } from './admin-api/mentorDesk'
 export type { MyMeeting, MyStudent, MyStudentCard, MyStudentResult, MyStudents } from './admin-api/mentorDesk'
