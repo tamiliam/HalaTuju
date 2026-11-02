@@ -40,6 +40,10 @@ docstring), then create the hourly Cloud Scheduler job `announcement-emails`.
 - `promotion.is_pathway_switch` compares the programme NAME (codes and a leading "XXX - " dropped), so a pre-S4 read
   and an S4 re-read of the same letter are not a switch; a real switch still is.
 - Tests: `test_offer_programme_code.py` (bite-checked: with the join off, 3 tests fail).
+- Review round (same day): a switch now reads the printed CODES first (one course name with different codes
+  is a switch: UKxxx vs UMxxx, BA272 vs BA240, DKM vs DTP), keeps the faculty in the name, and treats more pre-S4
+  shapes as one letter ("UW… - NAME", "NAME (UW…)", "FTV-NAME"); `programme_line` finds a code inside brackets or
+  beside another code.
 
 ## Offer matcher reads the S4 campus field (2026-11-02) — LIVE 2026-11-01 (main d08283f1; api-01231-8g9; no migration)
 

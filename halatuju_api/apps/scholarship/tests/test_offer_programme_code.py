@@ -42,6 +42,11 @@ class TheJoinTest(TestCase):
         self.assertEqual(programme_line('DIPLOMA PELANCONGAN REKREASI', 'DRT'), 'DIPLOMA PELANCONGAN REKREASI')
         self.assertEqual(programme_line('DIPLOMA X', 'AT06'), 'DIPLOMA X')
 
+    def test_a_code_inside_brackets_or_beside_another_is_found(self):
+        self.assertEqual(programme_line(UKUR, '(UW6526001)'), f'{UKUR} - UW6526001')
+        self.assertEqual(programme_line('SARJANA MUDA X', 'BA272 / UW6526001'), 'BA272 SARJANA MUDA X - UW6526001')
+        self.assertEqual(programme_line(UKUR, 'UW 6526001'), UKUR)          # not a code
+
     def test_a_pre_s4_read_is_unchanged(self):
         self.assertEqual(programme_line(f'{UKUR} - UW6526001', ''), f'{UKUR} - UW6526001')
         self.assertEqual(programme_line(f'{UKUR} - UW6526001', 'UW6526001'), f'{UKUR} - UW6526001')
@@ -70,6 +75,37 @@ class SwitchReadsTheNameTest(TestCase):
         upu_old = _offer(app, {'programme': f'{UKUR} - UW6526001'})
         upu_new = _offer(app, {'programme': UKUR, 'programme_code': 'UW6526001'})
         self.assertFalse(is_pathway_switch(upu_new, upu_old))
+
+    def test_other_pre_s4_shapes_of_one_letter_are_no_switch(self):
+        app = make_application()
+        for old_prog, new_prog, code in (
+                (f'UW6526001 - {UKUR}', UKUR, 'UW6526001'),
+                (f'{UKUR} (UW6526001)', UKUR, 'UW6526001'),
+                ('FTV-ASASI TEKNOLOGI KEJURUTERAAN', 'ASASI TEKNOLOGI KEJURUTERAAN', 'FTV'),
+                ('BA272 SARJANA MUDA PERNIAGAAN (KEPUJIAN)', 'SARJANA MUDA PERNIAGAAN (KEPUJIAN)', 'BA272')):
+            with self.subTest(old_prog=old_prog):
+                old = _offer(app, {'programme': old_prog})
+                new = _offer(app, {'programme': new_prog, 'programme_code': code})
+                self.assertFalse(is_pathway_switch(new, old))
+
+    def test_one_name_with_different_codes_is_a_switch(self):
+        """Review 2026-11-02: the same course name at two universities, two UiTM codes, two polys."""
+        app = make_application()
+        for old_fields, new_fields in (
+                ({'programme': 'Sarjana Muda Kejuruteraan Awam dengan Kepujian - UK6526001'},
+                 {'programme': 'Sarjana Muda Kejuruteraan Awam dengan Kepujian', 'programme_code': 'UM6526001'}),
+                ({'programme': 'BA272 SARJANA MUDA PERNIAGAAN (KEPUJIAN)'},
+                 {'programme': 'BA240 SARJANA MUDA PERNIAGAAN (KEPUJIAN)'}),
+                ({'programme': 'DKM - DIPLOMA KEJURUTERAAN MEKANIKAL'},
+                 {'programme': 'DIPLOMA KEJURUTERAAN MEKANIKAL', 'programme_code': 'DTP'})):
+            with self.subTest(old=old_fields):
+                self.assertTrue(is_pathway_switch(_offer(app, new_fields), _offer(app, old_fields)))
+
+    def test_a_faculty_difference_is_a_switch(self):
+        app = make_application()
+        old = _offer(app, {'programme': 'SARJANA MUDA SAINS DENGAN KEPUJIAN FAKULTI SAINS GUNAAN'})
+        new = _offer(app, {'programme': 'SARJANA MUDA SAINS DENGAN KEPUJIAN FAKULTI SUMBER ALAM'})
+        self.assertTrue(is_pathway_switch(new, old))
 
     def test_a_real_switch_is_still_a_switch(self):
         app = make_application()
