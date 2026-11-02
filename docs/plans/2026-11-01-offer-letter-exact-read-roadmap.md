@@ -325,20 +325,22 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   lead: tile each page into crops, or page 1 alone at high + pages 2–3 in a second call. The 5 held-out pilot
   letters must not be used to tune the prompt.
 - **Every reader of the offer fields (sprint-start 3b), and what the new shape does to it** — updated to the
-  matcher session's live join (`offer_course_match.letter_institution` = institution + " " + campus, main
-  `d08283f1`, read inside `student_offer_check` and by `align_institution_to_catalogue`; a read with no `campus`
-  reads as before). Tests: `tests/test_offer_reader_doors.py` (one per door).
+  matcher session's live joins: `offer_course_match.letter_institution` = institution + " " + campus (main
+  `d08283f1`) and `programme_line` = programme with `programme_code` put back where the code tier reads it (main
+  `cddb4661`, api-01233-pwg), both read inside `student_offer_check`; `align_institution_to_catalogue` reads the
+  first, `promotion.is_pathway_switch` reads the printed codes first. A read with neither key reads as before.
+  Tests: `tests/test_offer_reader_doors.py` (one per door).
 
   | Door | Reads | Effect of S4's shape (with the live join) |
   |---|---|---|
-  | `pathway_engine.student_offer_check` (feeds every door below) | all fields | `institution` = the joined line again; S4 adds nothing here (it is at its 633-line limit) |
+  | `pathway_engine.student_offer_check` (feeds every door below) | all fields | `institution` and `programme` = the joined lines again; S4 adds nothing here (633-line limit) |
   | Name / IC statuses → `verdict_engine`, `verdict_ladder`, `doc_red_keys.person_red` (gate), `resolution` (Action Centre), `help_engine` (Cikgu Gopal), `offer_sync`, `offer_link`, the confirm, `backfill_*`, `audit_pathway_ticks` | `candidate_name`, `candidate_nric` | same fields and rules; a reference-line IC reads `match` where it read `unreadable`; a non-IC number is blanked → `unreadable`, never `mismatch`; another person's IC is still `mismatch` |
   | `vision.doc_student_verdict` (extraction-time name verdict) | `candidate_name` | unchanged |
-  | Matcher `match_offer_course` / `pinned_match` (realign, link, confirm), `letter_place` / `CampusReader` (ticks, `institution_agreement`, `offer_contradicts_course_institution`) | programme, joined line, issuer | multi-campus pins survive through the join (test); one-row universities resolve from the name; a hostel line now goes to `reporting_venue`, so the university name agrees without the issuer standing in. **STILL LOSES the printed-code tier:** a code is moved to `programme_code`, which no matcher reads — on the pilot, 5 of 10 S4 reads carry a `programme_code`. **Owed by the matcher session:** read `programme_code` (e.g. join it back as the code tier's input) before the push. |
+  | Matcher `match_offer_course` / `pinned_match` (realign, link, confirm), `letter_place` / `CampusReader` (ticks, `institution_agreement`, `offer_contradicts_course_institution`) | programme line, joined line, issuer | multi-campus pins and the printed-code tier both survive through the joins (tests); one-row universities resolve from the name; a hostel line now goes to `reporting_venue`, so the university name agrees without the issuer standing in |
   | `offer_sync.institution_fill` / `sync_institution_from_catalogue` (sponsor-facing must-fill) | joined line, issuer | the multi-campus fill survives through the join (test) |
   | `services/confirmation` (confirm label, `_confirmed_place`) | programme, joined line, issuer | the label carries the campus again (joined) |
   | `offer_reporting_bonus` (reads `issuer`, `institution`, `campus` — live), `private_arm_letter` (via the joined line) | | a private-arm tell in the campus line is seen |
-  | `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`, `promotion` | programme / institution | no loss (polytechnic / KK / matric / Form-Six names keep their town; a code-free programme is the same name) |
+  | `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`, `promotion.is_pathway_switch` | programme / institution | no loss (names keep their town; the switch test reads the printed codes first, live) |
   | Check 2 `offer_reporting_date_unknown`; `sync_reporting_date_from_offer` | reporting_date | a commencement-only letter now reads no reporting date → Check 2 asks the student (owner a405); a blank never clears a stored date |
   | Cockpit display (`checklistsPathway.tsx`: `chk.institution`, `chk.issuer`) | joined line | shows institution + campus, as before |
   | Student-facing text (`help_engine`, the Documents card) | name / IC statuses | unchanged |
@@ -346,9 +348,23 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Matcher inputs, stored vs S4, on the 10 pilot letters (eval caches only, keys and fields only):** name and
   IC inputs unchanged on all 10; programme, joined line or issuer changed on 9; a `programme_code` present on 5.
   The realign / link / ticks dry-run itself needs the live catalogue and applications (below).
-- **Before the push:** the matcher session reads `programme_code`; then the realign / link / ticks dry-run on
-  the new reads (rule 5) goes to that session; adversarial review (identity: the IC guard and the reference-line
-  IC); the dev and held-out runs.
+- **Full run (2026-11-02, the lead; RM5.23; caches `*.fresh_s4.json` for all 216).** Fully exact: **held-out
+  66/90** (stored 19, current 18) and **dev 90/126** (stored 31, current 35). Right on held-out, stored → current
+  → new: institution 42 → 41 → 84; programme 66 → 64 → 86; intake 73 → 76 → 83; reporting date 87 → 84 → 87;
+  name 85 → 86 → 85; NRIC 89 → 89 → 88; campus 47 → 47 → 76; offer date 86 → 84 → 88; issuer 19 → 23 → 12.
+  Dev: institution 57 → 55 → 114; programme 86 → 91 → 111; intake 111 → 107 → 118; reporting date 124 → 123 →
+  123; name 120 → 122 → 119; NRIC 124 → 123 → 122; campus 69 → 69 → 111; offer date 122 → 123 → 123; issuer
+  43 → 43 → 39. **Not every field rose:** name and NRIC fell by 1–3 against the current reader on both sets
+  (held-out: one NRIC now wrong; dev: one NRIC read where the letter prints none), and the issuer fell (not
+  core). Against the local profiles (where the corpus holds one), ONE held-out letter's name now reads
+  `mismatch` where it read `match` — a new wrong-person signal. These are for the adversarial review; the
+  held-out letters are not used to tune the prompt.
+- **Production dry run (prepared, run by the lead):** `eval/offer_s4_dry_run.py` — for every letter with an S4
+  cache, realign / link / institution fill / the ticks on the stored fields and on the S4 fields (in memory), in
+  ONE transaction set READ ONLY at the transaction level and always rolled back; non-read SQL, Storage, Gemini
+  and the meter refused. Prints ids and outcomes only. Tests: `tests/test_offer_s4_dry_run.py`.
+- **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
+  the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 
 ### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.

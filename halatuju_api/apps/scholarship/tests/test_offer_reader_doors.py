@@ -9,9 +9,8 @@ reference line. The door list is in the roadmap's S4 section. Two kinds of test 
   statuses `student_offer_check` builds, plus the extraction verdict `doc_student_verdict`).
 * **What the new shape does to the matcher's doors.** The campus is rejoined for every reader by the
   matcher session's `offer_course_match.letter_institution` (live on main d08283f1), read inside
-  `student_offer_check`; these tests show the pins survive through it. The printed-code tier is still
-  LOST (the code is in `programme_code`, which no matcher reads yet) — that test pins the gap and the
-  join that would close it; update it when the matcher reads `programme_code`.
+  `student_offer_check`; these tests show the pins survive through it. The printed-code tier
+  is rejoined the same way by `programme_line` (main cddb4661).
 
 Synthetic twins only (`test_no_gitignored_corpus.py`): invented people, and invented campuses
 ("Institut Qorvane ...") beside the shared realignment catalogue.
@@ -25,7 +24,7 @@ from apps.scholarship import vision
 from apps.scholarship.doc_red_keys import person_red
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.offer_course_match import (
-    letter_institution, letter_place, match_offer_course, pinned_match)
+    letter_institution, letter_place, match_offer_course, pinned_match, programme_line)
 from apps.scholarship.offer_reader import clean_offer_fields
 from apps.scholarship.pathway_engine import offer_reporting_date_unknown, student_offer_check
 from apps.scholarship.services.offer_sync import institution_fill
@@ -139,16 +138,24 @@ class MatcherOnTheNewShapeTest(TestCase):
         joined = letter_institution('INSTITUT QORVANE', 'KAMPUS UTARA')        # what every reader is fed
         self.assertEqual(pinned_match(prog, joined)[1]['institution'], NORTH)
 
-    def test_loses_the_printed_code_tier_until_the_matcher_reads_programme_code(self):
+    def test_the_printed_code_tier_survives_through_the_live_join(self):
         issuer = 'Pejabat Timbalan Naib Canselor (Akademik dan Antarabangsa)'
         old = 'Sarjana Muda Ukur Bahan dengan Kepujian - UW6526001'
         self.assertEqual(match_offer_course(old, '', issuer)['course_id'], 'UW6526001')
         read = clean_offer_fields({'programme': old})
         self.assertEqual((read['programme'], read['programme_code']),
                          ('Sarjana Muda Ukur Bahan dengan Kepujian', 'UW6526001'))
-        self.assertIsNone(match_offer_course(read['programme'], '', issuer))                # lost
-        rejoined = f"{read['programme']} - {read['programme_code']}"                           # the fix
-        self.assertEqual(match_offer_course(rejoined, '', issuer)['course_id'], 'UW6526001')
+        self.assertIsNone(match_offer_course(read['programme'], '', issuer))      # the name alone
+        line = programme_line(read['programme'], read['programme_code'])           # what readers are fed
+        self.assertEqual(match_offer_course(line, '', issuer)['course_id'], 'UW6526001')
+
+    def test_student_offer_check_feeds_both_joins(self):
+        app = make_application('submitted')
+        chk = student_offer_check(_offer(app, programme='Sarjana Muda Ukur Bahan dengan Kepujian',
+                                         programme_code='UW6526001', institution='UNIVERSITI QORVANE',
+                                         campus='KAMPUS PERLAK'))
+        self.assertIn('UW6526001', chk['programme'])
+        self.assertEqual(chk['institution'], 'UNIVERSITI QORVANE KAMPUS PERLAK')
 
     def test_a_private_arm_letterhead_still_refuses_with_the_tell_in_the_issuer(self):
         self.assertIsNone(match_offer_course('SARJANA MUDA SAINS KOMPUTER DENGAN KEPUJIAN',

@@ -238,6 +238,20 @@ python -I apps/scholarship/eval/offer_fresh_read.py --costs --keys K1,K2 --eval-
 python -I apps/scholarship/eval/offer_read_check.py --read file:.fresh_s4.json --split dev --eval-dir <corpus>
 ```
 
+**What the S4 reads would do live (S4 dry run) — reads PRODUCTION, run by the lead only.**
+`offer_s4_dry_run.py` loads each cached letter's document (`__d<id>`) and runs the repairs' planners — realign
+(`plan_bumi_realign`), link (`plan_offer_link`, after realign as `link_offer_courses` orders them), the
+institution fill (`institution_fill`) and the `student_offer_check` ticks — on the stored fields and on the S4
+fields put in their place in memory. ONE transaction whose first statement is `SET TRANSACTION READ ONLY`
+(never a session-level setting through the pooler), always rolled back; any non-read statement, Storage, Gemini
+and the meter raise. Prints doc / application ids, outcomes, course ids, campus ids (or a hash) and tick
+changes — no names. Needs `DATABASE_URL` only. Tests: `tests/test_offer_s4_dry_run.py`.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--keys K1,K2] [--json]
+```
+
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.

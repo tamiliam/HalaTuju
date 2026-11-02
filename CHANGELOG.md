@@ -254,7 +254,13 @@ US$0.001 synthetic-image probe.
   `programme_code`; an IC read that cannot be an IC (not 11–13 digits) is blanked.
 - `vision._call_gemini_json` takes `images=[…]` and `media_resolution=` (other callers unchanged). Rebased on
   the matcher's live campus join (`letter_institution`, main d08283f1); `pathway_engine.py` unchanged by S4.
-  Still owed by the matcher session: read `programme_code` (the printed-code tier).
+  Rebased again on the live `programme_line` join (main cddb4661): the printed-code tier survives.
+- **Full run (the lead, RM5.23):** held-out 66/90 fully exact (current 18), dev 90/126 (current 35); name and
+  NRIC fell by 1–3 letters and one held-out name now reads mismatch — for the adversarial review.
+- **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
+  fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
+  rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.
+  `tests/test_offer_s4_dry_run.py`.
 - `halatuju/ai_registry.py`: the offer reader is a registered AI job (`offer_read`).
 - **Finding:** the 258-token image was the default media resolution (a synthetic A4 page: 258 default / medium,
   3,354 high). High resolution applies only to a ONE-image call: a 2-page letter came back as 2 × 258.
