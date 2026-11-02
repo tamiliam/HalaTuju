@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
+import { PHONE_GUTTER } from '@/lib/phoneSection'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { useBranding } from '@/lib/branding-context'
@@ -35,7 +36,7 @@ export default function SponsorLanding({ count }: { count: number }) {
 
       <main className="bg-ground-50">
         {/* Hero — text + image, with a live "students waiting" counter under the CTAs */}
-        <section className="container mx-auto px-6 pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl`}>
           <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
             <div className="relative w-full h-60 lg:h-[26rem] rounded-2xl overflow-hidden mb-6 lg:mb-0 lg:order-2">
               <Image src="/scholarship/hero.jpg" alt="" fill priority
@@ -54,7 +55,7 @@ export default function SponsorLanding({ count }: { count: number }) {
                   className="bg-brand-fill text-brand-fill-ink font-semibold px-6 py-3 rounded-xl hover:bg-brand-fill-hover transition-colors text-center w-full sm:w-auto">
                   {t('sponsorLanding.hero.becomeSponsor')} →
                 </Link>
-                <a href="#how" className="text-primary-600 text-sm text-center sm:text-left font-medium">
+                <a href="#how" className="inline-flex min-h-11 items-center justify-center text-primary-600 text-sm sm:justify-start font-medium">
                   {t('sponsorLanding.hero.howItWorks')} ↓
                 </a>
               </div>
@@ -73,7 +74,7 @@ export default function SponsorLanding({ count }: { count: number }) {
 
         {/* Trust bar — the "Regulated by…" equivalent (R5). Honest: describes the
             assurance MODEL being established, not a current audited state. */}
-        <section className="container mx-auto px-6 -mt-2 pb-8 lg:pb-12 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} -mt-2 pb-8 lg:pb-12 max-w-2xl lg:max-w-5xl`}>
           <div className="rounded-2xl border border-positive-100 bg-positive-50/50 px-5 py-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-center text-center">
               <span className="inline-flex items-center gap-2 text-sm text-ground-700">🛡️ <b>{t('sponsorLanding.trustBar.title')}</b></span>
@@ -86,11 +87,12 @@ export default function SponsorLanding({ count }: { count: number }) {
         </section>
 
         {/* Why sponsor — three promise cards */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('sponsorLanding.promises.title')}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-5">
+          {/* Rule 15 (Mobile M5): rows on a phone, the cards they were from md. */}
+          <div className="max-md:divide-y max-md:divide-ground-200 md:grid md:grid-cols-3 md:gap-5">
             {PROMISE_CARDS.map((c) => (
-              <div key={c} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+              <div key={c} className="py-4 md:rounded-2xl md:bg-ground-0 md:p-5 md:shadow-sm">
                 <div className="w-10 h-10 rounded-full bg-info-50 flex items-center justify-center mb-2">
                   <svg className="w-5 h-5 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d={PROMISE_ICONS[c]} />
@@ -104,11 +106,11 @@ export default function SponsorLanding({ count }: { count: number }) {
         </section>
 
         {/* How it works — four numbered steps */}
-        <section id="how" className="scroll-mt-20 container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl">
+        <section id="how" className={`scroll-mt-20 container mx-auto ${PHONE_GUTTER} pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-6">{t('sponsorLanding.how.title')}</h2>
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="max-md:divide-y max-md:divide-ground-200 md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-4">
             {STEPS.map((n) => (
-              <li key={n} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+              <li key={n} className="py-4 md:rounded-2xl md:bg-ground-0 md:p-5 md:shadow-sm">
                 {/* BRAND — the step numbers are this page's own furniture, not a signal, and they
                     sit beside the brand CTA above. Two different blues on one page is what leaving
                     them as `info` would produce. */}
@@ -123,22 +125,22 @@ export default function SponsorLanding({ count }: { count: number }) {
         </section>
 
         {/* FAQ — accordion */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('sponsorLanding.faq.title')}</h2>
-          <div className="grid gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
+          <div className="max-md:divide-y max-md:divide-ground-200 md:grid md:gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
             {FAQS.map((i) => {
               const open = openFaq === i
               return (
-                <div key={i} className="bg-ground-0 rounded-xl shadow-sm self-start">
+                <div key={i} className="self-start md:rounded-xl md:bg-ground-0 md:shadow-sm">
                   <button type="button" aria-expanded={open}
                     onClick={() => setOpenFaq(open ? null : i)}
-                    className="w-full flex items-center justify-between gap-3 p-4 text-left">
+                    className="w-full min-h-12 flex items-center justify-between gap-3 py-3 text-left md:p-4">
                     <span className="font-medium text-ground-900 text-sm">{t(`sponsorLanding.faq.q${i}`)}</span>
                     <svg className={`w-5 h-5 text-ground-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  {open && <p className="px-4 pb-4 text-sm text-ground-600 leading-relaxed">{t(`sponsorLanding.faq.a${i}`)}</p>}
+                  {open && <p className="pb-4 text-sm md:px-4 text-ground-600 leading-relaxed">{t(`sponsorLanding.faq.a${i}`)}</p>}
                 </div>
               )
             })}
@@ -146,7 +148,7 @@ export default function SponsorLanding({ count }: { count: number }) {
         </section>
 
         {/* Closing CTA */}
-        <section className="container mx-auto px-6 pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl`}>
           <div className="bg-info-50 border border-info-100 rounded-2xl p-6 lg:p-10 text-center">
             <h2 className="text-2xl lg:text-3xl font-bold text-ground-900">{t('sponsorLanding.cta.heading')}</h2>
             <p className="text-ground-700 mt-2 lg:text-lg">{t('sponsorLanding.cta.body')}</p>

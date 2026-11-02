@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { useBottomBarInset } from '@/lib/bottomBarInset'
 import {
   acceptSponsorTerms, getSponsorTerms, getSponsorTermsQuiz,
   type SponsorTermsCheckpoint, type SponsorTermsDocument,
@@ -23,6 +24,16 @@ import {
  */
 type Phase = 'read' | 'quiz' | 'sign' | 'done'
 
+/**
+ * Mobile M5: on a phone the wizard runs the full width of the screen (no card around it) and its
+ * forward action — "Start the quiz", the quiz's progress + Next — sits in a sticky bar at the foot,
+ * marked `data-page-bar` (rule 6/11: one bottom bar at a time). From md it is the inline row it always
+ * was. The sign step keeps its button inline: the keyboard is up while the name is typed.
+ */
+const BAR = 'sticky bottom-0 z-10 -mx-4 border-t border-ground-200 bg-ground-0 px-4 pt-3 '
+  + 'pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] '
+  + 'md:static md:mx-0 md:shadow-none'
+
 export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
   token: string | null
   accountName: string
@@ -38,6 +49,11 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // The two sticky bars lift the toast while they are on screen (rule 6).
+  const readBar = useRef<HTMLDivElement>(null)
+  const quizBar = useRef<HTMLDivElement>(null)
+  useBottomBarInset(readBar, phase === 'read' && !!doc)
+  useBottomBarInset(quizBar, phase === 'quiz')
 
   const load = useCallback(() => {
     if (!token) return
@@ -110,25 +126,27 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
               {t('sponsorAuth.privacyNotice')}
             </Link>.
           </p>
-          <button type="button" onClick={() => setPhase('quiz')}
-            className="self-start px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover">
-            {checkpoints.length > 0
-              ? t('sponsorPortal.terms.startQuiz', { n: String(checkpoints.length) })
-              : t('sponsorPortal.terms.continue')}
-          </button>
+          <div ref={readBar} data-page-bar data-testid="terms-read-bar" className={`${BAR} md:border-0 md:bg-transparent md:p-0`}>
+            <button type="button" onClick={() => setPhase('quiz')}
+              className="w-full min-h-12 px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover md:w-auto">
+              {checkpoints.length > 0
+                ? t('sponsorPortal.terms.startQuiz', { n: String(checkpoints.length) })
+                : t('sponsorPortal.terms.continue')}
+            </button>
+          </div>
         </>
       )}
 
       {phase === 'quiz' && current && (
-        <div className="bg-ground-0 border border-ground-200 rounded-2xl overflow-hidden">
-          <div className="flex gap-1 px-5 pt-5" aria-hidden>
+        <div className="md:bg-ground-0 md:border md:border-ground-200 md:rounded-2xl md:overflow-hidden">
+          <div className="flex gap-1 md:px-5 md:pt-5" aria-hidden>
             {checkpoints.map((c, k) => (
               <span key={c.order} className={`flex-1 h-1 rounded ${
                 k < i ? 'bg-positive-600' : k === i ? 'bg-primary-600' : 'bg-ground-200'}`} />
             ))}
           </div>
-          <div className="p-5 flex flex-col gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-ground-400">
+          <div className="py-4 flex flex-col gap-3 md:p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-ground-400">
               {current.tag}
             </p>
             <p className="text-sm text-ground-500">{current.plain}</p>
@@ -144,7 +162,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
                       if (k === current.correct) setPassed(true)
                       else if (!wrong.includes(k)) setWrong([...wrong, k])
                     }}
-                    className={`text-left rounded-xl border px-4 py-3 transition-colors ${
+                    className={`min-h-12 text-left rounded-xl border px-4 py-3 transition-colors ${
                       isRight ? 'border-positive-500 bg-positive-50 text-positive-800 font-medium'
                         : isWrong ? 'border-critical-300 bg-critical-50 text-critical-700'
                           : 'border-ground-200 hover:border-info-400 hover:bg-info-50/50'}`}>
@@ -164,7 +182,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
               </div>
             )}
           </div>
-          <div className="flex items-center justify-between gap-3 border-t border-ground-100 bg-ground-50 px-5 py-3">
+          <div ref={quizBar} data-page-bar data-testid="terms-quiz-bar" className={`${BAR} flex items-center justify-between gap-3 md:border-ground-100 md:bg-ground-50 md:px-5 md:py-3`}>
             <span className="text-xs text-ground-500">
               {t('sponsorPortal.terms.progress', {
                 n: String(i + 1), total: String(checkpoints.length),
@@ -175,7 +193,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
                 if (i + 1 >= checkpoints.length) setPhase('sign')
                 else { setI(i + 1); setWrong([]); setPassed(false) }
               }}
-              className="px-5 py-2.5 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover disabled:opacity-40">
+              className="min-h-12 min-w-[9rem] px-5 py-2.5 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover disabled:opacity-40 md:min-h-0 md:min-w-0">
               {i + 1 >= checkpoints.length
                 ? t('sponsorPortal.terms.toSign')
                 : t('sponsorPortal.terms.next')}
@@ -185,13 +203,13 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
       )}
 
       {(phase === 'sign' || (phase === 'quiz' && !current)) && (
-        <div className="bg-ground-0 border border-ground-200 rounded-2xl p-6 flex flex-col gap-3 max-w-lg">
+        <div className="flex flex-col gap-3 max-w-lg md:bg-ground-0 md:border md:border-ground-200 md:rounded-2xl md:p-6">
           <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.terms.signTitle')}</h2>
           <p className="text-sm text-ground-600">{t('sponsorPortal.terms.signBody')}</p>
           <p className="text-sm text-ground-500">
             {t('sponsorPortal.terms.yourName')} <b className="text-ground-900">{accountName}</b>
           </p>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-ground-500"
+          <label className="text-xs font-bold uppercase tracking-wider text-ground-500"
             htmlFor="sig">
             {t('sponsorPortal.terms.typeName')}
           </label>
@@ -200,7 +218,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
             className="w-full border border-ground-300 border-b-2 rounded-lg px-4 py-3 text-lg
                        focus:border-info-500 focus:outline-none" />
           <button type="button" disabled={busy || name.trim().length < 3} onClick={accept}
-            className="px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover disabled:opacity-40">
+            className="min-h-12 px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover disabled:opacity-40">
             {busy ? t('sponsorPortal.terms.accepting') : t('sponsorPortal.terms.accept')}
           </button>
           <p className="text-xs text-ground-500">{t('sponsorPortal.terms.signNote')}</p>

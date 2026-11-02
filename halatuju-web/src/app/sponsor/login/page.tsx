@@ -81,14 +81,14 @@ export default function SponsorLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center">
-      <div className="w-full max-w-md px-6">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-8 md:py-0">
+      <div className="w-full max-w-md px-4 md:px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+        <div className="md:bg-ground-0 md:rounded-2xl md:border md:border-ground-200 md:p-8 md:shadow-sm">
           {step === 'login' && (
             <>
               <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">{t('sponsorAuth.loginTitle')}</h1>
@@ -118,7 +118,7 @@ export default function SponsorLoginPage() {
                   <input
                     type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                     required
                   />
                 </div>
@@ -127,7 +127,7 @@ export default function SponsorLoginPage() {
                   <input
                     type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('sponsorAuth.enterPassword')}
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                    className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                     required
                   />
                 </div>
@@ -141,7 +141,7 @@ export default function SponsorLoginPage() {
 
               <button
                 onClick={() => { setStep('forgot'); setError(null) }}
-                className="w-full text-sm text-ground-500 hover:text-ground-700 mb-6"
+                className="w-full min-h-11 text-sm text-ground-500 hover:text-ground-700 mb-4"
               >
                 {t('sponsorAuth.forgotPassword')}
               </button>
@@ -166,7 +166,7 @@ export default function SponsorLoginPage() {
 
               <p className="text-center text-sm text-ground-500 mt-6">
                 {t('sponsorAuth.noAccount')}{' '}
-                <Link href="/sponsor/register" className="font-semibold text-primary-600 hover:underline">
+                <Link href="/sponsor/register" className="inline-flex min-h-11 items-center font-semibold text-primary-600 hover:underline">
                   {t('sponsorAuth.createAccount')}
                 </Link>
               </p>
@@ -184,7 +184,7 @@ export default function SponsorLoginPage() {
                 <input
                   type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                  className="w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                   required
                 />
                 <button
@@ -195,7 +195,7 @@ export default function SponsorLoginPage() {
                 </button>
                 <button
                   type="button" onClick={() => { setStep('login'); setError(null) }}
-                  className="w-full text-sm text-ground-500 hover:text-ground-700"
+                  className="w-full min-h-11 text-sm text-ground-500 hover:text-ground-700"
                 >
                   {t('login.backToLogin')}
                 </button>
@@ -207,7 +207,7 @@ export default function SponsorLoginPage() {
             <div className="text-center">
               <h1 className="text-2xl font-bold text-ground-900 mb-2">{t('sponsorAuth.checkEmail')}</h1>
               <p className="text-ground-600 mb-6">{t('sponsorAuth.resetSent')} <strong>{email}</strong></p>
-              <button onClick={() => { setStep('login'); setError(null) }} className="text-primary-600 hover:underline text-sm">
+              <button onClick={() => { setStep('login'); setError(null) }} className="inline-flex min-h-11 items-center text-primary-600 hover:underline text-sm">
                 {t('login.backToLogin')}
               </button>
             </div>
@@ -215,7 +215,7 @@ export default function SponsorLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">
+          <Link href="/" className="inline-flex min-h-11 items-center text-sm text-ground-500 hover:text-primary-600 transition-colors">
             {t('sponsorAuth.backToHome')}
           </Link>
         </div>

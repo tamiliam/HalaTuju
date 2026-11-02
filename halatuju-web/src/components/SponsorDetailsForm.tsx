@@ -10,7 +10,7 @@ import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, flagOf } from '@/lib/coun
 import { KEY_SPONSOR_PENDING, KEY_SPONSOR_REF } from '@/lib/storage'
 
 const inputCls =
-  'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
+  'w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
 /**
  * The "complete your details" form shown to a signed-in sponsor whose account is
@@ -108,7 +108,7 @@ export default function SponsorDetailsForm() {
             {t('sponsorAuth.phone')} <span className="text-critical-600">*</span>
           </label>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
+            <span className="inline-flex min-h-12 items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
             <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatIntlPhone(e.target.value))} placeholder={t('sponsorAuth.phonePlaceholder')} className={inputCls} />
           </div>
           {phoneInvalid && <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.phoneInvalid')}</p>}
@@ -122,8 +122,8 @@ export default function SponsorDetailsForm() {
             {SPONSOR_SOURCES.map((s) => <option key={s} value={s}>{t(`sponsorAuth.sourceOption.${s}`)}</option>)}
           </select>
         </div>
-        <label className="flex items-start gap-2 text-sm text-ground-600">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+        <label className="flex min-h-11 items-start gap-3 py-1 text-sm text-ground-600">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
           <span>{t('sponsorAuth.consent')}{' '}
             <Link href="/privacy" className="text-primary-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
           </span>

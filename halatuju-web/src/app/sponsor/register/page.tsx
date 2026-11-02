@@ -98,23 +98,23 @@ export default function SponsorRegisterPage() {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
+  const inputCls = 'w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-12">
-      <div className="w-full max-w-md px-6">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-8 md:py-12">
+      <div className="w-full max-w-md px-4 md:px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+        <div className="md:bg-ground-0 md:rounded-2xl md:border md:border-ground-200 md:p-8 md:shadow-sm">
           {step === 'confirm' ? (
             <div className="text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-positive-100 text-positive-700 text-xl">✉️</div>
               <h1 className="text-xl font-bold text-ground-900 mt-3">{t('sponsorAuth.confirmTitle')}</h1>
               <p className="text-sm text-ground-600 mt-2">{t('sponsorAuth.confirmBody')} <strong>{email}</strong></p>
-              <Link href="/sponsor/login" className="inline-block mt-5 text-sm font-semibold text-primary-600 hover:underline">
+              <Link href="/sponsor/login" className="inline-flex min-h-11 items-center mt-4 text-sm font-semibold text-primary-600 hover:underline">
                 {t('login.backToLogin')}
               </Link>
             </div>
@@ -169,7 +169,7 @@ export default function SponsorRegisterPage() {
                 <div>
                   <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.phone')} <span className="text-critical-600">*</span></label>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">
+                    <span className="inline-flex min-h-12 items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">
                       {flagOf(country)} +{dial}
                     </span>
                     <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatIntlPhone(e.target.value))}
@@ -186,8 +186,8 @@ export default function SponsorRegisterPage() {
                   </select>
                 </div>
 
-                <label className="flex items-start gap-2 text-sm text-ground-600">
-                  <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+                <label className="flex min-h-11 items-start gap-3 py-1 text-sm text-ground-600">
+                  <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
                   <span>{t('sponsorAuth.consent')}{' '}
                     <Link href="/privacy" className="text-primary-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
                   </span>
@@ -217,14 +217,14 @@ export default function SponsorRegisterPage() {
 
               <p className="text-center text-sm text-ground-500 mt-6">
                 {t('sponsorAuth.haveAccount')}{' '}
-                <Link href="/sponsor/login" className="font-semibold text-primary-600 hover:underline">{t('sponsorAuth.signInLink')}</Link>
+                <Link href="/sponsor/login" className="inline-flex min-h-11 items-center font-semibold text-primary-600 hover:underline">{t('sponsorAuth.signInLink')}</Link>
               </p>
             </>
           )}
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('sponsorAuth.backToHome')}</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('sponsorAuth.backToHome')}</Link>
         </div>
       </div>
     </main>

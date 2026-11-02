@@ -9,6 +9,7 @@ import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { fieldImageUrl } from '@/lib/fieldImage'
 import { FundingBar } from '@/components/FundingBar'
 import { countdown, rmWhole } from '@/lib/poolCard'
+import SponsorFilterSheet, { type SponsorFacet } from '@/components/sponsor/SponsorFilterSheet'
 import type { SponsorPoolCard } from '@/lib/api'
 
 // Distinct amount → its whole-ringgit key ("2000.00" -> "2000"); '' when not numeric.
@@ -30,6 +31,8 @@ export default function StudentsPage() {
   const [amount, setAmount] = useState('')
   // '' = all; 'open' = still open for sponsorship (unfunded); 'sponsored' = just-sponsored cards.
   const [status, setStatus] = useState('')
+  // Phones (Mobile M5): the four selects become one "Filters" button and a Sheet of chips — the SAME state.
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const rows = pool || []
   const facets = useMemo(() => {
@@ -52,16 +55,42 @@ export default function StudentsPage() {
 
   const selectCls = 'text-sm border border-ground-200 rounded-lg pl-3.5 pr-9 py-2.5 bg-ground-0 min-w-[10rem] cursor-pointer'
 
+  // The phone's chips read the SAME facets and write the SAME state as the desktop selects.
+  const groups: SponsorFacet[] = [
+    { key: 'status', title: t('sponsorPortal.students.facetStatus'), value: status, onChange: setStatus,
+      options: [{ value: 'open', label: t('sponsorPortal.students.openForSponsorship') },
+        { value: 'sponsored', label: t('sponsorPortal.students.sponsored') }] },
+    { key: 'field', title: t('sponsorPortal.students.facetField'), value: field, onChange: setField,
+      options: facets.fields.map((f) => ({ value: f, label: getFieldName(f) || f })) },
+    { key: 'state', title: t('sponsorPortal.students.facetState'), value: state, onChange: setState,
+      options: facets.states.map((x) => ({ value: x, label: x })) },
+    { key: 'amount', title: t('sponsorPortal.students.facetAmount'), value: amount, onChange: setAmount,
+      options: facets.amounts.map((a) => ({ value: a, label: `RM${rmWhole(a)}` })) },
+  ]
+  const picked = groups.filter((g) => g.value).length
+  const clearAll = () => { setField(''); setState(''); setAmount(''); setStatus('') }
+
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 pt-3 md:pt-0">
         <h1 className="text-2xl font-bold text-ground-900">{t('sponsorPortal.students.title')}</h1>
         <span className="text-xs text-ground-400">{t('sponsorPortal.students.shown').replace('{count}', String(shown.length))}</span>
       </div>
       <p className="text-sm text-ground-600 mt-1 max-w-2xl">{t('sponsorPortal.students.intro')}</p>
 
-      {/* Filters: field / state / amount */}
-      <div className="flex flex-wrap gap-2 mt-5">
+      {/* Phones: one Filters button (the count of facets in use) and a Sheet of chips. */}
+      <div className="mt-4 flex items-center justify-between gap-3 md:hidden">
+        <button type="button" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" data-testid="sponsor-filters-button"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm font-semibold text-ground-700">
+          <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M4 6h16M7 12h10M10 18h4" /></svg>
+          {t('sponsorPortal.students.filters')}{picked > 0 ? ` · ${picked}` : ''}
+        </button>
+      </div>
+      <SponsorFilterSheet open={sheetOpen} onClose={() => setSheetOpen(false)} groups={groups}
+        count={shown.length} onClear={clearAll} />
+
+      {/* From md: the row of selects — field / state / amount / status */}
+      <div className="hidden md:flex flex-wrap gap-2 mt-5">
         <select value={field} onChange={(e) => setField(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPortal.students.allFields')}</option>
           {facets.fields.map((f) => <option key={f} value={f}>{getFieldName(f) || f}</option>)}
@@ -90,15 +119,15 @@ export default function StudentsPage() {
       {pool === null ? (
         <p className="text-center text-ground-500 mt-12">{t('common.loading')}</p>
       ) : rows.length === 0 ? (
-        <div className="text-center text-ground-500 mt-8 rounded-xl bg-ground-0 border border-dashed px-6 py-10">
+        <div className="text-center text-ground-500 mt-8 py-6 md:rounded-xl md:bg-ground-0 md:border md:border-dashed md:px-6 md:py-10">
           {t('sponsorPool.empty')}
         </div>
       ) : shown.length === 0 ? (
-        <div className="text-center text-ground-500 mt-8 rounded-xl bg-ground-0 border border-dashed px-6 py-10">
+        <div className="text-center text-ground-500 mt-8 py-6 md:rounded-xl md:bg-ground-0 md:border md:border-dashed md:px-6 md:py-10">
           {t('sponsorPortal.students.filteredEmpty')}
         </div>
       ) : (
-        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 md:mt-5 md:gap-5 lg:grid-cols-3">
           {shown.map((s) => <PoolCard key={s.id} s={s} />)}
         </div>
       )}
@@ -120,11 +149,11 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={fieldImageUrl(s.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-ground-0/90 px-2 py-0.5 text-[11px] font-semibold text-positive-700 shadow-sm">
+        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-ground-0/90 px-2 py-0.5 text-xs font-semibold text-positive-700 shadow-sm">
           🛡️ {t('sponsorPool.verified')}
         </span>
         {s.enrolment_verified && (
-          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-fill/90 px-2 py-0.5 text-[11px] font-semibold text-brand-fill-ink shadow-sm">
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-fill/90 px-2 py-0.5 text-xs font-semibold text-brand-fill-ink shadow-sm">
             ✓ {t('sponsorPool.enrolmentVerified')}
           </span>
         )}
@@ -134,16 +163,16 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-4 md:p-5">
         {(s.course || s.field) && (
           <p className="text-[15px] font-semibold text-ground-900 leading-snug">{s.course || s.field}</p>
         )}
         {institutionLine && <p className="text-xs text-ground-500 mt-0.5">{institutionLine}</p>}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {s.academic && <span className="rounded-md bg-ground-100 px-2 py-0.5 text-[11px] font-medium text-ground-700">{s.academic}</span>}
+          {s.academic && <span className="rounded-md bg-ground-100 px-2 py-0.5 text-xs font-medium text-ground-700">{s.academic}</span>}
           {s.funding_categories.slice(0, 3).map((c) => (
-            <span key={c} className="rounded-md bg-info-50 px-2 py-0.5 text-[11px] font-medium text-info-700">{c}</span>
+            <span key={c} className="rounded-md bg-info-50 px-2 py-0.5 text-xs font-medium text-info-700">{c}</span>
           ))}
         </div>
 

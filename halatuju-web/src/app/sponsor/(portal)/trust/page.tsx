@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { figureTotal, figurePercent, formatRM } from '@/lib/sponsorTrust'
+import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 /**
  * Trust & Transparency hub (R5) — the load-bearing trust layer. Four sections:
@@ -20,7 +21,7 @@ export default function TrustPage() {
   if (!trust) {
     return (
       <div className="max-w-3xl">
-        <Link href="/sponsor" className="text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
+        <Link href="/sponsor" className="inline-flex min-h-11 items-center text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
         <p className="text-center text-ground-500 mt-12">{t('common.loading')}</p>
       </div>
     )
@@ -35,13 +36,14 @@ export default function TrustPage() {
 
   return (
     <div className="max-w-4xl">
-      <Link href="/sponsor" className="text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
+      <Link href="/sponsor" className="inline-flex min-h-11 items-center text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
       <h1 className="text-2xl font-bold text-ground-900 mt-3">{t('sponsorPortal.trust.title')}</h1>
       <p className="text-sm text-ground-500 mt-1 max-w-2xl">{t('sponsorPortal.trust.intro')}</p>
 
-      <div className="grid lg:grid-cols-2 gap-4 mt-6">
+      {/* Rule 15 (Mobile M5): sections on a phone, the cards they were from md. */}
+      <div className="mt-2 md:mt-6 md:grid lg:grid-cols-2 md:gap-4">
         {/* Who we are */}
-        <section className="bg-ground-0 rounded-2xl border p-5">
+        <section className={PHONE_SECTION_NO_GAP}>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-ground-900">{t('sponsorPortal.trust.whoWeAre.title')}</h2>
             {!trust.legal_entity && comingSoon}
@@ -57,7 +59,7 @@ export default function TrustPage() {
         </section>
 
         {/* Governance */}
-        <section className="bg-ground-0 rounded-2xl border p-5">
+        <section className={PHONE_SECTION_NO_GAP}>
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-ground-900">{t('sponsorPortal.trust.governance.title')}</h2>
             {trust.trustees.length === 0 && comingSoon}
@@ -76,20 +78,20 @@ export default function TrustPage() {
             <>
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="bg-ground-50 rounded-xl p-3 text-center">
+                  <div key={i} className="text-center md:rounded-xl md:bg-ground-50 md:p-3">
                     <div className="w-10 h-10 rounded-full bg-ground-200 mx-auto" />
-                    <p className="text-[11px] text-ground-400 mt-2">{t('sponsorPortal.trust.governance.trusteeLabel')}</p>
+                    <p className="text-xs text-ground-400 mt-2">{t('sponsorPortal.trust.governance.trusteeLabel')}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-ground-400 mt-2">{t('sponsorPortal.trust.governance.tbd')}</p>
+              <p className="text-xs text-ground-400 mt-2">{t('sponsorPortal.trust.governance.tbd')}</p>
             </>
           )}
         </section>
       </div>
 
       {/* Sources & uses of funds */}
-      <section className="bg-ground-0 rounded-2xl border p-5 mt-4">
+      <section className={`${PHONE_SECTION_NO_GAP} md:mt-4`}>
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-ground-900">{t('sponsorPortal.trust.sourcesUses.title')}</h2>
           {trust.figures_are_illustrative && (
@@ -116,7 +118,7 @@ export default function TrustPage() {
       </section>
 
       {/* Independent assurance */}
-      <section className="bg-ground-0 rounded-2xl border border-positive-100 p-5 mt-4">
+      <section className={`py-4 md:mt-4 md:rounded-2xl md:border md:border-positive-100 md:bg-ground-0 md:p-5`}>
         <div className="flex items-start gap-3">
           <span className="text-2xl">🛡️</span>
           <div className="flex-1">
@@ -166,7 +168,7 @@ function AssureStat({ value, label }: { value: string; label: string }) {
   return (
     <div className="bg-positive-50 rounded-xl p-3">
       <p className="text-lg font-bold text-positive-700">{value}</p>
-      <p className="text-[11px] text-ground-500">{label}</p>
+      <p className="text-xs text-ground-500">{label}</p>
     </div>
   )
 }

@@ -133,7 +133,8 @@ export default function SpendingCard({ spending, copy, className = 'mt-6 rounded
         {([['promised', spending.promised], ['released', spending.released],
            ['spent', spending.spent], ['left', spending.left]] as const).map(([key, value]) => (
           <div key={key}>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">
+            {/* 12 px (rule 12, Mobile M5) — was 10 px capitals, on the sponsor's page and on her My Bursary. */}
+            <dt className="text-xs font-semibold uppercase tracking-wide text-ground-400">
               {t(`${copy}.${key}`)}
             </dt>
             <dd className="mt-0.5 text-base font-medium tabular-nums text-ground-900">

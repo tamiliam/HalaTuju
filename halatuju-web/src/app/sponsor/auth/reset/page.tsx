@@ -67,17 +67,17 @@ export default function SponsorResetPasswordPage() {
     router.replace('/sponsor')
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
+  const inputCls = 'w-full min-h-12 px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-12">
-      <div className="w-full max-w-md px-6">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-8 md:py-12">
+      <div className="w-full max-w-md px-4 md:px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+        <div className="md:bg-ground-0 md:rounded-2xl md:border md:border-ground-200 md:p-8 md:shadow-sm">
           {phase === 'verifying' && (
             <p className="text-center text-ground-600">{t('sponsorAuth.resetVerifying')}</p>
           )}
@@ -86,7 +86,7 @@ export default function SponsorResetPasswordPage() {
             <div className="text-center">
               <h1 className="text-xl font-bold text-ground-900 mb-2">{t('sponsorAuth.resetPassword')}</h1>
               <p className="text-critical-600 text-sm mb-6">{t('sponsorAuth.resetLinkError')}</p>
-              <Link href="/sponsor/login" className="inline-block text-primary-600 font-semibold hover:underline">
+              <Link href="/sponsor/login" className="inline-flex min-h-11 items-center text-primary-600 font-semibold hover:underline">
                 {t('sponsorAuth.requestNewLink')}
               </Link>
             </div>
@@ -131,7 +131,7 @@ export default function SponsorResetPasswordPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/sponsor/login" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('login.backToLogin')}</Link>
+          <Link href="/sponsor/login" className="inline-flex min-h-11 items-center text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('login.backToLogin')}</Link>
         </div>
       </div>
     </main>
