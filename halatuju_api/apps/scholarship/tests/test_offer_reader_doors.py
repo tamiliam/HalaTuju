@@ -26,6 +26,7 @@ from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.offer_course_match import (
     letter_institution, letter_place, match_offer_course, pinned_match, programme_line)
 from apps.scholarship.offer_reader import clean_offer_fields
+from apps.scholarship.verdict_ladder import _OFFER_CHIP_RED
 from apps.scholarship.pathway_engine import offer_reporting_date_unknown, student_offer_check
 from apps.scholarship.services.offer_sync import institution_fill
 from apps.scholarship.tests.factories import make_application
@@ -79,20 +80,30 @@ class NameAndIcDoNotGetWorseTest(TestCase):
         # The matcher session's live join (`letter_institution`, main d08283f1): one line again.
         self.assertEqual(chk['institution'], 'UNIVERSITI QORVANE KAMPUS PERLAK')
 
+    def _guarded(self, nric, source='label'):
+        read = {'candidate_nric': nric, 'candidate_nric_source': source}
+        clean_offer_fields(read, profile_nric=self.app.profile.nric)
+        return read['candidate_nric']
+
     def test_an_ic_read_off_the_reference_line_matches(self):
-        ref_line_read = clean_offer_fields({'candidate_nric': self.app.profile.nric.replace('-', '')})
-        chk = self._chk(candidate_nric=ref_line_read['candidate_nric'])
+        chk = self._chk(candidate_nric=self._guarded(self.app.profile.nric, 'reference_line'))
         self.assertEqual(chk['ic'], 'match')
 
-    def test_no_ic_printed_is_unread_never_a_wrong_person(self):
-        chk = self._chk(candidate_nric='')
+    def test_a_reference_line_ic_of_someone_else_never_reads_a_wrong_person(self):    # review M1
+        chk = self._chk(candidate_nric=self._guarded('991231-01-0001', 'reference_line'))
         self.assertEqual(chk['ic'], 'unreadable')
         self.assertFalse(person_red('offer_letter', chk))
 
-    def test_a_reference_number_read_as_the_ic_is_blanked_not_red(self):
+    def test_no_ic_printed_is_unread_which_the_cockpit_shows_red_but_never_a_wrong_person(self):   # review H2
+        chk = self._chk(candidate_nric='')
+        self.assertEqual(chk['ic'], 'unreadable')
+        self.assertIn(chk['ic'], _OFFER_CHIP_RED)              # a blank is NOT harmless: the chip is red
+        self.assertFalse(person_red('offer_letter', chk))      # but it never blocks as a wrong person
+
+    def test_a_reference_number_read_as_the_ic_is_blanked_to_unread_not_a_wrong_person(self):
         before = self._chk(candidate_nric='UPM/BPA/S/3-1')            # what an unguarded read would store
         self.assertEqual(before['ic'], 'mismatch')
-        after = self._chk(candidate_nric=clean_offer_fields({'candidate_nric': 'UPM/BPA/S/3-1'})['candidate_nric'])
+        after = self._chk(candidate_nric=self._guarded('UPM/BPA/S/3-1'))
         self.assertEqual(after['ic'], 'unreadable')
 
     def test_another_persons_ic_is_still_a_wrong_person(self):
@@ -119,7 +130,8 @@ class MatcherOnTheNewShapeTest(TestCase):
 
     def test_a_one_row_university_resolves_from_the_name_alone(self):
         # UiTM: "UiTM" + campus "KAMPUS KOTA KINABALU", the code moved to programme_code.
-        read = clean_offer_fields({'programme': 'BA272 SARJANA MUDA PERNIAGAAN KEWANGAN (KEPUJIAN)'})
+        read = {'programme': 'BA272 SARJANA MUDA PERNIAGAAN KEWANGAN (KEPUJIAN)'}
+        clean_offer_fields(read)
         self.assertEqual(read['programme_code'], 'BA272')
         m = match_offer_course(read['programme'], 'UiTM', 'UNIVERSITI TEKNOLOGI MARA')
         self.assertEqual(m['course_id'], 'UE6343001')
@@ -142,7 +154,8 @@ class MatcherOnTheNewShapeTest(TestCase):
         issuer = 'Pejabat Timbalan Naib Canselor (Akademik dan Antarabangsa)'
         old = 'Sarjana Muda Ukur Bahan dengan Kepujian - UW6526001'
         self.assertEqual(match_offer_course(old, '', issuer)['course_id'], 'UW6526001')
-        read = clean_offer_fields({'programme': old})
+        read = {'programme': old}
+        clean_offer_fields(read)
         self.assertEqual((read['programme'], read['programme_code']),
                          ('Sarjana Muda Ukur Bahan dengan Kepujian', 'UW6526001'))
         self.assertIsNone(match_offer_course(read['programme'], '', issuer))      # the name alone

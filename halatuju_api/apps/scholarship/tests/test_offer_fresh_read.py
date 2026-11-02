@@ -143,7 +143,8 @@ class TestFreshRead(SimpleTestCase):
         self.assertEqual(rec['model'], 'gemini-2.5-flash')
         self.assertEqual(rec['image']['mime'], 'image/png')          # a PDF is shown as page PNGs
         self.assertEqual(len(rec['image']['pages']), 1)
-        self.assertEqual(rec['offer_reader_version'], '2.0.0')
+        from apps.scholarship.offer_reader import OFFER_READER_VERSION
+        self.assertEqual(rec['offer_reader_version'], OFFER_READER_VERSION)
         self.assertEqual((rec['calls'][0]['images'], rec['calls'][0]['media_resolution']),
                          (1, 'MEDIA_RESOLUTION_HIGH'))
         self.assertEqual(rec['calls'][0]['thinking_tokens'], 900)
@@ -362,11 +363,16 @@ class TestNewReader(SimpleTestCase):
         rc = fr.main(['--eval-dir', self.c.dir, '--split-file', self.split, '--keys', 'offer_letter__a1__d11'],
                      client_factory=FakeGemini([_resp(prompt=9000, out=300, think=1200)]), out=lambda *_: None)
         self.assertEqual(rc, 0)
+        import shutil
+        k = 'offer_letter__a1__d11'
+        self.assertFalse(os.path.exists(fr.fresh_path(self.c.dir, k, fr.READERS['s4'])))   # never written
+        shutil.copy(fr.fresh_path(self.c.dir, k, fr.READERS['new']), fr.fresh_path(self.c.dir, k, fr.READERS['s4']))
         c = fr.compare(self.c.dir, 'all', self.split, reader='new')
-        self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4')))
+        self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4', 's4b')))
         self.assertEqual(c['fields']['fresh']['institution']['wrong'], 1)
-        self.assertEqual(c['fields']['s4']['institution']['exact'], 1)
+        self.assertEqual(c['fields']['s4b']['institution']['exact'], 1)
         self.assertEqual(c['changed_by_read']['s4']['institution'], {'fixed': 1, 'broke': 0, 'same': 0})
+        self.assertEqual(c['changed_by_read']['s4b']['institution'], {'fixed': 0, 'broke': 0, 'same': 1})
         self.assertEqual(c['changed_by_read']['fresh']['nric'], {'fixed': 1, 'broke': 0, 'same': 0})
         rows = fr.costs(self.c.dir, ['offer_letter__a1__d11'])
         self.assertEqual((rows[0][1]['input_tokens'], rows[0][2]['input_tokens'], rows[0][3]), (1500, 9000, 1))

@@ -99,7 +99,8 @@ from apps.scholarship.eval import offer_read_check as orc
 from apps.scholarship.eval.offer_fresh_gemini import (
     IMAGE_TOKENS_HIGH_A4, IMAGE_TOKENS_MEASURED, PRICE_SOURCE, PRICES, STOP_CODES, USD_TO_MYR, DatabaseRefused,
     StopRun, _refuse_db, call_cost_usd, error_code, guarded_production_read,
-    image_tokens_estimate, price_for, print_costs, prompt_of, sha256_text, usage_of, usd_to_myr)
+    bootstrap_django, image_tokens_estimate, load_gemini_key, price_for, print_costs, prompt_of,
+    sha256_text, usage_of, usd_to_myr)
 
 __all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRICES', 'STOP_CODES', 'USD_TO_MYR',
            'DatabaseRefused', 'StopRun', '_refuse_db', 'call_cost_usd', 'error_code',
@@ -108,8 +109,14 @@ __all__ = ['IMAGE_TOKENS_HIGH_A4', 'IMAGE_TOKENS_MEASURED', 'PRICE_SOURCE', 'PRI
 
 FRESH_SUFFIX = '.fresh.json'
 #: The readers this tool knows: `current` = S3's page-1 reader (caches only), `new` = S4's reader.
-READERS = {'current': FRESH_SUFFIX, 'new': '.fresh_s4.json'}
+#: `s4` = the S4 reader as first built (2.0.0, caches only); `new` = this checkout's reader (2.1.0+,
+#: the review fixes: page 1 alone, the IC guard), cached apart so no earlier cache is ever overwritten.
+READERS = {'current': FRESH_SUFFIX, 's4': '.fresh_s4.json', 'new': '.fresh_s4b.json'}
 PAID_READERS = ('new',)
+#: compare: the reads shown for each --reader, oldest first.
+COMPARE_READS = {'current': ('stored', 'fresh'), 's4': ('stored', 'fresh', 's4'),
+                 'new': ('stored', 'fresh', 's4', 's4b')}
+_COMPARE_SUFFIX = {'fresh': READERS['current'], 's4': READERS['s4'], 's4b': READERS['new']}
 LOG_NAME = 'offer_fresh_read.log'
 DOC_TYPE = 'offer_letter'
 #: Exit codes: 0 done, 2 no corpus / bad arguments, 3 stopped on a 402/429, 4 calls failed.
@@ -229,7 +236,7 @@ def read_one(eval_dir, key, extract, calls, meter, versions):
         data = fh.read()
     ct = content_type_for(path)
     start_calls, start_meter = len(calls), len(meter)
-    ex = extract('', DOC_TYPE, image=data, content_type=ct)
+    ex = extract('', DOC_TYPE, image=data, content_type=ct, **offer_context(eval_dir, key))
     mine, metered = calls[start_calls:], meter[start_meter:]
     used = [c for c in mine if c.get('answered') and c.get('json_ok')]
     rec = {
@@ -245,6 +252,19 @@ def read_one(eval_dir, key, extract, calls, meter, versions):
         'read_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
     }
     return rec
+
+
+def offer_context(eval_dir, key):
+    """What production hands the reader's IC guard (`vision._offer_context`): the profile's IC from the
+    corpus's `context.json` and the page-1 text production holds (`<key>.ocr.txt`: the text layer or
+    the Vision OCR of page 1). Never printed."""
+    ctx = (orc.read_json_file(os.path.join(eval_dir, 'context.json')) or {}).get(key) or {}
+    ocr = os.path.join(eval_dir, 'snapshots', key + '.ocr.txt')
+    text = ''
+    if os.path.exists(ocr):
+        with open(ocr, encoding='utf-8') as fh:
+            text = fh.read()
+    return {'profile_nric': ctx.get('profile_nric') or '', 'page1_ocr': text}
 
 
 def _should_cache(rec):
@@ -385,8 +405,12 @@ def estimate(eval_dir, keys, suffix=READERS['new']):
         if not facts or not facts.get('width'):
             no_image += 1
             continue
-        img_tokens.append(sum(image_tokens_estimate(p['width'], p['height'], offer_reader.MEDIA_RESOLUTION)
-                              for p in facts['pages']) + math.ceil(facts['text_layer_chars'] / 4))
+        # 2.1.0: page 1 alone at high resolution; pages 2-3 (worst case: the later call is made) at the
+        # default, plus that call's own prompt.
+        later = facts['pages'][1:]
+        img_tokens.append(image_tokens_estimate(1, 1, offer_reader.MEDIA_RESOLUTION)
+                          + len(later) * IMAGE_TOKENS_MEASURED + (text_tokens if later else 0)
+                          + math.ceil(facts['text_layer_chars'] / 4))
     n = len(img_tokens)
     est = {}
     for band, think in EST_THINKING.items():
@@ -433,8 +457,8 @@ def compare(eval_dir, split='all', split_file=orc.SPLIT_PATH, reader='current'):
     letters of the split that hold every compared cache — the same letters for all. `reader`
     'current': stored vs `fresh` (S3); 'new': stored vs `fresh` (S3) vs `s4`. fixed / broke count
     each read against the one before it."""
-    names = {'current': ('stored', 'fresh'), 'new': ('stored', 'fresh', 's4')}[reader]
-    suffixes = {'fresh': READERS['current'], 's4': READERS['new']}
+    names = COMPARE_READS[reader]
+    suffixes = _COMPARE_SUFFIX
     keys = [k for k in select_keys(eval_dir, split=split, split_file=split_file)
             if all(os.path.exists(fresh_path(eval_dir, k, suffixes[n])) for n in names[1:])]
     heldout = orc.load_heldout(split_file)
@@ -492,11 +516,11 @@ def print_compare(c, out=print):
                 + f'{right:>7}' + tail)
 
 
-def costs(eval_dir, keys):
-    """Per letter holding both caches: (key, current usage, new usage, pages, text-layer chars)."""
+def costs(eval_dir, keys, pair=('current', 'new')):
+    """Per letter holding both caches: (key, ``pair[0]`` usage, ``pair[1]`` usage, pages, text chars)."""
     rows = []
     for k in keys:
-        pair = [orc.read_json_file(fresh_path(eval_dir, k, READERS[r])) for r in ('current', 'new')]
+        pair = [orc.read_json_file(fresh_path(eval_dir, k, READERS[r])) for r in pair]
         if all(pair):
             shown = pair[1].get('offer_reader_inputs') or {}
             rows.append((k, pair[0].get('usage') or {}, pair[1].get('usage') or {},
@@ -506,31 +530,6 @@ def costs(eval_dir, keys):
 
 # ── Bootstrap (the script only — tests never call this) ─────────────────────────────────────
 DEFAULT_ENV_FILE = os.path.join(os.path.dirname(_API_ROOT), '.env')
-
-
-def load_gemini_key(env_file):
-    """GEMINI_API_KEY from `env_file` into os.environ — never printed. True when found."""
-    if os.environ.get('GEMINI_API_KEY'):
-        return True
-    if not os.path.exists(env_file):
-        return False
-    with open(env_file, encoding='utf-8') as fh:
-        for line in fh:
-            line = line.strip()
-            if line.startswith('GEMINI_API_KEY='):
-                os.environ['GEMINI_API_KEY'] = line.split('=', 1)[1].strip().strip('"').strip("'")
-                return bool(os.environ['GEMINI_API_KEY'])
-    return False
-
-
-def bootstrap_django():
-    """Development settings on a local SQLite (any DATABASE_URL / DB_HOST removed first) — and
-    the run refuses every query anyway."""
-    for name in ('DATABASE_URL', 'DB_HOST'):
-        os.environ.pop(name, None)
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'halatuju.settings.development'
-    import django
-    django.setup()
 
 
 def main(argv=None, *, client_factory=None, out=print):
@@ -545,7 +544,9 @@ def main(argv=None, *, client_factory=None, out=print):
     ap.add_argument('--compare', action='store_true', help='fresh vs stored per field (free)')
     ap.add_argument('--reader', choices=tuple(READERS), default='new',
                     help="new = this checkout's reader (S4, paid); current = S3's caches (read-only)")
-    ap.add_argument('--costs', action='store_true', help='per-letter tokens + cost, current vs new')
+    ap.add_argument('--costs', action='store_true', help='per-letter tokens + cost, --against vs new')
+    ap.add_argument('--against', choices=('current', 's4'), default='current',
+                    help='--costs: the earlier reader to put beside the new one')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--env-file', default=DEFAULT_ENV_FILE)
     args = ap.parse_args(argv)
@@ -560,7 +561,7 @@ def main(argv=None, *, client_factory=None, out=print):
                        keys=[k.strip() for k in args.keys.split(',') if k.strip()],
                        limit=args.limit, split_file=args.split_file)
     if args.costs:
-        print_costs(costs(args.eval_dir, keys), out)
+        print_costs(costs(args.eval_dir, keys, (args.against, 'new')), out, (args.against, 'new'))
         return 0
     if args.dry_run:
         e = estimate(args.eval_dir, keys, READERS[args.reader])

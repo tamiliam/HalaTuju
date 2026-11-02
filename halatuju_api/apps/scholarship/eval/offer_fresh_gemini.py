@@ -13,6 +13,7 @@ description. Here:
 import contextlib
 import hashlib
 import json
+import os
 import re
 from collections import Counter
 from unittest import mock
@@ -76,9 +77,9 @@ def usd_to_myr(usd):
     return usd * USD_TO_MYR
 
 
-def print_costs(rows, out=print):
+def print_costs(rows, out=print, names=('current', 'new')):
     t = ('input_tokens', 'output_tokens', 'thinking_tokens')
-    out(f"{'key':<30}{'pages':>6}{'text':>6} | current in/out/think US$  | new in/out/think US$")
+    out(f"{'key':<30}{'pages':>6}{'text':>6} | {names[0]} in/out/think US$  | {names[1]} in/out/think US$")
     tot = [Counter(), Counter()]
     for k, cur, new, pages, text in rows:
         cells = []
@@ -88,7 +89,7 @@ def print_costs(rows, out=print):
                 tot[i][x] += u.get(x) or 0
         out(f'{k:<30}{pages or 0:>6}{text or 0:>6} | {cells[0]:<26}| {cells[1]}')
     n = len(rows)
-    for name, c in zip(('current', 'new'), tot if n else ()):
+    for name, c in zip(names, tot if n else ()):
         out(f"{name}: {n} letters, mean in {c['input_tokens'] / n:.0f} out {c['output_tokens'] / n:.0f} "
             f"think {c['thinking_tokens'] / n:.0f}, US${c['cost_usd'] / n:.5f}/letter "
             f"(RM{usd_to_myr(c['cost_usd'] / n):.4f}); total US${c['cost_usd']:.4f}")
@@ -222,3 +223,29 @@ def guarded_production_read(client_factory, calls, meter):
         for alias in connections:
             stack.enter_context(connections[alias].execute_wrapper(_refuse_db))
         yield vision.extract_document_fields
+
+
+# ── Bootstrap for the script (moved from offer_fresh_read.py for the file-size rule) ─────────────
+def load_gemini_key(env_file):
+    """GEMINI_API_KEY from `env_file` into os.environ — never printed. True when found."""
+    if os.environ.get('GEMINI_API_KEY'):
+        return True
+    if not os.path.exists(env_file):
+        return False
+    with open(env_file, encoding='utf-8') as fh:
+        for line in fh:
+            line = line.strip()
+            if line.startswith('GEMINI_API_KEY='):
+                os.environ['GEMINI_API_KEY'] = line.split('=', 1)[1].strip().strip('"').strip("'")
+                return bool(os.environ['GEMINI_API_KEY'])
+    return False
+
+
+def bootstrap_django():
+    """Development settings on a local SQLite (any DATABASE_URL / DB_HOST removed first) — and
+    the run refuses every query anyway."""
+    for name in ('DATABASE_URL', 'DB_HOST'):
+        os.environ.pop(name, None)
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'halatuju.settings.development'
+    import django
+    django.setup()

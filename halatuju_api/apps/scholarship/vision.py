@@ -1589,13 +1589,15 @@ _DOC_HINTS = {
 
 
 def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = None,
-                      mime_type: str = 'image/jpeg', images=None, media_resolution=None) -> dict:
+                      mime_type: str = 'image/jpeg', images=None, media_resolution=None,
+                      with_model: bool = False) -> dict:
     """Structured-output Gemini call → parsed JSON dict, or {'_error': msg}. This is
     the single seam tests @patch. Reuses profile_engine's model cascade + key guard.
     Pass ``image`` (raw bytes) for a multimodal read — Gemini sees the picture, not
     just OCR text (used by the IC second-opinion to recover blurry digits). ``images`` =
     [(bytes, mime), …] for several (images first, then the prompt); ``media_resolution`` sets
-    the image detail (the offer reader, S4 — the default sends every image as 258 tokens)."""
+    the image detail (the offer reader, S4 — the default sends every image as 258 tokens);
+    ``with_model`` adds ``_model`` (the cascade model that answered) to the answer."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '') or ''
     if not api_key:
         return {'_error': 'AI service not configured (missing API key)'}
@@ -1626,7 +1628,8 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
         _it, _ot = usage.gemini_tokens(resp)
         usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
         try:
-            return json.loads(resp.text)
+            out = json.loads(resp.text)
+            return {**out, '_model': model_name} if with_model and isinstance(out, dict) else out
         except (TypeError, ValueError) as e:   # answered (billed) with nothing usable: try the next
             document.append((model_name, f'{UNPARSEABLE_RESPONSE}: {e}'))
             logger.warning('Gemini JSON call: %s returned no parseable JSON: %s', model_name, e)
@@ -1645,15 +1648,16 @@ _WARNING_VOICE = (' Write each warning as ONE short plain-language sentence for 
 
 
 def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[bytes] = None,
-                            content_type: str = '') -> dict:
+                            content_type: str = '', **offer_context) -> dict:
     """Gemini extracts the per-doc-type fields. Pass ``image`` to read the document
     VISUALLY (the model sees the real 2-D layout — used for the results slip, whose
     table can't survive being flattened to OCR text); otherwise it reads ``ocr_text``.
     Returns {fields, warnings, error}. Never raises. An OFFER LETTER goes to `offer_reader.read_offer`
-    (its pages, text layer, prompt and version; ``image`` is then the uploaded file's bytes)."""
+    (its pages, text layer, prompt and version; ``image`` is then the uploaded file's bytes);
+    ``offer_context`` (profile_nric, page1_ocr — `_offer_context`) feeds only its IC guard."""
     if doc_type == 'offer_letter':
         from .offer_reader import read_offer
-        return read_offer(ocr_text, image=image, content_type=content_type)
+        return read_offer(ocr_text, image=image, content_type=content_type, **offer_context)
     schema = _FIELD_SCHEMAS.get(doc_type)
     if schema is None:
         return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
@@ -1822,7 +1826,9 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                 return False
             return any(k in s for k in ('offer_date', 'offer date', 'reporting_date', 'reporting date',
                                         'intake', 'address', 'stream', 'bidang', 'elektif', 'aliran',
-                                        'specialis', 'specializ'))
+                                        'specialis', 'specializ', 'campus', 'reporting venue',
+                                        'reporting_venue', 'programme code', 'programme_code',
+                                        'course code'))
         return [w for w in warnings if not _is_optional_offer_noise(w)]
     if doc_type == 'semester_result':
         # Only Name / NRIC / CGPA matter on a semester slip (owner): Name·IC drive the red/green
@@ -1984,6 +1990,14 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             check_address=check_address, ocr=ocr)
 
 
+def _offer_context(doc, page1_text):
+    """What the offer reader's IC guard needs (`offer_ic`): the student's own IC and page 1's text."""
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    return {'profile_nric': getattr(profile, 'nric', '') or '', 'page1_ocr': page1_text or ''}
+
+
+#: The deterministic offer read's stamp (review L1): which reader wrote the fields.
+_DET_OFFER_STAMP = {'offer_reader_inputs': {'reader': 'deterministic'}}
 #: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs).
 _EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
             'approval_read_until', 'offer_reader_version', 'offer_reader_inputs')
@@ -2056,12 +2070,12 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             prior = doc.vision_fields.get('fields') if isinstance(getattr(doc, 'vision_fields', None), dict) else None
             fields = ({**prior, **{k: v for k, v in govt.items() if (v or '').strip()}}
                       if isinstance(prior, dict) else govt)
-            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic', **_DET_OFFER_STAMP}
         elif image is not None:
-            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_offer_context(doc, _otext))
             ex['capture'] = 'ai'
         else:
-            ex = extract_document_fields(_otext, doc.doc_type)
+            ex = extract_document_fields(_otext, doc.doc_type, **_offer_context(doc, _otext))
             ex['capture'] = 'ai'
     elif doc.doc_type == 'higher_results': ex = _higher_extract(doc, ocr, _image, extract_document_fields)
     elif doc.doc_type == 'birth_certificate':
@@ -2105,7 +2119,7 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
 
     if ex['error']:   # OUR AI outage is a deferred read ('review_manually'), never the student's 'unreadable'
         svc = is_ai_service_error(ex['error'])
-        result = {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable',
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable', **{k: ex[k] for k in ex if k in _EX_KEPT},
                   'capture': ex.get('capture', 'ai'), 'error': ex['error'], 'service_error': svc}
     else:
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
