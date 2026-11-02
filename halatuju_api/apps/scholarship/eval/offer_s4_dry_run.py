@@ -127,6 +127,11 @@ def s4_keys(eval_dir, suffix=S4_SUFFIX):
                   for p in glob.glob(os.path.join(eval_dir, 'snapshots', '*' + suffix)))
 
 
+def _cache(eval_dir, key, suffix=S4_SUFFIX):
+    with open(os.path.join(eval_dir, 'snapshots', key + suffix), encoding='utf-8') as fh:
+        return json.load(fh) or {}
+
+
 def s4_fields(eval_dir, key, suffix=S4_SUFFIX):
     with open(os.path.join(eval_dir, 'snapshots', key + suffix), encoding='utf-8') as fh:
         return (json.load(fh).get('fields') or {})
@@ -180,6 +185,32 @@ def plan_offer_doc(doc, fields=None):
     return out
 
 
+def reguard(eval_dir, key, cache, fields, profile_nric):
+    """The S4 fields with the IC guard RE-APPLIED against the production profile IC, when the cache holds
+    the model's own pre-guard read (`raw_identity`, caches made since 2026-11-02); else the fields as cached.
+    Returns (fields, how): 'reguarded:<outcome>' | 'no_raw_read' (an older cache: the eval-time blank stands)."""
+    from apps.scholarship.offer_ic import guard_nric
+    raw = (cache or {}).get('raw_identity')
+    if not isinstance(raw, dict):
+        return fields, 'no_raw_read'
+    ocr = os.path.join(eval_dir, 'snapshots', key + '.ocr.txt')
+    text = open(ocr, encoding='utf-8').read() if os.path.exists(ocr) else ''
+    layer = bool(((cache or {}).get('offer_reader_inputs') or {}).get('text_layer_chars'))
+    out = {**fields, **raw}
+    return out, 'reguarded:' + guard_nric(out, profile_nric=profile_nric, page1_text=text, page1_is_text_layer=layer)
+
+
+def printed_ic_is_profile(eval_dir, key, profile_nric):
+    """Does the IC the letter PRINTS (the hand-checked answer) equal the production profile IC? 'yes' / 'no' /
+    'no_answer' / 'no_profile' — the evidence for a blank the guard made for want of a profile."""
+    from apps.scholarship.offer_ic import digits
+    path = os.path.join(eval_dir, 'snapshots', key + '.offer_expect.json')
+    printed = digits((json.load(open(path, encoding='utf-8')) if os.path.exists(path) else {}).get('candidate_nric'))
+    if not printed:
+        return 'no_answer'
+    return 'no_profile' if not digits(profile_nric) else ('yes' if printed == digits(profile_nric) else 'no')
+
+
 def compare_one(doc, fields):
     """{doc, app, live, stored, s4, changed: [what differs]} — ids and outcomes only."""
     stored, s4 = plan_offer_doc(doc), plan_offer_doc(doc, fields)
@@ -202,7 +233,16 @@ def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print, suffix=S4_
                 totals['no_document'] += 1
                 out(f'  {key:<32} no offer document in this database')
                 continue
-            r = compare_one(doc, s4_fields(eval_dir, key, suffix))
+            cache = _cache(eval_dir, key, suffix)
+            profile_ic = getattr(getattr(doc.application, 'profile', None), 'nric', '') or ''
+            fields, how = reguard(eval_dir, key, cache, cache.get('fields') or {}, profile_ic)
+            r = compare_one(doc, fields)
+            r['ic_guard'] = how
+            totals[f'ic_guard:{how.split(":")[0]}'] += 1
+            eval_check = ((cache.get('offer_reader_inputs') or {}).get('nric_check') or '')
+            if eval_check.startswith('blank'):
+                r['eval_blank_printed_is_profile'] = printed_ic_is_profile(eval_dir, key, profile_ic)
+                totals[f"eval_blank:{eval_check.split('+')[0]}:printed_is_profile={r['eval_blank_printed_is_profile']}"] += 1
             rows[key] = r
             totals['letters'] += 1
             totals['live' if r['live'] else 'superseded'] += 1
@@ -224,7 +264,10 @@ def _line(key, r):
              f"fill {s['fill']} -> {n['fill']}"]
     ticks = [f"{k} {s['ticks'][k]}->{n['ticks'][k]}" for k in TICKS if s['ticks'][k] != n['ticks'][k]]
     return (f"  {key:<32} doc={r['doc']} app={r['app']} {'live' if r['live'] else 'superseded'} | "
-            + ' | '.join(parts) + ' | ticks ' + (', '.join(ticks) or 'same'))
+            + ' | '.join(parts) + ' | ticks ' + (', '.join(ticks) or 'same')
+            + f" | ic_guard {r.get('ic_guard', '-')}"
+            + (f" | eval_blank printed_is_profile={r['eval_blank_printed_is_profile']}"
+               if 'eval_blank_printed_is_profile' in r else ''))
 
 
 def main(argv=None, *, session=None, out=print):

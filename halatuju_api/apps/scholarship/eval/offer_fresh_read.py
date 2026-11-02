@@ -249,7 +249,7 @@ def read_one(eval_dir, key, extract, calls, meter, versions):
         'image': image_facts(data, ct), 'input_file_ext': os.path.splitext(path)[1].lstrip('.').lower(),
         'versions': {**versions, 'prompt_sha256': (mine[0]['prompt_sha256'] if mine else None)},
         'offer_reader_version': ex.get('offer_reader_version'),
-        'offer_reader_inputs': ex.get('offer_reader_inputs'),
+        'offer_reader_inputs': ex.get('offer_reader_inputs'), 'raw_identity': ex.get('_raw_identity'),
         'prices_usd_per_million': PRICES, 'price_source': PRICE_SOURCE, 'usd_to_myr': USD_TO_MYR,
         'read_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
     }

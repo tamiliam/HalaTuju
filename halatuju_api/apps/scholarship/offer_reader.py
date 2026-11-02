@@ -284,10 +284,12 @@ def read_offer(ocr_text: str, *, image=None, content_type: str = '', profile_nri
     merged = [f for f in LATER_FIELDS if not (data.get(f) or '').strip() and later.get(f)]
     data.update({f: later[f] for f in merged})                      # page 1 always wins
     data = vision._sanitize_extracted_fields('offer_letter', data)
+    raw_ic = {f: data.get(f) or '' for f in ('candidate_nric', 'candidate_nric_source')}
     check = clean_offer_fields(data, profile_nric=profile_nric,
                                page1_text=p1_text or page1_ocr or ocr_text, page1_is_text_layer=bool(p1_text))
     stamp['offer_reader_inputs'].update(later_pages_filled=merged, nric_check=check)
-    return {'fields': data, 'warnings': warnings, 'error': '', **stamp}
+    # `_raw_identity`: the model's IC read before the guard, for the eval cache ONLY (never stored live).
+    return {'fields': data, 'warnings': warnings, 'error': '', **stamp, '_raw_identity': raw_ic}
 
 
 def clean_offer_fields(data: dict, *, profile_nric: str = '', page1_text: str = '',

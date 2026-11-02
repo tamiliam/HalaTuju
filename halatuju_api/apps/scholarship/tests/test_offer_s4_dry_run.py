@@ -156,6 +156,42 @@ class RunTest(TestCase):
         self.assertTrue(rows[self.key]['stored']['not_offer_dated'])
         self.assertEqual(totals['not_offer_dated:stored'], 1)
 
+    def _cache(self, **extra):
+        path = os.path.join(self._tmp.name, 'snapshots', self.key + dr.S4_SUFFIX)
+        data = json.load(open(path, encoding='utf-8'))
+        data.update(extra)
+        with open(path, 'w', encoding='utf-8') as fh:
+            json.dump(data, fh)
+
+    def test_the_guard_is_reapplied_with_the_production_profile_ic(self):
+        prof_ic = self.app.profile.nric
+        self._cache(fields={**self.stored, 'candidate_nric': '', 'candidate_nric_source': 'none'},
+                    raw_identity={'candidate_nric': prof_ic, 'candidate_nric_source': 'other'},
+                    offer_reader_inputs={'nric_check': 'blanked_uncorroborated', 'text_layer_chars': 0})
+        rows, totals = dr.dry_run(self._tmp.name, [self.key], session=lambda: dr.read_only_rollback(allow_sqlite=True),
+                                  out=lambda *_: None)
+        r = rows[self.key]
+        self.assertEqual(r['ic_guard'], 'reguarded:kept_corroborated')
+        self.assertEqual(r['s4']['ticks']['ic'], 'match')                 # what production would record
+        self.assertEqual(totals['ic_guard:reguarded'], 1)
+
+    def test_an_older_cache_replays_its_blank_and_says_so(self):
+        self._cache(fields={**self.stored, 'candidate_nric': ''},
+                    offer_reader_inputs={'nric_check': 'blanked_uncorroborated'})
+        self._write_answer(self.app.profile.nric)
+        lines = []
+        rows, totals = dr.dry_run(self._tmp.name, [self.key], session=lambda: dr.read_only_rollback(allow_sqlite=True),
+                                  out=lines.append)
+        r = rows[self.key]
+        self.assertEqual((r['ic_guard'], r['s4']['ticks']['ic']), ('no_raw_read', 'unreadable'))
+        self.assertEqual(r['eval_blank_printed_is_profile'], 'yes')
+        self.assertEqual(totals['eval_blank:blanked_uncorroborated:printed_is_profile=yes'], 1)
+        self.assertNotIn(self.app.profile.nric.replace('-', ''), ' '.join(lines))
+
+    def _write_answer(self, nric):
+        with open(os.path.join(self._tmp.name, 'snapshots', self.key + '.offer_expect.json'), 'w', encoding='utf-8') as fh:
+            json.dump({'candidate_nric': nric}, fh)
+
     def test_a_key_with_no_document_is_counted_not_guessed(self):
         lines = []
         dr.dry_run(self._tmp.name, ['offer_letter__a1__d999999'],

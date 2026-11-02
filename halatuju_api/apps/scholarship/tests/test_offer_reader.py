@@ -6,6 +6,7 @@ Synthetic twins only: every letter is built here and every value is invented —
 gitignored corpus (`test_no_gitignored_corpus.py`). Gemini is never called (the seam is patched, or
 the genai client is a fake)."""
 import io
+import json
 from types import SimpleNamespace
 from unittest import mock
 
@@ -358,6 +359,18 @@ class StoredRecordTest(TestCase):
             self._read(doc)
         doc.refresh_from_db()
         self.assertEqual(doc.vision_fields['offer_reader_version'], orr.OFFER_READER_VERSION)
+
+    def test_the_raw_ic_is_handed_to_the_eval_but_never_stored(self):
+        doc = self._doc()
+        answer = {**GOOD, 'candidate_nric': '991231-01-0001', 'candidate_nric_source': 'reference_line'}
+        with mock.patch.object(vision, '_call_gemini_json', _seam(answer, answer)):
+            ex = vision.extract_document_fields('', 'offer_letter', image=png(), content_type='image/png')
+            self._read(doc)
+        self.assertEqual(ex['_raw_identity'], {'candidate_nric': '991231-01-0001',
+                                               'candidate_nric_source': 'reference_line'})
+        doc.refresh_from_db()
+        self.assertNotIn('_raw_identity', doc.vision_fields)
+        self.assertNotIn('991231', json.dumps(doc.vision_fields))
 
     def test_the_profile_ic_reaches_the_guard(self):
         doc = self._doc()
