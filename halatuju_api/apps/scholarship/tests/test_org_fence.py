@@ -314,6 +314,15 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminAnnouncementsView': 'announcement-org-fenced',
         'AdminAnnouncementView': 'announcement-org-fenced',
         'AdminAnnouncementWithdrawView': 'announcement-org-fenced',
+        # S9: Surveys — `_SurveysBase._organisation` (the gift inside the caller's own org, else theirs) and
+        # `_survey` (a row of another organisation is 404 on every door, the CSV included; a super: any).
+        '_SurveysBase': 'survey-org-fenced',
+        'AdminSurveysView': 'survey-org-fenced',
+        'AdminSurveyView': 'survey-org-fenced',
+        'AdminSurveyActionView': 'survey-org-fenced',
+        'AdminSurveyResultsView': 'survey-org-fenced',
+        'AdminSurveyCsvView': 'survey-org-fenced',
+        'AdminScholarSurveysView': 'scholars-org-fenced',   # `_file_for` + `surveys.may_make`
         '_MentoringBase': 'scholars-org-fenced',
         'AdminScholarMentoringView': 'scholars-org-fenced',
         'AdminScholarMentoringActionView': 'scholars-org-fenced',

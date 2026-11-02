@@ -260,3 +260,17 @@ it('S8: the News tab shows only when she has news, with her unread count', async
   fireEvent.click(tab)
   expect(tab.getAttribute('aria-selected')).toBe('true')
 })
+
+it('S9: the Surveys tab shows only when she has one, with the open ones still to answer', async () => {
+  serve({ surveys_tab: false })
+  const { unmount } = render(<BursaryPage />)
+  await screen.findByTestId('bursary-hello')
+  expect(screen.queryByRole('tab', { name: /bursaryTabs\.surveys\.tab/ })).toBeNull()
+  unmount()
+  serve({ surveys_tab: true, surveys_to_answer: 1 })
+  render(<BursaryPage />)
+  const tab = await screen.findByRole('tab', { name: /bursaryTabs\.surveys\.tab/ })
+  expect(screen.getByTestId('surveys-to-answer').textContent).toBe('1')
+  fireEvent.click(tab)
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+})

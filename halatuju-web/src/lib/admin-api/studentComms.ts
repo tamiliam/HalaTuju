@@ -6,6 +6,7 @@ import { adminFetch, adminMutate, type ApiOptions } from './client'
 export type StudentEmailKind = 'results_due' | 'results_overdue' | 'result_queried' | 'letter_issued'
   | 'mentor_assigned'   // S7b
   | 'announcement'      // S8: the wrapper around an announcement's own title and message
+  | 'survey_open'       // S9: a survey is open / a reminder (one wording, `{survey_note}` says which)
 export type StudentEmailLanguage = 'en' | 'ms' | 'ta'
 
 export interface StudentEmailTemplate {

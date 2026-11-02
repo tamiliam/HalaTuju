@@ -6445,8 +6445,7 @@
         "executed": "Ditandatangani dan berkuat kuasa"
       },
       "later": {
-        "letters": "Surat akan tersedia dalam kemas kini akan datang.",
-        "surveys": "Tinjauan akan tersedia dalam fasa akan datang."
+        "letters": "Surat akan tersedia dalam kemas kini akan datang."
       },
       "activity": {
         "title": "Aktiviti",
@@ -6782,7 +6781,15 @@
       },
       "askedForHelp": "Minta bantuan",
       "askedForHelpNote": "\"Minta bantuan\" bermaksud pelajar menjawab ya atau tidak pasti untuk bantuan permohonan universiti atau biasiswa semasa memohon, atau staf menandakan mereka untuk bimbingan mentor. Mentor dan pertemuan tidak pernah dikongsi dengan penaja atau rakan kongsi.",
-      "mentorConcerned": "Mentor bimbang"
+      "mentorConcerned": "Mentor bimbang",
+      "surveys": {
+        "card": "Jawapan penerima biasiswa ini kepada tinjauan anda ada di tab Tinjauan.",
+        "open": "Buka Tinjauan",
+        "loadError": "Tinjauan tidak dapat dimuatkan.",
+        "waiting": "Belum dijawab: {list}",
+        "none": "Belum ada tinjauan yang dijawab.",
+        "sent": "dijawab {date}"
+      }
     },
     "contracts": {
       "title": "Templat kontrak",
@@ -7808,7 +7815,8 @@
           "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
           "letter_issued": "Surat telah dikeluarkan",
           "mentor_assigned": "Anda mempunyai mentor",
-          "announcement": "Satu pengumuman"
+          "announcement": "Satu pengumuman",
+          "survey_open": "Tinjauan untuk anda"
         },
         "when": {
           "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
@@ -7842,7 +7850,8 @@
           "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
           "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
           "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor.",
-          "announcement": "Dihantar dalam masa sejam selepas pengumuman keluar, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Pengumuman). Tajuk dan mesej pengumuman itu sendiri dimasukkan. Selamat untuk dimatikan — berita tetap ada di Biasiswa Saya."
+          "announcement": "Dihantar dalam masa sejam selepas pengumuman keluar, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Pengumuman). Tajuk dan mesej pengumuman itu sendiri dimasukkan. Selamat untuk dimatikan — berita tetap ada di Biasiswa Saya.",
+          "survey_open": "Dihantar dalam masa sejam selepas tinjauan dibuka, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Tinjauan) — dan, apabila diminta oleh kakitangan, peringatan 3 hari sebelum ditutup kepada mereka yang belum menjawab. Kata-kata yang sama digunakan untuk kedua-duanya; baris pertama menyatakan yang mana. Selamat untuk dimatikan — tinjauan tetap ada di Biasiswa Saya."
         },
         "language": {
           "en": "Inggeris",
@@ -8205,7 +8214,8 @@
         "issue-monthly-invoices": "Invois bulanan",
         "refresh-reminder": "Peringatan katalog kursus",
         "decision-emails": "E-mel keputusan",
-        "announcement-emails": "E-mel pengumuman"
+        "announcement-emails": "E-mel pengumuman",
+        "survey-emails": "E-mel tinjauan"
       }
     },
     "platformBilling": {
@@ -8688,6 +8698,170 @@
         "badTime": "Masukkan tarikh, dan masa sebagai HH:MM (contohnya 09:30).",
         "generic": "Tidak dapat disimpan. Sila cuba lagi."
       }
+    },
+    "surveys": {
+      "nav": "Tinjauan",
+      "title": "Tinjauan",
+      "intro": "Ajukan soalan kepada penerima biasiswa anda. Mereka menjawab di Biasiswa Saya → Tinjauan.",
+      "new": "Tinjauan baharu",
+      "tabsAria": "Tinjauan mengikut status",
+      "tab": {
+        "open": "Dibuka",
+        "scheduled": "Dijadualkan",
+        "draft": "Draf",
+        "closed": "Ditutup"
+      },
+      "col": {
+        "survey": "Tinjauan",
+        "for": "Untuk",
+        "dates": "Dibuka",
+        "answered": "Dijawab",
+        "actions": "Tindakan"
+      },
+      "forAll": "Semua penerima biasiswa ({count})",
+      "forGift": "{name} ({count})",
+      "by": "oleh {name}",
+      "byRole": "oleh {name} ({role})",
+      "questions": "{count} soalan",
+      "oneQuestion": "1 soalan",
+      "locked": "soalan dikunci",
+      "answeredOf": "{n} daripada {count}",
+      "yes": "Ya",
+      "no": "Tidak",
+      "action": {
+        "results": "Keputusan",
+        "edit": "Sunting",
+        "close": "Tutup sekarang",
+        "delete": "Padam"
+      },
+      "confirm": {
+        "close": "Tutup “{title}” sekarang? Penerima biasiswa tidak lagi boleh menjawab atau mengubah jawapan; apa yang telah dihantar kekal.",
+        "delete": "Padam “{title}”? Tindakan ini tidak boleh dibatalkan."
+      },
+      "done": {
+        "published": "Diterbitkan. Penerima biasiswa kini boleh menjawabnya di Biasiswa Saya → Tinjauan.",
+        "scheduled": "Dijadualkan. Ia dibuka pada masa yang anda pilih.",
+        "draft": "Disimpan sebagai draf. Penerima biasiswa tidak dapat melihatnya.",
+        "saved": "Disimpan.",
+        "closed": "Ditutup. Penerima biasiswa tidak lagi boleh menjawab.",
+        "deleted": "Dipadam."
+      },
+      "empty": {
+        "open": "Tiada tinjauan dibuka.",
+        "scheduled": "Tiada yang dijadualkan.",
+        "draft": "Tiada draf.",
+        "closed": "Belum ada tinjauan yang ditutup."
+      },
+      "loadError": "Tinjauan tidak dapat dimuatkan.",
+      "chooseGift": "Pilih program dahulu (Program), supaya kami tahu penerima biasiswa organisasi mana yang dimaksudkan.",
+      "footnote": "Hanya penerima biasiswa yang dibiayai (Biasiswa Saya) melihat tinjauan. Jawapan mereka membawa nama mereka dan hanya dilihat oleh kakitangan anda — tidak sekali-kali oleh penaja atau rakan kongsi. Sebaik sahaja tinjauan ada jawapan, soalannya dikunci; tinjauan yang ada jawapan ditutup, tidak dipadam.",
+      "kind": {
+        "one": "Satu pilihan",
+        "many": "Beberapa pilihan",
+        "rating": "Penilaian 1–5",
+        "yes_no": "Ya atau tidak",
+        "short": "Jawapan pendek",
+        "long": "Jawapan panjang"
+      },
+      "form": {
+        "newTitle": "Tinjauan baharu",
+        "editTitle": "Sunting tinjauan",
+        "title": "Tajuk",
+        "intro": "Pengenalan ringkas (dipaparkan di atas soalan)",
+        "for": "Untuk",
+        "opens": "Dibuka",
+        "now": "Sekarang",
+        "asIs": "Seperti sedia ada",
+        "later": "Kemudian: pilih tarikh dan masa",
+        "openDate": "Dibuka pada",
+        "closeDate": "Ditutup pada",
+        "time": "Masa (24 jam, cth. 21:30)",
+        "questions": "Soalan",
+        "questionType": "Jenis",
+        "questionText": "Soalan",
+        "hint": "Petunjuk (pilihan)",
+        "hintRating": "1 = tidak berguna, 5 = sangat berguna",
+        "options": "Pilihan, satu bagi setiap baris (2 hingga {max})",
+        "required": "Wajib",
+        "optional": "Pilihan",
+        "mentorOnly": "Hanya untuk penerima biasiswa yang ada mentor",
+        "mentorOnlyShort": "hanya penerima biasiswa yang ada mentor",
+        "doneQuestion": "Selesai",
+        "untitled": "(belum ada soalan)",
+        "edit": "Sunting",
+        "moveUp": "Naikkan",
+        "remove": "Buang",
+        "addQuestion": "+ Tambah soalan",
+        "types": "Jenis: satu pilihan, beberapa pilihan, penilaian 1–5, ya/tidak, jawapan pendek, jawapan panjang",
+        "emailOpen": "E-mel penerima biasiswa apabila ia dibuka",
+        "emailNote": "Dihantar dalam masa sejam selepas dibuka, sekali kepada setiap penerima biasiswa yang berkenaan, selagi “Tinjauan untuk anda” dihidupkan dalam Komunikasi pelajar.",
+        "emailOff": "E-mel “Tinjauan untuk anda” dimatikan dalam Komunikasi pelajar, jadi tiada sesiapa akan menerima e-mel.",
+        "remind": "Ingatkan mereka yang belum menjawab, 3 hari sebelum ia ditutup",
+        "lockNote": "Sebaik sahaja tinjauan ada jawapan, soalannya dikunci (supaya jawapan boleh dibandingkan). Anda masih boleh mengubah tajuk, pengenalan dan tarikh tutup.",
+        "lockedNote": "Sudah ada yang menjawab: soalan, untuk siapa dan masa dibuka dikunci. Tajuk, pengenalan, tarikh tutup dan e-mel masih boleh diubah."
+      },
+      "btn": {
+        "publish": "Terbitkan",
+        "schedule": "Jadualkan",
+        "draft": "Simpan sebagai draf",
+        "save": "Simpan perubahan"
+      },
+      "error": {
+        "title_required": "Tulis tajuk.",
+        "title_too_long": "Tajuk terlalu panjang (paling banyak 150 aksara).",
+        "title_newline": "Kekalkan tajuk dalam satu baris.",
+        "intro_too_long": "Pengenalan terlalu panjang (paling banyak 1,000 aksara).",
+        "bad_audience": "Pilih semula untuk siapa.",
+        "bad_opens_at": "Pilih bila ia dibuka.",
+        "bad_closes_at": "Pilih bila ia ditutup.",
+        "closes_at_past": "Pilih masa tutup pada masa hadapan.",
+        "closes_before_opens": "Ia mesti ditutup selepas dibuka.",
+        "no_questions": "Tambah sekurang-kurangnya satu soalan sebelum menerbitkan.",
+        "too_many_questions": "Tinjauan mempunyai paling banyak 30 soalan.",
+        "bad_question_kind": "Pilih jenis bagi setiap soalan.",
+        "question_required": "Tulis soalan.",
+        "question_too_long": "Soalan terlalu panjang (paling banyak 300 aksara).",
+        "question_newline": "Kekalkan setiap soalan dalam satu baris.",
+        "hint_too_long": "Petunjuk terlalu panjang (paling banyak 200 aksara).",
+        "options_count": "Soalan pilihan memerlukan 2 hingga 12 pilihan.",
+        "option_required": "Pilihan tidak boleh kosong.",
+        "option_too_long": "Pilihan terlalu panjang (paling banyak 120 aksara).",
+        "option_duplicate": "Dua pilihan adalah sama.",
+        "bad_options": "Tulis pilihan, satu bagi setiap baris.",
+        "questions_locked": "Sudah ada yang menjawab, jadi soalan tidak boleh diubah.",
+        "answered_locked": "Sudah ada yang menjawab, jadi untuk siapa dan masa dibuka tidak boleh diubah.",
+        "badTime": "Masukkan tarikh, dan masa sebagai HH:MM (contohnya 09:30).",
+        "atQuestion": "(soalan {n})",
+        "generic": "Tidak dapat disimpan. Sila cuba lagi."
+      },
+      "results": {
+        "title": "{title} · keputusan",
+        "dates": "dibuka {from} – {to}",
+        "answered": "{n} daripada {count} menjawab ({pct}%)",
+        "csv": "Muat turun CSV",
+        "csvFailed": "CSV tidak dapat dimuat turun. Sila cuba lagi.",
+        "remind": "Ingatkan mereka yang belum menjawab",
+        "remindOff": "Peringatan dimatikan: e-mel “Tinjauan untuk anda” dimatikan dalam Komunikasi pelajar.",
+        "confirmRemind": "Hantar e-mel peringatan kepada {count} penerima biasiswa yang belum menjawab? Setiap orang diingatkan sekali sahaja.",
+        "reminded": "Peringatan dihantar: {count}.",
+        "remindFailed": "Peringatan tidak dapat dihantar. Sila cuba lagi.",
+        "remindedOne": "telah diingatkan",
+        "tabsAria": "Paparan keputusan",
+        "tab": {
+          "summary": "Ringkasan",
+          "each": "Setiap penerima",
+          "pending": "Belum menjawab"
+        },
+        "who": "siapa",
+        "noneYet": "Belum ada jawapan.",
+        "showAll": "Tunjukkan semua {count} jawapan",
+        "answersCount": "{count} jawapan",
+        "average": "Purata {avg} daripada 5",
+        "sent": "dihantar {date}",
+        "everyone": "Semua yang berkenaan telah menjawab.",
+        "loadError": "Keputusan tidak dapat dimuatkan.",
+        "footnote": "Jawapan setiap penerima biasiswa juga ada dalam fail mereka (tab Tinjauan). Untuk kakitangan sahaja; tidak sekali-kali untuk penaja atau rakan kongsi."
+      }
     }
   },
   "documentsTab": {
@@ -8861,6 +9035,34 @@
       "empty": "Belum ada berita.",
       "loadFailed": "Berita anda tidak dapat dimuatkan. Sila cuba lagi.",
       "readNote": "Pengumuman dikira sudah dibaca sebaik sahaja ia dipaparkan di sini. Nombor merah mengira yang belum dibaca."
+    },
+    "surveys": {
+      "tab": "Tinjauan",
+      "toAnswer": "{count} untuk dijawab",
+      "openUntil": "Dibuka sehingga {date}",
+      "closed": "Ditutup {date}",
+      "questions": "{count} soalan",
+      "oneQuestion": "1 soalan",
+      "answered": "dijawab {date}",
+      "noAnswer": "Tidak dijawab",
+      "yes": "Ya",
+      "no": "Tidak",
+      "needThis": "Sila jawab soalan ini.",
+      "thanks": "Terima kasih. Jawapan anda telah disimpan — anda boleh mengubahnya sehingga {date}.",
+      "send": "Hantar jawapan saya",
+      "change": "Simpan perubahan saya",
+      "who": "Jawapan anda dihantar kepada pasukan {org} (mereka melihat nama anda). Anda boleh mengubahnya sehingga {date}. Penaja tidak sekali-kali melihatnya.",
+      "yourAnswers": "Jawapan anda",
+      "error": {
+        "required": "Sila jawab setiap soalan yang bertanda *.",
+        "bad_answer": "Sila semak jawapan anda.",
+        "answer_too_long": "Jawapan itu terlalu panjang.",
+        "survey_closed": "Tinjauan ini telah ditutup, jadi jawapan tidak lagi boleh dihantar.",
+        "generic": "Jawapan anda tidak dapat dihantar. Sila cuba lagi."
+      },
+      "loadFailed": "Tinjauan anda tidak dapat dimuatkan. Sila cuba lagi.",
+      "empty": "Tiada tinjauan untuk anda buat masa ini.",
+      "footnote": "Nombor merah mengira tinjauan yang dibuka yang belum anda jawab."
     }
   }
 }

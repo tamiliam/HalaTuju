@@ -149,6 +149,10 @@ from .mentoring import (   # S7b: the scholar file's Mentoring tab
 from .announcements import (   # S8: Programme -> Announcements
     AdminAnnouncementView, AdminAnnouncementWithdrawView, AdminAnnouncementsView,
 )
+from .surveys import (   # S9: Programme -> Surveys, and the scholar file's Surveys tab
+    AdminScholarSurveysView, AdminSurveyActionView, AdminSurveyCsvView, AdminSurveyResultsView, AdminSurveyView,
+    AdminSurveysView,
+)
 from .mentor_students import (   # S7c: a mentor's own students
     AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
 )

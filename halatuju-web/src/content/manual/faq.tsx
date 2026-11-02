@@ -313,6 +313,19 @@ export const FAQ: Record<Audience, QA[]> = {
         changes what they see and marks it &ldquo;edited&rdquo;; it never emails again. A published one is withdrawn,
         never deleted. Sponsors and partners never see announcements.</>,
     },
+    {
+      q: <>How do I ask our scholars questions (a survey)?</>,
+      a: <>Open the gift, then <strong>Surveys</strong> (organisation admins and admins). Give it a title, a short
+        introduction, who it is for (all your scholars, or one gift), when it opens and closes, and up to 30
+        questions: one choice, several choices, a rating from 1 to 5, yes or no, a short or a long answer. Scholars
+        answer on My Bursary &rarr; <strong>Surveys</strong> and can change their answers until it closes. You can
+        email them when it opens and remind those who have not answered 3 days before it closes, while the
+        &ldquo;A survey for you&rdquo; email is switched on in Student communications. <strong>Results</strong> shows
+        each question&rsquo;s answers with who gave them, each scholar&rsquo;s answers, who has not answered (with a
+        Remind button), and a CSV download. Once anybody answers, the questions are locked; a survey with answers is
+        closed, never deleted. Answers carry the scholar&rsquo;s name and are for staff only &mdash; sponsors and
+        partners never see them.</>,
+    },
   ],
   admin: [
     {

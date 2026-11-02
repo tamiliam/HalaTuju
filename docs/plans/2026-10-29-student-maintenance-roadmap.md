@@ -53,7 +53,7 @@ and tabs Overview · Results · Money · Contract · Letters · Mentoring · Sur
 | `LetterTemplate` / `Letter` | discipline, suspension, termination, close-out, general; PDF in private bucket; emailed; acknowledged; response_due_on | 6 |
 | `Mentor` / `MentorAssignment` / `MentoringSession` | records-only mentoring; nullable user link for later login | 7 |
 | `Announcement` / `AnnouncementRead` | audience all/gift; optional email; read receipts | 8 |
-| `Survey` / `SurveyQuestion` / `SurveyResponse` | later | 9 |
+| `Survey` / `SurveyQuestion` / `SurveyResponse` / `SurveyAnswer` / `SurveyEmail` | audience all/gift; dates give the status; questions lock at the first answer; two optional emails | 9 |
 | `DevelopmentModule` / `ModuleProgress` | later | 10 |
 
 ## Where settings live (nothing hard-coded)
@@ -150,7 +150,8 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
    **LIVE 2026-11-02** (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200).
-9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).
+9. **Surveys** (builder, schedule, student form, outcomes tab; scholarship 0200; cron `survey-emails`, hourly).
+   **BUILT, NOT LIVE 2026-11-02** (branch maint-s7; migrate 0200 by hand first; Scheduler job halatuju-survey-emails).
 10. *Later* — **Development modules** (content library + progress).
 11. ~~*Later* — **Mentor login**~~ — brought forward into Sprint 7a (owner, 2026-10-31).
 
