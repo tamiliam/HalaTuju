@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M4c — one box level on the rest of the student pages (2026-11-02, not yet pushed)
+
+No new design: the M4 / M4b pattern the owner approved (decisions.md, "One box level; sections on phones"). Below `md`
+a card is a plain full-width section on a 16 px gutter, divided from the next by a hairline; nothing inside it is boxed
+again; from `md` every page looks exactly as before.
+
+- **My Bursary and all its tabs** (overview, Results, Funds, Contract, Letters, News, Surveys, Mentoring): sections,
+  not cards, through the new `PHONE_SECTION_FLAT` (`src/lib/phoneSection.ts` — the borderless shadow card from `md`,
+  no border and no margin of its own); the tabs, "See all", "Open results", the back arrow and every form button are
+  44 px on a phone; the spending card takes a `className` (`SpendingCard.tsx` — the sponsor portal keeps its default
+  box); Surveys moved from its own `sm:` white band onto the shared section; News keeps its brand rule for a new item.
+- **Home**: 16 px gutter; the tall 80 px section padding is 40 px on a phone (owner's audit item; 80 from `md`); the
+  three steps are divided sections (the `.card` from `md`); the figures band is 2 × 2 on a phone.
+- **The scholarship landing**: 16 px gutter, tighter rhythm; value tiles, steps and FAQ are divided rows on a phone,
+  the requirements list unboxed; the coloured "Please note" and donor callouts keep their boxes; "See if you qualify"
+  is 44 px.
+- **The report** (`ReportView`), **About, Privacy, Terms, Cookies, Contact, Get started**: the page itself on a phone,
+  the white card from `md`; Contact's fields sit on white and are 44 px; Get started's Log in is 44 px.
+- **The pathway pages** (`/pathway/matric`, `/pathway/stpm`): sections; the college / school lists are divided rows
+  (no inner 600 px scroll box on a phone — Load more pages it); the state and district pickers and the phone /
+  website links are 44 px.
+- **Onboarding** (exam type, SPM grades, higher grades, STPM grades, profile, the shared `SpmResultsBlock` and
+  `StpmSubjectRow`) and **scholarship onboarding**: 16 px gutter, the subject cards are divided rows, the single form
+  card is the page on a phone; the exam-type choices keep their boxes (controls) with less padding; MUET bands,
+  nationality and special-needs choices are 44 px.
+- **Both quizzes**: 16 px gutter, tighter tile gap, "Not sure yet" and Previous 44 px.
+- **Guards** (`mobileStandard.test.ts`, rule 15): 26 more swept files and 3 more swept parts; the `md:divide-y-0` ban
+  covers them all; `PHONE_SECTION_FLAT` must box nothing on a phone; a string sized as a 44-48 px button (`h-11`,
+  `h-12`, `min-h-11`) is a control, not a card. The report test now pins the phone-plain / desktop-card body
+  (`discoveryLayout.test.ts`). Every guard change bite-checked (8 injections, all red, restored by checksum).
+- **Sandbox** (`src/sandbox/studentM4cSurfaces.tsx`, synthetic sign-in only): `bursary-overview`, `bursary-news`,
+  `bursary-surveys`, `onboarding-exam-type`, `onboarding-grades`, `quiz`; the bursary slice now names the sandbox as
+  an owner (`sliceReach.test.ts`), as the other slices do.
+- **Numbers:** Jest 6,118 → 6,118 (no new test cases: the guards grew inside the rule-15 tests); mobile-check 360 →
+  396 cells, all passing, nothing worse, 18 cells better (`/contact` 2 → 0, `/get-started` 1 → 0, `/scholarship` 1 → 0
+  small targets); the 36 new cells are clean except the quiz's two 10 px step dots (TD-465); ledger 27 → 31 routes
+  measured, 16 → 22 green. Bundle (exact): median 145.329 → 145.407 kB (line 147), `/` 143.743 → 143.976,
+  `/scholarship` 182.429 → 182.664, `/scholarship/bursary` 190.314 → 190.612, `/profile` 192.802 → 192.817 (line 194),
+  `/scholarship/application` 206.181 → 206.196 (line 208). Nothing raised; nothing touches the API.
+- New TD-465 (the quiz step dots; the sandbox mounts pages inside its own 16 px gutter).
+
 ## Student maintenance Sprint 9 — surveys — LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK)
 
 Owner rulings and the approved SurveysAdmin / SurveyStudent / SurveyResults boards, 2026-11-02 (decisions.md, the S9

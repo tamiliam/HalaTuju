@@ -7386,3 +7386,14 @@ when it names the widest element, but not that element's CHILDREN: when a page o
 contact rows, fixed in M4b), it named a tab of the fixed tab bar instead of the real offender. Skip anything inside a
 fixed ancestor (the `measureBars` walk already does). (3) The rest of the student pages are M4c (roadmap), not debt.
 *(W · S)*
+
+### [TD-465] Mobile M4c leftovers: the quiz step dots are 10 px buttons; the sandbox mounts pages inside its own 16 px gutter - low
+
+**Raised 2026-11-02 at the Mobile M4c build.** (1) Both quizzes (`src/app/quiz/page.tsx`, `src/app/stpm/quiz/page.tsx`)
+draw one 10 px dot BUTTON per question to jump between them — the only small targets left on the swept student pages
+(mobile-check: 2 on the `quiz` surface's two questions; ~10 on a real quiz). At 44 px each, ten do not fit a 360 px row.
+Options: dots as decoration on a phone (Previous / auto-advance already move between questions) with a "Question n of
+m" chooser, or two rows. Needs an owner nod (it removes a way of moving on a phone). (2) The sandbox layout wraps every
+surface in `max-w-6xl px-4 py-6`, so a surface page sits 32 px from the edge instead of 16 and mobile-check measures it
+narrower than a phone shows it (no false failure seen, but a full-bleed bar or a 360 px overflow could hide). Mount
+page surfaces without the wrapper. *(W · S)*

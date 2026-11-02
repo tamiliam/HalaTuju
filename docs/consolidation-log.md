@@ -23,6 +23,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
 - 2026-11-02 Mobile-native Sprint M4 (part 0 shared-phone privacy fix; apply draft in this tab, one step per screen; document cards, Action Centre, award reader; award read-back of a passed quiz and a valid PIN; rule 15 one box level on phones; adversarial review fixes; not yet pushed) — 1c6ecf40 22cf678e 7e5dce9f 70a0ab05 dbf092b5 8717b111 94366446 86423305
 - 2026-11-02 Mobile-native Sprint M4b (student bottom tab bar; rule-15 sweep of dashboard, search, course pages, profile, saved, settings) — d37fc2f5 12c8f8dc 691e8804 6de6113d
+- 2026-11-02 Mobile-native Sprint M4c (rule-15 sweep of My Bursary, Home, scholarship landing, report, info/legal pages, pathways, onboarding, quizzes; not yet pushed) — 633ff8b5
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 

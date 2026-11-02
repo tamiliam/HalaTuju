@@ -220,8 +220,10 @@ Three kinds of check, from cheapest to most human:
   card — rounded-xl or -2xl, a border and the card ground in one class string, in any order — and no bare 24 px
   `container` gutter; `PHONE_SECTION` boxes nothing below `md`) and review. Swept in Mobile M4: apply, application
   (step wizard, documents, Action Centre, post-award tasks) and award; in M4b: Dashboard, Search, the course pages
-  (`/course`, `/stpm`), Profile, Saved and Settings. M4c sweeps the rest (My Bursary, Home, the scholarship landing,
-  report, the info and legal pages, the pathway pages, onboarding, the quizzes).
+  (`/course`, `/stpm`), Profile, Saved and Settings; in M4c: the rest of the student pages — My Bursary and all its
+  tabs, Home, the scholarship landing, the report, About / Contact / Privacy / Terms / Cookies / Get started, the
+  pathway pages, onboarding (and the scholarship's own) and both quizzes. A string sized as a 44-48 px button (`h-11`,
+  `h-12`, `min-h-11`) is a control, so the card check passes it.
 - **Copy this:** `src/lib/phoneSection.ts` — `PHONE_GUTTER` on the page's `<main>`, `PHONE_SECTION` for what was
   a card, `PHONE_ROWS` for the items inside it, `PHONE_INNER_BOX` (or `md:`-prefixed box classes) for a group that
   was boxed inside a card, `PHONE_BLEED` for a sticky bar that runs edge to edge across the gutter. A test that
@@ -234,6 +236,12 @@ Three kinds of check, from cheapest to most human:
   Tailwind's divide selector is stronger than a child's own `md:border`, so the `md:` reset strips the borders of every
   box after the first from `md` (guarded). A section inside a parent that already spaces its children takes
   `PHONE_SECTION_NO_GAP`, so the desktop keeps its old spacing.
+  M4c examples: what was a BORDERLESS shadow card (`rounded-2xl bg-ground-0 p-5 shadow-sm`, all of My Bursary) takes
+  `PHONE_SECTION_FLAT` — the same card from `md`, no border, no margin of its own. A page that was ONE card around the
+  whole text (About, the legal pages, Contact, Get started, the report, a form step) keeps no section at all on a phone:
+  the box classes become `md:`-only and the text sits on the gutter. A shared component that a non-student screen also
+  draws takes a `className` with its old box as the default (`sponsor/SpendingCard.tsx`). A list inside a section with
+  a fixed height and its own scroll bar loses both on a phone (`/pathway/stpm`'s school list; Load more pages it).
 
 ## Tamil type
 
