@@ -8,6 +8,7 @@ import LanguageSelector from '@/components/LanguageSelector'
 import ThemeSelector from '@/components/ThemeSelector'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'
 
 
 export default function SettingsPage() {
@@ -24,9 +25,9 @@ export default function SettingsPage() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-6 py-8 max-w-lg space-y-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8 max-w-lg`}>
         {/* Language */}
-        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+        <section className={PHONE_SECTION}>
           <h2 className="font-semibold text-ground-900 mb-1">{t('settings.language')}</h2>
           <p className="text-sm text-ground-500 mb-3">{t('settings.languageDesc')}</p>
           <LanguageSelector />
@@ -34,14 +35,14 @@ export default function SettingsPage() {
 
         {/* Theme (Layer 1 F7d). Beside Language on purpose: both are device-local personal
             choices, and this is the page a person looks on when they want to change one. */}
-        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+        <section className={PHONE_SECTION}>
           <h2 className="font-semibold text-ground-900 mb-1">{t('settings.theme')}</h2>
           <p className="text-sm text-ground-500 mb-3">{t('settings.themeDesc')}</p>
           <ThemeSelector />
         </section>
 
         {/* Clear Data */}
-        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+        <section className={PHONE_SECTION}>
           <h2 className="font-semibold text-ground-900 mb-1">{t('settings.clearData')}</h2>
           <p className="text-sm text-ground-500 mb-3">{t('settings.clearDataDesc')}</p>
           {cleared ? (
@@ -49,7 +50,7 @@ export default function SettingsPage() {
           ) : (
             <button
               onClick={handleClearData}
-              className="px-4 py-2 text-sm font-medium text-critical-600 border border-critical-200 rounded-lg hover:bg-critical-50 transition-colors"
+              className="min-h-11 px-4 py-2 text-sm font-medium text-critical-600 border border-critical-200 rounded-lg hover:bg-critical-50 transition-colors"
             >
               {t('settings.clearButton')}
             </button>
@@ -57,7 +58,7 @@ export default function SettingsPage() {
         </section>
 
         {/* About */}
-        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+        <section className={PHONE_SECTION}>
           <h2 className="font-semibold text-ground-900 mb-3">{t('settings.aboutTitle')}</h2>
           <div className="space-y-2 text-sm text-ground-600">
             <div className="flex justify-between">

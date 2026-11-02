@@ -43,7 +43,8 @@ describe('the course pages on a phone (Mobile M3)', () => {
   })
 
   it.each(Object.entries(COURSE_PAGES))('%s dissolves its columns on a phone and orders every section', (_f, src) => {
-    expect(src).toMatch(/className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8"/)
+    // Rule 15 (M4b): no gap on a phone — the sections are divided by their own hairlines.
+    expect(src).toMatch(/className="flex flex-col md:grid md:grid-cols-3 md:gap-8"/)
     const cols = src.match(/className="(contents [^"]+)"/g) ?? []
     expect(cols.length).toBe(2)
     for (const c of cols) expect(c).toMatch(/\bmd:block\b/)

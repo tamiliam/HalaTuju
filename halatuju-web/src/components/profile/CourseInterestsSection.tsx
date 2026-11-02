@@ -11,6 +11,7 @@ import { updateSavedCourseStatus, unsaveCourse } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { useToast } from '@/components/ToastContext'
 import { useT } from '@/lib/i18n'
+import { PHONE_SECTION } from '@/lib/phoneSection'
 
 const STATUS_OPTIONS = [
   { value: 'interested', label: 'profile.status.interested', color: 'bg-ground-100 text-ground-600' },
@@ -53,9 +54,9 @@ export default function CourseInterestsSection({ savedCourses, setSavedCourses, 
     STATUS_OPTIONS.find(s => s.value === status)?.color || 'bg-ground-100 text-ground-600'
 
   return (
-          <div className="bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={PHONE_SECTION}>
+            <div className="flex items-center gap-3 mb-1 md:mb-5">
+              <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                 <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                 </svg>

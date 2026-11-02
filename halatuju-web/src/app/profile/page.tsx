@@ -44,6 +44,9 @@ import { useToast } from '@/components/ToastContext'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
 import { usePostcodeAutofill } from '@/lib/usePostcodeAutofill'
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'
+/** Rule 15 (Mobile M4b): a section's read-only rows, divided by hairlines on a phone (never boxed). */
+const PROFILE_ROWS = 'divide-y divide-ground-100 md:divide-y-0 [&>*]:py-2.5 md:[&>*]:py-0'
 
 type EditingSection = 'identity' | 'contactDetails' | 'contact' | 'family' | 'application' | null
 
@@ -471,14 +474,14 @@ export default function ProfilePage() {
     <>
       <AppHeader />
       <main className="min-h-screen bg-ground-50">
-        <div className="container mx-auto px-6 py-10 max-w-2xl">
+        <div className={`container mx-auto ${PHONE_GUTTER} py-4 md:py-10 max-w-2xl`}>
           {nextUrl && (
             <Link href={nextUrl} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline mb-4">
               ← {t('scholarship.apply.backToApplication')}
             </Link>
           )}
           {/* Page title */}
-          <div className="mb-8">
+          <div className="md:mb-8">
             <h1 className="text-2xl font-bold text-ground-900 mb-1">
               {t('profile.title')}
             </h1>
@@ -488,10 +491,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 1: Personal Details (Identity) */}
-          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${identityIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={`${PHONE_SECTION} ${identityIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                   <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
                   </svg>
@@ -504,7 +507,7 @@ export default function ProfilePage() {
                 )}
               </div>
               {editingSection === null && (
-                <button onClick={() => startEditing('identity')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <button onClick={() => startEditing('identity')} className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
                   {t('profile.edit')}
                 </button>
               )}
@@ -653,7 +656,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className={`grid grid-cols-1 md:grid-cols-2 md:gap-3 ${PROFILE_ROWS}`}>
                 <div className="flex justify-between">
                   <span className="text-sm text-ground-500 flex items-center gap-1.5">
                     {/* Same correction as the edit panel: the padlock is drawn only when the IC
@@ -716,10 +719,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 2: Contact Details (NEW) */}
-          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactDetailsIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={`${PHONE_SECTION} ${contactDetailsIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                   <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                   </svg>
@@ -732,7 +735,7 @@ export default function ProfilePage() {
                 )}
               </div>
               {editingSection === null && (
-                <button onClick={() => startEditing('contactDetails')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <button onClick={() => startEditing('contactDetails')} className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
                   {t('profile.edit')}
                 </button>
               )}
@@ -889,7 +892,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={`${PROFILE_ROWS} md:space-y-3`}>
                 <div className="flex justify-between">
                   <span className="text-sm text-ground-500">{t('profile.loginMethod')}</span>
                   <span className="text-sm text-ground-900">{loginMethod || '—'}</span>
@@ -897,7 +900,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.contactEmail')} empty={!contactEmail} />
                   {contactEmail ? (
-                    <span className="text-sm text-ground-900 flex items-center gap-1.5">
+                    <span className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 break-all text-right text-sm text-ground-900">
                       {contactEmail}
                       {contactEmailVerified ? (
                         <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
@@ -912,7 +915,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.contactPhone')} empty={!contactPhone} />
                   {contactPhone ? (
-                    <span className="text-sm text-ground-900 flex items-center gap-1.5">
+                    <span className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 break-all text-right text-sm text-ground-900">
                       {contactPhone}
                       {contactPhoneVerified ? (
                         <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
@@ -933,10 +936,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 3: Contact & Location */}
-          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={`${PHONE_SECTION} ${contactIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                   <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -950,7 +953,7 @@ export default function ProfilePage() {
                 )}
               </div>
               {editingSection === null && (
-                <button onClick={() => startEditing('contact')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <button onClick={() => startEditing('contact')} className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
                   {t('profile.edit')}
                 </button>
               )}
@@ -1018,7 +1021,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={`${PROFILE_ROWS} md:space-y-3`}>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.address')} empty={!address && !postalCode && !city && !state} />
                   <span className="text-sm text-ground-900 text-right max-w-[60%]">
@@ -1032,10 +1035,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 4: Family & Background */}
-          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${familyIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={`${PHONE_SECTION} ${familyIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                   <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                   </svg>
@@ -1048,7 +1051,7 @@ export default function ProfilePage() {
                 )}
               </div>
               {editingSection === null && (
-                <button onClick={() => startEditing('family')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <button onClick={() => startEditing('family')} className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
                   {t('profile.edit')}
                 </button>
               )}
@@ -1109,7 +1112,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={`${PROFILE_ROWS} md:space-y-3`}>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.householdIncome')} empty={!householdIncome} />
                   <FieldValue value={householdIncome ? `RM ${parseInt(householdIncome, 10).toLocaleString('en-MY')}` : ''} t={t} />
@@ -1148,10 +1151,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 5: Application Tracking */}
-          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+          <div className={`${PHONE_SECTION} ${appIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
                   <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
@@ -1164,7 +1167,7 @@ export default function ProfilePage() {
                 )}
               </div>
               {editingSection === null && (
-                <button onClick={() => startEditing('application')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <button onClick={() => startEditing('application')} className="-mr-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
                   {t('profile.edit')}
                 </button>
               )}
@@ -1202,7 +1205,7 @@ export default function ProfilePage() {
                     why merit looked editable from the view but not from inside edit). Tapping jumps
                     to the grades page (stashing a return to /profile). */}
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push(resultsPath) }}
-                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  className="w-full min-h-11 flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm font-medium text-ground-700">{meritLabel}</span>
                   <span className={`text-sm text-right ${meritShown != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {meritShown != null ? meritShown : t('profile.meritTapAdd')}
@@ -1222,7 +1225,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={`${PROFILE_ROWS} md:space-y-3`}>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.school')} empty={!school} />
                   {school ? (
@@ -1242,7 +1245,7 @@ export default function ProfilePage() {
                 {/* Merit — tap to the grades editor, then return here (not the
                     course-guide recommendations). */}
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push(resultsPath) }}
-                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  className="w-full min-h-11 flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm text-ground-500">{meritLabel}</span>
                   <span className={`text-sm text-right ${meritShown != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {meritShown != null ? meritShown : t('profile.meritTapAdd')}
@@ -1251,7 +1254,7 @@ export default function ProfilePage() {
                 {/* Pathway — show the chosen COURSE when one exists, else the pathway type;
                     tap to edit inline. */}
                 <button type="button" onClick={() => startEditing('application')}
-                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  className="w-full min-h-11 flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm text-ground-500">{t('profile.pathway')}</span>
                   <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-ground-900' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {pathwayForm.chosenProgramme?.courseName

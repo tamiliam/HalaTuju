@@ -71,7 +71,7 @@ export default function GuardianContactSection() {
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-medium text-ground-900">{t('scholarship.apply.parentHeading')}</span>
         {!locked && !editing && (
-          <button onClick={startEditing} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={startEditing} className="-mr-2 inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-sm text-primary-600 hover:text-primary-700 font-medium">
             {t('profile.edit')}
           </button>
         )}

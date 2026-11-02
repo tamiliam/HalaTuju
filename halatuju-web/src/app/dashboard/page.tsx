@@ -32,6 +32,7 @@ import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { useCachedResults } from '@/hooks/useCachedResults'
 import { abandonApplyDetour } from '@/lib/applyReturn'   // the leaf, not @/lib/scholarship (6 kB)
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -327,7 +328,7 @@ export default function DashboardPage() {
       <AppHeader />
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
         {/* B40 application status — renders only when shortlisted/accepted */}
         <ScholarshipBanner />
 
@@ -392,7 +393,7 @@ export default function DashboardPage() {
 
         {/* Compact Dashboard Header */}
         {examType === 'spm' && eligibilityData && (
-          <div className="bg-ground-0 rounded-xl border border-ground-200 px-4 sm:px-6 py-4 mb-6">
+          <div className={`${PHONE_SECTION} mb-2 md:mb-6`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left: headline + chance pills */}
               <div>
@@ -416,7 +417,7 @@ export default function DashboardPage() {
                     {eligibilityData.insights.merit_summary.no_data > 0 && (
                       <span className="text-ground-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
                     )}
-                    <Link href="/onboarding/grades" className="text-xs text-ground-400 hover:text-primary-600 underline">
+                    <Link href="/onboarding/grades" className="inline-flex min-h-11 items-center text-xs text-ground-400 hover:text-primary-600 underline md:min-h-0">
                       {t('dashboard.editProfile')}
                     </Link>
                   </div>
@@ -643,7 +644,7 @@ function StpmDashboardCards({
   return (
     <div>
       {/* Header */}
-      <div className="bg-ground-0 rounded-xl border border-ground-200 px-6 py-4 mb-6">
+      <div className={`${PHONE_SECTION} mb-2 md:mb-6`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             {framing && quizSignals ? (
@@ -687,7 +688,7 @@ function StpmDashboardCards({
                 </div>
               </div>
             )}
-            <Link href="/onboarding/stpm-grades" className="text-xs text-ground-400 hover:text-primary-600 underline mt-1 inline-block">
+            <Link href="/onboarding/stpm-grades" className="mt-1 inline-flex min-h-11 items-center text-xs text-ground-400 hover:text-primary-600 underline md:min-h-0">
               {t('dashboard.editProfile')}
             </Link>
           </div>

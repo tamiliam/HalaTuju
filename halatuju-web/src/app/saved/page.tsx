@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/ToastContext'
 import AppHeader from '@/components/AppHeader'
+import { PHONE_GUTTER } from '@/lib/phoneSection'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
@@ -227,7 +228,7 @@ export default function SavedPage() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-4 md:py-8`}>
         {(loading || guardLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />

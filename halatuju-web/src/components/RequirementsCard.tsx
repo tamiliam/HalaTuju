@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { getSubjectName } from '@/lib/subjects'
 import { institutionTypeChip } from '@/lib/courseBadges'
+import { PHONE_INNER_BOX } from '@/lib/phoneSection'
+
+/** Rule 15 (Mobile M4b): a plain section on a phone, the card from `md` — its own padding sits on
+ *  the header and body rows inside (so not `PHONE_SECTION`, whose `md:p-5` would double it). */
+const REQ_SECTION = 'border-b border-ground-100 py-4 md:mb-0 md:overflow-hidden md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:py-0'
 
 // --- Types matching backend CourseRequirementSerializer output ---
 
@@ -189,9 +194,9 @@ export default function RequirementsCard({
   const isTvet = requirements.source_type === 'tvet'
 
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 overflow-hidden">
+    <section className={REQ_SECTION}>
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+      <div className="pb-3 flex items-center justify-between md:px-5 md:pt-5">
         <h2 className="text-base font-semibold text-ground-900 flex items-center gap-2">
           <svg className="w-[18px] h-[18px] text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -205,7 +210,7 @@ export default function RequirementsCard({
         )}
       </div>
 
-      <div className="px-5 pb-5 space-y-4">
+      <div className="space-y-4 md:px-5 md:pb-5">
         {/* General Requirements (Syarat Am) */}
         {hasGeneral && (
           <div>
@@ -214,12 +219,12 @@ export default function RequirementsCard({
             </h3>
             {isTvet ? (
               // TVET: clean key-value table layout (matches Stitch design)
-              <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
+              <div className="divide-y divide-ground-100 md:rounded-lg md:border md:border-ground-100">
                 {requirements.general.map((item) => !TVET_KEY_LABELS[item.key]
                   ? <TvetLabelOnlyRow key={item.key} label={item.label} /> : (
                   // Wraps, and both halves may shrink: in Lexend a long label + value pair was
                   // wider than a 360 px phone (TD-310 review). navLayout.test.ts pins it.
-                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 py-2 md:px-3">
                     <span className="min-w-0 break-words text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
                     <span className="min-w-0 break-words text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
@@ -248,10 +253,10 @@ export default function RequirementsCard({
               {t('courseDetail.specialReq')}
             </h3>
             {isTvet ? (
-              <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
+              <div className="divide-y divide-ground-100 md:rounded-lg md:border md:border-ground-100">
                 {requirements.special.map((item) => !TVET_KEY_LABELS[item.key]
                   ? <TvetLabelOnlyRow key={item.key} label={item.label} /> : (
-                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 px-3 py-2">
+                  <div key={item.key} className="flex flex-wrap justify-between items-center gap-x-3 gap-y-0.5 py-2 md:px-3">
                     <span className="min-w-0 break-words text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
                     <span className="min-w-0 break-words text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
@@ -346,7 +351,7 @@ function tvetKeyLabel(key: string, locale: string): string {
 /** A TVET row whose key has no label of its own: the served label alone, never the raw key. */
 function TvetLabelOnlyRow({ label }: { label: string }) {
   return (
-    <div className="px-3 py-2">
+    <div className="py-2 md:px-3">
       <span className="min-w-0 break-words text-xs font-medium text-ground-800">{label}</span>
     </div>
   )
@@ -427,15 +432,15 @@ function OrGroupSection({
       <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
         {label}
       </h3>
-      <div className="space-y-2">
+      <div className="divide-y divide-ground-100 md:divide-y-0 md:space-y-2">
         {displayGroups.map((group, idx) => (
-          <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
+          <div key={idx} className={`py-2 ${PHONE_INNER_BOX}`}>
             <GroupBody group={group} locale={locale} number={idx + 1} />
           </div>
         ))}
         {/* Count-once blocks: "N more subjects not already counted" (Bumi Sprint D1) */}
         {expanded && remaining.map((text, idx) => (
-          <div key={`r${idx}`} className="bg-ground-50 rounded-lg p-3 border border-ground-100">
+          <div key={`r${idx}`} className={`py-2 ${PHONE_INNER_BOX}`}>
             <div className="flex items-start gap-2.5">
               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
                 {groups.length + idx + 1}
@@ -513,12 +518,12 @@ function PismpSection({
           {label}
         </h3>
       )}
-      <div className="space-y-2">
+      <div className="divide-y divide-ground-100 md:divide-y-0 md:space-y-2">
         {displayRules.map((rule, idx) => {
           const isGenericRule = rule.subjects.length === 0
 
           return (
-            <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
+            <div key={idx} className={`py-2 ${PHONE_INNER_BOX}`}>
               <div className="flex items-start gap-2.5">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
                   {idx + 1}
@@ -545,7 +550,7 @@ function PismpSection({
 
         {/* Language OR rule — appended as last numbered rule */}
         {hasLangs && (
-          <div className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
+          <div className={`py-2 ${PHONE_INNER_BOX}`}>
             <div className="flex items-start gap-2.5">
               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-fill text-brand-fill-ink text-[11px] font-bold flex-shrink-0">
                 {displayRules.length + 1}

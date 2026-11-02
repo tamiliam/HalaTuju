@@ -25,7 +25,7 @@ export default function PathwayCards({
   if (eligible.length === 0) return null
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 border-b border-ground-100 pb-4 md:border-0 md:pb-0">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-semibold text-ground-700">{t('pathways.title')}:</span>
         {eligible.map(p => {
@@ -34,7 +34,7 @@ export default function PathwayCards({
             <button
               key={p.type}
               onClick={() => onFilterChange(isActive ? 'all' : p.type)}
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
+              className={`inline-flex min-h-11 items-center gap-1 rounded-full px-3.5 text-sm font-medium transition-colors cursor-pointer md:min-h-0 md:px-2.5 md:py-0.5 md:text-xs ${
                 isActive
                   ? 'bg-brand-fill text-brand-fill-ink border border-primary-600'
                   : 'bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
@@ -50,7 +50,7 @@ export default function PathwayCards({
         {activeFilter !== 'all' && (
           <button
             onClick={() => onFilterChange('all')}
-            className="text-xs text-ground-400 hover:text-ground-600 ml-1"
+            className="inline-flex min-h-11 items-center px-2 text-xs text-ground-400 hover:text-ground-600 md:min-h-0 md:px-0 md:ml-1"
           >
             {t('dashboard.clearFilter')}
           </button>

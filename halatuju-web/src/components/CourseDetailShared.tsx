@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRef } from 'react'
 import { useT } from '@/lib/i18n'
 import { useBottomBarInset } from '@/lib/bottomBarInset'
+import { PHONE_SECTION } from '@/lib/phoneSection'
 
 /**
  * Shared building blocks for SPM and STPM course detail pages.
@@ -55,7 +56,7 @@ interface CourseActionsProps {
 export function CourseActions({ isSaved, isHovering, onSave, onHoverStart, onHoverEnd }: CourseActionsProps) {
   const { t } = useT()
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+    <section className={PHONE_SECTION}>
       <h2 className="text-lg font-semibold text-ground-900 mb-4">
         {t('courseDetail.actions')}
       </h2>
@@ -107,7 +108,7 @@ export function CourseSaveBar({ isSaved, onSave }: { isSaved: boolean; onSave: (
   const bar = useRef<HTMLDivElement>(null)
   useBottomBarInset(bar)
   return (
-    <div ref={bar} data-testid="course-save-bar"
+    <div ref={bar} data-page-bar data-testid="course-save-bar"
       className="sticky bottom-0 z-10 border-t border-ground-200 bg-ground-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:hidden">
       <button type="button" onClick={onSave} aria-pressed={isSaved}
         className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-base font-semibold ${

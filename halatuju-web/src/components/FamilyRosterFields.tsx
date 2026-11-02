@@ -153,7 +153,7 @@ export default function FamilyRosterFields({
 
         {/* Optional member pool */}
         {form.otherFamilyMembers.map((m, i) => (
-          <div key={i} className="rounded-lg border border-ground-200 bg-ground-0 p-3 space-y-2">
+          <div key={i} className="space-y-2 border-t border-ground-100 pt-3 md:rounded-lg md:border md:border-ground-200 md:bg-ground-0 md:p-3">
             <div className="flex items-start gap-2">
               <div className="flex-1 grid gap-2 sm:grid-cols-2">
                 <select className="input" value={m.role}

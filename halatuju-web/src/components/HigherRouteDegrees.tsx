@@ -17,6 +17,7 @@ import { searchStpmCourses, type EligibleCourse } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { resultsEditPath, type ThirdRouteKind } from '@/lib/qualification'
 import { COURSE_PAGE_SIZE } from '@/lib/storage'
+import { PHONE_SECTION } from '@/lib/phoneSection'
 
 export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoadMoreGate, bumiputera = false }: {
   kind: ThirdRouteKind
@@ -53,7 +54,7 @@ export default function HigherRouteDegrees({ kind, savedIds, onToggleSave, onLoa
 
   return (
     <div>
-      <div className="bg-ground-0 rounded-xl border border-ground-200 px-6 py-4 mb-6">
+      <div className={`${PHONE_SECTION} mb-2 md:mb-6`}>
         <h1 className="text-xl font-bold text-ground-900">
           {t('dashboard.higherBrowseTitle')}
           {courses && courses.length > 0 && <span className="text-primary-600"> ({courses.length})</span>}

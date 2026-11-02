@@ -19,6 +19,7 @@ import { useT } from '@/lib/i18n'
 import { isThirdRoute } from '@/lib/qualification'
 import { isBumiputera } from '@/lib/bumiputera'
 import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
 
 export default function SearchPage() {
   return (
@@ -305,9 +306,9 @@ function SearchPageInner() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-4 py-5 sm:px-6 md:py-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-4 md:py-8`}>
         {/* Header */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-3 md:mb-6">
           <h1 className="text-2xl font-bold text-ground-900 mb-1">
             {t('search.title')}
           </h1>
@@ -318,7 +319,7 @@ function SearchPageInner() {
         </div>
 
         {/* Search + Filter container */}
-        <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-3 mb-4 md:p-4">
+        <div className={`${PHONE_SECTION} mb-1 pt-0 md:pt-5`}>
           {/* Search bar — on a phone with the Filters button beside it */}
           <div className="mb-3 flex gap-2">
           <div className="relative min-w-0 flex-1">

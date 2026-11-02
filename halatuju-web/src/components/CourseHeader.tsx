@@ -1,6 +1,7 @@
 'use client'
 
 import { TYPE_LABELS, institutionTypeChip, LEVEL_CHIP } from '@/lib/courseBadges'
+import { PHONE_GUTTER } from '@/lib/phoneSection'
 
 interface CourseHeaderProps {
   sourceType: string
@@ -15,7 +16,7 @@ export default function CourseHeader({ sourceType, pathwayType, level, title, su
 
   return (
     <section className="bg-ground-0 border-b">
-      <div className="container mx-auto px-6 py-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-5 md:py-8`}>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
@@ -32,11 +33,11 @@ export default function CourseHeader({ sourceType, pathwayType, level, title, su
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-ground-900 mb-2">
+            <h1 className="text-2xl font-bold text-ground-900 mb-2 md:text-3xl">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-lg text-primary-600 font-medium">
+              <p className="text-base text-primary-600 font-medium md:text-lg">
                 {subtitle}
               </p>
             )}

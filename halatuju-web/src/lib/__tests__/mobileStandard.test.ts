@@ -281,13 +281,32 @@ const RULE15_SWEPT = [
   'src/app/scholarship/apply/page.tsx', 'src/app/scholarship/award/page.tsx',
   'src/app/scholarship/application/page.tsx', 'src/components/ScholarshipNextSteps.tsx',
   'src/components/ActionCentre.tsx', 'src/components/scholarship/PostAwardTasks.tsx',
+  // Mobile M4b: Dashboard, Search, the course pages, Profile, Saved and Settings.
+  'src/app/dashboard/page.tsx', 'src/components/HigherRouteDegrees.tsx', 'src/app/search/page.tsx',
+  'src/app/course/[id]/page.tsx', 'src/app/stpm/[id]/page.tsx', 'src/components/CourseHeader.tsx',
+  'src/components/CourseDetailShared.tsx', 'src/components/CareerPathways.tsx', 'src/components/SpecialConditions.tsx',
+  'src/components/RequirementsCard.tsx', 'src/components/course/PreUInstitutions.tsx', 'src/app/profile/page.tsx',
+  'src/components/profile/CourseInterestsSection.tsx', 'src/app/saved/page.tsx', 'src/app/settings/page.tsx',
 ]
+/** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
+const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx']
 describe('rule 15 — one box level; sections on phones', () => {
   test('the swept screens draw no hand-written white card (they use PHONE_SECTION)', () => {
-    const card = /(?<!md:)rounded-2xl[^"`]*(?<!md:)\bborder\b[^"`]*(?<!md:)bg-ground-0|(?<!md:)bg-ground-0[^"`]*(?<!md:)\bborder\b[^"`]*(?<!md:)rounded-2xl/
-    const offenders = RULE15_SWEPT.filter((rel) => card.test(readWeb(rel, 'a rule-15 screen')
-      .split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')))
+    // A white card: ONE class string holding rounded-xl / -2xl, a border and the card ground, in any
+    // order, none of them `md:`-only (M4b: the M4 regex read them in two fixed orders and missed the
+    // commonest one, `bg-ground-0 rounded-xl border`).
+    const card = (s: string) => {
+      const t = s.split(/\s+/)
+      return t.some((x) => /^rounded-(xl|2xl)$/.test(x)) && t.includes('border') && t.includes('bg-ground-0')
+    }
+    const code = (rel: string) => readWeb(rel, 'a rule-15 screen').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')
+    const strings = (src: string) => Array.from(src.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)).map((m) => m[1] ?? m[2] ?? m[3] ?? '')
+    const offenders = [...RULE15_SWEPT, ...RULE15_SWEPT_PARTS].filter((rel) => strings(code(rel)).some(card))
     expect(offenders).toEqual([])
+    // No bare 24 px page gutter on a phone: a `container` line carries PHONE_GUTTER (px-4; px-6 from md).
+    const gutters = RULE15_SWEPT.flatMap((rel) => code(rel).split('\n')
+      .filter((l) => /\bcontainer\b/.test(l) && /(?<![\w:-])px-6\b/.test(l)).map((l) => `${rel}: ${l.trim()}`))
+    expect(gutters).toEqual([])
     for (const rel of RULE15_SWEPT) expect(readWeb(rel, 'a rule-15 screen')).toContain("from '@/lib/phoneSection'")
   })
   test('the sections are a card from md, and plain (no border, no rounding) below it', () => {
@@ -298,6 +317,74 @@ describe('rule 15 — one box level; sections on phones', () => {
     }
     expect(section).toMatch(/md:rounded-2xl/)
     expect(src).toMatch(/PHONE_GUTTER = 'px-4 md:px-6'/)
+  })
+})
+
+// ── Rule 11 (Mobile M4b): the student tab bar, and ONE bottom bar at a time ──────────────────
+/**
+ * The phone's tab bar (`StudentTabBar`) is mounted by the student header only, and gives way to a
+ * page's own bottom bar through CSS: every such bar carries `data-page-bar`, and `globals.css` hides
+ * the tabs while one is on the page (the owner's swap rule). A page bar WITHOUT the marker would sit
+ * on top of the fixed tabs — two bars, the main action covered — so an unmarked one fails here.
+ */
+const STUDENT_SCOPE = (rel: string) => /^src\/(app|components)\//.test(rel)
+  && !/^src\/(app|components)\/(admin|sponsor)\//.test(rel)
+const PINNED_BOTTOM = (cls: string) => {
+  const t = cls.split(/\s+/)
+  return t.includes('bottom-0') && (t.includes('sticky') || t.includes('fixed'))
+}
+describe('rule 11 — the student tab bar gives way to a page\'s own bar', () => {
+  test('every bar pinned to the foot of a student screen carries data-page-bar', () => {
+    const bars: string[] = []
+    const offenders: Offender[] = []
+    for (const f of TSX.filter((x) => STUDENT_SCOPE(x.rel))) {
+      for (const name of ['div', 'nav', 'footer', 'section']) {
+        for (const tag of openTags(f.code, name)) {
+          if (!PINNED_BOTTOM(classText(f, tag, resolve))) continue
+          bars.push(f.rel)
+          if (!/(^|\s)data-page-bar(\s|=|$)/.test(tag.attrs)) offenders.push(where(f, tag.start, tag.attrs))
+        }
+      }
+    }
+    // The five of M4b: course Save, saved compare, apply Back / Continue, award sign, post-award steps.
+    expect(bars.length).toBeGreaterThanOrEqual(5)
+    expect(offenders).toEqual([])
+  })
+  test('the tab bar is mounted by the student header only, which a flow or the sponsor side turns off', () => {
+    const users = FILES.filter((f) => /from '(@\/components|\.)\/StudentTabBar'/.test(f.code)).map((f) => f.rel)
+    expect(users).toEqual(['src/components/AppHeader.tsx'])
+    expect(readWeb('src/components/AppHeader.tsx', 'the student header')).toMatch(/\{tabs && <StudentTabBar \/>\}/)
+    for (const rel of ['src/app/scholarship/onboarding/page.tsx', 'src/components/SponsorLanding.tsx']) {
+      expect(readWeb(rel, 'a page that keeps the header but not the tabs')).toContain('<AppHeader tabs={false} />')
+    }
+    // Onboarding and the quizzes draw no student header at all, so no tabs.
+    const flows = FILES.filter((f) => /^src\/app\/(onboarding|quiz|stpm\/quiz)\//.test(f.rel))
+    expect(flows.length).toBeGreaterThanOrEqual(5)
+    expect(flows.filter((f) => /<AppHeader\b/.test(f.code)).map((f) => f.rel)).toEqual([])
+  })
+  test('its words are existing CORE keys (no new string) and the organisation\'s own short name', () => {
+    const src = readWeb('src/components/StudentTabBar.tsx', 'the tab bar')
+    const keys = Array.from(src.matchAll(/\bt\('([\w.]+)'\)/g)).map((m) => m[1])
+    expect(keys.sort()).toEqual(['common.dashboard', 'common.menu', 'common.saved', 'search.nav'])
+    const en = JSON.parse(readWeb('src/messages/en.json', 'the English catalogue'))
+    for (const k of keys) expect(k.split('.').reduce((o: Record<string, unknown>, p) => o?.[p] as never, en)).toEqual(expect.any(String))
+    // `common` and `search` are core namespaces: neither is cut into a slice.
+    const slicer = readWeb('scripts/messages-slice-loader.js', 'the slice loader')
+    expect(slicer).not.toMatch(/['"](common|search)['"]/)
+    expect(src).toContain('orgShortName')
+  })
+  test('globals.css: phones only, never without :has(), swapped by a page bar, hidden while typing, the page padded, the toast lifted', () => {
+    const css = readWeb('src/app/globals.css', 'the stylesheet').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(css).toMatch(/\[data-tab-bar\] \{\s*display: none;/)
+    const block = css.slice(css.indexOf('@supports selector(:has(*))'))
+    expect(block.length).toBeGreaterThan(30)
+    expect(block).toMatch(/@media \(max-width: 767\.98px\)/)
+    expect(block).toMatch(/html:not\(:has\(\[data-page-bar\]\)\) \[data-tab-bar\] \{\s*display: grid;/)
+    expect(block).toMatch(/textarea, select, \[contenteditable='true'\]\):focus\) \[data-tab-bar\] \{\s*display: none;/)
+    expect(block).toMatch(/--bottom-bar: 4rem;/)
+    expect(block).toMatch(/padding-bottom: calc\(4rem \+ env\(safe-area-inset-bottom\)\);/)
+    expect(css).toMatch(/\[data-tab-bar\] a \{[^}]*min-height: 4rem;/)
+    expect(css).toMatch(/\[data-tab-bar\] \{[^}]*padding-bottom: env\(safe-area-inset-bottom\);/)
   })
 })
 

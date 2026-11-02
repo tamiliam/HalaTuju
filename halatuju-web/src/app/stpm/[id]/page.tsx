@@ -14,6 +14,7 @@ import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useCallback } from 'react'
 import { institutionTypeChip } from '@/lib/courseBadges'
+import { PHONE_GUTTER, PHONE_INNER_BOX, PHONE_SECTION } from '@/lib/phoneSection'
 
 export default function StpmCourseDetailPage() {
   const params = useParams()
@@ -51,14 +52,14 @@ export default function StpmCourseDetailPage() {
 
       {/* Main Content — on a phone the columns dissolve into one ordered column, exactly as on the
           SPM course page (`course/[id]/page.tsx` says why; Mobile M3). */}
-      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
-        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
+        <div className="flex flex-col md:grid md:grid-cols-3 md:gap-8">
           {/* Left Column */}
           <div className="contents md:col-span-2 md:block md:min-w-0 md:space-y-8">
             {/* About */}
             {data.description && (
               <div className="order-4 min-w-0 md:order-none">
-              <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <section className={PHONE_SECTION}>
                 <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.aboutTitle')}
                 </h2>
@@ -88,13 +89,13 @@ export default function StpmCourseDetailPage() {
 
             {/* Institution */}
             <div className="order-6 min-w-0 md:order-none">
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PHONE_SECTION}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.whereToStudy')}
                 <span className="text-ground-500 font-normal ml-2">(1 institution)</span>
               </h2>
               {data.institution ? (
-                <div className="rounded-lg border border-ground-200 bg-ground-50 p-4">
+                <div className={PHONE_INNER_BOX}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-ground-900 mb-1 break-words">
@@ -132,7 +133,7 @@ export default function StpmCourseDetailPage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg border border-ground-200 bg-ground-50 p-4">
+                <div className={PHONE_INNER_BOX}>
                   <h3 className="font-semibold text-ground-900 mb-1">{data.university}</h3>
                   <p className="text-sm text-ground-500">Universiti Awam</p>
                 </div>
@@ -145,7 +146,7 @@ export default function StpmCourseDetailPage() {
           <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
             <div className="order-1 min-w-0 md:order-none">
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PHONE_SECTION}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
@@ -172,9 +173,9 @@ export default function StpmCourseDetailPage() {
 
             {/* Entry Requirements — unified card */}
             <div className="order-2 min-w-0 md:order-none">
-            <section className="bg-ground-0 rounded-xl border border-ground-200 overflow-hidden">
+            <section className="border-b border-ground-100 py-4 md:overflow-hidden md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:py-0">
               {/* Header */}
-              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+              <div className="pb-3 flex items-center justify-between md:px-5 md:pt-5">
                 <h2 className="text-base font-semibold text-ground-900 flex items-center gap-2">
                   <svg className="w-[18px] h-[18px] text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -188,7 +189,7 @@ export default function StpmCourseDetailPage() {
                 </span>
               </div>
 
-              <div className="px-5 pb-5 space-y-4">
+              <div className="space-y-4 md:px-5 md:pb-5">
                 {/* General Requirements */}
                 {(data.requirements.req_malaysian || data.requirements.req_bumiputera) && (
                   <div>
@@ -217,20 +218,20 @@ export default function StpmCourseDetailPage() {
                   <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
                     {t('stpm.requirements')}
                   </h3>
-                  <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
-                    <div className="flex justify-between items-center px-3 py-2">
+                  <div className="divide-y divide-ground-100 md:rounded-lg md:border md:border-ground-100">
+                    <div className="flex justify-between items-center py-2 md:px-3">
                       <span className="text-xs text-ground-500">{t('stpm.minimumCGPA')}</span>
                       <span className="text-xs font-medium text-ground-800">{data.requirements.min_cgpa.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between items-center px-3 py-2">
+                    <div className="flex justify-between items-center py-2 md:px-3">
                       <span className="text-xs text-ground-500">{t('stpm.minimumMUET')}</span>
                       <span className="text-xs font-medium text-ground-800">Band {data.requirements.min_muet_band}</span>
                     </div>
-                    <div className="flex justify-between items-center px-3 py-2">
+                    <div className="flex justify-between items-center py-2 md:px-3">
                       <span className="text-xs text-ground-500">{t('stpm.minimumSubjects')}</span>
                       <span className="text-xs font-medium text-ground-800">{data.requirements.stpm_min_subjects}</span>
                     </div>
-                    <div className="flex justify-between items-center px-3 py-2">
+                    <div className="flex justify-between items-center py-2 md:px-3">
                       <span className="text-xs text-ground-500">{t('stpm.minimumGrade')}</span>
                       <span className="text-xs font-medium text-ground-800">{data.requirements.stpm_min_grade}</span>
                     </div>

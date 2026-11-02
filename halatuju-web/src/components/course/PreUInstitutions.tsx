@@ -12,6 +12,7 @@ import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
 import { MATRIC_TRACK_MAP, TRACK_CHIP, TRACK_LABELS, type TrackId } from '@/lib/matricTracks'
+import { PHONE_ROWS, PHONE_SECTION } from '@/lib/phoneSection'
 
 // ── STPM rich institution section ────────────────────────────────────────
 
@@ -19,7 +20,7 @@ export function SubjectLegend({ stream }: { stream: string }) {
   const subjects = legendSubjects(stream)
 
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+    <section className={PHONE_SECTION}>
       <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
       <div className="space-y-2">
         {subjects.map(code => (
@@ -83,7 +84,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
   const remaining = filteredSchools.length - displayCount
 
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+    <section className={PHONE_SECTION}>
       <h2 className="text-xl font-semibold text-ground-900 mb-4">
         {t('courseDetail.whereToStudy')}
         <span className="text-ground-500 font-normal ml-2">
@@ -117,7 +118,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
       {/* ⚠ NO INNER SCROLL BOX (Mobile M3). This was a 600 px box with its own scroll around 240
           schools: on a phone the thumb scrolled the box, not the page, and was trapped in it. The
           list is part of the page now, 20 at a time. `discoveryLayout.test.ts` holds it. */}
-      <div className="space-y-3">
+      <div className={PHONE_ROWS}>
         {displayedSchools.length > 0 ? (
           displayedSchools.map(school => (
             <StpmSchoolCard key={school.code} school={school} stream={streamName} />
@@ -147,7 +148,7 @@ function StpmSchoolCard({ school, stream }: { school: StpmSchool; stream: string
   const subjects = school.subjects ? filterSubjects(school.subjects, stream) : []
 
   return (
-    <div className="rounded-lg border border-ground-200 bg-ground-50 p-3 sm:p-4">
+    <div className="py-3 md:rounded-lg md:border md:border-ground-200 md:bg-ground-50 md:p-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-ground-900 text-sm sm:text-base mb-1 break-words">
@@ -207,7 +208,7 @@ export function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   }, [trackId])
 
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+    <section className={PHONE_SECTION}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold text-ground-900">
           {t('courseDetail.whereToStudy')}
@@ -228,7 +229,7 @@ export function MatricInstitutionsSection({ courseId }: { courseId: string }) {
       </div>
 
       {trackColleges.length > 0 ? (
-        <div className="space-y-3">
+        <div className={PHONE_ROWS}>
           {trackColleges.map(college => (
             <MatricCollegeCard key={college.id} college={college} trackId={trackId} />
           ))}
@@ -244,7 +245,7 @@ export function MatricInstitutionsSection({ courseId }: { courseId: string }) {
 
 function MatricCollegeCard({ college, trackId }: { college: MatricCollege; trackId: TrackId }) {
   return (
-    <div className="bg-ground-50 rounded-lg p-4">
+    <div className="py-3 md:rounded-lg md:bg-ground-50 md:p-4">
       <h3 className="font-semibold text-ground-900 mb-2">{college.name}</h3>
 
       <div className="flex items-center gap-1.5 text-sm text-ground-500 mb-3">

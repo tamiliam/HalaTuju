@@ -18,6 +18,7 @@ import { useState, useCallback } from 'react'
 import { StpmInstitutionsSection, MatricInstitutionsSection, SubjectLegend } from '@/components/course/PreUInstitutions'
 // Mobile M3: "show all" on a phone (the `discovery` slice), loaded by this PAGE.
 import '@/lib/messagesDiscovery'
+import { PHONE_GUTTER, PHONE_ROWS, PHONE_SECTION } from '@/lib/phoneSection'
 
 export default function CourseDetailPage() {
   const params = useParams()
@@ -85,13 +86,13 @@ export default function CourseDetailPage() {
           Tab) stays the source order, the desktop's; each section keeps its own heading
           (docs/decisions.md, Mobile M3). Every item is `min-w-0`: a `truncate` school name used to
           set the column's width and push the page 8 px past a 375 px screen. */}
-      <div className="container mx-auto px-4 py-6 sm:px-6 md:py-8">
-        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
+        <div className="flex flex-col md:grid md:grid-cols-3 md:gap-8">
           {/* Left Column - Description */}
           <div className="contents md:col-span-2 md:block md:min-w-0 md:space-y-8">
             {/* About */}
             <div className="order-4 min-w-0 md:order-none">
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PHONE_SECTION}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.aboutTitle')}
               </h2>
@@ -129,7 +130,7 @@ export default function CourseDetailPage() {
             ) : courseId.startsWith('matric-') ? (
               <MatricInstitutionsSection courseId={courseId} />
             ) : (
-              <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <section className={PHONE_SECTION}>
                 <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.whereToStudy')}
                   {institutions && (
@@ -154,7 +155,7 @@ export default function CourseDetailPage() {
           <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
             <div className="order-1 min-w-0 md:order-none">
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PHONE_SECTION}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
@@ -248,7 +249,7 @@ function InstitutionList({ institutions }: { institutions: Institution[] }) {
   const [all, setAll] = useState(false)
   const hidden = institutions.length - PHONE_INSTITUTIONS
   return (
-    <div className="space-y-4">
+    <div className={PHONE_ROWS}>
       {institutions.map((inst, i) => (
         <div key={inst.institution_id} className={!all && i >= PHONE_INSTITUTIONS ? 'hidden md:block' : undefined}>
           <InstitutionCard institution={inst} />
@@ -276,7 +277,7 @@ function InstitutionCard({ institution }: { institution: Institution }) {
 
   return (
     <div
-      className="rounded-lg border border-ground-200 p-4 bg-ground-50"
+      className="py-3 md:rounded-lg md:border md:border-ground-200 md:bg-ground-50 md:p-4"
     >
       {/* A phone stacks the badge and link UNDER the name (Mobile M3): side by side they squeezed it. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
