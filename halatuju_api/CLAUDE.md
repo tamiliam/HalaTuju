@@ -1153,7 +1153,7 @@ Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. **S
 list (a button inside it loses its own border); the rule-15 guard detects cards by ground + radius, with or
 without a border. NEXT: M5 sponsor portal (its own phone nav), then M6 admin + reviewer cockpit (may split), M7, M8.
 
-### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 10 BUILT, NOT LIVE (branch maint-s7) — development modules
+### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 10 LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK) — development modules
 
 **Next free migration numbers: scholarship 0202, courses 0092.** **scholarship 0201_development_modules — MIGRATE
 FIRST by hand** (five new tables `development_modules`, `module_lessons`, `module_progress`, `module_lesson_reads`,
@@ -1175,7 +1175,7 @@ mentor's `admin/mentor/students/<id>/` gains `modules` (no links), and the mento
 `admin/mentor/students/<id>/modules/<module>/file/` signs an upload on the tap (`mentor_methods`; review fix). Routes in `urls_development.py`. `storage.download_object`
 gained `max_bytes`. Web: `/admin/programme/development` (+ `[id]`, lazy, Mobile `can`), the scholar file's Growth
 tab (lazy `ScholarGrowth`), the mentor page's Growth section, the bursary Growth tab (lazy, `bursaryTabs.growth`).
-**NEXT (maintenance stream): the lead's review, then deploy Sprint 10; then the parked Team tables T1–T4
+**MAINTENANCE ROADMAP COMPLETE (Sprints 1–10 live). NEXT (maintenance stream): the parked Team tables T1–T4
 (`docs/plans/2026-11-01-team-tables-roadmap.md`) only on the owner's word.**
 
 ### Offer letters read exactly (separate stream) — S1–S4 LIVE 2026-11-02 (main cfd02d91; api-01237-gdp), NEXT = S5
