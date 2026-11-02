@@ -311,7 +311,13 @@ const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/F
   'src/app/sponsor/(portal)/students/page.tsx', 'src/app/sponsor/(portal)/my-students/[id]/page.tsx',
   'src/components/sponsors/SponsorTermsWizard.tsx', 'src/components/sponsor/JourneyLine.tsx',
   'src/components/SponsorDetailsForm.tsx',
-  'src/app/sponsor/login/page.tsx', 'src/app/sponsor/register/page.tsx', 'src/app/sponsor/auth/reset/page.tsx']
+  'src/app/sponsor/login/page.tsx', 'src/app/sponsor/register/page.tsx', 'src/app/sponsor/auth/reset/page.tsx',
+  // Mobile M6a: the console's everyday screens — the case list, the sign-in screens, Guide, FAQ, the
+  // Organisation page and the Profile cards (one class constant), and the 404.
+  'src/app/admin/scholarship/page.tsx', 'src/app/admin/login/page.tsx', 'src/app/admin/set-password/page.tsx',
+  'src/app/admin/auth/callback/page.tsx', 'src/app/admin/guide/page.tsx', 'src/app/admin/faq/page.tsx',
+  'src/app/admin/organisation/page.tsx', 'src/components/adminProfile/shared.tsx', 'src/app/admin/not-found.tsx',
+  'src/components/admin/CaseListPhoneTools.tsx']
 /** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
 const CONTROL_CONSTS: Record<string, string[]> = {
   'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS
@@ -565,6 +571,73 @@ describe('rule 11 — the sponsor tab bar', () => {
     const providers = FILES.filter((f) => /SponsorAuthContext\.Provider/.test(f.code)).map((f) => f.rel)
     expect(providers).toEqual(['src/lib/sponsor-auth-context.tsx'])
     expect(readWeb('src/lib/sponsor-auth-context.tsx', 'the sponsor auth context')).toMatch(/export function SponsorAuthProvider[\s\S]*getSponsorSession\(\)/)
+  })
+})
+
+// ── Rule 11: the console shell on a phone (Mobile M6a) ─────────────────────────────────────────────
+/**
+ * The console's phone bar is ONE pinned row of 44 px controls — Menu · where you are · Search ·
+ * Notifications · Account — and everything the bar holds from `md` that is not in that row (the theme,
+ * Help) is in the phone menu, with Guide, FAQ, Profile and Log out. The phone menu's Log out is the account
+ * menu's Log out: both are the ONE `signOut` in AppShell, whose body is pinned here word for word.
+ */
+describe('rule 11 — the console shell on a phone', () => {
+  const topbar = () => readWeb('src/components/admin/Topbar.tsx', 'the console top bar')
+  const shell = () => readWeb('src/components/admin/AppShell.tsx', 'the console shell')
+  test('the phone row is pinned, and each control in it is 44 x 44', () => {
+    const src = topbar()
+    const header = (src.match(/<header data-admin-topbar className="([^"]+)"/) ?? [])[1] ?? ''
+    expect(header.split(' ')).toEqual(expect.arrayContaining(['max-md:sticky', 'max-md:top-0', 'max-md:min-h-14']))
+    expect(header).toMatch(/max-md:pt-\[max\([^)]*env\(safe-area-inset-top\)\)\]/)
+    // Menu and Search are 44 x 44 on a phone; Notifications and Account are Menu triggers (below).
+    expect(src).toMatch(/aria-label=\{t\('common\.menu'\)\}\s*className="inline-flex h-11 w-11 /)
+    expect(src).toMatch(/aria-label=\{t\('admin\.shell\.search'\)\}\s*className="[^"]*max-md:h-11 max-md:w-11/)
+    const menu = readWeb('src/components/admin/Menu.tsx', 'the console menu')
+    expect(menu).toMatch(/aria-controls[\s\S]*?className="[^"]*max-md:min-h-11 max-md:min-w-11/)
+    expect(menu).toMatch(/const cls = `[^`]*max-md:min-h-11/)
+  })
+  test('the theme and Help leave the phone row — and are in the phone menu instead', () => {
+    const src = topbar()
+    expect(src).toContain('<div className="hidden md:block"><ThemeSelector /></div>')
+    expect(src).toMatch(/<div className="hidden md:block"><Menu label=\{t\('admin\.shell\.help'\)\}/)
+    // The phone names where you are as TEXT; the switchers are not squeezed into the row.
+    expect(src).toMatch(/<nav aria-label="Breadcrumb" className="hidden [^"]*md:flex"/)
+    const drawer = shell().slice(shell().indexOf('data-admin-drawer'))
+    for (const piece of ['<ThemeSegments />', "t('admin.guideNav')", "t('admin.faqNav')", "t('admin.profile')",
+      "t('header.logout')", '{scopeSwitchers}', "aria-label={t('common.dismiss')}"]) {
+      expect(drawer).toContain(piece)
+    }
+  })
+  test('ONE sign-out, two doors: the body is exactly the account menu\'s, and both doors call it', () => {
+    const src = shell()
+    expect(src).toContain("const signOut = async () => { await adminSignOut(); router.replace('/admin/login') }")
+    // Nothing else signs out: one call of adminSignOut in the shell, inside that line.
+    expect((src.match(/adminSignOut\(/g) ?? []).length).toBe(1)
+    expect(src).toContain('onSignOut={signOut}')
+    const drawer = src.slice(src.indexOf('data-admin-drawer'))
+    expect(drawer).toMatch(/<button type="button" onClick=\{signOut\}/)
+    const bar = topbar()
+    expect(bar).toMatch(/<MenuItem icon=\{<Icon name="signOut" \/>\} danger onClick=\{onSignOut\}>/)
+  })
+  test('the phone menu rows are 44 px (the rail keeps its 32 px from lg)', () => {
+    const src = readWeb('src/components/admin/Sidebar.tsx', 'the console sidebar')
+    expect(src).toMatch(/group\/row relative flex h-11 [^`]*lg:h-8/)
+    expect(src).toMatch(/flex h-11 cursor-default [^"]*lg:h-8/)
+  })
+  test('the case list on a phone: whole-row links, no tooltip, filters in the Sheet, one set of controls', () => {
+    const src = readWeb('src/app/admin/scholarship/page.tsx', 'the case list')
+    const phone = src.slice(src.indexOf('data-testid="application-cards"'), src.indexOf('<TableFrame'))
+    expect(phone).not.toBe('')
+    expect(phone).not.toMatch(/\btitle=/)
+    expect(phone).toMatch(/<Link href=\{`\/admin\/scholarship\/\$\{a\.id\}`\} data-row-link/)
+    expect(phone).not.toMatch(/text-\[(9|10|11)px\]/)
+    // ONE set of filters: the desktop row draws it, and the phone tools get the same nodes for their Sheet.
+    expect(src).toContain('<div className="hidden md:contents">{filterControls}</div>')
+    expect(src).toMatch(/<CaseListPhoneTools filters=\{filterControls\}/)
+    const tools = readWeb('src/components/admin/CaseListPhoneTools.tsx', 'the case list phone tools')
+    expect(tools).toMatch(/<Sheet open=\{open\}[\s\S]*data-testid="list-filter-sheet">\s*\{filters\}/)
+    expect(tools).not.toMatch(/useState\(['"]/)   // it owns no filter value of its own
+    expect(src.slice(src.indexOf('const filterControls'), src.indexOf('const activeFilters'))).not.toMatch(/\btitle=/)
   })
 })
 
