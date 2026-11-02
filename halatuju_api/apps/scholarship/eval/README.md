@@ -161,6 +161,7 @@ downloads `offer_review_results.json`. `--apply <that file>` prints counts only 
 lines wrong per field) and changes no answer file — the lead decides. Tests:
 `tests/test_offer_review_page.py` (synthetic twins).
 `--offer-check` (S2) writes `review_s2_offer.html` the same way: every letter (any split) whose answer's `is_offer_letter` is not `yes` or whose stored genuineness status is `not_offer_letter`, with two Right/Wrong lines (our label; the live system's decision) and the labeller's note; it saves `offer_review_s2_results.json`, which `--apply` counts.
+`--exact-reads` (S5) writes `review_s5_exact.html`: the review_s1 card for EVERY letter whose stored read is the fixed-format reader's (`capture='deterministic'`) and has an answer, no sample, every line starting Right; it saves `offer_review_s5_exact_results.json`, which `--apply` counts. Those 71 answers are dev letters (the split's pool is AI reads only, so `offer_split.json` is unchanged).
 
 **Free text, today's free readers, and the failure map (S2).** `capture_ocr.py offer_letter
 --corpus <eval-dir> --reuse-from snapshots` caches OCR for every letter into the corpus's own

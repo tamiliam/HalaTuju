@@ -39,6 +39,12 @@ note (read only, when there is one). Save downloads `offer_review_s2_results.jso
 (`"page": "review_s2_offer"`, fields `is_offer_letter` and `system_status`); `--apply` counts it
 the same way.
 
+THE EXACT-READ CHECK (`--exact-reads`, offer exact-read S5, 2026-11-03) — a third page,
+`<eval-dir>/review_s5_exact.html`, the same card as review_s1 (every line starts Right). It shows
+EVERY letter, any split, whose stored read is the fixed-format reader's (`capture='deterministic'`)
+and that has a usable answer — no sample. Save downloads `offer_review_s5_exact_results.json`
+(`"page": "review_s5_exact"`); `--apply` counts it as it counts review_s1.
+
 It prints counts and the page path — NEVER a value.
 
 Usage:  python -I apps/scholarship/eval/offer_review_page.py [--eval-dir DIR] [--random N]
@@ -117,7 +123,12 @@ S2_STATUS_WORDS = {'genuine': 'Genuine', 'likely_genuine': 'Genuine', 'suspect':
 S2_INSTRUCTION = ("For each document, say whether our label is right, and whether the live "
                   "system's decision is right. Change a line to Wrong only if it is wrong. Press "
                   "Save my answers when you finish.")
-_MAGIC = {'pdf': (b'%PDF',), 'jpg': (b'\xff\xd8',), 'jpeg': (b'\xff\xd8',),
+# The exact-read check (`--exact-reads`, S5).
+S5_PAGE_NAME = 'review_s5_exact.html'
+S5_RESULTS_NAME = 'offer_review_s5_exact_results.json'
+S5_STORAGE_KEY = 'halatuju-offer-review-s5-exact'
+S5_PAGE_ID = 'review_s5_exact'
+_MAGIC = {'pdf':(b'%PDF',), 'jpg': (b'\xff\xd8',), 'jpeg': (b'\xff\xd8',),
           'png': (b'\x89PNG',)}
 
 
@@ -167,6 +178,22 @@ def select_offer_check(eval_dir):
     return keys, answers, statuses, {'total': len(keys), 'label_only': counts['label_only'],
                                      'system_only': counts['system_only'], 'both': counts['both'],
                                      'skipped_no_answer': counts['skipped_no_answer']}
+
+
+def select_exact_reads(eval_dir):
+    """(sorted keys, answers, counts) for `--exact-reads`: every letter whose stored read is the
+    fixed-format reader's; one without a usable answer is only counted."""
+    keys, answers, skipped = [], {}, 0
+    for key in orc.offer_keys(eval_dir):
+        if orc.stored_vision_fields(eval_dir, key).get('capture') != 'deterministic':
+            continue
+        answer = _usable_answer(eval_dir, key)
+        if answer is None:
+            skipped += 1
+            continue
+        keys.append(key)
+        answers[key] = answer
+    return keys, answers, {'total': len(keys), 'skipped': skipped}
 
 
 # ── The document ─────────────────────────────────────────────────────────────────────────────
@@ -328,14 +355,15 @@ _KEPT = ('Your changes are kept in this browser as you go, so closing or refresh
          'not lose them.')
 
 
-def build_page(eval_dir, keys, answers, blank=False):
+def build_page(eval_dir, keys, answers, blank=False, page_id='review_s1', storage_key=STORAGE_KEY,
+               results_name=RESULTS_NAME):
     total = len(keys)
     cards = '\n'.join(_card_html(eval_dir, k, answers[k], i, total, blank)
                       for i, k in enumerate(keys, start=1))
     intro = (f'<p>{_e(INSTRUCTION_BLANK if blank else INSTRUCTION)}</p>\n<p>{_KEPT} Lines marked '
              f'<span class="unsure">unsure</span> are the ones most worth a careful look.</p>')
-    return orh.page_html('Offer letter check', intro, cards, total, 'review_s1', STORAGE_KEY,
-                         RESULTS_NAME, blank)
+    return orh.page_html('Offer letter check', intro, cards, total, page_id, storage_key,
+                         results_name, blank)
 
 
 def build_offer_check_page(eval_dir, keys, answers, statuses):
@@ -435,6 +463,21 @@ def _write_offer_check(args):
     return 0
 
 
+def _write_exact_reads(args):
+    keys, answers, counts = select_exact_reads(args.eval_dir)
+    if not keys:
+        print(f"No stored exact reads with answers (left off, no usable answer: {counts['skipped']}).")
+        return 2
+    path = os.path.join(args.eval_dir, S5_PAGE_NAME)
+    with open(path, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(build_page(args.eval_dir, keys, answers, args.blank, S5_PAGE_ID, S5_STORAGE_KEY,
+                            S5_RESULTS_NAME))
+    print(f"exact-read check: {counts['total']} letters (left off, no usable answer: "
+          f"{counts['skipped']})")
+    print(f'page: {path}')
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--eval-dir', default=orc.DEFAULT_EVAL_DIR)
@@ -446,6 +489,9 @@ def main(argv=None):
     ap.add_argument('--offer-check', action='store_true',
                     help=f'write {S2_PAGE_NAME}: every letter whose label is not yes or whose '
                          f'stored status is not_offer_letter (any split)')
+    ap.add_argument('--exact-reads', action='store_true',
+                    help=f'write {S5_PAGE_NAME}: every letter whose stored read is the fixed-format '
+                         f"reader's (any split, no sample)")
     ap.add_argument('--apply', metavar='RESULTS_JSON',
                     help="count the owner's saved results (changes nothing)")
     args = ap.parse_args(argv)
@@ -466,6 +512,8 @@ def main(argv=None):
         return 2
     if args.offer_check:
         return _write_offer_check(args)
+    if args.exact_reads:
+        return _write_exact_reads(args)
     heldout = orc.load_heldout(args.split_file)
     keys, answers, counts = select_sample(args.eval_dir, heldout, args.random, args.seed)
     if not keys:
