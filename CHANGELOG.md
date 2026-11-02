@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M4b — a bottom tab bar for students, and one box level on six more pages (2026-11-02, not yet pushed)
+
+Owner approved the HTML mock-ups, four tabs, the swap rule and the split on 2026-11-02 (decisions.md, the Mobile
+M4b entry). The Maintenance S9 Surveys work was not on main when the build began, so Saved and Settings were swept
+instead of My Bursary (M4c).
+
+- **Student tab bar** (`src/components/StudentTabBar.tsx`, mounted only by `AppHeader`): Dashboard · Explore · Saved
+  · BrightPath fixed at the foot of every student page on a phone, 64 px tabs, the current one marked. No new string:
+  three existing core keys and the organisation's own short name. BrightPath opens My Bursary for a student with a file
+  (the menu's hint), else the landing; signed out, Saved opens the sign-in sheet (or onboarding before any results), as
+  the menu does. Her profile stays the header avatar; the menu keeps every destination. Not on onboarding, the quizzes,
+  scholarship onboarding or the sponsor side (`<AppHeader tabs={false} />`), tablets or print.
+- **One bottom bar at a time**: every bar pinned to the foot of a student screen carries `data-page-bar` (course Save,
+  saved compare, apply Back / Continue, award sign, post-award step tabs) and the tabs give way to it. The rules are CSS
+  (`globals.css`, "THE STUDENT TAB BAR"): phones only, hidden while typing, the page padded by the bar's height, the
+  toast lifted (`--bottom-bar`); a browser without `:has()` simply shows no bar.
+- **Rule 15 (one box level) on** Dashboard (+ its STPM and higher-route headers), Search, the course pages (`/course`,
+  `/stpm`: sections, requirements lists and institution cards unboxed on a phone), Profile (full-width sections, hairline
+  rows, 44 px Edit, the icon tiles from `md` only; the contact rows wrap in Tamil at 360), Saved and Settings — 16 px
+  gutter throughout. The dashboard's pathway pills are 44 px on a phone (were ~22 px). From `md` the cards stay
+  (`PHONE_SECTION`: rounded-2xl / p-5 where some were rounded-xl / p-6).
+- **Bytes — the logo left `next/image`**: `BrandLogo` is a plain `<img>` asking the optimiser for the same addresses
+  (1x / 2x at Next's sizes, `BrandLogo.test.tsx`), which took ~4.5 kB off every student route and paid for the bar.
+  Measured: median 147.718 → 145.313 kB, `/` 148.055 → 143.625, `/dashboard` 166.989 → 162.469, `/search` 160.087 →
+  155.559, `/profile` 196.219 → 192.660, `/scholarship/application` 210.471 → 206.049, `/scholarship/apply` 186.533 →
+  186.573 (no header). Lines LOWERED: median 148 → 147, `/profile` 198 → 194, `/scholarship/application` 211 → 208.
+- **Guards** (`mobileStandard.test.ts`): rule 11 — every bar pinned to a student screen's foot carries `data-page-bar`,
+  the tab bar is mounted by the header only (flows turn it off; onboarding and the quizzes draw no header), its words
+  are existing core keys, and the CSS (phones, `:has()`, swap, typing, padding, toast) is present; rule 15 — the swept
+  list grows by 17 files, the card check reads ONE class string in any order (the M4 regex missed
+  `bg-ground-0 rounded-xl border`), and no bare 24 px `container` gutter. Bite-checked.
+- **mobile-check**: two hard rules on every cell — one bottom bar at a time, and nothing of the page left under the tab
+  bar at its end (`measureBars`); sandbox surfaces `tab-bar-signed-in`, `tab-bar-signed-out`, `dashboard`, `profile`,
+  `settings` (synthetic sign-in, `src/sandbox/studentM4bSurfaces.tsx`).
+- **Numbers:** Jest 6,079 → 6,093 (385 → 387 suites); mobile-check 330 → 360 cells, none worse, the two bar rules
+  green on all 360; the 30 new cells are clean except Settings (the shared 36 px Language / Theme selects, TD-464) — the
+  profile's 43 px Edit and 41 px rows, the dashboard's 16 px "Edit Profile" link and a 3 px Tamil overflow on the
+  profile's contact rows were found by the new surfaces and fixed in this sprint.
+- **Also:** the profile's Edit buttons (incl. the parent / guardian one) are 44 × 44; the profile's contact rows wrap.
+- New TD-464 (the shared selects; mobile-check names a fixed bar's child as "widest").
+
 ## Mobile M4 — scholarship apply, documents, award on a phone (2026-11-01, not yet pushed)
 
 Owner approved the M4 mock-ups (apply one step per screen, document cards, award reader) and two rulings on

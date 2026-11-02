@@ -125,6 +125,11 @@ Three kinds of check, from cheapest to most human:
   `src/components/CourseDetailShared.tsx`): `sticky bottom-0 md:hidden` — `sticky`, not `fixed`, so it rests
   above the footer at the end and never covers it — padded `pb-[max(0.75rem,env(safe-area-inset-bottom))]`, and it
   calls `useBottomBarInset(ref)` (`src/lib/bottomBarInset.ts`) so the toast rises above it.
+  **Mark it `data-page-bar`** (Mobile M4b): the student tab bar hides while any such bar is on the page (one bottom
+  bar at a time), and `mobileStandard.test.ts` fails on an unmarked bar pinned to the foot of a student screen.
+  **The student tab bar** (`src/components/StudentTabBar.tsx`) is `fixed`, not sticky — it is the way around, always in
+  reach — so the page is padded by its height instead (`globals.css`, "THE STUDENT TAB BAR": `4rem` + the home-bar inset,
+  and `--bottom-bar` for the toast). mobile-check fails a page whose end lies under it.
 
 ### 7. Tables become cards on phones
 - **Why:** a seven-column table dragged sideways is the wrong shape for the screen people check things on.
@@ -177,8 +182,13 @@ Three kinds of check, from cheapest to most human:
 - **Checked by:** mobile-check (Tamil at 360) and review.
 - **Copy this:** the student header's menu (`src/components/AppHeader.tsx` + `StudentMenus.tsx`, Mobile M2: a
   one-row bar, then every destination once in the shared `Sheet`, loaded on the first open), the admin drawer
-  (`src/components/admin/AppShell.tsx`) or bottom tabs
-  (`src/app/scholarship/apply/page.tsx`).
+  (`src/components/admin/AppShell.tsx`). **Students also have a bottom tab bar** (Mobile M4b,
+  `src/components/StudentTabBar.tsx`, mounted only by `AppHeader`): Dashboard · Explore · Saved · BrightPath, existing
+  core words and the organisation's short name, 64 px tabs whose word may wrap to a second line (Tamil at 360). Its
+  rules live in CSS (`globals.css`): phones only, hidden while she types, replaced by a page's own bar (`data-page-bar`,
+  rule 6), never shown by a browser without `:has()`. A focused flow that keeps the header turns it off with
+  `<AppHeader tabs={false} />`. Sandbox: `tab-bar-signed-in`, `tab-bar-signed-out`. mobile-check: one bottom bar at a
+  time, and nothing of the page left under the tabs.
 
 ### 12. Body text is 12 px or more on phones
 - **Why:** smaller text is unreadable for many people. 9–11 px is for badges only.
@@ -207,12 +217,19 @@ Three kinds of check, from cheapest to most human:
   Exceptions: genuine controls (inputs, buttons, chips) and coloured status callouts. Tighter rhythm (sections
   ~16 px apart, rows 8-12 px) — never at the cost of a 44 px target or a 16 px field.
 - **Checked by:** static guard (`mobileStandard.test.ts`, rule 15: the swept screens draw no hand-written white
-  card; `PHONE_SECTION` boxes nothing below `md`) and review. Swept in Mobile M4: apply, application (step
-  wizard, documents, Action Centre, post-award tasks) and award; the other student pages are the next sprint.
+  card — rounded-xl or -2xl, a border and the card ground in one class string, in any order — and no bare 24 px
+  `container` gutter; `PHONE_SECTION` boxes nothing below `md`) and review. Swept in Mobile M4: apply, application
+  (step wizard, documents, Action Centre, post-award tasks) and award; in M4b: Dashboard, Search, the course pages
+  (`/course`, `/stpm`), Profile, Saved and Settings. M4c sweeps the rest (My Bursary, Home, the scholarship landing,
+  report, the info and legal pages, the pathway pages, onboarding, the quizzes).
 - **Copy this:** `src/lib/phoneSection.ts` — `PHONE_GUTTER` on the page's `<main>`, `PHONE_SECTION` for what was
   a card, `PHONE_ROWS` for the items inside it, `PHONE_INNER_BOX` (or `md:`-prefixed box classes) for a group that
   was boxed inside a card, `PHONE_BLEED` for a sticky bar that runs edge to edge across the gutter. A test that
   found a card by its look (`.border.rounded-lg`) finds it by a hook instead (`data-doc-card`).
+  M4b examples: a section whose padding sits on rows inside it gets a `md:`-only card of its own instead of
+  `PHONE_SECTION` (whose `md:p-5` would double it — `RequirementsCard.tsx`'s `REQ_SECTION`); read-only particulars are
+  hairline rows on a phone (`profile/page.tsx`'s `PROFILE_ROWS`); a list of boxed items becomes `PHONE_ROWS` with each
+  item's box `md:`-only (the institution cards); a section's icon tile is `hidden md:flex`; its Edit is a 44 px text button.
 
 ## Tamil type
 

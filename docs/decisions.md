@@ -1,5 +1,55 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M4b: a four-tab bar at the foot of every student page; a page's own bar replaces it; the logo leaves next/image — 2026-11-02 (owner approved the mock-ups, the tabs, the swap rule and the split)
+
+**Context:** the owner compared HalaTuju with the Grab app: Grab has a fixed bottom tab bar on its main screens, and
+on a store page the bottom becomes that page's own bar. HalaTuju had only the M2 header (logo, Log in / avatar, the
+menu in a bottom Sheet). **Decisions (owner, 2026-11-02):**
+
+1. **Four tabs, signed in and signed out alike: Dashboard · Explore · Saved · BrightPath.** Labels are three existing
+   core keys (`common.dashboard`, `search.nav`, `common.saved`) and the organisation's own short name from its
+   branding (`orgShortName`, "BrightPath" — the same in every language), so no string was added. Measured at 12 px:
+   the longest are "Papan Pemuka" 89 px and "முகப்புப் பலகை" 88 px against a 90 px tab at 360, so a long word may wrap
+   onto a second line (the tab is 64 px tall). Five tabs (adding Profile) was rejected: "எனது சுயவிவரம்" is 94 px
+   against a 72 px tab. **Her profile stays the header's avatar** (with its "still to fill" badge), and **the header
+   menu keeps every destination** — it is the way around wherever the bar gives way, and on tablets. BrightPath
+   opens My Bursary for a student with a file (the same display hint as the menu), else the landing; it is current on
+   every `/scholarship` page. Signed out, Saved opens the sign-in sheet — or onboarding before any results — exactly
+   as the menu's Saved does. No tab is current on Home (the logo is the way home).
+2. **The swap rule — ONE bottom bar at a time; a page's own bar wins.** Every bar pinned to the foot of a student
+   screen carries `data-page-bar` (the course Save bar, the saved compare bar, apply Back / Continue, the award's sign
+   bar, the post-award step tabs) and the tabs hide while one is on the page. Stacking was rejected: two bars take
+   ~130 px of a ~700 px screen and push the page's main action away from the thumb.
+3. **Where it shows:** every student page that draws the student header (`AppHeader` mounts the bar; nothing else
+   may), below `md` only. Not on onboarding or the quizzes (no student header), scholarship onboarding and the sponsor
+   landing (`<AppHeader tabs={false} />`), the sponsor portal, the console, tablets, print. Hidden while she types (a
+   focused text field — a fixed bar would ride up on the keyboard).
+4. **The behaviour is CSS, not JavaScript** (`globals.css`, "THE STUDENT TAB BAR"): the swap (`html:has([data-page-bar])`),
+   the typing rule (`:has(… :focus)`), the page's bottom padding (`4rem` + the home-bar inset, so the footer never
+   ends under it), `--bottom-bar` for the toast, even the bar's look (`aria-current` is both the screen reader's
+   "current page" and the active style). The component is four links. **A browser without `:has()`** (Safari < 15.4,
+   Chrome < 105) shows no bar at all: there it could not give way to a page's bar, and a fixed bar covering a Save
+   button is worse than no bar — the header menu still works. The bar is EAGER (it is the navigation — the M2 lesson:
+   a lazy way around needs an eager fallback, so this one is simply eager).
+5. **Bytes: the logo left `next/image`.** The bar measured +0.47–0.71 kB on every student route, against 0.28 kB of
+   median room and 0.53 kB on `/scholarship/application`. `next/image` was ~4.5 kB of JavaScript on most student
+   routes and `BrandLogo` was its only user there, so `BrandLogo` is now a plain `<img>` that asks Next's optimiser
+   for the SAME addresses `next/image` wrote (`/_next/image?url=…&w=128|256&q=75`, 1x and 2x — pinned by
+   `BrandLogo.test.tsx`); a remote tenant logo is used as it is, as before. Lost: the `priority` preload link (the
+   header logo now loads eagerly instead). Every student route fell ~4.4 kB with the bar included; the budget lines
+   were LOWERED to the new figures (the ratchet), never raised.
+6. **The split:** M4b = the bar + Dashboard, Search, the course pages, Profile, and — because the Maintenance S9
+   Surveys work was not on main when the build began — Saved and Settings instead of My Bursary. **M4c** = My Bursary
+   (after S9), Home, the scholarship landing, report, About / Contact / legal / Get started, the pathway pages,
+   onboarding and the quizzes.
+
+**Alternatives:** stack the bars (rejected above); hide the bar on every page with a page bar by a per-page prop
+(rejected: a marker on the bar itself cannot be forgotten by a new page, and the guard finds an unmarked bar);
+a Menu tab (rejected: the header already has the menu, and a fifth tab does not fit Tamil). **Revisit if:** a
+page needs the tabs AND its own bar (it would need a stacked layout and the inset maths for both); `:has()` support
+matters for a real cohort of students; the bar should carry a badge (News / Surveys unread — needs a count on every
+page, so a server field).
+
 ## One box level; sections on phones (rule 15) — owner, 2026-11-02 (Grab reference), Mobile M4
 
 **Context:** the owner compared our phone screens with the Grab app. Ours nested a card (border, rounded corners,

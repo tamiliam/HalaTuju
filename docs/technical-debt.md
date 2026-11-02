@@ -7375,3 +7375,14 @@ Fix: the same `uploadRefusal` call before `signUploadDocument`. *(B · S)*
 **Raised 2026-11-02 at the Mobile M4 close.** `bursary_preview.payment_schedule` ("RM 500 a month, 12 months") is a
 server-composed English string, so the Tamil and Malay award pages show it in English among translated labels.
 **Fix:** serve the parts (amount, cadence, count) and compose the sentence in the web catalogue. *(B · S)*
+
+### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
+
+**Raised 2026-11-02 at the Mobile M4b build.** (1) `LanguageSelector` and `ThemeSelector` draw 36 px selects (rule 3
+asks 44): two small targets on every Settings cell. They ride eagerly on the console and the sponsor portal, so a
+size change there is a change to ~75 routes — do it with the M6/M7 console sweep, or give Settings the student menu's
+44 px `LanguageSegments` / `ThemeSegments`. (2) `mobile-check/measure.ts` skips an element that is `position: fixed`
+when it names the widest element, but not that element's CHILDREN: when a page overflowed by 3 px at 360 (the profile's
+contact rows, fixed in M4b), it named a tab of the fixed tab bar instead of the real offender. Skip anything inside a
+fixed ancestor (the `measureBars` walk already does). (3) The rest of the student pages are M4c (roadmap), not debt.
+*(W · S)*
