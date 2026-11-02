@@ -16,8 +16,8 @@ export default function LazyBursarySurveys(props: Props) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('@/components/bursary/BursarySurveys')
-      .then((m) => { if (live) setTab(() => m.default) })
+    import('@/components/bursary/tabScreens')   // shared with Growth: no new chunk-map entry (S10)
+      .then((m) => { if (live) setTab(() => m.BursarySurveys) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }
   }, [])
