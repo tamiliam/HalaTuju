@@ -29,7 +29,19 @@ docstring), then create the hourly Cloud Scheduler job `announcement-emails`.
 - Tests: `test_announcements.py` (29), `AnnouncementsAdmin.test.tsx`, `BursaryNews.test.tsx`, bursary page,
   navigation snapshot. Admin FAQ: "How do I send news to all our scholars?".
 
-## Offer matcher reads the S4 campus field (2026-11-02) — BUILT, NOT LIVE (no migration)
+## Offer matcher reads the S4 programme_code field (2026-11-02) — no migration
+
+- Offer reader S4 moves a printed course code out of `programme` into a new `programme_code` ("UW6526001", "BA272",
+  "AT06"). `offer_course_match._printed_course` reads a UPU code from the programme text, and UNIMAS / UMS letters
+  resolve through it, so the code goes back in: `offer_course_match.programme_line` (the twin of
+  `letter_institution`) puts a UPU code after " - ", a UiTM local code in front (already stripped by
+  `_LOCAL_CODE_RE`), and leaves any other code out. `pathway_engine.student_offer_check` reads through it (line count
+  unchanged, 633). A pre-S4 read has no code and is unchanged.
+- `promotion.is_pathway_switch` compares the programme NAME (codes and a leading "XXX - " dropped), so a pre-S4 read
+  and an S4 re-read of the same letter are not a switch; a real switch still is.
+- Tests: `test_offer_programme_code.py` (bite-checked: with the join off, 3 tests fail).
+
+## Offer matcher reads the S4 campus field (2026-11-02) — LIVE 2026-11-01 (main d08283f1; api-01231-8g9; no migration)
 
 - Offer reader S4 will store `institution` = name only and a new `campus` = the campus as printed. The catalogue keeps
   one row per campus for poly / KK / IPG / IKBN / IKM / KKTM, so the matcher must see both or a multi-campus pin drops.

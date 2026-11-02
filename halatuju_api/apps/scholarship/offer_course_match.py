@@ -82,6 +82,28 @@ def letter_institution(institution: str, campus: str = '') -> str:
     return f'{inst} {camp}'
 
 
+def programme_line(programme: str, code: str = '') -> str:
+    """The letter's programme LINE as the matcher reads it: ``programme`` with ``programme_code`` put
+    back where the matcher looks for it — the twin of ``letter_institution``.
+
+    Offer reader S4 (2026-11-02) moves a printed course code OUT of ``programme`` into
+    ``programme_code``. ``_printed_course`` reads a UPU code ("UW6526001") from the programme text and
+    UNIMAS / UMS letters resolve through it, so the code goes back in the pre-S4 shape: a UPU code
+    after " - "; a UiTM local code ("BA272") in front, where ``_LOCAL_CODE_RE`` drops it; any other
+    code ("AT06", "DRT") is left out — the matcher never used it and a stray token only blurs the
+    name. A code already in the text is not repeated; a pre-S4 read has no code, so its line is
+    returned unchanged."""
+    prog = ' '.join((programme or '').split())
+    c = ' '.join((code or '').split()).upper()
+    if not c or c in prog.upper():
+        return prog
+    if COURSE_CODE_RE.fullmatch(c):
+        return f'{prog} - {c}' if prog else c
+    if _LOCAL_CODE_RE.match(f'{c} '):
+        return f'{c} {prog}' if prog else ''
+    return prog
+
+
 def catalogue_name(name: str) -> str:
     """A catalogue course name without its campus parenthetical."""
     return ' '.join(_CAMPUS_PAREN_RE.sub(' ', name or '').split())

@@ -109,8 +109,14 @@ def _offer_programme(doc):
     """The programme named on an offer letter, normalised for comparison (blank when unread)."""
     vf = getattr(doc, 'vision_fields', None)
     fields = vf.get('fields') if isinstance(vf, dict) else None
-    raw = (fields or {}).get('programme') if isinstance(fields, dict) else ''
-    return ' '.join((raw or '').strip().lower().split())
+    fields = fields if isinstance(fields, dict) else {}
+    # S4 (2026-11-02) moves a printed code into `programme_code`; compare the NAME on both sides, so a
+    # pre-S4 read ("FTV - ASASI …") and an S4 re-read of the same letter ("ASASI …" + "FTV") agree.
+    import re
+    from .offer_course_match import letter_programme, programme_line
+    name = letter_programme(programme_line(fields.get('programme'), fields.get('programme_code')))
+    name = re.sub(r'^[A-Za-z0-9]{2,6}\s*[-–—]\s+', '', name)
+    return ' '.join(name.lower().split())
 
 
 def is_pathway_switch(new_doc, existing_doc):
