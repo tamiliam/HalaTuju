@@ -1,5 +1,7 @@
 # Engineering Lessons — HalaTuju
 
+- **A Tailwind divide utility styles the CHILDREN — `md:divide-y-0` does not give the desktop back.** (Mobile M4b, 2026-11-02.) Phone dividers written `divide-y … md:divide-y-0` beat each child's own `md:border` (the divide selector is stronger) and recoloured it, so from `md` up every box after the first lost its lines. Write a phone-only divider as `max-md:divide-y`, and a check that polices a marker must also count what is NOT marked.
+
 - **A test that waits for one thing and asserts on another is a race the deploy gate will find.** (Mobile M4, 2026-11-02.) `ScholarshipDocuments.test.tsx` waited for the section headings (drawn at once) and then asserted an income tick that depends on `listDocuments` (async). Every local run passed; the slower gate refused the push. Wait for the data the assertion reads — prove it by delaying the mock (here 150 ms: 7 failures before, 0 after).
 
 - **When code moves out of a guarded file, EXTEND the guard to the new file — do not re-point it.** (Mobile M3, 2026-11-01.) The compare words moved to `SavedCompare.tsx` and the pre-U sections to `PreUInstitutions.tsx`; one guard kept reading only the old page (so the moved code was unguarded) and the other read only the new file (so a copy put back in the old page would pass). A move has two places the rule must hold: where the code went and where it must not come back. Grep every test for the old path before the move commit.

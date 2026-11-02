@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0–M4 DONE (M4 live 2026-11-02, main 86423305), NEXT = student bottom tab bar + rule-15 sweep
+### Mobile-native arc (separate stream) — M0–M4b DONE (M4b live 2026-11-02, main cef8e42d), NEXT = M4c rule-15 sweep of the remaining student pages
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1146,8 +1146,11 @@ rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare
 in the page-loaded `discovery` slice. **Since M4:** the apply form keeps a draft in THIS TAB only (`src/lib/applyDraft.ts`: no IC,
 signature or consent; keyed to the user id that filled it; cleared on submit and any sign-out); rule 15 — one box
 level on phones (16 px gutter, sections not cards, no bordered box in a box); the award page reads back a passed
-quiz / valid PIN (`signing_progress.py`). NEXT (owner, 2026-11-02): a context-aware student bottom tab bar + the
-rule-15 sweep of the other student pages, mock-up first (Stitch has failed three sprints running).
+quiz / valid PIN (`signing_progress.py`). **Since M4b:** a student bottom tab bar (`StudentTabBar.tsx`, mounted only by `AppHeader`; CSS
+`:has()` rules); every sticky bottom bar on a student page MUST carry `data-page-bar` (guarded) so the tabs swap out;
+phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` is a plain `<img>` on the optimiser.
+Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. NEXT: M4c (My Bursary, Home, landing,
+report, info/legal, pathway, onboarding, quizzes) with the M4b pattern.
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200) — announcements
 
 **Next free migration numbers: scholarship 0200, courses 0092.** **scholarship 0199_announcements — MIGRATE FIRST by

@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-02 | cef8e42 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 176 | 0 | 0 | ok | ok |
 | 2026-11-02 | 8642330 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 175 | 0 | 0 | ok | ok |
 | 2026-11-01 | 5617359 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 170 | 0 | 0 | ok | ok |
 | 2026-11-01 | ab1aebc | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 167 | 0 | 0 | ok | ok |
@@ -120,7 +121,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-02, 8642330, window 2026-08-04 onward)
+## Latest run (2026-11-02, cef8e42, window 2026-08-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -137,7 +138,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 270 fix / 259 feat commits since 2026-08-04
+- 271 fix / 261 feat commits since 2026-08-04
 
 ### Files over 1000 lines
 - `2440  halatuju_api/apps/scholarship/views.py`
@@ -146,7 +147,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
 - `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
-- `1271  halatuju-web/src/app/profile/page.tsx`
+- `1274  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1151  halatuju_api/apps/scholarship/contracts.py`
 - `1054  halatuju_api/apps/courses/models.py`
@@ -201,10 +202,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 42 of 357 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 42 of 359 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 459 entries have a defining line; 175 carry no resolution marker on it
+- 460 entries have a defining line; 176 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -226,12 +227,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 6587: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
 - line 6590: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
 - line 7135: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
+- line 7379: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 5617359
+- budgets no looser than at 8642330
 
 ### tsc
 - 0 errors in 0 files
@@ -251,6 +253,13 @@ _Decisions per run, newest first. Written by a person or the agent — never by 
 this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
 the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
 offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
+
+### 2026-11-02 (cef8e42, Mobile-native M4b close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). Only `td_open` moved: **170s -> 176** with TD-464 (36 px
+shared selects; mobile-check's widest-element report inside a fixed bar). **Accepted.** M4b also LOWERED three
+first-load lines (median 148 -> 147, `/profile` 198 -> 194, `/scholarship/application` 211 -> 208) after taking
+`next/image` off every student route.
 
 ### 2026-11-02 (8642330, Mobile-native M4 close) — 0 FAIL
 
