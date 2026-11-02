@@ -7447,3 +7447,13 @@ sign / record. *(W · M)*
 Next / Previous, "pick up to 2") but the question and the answer cards read in English for a Tamil or Malay student.
 **Fix:** move the quiz content into the message catalogues (a page-loaded slice) or serve it per locale; review in Sol.
 *(B · S)*
+
+### [TD-469] Mobile M5 leftovers: the sponsor desktop has no language control; the portal's Sheets paint in Lexend - low
+
+**Raised 2026-11-03 at Mobile M5.** (1) The portal's language control (the 44 px segments) is on My Account on a phone
+only; from `md` the top row has the theme select and Log out but no language — a desktop sponsor still changes
+language only on the public pages. Add `LanguageSelector` to the desktop row or show the Display section at every
+width (an owner call: "desktop top row unchanged" was the M5 ruling). (2) `Sheet` is portalled to `<body>`, so the
+filter Sheet and the fund confirm leave the portal's Inter stack behind and paint in Lexend; give the portal a
+`font-sponsor` utility class (the `font-plex` precedent) and pass it to both. (3) The admin-side sponsor screens
+(`sponsors/SponsorEmailsCard.tsx`, `sponsors/terms/*`) keep 10-11 px labels — M7's sweep. *(B · S)*

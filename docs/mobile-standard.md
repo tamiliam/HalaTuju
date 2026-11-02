@@ -189,6 +189,12 @@ Three kinds of check, from cheapest to most human:
   rule 6), never shown by a browser without `:has()`. A focused flow that keeps the header turns it off with
   `<AppHeader tabs={false} />`. Sandbox: `tab-bar-signed-in`, `tab-bar-signed-out`. mobile-check: one bottom bar at a
   time, and nothing of the page left under the tabs.
+  **Sponsors have their own three tabs** (Mobile M5, `src/components/sponsor/SponsorTabBar.tsx`, drawn only by
+  `SponsorShell`): My Giving · Students · My Account — the same `data-tab-bar` CSS with `data-tab-bar="sponsor"` (three
+  columns), so every rule above holds. The phone header is the logo only; the theme, the language
+  (`src/components/DisplaySegments.tsx`, shared with the student menus) and Log out are at the end of My Account; a screen
+  without tabs keeps a 44 px Log out in the header. Guarded: `mobileStandard.test.ts`, "rule 11 — the sponsor tab bar".
+  Sandbox: `sponsor-giving`, `sponsor-account`.
 
 ### 12. Body text is 12 px or more on phones
 - **Why:** smaller text is unreadable for many people. 9–11 px is for badges only.
@@ -244,6 +250,11 @@ Three kinds of check, from cheapest to most human:
   the box classes become `md:`-only and the text sits on the gutter. A shared component that a non-student screen also
   draws takes a `className` with its old box as the default (`sponsor/SpendingCard.tsx`). A list inside a section with
   a fixed height and its own scroll bar loses both on a phone (`/pathway/stpm`'s school list; Load more pages it).
+  M5 examples (the sponsor portal): a single-card screen (the details form, the terms wizard) sits on the gutter below
+  `md` (`SponsorCard`); a row of words under dots that cannot reach 12 px in Tamil becomes a stepped line plus ONE line
+  naming the current stage (`sponsor/JourneyLine.tsx`); a page's main money action is a sticky `data-page-bar` whose
+  confirm is a `dismissible={false}` Sheet with a ref lock (one request per tap burst — `students/[id]/page.tsx`);
+  sign-in screens drop their card below `md` and make every field 48 px (`sponsor/login/page.tsx`).
 
 ## Tamil type
 

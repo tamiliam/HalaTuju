@@ -1151,7 +1151,12 @@ quiz / valid PIN (`signing_progress.py`). **Since M4b:** a student bottom tab ba
 phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` is a plain `<img>` on the optimiser.
 Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. **Since M4c:** every student page uses rule 15 and the tab bar; only rows go inside a `PHONE_ROWS`
 list (a button inside it loses its own border); the rule-15 guard detects cards by ground + radius, with or
-without a border. NEXT: M5 sponsor portal (its own phone nav), then M6 admin + reviewer cockpit (may split), M7, M8.
+without a border. **Since M5 (built, branch `mobile-m5`, not pushed):** the sponsor portal's chrome is
+`components/sponsor/SponsorShell.tsx` (the layout keeps the gating); phones get `SponsorTabBar` (three tabs, the
+student bar's `data-tab-bar` CSS with `="sponsor"`), a logo-only header, and the theme / language / Log out at the end
+of My Account (`DisplaySegments.tsx`, `SponsorLogOut.tsx`); every pinned bar on a sponsor screen carries
+`data-page-bar` (guarded); funding = sticky fund bar + one `dismissible={false}` confirm Sheet with a ref lock.
+NEXT: M6 admin + reviewer cockpit (may split), M7, M8.
 
 ### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 10 LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK) — development modules
 

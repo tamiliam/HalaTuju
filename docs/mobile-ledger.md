@@ -8,7 +8,7 @@ Baseline last updated **2026-11-02** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **101 routes:** 66 Must · 29 Can · 6 Desktop-only.
-**36 measured** (public page or sandbox surface), **28 fully green.**
+**39 measured** (public page or sandbox surface), **34 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -100,18 +100,18 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/scholarship/onboarding` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 2 | ❌ |  |
-| `/sponsor` | Must | M5 | 12 (public page, sandbox `sponsor-landing`) | 0 | 0 | 1 | ❌ |  |
+| `/sponsor` | Must | M5 | 24 (public page, sandbox `sponsor-landing`, sandbox `sponsor-giving`, sandbox `sponsor-terms-quiz`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/[...notFound]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/sponsor/account` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/account` | Must | M5 | 6 (sandbox `sponsor-account`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/auth/callback` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/auth/confirm` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/auth/reset` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/sponsor/login` | Must | M5 | 6 (public page) | 0 | 0 | 2 | ❌ |  |
-| `/sponsor/my-students/[id]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/login` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/my-students/[id]` | Must | M5 | 6 (sandbox `sponsor-my-student`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/pool/[id]` | Must | M5 | — | — | — | — | n/a (redirect only) | redirects to `/sponsor/students/[id]` |
-| `/sponsor/register` | Must | M5 | 6 (public page) | 0 | 0 | 3 | ❌ |  |
-| `/sponsor/students` | Must | M5 | 6 (sandbox `sponsor-browse`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/students/[id]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/register` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/students` | Must | M5 | 18 (sandbox `sponsor-browse`, sandbox `sponsor-students`, sandbox `sponsor-filters`) | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/students/[id]` | Must | M5 | 12 (sandbox `sponsor-pool-student`, sandbox `sponsor-fund-confirm`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/terms` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/trust` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/stpm/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ |  |

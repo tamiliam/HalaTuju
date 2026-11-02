@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M5 — the sponsor portal on phones (2026-11-03, not yet pushed)
+
+Owner approved the HTML mock-ups, three tabs with the theme, the language and Log out in My Account on a phone, and a
+sticky fund bar with a confirm that cannot be swiped away (decisions.md, the Mobile M5 entry). Before: the portal's
+only navigation was one top row needing 536 px in English and 688 px in Tamil, so every signed-in sponsor page
+scrolled sideways on a phone.
+
+- **A sponsor tab bar** (`src/components/sponsor/SponsorTabBar.tsx`): My Giving · Students · My Account at the foot of
+  every portal page below `md` — the student bar's CSS (`data-tab-bar="sponsor"`, three columns): hidden while typing,
+  replaced by a page's own bar (`data-page-bar`), the page padded, the toast lifted, never on paper (the giving
+  statement prints without it). My Giving is current on a supported student's page too. Existing words only.
+- **The portal's chrome moved to `SponsorShell`** (`src/components/sponsor/SponsorShell.tsx`; the layout keeps every
+  gating decision): on a phone a slim header (logo + Sponsor); on the screens without tabs (details form, terms
+  wizard, pending, inactive) a 44 px Log out; from `md` the top row exactly as before. The single-card screens sit on
+  the gutter on a phone (`SponsorCard`). **Log out** is one component (`SponsorLogOut.tsx`) doing exactly what the
+  shell did: `sponsorSignOut()` (the sponsor session only, `scope: 'local'`) then `/sponsor/login`.
+- **My Account on a phone** ends with "Display and language" — the student menus' 44 px theme and language segments,
+  moved unchanged into `src/components/DisplaySegments.tsx` (the student menus import them from there) — and Log
+  out. The portal had no language control before; from `md` the top row keeps its theme select.
+- **Rule 15 across the portal**: My Giving, one pool student, a supported student, My Account and Trust are
+  full-width sections on a 16 px gutter (the cards they were from `md`); the students you support are rows; the
+  journey tracker is a stepped line with ONE 12 px line naming the stage (`JourneyLine.tsx`; was 9 px / 11 px words
+  under four dots); every 9-11 px label is 12 px, `SpendingCard`'s figure labels included (shared: her My Bursary's
+  spending labels are 12 px too).
+- **Students**: on a phone one 44 px "Filters" button (with the number in use) opens a Sheet of 44 px chips per facet
+  (`SponsorFilterSheet.tsx`) — the same state and facet lists as the desktop's selects; the footer counts the students
+  and closes.
+- **Funding a student** (owner): on a phone a sticky bar with the balance and "Fully fund this student"
+  (`data-page-bar`, so the tabs give way); both it and the desktop's sidebar button open ONE confirm Sheet,
+  `dismissible={false}` and `busy` while the award is sent, naming the server's `award_amount` and the wallet's
+  balance through the same formatting as before; a burst of taps sends ONE request (a ref lock); a refusal keeps the
+  Sheet open with the reason. The request, the refresh of the pool and wallet, and the server's checks are unchanged.
+- **The terms wizard** runs the full width of a phone (no card in a card): "Start the quiz" and the quiz's progress +
+  Next sit in sticky page bars; the options are 48 px; the signature step is unchanged (inline, keyboard up).
+- **Sign-in screens** (login, register, password reset, the details form): no card on a phone, the fields full width
+  and 48 px, every link and text button 44 px; the privacy consent tick box is 20 px in a 44 px row (size only).
+- **The public landing**: 16 px gutter; promises, steps and FAQ are divided rows on a phone (cards from `md`); "How
+  it works" is 44 px.
+- **Sandbox** (`src/sandbox/sponsorM5Surfaces.tsx`, a synthetic sponsor via the newly exported `SponsorAuthContext`,
+  never a real sign-in): `sponsor-giving`, `sponsor-students`, `sponsor-filters`, `sponsor-pool-student`,
+  `sponsor-fund-confirm`, `sponsor-my-student`, `sponsor-account`, `sponsor-terms-quiz`; mobile-check reads them.
+- **Guards** (`mobileStandard.test.ts`): the sponsor bar is mounted by the shell only and the shell by the portal
+  layout only; no sponsor screen reaches `StudentTabBar`; three columns and the print rule; every bar pinned to the
+  foot of a sponsor screen carries `data-page-bar`; the sponsor identity context is provided by its real provider
+  only; rule 15 now sweeps the sponsor files. Tests: `SponsorShell.test.tsx` (tabs, current tab, Log out), the pool
+  student page (fund bar, one request per burst, the Sheet cannot be dismissed, refusal, grace-window funded).
+- **Weight** (exact page entry): the route median 145.182 → 145.218 kB (1.78 kB under its 147 line); `/scholarship/bursary`
+  unchanged (191.46); sponsor routes +0.07 to +1.8 kB, except `/sponsor/students` +3.37 and `/sponsor/students/[id]`
+  +3.32 (the shared `Sheet`, eager on purpose: it is the only way to filter on a phone and the only way to fund).
+  No budget raised. mobile-check: 24 sponsor cells lowered (landing, login, register), the eight new surfaces at 0.
+
 ## Student maintenance Sprint 10 — development modules — LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK)
 
 Owner rulings and the approved ModulesAdmin / ModuleStudent / ModuleProgress boards, 2026-11-02 (decisions.md, the

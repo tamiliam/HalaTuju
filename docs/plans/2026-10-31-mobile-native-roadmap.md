@@ -91,8 +91,10 @@ Each sprint: tests + `mobile-check` green, owner sees phone screenshots, **owner
 
 **M4c — Rule-15 sweep, the rest of the student pages** — DONE, live 2026-11-02 (main a7c91931 + quiz follow-up 688a1a46; retrospective `docs/retrospectives/retrospective-2026-11-02-mobile-m4c.md`).
 
-**M5 — Sponsor portal** (medium; Stitch first)
-New phone nav (bottom tabs: My Giving / Students / Account); terms wizard full width; 9 px labels; filters; login card padding.
+**M5 — Sponsor portal** — BUILT 2026-11-03 on branch `mobile-m5`, not pushed (owner approved the HTML mock-ups, three
+tabs with the theme / language / Log out in My Account on a phone, and the sticky fund bar + undismissable confirm;
+decisions.md, the Mobile M5 entry). Sponsor tab bar, slim phone header, rule 15 across the portal, sign-in screens and
+landing, 12 px minimum, filters in a Sheet, terms wizard full width with sticky bars.
 
 **M6 — Admin shell + reviewer cockpit** (high; Stitch first)
 Topbar phone version (sticky; search/theme/help into a menu; breadcrumb truncates); review cockpit on phones: sticky decision bar (SaveBar pattern), 44 px Prev/Next, whole-card tap, sort on phone lists; documents in a full-screen viewer — images inline, PDFs rendered as page images or opened in a new tab.

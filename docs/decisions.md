@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M5: three sponsor tabs; on a phone the theme, the language and Log out live in My Account; funding is a sticky bar and one confirm that cannot be swiped away — 2026-11-03 (owner approved the mock-ups and both recommendations)
+
+**Context:** the sponsor portal's only navigation was one top row — logo, three tabs, the theme select and Log out —
+measured at 536 px in English and 688 px in Tamil against a 390 px phone, so every signed-in sponsor page scrolled
+sideways; the terms wizard sat in a card in a card (~220 px of text); My Giving's journey labels were 9 px.
+**Decisions (owner, 2026-11-02/03):**
+
+1. **Three tabs at the foot of every portal page on a phone: My Giving · Students · My Account** (existing words,
+   heart / two people / person icons; 120 px tabs at 360, so "எனது பங்களிப்பு" fits). The student bar's PATTERN, not
+   the student bar: the same `data-tab-bar` CSS with three columns (`data-tab-bar="sponsor"`), so the swap rule, the
+   typing rule, the padding, the toast and print all hold unchanged. `StudentTabBar` never reaches a sponsor screen.
+   Trust stays a link (My Giving's assurance strip, the footer, My Account). My Giving is current on a supported
+   student's page (where the sponsor came from).
+2. **The phone header is the logo and "Sponsor" only.** The theme, the language (the portal had no language control
+   before) and Log out are at the end of My Account on a phone; on the screens without tabs (details, terms wizard,
+   pending, inactive) the header keeps a 44 px Log out. **From `md` the top row is unchanged.** A header menu Sheet
+   was the alternative and was not chosen: a second way around for three items.
+3. **Funding on a phone is the page's own sticky bar** (balance + "Fully fund this student", `data-page-bar`, so the
+   tabs give way) **and one confirm Sheet** for both widths: `dismissible={false}` (no ×, no Escape, no backdrop),
+   `busy` while sending, one request per tap burst (a ref lock, not state), the amount and balance exactly the
+   server's strings through the same formatting as before — no new arithmetic. A refusal keeps the Sheet open with
+   the reason. The desktop sidebar's inline confirm became that same Sheet, so there is one confirm door, not two.
+4. **One box level** on the portal, the sponsor sign-in screens and the landing (rule 15), and **12 px** as the
+   smallest text: the journey tracker became a stepped line plus ONE 12 px line naming the stage, because four 12 px
+   Tamil stage names do not fit a phone row. `SpendingCard`'s figure labels went 10 → 12 px on both its screens.
+
+**Alternatives:** stack the old top row onto two lines (rejected: still the only navigation, and Tamil needed three);
+four tabs with Trust (rejected: a link already reaches it three ways, and a fourth tab costs 30 px per tab at 360).
+**Revisit if:** sponsors need a badge on a tab (a new count from the server); the desktop wants the language control
+too (it has none — TD-469).
+
 ## Development modules: status from the time, the task type locks at the first start, progress per lesson id, files typed by their bytes, emails once per kind behind one switch — 2026-11-02 (owner rulings, student maintenance S10)
 
 **Decision:** (1) **Who makes modules:** super, org_admin and admin, org-fenced (another organisation 404 on every
