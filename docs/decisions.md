@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## The not_offer_letter money ruling is DEFERRED to its own money sprint (owner, 2026-11-02)
+
+**Context.** The offer exact-read S4 review proposed that a document scored `not_offer_letter` never sets
+`pathway_engine.course_start_year` (which feeds `award.proposed_award_amount` via `started_before_cohort`,
+`award.course_start_unknown` and `income_engine.epf_evidence`). The owner first agreed ("1 yes"), but the
+re-review showed the change could not be closed inside S4: `course_start_unknown` has no production caller, so a
+`None` start year makes `proposed_award_amount` pay an STPM student RM3,000 instead of RM1,000; and QC
+(`verdict.py`) and the payments screen (`payments.py`) read `reporting_date` directly (TD-465).
+
+**Decision (owner, "1", 2026-11-02).** The money ruling comes OUT of S4 and goes to its own money sprint. S4 ships
+the reader only, and money behaves EXACTLY as on main: `course_start_year`, `offer_reporting_date`,
+`sync_reporting_date_from_offer` and `backfill_reporting_dates` are main's (the S4 branch's change was reverted;
+`tests/test_offer_reader_doors_more.py` pins main's behaviour). **Owner ruling for that sprint (Cockpit session,
+2026-11-02):** the reporting date answers only "already in college, or starting soon?"; the REVIEWER sets the
+amount from the time left (one year RM2,000, six months RM1,000); a start year must never set the amount by
+itself. App 329's start year 2024, from its own reporting date, is correct.
+
+**Revisit at:** the money sprint (roadmap, after S4).
+
 ## Surveys: status from the dates, questions lock at the first answer, one response per scholar, emails once per kind behind one switch — 2026-11-02 (owner rulings, student maintenance S9)
 
 **Decision:** (1) **Who makes surveys:** super, org_admin and admin, org-fenced (another organisation 404 on every
@@ -216,6 +235,31 @@ diploma transcripts today) gets no colour. The offer letter's intake rule (intak
 officer learned to ignore. Display only: no verdict, query or money reader consumes the status.
 
 **Revisit if:** a transcript starts carrying a readable year (colour it by the same table), or a route's timing changes.
+## Offer letters: the institution and the campus are two fields; what a genuineness status means (owner rulings, 2026-11-01)
+
+**Context.** The offer exact-read arc (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`) measured the AI
+reader on 216 hand-answered letters. The institution is wrong on about half, mostly a reporting venue or a joined
+campus; and the genuineness check called real public-institute offers "not an offer letter".
+
+**Decisions (owner).**
+1. **The reader returns the institution's name and the campus as TWO fields** (`institution`, `campus` - '' when
+   none); a hostel / residential college / reporting venue goes in neither. Shape agreed with the matcher's
+   session; the matcher joins institution + campus for multi-campus families, and the reader change does not
+   ship until the matcher reads `campus`.
+2. **Intake is recorded as printed, with its label** ("SESI 1-2026/2027"); the scorer strips the label only to
+   compare. **PISMP's programme is the degree title** ("IJAZAH SARJANA MUDA PERGURUAN"); the specialisation is
+   kept beside it.
+3. **A genuineness status is a bursary decision, not a document type.** `not_offer_letter` = a fail; `suspect` =
+   not sure, a person decides. An offer from a private college (IPTS) or a public university's private wing is
+   `not_offer_letter`. An admission printout / portal page is `suspect`. A confirmation-of-studies letter from a
+   public institution with no private wing is an acceptable alternative to an offer (with a private wing:
+   confirm the government programme). Public skills institutes (IKBN, IKM) are public offers.
+   **`suspect` is not a blocker:** the student is told the document is not an offer letter and urged to upload the
+   offer letter if they have it; Check 2 or a reviewer can ask for more.
+4. The offer letter's NRIC belongs to this arc (owner, via the matcher's session): a blank is correct where the
+   issuer prints none (UNIMAS, UPSI, UUM, UTHM...); UPM and one private college print it only inside the reference.
+
+**Revisit if:** the bursary starts funding private colleges, or the matcher needs the venue.
 
 ## Staff can also be mentors, on the same login; every way out ends the mentoring and never touches the staff sign-in — 2026-11-01 (owner rulings + lead data rulings, student maintenance S7d)
 

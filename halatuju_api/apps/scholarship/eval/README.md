@@ -79,6 +79,183 @@ the eight SPM certificates are pages split out of combined uploads (`__p<n>`); p
 so the live hit rate on combined uploads is lower than the corpus score. Credentials: `GOOGLE_CLOUD_VISION_API_KEY` from `halatuju_api/.env` or the repo-root `.env`,
 else gcloud Application Default Credentials.
 
+## Offer letters — exact read (offer exact-read S1, 2026-11-01)
+Roadmap: `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. The corpus is
+`fixtures/offer_letters_2026-11-01/` (gitignored PII): `fixtures/offer_letter/<key>.<ext>`,
+`snapshots/<key>.json` (the stored production read), `programme_by_key.csv`, `context.json`,
+`applicants.json`, `_manifest.csv`. The old `fixtures/offer_letter/` (~95 letters) is what "seen
+before" means (matched by doc id `__d<id>`).
+
+**The correct answer** — `snapshots/<key>.offer_expect.json` beside the snapshot (gitignored PII).
+Every key present; a field the letter does not print is JSON `null`, explicitly:
+
+| Key | What to write |
+|-----|---------------|
+| `candidate_name`, `candidate_nric` | as printed |
+| `institution_as_printed` | the institution's **name only**, as printed (owner, 2026-11-01: the institution and the campus are TWO fields) |
+| `institution_campus` | the campus / branch, as printed, or `null`. One printed line holding both is split: "UiTM KAMPUS KOTA KINABALU" → `institution_as_printed` "UiTM", `institution_campus` "KAMPUS KOTA KINABALU". Scored, not core |
+| `programme` | the programme / course title, as printed. **PISMP: the degree title** ("IJAZAH SARJANA MUDA PERGURUAN"), the same as any other university course (owner, 2026-11-01) — the Bidang goes in `specialisation` |
+| `stream` | STPM "Bidang" / matriculation "Jurusan" (`null` for other families) |
+| `specialisation` | PISMP "Bidang Pengkhususan" (`null` for other families) |
+| `intake` | the session / intake **as printed, with its label** ("SESI 1-2026/2027", "SESI AKADEMIK 2026/2027", "INTAKE AUGUST 2025", "JUNE 2026 INTAKE", "AMBILAN 2026" — owner, 2026-11-01). The scorer drops the label when it compares, so label or no label scores the same; S1 answers written before the ruling without the label were left as they are, and every new answer keeps it. "SEMESTER 1" / "SEMESTER PERTAMA" is part of the intake, not a label — keep it |
+| `reporting_date` | the report / registration date (a range: its first day) |
+| `offer_date` | the issue date (not the print date) |
+| `issuer` | the body that issued the letter |
+| `duration`, `fees` | as printed — written, never scored (decision D3) |
+| `is_offer_letter` | `yes` · `conditional` · `portal_page` · `not_offer` · `unsure` |
+| `pages` | int, pages in the file |
+| `unsure_fields` | list of the field names above you are not sure of |
+| `labeller_note` | short, or `null` — no personal data beyond the fields |
+| `family` (optional) | `stpm` · `matriculation` · `polytechnic` · `pismp` · `uitm` · `other_university` · `tvet` · `other`; absent/`null` = derived from the stored read |
+
+**The scorer** `offer_read_check.py` compares a read (default the stored `vision_fields.fields`;
+`--read file:<suffix>` reads `snapshots/<key><suffix>`, for S3's fresh reads) with the answer, per
+core field — name, nric, institution, programme (STPM/matric: the stream; every other family,
+PISMP included: the programme), intake, reporting_date — as **exact / blank_correct /
+missing / wrong / extra**; the institution is the answer's `institution_as_printed` (the name
+only) vs the read's `institution`. offer_date, issuer, campus and specialisation (vs the read's
+`bidang_pengkhususan`) are scored but not core. **campus** is the answer's `institution_campus`
+vs the read's `campus`, on every letter (no campus printed and none read = blank_correct);
+today's reader has no `campus` field, so every printed campus scores `missing` — the honest
+baseline — and a read that joins the campus into the institution gets the (core) institution
+`wrong`. specialisation only on letters whose answer has one, and its `right` % is over those
+(the `of` column). A letter is **fully
+exact** when every core field is exact or blank_correct. Tidying only — case, spacing,
+punctuation, accents, NRIC digits, dates to `D Mon YYYY` (Malay/English months, numeric dates),
+an intake label — Sesi / Sesi Akademik / Sesi Mula / Session / Academic Session / Ambilan /
+Pengambilan / Intake — dropped at the start **or the end** ("JUNE 2026 INTAKE" = "INTAKE JUNE
+2026" = "JUNE 2026"; a label mid-line stays), and a "Tahun" before a 4-digit year; "SEMESTER 1"
+and a session number stay (polytechnic "SESI I : 2026/2027" is "I 2026/2027", not "2026/2027"),
+one trailing bracketed acronym on the institution and the campus dropped ("… (UniSZA)" = "…"; a
+bracket mid-line stays) — and **no fuzzy matching**: one letter different is `wrong`. Reports the
+totals, per field, and by family, input kind (pdf / photo), capture, programme, split and answer
+kind, the letters not fully exact (keys + field names), and — whatever the split, with or without
+answers — the **known-format-AI count**: STPM / matriculation / polytechnic letters whose stored
+read is the AI reader's, by family, input kind and programme (likely cheap S5 wins). Prints keys,
+field names and counts only, never a value; sorted, identical on re-run; `--json` for the same
+counts as JSON. Exit 1 when an answer file is malformed (listed as `FORMAT <key> <field>`).
+
+**The held-out split** `offer_split.json` (committed — keys, seed and rule only) is made by
+`offer_split.py`: ~90 letters drawn with a fixed seed from the letters **not** in the old corpus
+**whose stored read is the AI reader's** (`capture='ai'` — the fixed-format reader's locks are
+covered by the stpm/matric/poly parse checks and are not hand-labelled in S1), stratified by
+family + programme. Every other key is dev. `--check` re-derives it and exits 1 on a difference.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_read_check.py                   # held-out baseline
+python -I apps/scholarship/eval/offer_read_check.py --split dev       # or --split all, --json
+python -I apps/scholarship/eval/offer_split.py --check                # the split still reproduces
+```
+Run from a checkout that holds the corpus, or pass `--eval-dir` (and `--old-dir` for the split).
+Committed tests: `tests/test_offer_read_scorer.py` (synthetic twins only).
+
+**The owner's spot-check** (decision D1) — `offer_review_page.py` writes ONE offline page,
+`<eval-dir>/review_s1.html`, inside the gitignored corpus folder (it shows real student data:
+never publish or commit it; it refuses a tracked folder). It samples the held-out letters whose
+answer has `unsure_fields` plus a seeded 20 of the rest (`--random N`), shows each document beside
+its answer with Right / Wrong per line — every line starts Right, so the owner changes only the
+wrong ones (`--blank` starts with nothing ticked) — keeps progress in the browser (an earlier tick
+wins over the default), and "Save my answers"
+downloads `offer_review_results.json`. `--apply <that file>` prints counts only (letters checked,
+lines wrong per field) and changes no answer file — the lead decides. Tests:
+`tests/test_offer_review_page.py` (synthetic twins).
+`--offer-check` (S2) writes `review_s2_offer.html` the same way: every letter (any split) whose answer's `is_offer_letter` is not `yes` or whose stored genuineness status is `not_offer_letter`, with two Right/Wrong lines (our label; the live system's decision) and the labeller's note; it saves `offer_review_s2_results.json`, which `--apply` counts.
+
+**Free text, today's free readers, and the failure map (S2).** `capture_ocr.py offer_letter
+--corpus <eval-dir> --reuse-from snapshots` caches OCR for every letter into the corpus's own
+`snapshots/` (gitignored): a digital PDF's text layer (free); else an earlier page-1 Vision capture
+from `eval/snapshots/` (meta `earlier_vision`, no second call); else Vision, one call per page.
+`--dry-run` first prints the counts and the cost and writes nothing. `offer_replay.py --write` runs
+today's deterministic offer reader (`offer_parse.parse_govt_offer`) and the offer genuineness on the
+text production would feed them (the text layer, or Vision **page 1**), no paid call, and writes
+`<key>.replay.json`: a lock is merged over the stored read as a production re-run does; a fallback
+keeps the stored read as a stand-in for the Gemini read it does not make (`capture: ai_stand_in`).
+It prints lock / fallback by family and input kind (photo / scanned_pdf / text_pdf), the
+known-format-AI letters that lock today and, for the rest, a rule-based reason (no_text /
+photo_ocr_noise / layout_variant / other — the rules are in its docstring), genuineness stored vs
+today, and the stored Exact reads today's parser would now defer. The scorer reads it with
+`--read file:.replay.json`. `offer_failure_map.py --split dev` (or heldout / all, `--read`,
+`--keys`, `--json`) prints per core field wrong / missing / extra, by family, pages, input kind,
+stored capture, stored reader version and stored genuineness version, and a **ranked list of failure
+kinds** (institution = reporting venue, institution joins the campus — the answer's name and
+campus are two fields, so a read holding both in `institution` is that kind —, programme keeps a
+code, intake drops Semester, reporting date
+only on page 2+, known format not locked, real offer judged not genuine, …), each tagged against
+today's free readers: `old read` (a re-read fixes it), `today too`, or `ai, S3` (still Gemini today —
+S3 measures it). Every kind's rule is in its docstring. Counts and keys only, never a value. Tests:
+`tests/test_offer_replay.py`, `tests/test_capture_ocr.py` (synthetic twins).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/capture_ocr.py offer_letter --corpus apps/scholarship/eval/fixtures/offer_letters_2026-11-01 --reuse-from apps/scholarship/eval/snapshots --dry-run
+python -I apps/scholarship/eval/offer_replay.py --write
+python -I apps/scholarship/eval/offer_failure_map.py --split dev
+python -I apps/scholarship/eval/offer_read_check.py --split dev --read file:.replay.json
+```
+
+**Today's AI reader, measured (S3) — PAID.** `offer_fresh_read.py` runs the production AI offer
+read — `vision.extract_document_fields('', 'offer_letter', image=…, content_type=…)`, the exact call
+`_run_field_extraction_impl` makes (PDF → page-1 PNG, the offer prompt and schema, the model
+cascade, the clean-up) — on the LOCAL letter file, and caches `snapshots/<key>.fresh.json`
+(gitignored): `fields` (the stored read's shape), the answering model, every call's input / output /
+**thinking** tokens and cost, what the usage meter was handed, and the code / prompt / schema
+hashes. For the run the meter is replaced by a recorder, every database query and Storage raise,
+so nothing persists but the cache and `offer_fresh_read.log`. Cache-first (`--force` re-reads);
+`--keys`, `--split`, `--limit`; `--dry-run` prints counts and the cost (measured per-letter mean once
+caches exist) with no call; a **402 or 429 stops the whole run** (no retry, no model fall-through).
+`--compare` (free) prints per field stored vs fresh on the same letters, with fixed / broke counts;
+`offer_read_check.py --read file:.fresh.json` scores the cache (letters with no cache are counted,
+not scored). Key: `GEMINI_API_KEY` from `--env-file` (default the repo-root `.env`), never printed.
+Prices (US$/1M, paid tier): 2.5 Flash in 0.30, out + thinking 2.50; Flash-Lite 0.10 / 0.40; RM 4.4
+per US$. The recording client, the guards and the prices are in `offer_fresh_gemini.py`. Tests:
+`tests/test_offer_fresh_read.py` (fake Gemini client, synthetic twins).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_fresh_read.py --split all --dry-run --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --split dev --eval-dir <corpus> --env-file <repo>/.env
+python -I apps/scholarship/eval/offer_fresh_read.py --compare --split dev --eval-dir <corpus>
+```
+
+**The new reader (S4) — PAID.** Since S4 the production offer read is `offer_reader.read_offer` (reached
+through the same `extract_document_fields` call): up to 3 pages, one image each at high media resolution,
+a digital PDF's text layer beside them, the `campus` / `reporting_venue` / `programme_code` fields and the
+`offer_reader_version` stamp. `offer_fresh_read.py --reader new` (the default) runs it and caches
+`<key>.fresh_s4.json`; `--reader current` names S3's `<key>.fresh.json` caches, which this checkout can no
+longer produce, so it only compares (`--compare`, `--dry-run`) and never reads. `--compare --reader new`
+scores stored / current (`fresh`) / new (`s4`) on the letters holding both caches, each with fixed / broke
+against the read before it; `--costs` prints per letter the input / output / thinking tokens and cost of
+current beside new, and the means. The dry run prices every page shown at the measured 3,354 tokens of
+an A4 page at high resolution (a synthetic page, 2026-11-01; 258 at the default) plus the text layer.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_fresh_read.py --split dev --dry-run --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --keys K1,K2 --eval-dir <corpus> --env-file <repo>/.env
+python -I apps/scholarship/eval/offer_fresh_read.py --compare --reader new --split all --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_fresh_read.py --costs --keys K1,K2 --eval-dir <corpus>
+python -I apps/scholarship/eval/offer_read_check.py --read file:.fresh_s4.json --split dev --eval-dir <corpus>
+```
+
+**What the S4 reads would do live (S4 dry run) — reads PRODUCTION, run by the lead only.**
+`offer_s4_dry_run.py` loads each cached letter's document (`__d<id>`) and runs the repairs' planners — realign
+(`plan_bumi_realign`), link (`plan_offer_link`, after realign as `link_offer_courses` orders them), the
+institution fill (`institution_fill`) and the `student_offer_check` ticks — on the stored fields and on the S4
+fields put in their place in memory. ONE transaction whose first statement is `SET TRANSACTION READ ONLY`
+(never a session-level setting through the pooler), always rolled back; any non-read statement, Storage, Gemini
+and the meter raise. Prints doc / application ids, outcomes, course ids, campus ids (or a hash) and tick
+changes — no names. Needs `DATABASE_URL` only. Tests: `tests/test_offer_s4_dry_run.py`.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--keys K1,K2] [--json]
+```
+
+`fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
+an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
+dropped most profiles before 2026-11-01.
+
 ## Limits (honest)
 - It scores each document **in isolation**. A check that needs a companion document present
   (e.g. a payslip verified against the matching parent IC) sees only the one doc — note such

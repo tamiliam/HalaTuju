@@ -37,11 +37,11 @@ again; from `md` every page looks exactly as before.
   an owner (`sliceReach.test.ts`), as the other slices do.
 - **Numbers:** Jest 6,118 → 6,118 (no new test cases: the guards grew inside the rule-15 tests); mobile-check 360 →
   396 cells, all passing, nothing worse, 18 cells better (`/contact` 2 → 0, `/get-started` 1 → 0, `/scholarship` 1 → 0
-  small targets); the 36 new cells are clean except the quiz's two 10 px step dots (TD-465); ledger 27 → 31 routes
+  small targets); the 36 new cells are clean except the quiz's two 10 px step dots (TD-466); ledger 27 → 31 routes
   measured, 16 → 22 green. Bundle (exact): median 145.329 → 145.407 kB (line 147), `/` 143.743 → 143.976,
   `/scholarship` 182.429 → 182.664, `/scholarship/bursary` 190.314 → 190.612, `/profile` 192.802 → 192.817 (line 194),
   `/scholarship/application` 206.181 → 206.196 (line 208). Nothing raised; nothing touches the API.
-- New TD-465 (the quiz step dots; the sandbox mounts pages inside its own 16 px gutter).
+- New TD-466 (the quiz step dots; the sandbox mounts pages inside its own 16 px gutter).
 - **Review fixes (before the push):** "+ Add elective" (SPM and STPM grades) sits below its divided list so it keeps
   its dashed box; the rule-15 card check now sees borderless and `border-2` cards and exempts only a CONTROL element
   (button, link, field, label) or a named choice-button constant, never a size (bitten: an old bursary card, a 44 px
@@ -287,6 +287,122 @@ Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not dep
 - Nothing that decides, queries or pays reads `exam_year_status` (the Check-2 "exam year unknown" ask reads
   `exam_year` only).
 - Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
+
+## Offer letters read exactly — Sprint 4 (reader round 1) — 2026-11-01 — BUILT, not deployed
+
+Production code (the AI offer read); no migration; not pushed. Ships only after the matcher session reads
+`campus` / `programme_code` (roadmap S4 door list). Paid: a 10-letter pilot, US$0.0615 (RM0.27), plus a
+US$0.001 synthetic-image probe.
+
+- **`apps/scholarship/offer_reader.py`** — the AI offer reader, reached through the same
+  `vision.extract_document_fields(…, 'offer_letter', …)` call. `OFFER_READER_VERSION` 2.0.0 is stored on every AI
+  offer read (`vision_fields.offer_reader_version`, with `offer_reader_inputs`: pages, text-layer characters,
+  media resolution). Gemini now sees up to 3 pages, one image each (`pdf_pages.pdf_page_pngs`), at
+  `MEDIA_RESOLUTION_HIGH`, and a digital PDF's text layer for those pages (`pdf_page_text`).
+- **Schema + prompt (owner rulings):** `institution` = the name only; new `campus`, `reporting_venue`,
+  `programme_code`; hostels / venues never in institution or campus; PISMP programme = the degree title; intake
+  with its label; dates without weekday or time; a reporting date is never a commencement date; the IC also from
+  the reference line, never invented; read exactly as printed. Clean-up: a code left in `programme` moves to
+  `programme_code`; an IC read that cannot be an IC (not 11–13 digits) is blanked.
+- `vision._call_gemini_json` takes `images=[…]` and `media_resolution=` (other callers unchanged). Rebased on
+  the matcher's live campus join (`letter_institution`, main d08283f1); `pathway_engine.py` unchanged by S4.
+  Rebased again on the live `programme_line` join (main cddb4661): the printed-code tier survives.
+- **Full run (the lead, RM5.23):** held-out 66/90 fully exact (current 18), dev 90/126 (current 35); name and
+  NRIC fell by 1–3 letters and one held-out name now reads mismatch — for the adversarial review.
+- **Reader 2.1.0 — the adversarial review's fixes** (deploy was blocked): page 1 alone at high detail for every
+  identity field, later pages only to fill a blank reporting date / intake; the IC guard `offer_ic.py`
+  (reference line corroborate-only, well-formed shape, not-on-page blanked, text-layer backstop for the
+  profile's own IC); issuer a name, never an office alone; the text layer fenced as data; the model recorded.
+  2.1.0 pilot: 6/10 fully exact (2.0.0: 9/10 — issuer wording, a PISMP "PROGRAM" wrapper, one intake), US$0.00558
+  a letter. **Money door (needs the owner):** a `not_offer_letter` document no longer sets the course-start year
+  (`course_start_year` → award size, EPF evidence).
+- **Reader 2.2.0** (dev-tuned wording) **full run, RM6.09:** held-out 63/90 fully exact (stored 19), dev 91/126
+  (stored 31). Name never worse; NRIC blank on 16 letters that stored had right (never wrong) — 10 for want of
+  a profile IC in the corpus. Owner ruling recorded: a not_offer_letter document never sets the course-start year.
+- **Reader 2.3.0** (IC prompt only, guard unchanged): held-out 63/90, dev 89/126; the production dry run with
+  the guard re-applied against the live profile IC: IC 3 unreadable → match, none lost, no mismatch. RM6.40.
+- **Money ruling taken OUT of S4 (owner, 2026-11-02):** `course_start_year`, `offer_reporting_date`, the
+  reporting-date sync and the backfill are main's again (`course_start.py` deleted); deferred to a money sprint
+  with TD-465. S4 ships the reader only; the IC guard fixes and reader 2.4.0 stay.
+- **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
+  fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
+  rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.
+  `tests/test_offer_s4_dry_run.py`.
+- `halatuju/ai_registry.py`: the offer reader is a registered AI job (`offer_read`).
+- **Finding:** the 258-token image was the default media resolution (a synthetic A4 page: 258 default / medium,
+  3,354 high). High resolution applies only to a ONE-image call: a 2-page letter came back as 2 × 258.
+- **Pilot (S3's 10 letters, 5 dev + 5 held-out):** fully exact 9/10 new vs 1/10 current (S3); institution 9 vs 4,
+  programme 10 vs 6, intake 10 vs 8, name / NRIC / reporting date 10 each, no core field down. US$0.00615 a letter
+  vs US$0.00344 (×1.79).
+- `eval/offer_fresh_read.py --reader new|current`, `--costs`; three-way `--compare`. Tests:
+  `tests/test_offer_reader.py`, `tests/test_offer_reader_doors.py` (every reader of the fields),
+  `tests/test_offer_fresh_read.py` (synthetic twins).
+
+## Offer letters read exactly — Sprint 3 (today's AI reader measured) — 2026-11-01 — BUILT, not deployed
+
+Measurement only; no production code. Paid: RM3.72 of Gemini (owner yes, RM3–9).
+
+- **`eval/offer_fresh_read.py`** (+ `offer_fresh_gemini.py`): the production AI offer read
+  (`vision.extract_document_fields`) on the local files; the usage meter replaced by a recorder, any database or
+  Storage access raises; caches `<key>.fresh.json` (fields, model, per-call tokens incl. thinking, cost, code
+  fingerprints). `--dry-run`, `--limit`, `--split`, `--force`, `--compare`; a 402/429 stops the run.
+- **Result (216 letters):** fully exact 53 fresh vs 50 stored - today's reader is no better than the stored reads;
+  US$0.0039 a letter. Images are sent as 258 tokens each. The live usage meter misses thinking tokens (TD-459).
+- `tests/test_offer_fresh_read.py` (fake Gemini client).
+
+## Offer letters read exactly — Sprint 2 (answers, failure map, owner checks) — 2026-11-01 — BUILT, not deployed
+
+Measurement tooling only; no production code, no migration, no Gemini call.
+
+- **Free text for every letter.** `eval/capture_ocr.py` gains `--corpus` (read `<dir>/fixtures/<type>`, write
+  `<dir>/snapshots`), `--reuse-from` (an earlier page-1 Vision capture stands in, no second call) and
+  `--dry-run` (counts and cost, nothing written). Run once on the offer corpus: 134 text layers, 57 earlier
+  captures, 95 letters by Vision (**106 calls, ≈ US$0.16 list price, inside the free 1,000**), 1 not-a-PDF file
+  unreadable.
+- **`eval/offer_replay.py`** — today's deterministic offer reader and offer genuineness on the text production
+  would feed them, cached per letter as `<key>.replay.json` (the scorer reads it with `--read file:.replay.json`);
+  lock / fallback counts, the known-format-AI letters' lock and miss reasons, genuineness stored vs today.
+- **`eval/offer_failure_map.py`** — per core field wrong / missing / extra by family, pages, input kind, stored
+  capture and versions; a ranked, rule-based list of failure kinds, each tagged old read / today too / ai, S3.
+- `tests/test_offer_replay.py`, `tests/test_capture_ocr.py` (synthetic twins).
+- **Answers:** 126 dev letters (the AI-read ones) by four labelling agents, then one consistency pass for the
+  institution / campus split (owner) - 216 letters answered. Scorer: `campus` scored (not core); intake labels
+  stripped at either end (Sesi, Sesi Akademik, Sesi Mula, Session, Ambilan, Pengambilan, Intake); "Semester 1"
+  stays content. Held-out 19/90 fully exact, dev 31/126.
+- **Owner offer check** (`offer_review_page.py --offer-check`, 47 letters): our labels 47/47 right; 8 live
+  genuineness calls wrong - the rulings are in `docs/decisions.md` and the roadmap's S6.
+- **NRIC map:** 157 of 187 offers print it, 30 print none (correct blanks); the only gaps are an NRIC inside the
+  reference line (UPM 2, Netherlands Maritime 1).
+
+## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — BUILT, not deployed
+
+Measurement tooling only; no production code, no migration, no paid call
+(`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, approved D1–D6 a).
+
+- **The correct-answer format** `<key>.offer_expect.json` (gitignored, beside the snapshot): name, NRIC,
+  institution as printed + the campus a person would pick, programme / stream / specialisation, intake,
+  reporting and offer dates, issuer, duration and fees (written, not scored), is-it-an-offer, pages,
+  unsure fields, a short note; a field the letter does not print is an explicit `null`.
+- **The scorer** `eval/offer_read_check.py`: per core field exact / blank_correct / missing / wrong / extra,
+  "fully exact" per letter, by family, input kind, capture, programme, split and answer kind; tidying only,
+  no fuzzy matching; a pluggable read source for S3; keys, field names and counts only. It also prints the
+  known-format-AI count (STPM / matriculation / polytechnic letters read by the AI reader) for S5.
+- **The held-out split** `eval/offer_split.json` + `eval/offer_split.py`: 90 letters, fixed seed, drawn only from
+  unseen letters with an AI read (owner steer: the fixed-format locks are already exact), stratified by
+  family + programme; `--check` re-derives it.
+- **`fetch_corpus.py` pages every read** — PostgREST caps a response at 1,000 rows, so the profile read was
+  silently cut short. Read-only; not yet re-run against production.
+- `tests/test_offer_read_scorer.py` (synthetic twins: tidying, every outcome, fully exact, no value printed,
+  split determinism, paging).
+- **The owner's spot-check** (32 held-out answers) and its conventions: the intake is written **as printed,
+  with its label** (the scorer drops the label, so scores do not move); **PISMP's programme is the degree title**
+  — the scorer's core `programme` now compares the programme for PISMP too, and `specialisation` is a scored
+  not-core field wherever the answer has one (its % over those letters, an `of` column). One core-field
+  labelling error found (a reporting date that was a commencement date); the answer files were corrected
+  (gitignored).
+- **The BASELINE (stored reads, held-out 90): 21 of 90 fully exact (23.3 %).** Right per core field: name
+  94.4 %, NRIC 98.9 %, institution 51.1 %, programme 73.3 %, intake 81.1 %, reporting date 96.7 %. Recorded in
+  the roadmap's S1 section with the owner's notes for S2, S4 and S6.
 
 ## Shared-phone privacy fix: the stashed apply form is wiped on sign-out (Mobile M4, part 0) (2026-11-01)
 

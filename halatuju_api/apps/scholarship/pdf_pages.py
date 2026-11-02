@@ -158,6 +158,64 @@ def pdf_first_page_png(data: bytes) -> Optional[bytes]:
         return None
 
 
+def pdf_page_pngs(data: bytes, max_pages: int) -> list:
+    """The first ``max_pages`` pages of a PDF, each its OWN PNG (within the pixel budget) — the offer
+    reader shows Gemini one image per page, so no page is shrunk to share one raster (offer exact-read
+    S4, 2026-11-01). A page that cannot be rendered ends the list there; [] on any failure."""
+    out = []
+    try:
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(data)
+        try:
+            for i in range(min(len(pdf), max(0, max_pages))):
+                page = pdf[i]
+                scale = raster_scale(page.get_width(), page.get_height())
+                if scale is None:
+                    break
+                buf = io.BytesIO()
+                page.render(scale=scale).to_pil().convert('RGB').save(buf, format='PNG')
+                out.append(buf.getvalue())
+        finally:
+            pdf.close()
+    except (ImportError, OSError, ValueError, RuntimeError) as e:   # pdfium's errors are RuntimeErrors
+        logger.warning('PDF page render failed: %s', e)
+    return out
+
+
+def pdf_page_count(data: bytes) -> int:
+    """The number of pages in a PDF; 0 when it cannot be opened."""
+    try:
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(data)
+        try:
+            return len(pdf)
+        finally:
+            pdf.close()
+    except (ImportError, OSError, ValueError, RuntimeError):
+        return 0
+
+
+def pdf_page_texts(data: bytes, max_pages: int) -> list:
+    """The RAW text layer of each of the first ``max_pages`` pages, one string per page ([] if none /
+    encrypted / unreadable). Pass a page through `usable_text_layer` before trusting it. pypdf raises
+    many kinds on a damaged file (its own, struct / zlib / recursion errors…), so any failure is no
+    layer — the safe answer: the images are still shown."""
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(data))
+        if reader.is_encrypted:
+            reader.decrypt('')
+        return [(p.extract_text() or '').strip() for p in reader.pages[:max(0, max_pages)]]
+    except Exception as e:   # a damaged PDF's layer is simply absent (review L2)
+        logger.warning('PDF page text extraction failed: %s', e)
+        return []
+
+
+def pdf_page_text(data: bytes, max_pages: int) -> str:
+    """The text layer of the first ``max_pages`` pages, joined by a blank line ('' if none)."""
+    return '\n\n'.join(pdf_page_texts(data, max_pages)).strip()
+
+
 #: The pages `pdf_pages_png` stacks: the first two and the LAST — a declaration form's approval box
 #: ("Tandatangan dan Cap Rasmi") is often on its final page (#374 review round 3).
 MAX_STACKED_PAGES = 3

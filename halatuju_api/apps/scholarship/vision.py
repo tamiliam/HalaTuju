@@ -29,6 +29,7 @@ from .pdf_pages import (MIN_TEXT_LAYER_CHARS as _MIN_PDF_TEXT, pdf_first_page_pn
 from .income_declaration import read_approval as _read_approval   # #374: the approval is read off the IMAGE
 from .higher_results import HINT as _HIGHER_HINT, SCHEMA as _HIGHER_SCHEMA, extract as _higher_extract
 from .name_order import patronymic_reversed   # TD-408: a reversed patronymic is a different person
+from .offer_reader import OFFER_SCHEMA         # offer exact-read S4: the offer reader's own module
 
 logger = logging.getLogger(__name__)
 
@@ -1332,18 +1333,10 @@ _FIELD_SCHEMAS = {
                                  'results': {'type': 'array', 'items': {'type': 'object',
                                              'properties': {'subject': _STR, 'grade': _STR,
                                                             'band': _STR}}}}),
-    # Pathway Check-1: the offer letter's facts, differentiated. candidate_nric is the
-    # strong identity check (matched against the profile NRIC); offer_date is the ISSUE date
-    # (for currency). Pathway type now comes free from the genuineness scorer, so the
-    # per-pathway academic fields are captured explicitly (LOCKED contract 2026-06-18):
-    # STPM/Matric → college (institution) + stream (Bidang/Jurusan); Poly → programme
-    # (+ institusi); PISMP → bidang_pengkhususan (+ elektif + aliran). reporting_date is the
-    # report/registration date. institution/programme/issuer kept for the live Layer-2 matcher.
-    'offer_letter': _doc_schema({'candidate_name': _STR, 'candidate_nric': _STR,
-                                 'programme': _STR, 'institution': _STR, 'issuer': _STR,
-                                 'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR,
-                                 'stream': _STR, 'reporting_date': _STR, 'reporting_date_label': _STR,
-                                 'bidang_pengkhususan': _STR, 'elektif': _STR, 'aliran': _STR}),
+    # Pathway Check-1: the offer letter's facts. Its schema, prompt, inputs (up to 3 pages + the PDF
+    # text layer) and version live in offer_reader.py (offer exact-read S4, 2026-11-01), where
+    # extract_document_fields sends every offer read.
+    'offer_letter': OFFER_SCHEMA,
     # Income Check-1: the Birth Certificate links the income earner (mother) to the
     # student. Read the child + both parents' names AND their NRICs (the strong match).
     # `bc_child_dob` exists ONLY to validate `bc_child_nric` (see `nric_dob_agrees`) — the
@@ -1422,37 +1415,6 @@ _DOC_HINTS = {
                      'belong to the subject printed on the SAME line; NEVER carry a grade or '
                      'band up or down to a different subject, even if the slip is faint or '
                      'watermarked. Ignore the "Ujian Lisan" line and any watermark text.'),
-    'offer_letter': (' This is a Malaysian post-SPM offer letter — a Form Six ("Tingkatan Enam"), '
-                     'matriculation ("Program Matrikulasi"), polytechnic ("Politeknik"), PISMP '
-                     '(teacher-training, "Ijazah Sarjana Muda Perguruan"), or a university '
-                     'degree/diploma/foundation offer. The fields are arranged as a two-column '
-                     'label/value list (e.g. "2.1 Bidang … 2.2 Pusat Tingkatan Enam …") — read it '
-                     'VISUALLY and pair each value with its own label. '
-                     '"candidate_name" = the offered student\'s full name; "candidate_nric" = their IC, '
-                     'printed as "No. Kad Pengenalan" / "No. Pengenalan Diri" / "K/P" (keep the 12 '
-                     'digits). "offer_date" = the date the letter was ISSUED ("Tarikh" in the reference '
-                     'block) — NOT "Tarikh Cetakan" (the print date); used to judge currency. '
-                     '"institution" = the college/campus/school the student reports to (Pusat Tingkatan '
-                     'Enam, Kolej Matrikulasi, the Politeknik, or the IPG campus); "issuer" = the body '
-                     'that issued the letter (Sektor Operasi Sekolah / Bahagian Matrikulasi / Jabatan '
-                     'Pendidikan Politeknik dan Kolej Komuniti / Institut Pendidikan Guru / a university). '
-                     'Per-pathway academic field: "programme" = the diploma/degree name (polytechnic or '
-                     'university); "stream" = the Form-Six "Bidang" (Sains / Sains Sosial) OR the '
-                     'matriculation "Jurusan"; "bidang_pengkhususan" = the PISMP specialisation (e.g. '
-                     '"Bahasa Tamil Pendidikan Rendah"); "elektif" = the PISMP elective subject; "aliran" '
-                     '= the PISMP school stream ("SK" / "SJKC" / "SJKT"). "reporting_date" = the report/'
-                     'registration date — labelled "Tarikh Lapor Diri" (STPM, UKM), "Tarikh Kemasukan ke '
-                     'Kolej" (matriculation), "Tarikh dan Masa Daftar" (polytechnic), "Tarikh Pendaftaran" '
-                     '(PISMP, UPNM, UMP, UTeM), "Tarikh Mendaftar" (UPSI), or — UTHM style — a bare '
-                     '"Tarikh" line INSIDE the "diminta untuk mendaftar pada tarikh, tempat dan masa" '
-                     'clause (never the letter-issue "Tarikh" in the reference block). '
-                     '"reporting_date_label" = the VERBATIM label heading the reporting date sits under, '
-                     'exactly as printed on the letter (e.g. "Tarikh Mendaftar", "TARIKH LAPOR DIRI", '
-                     '"Tarikh dan Masa Daftar", or just "Tarikh" for the UTHM clause style); empty when '
-                     'no reporting date is shown. '
-                     '"intake" = the session (e.g. "Sesi 2026/2027"); '
-                     '"candidate_address" = the student\'s mailing address if shown. Leave any field empty '
-                     'if absent — only fill the academic fields that this pathway\'s letter actually has.'),
     'str': (' This is meant to be a Malaysian STR (Sumbangan Tunai Rahmah) proof. It should be ONE '
             'of three recognised kinds — set "source_type" to: "letter" (an official Kementerian '
             'Kewangan STR APPROVAL letter — KEMENTERIAN KEWANGAN letterhead, a "No. Rujukan" + '
@@ -1627,11 +1589,15 @@ _DOC_HINTS = {
 
 
 def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = None,
-                      mime_type: str = 'image/jpeg') -> dict:
+                      mime_type: str = 'image/jpeg', images=None, media_resolution=None,
+                      with_model: bool = False) -> dict:
     """Structured-output Gemini call → parsed JSON dict, or {'_error': msg}. This is
     the single seam tests @patch. Reuses profile_engine's model cascade + key guard.
     Pass ``image`` (raw bytes) for a multimodal read — Gemini sees the picture, not
-    just OCR text (used by the IC second-opinion to recover blurry digits)."""
+    just OCR text (used by the IC second-opinion to recover blurry digits). ``images`` =
+    [(bytes, mime), …] for several (images first, then the prompt); ``media_resolution`` sets
+    the image detail (the offer reader, S4 — the default sends every image as 258 tokens);
+    ``with_model`` adds ``_model`` (the cascade model that answered) to the answer."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '') or ''
     if not api_key:
         return {'_error': 'AI service not configured (missing API key)'}
@@ -1642,15 +1608,17 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
         return {'_error': 'AI module not installed'}
     from .profile_engine import MODEL_CASCADE
     client = genai.Client(api_key=api_key)
-    contents = (prompt if image is None
-                else [types.Part.from_bytes(data=image, mime_type=mime_type), prompt])
+    parts = list(images or []) + ([(image, mime_type)] if image is not None else [])
+    contents = [types.Part.from_bytes(data=d, mime_type=m) for d, m in parts] + [prompt] if parts else prompt
+    extra = {'media_resolution': media_resolution} if media_resolution else {}
     ours, document = [], []          # why each model failed: OUR side, or the document (2026-10-24)
     for model_name in MODEL_CASCADE:
         try:
             resp = client.models.generate_content(
                 model=model_name, contents=contents,
                 config=types.GenerateContentConfig(
-                    response_mime_type='application/json', response_schema=schema, temperature=0.1),
+                    response_mime_type='application/json', response_schema=schema, temperature=0.1,
+                    **extra),
             )
         except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
             (document if model_rejected_document(e) else ours).append((model_name, str(e)))
@@ -1660,7 +1628,8 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
         _it, _ot = usage.gemini_tokens(resp)
         usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
         try:
-            return json.loads(resp.text)
+            out = json.loads(resp.text)
+            return {**out, '_model': model_name} if with_model and isinstance(out, dict) else out
         except (TypeError, ValueError) as e:   # answered (billed) with nothing usable: try the next
             document.append((model_name, f'{UNPARSEABLE_RESPONSE}: {e}'))
             logger.warning('Gemini JSON call: %s returned no parseable JSON: %s', model_name, e)
@@ -1679,11 +1648,16 @@ _WARNING_VOICE = (' Write each warning as ONE short plain-language sentence for 
 
 
 def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[bytes] = None,
-                            content_type: str = '') -> dict:
+                            content_type: str = '', **offer_context) -> dict:
     """Gemini extracts the per-doc-type fields. Pass ``image`` to read the document
     VISUALLY (the model sees the real 2-D layout — used for the results slip, whose
     table can't survive being flattened to OCR text); otherwise it reads ``ocr_text``.
-    Returns {fields, warnings, error}. Never raises."""
+    Returns {fields, warnings, error}. Never raises. An OFFER LETTER goes to `offer_reader.read_offer`
+    (its pages, text layer, prompt and version; ``image`` is then the uploaded file's bytes);
+    ``offer_context`` (profile_nric, page1_ocr — `_offer_context`) feeds only its IC guard."""
+    if doc_type == 'offer_letter':
+        from .offer_reader import read_offer
+        return read_offer(ocr_text, image=image, content_type=content_type, **offer_context)
     schema = _FIELD_SCHEMAS.get(doc_type)
     if schema is None:
         return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
@@ -1852,7 +1826,9 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                 return False
             return any(k in s for k in ('offer_date', 'offer date', 'reporting_date', 'reporting date',
                                         'intake', 'address', 'stream', 'bidang', 'elektif', 'aliran',
-                                        'specialis', 'specializ'))
+                                        'specialis', 'specializ', 'campus', 'reporting venue',
+                                        'reporting_venue', 'programme code', 'programme_code',
+                                        'course code'))
         return [w for w in warnings if not _is_optional_offer_noise(w)]
     if doc_type == 'semester_result':
         # Only Name / NRIC / CGPA matter on a semester slip (owner): Name·IC drive the red/green
@@ -2014,6 +1990,22 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             check_address=check_address, ocr=ocr)
 
 
+def _offer_context(doc, page1_text):
+    """What the offer reader's IC guard needs (`offer_ic`): the student's own IC and page 1's text. For a
+    photo or a scan ``page1_text`` IS page 1 (`_vision_words` rasterises page 1 only); for a digital PDF it
+    is the whole text layer, but the reader then uses its OWN page-1 layer and falls back to this only when
+    page 1 has none (S4 re-review L3: there it can only make the cross-check more lenient, never refill)."""
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    return {'profile_nric': getattr(profile, 'nric', '') or '', 'page1_ocr': page1_text or ''}
+
+
+#: The deterministic offer read's stamp (review L1): which reader wrote the fields.
+_DET_OFFER_STAMP = {'offer_reader_inputs': {'reader': 'deterministic'}}
+#: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs).
+_EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
+            'approval_read_until', 'offer_reader_version', 'offer_reader_inputs')
+
+
 def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
     """Extract fields + a deterministic student-facing verdict, store on the doc. Never blocks,
     never raises. Pass ``ocr`` to reuse a prior OCR pass.
@@ -2065,8 +2057,8 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
         # STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read DETERMINISTICALLY
         # from the OCR text — self-identifying + conservative (offer_parse.parse_govt_offer returns
         # None unless it locks a coherent identity+pathway+intake read). University (ua_offer) offers
-        # vary, and PISMP's new format is deferred, so those fall through to the Gemini IMAGE read (the
-        # offer's 2-D label/value layout otherwise doesn't survive flattened OCR).
+        # vary, and PISMP's new format is deferred, so those fall through to the Gemini IMAGE read —
+        # `offer_reader`: up to 3 pages + a PDF's text layer, stamped `offer_reader_version` (S4).
         from .offer_parse import parse_govt_offer
         image = _image()
         _r = ocr if (ocr is not None) else ocr_document(doc)
@@ -2081,12 +2073,12 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             prior = doc.vision_fields.get('fields') if isinstance(getattr(doc, 'vision_fields', None), dict) else None
             fields = ({**prior, **{k: v for k, v in govt.items() if (v or '').strip()}}
                       if isinstance(prior, dict) else govt)
-            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic', **_DET_OFFER_STAMP}
         elif image is not None:
-            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_offer_context(doc, _otext))
             ex['capture'] = 'ai'
         else:
-            ex = extract_document_fields(_otext, doc.doc_type)
+            ex = extract_document_fields(_otext, doc.doc_type, **_offer_context(doc, _otext))
             ex['capture'] = 'ai'
     elif doc.doc_type == 'higher_results': ex = _higher_extract(doc, ocr, _image, extract_document_fields)
     elif doc.doc_type == 'birth_certificate':
@@ -2130,13 +2122,13 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
 
     if ex['error']:   # OUR AI outage is a deferred read ('review_manually'), never the student's 'unreadable'
         svc = is_ai_service_error(ex['error'])
-        result = {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable',
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'review_manually' if svc else 'unreadable', **{k: ex[k] for k in ex if k in _EX_KEPT},
                   'capture': ex.get('capture', 'ai'), 'error': ex['error'], 'service_error': svc}
     else:
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
                                       postcode=postcode, city=city, street=street,
                                       check_address=check_address)
-        result = {'fields': ex['fields'], 'warnings': ex['warnings'], **{k: ex[k] for k in ex if k in ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error', 'approval_read_until')},
+        result = {'fields': ex['fields'], 'warnings': ex['warnings'], **{k: ex[k] for k in ex if k in _EX_KEPT},
                   'student_verdict': verdict, 'capture': ex.get('capture', 'ai'), 'error': ''}
     # Genuineness fingerprint (flag-gated, soft): a multimodal "does this look like a real
     # official document?" read → vision_fields['authenticity']. One extra Gemini call per
