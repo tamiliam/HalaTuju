@@ -4,24 +4,27 @@
 // page imports it too, so the slice is counted in that page's first-load JS (TD-304), not hidden here.
 import '@/lib/messagesSponsor'
 import { useEffect, useState, type ReactNode } from 'react'
-import Link from 'next/link'
-import BrandLogo from '@/components/BrandLogo'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
-import { sponsorSignOut } from '@/lib/sponsor-supabase'
 import { wasScopeSuperseded } from '@/lib/sessionPolicy'
 import { getStudentsWaitingCount } from '@/lib/api'
 import SponsorLanding from '@/components/SponsorLanding'
 import SponsorDetailsForm from '@/components/SponsorDetailsForm'
 import SponsorTermsWizard from '@/components/sponsors/SponsorTermsWizard'
 import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
-import ThemeSelector from '@/components/ThemeSelector'
+// The chrome (header, desktop tabs, phone tab bar, footer) and the single-card frame — Mobile M5.
+import SponsorShell, { SponsorCard } from '@/components/sponsor/SponsorShell'
 import { SponsorPortalProvider, useSponsorPortal } from '@/lib/sponsor-portal-context'
+
+const Chrome = SponsorShell
+const CardWrap = SponsorCard
 
 /**
  * The signed-in sponsor portal shell. Gates by account state and renders the
- * three-tab chrome (My Giving · Students · My Account) for approved sponsors only.
+ * three-tab chrome (My Giving · Students · My Account) for approved sponsors only —
+ * `SponsorShell` draws it (Mobile M5: a slim header and a bottom tab bar on a phone,
+ * the old top row from md).
  * Signed-out visitors get the public marketing landing; the auth screens
  * (/sponsor/login, /register, /auth/callback) live OUTSIDE this route group so
  * they are not gated. Everything ships dark behind SPONSOR_POOL_ENABLED — when the
@@ -135,91 +138,6 @@ function ApprovedPortal({ children }: { children: ReactNode }) {
   }
 
   return <Chrome nav>{children}</Chrome>
-}
-
-/** Top bar (+ optional tab nav) shared by every signed-in sponsor screen. */
-function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean }) {
-  const { t } = useT()
-  const router = useRouter()
-  const pathname = usePathname()
-
-  const signOut = async () => {
-    await sponsorSignOut()
-    router.replace('/sponsor/login')
-  }
-
-  const tabs = [
-    { href: '/sponsor', label: t('sponsorPortal.nav.giving') },
-    { href: '/sponsor/students', label: t('sponsorPortal.nav.students') },
-    { href: '/sponsor/account', label: t('sponsorPortal.nav.account') },
-  ]
-  const active = (href: string) =>
-    href === '/sponsor' ? pathname === '/sponsor' : pathname.startsWith(href)
-
-  return (
-    // Sponsor portal typeface (owner 2026-07-18): Inter — crisp at small sizes, trustworthy
-    // for the money/facts. Scoped here; the rest of HalaTuju stays on Lexend. (--font-inter
-    // is registered in the root layout.) Inter HAS tabular figures, so money here keeps Inter:
-    // `--figures-face` is what `.tabular-nums` paints in (globals.css, TD-310).
-    <div className="min-h-screen flex flex-col bg-ground-50"
-      style={{
-        // Tamil first and Tamil-only (unicode-range): Tamil letters in Mukta Malar, the rest Inter.
-        fontFamily: 'var(--font-tamil), var(--font-inter), system-ui, sans-serif',
-        '--figures-face': 'var(--font-tamil), var(--font-inter), system-ui, sans-serif',
-      } as React.CSSProperties}>
-      <header className="bg-ground-0 border-b sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
-            <BrandLogo width={100} height={36} />
-            <span className="text-sm font-semibold text-primary-600">{t('sponsorAuth.badge')}</span>
-          </Link>
-          <div className="flex items-center gap-0.5 sm:gap-1">
-            {nav && (
-              <nav aria-label={t('sponsorPortal.account.title')} className="flex items-center gap-0.5 sm:gap-1">
-                {tabs.map((tb) => (
-                  <Link
-                    key={tb.href} href={tb.href}
-                    aria-current={active(tb.href) ? 'page' : undefined}
-                    className={`px-2.5 sm:px-3 py-2 text-sm font-medium rounded-lg ${
-                      active(tb.href) ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:bg-ground-50'
-                    }`}
-                  >
-                    {tb.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
-            {/* Light / Dark / Auto (Layer 1 F7d). The sponsor portal has no settings page of its
-                own, so the top bar is the only place a sponsor could ever find it. */}
-            <div className="ml-1 sm:ml-2"><ThemeSelector /></div>
-            <button onClick={signOut} className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 text-sm text-ground-400 hover:text-ground-600">
-              {t('header.logout')}
-            </button>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
-      {nav && (
-        <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-ground-400">
-          <Link href="/sponsor/trust" className="text-ground-500 hover:text-primary-600 underline">
-            {t('sponsorPortal.trust.footerLink')}
-          </Link>
-          <span className="mx-2">·</span>
-          <Link href="/privacy" className="hover:text-ground-600">
-            {t('sponsorAuth.privacyNotice')}
-          </Link>
-        </footer>
-      )}
-    </div>
-  )
-}
-
-function CardWrap({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-center px-2 py-8">
-      <div className="w-full max-w-md bg-ground-0 rounded-2xl shadow-sm border p-8">{children}</div>
-    </div>
-  )
 }
 
 function Centered({ children }: { children: ReactNode }) {

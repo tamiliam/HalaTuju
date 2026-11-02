@@ -154,7 +154,7 @@ describe('Lexend actually paints (TD-310)', () => {
     expect(globals).toMatch(/--figures-face:\s*var\(--font-tamil\),\s*var\(--font-ibm-plex-sans\)/)
     expect(globals).toMatch(/\.tabular-nums:not\(\.font-mono\)\s*\{\s*font-family:\s*var\(--figures-face\);\s*\}/)
     // The sponsor portal is on Inter, which HAS tabular figures — it keeps its own face.
-    const sponsor = readWeb('src/app/sponsor/(portal)/layout.tsx',
+    const sponsor = readWeb('src/components/sponsor/SponsorShell.tsx', /* Mobile M5: the portal's chrome moved here */
       'the sponsor portal sets its figures face to Inter')
     expect(sponsor).toMatch(/'--figures-face': 'var\(--font-tamil\), var\(--font-inter\)/)
   })
@@ -217,7 +217,7 @@ describe('Tamil paints in Mukta Malar, and only Tamil (Mobile M1a)', () => {
     const families = tailwindConfig.theme?.extend?.fontFamily as Record<string, string[]>
     expect(families.sans[0]).toBe('var(--font-tamil)')
     expect(families.plex[0]).toBe('var(--font-tamil)')
-    const sponsor = readWeb('src/app/sponsor/(portal)/layout.tsx', 'the sponsor portal sets its own stack')
+    const sponsor = readWeb('src/components/sponsor/SponsorShell.tsx', /* Mobile M5: the portal's chrome moved here */ 'the sponsor portal sets its own stack')
     expect(sponsor).toMatch(/fontFamily: 'var\(--font-tamil\), var\(--font-inter\)/)
   })
 })

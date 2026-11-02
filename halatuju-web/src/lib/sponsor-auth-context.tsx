@@ -21,7 +21,13 @@ interface SponsorAuthContextValue {
   refreshAccount: () => Promise<void>
 }
 
-const SponsorAuthContext = createContext<SponsorAuthContextValue | null>(null)
+/**
+ * Exported so a HARNESS can supply the value (Mobile M5) — the design sandbox mounts real portal pages
+ * against a synthetic sponsor this way, never a real sign-in (the same rule as `SponsorPortalContext`).
+ * Product code must keep using `SponsorAuthProvider` + `useSponsorAuth()`; providing this context
+ * anywhere outside a harness would be a second, unauthenticated source of the sponsor's identity.
+ */
+export const SponsorAuthContext = createContext<SponsorAuthContextValue | null>(null)
 
 export function SponsorAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)

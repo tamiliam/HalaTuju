@@ -298,11 +298,15 @@ describe('the switch a person can actually click (Layer 1 F7d)', () => {
     // Home no longer draws a bar of its own.
     const SHELLS = [
       'src/components/admin/Topbar.tsx',     // reviewers, org admins, the officer cockpit
-      'src/app/sponsor/(portal)/layout.tsx', // sponsors, who have no settings page at all
+      'src/components/sponsor/SponsorShell.tsx', // sponsors' desktop row (Mobile M5: the portal's chrome)
       'src/app/settings/page.tsx',           // where a person goes looking for it
     ]
     const missing = SHELLS.filter((f) => !read(f).includes('<ThemeSelector />'))
     expect({ missing }).toEqual({ missing: [] })
+    // Mobile M5: the shell's ThemeSelector sits in the desktop row; on a phone a sponsor reaches the
+    // theme (and the language, and Log out) at the end of My Account.
+    const account = read('src/app/sponsor/(portal)/account/page.tsx')
+    expect(account).toMatch(/className="py-4 md:hidden" data-testid="sponsor-phone-settings"[\s\S]*<DisplayControls \/>[\s\S]*<SponsorLogOut /)
   })
 
   it('reaches every student page: the header loads its menus, the menus mount the switch, Home draws that header', () => {
@@ -313,10 +317,13 @@ describe('the switch a person can actually click (Layer 1 F7d)', () => {
     expect(read('src/components/AppHeader.tsx')).toMatch(/import\('\.\/StudentMenus'\)/)
     expect(read('src/app/page.tsx')).toMatch(/<AppHeader \/>/)
     const menus = read('src/components/StudentMenus.tsx')
-    expect(menus).toMatch(/function DisplayControls[\s\S]*<ThemeSegments \/>/)
+    expect(menus).toMatch(/import \{ DisplayControls \} from '@\/components\/DisplaySegments'/)
     expect((menus.match(/<DisplayControls \/>/g) ?? []).length).toBe(3)
+    // Mobile M5: the segments live in their own module (the sponsor's My Account draws them too).
+    const display = read('src/components/DisplaySegments.tsx')
+    expect(display).toMatch(/function DisplayControls[\s\S]*<ThemeSegments \/>/)
     // It is the same switch as ThemeSelector: it writes the device-local choice and applies it…
-    const segments = menus.slice(menus.indexOf('function ThemeSegments'), menus.indexOf('function LanguageSegments'))
+    const segments = display.slice(display.indexOf('function ThemeSegments'), display.indexOf('function LanguageSegments'))
     expect(segments).toMatch(/writeStoredMode\(next\)/)
     expect(segments).toMatch(/applyTheme\(resolveTheme\(next, devicePrefersDark\(\)\)\)/)
     // …and, like ThemeSelector, its mount effect only READS (the before-paint script owns applying).

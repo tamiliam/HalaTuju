@@ -322,6 +322,12 @@
       "sponsored": "Telah ditaja",
       "shown": "{count} dipaparkan",
       "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
+      "filters": "Tapisan",
+      "facetStatus": "Ketersediaan",
+      "facetField": "Bidang",
+      "facetState": "Negeri",
+      "facetAmount": "Jumlah",
+      "showResults": "Tunjuk {count} pelajar",
       "support": "Sokong",
       "balanceLabel": "Baki {orgShortName} anda",
       "confirmBody": "Ini mengikat RM {amount} daripada baki anda dan meminta kami menganugerahkannya kepada pelajar ini. Kami membuat anugerah itu, dan pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
@@ -334,6 +340,7 @@
     "account": {
       "title": "Akaun Saya",
       "detailsTitle": "Butiran anda",
+      "displayTitle": "Paparan dan bahasa",
       "email": "E-mel"
     },
     "trust": {

@@ -322,6 +322,12 @@
       "sponsored": "Sponsored",
       "shown": "{count} shown",
       "filteredEmpty": "No students match these filters.",
+      "filters": "Filters",
+      "facetStatus": "Availability",
+      "facetField": "Field",
+      "facetState": "State",
+      "facetAmount": "Amount",
+      "showResults": "Show {count} students",
       "support": "Support",
       "balanceLabel": "Your {orgShortName} balance",
       "confirmBody": "This commits RM {amount} from your balance and asks us to award it to this student. We make the award, and they will be notified to complete their details.",
@@ -334,6 +340,7 @@
     "account": {
       "title": "My Account",
       "detailsTitle": "Your details",
+      "displayTitle": "Display and language",
       "email": "Email"
     },
     "trust": {
