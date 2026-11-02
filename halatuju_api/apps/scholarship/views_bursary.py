@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.throttling import UploadRateThrottle
 
 from . import card_display
 from .in_programme import can_record_results
@@ -75,7 +76,16 @@ def summary_payload(app):
         # S9: whether the Surveys tab shows (an open one for her, or one she answered) and how many open
         # ones she has not answered yet (the red number).
         **_surveys(app),
+        # S10: whether the Growth tab shows (a live module for her, or one she started) and how many live ones
+        # she has not finished (the red number).
+        **_growth(app),
     }
+
+
+def _growth(app):
+    from .development import growth_tab_state
+    shown, to_do = growth_tab_state(app)
+    return {'growth_tab': shown, 'growth_to_do': to_do}
 
 
 def _surveys(app):
@@ -305,3 +315,113 @@ class BursarySurveyAnswersView(APIView):
             return Response(body, status=code)
         mine = next((x for x in student_surveys(app)['surveys'] if x['id'] == pk), None)
         return Response({'survey': mine, 'to_answer': tab_state(app)[1]})
+
+
+# ── Her Growth tab: development modules (student maintenance S10, 2026-11-02) ─────────────────────────
+# Her OWN file only (`_own_file`). What she sees is `development.student_modules` / `student_module` (an
+# allowlist): never who wrote it, the audience, a count or anybody else's work. A module she may not see — a
+# draft, a scheduled one, another organisation's, another gift's, an archived one she never started, or a
+# lesson of another module — is 404, never a refusal that confirms it exists. Files: a 300-second signed link
+# to a lesson file of a module she may see, or to HER OWN upload — nothing else.
+def _growth_refusal(e):
+    if e.code == 'not_found':
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    code = (status.HTTP_409_CONFLICT if e.code in ('module_closed', 'lessons_first', 'reviewed', 'no_task')
+            else status.HTTP_503_SERVICE_UNAVAILABLE if e.code == 'storage_unavailable'
+            else status.HTTP_400_BAD_REQUEST)
+    return Response({'error': e.code, 'code': e.code}, status=code)
+
+
+def _her_module(app, pk):
+    from .development import growth_tab_state, student_module
+    return {'module': student_module(app, pk), 'to_do': growth_tab_state(app)[1]}
+
+
+class BursaryGrowthView(APIView):
+    """GET scholarship/bursary/growth/ — her modules: the live ones and the ones she started (read-only once
+    archived or her file closed). GET .../growth/<pk>/ — one module, its lessons and her task."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request, pk=None):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .development import student_module, student_modules
+        if pk is None:
+            return Response(student_modules(app))
+        body = student_module(app, pk)
+        if body is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(body)
+
+
+class BursaryGrowthLessonView(APIView):
+    """POST scholarship/bursary/growth/<pk>/lessons/<lid>/read/ — "I have read this" (idempotent; 409
+    `module_closed`). GET .../lessons/<lid>/file/ — a 300-second link to the lesson's file."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request, pk, lid, action):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import development, development_files
+        m = development.visible_module(app, pk) if action == 'file' else None
+        lesson = m.lessons.filter(pk=lid).first() if m is not None else None
+        url = development_files.signed_url(lesson.file_path) if lesson is not None else None
+        if not url:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'url': url, 'expires_in': development_files.SIGNED_FOR})
+
+    def post(self, request, pk, lid, action):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .development import DevelopmentError, mark_lesson_read
+        if action != 'read':
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            mark_lesson_read(app, pk, lid)
+        except DevelopmentError as e:
+            return _growth_refusal(e)
+        return Response(_her_module(app, pk))
+
+
+class BursaryGrowthTaskView(APIView):
+    """POST scholarship/bursary/growth/<pk>/task/ — send or change her task: `{text}` (a reflection, <= 5,000)
+    or `{storage_path, original_filename}` (a PDF / JPEG / PNG up to 10 MB she PUT to the signed URL; checked
+    by its bytes). 409 `lessons_first` / `reviewed` / `module_closed` / `no_task`. POST .../task/sign/ `{size}`
+    → `{upload_url, storage_path}` under HER own path, only when she may send it now (the same checks). GET
+    .../task/file/ → a 300-second link to HER file. POSTs are rate-limited like the document uploads."""
+    permission_classes = [SupabaseIsAuthenticated]
+    throttle_classes = [UploadRateThrottle]
+
+    def get(self, request, pk, step=None):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import development, development_files
+        from .models import ModuleProgress
+        m = development.visible_module(app, pk) if step == 'file' else None
+        path = (ModuleProgress.objects.filter(module=m, application=app).values_list('task_file_path', flat=True)
+                .first() if m is not None else '')
+        url = development_files.signed_url(path) if path else None
+        if not url:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'url': url, 'expires_in': development_files.SIGNED_FOR})
+
+    def post(self, request, pk, step=None):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from . import development, development_files
+        data = request.data if isinstance(request.data, dict) else {}
+        try:
+            if step == 'sign':
+                m = development.task_upload_allowed(app, pk)   # S10 review 3: the send's own checks
+                return Response(development_files.task_upload_url(app, m, data.get('size')))
+            if step is not None:
+                raise development.DevelopmentError('not_found')
+            development.submit_task(app, pk, data)
+        except development.DevelopmentError as e:
+            return _growth_refusal(e)
+        return Response(_her_module(app, pk))

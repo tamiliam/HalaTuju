@@ -5,6 +5,8 @@
 - `AdminMentorStudentView` — `GET admin/mentor/students/<pk>/` → one student (`pk` = the application);
 - `AdminMentorStudentSessionsView` — `POST admin/mentor/students/<pk>/sessions/` `{met_on, mode, minutes,
   notes, next_step, concern}` → 201 with the student's page.
+- `AdminMentorStudentModuleFileView` — `GET admin/mentor/students/<pk>/modules/<mid>/file/` → a short signed
+  link to the student's uploaded development-module task (S10).
 
 ⚠ WHO: a MENTOR, and nobody else. These three views are the ONLY additions to `mentor_methods` in 7c
 (`test_mentor_denied_everywhere.py` pins the full list); staff, sources and students are refused (403).
@@ -88,3 +90,25 @@ class AdminMentorStudentSessionsView(_MentorBase):
         if assignment is None:   # ended between the write and this read: the meeting is saved
             return Response({'saved': True}, status=status.HTTP_201_CREATED)
         return Response(mentor_desk.student_payload(login, assignment), status=status.HTTP_201_CREATED)
+
+
+class AdminMentorStudentModuleFileView(_MentorBase):
+    """GET admin/mentor/students/<pk>/modules/<mid>/file/ — a short signed link to the student's uploaded task for
+    one development module (S10 review 1: signed on the tap, never carried in a payload). The student must be the
+    caller's CURRENT student (an ended assignment, another mentor's student: 404) and the module one the student
+    can see; no upload is 404 too."""
+    mentor_methods = ('get',)
+
+    def get(self, request, pk, mid):
+        login, err = self._mentor(request)
+        if err:
+            return err
+        assignment = mentor_desk.assignment_for(login, pk)
+        if assignment is None:
+            return self._not_found()
+        from .. import development_files
+        from ..development_progress import mentor_task_file_path
+        url = development_files.signed_url(mentor_task_file_path(assignment.application, mid))
+        if not url:
+            return self._not_found()
+        return Response({'url': url, 'expires_in': development_files.SIGNED_FOR})

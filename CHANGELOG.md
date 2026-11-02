@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 10 — development modules — LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK)
+
+Owner rulings and the approved ModulesAdmin / ModuleStudent / ModuleProgress boards, 2026-11-02 (decisions.md, the
+S10 entry). **scholarship 0201_development_modules — migrate first, by hand** (DDL, RLS, pre-check, ledger row and
+rollback in its docstring), then create the hourly Cloud Scheduler job `halatuju-module-emails` (job
+`module-emails`).
+
+- **Programme → Development** (`/admin/programme/development`, nav row after Surveys; super / org_admin / admin —
+  `development.may_make`, every other role 403, another organisation 404 on every door incl. the CSV, a lesson file,
+  a scholar's upload, the review and the scholar file's tab). Title (<= 150), summary (<= 500), For = all the
+  organisation's scholars or one gift (live counts), publish now or at a time, optional due date, 1-20 lessons
+  (title <= 150, plain text <= 10,000 with paragraphs and links, ONE YouTube / Vimeo `https` link OR ONE file), the
+  task at the end (none / written reflection with a prompt <= 1,000 / upload a file), "Email the scholars when it
+  is published", "Remind those not done, 3 days before the due date" (only with a due date). Tabs Published /
+  Scheduled / Drafts / Archived; "N of M · K to review"; Progress, Edit, Archive (published), Put back (archived),
+  Delete (nobody started).
+- **The locks:** the task type, the audience, the publishing time and "back to draft" lock at the first start (409
+  `task_locked` / `started_locked`); lesson text can still be fixed and lessons added or removed (progress is per
+  lesson id; done = every CURRENT lesson read + the task sent). A started module is archived, never deleted (409
+  `archive_instead`); archived, it leaves those who never started and stays read-only for those who did.
+- **Files** (a lesson's file; a scholar's uploaded task): the private `b40-documents` bucket on the existing signed
+  upload path, keys `<org>/development/<module>/<uuid>` and `<org>/<app>/growth-<module>/<uuid>`; the record step
+  accepts only the exact key issued for that module (and, for a task, HER application), reads the object back (at
+  most 10 MB + 1 byte, `storage.download_object(max_bytes=)`) and decides the type from the BYTES (PDF / JPEG /
+  PNG); a failing file is deleted and refused. Served only as 300-second signed links on a tap. A replaced or
+  removed file is deleted after the commit; `cleanup_orphan_blobs.known_paths` knows both columns.
+- **Progress** (`/admin/programme/development/<id>`): To review / Done / In progress / Not started, per scholar —
+  lessons read x of y, the task's date, the current mentor, "Late" after the due date when not done; read a
+  reflection or open an upload, an optional comment (<= 1,000) and "Mark reviewed" (who / when recorded; the
+  scholar sees the comment); "Remind those not done" (the job's own reminder, once per scholar; 409 and NOTHING
+  written while the switch is off); Download CSV (formula cells escaped incl. tab / CR — Sprint 9's `_cell`).
+- **The scholar file's Growth tab** (lazy `ScholarGrowth`; super / org_admin / admin), and **the mentor's My
+  students page** shows their own current students' modules and work, read-only (`mentor_desk.student_payload`
+  `modules`, an allowlist; an ended assignment loses sight with the rest of the page).
+- **Her My Bursary → Growth** (lazy chunk; words in the `bursaryTabs` slice): shown when a live module is hers or
+  she started one; red number = live ones not done. One lesson at a time, "I have read this — next lesson"
+  (idempotent), then the task; she can change it until staff mark it reviewed, then sees the comment. The video is
+  a link that opens a new tab, never an embed. Optional — never touches money, standing or eligibility.
+- **The emails**: hourly `module-emails` (`CronRunView.JOBS`, `cron_health.EXPECTED_CADENCE`), once per scholar per
+  kind (a `ModuleEmail` row claimed before the send), metered and logged via `send_student_email`, only while the
+  organisation's new switchable `module_published` kind is on (Student communications → News; ONE wording for
+  both, `{module_note}` says which, `{due_note}` the due date). The reminder skips those done and needs a due date;
+  a module archived mid-run stops the rest. Links to `/scholarship/bursary?tab=growth`.
+- New tables `development_modules`, `module_lessons`, `module_progress`, `module_lesson_reads`, `module_emails`
+  (RLS + one service_role policy each). Rules: `development.py`, `development_progress.py`, `development_files.py`,
+  `development_emails.py`; staff fence `views_admin/development.py`; routes `urls_development.py`.
+- Line budgets held: `urls.py` stays at 600 (one import list line joined), `views.py` at its allowance (one
+  comment line joined), `navigation.ts` at its allowance (the Programme rows' comment joined, the new row on one
+  line); the new web words are in `admin.development`, `admin.scholars.growth` and `bursaryTabs.growth`.
+- **First-load JS:** every async chunk adds an entry to webpack's runtime map, which is on EVERY route; four new
+  lazy chunks left /scholarship/apply 0.236 kB under its line (< 0.25, refused). The staff screens now share ONE
+  lazy chunk per feature (`components/development/screens.ts`, and the same for S9's three Surveys screens,
+  `components/surveys/screens.ts`): /scholarship/apply 186.739 kB (base 186.707, +0.032 — the Growth tab's own lazy
+  chunk), median 145.248 (base 145.385), budget ok.
+- **Review fixes:** the mentor's file link is signed on the tap by a mentor-only door
+  (`admin/mentor/students/<id>/modules/<module>/file/`: CURRENT assignment, own student, a module the student can
+  see — never a link in the page payload, which went stale); the Growth uploads are signed with `x-upsert: false`
+  (a recorded object cannot be overwritten through a still-valid URL; TD-467 for the bucket limits and the older
+  flows); signing her upload has the send's own checks (every lesson read, not reviewed, live) and the upload
+  throttle; the Remind button never writes `switched_off` rows, even if the switch flips mid-run (it stops).
+- Tests: `test_development.py` (46), `BursaryGrowth.test.tsx`, `DevelopmentAdmin.test.tsx`,
+  `ModuleProgressView.test.tsx`, the scholar file page's and the bursary page's Growth tab tests.
+
 ## Mobile M4c follow-up — the quizzes on a phone (2026-11-02, not yet pushed)
 
 - **Owner's decision (closes TD-466 item 1):** both quizzes (`/quiz`, `/stpm/quiz`) hide the row of 10 px question dots

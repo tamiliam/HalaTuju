@@ -33,6 +33,7 @@ OWNER_SWITCHABLE = {
     'mentor_assigned',   # S7b: "You have a mentor" (owner-approved MentoringTouches board, 2026-10-31)
     'announcement',      # S8: an announcement's email (owner ruling, 2026-11-01)
     'survey_open',       # S9: a survey's opening email and reminder (owner ruling, 2026-11-02)
+    'module_published',  # S10: a development module's email and reminder (owner ruling, 2026-11-02)
 }
 
 

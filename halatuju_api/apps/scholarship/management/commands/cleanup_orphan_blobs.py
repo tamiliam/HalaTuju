@@ -19,7 +19,7 @@ if the bucket is unreachable it lists nothing rather than erroring.
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.models import (
-    ApplicantDocument, BursaryAgreement, Letter, OrgRequestAttachment, StaffProfile,
+    ApplicantDocument, BursaryAgreement, Letter, ModuleLesson, ModuleProgress, OrgRequestAttachment, StaffProfile,
 )
 from apps.scholarship import storage
 
@@ -31,8 +31,9 @@ def known_paths():
     (`<org>/<app>/letters/<id>.pdf`), a signed bursary agreement (`BursaryAgreement.pdf_storage_path`)
     and a request's screenshot (`requests/<org>/<request>/<uuid>`) all read as orphans, and `--apply`
     would have DELETED them. Common profile S2 added the fifth kind: a staff photo
-    (`ReviewerProfile.photo_path`, `staff-photos/<admin>/<uuid>.webp`). A new model that stores a path in this bucket must be added HERE
-    (`test_cleanup_orphan_blobs` pins each)."""
+    (`ReviewerProfile.photo_path`, `staff-photos/<admin>/<uuid>.webp`); maintenance S10 the sixth and seventh:
+    a lesson file and a scholar's uploaded task (development modules). A new model that stores a path in this
+    bucket must be added HERE (`test_cleanup_orphan_blobs` pins each)."""
     sources = (
         ApplicantDocument.objects.exclude(storage_path='').values_list('storage_path', flat=True),
         BursaryAgreement.objects.exclude(pdf_storage_path='').values_list('pdf_storage_path', flat=True),
@@ -40,6 +41,10 @@ def known_paths():
         OrgRequestAttachment.objects.exclude(storage_path='').values_list('storage_path', flat=True),
         # Common profile S2: a staff member's photo (`staff-photos/<admin>/<uuid>.webp`).
         StaffProfile.objects.exclude(photo_path='').values_list('photo_path', flat=True),
+        # Student maintenance S10: a lesson's file (`<org>/development/<module>/<uuid>`) and a scholar's
+        # uploaded task (`<org>/<app>/growth-<module>/<uuid>`).
+        ModuleLesson.objects.exclude(file_path='').values_list('file_path', flat=True),
+        ModuleProgress.objects.exclude(task_file_path='').values_list('task_file_path', flat=True),
     )
     return {path for qs in sources for path in qs}
 

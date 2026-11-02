@@ -11,7 +11,7 @@ import { useProgrammeScope } from '@/lib/programmeScopeCore'
  * the shared first-load median does not move. The chosen gift travels as `?programme=`; the server reads
  * the ORGANISATION from it (inside the caller's own) and refuses every role but super / org_admin / admin.
  */
-const SurveysAdmin = lazySource(() => import('@/components/surveys/SurveysAdmin').then((m) => m.default))
+const SurveysAdmin = lazySource(() => import('@/components/surveys/screens').then((m) => m.SurveysAdmin))
 
 export default function SurveysPage() {
   // The chosen gift, read from the light context leaf (`programmeScopeCore`), not the provider module: with

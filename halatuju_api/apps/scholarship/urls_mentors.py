@@ -11,9 +11,9 @@ of the scholarship urlconf, spelt in full — exactly as the route walks read th
 from django.urls import path
 
 from .views_admin import (
-    AdminMentorActionView, AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
-    AdminMentorView, AdminMentorsView, AdminScholarMentoringActionView, AdminScholarMentoringSessionsView,
-    AdminScholarMentoringView, AdminStaffMentorsView,
+    AdminMentorActionView, AdminMentorStudentModuleFileView, AdminMentorStudentSessionsView, AdminMentorStudentView,
+    AdminMentorStudentsView, AdminMentorView, AdminMentorsView, AdminScholarMentoringActionView,
+    AdminScholarMentoringSessionsView, AdminScholarMentoringView, AdminStaffMentorsView,
 )
 from .views_bursary import BursaryMentoringView
 
@@ -29,4 +29,5 @@ urlpatterns = [
     path('admin/mentor/students/', AdminMentorStudentsView.as_view()),
     path('admin/mentor/students/<int:pk>/', AdminMentorStudentView.as_view()),
     path('admin/mentor/students/<int:pk>/sessions/', AdminMentorStudentSessionsView.as_view()),
+    path('admin/mentor/students/<int:pk>/modules/<int:mid>/file/', AdminMentorStudentModuleFileView.as_view()),
 ]

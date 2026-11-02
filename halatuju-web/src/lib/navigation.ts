@@ -363,12 +363,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'scholars', href: '/admin/scholars', labelKey: 'admin.scholars.nav', chord: 'M',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer', 'source_partner'],
         perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
-      // ⚠ ANNOUNCEMENTS (maintenance S8): super / org_admin / admin, the endpoint's own rule
-      // (`announcements.may_post`). No `needsProgramme`: an announcement belongs to the organisation.
+      // ⚠ ANNOUNCEMENTS (S8), SURVEYS (S9), DEVELOPMENT (S10): super / org_admin / admin, each endpoint's own rule (`may_post` / `may_make`); no `needsProgramme` — each belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+      { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },
