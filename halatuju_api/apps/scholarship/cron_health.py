@@ -37,6 +37,7 @@ EXPECTED_CADENCE = {
     'interview-reminders': EVERY_15_MIN,
     'notify-contact-submissions': EVERY_15_MIN,
     # hourly
+    'announcement-emails': HOURLY,           # ⚠ NEW in maintenance S8: create the Scheduler job
     'auto-sponsor': HOURLY,
     'partner-milestones': HOURLY,
     'query-emails': HOURLY,

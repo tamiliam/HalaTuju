@@ -7,7 +7,9 @@ Three kinds, each in the student's language (en / ms / ta), each the ORGANISATIO
   * ``result_queried``  — an officer queried a result she sent, with the officer's note.
 
 S6b added ``letter_issued`` (a formal letter, locked) and S7b ``mentor_assigned`` ("You have a mentor",
-switchable, sent by `mentoring.assign` to the student only).
+switchable, sent by `mentoring.assign` to the student only). S8 added ``announcement`` (switchable, sent by the
+hourly `announcement-emails` job): the organisation words the WRAPPER; the announcement's own title and
+message are inserted as staff wrote them (`announcement_title`, `announcement_body`).
 
 WHERE THE WORDS LIVE. The platform's default wording is HERE, in code (``DEFAULTS``). An organisation
 that edits a letter (Organisation → Settings → Student communications) gets its own
@@ -32,7 +34,7 @@ from django.db import transaction
 from . import email_templates
 from .models import StudentEmailTemplate
 
-KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned')
+KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned', 'announcement')
 #: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
 #: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
 PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
@@ -48,6 +50,8 @@ PLACEHOLDERS = {
     # S7b: the mentor's details as the student may see them (`mentoring._send_you_have_a_mentor`):
     # `mentor_contact` is the email, and the phone ONLY when the mentor shares it with students.
     'mentor_assigned': _COMMON + ('mentor_name', 'mentor_area', 'mentor_languages', 'mentor_contact'),
+    # S8: the announcement as staff wrote it; `{link}` opens My Bursary on its News tab.
+    'announcement': _COMMON + ('announcement_title', 'announcement_body'),
 }
 
 DEFAULTS = {
@@ -141,6 +145,24 @@ DEFAULTS = {
                'வழிகாட்டியைப் பற்றி மேலும் அறியவும், உங்கள் சந்திப்புகளைப் பார்க்கவும் எனது உதவித்தொகை '
                'பக்கத்தைத் திறவுங்கள்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.'
                '\n\n{signoff}'),
+    },
+    # S8: an organisation's announcement to its scholars. Switchable (the catalogue): the news is on My
+    # Bursary -> News either way. The title and message are the staff member's own, inserted as written.
+    'announcement': {
+        'en': ('{programme}: {announcement_title}',
+               'Dear {name},\n\nThere is news for you from the {programme}:\n\n{announcement_title}\n\n'
+               '{announcement_body}\n\nYou can read it again, with earlier news, under News on your My '
+               'Bursary page:\n{link}\n\nIf you have a question, write to {support}.\n\n{signoff}'),
+        'ms': ('{programme}: {announcement_title}',
+               'Salam {name},\n\nAda berita untuk anda daripada {programme}:\n\n{announcement_title}\n\n'
+               '{announcement_body}\n\nAnda boleh membacanya semula, bersama berita sebelum ini, di bawah '
+               'Berita di halaman Biasiswa Saya:\n{link}\n\nJika ada pertanyaan, tulis kepada {support}.'
+               '\n\n{signoff}'),
+        'ta': ('{programme}: {announcement_title}',
+               'அன்புள்ள {name},\n\n{programme}-இடமிருந்து உங்களுக்கு ஒரு செய்தி:\n\n{announcement_title}'
+               '\n\n{announcement_body}\n\nஇதையும் முந்தைய செய்திகளையும் எனது உதவித்தொகை பக்கத்தின் '
+               '"செய்திகள்" பகுதியில் மீண்டும் படிக்கலாம்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு '
+               'எழுதுங்கள்.\n\n{signoff}'),
     },
 }
 

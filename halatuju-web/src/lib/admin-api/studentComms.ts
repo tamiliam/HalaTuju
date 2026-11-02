@@ -5,6 +5,7 @@ import { adminFetch, adminMutate, type ApiOptions } from './client'
 
 export type StudentEmailKind = 'results_due' | 'results_overdue' | 'result_queried' | 'letter_issued'
   | 'mentor_assigned'   // S7b
+  | 'announcement'      // S8: the wrapper around an announcement's own title and message
 export type StudentEmailLanguage = 'en' | 'ms' | 'ta'
 
 export interface StudentEmailTemplate {
@@ -22,7 +23,7 @@ export interface StudentEmailTemplate {
 }
 
 /** The headings the page reads, in order (`student_email_catalogue.GROUPS`). */
-export type StudentEmailGroup = 'account' | 'applying' | 'interview' | 'award' | 'results' | 'letters' | 'mentoring'
+export type StudentEmailGroup = 'account' | 'applying' | 'interview' | 'award' | 'results' | 'letters' | 'mentoring' | 'news'
   | 'closure'
 
 /** One email a student receives (S6a) — every field decided by the server, the page only reads it. */

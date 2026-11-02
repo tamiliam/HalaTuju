@@ -7811,7 +7811,8 @@
           "vircle_setup": "Set up your Vircle wallet",
           "closed_by_officer": "Application closed by our team",
           "letter_issued": "A letter has been issued",
-          "mentor_assigned": "You have a mentor"
+          "mentor_assigned": "You have a mentor",
+          "announcement": "An announcement"
         },
         "when": {
           "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
@@ -7844,7 +7845,8 @@
           "vircle_setup": "When her agreement takes effect: how to set up the wallet the bursary is paid into.",
           "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request.",
           "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date.",
-          "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor."
+          "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor.",
+          "announcement": "Sent within the hour of an announcement going out, when staff choose to email it, once to each scholar it is for (Programme → Announcements). The announcement's own title and message go inside. Safe to switch off — the news is on My Bursary either way."
         },
         "language": {
           "en": "English",
@@ -7910,7 +7912,8 @@
           "results": "Results",
           "closure": "Closure",
           "letters": "Letters",
-          "mentoring": "Mentoring"
+          "mentoring": "Mentoring",
+          "news": "News"
         },
         "chip": {
           "en": "EN",
@@ -8205,7 +8208,8 @@
         "partner-digests": "Partner digests",
         "issue-monthly-invoices": "Monthly invoices",
         "refresh-reminder": "Course catalogue reminder",
-        "decision-emails": "Decision emails"
+        "decision-emails": "Decision emails",
+        "announcement-emails": "Announcement emails"
       }
     },
     "platformBilling": {
@@ -8585,7 +8589,110 @@
         "noEdit": "A saved meeting cannot be edited."
       }
     },
-    "stopsMentoring": "Their mentoring ends: their scholars are left without a mentor."
+    "stopsMentoring": "Their mentoring ends: their scholars are left without a mentor.",
+    "announcements": {
+      "nav": "Announcements",
+      "title": "Announcements",
+      "intro": "News for your funded scholars. They read it on My Bursary → News, and can be emailed too.",
+      "new": "New announcement",
+      "tabsAria": "Announcements by status",
+      "tab": {
+        "published": "Published",
+        "scheduled": "Scheduled",
+        "draft": "Drafts",
+        "withdrawn": "Withdrawn"
+      },
+      "col": {
+        "announcement": "Announcement",
+        "for": "For",
+        "published": "Published",
+        "scheduled": "Goes out",
+        "created": "Created",
+        "emailed": "Emailed",
+        "read": "Read",
+        "actions": "Actions"
+      },
+      "forAll": "All scholars ({count})",
+      "forGift": "{name} ({count})",
+      "by": "by {name}",
+      "byRole": "by {name} ({role})",
+      "edited": "edited {date}",
+      "pinned": "Pinned",
+      "emailed": {
+        "sent": "{count} sent",
+        "none": "Not emailed",
+        "pending": "Within the hour",
+        "later": "When it goes out",
+        "off": "Not emailed: switched off"
+      },
+      "read": "{read} of {count}",
+      "action": {
+        "edit": "Edit",
+        "withdraw": "Withdraw",
+        "delete": "Delete"
+      },
+      "confirm": {
+        "withdraw": "Withdraw “{title}”? Scholars will no longer see it; it stays here under Withdrawn. Emails not yet sent will not go.",
+        "delete": "Delete “{title}”? This cannot be undone."
+      },
+      "done": {
+        "published": "Published. Scholars see it on My Bursary → News now.",
+        "scheduled": "Scheduled. It goes out at the time you chose.",
+        "draft": "Saved as a draft. Scholars do not see it.",
+        "saved": "Saved. Scholars see the new text, marked “edited”; nobody is emailed again.",
+        "withdrawn": "Withdrawn. Scholars no longer see it.",
+        "deleted": "Deleted."
+      },
+      "empty": {
+        "published": "Nothing published yet.",
+        "scheduled": "Nothing scheduled.",
+        "draft": "No drafts.",
+        "withdrawn": "Nothing withdrawn."
+      },
+      "loadError": "The announcements could not be loaded.",
+      "chooseGift": "Choose a programme first (Programmes), so we know which organisation's scholars this is for.",
+      "footnote": "Only funded scholars (My Bursary) see announcements; a closed file keeps the ones it was shown before it closed. Sponsors and partners never see them.",
+      "form": {
+        "newTitle": "New announcement",
+        "editTitle": "Edit announcement",
+        "title": "Title",
+        "body": "Message",
+        "bodyHint": "Plain text with line breaks; web addresses become links. No pictures or attachments.",
+        "count": "{n} of {max} characters.",
+        "for": "For",
+        "when": "Publish",
+        "now": "Now",
+        "later": "Later: pick a date and time",
+        "date": "Date",
+        "time": "Time (24-hour, e.g. 21:30)",
+        "pin": "Pin to the top of News",
+        "email": "Also email it to the scholars",
+        "emailNote": "Sent within the hour, once to each scholar it is for, while “Announcement” is switched on in Student communications.",
+        "emailOff": "The “Announcement” email is switched off in Student communications, so nobody will be emailed.",
+        "editNote": "Editing later updates what scholars see and marks it “edited”; it does not email again. Withdraw hides it from scholars; it stays here under Withdrawn.",
+        "lockedNote": "It is out: only the title, the message and the pin can change. Scholars see it marked “edited”, and nobody is emailed again."
+      },
+      "btn": {
+        "publish": "Publish",
+        "schedule": "Schedule",
+        "draft": "Save as draft",
+        "save": "Save changes"
+      },
+      "error": {
+        "title_required": "Write a title.",
+        "title_too_long": "The title is too long (at most 150 characters).",
+        "title_newline": "Keep the title on one line.",
+        "body_required": "Write a message.",
+        "body_too_long": "The message is too long (at most 5,000 characters).",
+        "bad_audience": "Choose who it is for again.",
+        "bad_publish_at": "Choose a date and a time.",
+        "publish_at_past": "Choose a time in the future.",
+        "published_locked": "It is already out: only the title, the message and the pin can change.",
+        "withdrawn": "It has been withdrawn and cannot be changed.",
+        "badTime": "Enter a date, and the time as HH:MM (for example 09:30).",
+        "generic": "Could not save. Please try again."
+      }
+    }
   },
   "documentsTab": {
     "higher": {
@@ -8740,6 +8847,18 @@
         "title": "You do not have a mentor yet",
         "body": "A mentor is someone who can guide you through your studies. If you would like one, write to {supportEmail}."
       }
+    },
+    "news": {
+      "tab": "News",
+      "unread": "{count} unread",
+      "fresh": "You have {count} new announcements.",
+      "freshOne": "You have 1 new announcement.",
+      "pinned": "Pinned",
+      "new": "New",
+      "edited": "edited {date}",
+      "empty": "No news yet.",
+      "loadFailed": "Your news could not be loaded. Please try again.",
+      "readNote": "An announcement counts as read once it is shown here. The red number counts the unread ones."
     }
   }
 }

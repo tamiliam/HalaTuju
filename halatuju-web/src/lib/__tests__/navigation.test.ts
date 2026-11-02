@@ -78,11 +78,14 @@ describe('visibleNav per role', () => {
     // lost reach (super + org_admin, as before); only its position moved.
     // ⚠ S7a (2026-10-31): `mentors` is NEW in the Organisation group, after Sources, for super,
     // org_admin and admin (admin reads; the endpoint refuses everyone else). Nobody else gained reach.
+    // ⚠ S8 (2026-11-01): `announcements` is NEW in the Programme group, after Scholars, for super,
+    // org_admin and admin (all three POST — `announcements.may_post`). Nobody else gained reach.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'programmeConfig', 'payments', 'spending',
+      'contracts',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -103,12 +106,13 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'programmeConfig', 'payments', 'spending',
+      'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
-      'programmeOverview', 'applications', 'scholars', 'payments', 'spending',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // ⚠ `finance` still has Payments and still has NO Spending — the move changed where the
@@ -589,10 +593,12 @@ describe('visibleNav groups', () => {
   // ⚠ SIX SINCE 2026-10-03: Contracts joined LAST (TD-229) — the agreement is written per gift.
   // ⚠ SEVEN SINCE 2026-10-29: Scholars sits directly under Applications (maintenance S2) — the
   // funded students are the same people, later in their story.
-  it('the programme scope is seven rows, the overview first', () => {
+  // ⚠ EIGHT SINCE 2026-11-01: Announcements follows Scholars (maintenance S8) — news to those scholars.
+  it('the programme scope is eight rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
     expect(prog.items.map((i) => i.id)).toEqual(
-      ['programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts'])
+      ['programmeOverview', 'applications', 'scholars', 'announcements', 'programmeConfig', 'payments', 'spending',
+        'contracts'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -613,8 +619,10 @@ describe('visibleNav groups', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
       // `contracts` STAYS (TD-229): its list READS every gift's templates, each labelled, and
       // the page's own New version waits for a gift — the Applications rule, not Payments'.
+      // `announcements` STAYS (S8): an announcement belongs to the organisation; the page names a gift
+      // only in its For picker.
       expect(prog.items.map((i) => i.id))
-        .toEqual(['programmeOverview', 'applications', 'contracts'])
+        .toEqual(['programmeOverview', 'applications', 'announcements', 'contracts'])
     })
 
     /*
@@ -671,7 +679,8 @@ describe('visibleNav groups', () => {
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id)).toEqual(
-        ['programmeOverview', 'applications', 'scholars', 'programmeConfig', 'payments', 'spending', 'contracts'])
+        ['programmeOverview', 'applications', 'scholars', 'announcements', 'programmeConfig', 'payments', 'spending',
+          'contracts'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted

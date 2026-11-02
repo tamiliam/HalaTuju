@@ -146,6 +146,9 @@ from .mentors import (   # S7a; S7d the staff-mentor door
 from .mentoring import (   # S7b: the scholar file's Mentoring tab
     AdminScholarMentoringActionView, AdminScholarMentoringSessionsView, AdminScholarMentoringView,
 )
+from .announcements import (   # S8: Programme -> Announcements
+    AdminAnnouncementView, AdminAnnouncementWithdrawView, AdminAnnouncementsView,
+)
 from .mentor_students import (   # S7c: a mentor's own students
     AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
 )

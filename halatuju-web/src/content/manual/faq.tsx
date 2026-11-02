@@ -303,6 +303,16 @@ export const FAQ: Record<Audience, QA[]> = {
         email is sent). <strong>Stop mentoring</strong>, a revoke, or a switch to Finance ends their mentoring;
         their staff sign-in is never touched.</>,
     },
+    {
+      q: <>How do I send news to all our scholars?</>,
+      a: <>Open the gift, then <strong>Announcements</strong> (organisation admins and admins). Write a title and a
+        plain-text message, choose who it is for (all your scholars, or one gift), and publish now or at a chosen
+        time, or save a draft. Scholars read it on My Bursary &rarr; <strong>News</strong>, newest first with pinned
+        ones on top. Turn on <strong>Also email it to the scholars</strong> to email it once to each of them within
+        the hour, while the &ldquo;Announcement&rdquo; email is switched on in Student communications. Editing later
+        changes what they see and marks it &ldquo;edited&rdquo;; it never emails again. A published one is withdrawn,
+        never deleted. Sponsors and partners never see announcements.</>,
+    },
   ],
   admin: [
     {

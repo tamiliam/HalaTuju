@@ -114,3 +114,7 @@ from .mentors import MentorAssignment, MentoringSession
 # Common profile S3 (2026-10-31) — model 72, NEW: a staff member's own activity list. Points only at
 # `courses.PartnerAdmin` / `courses.PartnerOrganisation`, by string; the subject is an id, not an FK.
 from .staff_activity import StaffActivity, StaffActivitySubject, StaffActivityVerb
+# Student maintenance S8 (2026-11-01) — models 75, 76 and 77, NEW: an organisation's announcements to
+# its scholars, who has been shown each one, and each scholar's copy of its email. Point at
+# `courses.PartnerOrganisation`, Programme and ScholarshipApplication by string.
+from .announcements import Announcement, AnnouncementEmail, AnnouncementRead

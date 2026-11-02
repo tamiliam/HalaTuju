@@ -7811,7 +7811,8 @@
           "vircle_setup": "Sediakan dompet Vircle anda",
           "closed_by_officer": "Permohonan ditutup oleh pasukan kami",
           "letter_issued": "Surat telah dikeluarkan",
-          "mentor_assigned": "Anda mempunyai mentor"
+          "mentor_assigned": "Anda mempunyai mentor",
+          "announcement": "Satu pengumuman"
         },
         "when": {
           "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
@@ -7844,7 +7845,8 @@
           "vircle_setup": "Apabila perjanjiannya berkuat kuasa: cara menyediakan dompet yang menerima bayaran bursari.",
           "closed_by_officer": "Apabila pegawai menutup permohonan sebelum anugerah: terhenti, atau atas permintaannya.",
           "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
-          "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor."
+          "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor.",
+          "announcement": "Dihantar dalam masa sejam selepas pengumuman keluar, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Pengumuman). Tajuk dan mesej pengumuman itu sendiri dimasukkan. Selamat untuk dimatikan — berita tetap ada di Biasiswa Saya."
         },
         "language": {
           "en": "Inggeris",
@@ -7910,7 +7912,8 @@
           "results": "Keputusan",
           "closure": "Penutupan",
           "letters": "Surat",
-          "mentoring": "Bimbingan mentor"
+          "mentoring": "Bimbingan mentor",
+          "news": "Berita"
         },
         "chip": {
           "en": "EN",
@@ -8205,7 +8208,8 @@
         "partner-digests": "Ringkasan rakan kongsi",
         "issue-monthly-invoices": "Invois bulanan",
         "refresh-reminder": "Peringatan katalog kursus",
-        "decision-emails": "E-mel keputusan"
+        "decision-emails": "E-mel keputusan",
+        "announcement-emails": "E-mel pengumuman"
       }
     },
     "platformBilling": {
@@ -8585,7 +8589,110 @@
         "noEdit": "Pertemuan yang disimpan tidak boleh diubah."
       }
     },
-    "stopsMentoring": "Bimbingan mereka tamat: penerima biasiswa mereka tidak lagi mempunyai mentor."
+    "stopsMentoring": "Bimbingan mereka tamat: penerima biasiswa mereka tidak lagi mempunyai mentor.",
+    "announcements": {
+      "nav": "Pengumuman",
+      "title": "Pengumuman",
+      "intro": "Berita untuk penerima biasiswa anda. Mereka membacanya di Biasiswa Saya → Berita, dan boleh juga menerimanya melalui e-mel.",
+      "new": "Pengumuman baharu",
+      "tabsAria": "Pengumuman mengikut status",
+      "tab": {
+        "published": "Diterbitkan",
+        "scheduled": "Dijadualkan",
+        "draft": "Draf",
+        "withdrawn": "Ditarik balik"
+      },
+      "col": {
+        "announcement": "Pengumuman",
+        "for": "Untuk",
+        "published": "Diterbitkan",
+        "scheduled": "Akan keluar",
+        "created": "Dicipta",
+        "emailed": "E-mel",
+        "read": "Dibaca",
+        "actions": "Tindakan"
+      },
+      "forAll": "Semua penerima biasiswa ({count})",
+      "forGift": "{name} ({count})",
+      "by": "oleh {name}",
+      "byRole": "oleh {name} ({role})",
+      "edited": "disunting {date}",
+      "pinned": "Disematkan",
+      "emailed": {
+        "sent": "{count} dihantar",
+        "none": "Tidak dihantar melalui e-mel",
+        "pending": "Dalam masa sejam",
+        "later": "Apabila ia keluar",
+        "off": "Tidak dihantar: e-mel dimatikan"
+      },
+      "read": "{read} daripada {count}",
+      "action": {
+        "edit": "Sunting",
+        "withdraw": "Tarik balik",
+        "delete": "Padam"
+      },
+      "confirm": {
+        "withdraw": "Tarik balik “{title}”? Penerima biasiswa tidak lagi dapat melihatnya; ia kekal di sini di bawah Ditarik balik. E-mel yang belum dihantar tidak akan dihantar.",
+        "delete": "Padam “{title}”? Tindakan ini tidak boleh dibatalkan."
+      },
+      "done": {
+        "published": "Diterbitkan. Penerima biasiswa kini dapat melihatnya di Biasiswa Saya → Berita.",
+        "scheduled": "Dijadualkan. Ia akan keluar pada masa yang anda pilih.",
+        "draft": "Disimpan sebagai draf. Penerima biasiswa tidak dapat melihatnya.",
+        "saved": "Disimpan. Penerima biasiswa melihat teks baharu, bertanda “disunting”; tiada e-mel dihantar semula.",
+        "withdrawn": "Ditarik balik. Penerima biasiswa tidak lagi dapat melihatnya.",
+        "deleted": "Dipadam."
+      },
+      "empty": {
+        "published": "Belum ada yang diterbitkan.",
+        "scheduled": "Tiada yang dijadualkan.",
+        "draft": "Tiada draf.",
+        "withdrawn": "Tiada yang ditarik balik."
+      },
+      "loadError": "Pengumuman tidak dapat dimuatkan.",
+      "chooseGift": "Pilih program dahulu (Program), supaya kami tahu penerima biasiswa organisasi mana yang dimaksudkan.",
+      "footnote": "Hanya penerima biasiswa yang dibiayai (Biasiswa Saya) melihat pengumuman; fail yang ditutup mengekalkan pengumuman yang telah dipaparkan sebelum ia ditutup. Penaja dan rakan kongsi tidak sekali-kali melihatnya.",
+      "form": {
+        "newTitle": "Pengumuman baharu",
+        "editTitle": "Sunting pengumuman",
+        "title": "Tajuk",
+        "body": "Mesej",
+        "bodyHint": "Teks biasa dengan baris baharu; alamat web menjadi pautan. Tiada gambar atau lampiran.",
+        "count": "{n} daripada {max} aksara.",
+        "for": "Untuk",
+        "when": "Terbitkan",
+        "now": "Sekarang",
+        "later": "Kemudian: pilih tarikh dan masa",
+        "date": "Tarikh",
+        "time": "Masa (24 jam, cth. 21:30)",
+        "pin": "Sematkan di bahagian atas Berita",
+        "email": "Hantar juga melalui e-mel kepada penerima biasiswa",
+        "emailNote": "Dihantar dalam masa sejam, sekali kepada setiap penerima biasiswa yang berkenaan, selagi “Pengumuman” dihidupkan dalam Komunikasi pelajar.",
+        "emailOff": "E-mel “Pengumuman” dimatikan dalam Komunikasi pelajar, jadi tiada sesiapa akan menerima e-mel.",
+        "editNote": "Suntingan kemudian mengemas kini apa yang dilihat penerima biasiswa dan menandakannya “disunting”; tiada e-mel dihantar semula. Tarik balik menyembunyikannya daripada penerima biasiswa; ia kekal di sini di bawah Ditarik balik.",
+        "lockedNote": "Ia sudah keluar: hanya tajuk, mesej dan sematan boleh diubah. Penerima biasiswa melihatnya bertanda “disunting”, dan tiada e-mel dihantar semula."
+      },
+      "btn": {
+        "publish": "Terbitkan",
+        "schedule": "Jadualkan",
+        "draft": "Simpan sebagai draf",
+        "save": "Simpan perubahan"
+      },
+      "error": {
+        "title_required": "Tulis tajuk.",
+        "title_too_long": "Tajuk terlalu panjang (paling banyak 150 aksara).",
+        "title_newline": "Kekalkan tajuk dalam satu baris.",
+        "body_required": "Tulis mesej.",
+        "body_too_long": "Mesej terlalu panjang (paling banyak 5,000 aksara).",
+        "bad_audience": "Pilih semula untuk siapa.",
+        "bad_publish_at": "Pilih tarikh dan masa.",
+        "publish_at_past": "Pilih masa pada masa hadapan.",
+        "published_locked": "Ia sudah keluar: hanya tajuk, mesej dan sematan boleh diubah.",
+        "withdrawn": "Ia telah ditarik balik dan tidak boleh diubah.",
+        "badTime": "Masukkan tarikh, dan masa sebagai HH:MM (contohnya 09:30).",
+        "generic": "Tidak dapat disimpan. Sila cuba lagi."
+      }
+    }
   },
   "documentsTab": {
     "higher": {
@@ -8740,6 +8847,18 @@
         "title": "Anda belum mempunyai mentor",
         "body": "Mentor ialah seseorang yang boleh membimbing anda sepanjang pengajian. Jika anda mahukan seorang mentor, tulis kepada {supportEmail}."
       }
+    },
+    "news": {
+      "tab": "Berita",
+      "unread": "{count} belum dibaca",
+      "fresh": "Anda ada {count} pengumuman baharu.",
+      "freshOne": "Anda ada 1 pengumuman baharu.",
+      "pinned": "Disematkan",
+      "new": "Baharu",
+      "edited": "disunting {date}",
+      "empty": "Belum ada berita.",
+      "loadFailed": "Berita anda tidak dapat dimuatkan. Sila cuba lagi.",
+      "readNote": "Pengumuman dikira sudah dibaca sebaik sahaja ia dipaparkan di sini. Nombor merah mengira yang belum dibaca."
     }
   }
 }

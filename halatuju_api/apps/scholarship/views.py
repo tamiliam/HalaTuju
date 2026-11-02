@@ -2091,6 +2091,7 @@ class CronRunView(APIView):
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
         'results-overdue-flag': 'flag_results_overdue',  # daily (maintenance S4b): terms made + overdue flagged
         'results-due-reminders': 'send_results_due_reminders',  # daily (maintenance S4b): "your result is due"
+        'announcement-emails': 'send_announcement_emails',  # hourly (maintenance S8): an announcement's email, once each
         'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
         'expire-temp-passwords': 'expire_temp_passwords',  # daily: rotate partner temp passwords unchanged past the 7-day TTL
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages

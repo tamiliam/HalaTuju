@@ -308,6 +308,12 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminScholarLetterPdfView': 'scholars-org-fenced',   # S6b: `_file_for`
         # S7b: the Mentoring tab — the file's door (`_file_for`) plus `mentoring.may_act`; a mentor in
         # the body must be the application's own organisation's (`mentoring.refusal_for_mentor`).
+        # S8: Announcements — `_AnnouncementsBase._organisation` (the gift inside the caller's own org,
+        # else theirs) and `_announcement` (a row of another organisation is 404; a super: any).
+        '_AnnouncementsBase': 'announcement-org-fenced',
+        'AdminAnnouncementsView': 'announcement-org-fenced',
+        'AdminAnnouncementView': 'announcement-org-fenced',
+        'AdminAnnouncementWithdrawView': 'announcement-org-fenced',
         '_MentoringBase': 'scholars-org-fenced',
         'AdminScholarMentoringView': 'scholars-org-fenced',
         'AdminScholarMentoringActionView': 'scholars-org-fenced',

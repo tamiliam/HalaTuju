@@ -1,5 +1,42 @@
 # Architectural Decisions — HalaTuju
 
+## Announcements: one text for everyone, audience decided when read, email once per scholar behind the switch — 2026-11-01 (owner rulings, student maintenance S8)
+
+**Decision:** (1) **Who posts:** super, org_admin and admin, org-fenced (another organisation 404); reviewer, QC,
+finance, partner, source and mentor refused 403. ONE helper, `announcements.may_post`, so a future admin permission
+key narrows it in one place. (2) **One text** — title (<= 150, one line) + plain-text message (<= 5,000; line breaks
+kept, `http(s)://` / `www.` addresses linked on display). No per-language copies, pictures or attachments.
+(3) **Audience:** all the organisation's scholars in maintenance, or ONE of its gifts (the Applications gift rule:
+the application's `programme` OR its round's). **Decided at READ time**: a scholar who joins later sees the live
+ones of their audience. (4) **Statuses** draft / scheduled / published / withdrawn; a scheduled one past its time
+READS as published everywhere (`live_q`) — visibility never waits for the job; the job flips the stored status.
+Once out, only title, message and pin change (409 `published_locked` for audience, email, timing); the text
+change stamps `edited_at`; it NEVER emails again. Withdraw hides it from scholars (stays for staff); only a draft or
+a not-yet-out scheduled one is deleted (409 `withdraw_instead`). (5) **A closed file** keeps, read-only, what went
+out BEFORE it closed (`closed_at`), nothing newer; she may still mark those read (a reading receipt is not a file
+change). (6) **Her tab** (lazy) shows when at least one announcement is hers — the bursary page's "a tab appears
+when its module has something for her" rule; the unread badge counts the ones never shown on the tab. The GET never
+writes; the tab POSTs the shown new ids and only the ones she may see are recorded (`AnnouncementRead`, unique
+announcement x application). The Overview card for the newest one was SKIPPED (optional; the badge carries it).
+(7) **The email** (hourly `announcement-emails`): to each scholar of the audience in maintenance when the job
+reaches it (within the hour of going out), once — an `AnnouncementEmail` row (unique announcement x application)
+is CLAIMED before the send, so a re-run or a parallel run never sends twice; a row left at `sending` by a crash is
+never retried (at most once). Through `student_comms.send_student_email` (metered once, `StudentEmailLog`), kind
+`announcement` — **switchable**, under a new News heading, wrapper wording editable en/ms/ta, the announcement's
+own text inserted as written (`{announcement_title}`, `{announcement_body}`). **Switch off when the job reaches it:
+nobody is emailed, each scholar's row says `switched_off`, `emailed_at` is stamped — switching on later never sends
+that announcement** (the staff row says "Not emailed: switched off"). No address: `no_address`, the rest go. A
+withdraw mid-run stops the rest. Never to sponsors, partners or staff. (8) **Activity:** audit log lines only
+(`AUDIT announcement_*`), nothing on each scholar's file. (9) Sponsors, partners and sources never see any of it.
+
+**Why a separate `AnnouncementEmail` and not `StudentEmailLog`:** the log has no announcement column and records an
+ATTEMPT after the send; idempotence needs a unique claim BEFORE the send, per announcement x application. Adding a
+nullable FK and a partial unique index to the shared log would widen a table every student email writes to.
+
+**Alternatives considered:** fixing the audience at publish (rejected by the owner's read-time ruling); emailing
+everyone who later joins (no — the email follows going out, once); a per-language text (owner: one text).
+**Revisit if:** the owner wants pictures or attachments, an Overview card, or the audience frozen at publish.
+
 ## Exam-year colours follow the route the student holds (owner, 2026-11-01)
 
 **Decision.** The cockpit colours an exam year green when it is the year this route expects for the cohort year C,

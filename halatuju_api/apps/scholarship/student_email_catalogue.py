@@ -40,7 +40,7 @@ from django.conf import settings
 
 logger = logging.getLogger('apps.scholarship.student_email_catalogue')
 
-GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'letters', 'mentoring', 'closure')
+GROUPS = ('account', 'applying', 'interview', 'award', 'results', 'letters', 'mentoring', 'news', 'closure')
 
 
 @dataclass(frozen=True)
@@ -138,6 +138,11 @@ CATALOGUE = (
     # need — the mentor is on My Bursary either way, and staff can tell them. Sent only when staff
     # leave "Email the student" on at the assign / change; never to the mentor.
     _E('mentor_assigned', 'mentoring', switchable=True, tracked='log', editable=True),
+    # ── News (S8) ───────────────────────────────────────────────────────────────────────────
+    # SWITCHABLE (owner ruling, 2026-11-01): the announcement is on My Bursary -> News either way. Sent by
+    # the hourly `announcement-emails` job only when staff asked for it; the organisation words the
+    # wrapper, the announcement's own text goes in as written.
+    _E('announcement', 'news', switchable=True, tracked='log', editable=True),
     # ── Closure ─────────────────────────────────────────────────────────────────────────────
     _E('closed_by_officer', 'closure', ('send_application_closed_email',), status='closed',
        lock='closure_notice', wording=('student_reminders', 'CLOSED_SUBJECTS', 'CLOSED_BY_OFFICER_BODIES')),
