@@ -68,6 +68,15 @@ export type {
   AssignableMentor, CurrentMentor, MeetingMode, MentoringMeeting, PastMentor, ScholarMentoring, StaffRef,
 } from './admin-api/mentoring'
 
+// Programme -> Announcements (student maintenance S8).
+export {
+  createAnnouncement, deleteAnnouncement, getAnnouncements, updateAnnouncement, withdrawAnnouncement,
+} from './admin-api/announcements'
+export type {
+  AnnouncementAction, AnnouncementAudience, AnnouncementInput, AnnouncementRow, AnnouncementStatus,
+  AnnouncementsPayload,
+} from './admin-api/announcements'
+
 // A mentor's own students (student maintenance S7c).
 export { getMyStudent, getMyStudents, logMyMeeting } from './admin-api/mentorDesk'
 export type { MyMeeting, MyStudent, MyStudentCard, MyStudentResult, MyStudents } from './admin-api/mentorDesk'

@@ -47,6 +47,33 @@ holds as done (decisions.md, the Mobile M4 entry). Consent / PII / money / ident
   147.669.
 - New TD-460 (income wizard writes on open; silent save failure), TD-461 (the post-shortlist wizard's tab bar),
   TD-462 (bank-statement upload refusal); TD-458 updated (the draft closes its form half).
+## Student maintenance Sprint 8 — announcements (not yet live)
+
+Owner rulings and the approved AnnouncementsAdmin / StudentNews boards, 2026-11-01 (decisions.md, the S8 entry).
+**scholarship 0199_announcements — migrate first, by hand** (DDL, RLS, pre-check, ledger row and rollback in its
+docstring), then create the hourly Cloud Scheduler job `announcement-emails`.
+
+- **Programme → Announcements** (`/admin/programme/announcements`, nav row after Scholars; super / org_admin /
+  admin — `announcements.may_post`, every other role 403, another organisation 404). Title (<= 150) + plain-text
+  message (<= 5,000), For = all the organisation's scholars or one gift (live counts), publish now / schedule /
+  draft, pin, "Also email it to the scholars". Tabs Published / Scheduled / Drafts / Withdrawn with audience, emailed
+  count, "read N of M", author and edited / pinned marks; Edit, Withdraw (published), Delete (draft / scheduled).
+  Once out, only title, message and pin change (`published_locked`); the edit stamps "edited" and never emails.
+- **Her My Bursary → News** (lazy chunk; words in the `bursaryTabs` slice): shown when at least one announcement is
+  hers, red unread badge, pinned first then newest, "New" / "edited", links clickable. Opening it marks the shown
+  ones read (`POST scholarship/bursary/news/read/`, only ids she may see). Visibility is decided when read: live
+  (published, or scheduled past its time without waiting for the job), her organisation, her gift (application's or
+  round's), her file in maintenance or closed AFTER it went out.
+- **The email**: hourly `announcement-emails` (`CronRunView.JOBS`, `cron_health.EXPECTED_CADENCE`), once per
+  scholar (an `AnnouncementEmail` row claimed before the send), metered and logged via `send_student_email`, only
+  while the organisation's new switchable `announcement` kind is on (Student communications → News; wrapper
+  wording editable en/ms/ta). Switched off when the job reaches it: nobody emailed, rows `switched_off`, never later.
+  A withdraw stops the scholars not yet reached. The email links to `/scholarship/bursary?tab=news`.
+- New tables `announcements`, `announcement_reads`, `announcement_emails` (RLS + one service_role policy each).
+  Sponsors, partners and sources never read any of it (payload test + module scan).
+- Tests: `test_announcements.py` (29), `AnnouncementsAdmin.test.tsx`, `BursaryNews.test.tsx`, bursary page,
+  navigation snapshot. Admin FAQ: "How do I send news to all our scholars?".
+
 ## Offer matcher reads the S4 campus field (2026-11-02) — BUILT, NOT LIVE (no migration)
 
 - Offer reader S4 will store `institution` = name only and a new `campus` = the campus as printed. The catalogue keeps

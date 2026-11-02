@@ -149,6 +149,7 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    mentoring; courses 0091). **7d LIVE 2026-11-01** (main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first).
 8. **Announcements** (~25 files, migration). Authoring `/admin/programme/announcements`; student tab,
    unread count; optional email (cron `announcement-emails`, hourly).
+   **Built 2026-11-01, not live** (scholarship 0199_announcements, migrate first by hand; then the Scheduler job).
 9. *Later* — **Surveys** (builder, schedule, student form, outcomes tab).
 10. *Later* — **Development modules** (content library + progress).
 11. ~~*Later* — **Mentor login**~~ — brought forward into Sprint 7a (owner, 2026-10-31).

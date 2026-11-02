@@ -123,6 +123,9 @@ export interface BursarySummary {
   letters_to_acknowledge?: number
   /** S7b: the Mentoring tab shows (the student has or had a mentor, or the organisation has one). */
   mentoring_tab?: boolean
+  /** S8: the News tab shows (at least one announcement is hers), and how many her tab has not shown yet. */
+  news_tab?: boolean
+  news_unread?: number
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

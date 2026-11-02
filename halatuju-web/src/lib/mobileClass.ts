@@ -153,6 +153,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/students/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/scholars': { cls: 'can', sprint: 'M7' },
   '/admin/scholars/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/programme/announcements': { cls: 'can', sprint: 'M7' },   // maintenance S8: staff write news here
   '/admin/sponsors': { cls: 'can', sprint: 'M7' },
   '/admin/sponsors/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/payments': { cls: 'can', sprint: 'M7' },

@@ -196,7 +196,7 @@ class CadenceRegistry(SimpleTestCase):
     def test_the_watched_set_is_exactly_the_live_scheduler_fleet(self):
         self.assertEqual(set(EXPECTED_CADENCE), {
             'application-nudges', 'decision-emails', 'interview-reminders', 'notify-contact-submissions',
-            'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
+            'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
             'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime',
             'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
             'lapse-expired-offers', 'purge-referrals', 'query-reminders',
@@ -215,6 +215,7 @@ class CadenceRegistry(SimpleTestCase):
     def test_the_fleet_cadences(self):
         self.assertEqual(EXPECTED_CADENCE['interview-reminders'], EVERY_15_MIN)
         self.assertEqual(EXPECTED_CADENCE['read-outage-start'], HOURLY)
+        self.assertEqual(EXPECTED_CADENCE['announcement-emails'], HOURLY)   # maintenance S8
         self.assertEqual(EXPECTED_CADENCE['sync-vircle-sheet'], DAILY)
         self.assertEqual(EXPECTED_CADENCE['backup-documents'], WEEKLY)
 

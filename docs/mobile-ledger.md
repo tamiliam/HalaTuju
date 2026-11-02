@@ -7,7 +7,7 @@
 Baseline last updated **2026-11-02** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
-**96 routes:** 66 Must · 24 Can · 6 Desktop-only.
+**97 routes:** 66 Must · 25 Can · 6 Desktop-only.
 **24 measured** (public page or sandbox surface), **14 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
@@ -49,6 +49,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/payments/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 6 | ❌ |  |
+| `/admin/programme/announcements` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/overview` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/programme/years` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/programme` |
 | `/admin/requests` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |

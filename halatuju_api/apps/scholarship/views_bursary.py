@@ -70,7 +70,15 @@ def summary_payload(app):
         'letters_to_acknowledge': _letters_to_acknowledge(app),
         # S7b: whether the Mentoring tab shows (`mentoring_read.tab_shown`); its body is read lazily.
         'mentoring_tab': _mentoring_tab(app),
+        # S8: whether the News tab shows (at least one announcement is hers) and how many she has not seen.
+        **_news(app),
     }
+
+
+def _news(app):
+    from .announcements import tab_state
+    shown, unread = tab_state(app)
+    return {'news_tab': shown, 'news_unread': unread}
 
 
 def _mentoring_tab(app):
@@ -211,3 +219,37 @@ class BursaryMentoringView(APIView):
             return _no_file()
         from .mentoring_read import student_payload
         return Response(student_payload(app))
+
+
+# ── Her News (student maintenance S8, 2026-11-01) ─────────────────────────────────────────────────────
+# Her OWN file only. What she sees is `announcements.news_payload` (an allowlist): never who wrote
+# it, the audience or the email. A closed file reads what went out before it closed.
+class BursaryNewsView(APIView):
+    """GET scholarship/bursary/news/ — her announcements, pinned first, then newest; each says `new`
+    until her tab has shown it. Reading never writes: the tab POSTs `read/` with the ids it showed."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .announcements import news_payload
+        return Response(news_payload(app))
+
+
+class BursaryNewsReadView(APIView):
+    """POST scholarship/bursary/news/read/ `{ids: [..]}` — her tab showed these. Only the ones she may
+    see are recorded (an id she cannot see is ignored, never an error that confirms it exists)."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        app = _own_file(request)
+        if app is None:
+            return _no_file()
+        from .announcements import AnnouncementError, mark_read, tab_state
+        ids = request.data.get('ids') if isinstance(request.data, dict) else None
+        try:
+            marked = mark_read(app, ids)
+        except AnnouncementError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'marked': marked, 'unread': tab_state(app)[1]})

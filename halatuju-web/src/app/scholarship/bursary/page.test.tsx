@@ -246,3 +246,17 @@ it('S7b: the Mentoring tab shows only when the server says so, and opens', async
   fireEvent.click(tab)
   expect(tab.getAttribute('aria-selected')).toBe('true')
 })
+
+it('S8: the News tab shows only when she has news, with her unread count', async () => {
+  serve({ news_tab: false })
+  const { unmount } = render(<BursaryPage />)
+  await screen.findByTestId('bursary-hello')
+  expect(screen.queryByRole('tab', { name: /bursaryTabs\.news\.tab/ })).toBeNull()
+  unmount()
+  serve({ news_tab: true, news_unread: 2 })
+  render(<BursaryPage />)
+  const tab = await screen.findByRole('tab', { name: /bursaryTabs\.news\.tab/ })
+  expect(screen.getByTestId('news-unread').textContent).toBe('2')
+  fireEvent.click(tab)
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+})

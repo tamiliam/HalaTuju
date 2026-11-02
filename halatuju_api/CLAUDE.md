@@ -1146,6 +1146,21 @@ rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare
 in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
 apply-form draft storage (rec. tab-only sessionStorage).
 
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 BUILT, NOT LIVE — announcements
+
+**Next free migration numbers: scholarship 0200, courses 0092.** **scholarship 0199_announcements — MIGRATE FIRST by
+hand** (three new tables `announcements`, `announcement_reads`, `announcement_emails`, each RLS + one service_role
+policy; the `student_email_templates.kind` choice `announcement` needs no SQL; DDL, pre-check, ledger row and
+rollback in its docstring), then the Security Advisor, then API, then web, then **create the hourly Cloud Scheduler
+job `announcement-emails`** (`CronRunView.JOBS` -> `send_announcement_emails`; `cron_health.EXPECTED_CADENCE` HOURLY
+already expects it, so the health light goes red after two missed hours without it). Rules:
+`apps/scholarship/announcements.py` (`may_post`, `live_q`, `for_file`, `send_due_emails`); staff fence
+`views_admin/announcements.py` (`admin/scholarship/announcements/`, `<id>/` PATCH/DELETE, `<id>/withdraw/`; the org
+from `?programme=` inside the caller's own, else theirs; an org-less super must name a gift); her
+`scholarship/bursary/news/` + `news/read/`; summary keys `news_tab`, `news_unread`. Routes in `urls_announcements.py`
+(`urls.py` is at 600). Student communications gains the switchable `announcement` kind under a News heading. Web:
+`/admin/programme/announcements` (lazy, Mobile `can`), the bursary News tab (lazy, `bursaryTabs.news`).
+
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 7d LIVE (main fe6f21de; api-01229-4x6, web-01056-pld; courses 0091 applied by hand first) — staff can also be mentors
 
 **Next free migration numbers: courses 0092, scholarship 0199** (7d adds NO scholarship migration). **courses
