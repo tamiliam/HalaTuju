@@ -109,8 +109,27 @@ def _offer_programme(doc):
     """The programme named on an offer letter, normalised for comparison (blank when unread)."""
     vf = getattr(doc, 'vision_fields', None)
     fields = vf.get('fields') if isinstance(vf, dict) else None
-    raw = (fields or {}).get('programme') if isinstance(fields, dict) else ''
-    return ' '.join((raw or '').strip().lower().split())
+    fields = fields if isinstance(fields, dict) else {}
+    # S4 (2026-11-02) moves a printed code into `programme_code`. Returns (codes, name): the CODES are
+    # the decisive axis (two letters with different codes are a switch even under one course name —
+    # UKxxx vs UMxxx, BA272 vs BA240, DKM vs DTP), and the NAME is compared with every code removed, so
+    # a pre-S4 read ("FTV - ASASI …", "NAME - UW…") and an S4 re-read ("ASASI …" + "FTV") agree.
+    import re
+    from .offer_course_match import COURSE_CODE_RE
+    prog = (fields.get('programme') or '').upper()
+    field_code = (fields.get('programme_code') or '').upper()
+    codes = set(COURSE_CODE_RE.findall(prog)) | set(COURSE_CODE_RE.findall(field_code))
+    rest = COURSE_CODE_RE.sub(' ', prog)
+    # A leading short code: "FTV - …", "FTV-…", "BA272 …" (UiTM's own code needs no dash).
+    lead = (re.match(r'\s*([A-Z]{2,4}\d{0,3})\s*[-–—:/]', rest)
+            or re.match(r'\s*([A-Z]{2,3}\d{3})\s', rest))
+    if lead:
+        codes.add(lead.group(1))
+        rest = rest[lead.end():]
+    codes |= {t for t in re.findall(r'[A-Z0-9]+', COURSE_CODE_RE.sub(' ', field_code)) if t}
+    for c in codes:
+        rest = re.sub(rf'(?<![A-Z0-9]){re.escape(c)}(?![A-Z0-9])', ' ', rest)
+    return codes, ' '.join(re.findall(r'[a-z0-9]+', rest.lower()))
 
 
 def is_pathway_switch(new_doc, existing_doc):
@@ -128,8 +147,12 @@ def is_pathway_switch(new_doc, existing_doc):
     """
     if getattr(new_doc, 'doc_type', '') != 'offer_letter':
         return False
-    new_prog, old_prog = _offer_programme(new_doc), _offer_programme(existing_doc)
-    return bool(new_prog and old_prog and new_prog != old_prog)
+    (new_codes, new_name), (old_codes, old_name) = _offer_programme(new_doc), _offer_programme(existing_doc)
+    if not (new_name or new_codes) or not (old_name or old_codes):
+        return False
+    if new_codes and old_codes and not (new_codes & old_codes):
+        return True                     # different printed codes: a different programme
+    return bool(new_name and old_name and new_name != old_name)
 
 
 def _str_matched(doc, *, counting=False) -> bool:

@@ -82,6 +82,31 @@ def letter_institution(institution: str, campus: str = '') -> str:
     return f'{inst} {camp}'
 
 
+def programme_line(programme: str, code: str = '') -> str:
+    """The letter's programme LINE as the matcher reads it: ``programme`` with ``programme_code`` put
+    back where the matcher looks for it — the twin of ``letter_institution``.
+
+    Offer reader S4 (2026-11-02) moves a printed course code OUT of ``programme`` into
+    ``programme_code``. ``_printed_course`` reads a UPU code ("UW6526001") from the programme text and
+    UNIMAS / UMS letters resolve through it, so the code goes back in the pre-S4 shape: a UPU code
+    after " - "; a UiTM local code ("BA272") in front, where ``_LOCAL_CODE_RE`` drops it; any other
+    code ("AT06", "DRT") is left out — the matcher never used it and a stray token only blurs the
+    name. Each code is looked for INSIDE the field (brackets, spaces or two codes survive: "UW 6526001"
+    is not a code, "(UW6526001)" and "BA272 / UW6526001" are); a code already in the text is not
+    repeated; a pre-S4 read has no code, so its line is returned unchanged."""
+    prog = ' '.join((programme or '').split())
+    c = (code or '').upper()
+    upu = next(iter(COURSE_CODE_RE.findall(c)), '')
+    local = _LOCAL_CODE_RE.match(f'{m.group(0)} ') and m.group(0) if (
+        m := re.search(r'(?<![A-Z0-9])[A-Z]{2,3}\d{3}(?![A-Z0-9])', COURSE_CODE_RE.sub(' ', c))) else ''
+    text = prog.upper()
+    if upu and upu not in COURSE_CODE_RE.findall(text):
+        prog = f'{prog} - {upu}' if prog else upu
+    if local and not re.search(rf'(?<![A-Z0-9]){local}(?![A-Z0-9])', text) and prog:
+        prog = f'{local} {prog}'
+    return prog
+
+
 def catalogue_name(name: str) -> str:
     """A catalogue course name without its campus parenthetical."""
     return ' '.join(_CAMPUS_PAREN_RE.sub(' ', name or '').split())

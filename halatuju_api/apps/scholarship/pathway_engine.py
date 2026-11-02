@@ -405,8 +405,8 @@ def student_offer_check(doc) -> dict:
 
     cn = (f.get('candidate_name') or '').strip()
     cnric = (f.get('candidate_nric') or '').strip()
-    programme = (f.get('programme') or '').strip()
-    from .offer_course_match import letter_institution as _letter_institution   # S4 split, rejoined
+    from .offer_course_match import letter_institution as _letter_institution, programme_line   # S4 split, rejoined
+    programme = programme_line(f.get('programme'), f.get('programme_code'))
     institution = _letter_institution(f.get('institution'), f.get('campus'))
     stream = (f.get('stream') or '').strip()          # #117 (b) — the offer's Bidang / stream
     # PISMP: the letter RELIABLY states the BIDANG PENGKHUSUSAN (major); the aliran is NOT printed on
