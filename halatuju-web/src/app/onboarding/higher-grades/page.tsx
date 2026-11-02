@@ -43,7 +43,7 @@ function inRange(raw: string, min: number, max: number, minExclusive = false): n
   return n
 }
 
-const pill = (on: boolean) => `flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+const pill = (on: boolean) => `flex-1 min-w-0 break-words py-3 px-2 md:px-4 rounded-xl text-sm font-medium transition-all ${
   on ? 'bg-brand-fill text-brand-fill-ink shadow-md' : 'bg-ground-0 text-ground-700 border border-ground-200 hover:bg-ground-50'}`
 
 function Step({ n, title, hint }: { n: number; title: string; hint?: string }) {
@@ -125,7 +125,7 @@ export default function HigherGradesPage() {
     router.push('/onboarding/profile')
   }
 
-  const inputCls = 'min-h-11 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
+  const inputCls = 'min-h-11 md:min-h-0 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
@@ -140,7 +140,8 @@ export default function HigherGradesPage() {
         {/* 1. Which qualification — and, for a Diploma, where it is from (D5) */}
         <div className="mb-6 md:mb-8">
           <Step n={1} title={t('onboarding.higherWhich')} />
-          <div className="flex gap-3">
+          {/* A grid on a phone: three long words in a flex row ran 36 px off a 360 screen (M4c review surface). */}
+          <div className="grid grid-cols-3 gap-2 md:flex md:gap-3">
             {THIRD_ROUTE.map((k) => (
               <button key={k} type="button" onClick={() => chooseKind(k)} className={pill(kind === k)}>
                 {t(`onboarding.higherKind.${k}`)}

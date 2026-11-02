@@ -256,7 +256,7 @@ export default function ScholarshipOnboardingPage() {
                     key={opt}
                     type="button"
                     onClick={() => setLiving(opt)}
-                    className={`min-h-11 flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                    className={`min-h-11 md:min-h-0 flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       living === opt
                         ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-ground-300 text-ground-700 hover:bg-ground-50'
@@ -279,7 +279,7 @@ export default function ScholarshipOnboardingPage() {
                     key={key}
                     type="button"
                     onClick={() => setWantsMentor(val)}
-                    className={`min-h-11 flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
+                    className={`min-h-11 md:min-h-0 flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       wantsMentor === val
                         ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-ground-300 text-ground-700 hover:bg-ground-50'
@@ -299,7 +299,7 @@ export default function ScholarshipOnboardingPage() {
             <button
               type="button"
               onClick={() => setStep('welcome')}
-              className="min-h-11 rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
+              className="min-h-11 md:min-h-0 rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
             >
               {t('scholarship.onboarding.back')}
             </button>

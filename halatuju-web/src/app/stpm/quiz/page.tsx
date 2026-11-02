@@ -376,7 +376,7 @@ export default function StpmQuizPage() {
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="-ml-2 inline-flex min-h-11 items-center px-2 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
+            className="-ml-2 inline-flex min-h-11 items-center px-2 md:ml-0 md:min-h-0 md:px-0 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
             {t('quiz.previous')}
           </button>

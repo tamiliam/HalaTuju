@@ -7396,4 +7396,8 @@ Options: dots as decoration on a phone (Previous / auto-advance already move bet
 m" chooser, or two rows. Needs an owner nod (it removes a way of moving on a phone). (2) The sandbox layout wraps every
 surface in `max-w-6xl px-4 py-6`, so a surface page sits 32 px from the edge instead of 16 and mobile-check measures it
 narrower than a phone shows it (no false failure seen, but a full-bleed bar or a 360 px overflow could hide). Mount
-page surfaces without the wrapper. *(W · S)*
+page surfaces without the wrapper. (3) Not measured by mobile-check (a surface would need more than fixtures): My
+Bursary's results form OPEN (it opens on a tap; the page reads no address for it) and scholarship onboarding (needs an
+awarded application and its consent read). The other swept screens have surfaces since the M4c review. (4) Seen while
+adding them, older than M4c: the SPM block's grade pickers (`SpmResultsBlock.tsx`, `w-20`) clip "Grade" to "Grad‹" once
+rule 2 raises their text to 16 px. *(W · S)*

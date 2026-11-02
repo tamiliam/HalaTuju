@@ -93,7 +93,7 @@ export default function ContactPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('contactForm.namePlaceholder')}
-                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
+                  className="min-h-11 md:min-h-0 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -105,7 +105,7 @@ export default function ContactPage() {
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   placeholder={t('contactForm.contactPlaceholder')}
-                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
+                  className="min-h-11 md:min-h-0 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -115,7 +115,7 @@ export default function ContactPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none bg-ground-0"
+                  className="min-h-11 md:min-h-0 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none bg-ground-0"
                 >
                   <option value="general">{t('contactForm.categoryGeneral')}</option>
                   <option value="bug">{t('contactForm.categoryBug')}</option>
@@ -143,7 +143,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="min-h-11 w-full btn-primary py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="min-h-11 md:min-h-0 w-full btn-primary py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? t('contactForm.sending') : t('contactForm.submit')}
               </button>

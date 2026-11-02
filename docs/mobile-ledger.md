@@ -8,7 +8,7 @@ Baseline last updated **2026-11-02** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **99 routes:** 66 Must · 27 Can · 6 Desktop-only.
-**31 measured** (public page or sandbox surface), **22 fully green.**
+**36 measured** (public page or sandbox surface), **27 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -77,12 +77,12 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/login` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/` |
 | `/onboarding/exam-type` | Must | M2 | 6 (sandbox `onboarding-exam-type`) | 0 | 0 | 0 | ✅ |  |
 | `/onboarding/grades` | Must | M2 | 6 (sandbox `onboarding-grades`) | 0 | 0 | 0 | ✅ |  |
-| `/onboarding/higher-grades` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
+| `/onboarding/higher-grades` | Must | M2 | 6 (sandbox `onboarding-higher-grades`) | 0 | 0 | 0 | ✅ |  |
 | `/onboarding/ic` | Must | M2 | — | — | — | — | n/a (redirect only) | redirects to `/dashboard` |
-| `/onboarding/profile` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
-| `/onboarding/stpm-grades` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
-| `/pathway/matric` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
-| `/pathway/stpm` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
+| `/onboarding/profile` | Must | M2 | 6 (sandbox `onboarding-profile`) | 0 | 0 | 0 | ✅ |  |
+| `/onboarding/stpm-grades` | Must | M2 | 6 (sandbox `onboarding-stpm-grades`) | 0 | 0 | 0 | ✅ |  |
+| `/pathway/matric` | Must | M3 | 6 (sandbox `pathway-matric`) | 0 | 0 | 0 | ✅ |  |
+| `/pathway/stpm` | Must | M3 | 6 (sandbox `pathway-stpm`) | 0 | 0 | 0 | ✅ |  |
 | `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/profile` | Must | M2 | 6 (sandbox `profile`) | 0 | 0 | 0 | ✅ |  |
 | `/quiz` | Must | M3 | 6 (sandbox `quiz`) | 0 | 0 | 2 | ❌ |  |
@@ -93,7 +93,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 1 | ❌ |  |
 | `/scholarship/award` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
-| `/scholarship/bursary` | Must | M4 | 18 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`) | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/bursary` | Must | M4 | 42 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`, sandbox `bursary-funds`, sandbox `bursary-contract`, sandbox `bursary-letters`, sandbox `bursary-mentoring`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/in-programme` | Must | M4 | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
 | `/scholarship/onboarding` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |

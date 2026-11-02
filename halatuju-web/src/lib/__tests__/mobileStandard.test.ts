@@ -303,21 +303,44 @@ const RULE15_SWEPT = [
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
 const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
   'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx', 'src/components/ReportView.tsx']
+/** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
+const CONTROL_CONSTS: Record<string, string[]> = {
+  'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS
+  'src/app/onboarding/higher-grades/page.tsx': ['const pill'],   // the qualification / institution choice BUTTONS
+}
 describe('rule 15 — one box level; sections on phones', () => {
   test('the swept screens draw no hand-written white card (they use PHONE_SECTION)', () => {
-    // A white card: ONE class string holding rounded-xl / -2xl, a border and the card ground, in any
-    // order, none of them `md:`-only (M4b: the M4 regex read them in two fixed orders and missed the
-    // commonest one, `bg-ground-0 rounded-xl border`).
-    // A genuine CONTROL keeps its box (the rule's own exception): a string sized as a 44-48 px button
-    // (`h-11`, `h-12`, `min-h-11`) is a button, not a card (M4c: My Bursary's View PDF and Call buttons).
-    const card = (s: string) => {
-      const t = s.split(/\s+/)
-      return t.some((x) => /^rounded-(xl|2xl)$/.test(x)) && t.includes('border') && t.includes('bg-ground-0')
-        && !t.some((x) => /^(min-)?h-1[12]$/.test(x))
-    }
     const code = (rel: string) => readWeb(rel, 'a rule-15 screen').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')
-    const strings = (src: string) => Array.from(src.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)).map((m) => m[1] ?? m[2] ?? m[3] ?? '')
-    const offenders = [...RULE15_SWEPT, ...RULE15_SWEPT_PARTS].filter((rel) => strings(code(rel)).some(card))
+    // A white card: ONE class string holding rounded-xl / -2xl and the card ground (`bg-ground-0`), in any
+    // order, unprefixed — WITH OR WITHOUT a border (M4c review: My Bursary's cards were borderless shadow cards
+    // and the `border`-token test could not see them, nor a `border-2` card). M4b: one string, any order.
+    // A genuine CONTROL keeps its box (the rule's own exception) — judged by the ELEMENT the string sits on
+    // (a button, a link, a field, a label), never by its size (M4c review: a `min-h-11` exemption let any
+    // 44 px card through), or by a named class constant that only ever dresses a control (CONTROL_CONSTS).
+    const card = (s: string) => {
+      const t = s.split(/[\s'"`{}$()]+/)   // never on `:` — `md:bg-ground-0` is a desktop-only box
+      return t.some((x) => /^rounded-(xl|2xl)$/.test(x)) && t.includes('bg-ground-0')
+    }
+    const CONTROL_TAG = /^(button|a|Link|input|select|textarea|label|summary)$/
+    /** The JSX tag a class string sits on (`<button className="…">`), or `const NAME` for a constant. */
+    const owner = (src: string, at: number) => {
+      const before = src.slice(0, at)
+      const decl = before.match(/const (\w+) = (\([^)]*\) => )?$/)   // a constant, or a class-name maker
+      if (decl) return `const ${decl[1]}`
+      const tags = Array.from(before.matchAll(/<([A-Za-z][\w.]*)\b/g))
+      const last = tags[tags.length - 1]
+      if (!last) return ''
+      // Still inside that opening tag: no `>` since it, other than an arrow's `=>`.
+      return /(?<!=)>/.test(before.slice(last.index! + last[0].length)) ? '' : last[1]
+    }
+    const offenders = [...RULE15_SWEPT, ...RULE15_SWEPT_PARTS].flatMap((rel) => {
+      const src = code(rel)
+      return Array.from(src.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g))
+        .filter((m) => card(m[1] ?? m[2] ?? m[3] ?? ''))
+        .map((m) => owner(src, m.index!))
+        .filter((o) => !CONTROL_TAG.test(o) && !(CONTROL_CONSTS[rel] ?? []).includes(o))
+        .map((o) => `${rel}: a white card on ${o || 'an unknown element'}`)
+    })
     expect(offenders).toEqual([])
     // No bare 24 px page gutter on a phone: a `container` line carries PHONE_GUTTER (px-4; px-6 from md).
     const gutters = RULE15_SWEPT.flatMap((rel) => code(rel).split('\n')

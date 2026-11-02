@@ -258,8 +258,9 @@ export default function StpmGradesPage() {
                 />
               ))}
 
-              {/* Elective slot — click to add */}
-              {showElective ? (
+              {/* Elective slot — click to add (the add button sits BELOW the divided list: a list's
+                  dividers restyle every child, and the button must keep its dashed box, M4c review). */}
+              {showElective && (
                 <StpmSubjectRow dashed
                   subject={
                     <select value={electiveSubject} onChange={(e) => handleElectiveChange(e.target.value)} className={subjectCls}>
@@ -273,15 +274,16 @@ export default function StpmGradesPage() {
                   tag={electiveSubject ? countTag(electiveSubject) : undefined}
                   onRemove={() => { handleElectiveChange(''); setShowElective(false) }}
                 />
-              ) : (
-                <button
-                  onClick={() => setShowElective(true)}
-                  className="max-md:mt-2 w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
-                >
-                  + {t('onboarding.addElective')}
-                </button>
               )}
             </div>
+            {!showElective && (
+              <button
+                onClick={() => setShowElective(true)}
+                className="mt-2 md:mt-3 w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+              >
+                + {t('onboarding.addElective')}
+              </button>
+            )}
           </div>
         )}
 
@@ -328,7 +330,7 @@ export default function StpmGradesPage() {
                 value={kokoScore}
                 onChange={(e) => setKokoScore(e.target.value)}
                 placeholder="0.00 – 10.00"
-                className="min-h-11 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                className="min-h-11 md:min-h-0 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               />
               <p className="text-xs text-ground-400 mt-1">{t('onboarding.kokoHint')}</p>
             </div>

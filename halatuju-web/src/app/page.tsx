@@ -122,7 +122,7 @@ function FeatureCard({
 function StatCard({ number, label }: { number: string; label: string }) {
   return (
     <div>
-      <div className="text-4xl font-bold mb-2">{number}</div>
+      <div className="text-3xl font-bold mb-2 md:text-4xl">{number}</div>
       <div className="text-primary-100">{label}</div>
     </div>
   )

@@ -42,6 +42,17 @@ again; from `md` every page looks exactly as before.
   `/scholarship` 182.429 → 182.664, `/scholarship/bursary` 190.314 → 190.612, `/profile` 192.802 → 192.817 (line 194),
   `/scholarship/application` 206.181 → 206.196 (line 208). Nothing raised; nothing touches the API.
 - New TD-465 (the quiz step dots; the sandbox mounts pages inside its own 16 px gutter).
+- **Review fixes (before the push):** "+ Add elective" (SPM and STPM grades) sits below its divided list so it keeps
+  its dashed box; the rule-15 card check now sees borderless and `border-2` cards and exempts only a CONTROL element
+  (button, link, field, label) or a named choice-button constant, never a size (bitten: an old bursary card, a 44 px
+  div card, a `border-2` card, an unlisted constant — all red); every 44 px added on a phone is reset from `md`
+  (desktop exactly as before, incl. My Bursary's back arrow); white grounds on the onboarding choices and the bursary
+  results fields (44 px on a phone); Home's figures 30 px on a phone; seven more sandbox surfaces (bursary Funds,
+  Contract, Letters, Mentoring; STPM grades, higher grades, onboarding profile; both pathway pages). They found two
+  older faults, fixed here: the higher-grades qualification choices ran 36 px off a 360 screen (a 3-column grid on a
+  phone now) and both pathway pages' "Back to Dashboard" was a 20 px link (44 px on a phone). mobile-check 396 → 450
+  cells, 451 tests passing, nothing raised; ledger 31 → 36 routes measured, 22 → 27 green. Bundle: median 145.407,
+  `/scholarship/bursary` 190.645, `/profile` 192.817 (194), `/scholarship/application` 206.196 (208).
 
 ## Student maintenance Sprint 9 — surveys — LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK)
 

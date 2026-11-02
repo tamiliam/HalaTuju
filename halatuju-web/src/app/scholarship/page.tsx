@@ -80,7 +80,7 @@ export default function ScholarshipLandingPage() {
               <p className="text-ground-600 mt-3 lg:mt-4 lg:text-lg">{t('scholarship.landing.hero.sub')}</p>
               <div className="mt-5 lg:mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
                 {applyCta('btn-primary text-center w-full sm:w-auto')}
-                <a href="#requirements" className="inline-flex min-h-11 items-center justify-center text-primary-600 text-sm font-medium sm:justify-start">{t('scholarship.landing.hero.seeQualify')} ↓</a>
+                <a href="#requirements" className="inline-flex min-h-11 md:min-h-0 items-center justify-center text-primary-600 text-sm font-medium sm:justify-start">{t('scholarship.landing.hero.seeQualify')} ↓</a>
               </div>
               {closedNote}
             </div>

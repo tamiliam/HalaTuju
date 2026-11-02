@@ -119,7 +119,7 @@ export default function ExamTypePage() {
         <div className="flex justify-start">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center gap-1.5 text-ground-500 hover:text-ground-900 text-sm font-medium transition-colors"
+            className="inline-flex min-h-11 md:min-h-0 items-center gap-1.5 text-ground-500 hover:text-ground-900 text-sm font-medium transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />

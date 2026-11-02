@@ -233,7 +233,7 @@ export default function BursaryPage() {
         <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 text-center" data-testid="bursary-load-failed">
           <p className="text-ground-700">{t('scholarship.bursary.loadFailed')}</p>
           <button type="button" onClick={() => { setLoading(true); setAttempt((n) => n + 1) }}
-            className="mt-4 min-h-11 rounded-xl bg-brand-fill px-5 py-2.5 text-sm font-medium text-brand-fill-ink">
+            className="mt-4 min-h-11 md:min-h-0 rounded-xl bg-brand-fill px-5 py-2.5 text-sm font-medium text-brand-fill-ink">
             {t('scholarship.bursary.retry')}
           </button>
         </main>
@@ -266,7 +266,7 @@ export default function BursaryPage() {
       <main className="flex-1 max-w-md mx-auto w-full px-4 pt-2 pb-6 space-y-3 md:py-6 md:space-y-4">
         <div className="flex items-center gap-2">
           <Link href="/scholarship/application" aria-label={t('scholarship.inProgramme.back')}
-            className="-my-2 -ml-3 inline-flex min-h-11 min-w-11 items-center justify-center text-primary-600">‹</Link>
+            className="-my-2 -ml-3 inline-flex min-h-11 min-w-11 items-center justify-center text-primary-600 md:my-0 md:ml-0 md:inline md:min-h-0 md:min-w-0">‹</Link>
           <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.bursary.title')}</h1>
         </div>
 
@@ -458,7 +458,7 @@ export default function BursaryPage() {
 
           {!app?.can_record_results ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
-              className="mt-3 min-h-11 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
+              className="mt-3 min-h-11 md:min-h-0 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}
             </button>
           ) : (
@@ -467,13 +467,13 @@ export default function BursaryPage() {
                 <label className="text-xs font-medium text-ground-600">{t('scholarship.inProgramme.results.semester')}</label>
                 <input value={semester} onChange={(e) => setSemester(e.target.value)}
                   placeholder={t('scholarship.inProgramme.results.semesterPh')}
-                  className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
+                  className="mt-1 min-h-11 w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-sm md:min-h-0" />
               </div>
               <div>
                 <label className="text-xs font-medium text-ground-600">{t('scholarship.inProgramme.results.cgpa')}</label>
                 <input value={cgpa} onChange={(e) => setCgpa(e.target.value)}
                   inputMode="decimal" placeholder="3.50"
-                  className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
+                  className="mt-1 min-h-11 w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-sm md:min-h-0" />
                 <p className="mt-1 text-xs text-ground-400">{t('scholarship.inProgramme.results.cgpaHint')}</p>
               </div>
               <div>
@@ -491,11 +491,11 @@ export default function BursaryPage() {
               {resultError && <p className="text-sm text-critical-600">{resultError}</p>}
               <div className="flex gap-2">
                 <button onClick={saveResult} disabled={savingResult || !slip}
-                  className="min-h-11 flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
+                  className="min-h-11 md:min-h-0 flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
                   {savingResult ? t('scholarship.inProgramme.results.saving') : t('scholarship.inProgramme.results.save')}
                 </button>
                 <button onClick={() => { setShowForm(false); setResultError(null) }}
-                  className="min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium text-ground-500">
+                  className="min-h-11 md:min-h-0 rounded-xl px-4 py-2.5 text-sm font-medium text-ground-500">
                   {t('common.cancel')}
                 </button>
               </div>
@@ -551,9 +551,9 @@ export default function BursaryPage() {
 
           <textarea value={compose} onChange={(e) => setCompose(e.target.value)} rows={4} maxLength={2000}
             placeholder={t('scholarship.inProgramme.grad.placeholder')}
-            className="mt-3 w-full rounded-xl border border-ground-300 px-3 py-2 text-sm" />
+            className="mt-3 w-full rounded-xl border border-ground-300 bg-ground-0 px-3 py-2 text-sm" />
           <button onClick={sendThankYou} disabled={sending || !compose.trim()}
-            className="mt-2 min-h-11 w-full rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
+            className="mt-2 min-h-11 md:min-h-0 w-full rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
             {sending ? t('scholarship.inProgramme.grad.sending') : t('scholarship.inProgramme.grad.send')}
           </button>
         </section>}

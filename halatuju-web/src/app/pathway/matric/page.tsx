@@ -160,7 +160,7 @@ function MatricPageContent() {
       <div className={`container mx-auto ${PHONE_GUTTER} pt-6`}>
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-ground-500 hover:text-primary-600"
+          className="inline-flex min-h-11 items-center text-sm text-ground-500 hover:text-primary-600 md:min-h-0"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -240,7 +240,7 @@ function MatricPageContent() {
                 <select
                   value={stateFilter}
                   onChange={e => setStateFilter(e.target.value)}
-                  className="min-h-11 border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                  className="min-h-11 md:min-h-0 border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="all">{t('pathwayDetail.allStates')}</option>
                   {availableStates.map(state => (

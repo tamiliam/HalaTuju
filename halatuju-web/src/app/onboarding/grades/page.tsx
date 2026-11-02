@@ -342,7 +342,7 @@ export default function GradesInputPage() {
             {/* No stream chosen yet → say so, rather than offer four dropdowns with nothing in
                 them. The pool is empty until Section 1 is answered (see `handleStreamChange`). */}
             {!stream && (
-              <p className="rounded-xl border-2 border-dashed border-ground-300 bg-ground-0 px-4 py-4 text-sm text-ground-500">
+              <p className="py-2 text-sm text-ground-500 md:rounded-xl md:border-2 md:border-dashed md:border-ground-300 md:bg-ground-0 md:px-4 md:py-4">
                 {t('onboarding.pickStreamFirst')}
               </p>
             )}
@@ -381,15 +381,16 @@ export default function GradesInputPage() {
                 onRemove={() => removeElektifSlot(index)}
               />
             ))}
-            {elektifSlots.length < MAX_SPM_ELECTIVES && (
-              <button
-                onClick={addElektifSlot}
-                className="max-md:mt-2 w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
-              >
-                + {t('onboarding.addElective')}
-              </button>
-            )}
           </div>
+          {/* Below the divided list, not in it: its dividers would restyle the dashed box (M4c review). */}
+          {elektifSlots.length < MAX_SPM_ELECTIVES && (
+            <button
+              onClick={addElektifSlot}
+              className={`${elektifSlots.length ? 'mt-2 md:mt-3 ' : ''}w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium`}
+            >
+              + {t('onboarding.addElective')}
+            </button>
+          )}
         </div>
 
         {/* Section 5: Co-curricular + Total Merit */}

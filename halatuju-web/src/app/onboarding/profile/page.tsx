@@ -259,7 +259,7 @@ export default function ProfileInputPage() {
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="min-h-11 w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                className="min-h-11 md:min-h-0 w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               >
                 <option value="">{t('onboarding.selectState')}</option>
                 {MALAYSIAN_STATES.map((s) => (
@@ -276,7 +276,7 @@ export default function ProfileInputPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setNationality('malaysian')}
-                  className={`min-h-11 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`min-h-11 md:min-h-0 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'malaysian'
                       ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
@@ -290,7 +290,7 @@ export default function ProfileInputPage() {
                 </button>
                 <button
                   onClick={() => setNationality('non_malaysian')}
-                  className={`min-h-11 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`min-h-11 md:min-h-0 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'non_malaysian'
                       ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
@@ -332,7 +332,7 @@ export default function ProfileInputPage() {
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   gender === 'male'
                     ? 'border-brand-shape bg-primary-50 text-primary-700'
-                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                    : 'border-ground-200 bg-ground-0 text-ground-600 hover:border-ground-300'
                 }`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={gender === 'male' ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -346,7 +346,7 @@ export default function ProfileInputPage() {
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   gender === 'female'
                     ? 'border-brand-shape bg-primary-50 text-primary-700'
-                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                    : 'border-ground-200 bg-ground-0 text-ground-600 hover:border-ground-300'
                 }`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={gender === 'female' ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -370,7 +370,7 @@ export default function ProfileInputPage() {
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   bumiputera === true
                     ? 'border-brand-shape bg-primary-50 text-primary-700'
-                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                    : 'border-ground-200 bg-ground-0 text-ground-600 hover:border-ground-300'
                 }`}
               >
                 {t('onboarding.bumiYes')}
@@ -380,7 +380,7 @@ export default function ProfileInputPage() {
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   bumiputera === false
                     ? 'border-brand-shape bg-primary-50 text-primary-700'
-                    : 'border-ground-200 text-ground-600 hover:border-ground-300'
+                    : 'border-ground-200 bg-ground-0 text-ground-600 hover:border-ground-300'
                 }`}
               >
                 {t('onboarding.bumiNo')}
@@ -398,10 +398,10 @@ export default function ProfileInputPage() {
             </label>
             <p className="text-xs text-ground-400 mb-3">{t('onboarding.healthNote')}</p>
             <div className="flex flex-wrap gap-3">
-              <label className={`flex min-h-11 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+              <label className={`flex min-h-11 md:min-h-0 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 colorblind
                   ? 'border-brand-shape bg-primary-50'
-                  : 'border-ground-200 hover:border-ground-300'
+                  : 'border-ground-200 bg-ground-0 hover:border-ground-300'
               }`}>
                 <input
                   type="checkbox"
@@ -416,10 +416,10 @@ export default function ProfileInputPage() {
                 </svg>
                 <span className="text-sm text-ground-700">{t('onboarding.colorBlindness')}</span>
               </label>
-              <label className={`flex min-h-11 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+              <label className={`flex min-h-11 md:min-h-0 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 disability
                   ? 'border-brand-shape bg-primary-50'
-                  : 'border-ground-200 hover:border-ground-300'
+                  : 'border-ground-200 bg-ground-0 hover:border-ground-300'
               }`}>
                 <input
                   type="checkbox"

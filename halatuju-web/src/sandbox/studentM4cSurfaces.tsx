@@ -17,17 +17,30 @@ import BursaryPage from '@/app/scholarship/bursary/page'
 import ExamTypePage from '@/app/onboarding/exam-type/page'
 import GradesPage from '@/app/onboarding/grades/page'
 import QuizPage from '@/app/quiz/page'
+import StpmGradesPage from '@/app/onboarding/stpm-grades/page'
+import HigherGradesPage from '@/app/onboarding/higher-grades/page'
+import OnboardingProfilePage from '@/app/onboarding/profile/page'
+import MatricPathwayPage from '@/app/pathway/matric/page'
+import StpmPathwayPage from '@/app/pathway/stpm/page'
+import BursaryFunds from '@/components/bursary/BursaryFunds'
+import BursaryContract from '@/components/bursary/BursaryContract'
+import BursaryLetters from '@/components/bursary/BursaryLetters'
+import BursaryMentoring from '@/components/bursary/BursaryMentoring'
 import { AuthContext } from '@/lib/auth-context'
-import { KEY_EXAM_TYPE, KEY_PROFILE, rememberBursaryFile } from '@/lib/storage'
+import { KEY_EXAM_TYPE, KEY_GRADES, KEY_PROFILE, KEY_STPM_STREAM, rememberBursaryFile } from '@/lib/storage'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
 interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
 
 /** A signed-in student, synthetic. `tab` puts `?tab=…` in the address for the page to read. */
-function SignedIn({ tab, examType, children }: { tab?: string; examType?: string; children: ReactNode }) {
+function SignedIn({ tab, examType, grades, store, children }: {
+  tab?: string; examType?: string; grades?: Record<string, string>; store?: Record<string, string>; children: ReactNode
+}) {
   useState(() => {
     try {
       if (examType) localStorage.setItem(KEY_EXAM_TYPE, examType)
+      if (grades) localStorage.setItem(KEY_GRADES, JSON.stringify(grades))
+      for (const [k, v] of Object.entries(store ?? {})) localStorage.setItem(k, v)
       localStorage.setItem(KEY_PROFILE, JSON.stringify({ gender: 'female', nationality: 'malaysian' }))
     } catch { /* storage blocked: the page shows its empty state */ }
     rememberBursaryFile(true)
@@ -145,6 +158,36 @@ const BURSARY_ROUTES = {
   '/api/v1/scholarship/bursary/surveys/': () => SURVEYS,
 }
 
+const LETTERS = {
+  organisation: 'Yayasan Contoh',
+  letters: [
+    { id: 2, kind: 'general', language: 'ms', subject: 'Semester 2 results slip needed', body: 'Please upload your slip.',
+      issued_at: '2026-10-20', response_due_on: '2026-11-10', acknowledged_at: null, withdrawn_at: null, read: false,
+      state: 'awaiting', has_pdf: true },
+    { id: 1, kind: 'general', language: 'en', subject: 'Welcome letter', body: 'Welcome to the programme.',
+      issued_at: '2026-07-01', response_due_on: '2026-07-15', acknowledged_at: '2026-07-02', withdrawn_at: null,
+      read: true, state: 'acknowledged', has_pdf: false },
+  ],
+}
+
+const MENTORING = {
+  mentor: { name: 'Priya Devi', area: 'Kajang, Selangor', languages: ['en', 'ta'], other_language: '',
+    about: 'Engineer, mentoring students since 2020.', email: 'mentor@contoh.invalid', phone: '012-345 6789',
+    since: '2026-08-01' },
+  meetings: [{ met_on: '2026-10-12', mode: 'video' }, { met_on: '2026-09-05', mode: 'in_person' }],
+}
+
+/** One My Bursary tab as the page draws it: the page's own column (its tabs open by tap, not by address). */
+function TabColumn({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-ground-50">
+      <main className="mx-auto w-full max-w-md space-y-3 px-4 pb-6 pt-2 md:space-y-4 md:py-6">{children}</main>
+    </div>
+  )
+}
+
+const SPM = { BM: 'A', BI: 'A-', MAT: 'B+', SEJ: 'B', PI: 'A', SN: 'B+' }
+
 const opt = (text: string, icon: string) => ({ text, icon, signals: {} })
 /** `quiz/questions/` — two invented questions (the page shows the first). */
 const QUIZ = {
@@ -186,6 +229,34 @@ export const STUDENT_REST_SURFACES: Surface[] = [
     routes: BURSARY_ROUTES,
   },
   {
+    slug: 'bursary-funds',
+    title: 'My Bursary — Funds tab',
+    note: 'What has reached her and the spending card, as sections on a phone; the sponsor portal keeps its card.',
+    render: () => <SignedIn><TabColumn><BursaryFunds funds={FUNDS as never} /></TabColumn></SignedIn>,
+    routes: BURSARY_ROUTES,
+  },
+  {
+    slug: 'bursary-contract',
+    title: 'My Bursary — Contract tab',
+    note: 'The signed agreement and its parties as a section; View PDF is a 44 px button.',
+    render: () => <SignedIn><TabColumn><BursaryContract contract={CONTRACT as never} token="sandbox-not-a-real-token" /></TabColumn></SignedIn>,
+    routes: BURSARY_ROUTES,
+  },
+  {
+    slug: 'bursary-letters',
+    title: 'My Bursary — Letters tab',
+    note: 'Two letters, one waiting for her acknowledgement, as divided rows on a phone.',
+    render: () => <SignedIn><TabColumn><BursaryLetters token="sandbox-not-a-real-token" onAcknowledged={() => {}} /></TabColumn></SignedIn>,
+    routes: { ...BURSARY_ROUTES, '/api/v1/scholarship/bursary/letters/': () => LETTERS },
+  },
+  {
+    slug: 'bursary-mentoring',
+    title: 'My Bursary — Mentoring tab',
+    note: 'Her mentor and their meetings as sections; Email and Call are 44 px.',
+    render: () => <SignedIn><TabColumn><BursaryMentoring token="sandbox-not-a-real-token" /></TabColumn></SignedIn>,
+    routes: { ...BURSARY_ROUTES, '/api/v1/scholarship/bursary/mentoring/': () => MENTORING },
+  },
+  {
     slug: 'onboarding-exam-type',
     title: 'Onboarding — which results do you have?',
     note: 'The first onboarding step: three choices, each a tap-sized card on a 16 px gutter.',
@@ -197,6 +268,36 @@ export const STUDENT_REST_SURFACES: Surface[] = [
     note: 'The SPM results step: the core subjects and the stream as sections on a phone; grade pickers and the '
       + 'add-a-subject buttons are 44 px.',
     render: () => <SignedIn examType="spm"><GradesPage /></SignedIn>,
+  },
+  {
+    slug: 'onboarding-stpm-grades',
+    title: 'Onboarding — STPM grades',
+    note: 'STPM subjects as divided rows on a phone; "+ Add elective" keeps its dashed box below the list.',
+    render: () => <SignedIn examType="stpm" store={{ [KEY_STPM_STREAM]: 'science' }}><StpmGradesPage /></SignedIn>,
+  },
+  {
+    slug: 'onboarding-higher-grades',
+    title: 'Onboarding — Matriculation, Asasi or Diploma',
+    note: 'The third results route: CGPA, co-curriculum and MUET (44 px bands) with no card on a phone.',
+    render: () => <SignedIn examType="matric"><HigherGradesPage /></SignedIn>,
+  },
+  {
+    slug: 'onboarding-profile',
+    title: 'Onboarding — about you',
+    note: 'The last onboarding step: the form is the page on a phone; every choice 44 px on white.',
+    render: () => <SignedIn examType="spm" grades={SPM}><OnboardingProfilePage /></SignedIn>,
+  },
+  {
+    slug: 'pathway-matric',
+    title: 'Pathway — Matriculation',
+    note: 'Sections on a phone; the colleges are divided rows; the state picker is 44 px.',
+    render: () => <SignedIn examType="spm" grades={SPM}><MatricPathwayPage /></SignedIn>,
+  },
+  {
+    slug: 'pathway-stpm',
+    title: 'Pathway — Form Six (STPM)',
+    note: 'Sections on a phone; the schools are divided rows with no inner scroll box; the pickers are 44 px.',
+    render: () => <SignedIn examType="spm" grades={SPM}><StpmPathwayPage /></SignedIn>,
   },
   {
     slug: 'quiz',
