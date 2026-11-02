@@ -236,6 +236,8 @@ Three kinds of check, from cheapest to most human:
   Tailwind's divide selector is stronger than a child's own `md:border`, so the `md:` reset strips the borders of every
   box after the first from `md` (guarded). A section inside a parent that already spaces its children takes
   `PHONE_SECTION_NO_GAP`, so the desktop keeps its old spacing.
+  ⚠ **Only rows go inside a `PHONE_ROWS` list.** The divider styles every direct child, so a button or a note placed
+  in the list ("Show all", "+ Add elective") loses its own border on a phone — put it after the list (M4b, M4c reviews).
   M4c examples: what was a BORDERLESS shadow card (`rounded-2xl bg-ground-0 p-5 shadow-sm`, all of My Bursary) takes
   `PHONE_SECTION_FLAT` — the same card from `md`, no border, no margin of its own. A page that was ONE card around the
   whole text (About, the legal pages, Contact, Get started, the report, a form step) keeps no section at all on a phone:

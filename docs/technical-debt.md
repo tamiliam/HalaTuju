@@ -7426,3 +7426,10 @@ Bursary's results form OPEN (it opens on a tap; the page reads no address for it
 awarded application and its consent read). The other swept screens have surfaces since the M4c review. (4) Seen while
 adding them, older than M4c: the SPM block's grade pickers (`SpmResultsBlock.tsx`, `w-20`) clip "Grade" to "Grad‹" once
 rule 2 raises their text to 16 px. *(W · S)*
+
+### [TD-467] The quizzes' questions and answers are English in Tamil and Malay - low
+
+**Raised 2026-11-02 at the Mobile M4c close** (seen on the quiz screenshot): the frame is translated ("Question 1 of 2",
+Next / Previous, "pick up to 2") but the question and the answer cards read in English for a Tamil or Malay student.
+**Fix:** move the quiz content into the message catalogues (a page-loaded slice) or serve it per locale; review in Sol.
+*(B · S)*

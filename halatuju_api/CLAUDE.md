@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0–M4b DONE (M4b live 2026-11-02, main cef8e42d), NEXT = M4c rule-15 sweep of the remaining student pages
+### Mobile-native arc (separate stream) — M0–M4c DONE (M4c live 2026-11-02, main a7c91931 + quiz 688a1a46), NEXT = M5 sponsor portal
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1149,9 +1149,9 @@ level on phones (16 px gutter, sections not cards, no bordered box in a box); th
 quiz / valid PIN (`signing_progress.py`). **Since M4b:** a student bottom tab bar (`StudentTabBar.tsx`, mounted only by `AppHeader`; CSS
 `:has()` rules); every sticky bottom bar on a student page MUST carry `data-page-bar` (guarded) so the tabs swap out;
 phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` is a plain `<img>` on the optimiser.
-Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. NEXT: M4c (My Bursary, Home, landing,
-report, info/legal, pathway, onboarding, quizzes) with the M4b pattern.
-
+Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. **Since M4c:** every student page uses rule 15 and the tab bar; only rows go inside a `PHONE_ROWS`
+list (a button inside it loses its own border); the rule-15 guard detects cards by ground + radius, with or
+without a border. NEXT: M5 sponsor portal (its own phone nav), then M6 admin + reviewer cockpit (may split), M7, M8.
 ### Offer letters read exactly (separate stream) — S1–S4 LIVE 2026-11-02 (main cfd02d91; api-01237-gdp), NEXT = S5
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. Reader `offer_reader.py` (`OFFER_READER_VERSION`

@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-02 | 688a1a4 | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 180 | 0 | 0 | ok | ok |
 | 2026-11-02 | cef8e42 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 176 | 0 | 0 | ok | ok |
 | 2026-11-02 | 8642330 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 175 | 0 | 0 | ok | ok |
 | 2026-11-01 | 5617359 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 170 | 0 | 0 | ok | ok |
@@ -121,15 +122,15 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-02, cef8e42, window 2026-08-04 onward)
+## Latest run (2026-11-02, 688a1a4, window 2026-08-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
+| `halatuju_api/apps/scholarship/vision.py` | 14 | 2330 | 32.6 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
-| `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 17 | 1356 | 23.1 |
-| `halatuju_api/apps/scholarship/views.py` | 9 | 2440 | 22 |
+| `halatuju_api/apps/scholarship/views.py` | 9 | 2441 | 22 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
@@ -138,11 +139,11 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 271 fix / 261 feat commits since 2026-08-04
+- 278 fix / 278 feat commits since 2026-08-04
 
 ### Files over 1000 lines
-- `2440  halatuju_api/apps/scholarship/views.py`
-- `2338  halatuju_api/apps/scholarship/vision.py`
+- `2441  halatuju_api/apps/scholarship/views.py`
+- `2330  halatuju_api/apps/scholarship/vision.py`
 - `2190  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
@@ -159,7 +160,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
 - `320  halatuju_api/apps/scholarship/views.py:1011 post`
-- `315  halatuju_api/apps/scholarship/vision.py:2017 _run_field_extraction_impl`
+- `315  halatuju_api/apps/scholarship/vision.py:2009 _run_field_extraction_impl`
 - `294  halatuju_api/apps/courses/engine.py:354 check_eligibility`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
 - `253  halatuju_api/apps/courses/views.py:126 get`
@@ -202,10 +203,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 42 of 359 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 42 of 363 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 460 entries have a defining line; 176 carry no resolution marker on it
+- 464 entries have a defining line; 180 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -227,13 +228,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 6587: - **TD-383 (raised 2026-10-18 by the Consolidation Review, promoting a cluster) - money + eligibility: a write that depends on an application's status
 - line 6590: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
 - line 7135: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
-- line 7379: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
+- line 7390: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 8642330
+- budgets no looser than at cef8e42
 
 ### tsc
 - 0 errors in 0 files
@@ -241,7 +242,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7118
+- Total keys per locale: 7289
 
 ## Reviews
 
@@ -253,6 +254,13 @@ _Decisions per run, newest first. Written by a person or the agent — never by 
 this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
 the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
 offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
+
+### 2026-11-02 (688a1a4, Mobile-native M4c close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since cef8e42 holds Mobile M4c and its quiz
+follow-up (web only), Sprint 9 and the offer exact-read S4. Moved, none by M4c: `hot#1` is now `vision.py` 32.6 and
+`fix%` 51 -> 50 (the offer-reader work); `td_open` 176 -> 180 (TD-465 offer S4; TD-466, TD-467 M4c leftovers; others).
+**Accepted.**
 
 ### 2026-11-02 (cef8e42, Mobile-native M4b close) — 0 FAIL
 
