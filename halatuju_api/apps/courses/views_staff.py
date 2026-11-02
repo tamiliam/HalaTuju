@@ -25,7 +25,7 @@ from django.db import DatabaseError, transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import referral_links, staff_reinvite
+from . import referral_links, staff_reinvite, staff_tables
 from .models import PartnerAdmin, PartnerOrganisation
 from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES,
                           PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
@@ -411,7 +411,7 @@ class AdminListView(PartnerAdminMixin, APIView):
 
     def get(self, request):
         admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role in ('org_admin', 'admin')):
+        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
             return Response({'error': 'Super admin access required'}, status=403)
 
         # ⚠ A SOURCE USER IS NOT STAFF (source sign-in S1, C3), so not even a super's roster lists one;

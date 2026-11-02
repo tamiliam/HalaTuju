@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T1: a person's tables are DERIVED; a page gate is today's roles OR the Admins table by a key; a key seat opens READ pages only — 2026-11-03 (owner ruling, option B)
+
+**Owner ruling, 2026-11-03 (relayed by the lead): option B.** *A reviewer seated at the Admins table by her keys
+(Rohini: `review`, `see_all`, `spending`) gains the organisation READ pages only; the admin WRITE pages stay
+role-gated until T2 or a future key. Her landing page stays `/admin/programme/overview` — she is a reviewer first,
+and T1 is "no visible change" except the new menu rows. Overview sections and the Guide stay unchanged.* The qc
+correction (item 2) was accepted.
+
+**Decision (`apps/courses/staff_tables.py`):**
+1. **Derived, never stored** (the 0123 / no-backfill lesson): Admins = the lead tier or a super, the `admin` /
+   `finance` labels, or a TEAM member holding an admin key (`see_all`, `spending`, `payments_prepare`,
+   `payments_check`, `payments_approve`; `manage_team` never resolves for a team member). Reviewers = the `reviewer`
+   / `qc` labels, or `review` / `qc` (the lead tier stays off, owner 2026-10-19, until T2). Mentors = `mentors_now`.
+   A revoked row, a partner, a source user and a sponsor sit at no table.
+2. **Correction to the brief's derivation:** `see_all` held beside `qc` is `qc`'s own dependency (`DEPENDS_ON`),
+   not an admin hat — otherwise every QC preset would have been seated at Admins and gained the admin pages.
+   `staff_tables.admin_keys` drops it.
+3. **The gate is a UNION:** `admits(admin, roles, admin_keys_any)` = a super, or a role in today's list, or (at the
+   Admins table AND holding one of the page's keys). Nobody can lose a page; a gain needs a key already held.
+   `may_read_org` (roles org_admin / admin / finance; keys = every admin key — reproduces both presets) and
+   `may_do_admin_work` (roles org_admin / admin; keys = NONE — option B; `('see_all',)` would also reproduce the
+   presets, and was option A). A future admin key opens a page by being named in that page's gate.
+4. **The landing follows the FIRST hat:** `defaultRoute` ignores `tables` (registry order would otherwise land her
+   on Organisation). The Guide already follows keys (#39 S4) and does not read tables; the Overview's sections stay
+   on the role (R2).
+
+**Alternatives considered:** option A (`see_all` opens the admin work pages: she would post announcements, make
+surveys and modules, edit sources and the witness override, edit sponsor terms and emails — a READ key opening
+writes); a stored tables column (a backfill and a second source of truth); gating every admin page by `in_admins`
+alone (Finance would have gained the admin-only pages).
+
+**Revisit if:** T2 adds and removes table seats; the owner wants a key seat to reach the work pages (add a key to
+`ADMIN_WORK_KEYS`, or new keys); the Overview or Guide should follow tables.
+
 ## Mobile M5: three sponsor tabs; on a phone the theme, the language and Log out live in My Account; funding is a sticky bar and one confirm that cannot be swiped away — 2026-11-03 (owner approved the mock-ups and both recommendations)
 
 **Context:** the sponsor portal's only navigation was one top row — logo, three tabs, the theme select and Log out —

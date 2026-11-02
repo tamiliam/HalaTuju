@@ -44,6 +44,10 @@ export interface AdminRole {
    *  menu and the profile gains the mentoring bits. False / absent for everybody else (a mentor login
    *  reads its `role`). */
   mentoring?: boolean
+  /** Team tables T1: the tables the server seats this person at (`staff_tables.tables`, derived, never
+   *  stored) — 'admins' / 'reviewers' / 'mentors'. The menu, the page guards (`mayOpen`), the landing
+   *  and the Guide read it; absent on a payload from before T1, which then reads exactly as before. */
+  tables?: string[]
 }
 
 export interface AdminAuthContextValue {

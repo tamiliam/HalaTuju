@@ -11,6 +11,8 @@ from rest_framework.response import Response
 
 from .. import sponsor_terms as sponsor_terms_mod
 from ..models import Sponsor
+from apps.courses import staff_tables
+
 from .base import _AdminBase
 
 
@@ -92,7 +94,7 @@ class _SponsorTermsBase(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (self.has_role(admin, 'admin') or admin.role == 'org_admin'):
+        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
             return None, self._deny_role()
         return admin, None
 

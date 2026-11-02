@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T1 — hats plumbing (not yet live)
+
+Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T1). Owner ruling 2026-11-03 (option B; decisions.md the same
+day). No migration, no stored field, no backfill.
+
+- **`apps/courses/staff_tables.py` (new, a leaf):** the three tables DERIVED from the row — `in_admins` (lead tier,
+  super, the `admin` / `finance` labels, or a team member holding an admin key: `see_all`, `spending`,
+  `payments_prepare`, `payments_check`, `payments_approve`; `see_all` held beside `qc` is `qc`'s dependency and
+  seats nobody), `in_reviewers` (the `reviewer` / `qc` labels, or `review` / `qc`; never the lead tier yet),
+  `in_mentors` (= `mentors_now`), `tables()`. Revoked rows, partners, source users and sponsors sit nowhere.
+- **One page gate, `staff_tables.admits(admin, roles=..., admin_keys_any=...)`: always today's role rule OR the
+  Admins table by a key** — nobody can lose a page. `may_read_org` (Organisation, Invitations, People, Sponsors, the
+  sponsor detail, sponsorships, the wallet-credit screens) opens on any admin key; `may_do_admin_work` (Sources and
+  the witness override, Mentors, the team roster `admin/admins/`, Announcements, Surveys, Development, sponsor
+  terms, sponsor / partner emails) keeps its roles and opens on NO key yet (`ADMIN_WORK_KEYS = ()`). A future key
+  opens a page by being named in its gate. Lead-only gates (configuration, gifts, contracts, sponsors' acceptance,
+  assigning, billing, requests, invitations' actions, team management) are untouched; the payment chain, QC,
+  assignment, Spending and the credit chain still read their own keys / roles.
+- **`GET admin/role/` serves `tables`.** The web menu (`navigation.ts` rows gain `adminKeys`; `admitsRow` reads
+  `tables`) and the page guards (new `lib/pageGuard.ts` `mayOpen`, used by Organisation, Invitations and the People
+  pages) follow it. **The landing and the Guide do not move** (owner: she lands by her first hat).
+- **The one visible change:** a reviewer whose keys seat her at Admins (live: one reviewer with `see_all` +
+  `spending`) now sees and opens Organisation, Invitations, People and Sponsors, read-only. She still cannot record,
+  sign or void a credit, open Payments, or reach any write page; her reviewer doors (assigned cases, self-QC) stay.
+- **Golden test:** `apps/scholarship/tests/test_team_tables_matrix.py` (every `api/v1/admin/` route x every method
+  but DELETE x 15 person-shapes; BEFORE fixture generated on faacf681) and
+  `halatuju-web/src/lib/__tests__/teamTablesMatrix.test.ts` (menu, page guards, landing, Guide x 13 payloads);
+  `MenuAndEndpointAgree` checks the two halves against each other. Only the declared reviewer-with-admin-keys
+  cells moved.
+
 ## Mobile M5 — the sponsor portal on phones (2026-11-03, not yet pushed)
 
 Owner approved the HTML mock-ups, three tabs with the theme, the language and Log out in My Account on a phone, and a

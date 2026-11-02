@@ -13,6 +13,7 @@ from ..models import Sponsor, Sponsorship
 from ..serializers_admin import AdminApplicationDetailSerializer
 from .. import sponsorship as sponsorship_service
 
+from .. import surface_gates
 from .base import _AdminBase
 from .gift_programmes import AdminProgrammeListView
 
@@ -36,7 +37,7 @@ class AdminSponsorDetailView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+        if not surface_gates.may_read_sponsors(admin):   # T1: the Sponsors surface's own gate
             return self._deny_role()
         sponsor = Sponsor.objects.filter(pk=pk).first()
         if sponsor is None:
@@ -180,7 +181,7 @@ class AdminSponsorshipListView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+        if not surface_gates.may_read_sponsors(admin):   # T1: the Sponsors surface's own gate
             return self._deny_role()
         # org-fence: _org_scoped on the application join, applied below.
         qs = (Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')

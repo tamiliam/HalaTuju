@@ -10,16 +10,20 @@ choice around it.
 """
 from django.conf import settings
 
+from apps.courses import staff_tables
+
 
 def may_read_sponsors(admin):
     """The Sponsors list (`AdminSponsorListView`): super / org_admin / Admin-General / finance —
-    finance READ-ONLY (role matrix 2026-07-23); qc and reviewer are refused."""
-    return admin is not None and (admin.is_super or admin.role in ('org_admin', 'admin', 'finance'))
+    finance READ-ONLY (role matrix 2026-07-23); qc and reviewer are refused. Team tables T1: also a
+    person at the ADMINS table by an admin key (`staff_tables.may_read_org`)."""
+    return staff_tables.may_read_org(admin)
 
 
 def may_read_team(admin):
-    """The organisation's People / Reviewers / Invitations screens (`_ReviewersBase._side`)."""
-    return admin is not None and (admin.is_super or admin.role in ('org_admin', 'admin', 'finance'))
+    """The organisation's People / Reviewers / Invitations screens (`_ReviewersBase._side`). Team tables
+    T1: also a person at the ADMINS table by an admin key (`staff_tables.may_read_org`)."""
+    return staff_tables.may_read_org(admin)
 
 
 def billing_live():

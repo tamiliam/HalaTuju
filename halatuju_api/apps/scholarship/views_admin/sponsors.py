@@ -115,7 +115,8 @@ class AdminSponsorPendingCountView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+        from .. import surface_gates
+        if not surface_gates.may_read_sponsors(admin):   # T1: the list's own gate, in lockstep
             return self._deny_role()
         return Response({'count': Sponsor.objects.filter(status='pending').count()})
 

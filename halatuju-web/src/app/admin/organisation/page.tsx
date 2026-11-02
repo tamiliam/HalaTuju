@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react'
 import { getInvitations, getPendingSponsorCount } from '@/lib/admin-api'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { canAccess, effectiveRole, visibleNav, NO_PROBES } from '@/lib/navigation'
+import { effectiveRole, visibleNav, NO_PROBES } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { programmeStaff } from '@/lib/adminStaff'
 import { Icon } from '@/components/admin/icons'
 import { PageHeader, useStaffAdmin } from '@/components/admin/StaffAdmin'
@@ -40,7 +41,7 @@ export default function OrganisationOverviewPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const r = effectiveRole(role)
-  const mayView = canAccess('/admin/organisation', r)
+  const mayView = mayOpen('/admin/organisation', role)   // T1: with the served tables
   const maySeeGifts = r === 'super' || r === 'org_admin'
 
   const { admins } = useStaffAdmin(token)
@@ -87,7 +88,8 @@ export default function OrganisationOverviewPage() {
 
   // Where each row of the sidebar's organisation group actually goes — reused so a shortcut
   // here can never point somewhere the menu does not.
-  const orgGroup = visibleNav({ role: r, probes: NO_PROBES })
+  const orgGroup = visibleNav({ role: r, probes: NO_PROBES, permissions: role?.permissions,
+                                mentoring: role?.mentoring, tables: role?.tables })
     .find((g) => g.scope === 'organisation')
   const hrefOf = (id: string) => orgGroup?.items.find((i) => i.id === id && !i.placeholder)?.href
 

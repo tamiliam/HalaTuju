@@ -76,6 +76,13 @@ parent's contact, creating / editing / cancelling runs (never signing as maker),
 **only under the per-run fallback** (nobody eligible holds `payments_approve`). Org admins stay OFF the
 Reviewers tab although the tier holds `qc` (owner, 2026-10-19).
 
+**Team tables T1 (owner, 2026-11-03, option B; `apps/courses/staff_tables.py`):** a team member holding an
+ADMIN key (`see_all`, `spending`, `payments_*`; `see_all` beside `qc` does not count) also sits at the Admins table,
+and opens the organisation READ pages the `admin` / `finance` presets open — Organisation, Invitations, People,
+Sponsors (+ sponsor detail, sponsorships, the wallet-credit screens, read only: recording / signing / voiding a
+credit stays on the role). The admin WORK pages (Sources, Mentors, the team roster, Announcements, Surveys,
+Development, sponsor terms and emails) stay on the roles below; the landing and the Guide stay on the first hat.
+
 **Preset-bound surfaces (R2) read the ROLE, not the set:** the Overview sections, the reviewer profile
 hold and profile cards, graduation review, sponsors, sources, sponsor emails, wallet credits, team
 read-only views. So a Reviewer given Spending (Rohini) gets the Spending page and keeps the reviewer's

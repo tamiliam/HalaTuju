@@ -7,7 +7,8 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { getStaffPermissions, type StaffPermissionsView } from '@/lib/admin-api/admins'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import RecordState from '@/components/admin/RecordState'
 import PanelTabs from '@/components/admin/PanelTabs'
@@ -35,7 +36,7 @@ export default function AdminPersonPage() {
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
   const viewerRole = effectiveRole(role)
-  const mayView = canAccess('/admin/organisation/reviewers', viewerRole)
+  const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
   const mayManage = viewerRole === 'super' || viewerRole === 'org_admin'
 
   const [view, setView] = useState<StaffPermissionsView | null>(null)

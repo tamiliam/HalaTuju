@@ -30,7 +30,7 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated, auth_sub
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from . import (password_change_flag, referral_links, staff_activity_hook, staff_permissions,
-               staff_reinvite)
+               staff_reinvite, staff_tables)
 from .recovery_session import is_fresh_recovery_for
 from .search import apply_people_search
 from .supabase_admin import MIN_PASSWORD_LENGTH, _service_headers
@@ -340,6 +340,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             # S7d: a staff member who also mentors NOW (an active mentor record) gets My students in
             # their menu; their landing does not change. A mentor login reads its role instead.
             'mentoring': admin.mentors_now,
+            # Team tables T1: the tables this person sits in (`staff_tables.tables`, derived, never
+            # stored) — the menu, the page guards, the landing and the Guide read them.
+            'tables': list(staff_tables.tables(admin)),
         })
 
 

@@ -9,7 +9,8 @@ import { useT } from '@/lib/i18n'
 import {
   getReviewerDetail, setReviewerPaused, setReviewerProgramme, type AdminReviewerDetail,
 } from '@/lib/admin-api'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import RecordState from '@/components/admin/RecordState'
 import PanelTabs from '@/components/admin/PanelTabs'
 import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
@@ -93,7 +94,7 @@ export default function AdminReviewerDetailPage() {
   const id = Number(params?.id)
   // The list route, not this one — `canAccess` resolves a detail page to its parent item, and the
   // two carry the same role set by construction. UX only; the endpoint is the fence.
-  const mayView = canAccess('/admin/organisation/reviewers', effectiveRole(role))
+  const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
 
   const [detail, setDetail] = useState<AdminReviewerDetail | null>(null)
   // A BOOLEAN, not a message. The load's only reader is `RecordState`, which owns the wording

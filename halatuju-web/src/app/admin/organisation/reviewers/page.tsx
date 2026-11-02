@@ -8,7 +8,8 @@ import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { listReviewers, type AdminItem, type AdminReviewer } from '@/lib/admin-api'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import { orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
 import {
   DEFAULT_SORT, REVIEWER_SORT_LABEL, firstDirFor, sortReviewers,
@@ -70,7 +71,7 @@ export default function AdminReviewersList() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   // UX only — the endpoint is the fence. This just avoids rendering a table that would 403.
-  const mayView = canAccess('/admin/organisation/reviewers', effectiveRole(role))
+  const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
   // The same pill idiom the Sponsors and Sources screens use, so the console has one way of doing
   // this. Reviewers is the default: "who can take this case?" is the daily question, and both
   // "who still has access?" and "what are volunteers told?" are deliberate second clicks.

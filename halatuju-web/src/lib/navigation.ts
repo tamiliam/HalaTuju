@@ -26,7 +26,7 @@
  * drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts
  */
 
-import { admitsRow, type StaffPermission } from './staffPermissions'
+import { ORG_READ_KEYS, admitsRow, type StaffPermission } from './staffPermissions'
 import { isSuperRole } from './superRole'
 
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
@@ -89,6 +89,7 @@ export interface NavItem {
   roles: readonly AdminRoleName[]
   /** #39 S3: a TEAM MEMBER opens this row by holding any of these keys (`admitsRow`), not by role. */
   perms?: readonly StaffPermission[]
+  adminKeys?: readonly StaffPermission[]   // Team tables T1: the Admins table ALSO opens it by a key (`admitsRow`)
   gate: NavGate
   /** Extra path prefixes that make this item the active one (sub-pages with no entry). */
   match?: readonly string[]
@@ -172,13 +173,9 @@ export interface NavGroup {
 /**
  * Every route in the console, grouped by scope.
  *
- * Role sets reproduce the guards that exist on the pages themselves:
- *   payments  super/admin/org_admin/finance  (payments/page.tsx `allowed`)
- *   contracts super/org_admin                (contracts/page.tsx `allowed`)
- *   sources   super/org_admin/admin          (sources/page.tsx `canManage`)
- *   billing   super/org_admin                (billing/page.tsx)
- * `sponsors` and `requests` have NO client guard — they rely on the backend alone. Their role
- * sets here drive menu visibility only and add no client-side block.
+ * Role sets reproduce the page guards (payments, contracts, sources `canManage`, billing); `sponsors`
+ * and `requests` have NO client guard — their sets drive menu visibility only (the backend fences).
+ * Team tables T1: `adminKeys` widens a row to the Admins table by a key, never narrows it.
  *
  * NO item is marked `placeholder` — `billingRates` was the last one and its page shipped on
  * 2026-09-11. See that field's own note for the rule that governs the next request for one.
@@ -231,7 +228,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // their own — and the row was a whole menu entry for a list of one. The old route stays as a
       // permanent redirect and is matched here, so a bookmark still lights the right sidebar row.
       { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         gate: { mode: 'always' }, exact: true,
         match: ['/admin/administration', '/admin/organisation/programmes'] },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
@@ -239,7 +236,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // bookmark, the `/admin/invite` redirect and the highlight rules keep working; only the
       // label and the page moved.
       { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.invitations', chord: 'T',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         gate: { mode: 'always' }, match: ['/admin/invite'] },
       // Sibling of Invitations, and deliberately next to it. **Invitations asks; People is where
       // everybody who is already in lives** — reviewers and admins, one tab each, and Revoke now
@@ -253,7 +250,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // likewise still `reviewers` — it is the snapshot key, never derived from the label.
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' } },
+        adminKeys: ORG_READ_KEYS, gate: { mode: 'always' } },
       // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
       // before the people who fund them, in the order the work actually flows.
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
@@ -264,7 +261,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'mentors', href: '/admin/organisation/mentors', labelKey: 'admin.mentors.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
         scope: 'organisation', roles: ['super', 'org_admin'],
@@ -478,6 +475,7 @@ export interface NavContext {
    */
   pathname?: string
   mentoring?: boolean   // S7d: `/admin/role/` `mentoring` (a staff member who mentors now); absent = no
+  tables?: readonly string[] | null   // Team tables T1: `/admin/role/` `tables`; absent = the rows' roles
 }
 
 /** A context with nothing probed yet — the safe default (see `canSee`). */
@@ -509,7 +507,7 @@ export function effectiveRole(
  * loaded". Treating 'unknown' as live would flash a dark feature in during the round trip.
  */
 export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide' {
-  if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring)) return 'hide'
+  if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring, ctx.tables)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
   if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
@@ -611,10 +609,10 @@ export function activeItem(pathname: string): NavItem | undefined {
  *
  * An unknown route returns true: absence from the registry must never invent a new block.
  */
-export function canAccess(href: string, role: AdminRoleName,
-                          permissions?: readonly string[] | null, mentoring?: boolean): boolean {
+export function canAccess(href: string, role: AdminRoleName, permissions?: readonly string[] | null,
+                          mentoring?: boolean, tables?: readonly string[] | null): boolean {
   const item = activeItem(href)
-  return item ? admitsRow(item, role, permissions, mentoring) : true
+  return item ? admitsRow(item, role, permissions, mentoring, tables) : true
 }
 
 /** An item paired with its already-translated label, which is all the palette needs. */
@@ -668,6 +666,7 @@ export function defaultRoute(role: { role?: string; is_super_admin?: boolean; pe
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
       if (item.placeholder) continue
+      // ⚠ NO `tables` (T1, owner 2026-11-03): a person lands by their FIRST hat, never on a page a key seat added.
       if (canSee(item, { role: r, probes: NO_PROBES, permissions: role?.permissions }) === 'show') return item.href
     }
   }

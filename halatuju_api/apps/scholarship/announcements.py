@@ -54,7 +54,9 @@ class AnnouncementError(Exception):
 
 def may_post(admin):
     """THE gate for every staff announcement door. A super, an organisation admin, an admin."""
-    return admin is not None and bool(admin.is_super or admin.role in POSTER_ROLES)
+    # Team tables T1: POSTER_ROLES, or the Admins table by an admin-work key (`staff_tables`).
+    from apps.courses import staff_tables
+    return staff_tables.may_do_admin_work(admin)
 
 
 # ── What is live, and to whom ─────────────────────────────────────────────────────────────────────

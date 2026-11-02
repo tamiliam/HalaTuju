@@ -54,14 +54,42 @@ export const TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer'] as const
  * (`mentoring`, the served `/admin/role/` `mentoring`) — My students joins their own menu.
  */
 export function admitsRow(
-  row: { roles: readonly string[]; perms?: readonly StaffPermission[]; staffMentors?: boolean },
+  row: { roles: readonly string[]; perms?: readonly StaffPermission[]; staffMentors?: boolean;
+         adminKeys?: readonly StaffPermission[] },
   role: string,
   permissions?: readonly string[] | null,
   mentoring?: boolean,
+  tables?: readonly string[] | null,
 ): boolean {
   if (row.staffMentors && mentoring === true) return true
   if (row.perms && permissions && (TEAM_ROLES as readonly string[]).includes(role)) {
     return row.perms.some((k) => permissions.includes(k))
   }
-  return row.roles.includes(role)
+  if (row.roles.includes(role)) return true
+  // Team tables T1: a person at the ADMINS table opens the row by an admin key they hold — the server's
+  // `staff_tables.admits`, which is ALWAYS a union with the row's roles (nobody loses a row).
+  if (row.adminKeys && tables?.includes(ADMINS_TABLE) && permissions) {
+    const held = adminKeysHeld(permissions)
+    return row.adminKeys.some((k) => held.includes(k))
+  }
+  return false
 }
+
+/** Team tables T1: the table names `/admin/role/` serves as `tables` (`staff_tables.TABLES`). */
+export const ADMINS_TABLE = 'admins'
+export const TABLE_NAMES = ['admins', 'reviewers', 'mentors'] as const
+
+/** The admin keys a person holds, as the server reads them (`staff_tables.admin_keys`): `see_all` held
+ *  beside `qc` is `qc`'s own dependency, never an admin hat. drift-test: teamTablesMatrix.test.ts */
+export function adminKeysHeld(permissions: readonly string[]): string[] {
+  const qc = permissions.includes('qc')
+  return permissions.filter((k) => ADMIN_KEYS.includes(k as StaffPermission) && !(qc && k === 'see_all'))
+}
+
+/** The keys that seat a team member at the Admins table (`staff_tables.ADMIN_KEYS`). */
+export const ADMIN_KEYS: readonly StaffPermission[] =
+  ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'manage_team']
+
+/** Team tables T1: the organisation pages an Admin READS (Organisation, Invitations, People, Sponsors) —
+ *  any admin key opens them for a person at the Admins table (`staff_tables.ORG_READ_KEYS`). */
+export const ORG_READ_KEYS: readonly StaffPermission[] = ADMIN_KEYS

@@ -88,7 +88,8 @@ def may_invite(caller):
 
 def may_read(caller):
     """Who may open the Mentors page: a super, an organisation admin, an admin (read-only)."""
-    return caller is not None and (caller.is_super or caller.role in ('org_admin', 'admin'))
+    from apps.courses import staff_tables   # T1: or the Admins table by an admin-work key
+    return staff_tables.may_do_admin_work(caller)
 
 
 def manageable(caller, mentor):

@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { effectiveRole } from '@/lib/navigation'
+import { mayOpen } from '@/lib/pageGuard'
 import {
   cancelInvitation, getInvitations, inviteSponsor,
   type AdminItem, type InvitationKind, type InvitationRow, type InvitationsPayload,
@@ -85,7 +86,7 @@ export default function OrganisationInvitationsPage() {
   const { t } = useT()
   const r = effectiveRole(role)
   const canManage = r === 'super' || r === 'org_admin'
-  const mayView = canAccess('/admin/organisation/staff', r)
+  const mayView = mayOpen('/admin/organisation/staff', role)   // T1: with the served tables
   // The Mentor chip only for the roles that may invite a mentor (super, org_admin).
   const kinds = canManage ? KINDS : KINDS.filter((k) => k !== 'mentor')
 

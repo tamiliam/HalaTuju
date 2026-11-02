@@ -6,8 +6,9 @@ and every importer are unchanged.
 """
 from rest_framework import status
 from rest_framework.response import Response
-from ..models import Donation, Sponsor
+from apps.courses import staff_tables
 
+from ..models import Donation, Sponsor
 from .base import _AdminBase
 
 
@@ -29,13 +30,14 @@ class _CreditsBase(_AdminBase):
     # Who may OPEN a credit screen. Mirrors the payments read gate: finance is admitted
     # because checking is its job; the per-step role logic lives in the service, so this
     # gate is deliberately broad and `sponsorship.sign_admin_credit` refuses the wrong step.
-    _READ_ROLES = ('org_admin', 'admin', 'finance')
+    # Team tables T1: `staff_tables.may_read_org` — super / org_admin / admin / finance, or the Admins table
+    # by an admin key (a READ: recording, signing and voiding stay on the role, in `sponsorship`).
 
     def _credits_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.is_super or admin.role in self._READ_ROLES):
+        if not staff_tables.may_read_org(admin):
             return None, self._deny_role()
         return admin, None
 

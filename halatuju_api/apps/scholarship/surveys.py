@@ -79,7 +79,9 @@ class SurveyError(Exception):
 
 def may_make(admin):
     """THE gate for every staff survey door. A super, an organisation admin, an admin."""
-    return admin is not None and bool(admin.is_super or admin.role in MAKER_ROLES)
+    # Team tables T1: MAKER_ROLES, or the Admins table by an admin-work key (`staff_tables`).
+    from apps.courses import staff_tables
+    return staff_tables.may_do_admin_work(admin)
 
 
 # ── Status, audience, who sees one ────────────────────────────────────────────────────────────────

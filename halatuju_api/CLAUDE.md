@@ -1158,6 +1158,22 @@ of My Account (`DisplaySegments.tsx`, `SponsorLogOut.tsx`); every pinned bar on 
 `data-page-bar` (guarded); funding = sticky fund bar + one `dismissible={false}` confirm Sheet with a ref lock.
 NEXT: M6 admin + reviewer cockpit (may split), M7, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 BUILT, NOT LIVE (hats plumbing; no migration)
+
+Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md`; ruling decisions.md 2026-11-03 (option B). A person's
+TABLES (Admins / Reviewers / Mentors) are DERIVED in `apps/courses/staff_tables.py` (a leaf; never stored):
+`in_admins`, `in_reviewers`, `in_mentors` (= `mentors_now`), `tables()`; served by `admin/role/` as `tables`.
+**Every admin page gate that is not lead-only goes through `staff_tables.admits` — today's role list OR the Admins
+table by a key, never instead**: `may_read_org` (surface_gates `may_read_sponsors` / `may_read_team`, sponsor
+pending-count, sponsorships, wallet-credit screens) and `may_do_admin_work` (Sources + witness, Mentors read,
+`admin/admins/`, Announcements / Surveys / Development `may_post` / `may_make`, sponsor terms, sponsor / partner
+emails; `ADMIN_WORK_KEYS = ()` — no key opens them yet). A new admin key opens a page by being added to its gate.
+Web: rows carry `adminKeys`, `admitsRow` reads `tables`, page guards call `lib/pageGuard.ts` `mayOpen`; the landing
+(`defaultRoute`) deliberately ignores `tables`. Golden tests: `scholarship/tests/test_team_tables_matrix.py`
+(fixture `fixtures/team_tables_access_before.json`, from faacf681 — never regenerate it; a moved cell is a bug or a
+line in `EXPECTED_CHANGES`) and `halatuju-web/src/lib/__tests__/teamTablesMatrix.test.ts`. Deploy: API first, then
+web (an old web ignores `tables`). NEXT: T2 (the Team page).
+
 ### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 10 LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK) — development modules
 
 **Next free migration numbers: scholarship 0202, courses 0092.** **scholarship 0201_development_modules — MIGRATE
