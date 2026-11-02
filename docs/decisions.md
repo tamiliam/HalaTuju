@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## What a chip colour means: green fine, yellow look, red wrong (owner, 2026-11-02)
+
+The reviewer reads the chips. **Green** = fine, nothing to do. **Yellow** = the reviewer should look (an edge case,
+or judgement needed). **Red** = something is WRONG with the document. So a Pathway chip is never red: a letter for a
+different pathway is not a fault in the letter (yellow, and the Check 2 confirm query asks the student). When the
+student declared no pathway and a GENUINE offer set it, Pathway is green. The full offer-chip table and the audit
+are offer exact-read S6 (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`).
+
 ## The not_offer_letter money ruling is DEFERRED to its own money sprint (owner, 2026-11-02)
 
 **Context.** The offer exact-read S4 review proposed that a document scored `not_offer_letter` never sets

@@ -1152,6 +1152,16 @@ phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` i
 Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. NEXT: M4c (My Bursary, Home, landing,
 report, info/legal, pathway, onboarding, quizzes) with the M4b pattern.
 
+### Offer letters read exactly (separate stream) — S1–S4 LIVE 2026-11-02 (main cfd02d91; api-01237-gdp), NEXT = S5
+
+Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. Reader `offer_reader.py` (`OFFER_READER_VERSION`
+2.4.0) + IC guard `offer_ic.py` (a non-label or source-less IC is corroborate-only: exactly the profile IC, never a
+`mismatch`). Any reader change: score with `eval/offer_read_check.py` on held-out AND dev, then the production dry
+run `eval/offer_s4_dry_run.py` (read-only, rolled back; send the realign/link/ticks diff to the matcher session) and
+an adversarial review before the push. Paid Gemini runs only on the owner's yes. NEXT: S5 known-format exact reader;
+S6 genuineness + the owner's chip-colour ruling (`docs/decisions.md` 2026-11-02; app 329 named); S7 live re-read;
+the money sprint is separate (TD-465).
+
 ### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 9 LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK) — surveys
 
 **Next free migration numbers: scholarship 0201, courses 0092.** **scholarship 0200_surveys — MIGRATE FIRST by hand**
