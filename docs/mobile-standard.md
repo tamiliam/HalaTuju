@@ -197,6 +197,23 @@ Three kinds of check, from cheapest to most human:
 - **Checked by:** review (the workspace's Stitch-first rule).
 - **Copy this:** new pages and redesigns get a Stitch screen at phone width first, then desktop.
 
+### 15. One box level; sections on phones
+- **Why:** owner, 2026-11-02, comparing our phone screens with the Grab app: a card inside a card inside a 24 px
+  gutter leaves a 300 px column of nested borders. A phone reads best as full-width sections.
+- **The rule:** page gutter 16 px on a phone (`px-4`, 24 px from `md`). AT MOST ONE box level: below `md` an outer
+  card is a plain full-width SECTION — no border, no rounded corners, no padding beyond the gutter — with its
+  heading, separated from the next by a thin divider; from `md` it is the card it always was. Nothing inside a
+  section is boxed again: rows, answer groups and particulars are separated by dividers (`divide-y`) or spacing.
+  Exceptions: genuine controls (inputs, buttons, chips) and coloured status callouts. Tighter rhythm (sections
+  ~16 px apart, rows 8-12 px) — never at the cost of a 44 px target or a 16 px field.
+- **Checked by:** static guard (`mobileStandard.test.ts`, rule 15: the swept screens draw no hand-written white
+  card; `PHONE_SECTION` boxes nothing below `md`) and review. Swept in Mobile M4: apply, application (step
+  wizard, documents, Action Centre, post-award tasks) and award; the other student pages are the next sprint.
+- **Copy this:** `src/lib/phoneSection.ts` — `PHONE_GUTTER` on the page's `<main>`, `PHONE_SECTION` for what was
+  a card, `PHONE_ROWS` for the items inside it, `PHONE_INNER_BOX` (or `md:`-prefixed box classes) for a group that
+  was boxed inside a card, `PHONE_BLEED` for a sticky bar that runs edge to edge across the gutter. A test that
+  found a card by its look (`.border.rounded-lg`) finds it by a hook instead (`data-doc-card`).
+
 ## Tamil type
 
 Tamil paints in **Mukta Malar** (owner, 2026-10-31; live from Mobile M1a), copied byte for byte from

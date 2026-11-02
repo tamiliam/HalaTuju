@@ -19,6 +19,7 @@ import {
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
 import Sheet from '@/components/Sheet'
 import { AwardContractReader, AwardDeclineSheet } from '@/components/scholarship/AwardContract'
+import { PHONE_BLEED, PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 
 /** Guardian relationship codes — must match Consent.GUARDIAN_RELATIONSHIPS on
  *  the backend (mirrors ScholarshipConsent's list). */
@@ -117,7 +118,7 @@ export default function ScholarshipAwardPage() {
     return (
       <div className="flex min-h-screen flex-col">
         <AppHeader />
-        <main className="container mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+        <main className={`container mx-auto w-full max-w-3xl flex-1 ${PHONE_GUTTER} py-10`}>
           {children}
         </main>
         <AppFooter />
@@ -295,7 +296,7 @@ export default function ScholarshipAwardPage() {
   if (justSigned || signed) {
     const pdfUrl = signed?.pdf_url || null
     return wrap(
-      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+      <div className={`${PHONE_SECTION} text-center md:p-8`}>
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-positive-100">
           <svg className="h-8 w-8 text-positive-700" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -318,7 +319,7 @@ export default function ScholarshipAwardPage() {
   // Award cool-off: accepted, being finalised — confirmation + onboarding open in a couple of days.
   if (finalising) {
     return wrap(
-      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+      <div className={`${PHONE_SECTION} text-center md:p-8`}>
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-info-100">
           <svg className="h-8 w-8 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -336,7 +337,7 @@ export default function ScholarshipAwardPage() {
   // Gentle empty state — no offer waiting.
   if (!offer) {
     return wrap(
-      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+      <div className={`${PHONE_SECTION} text-center md:p-8`}>
         <p className="mb-5 text-ground-700">{t('scholarship.award.empty.body')}</p>
         <Link href="/scholarship/application" className="btn-primary inline-block">
           {t('scholarship.award.empty.cta')}
@@ -351,7 +352,7 @@ export default function ScholarshipAwardPage() {
     : ''
 
   if (unavailable && !preview && !signed) {
-    return wrap(<p className="rounded-2xl border bg-ground-0 p-8 text-center text-ground-700 shadow-sm"
+    return wrap(<p className={`${PHONE_SECTION} text-center text-ground-700 md:p-8`}
       data-testid="award-agreement-unavailable">{t('scholarship.award.error.no_active_template')}</p>)
   }
 
@@ -380,14 +381,14 @@ export default function ScholarshipAwardPage() {
     const canSubmit = studentAgreed && guarantorAgreed && studentNameOk && guarantorOk && phoneVerified && !submitting
 
     return wrap(
-      <form onSubmit={signAndAccept} className="space-y-6">
+      <form onSubmit={signAndAccept} className="md:space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.award.bursary.heading')}</h1>
           <p className="mt-2 text-ground-600">{t('scholarship.award.bursary.intro')}</p>
         </div>
 
         {/* Particulars summary */}
-        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <div className={PHONE_SECTION}>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-ground-500">
             {t('scholarship.award.bursary.particulars')}
           </h2>
@@ -418,7 +419,7 @@ export default function ScholarshipAwardPage() {
         {error && <InfoBox kind="block">{error}</InfoBox>}
 
         {/* STUDENT signature */}
-        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <div className={PHONE_SECTION}>
           <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.bursary.student.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.bursary.student.intro')}</p>
 
@@ -459,7 +460,7 @@ export default function ScholarshipAwardPage() {
         </div>
 
         {/* PARENT / GUARANTOR (surety) — signs in-session, same device */}
-        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <div className={PHONE_SECTION}>
           <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.bursary.guarantor.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.bursary.guarantor.intro')}</p>
 
@@ -501,7 +502,7 @@ export default function ScholarshipAwardPage() {
 
           {/* Same-session parent verification — a one-time PIN to the parent's phone on
               file (read server-side, never editable here). Required before signing. */}
-          <div className="mt-5 rounded-xl border border-ground-200 bg-ground-50 p-4">
+          <div className="mt-5 md:rounded-xl md:border md:border-ground-200 md:bg-ground-50 md:p-4">
             <p className="text-sm font-semibold text-ground-800">
               {t('scholarship.award.bursary.guarantor.pin.title')}
             </p>
@@ -580,7 +581,7 @@ export default function ScholarshipAwardPage() {
           <p className="text-sm text-ground-500">{t('scholarship.award.confirmed.acceptBy', { date: deadline })}</p>
         )}
 
-        <div className="sticky bottom-0 z-10 -mx-6 space-y-1 border-t border-ground-200 bg-ground-0 px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0">
+        <div className={`sticky bottom-0 z-10 ${PHONE_BLEED} space-y-1 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0`}>
           <button type="submit" disabled={!canSubmit} className="btn-primary min-h-12 w-full disabled:opacity-50">
             {submitting ? t('scholarship.award.bursary.signing') : t('scholarship.award.bursary.signSubmit')}
           </button>
@@ -598,7 +599,7 @@ export default function ScholarshipAwardPage() {
 
   // ── The plain (flag-off) accept/decline page — unchanged ──
   return wrap(
-    <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+    <div className={`${PHONE_SECTION} text-center md:p-8`}>
       {/* Award badge */}
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-info-100">
         <svg className="h-8 w-8 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">

@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## One box level; sections on phones (rule 15) — owner, 2026-11-02 (Grab reference), Mobile M4
+
+**Context:** the owner compared our phone screens with the Grab app. Ours nested a card (border, rounded corners,
+20-24 px padding) inside a 24 px gutter, and often a bordered box inside that card — the content column shrank to
+~300 px of stacked borders. **Decision:** on phones (< `md`) the page gutter is 16 px; an outer card becomes a plain
+full-width SECTION (no border, no rounding, no padding beyond the gutter, a heading, a thin divider to the next);
+nothing inside it gets its own box — rows are divided (`divide-y`) or spaced; only genuine controls and coloured
+status callouts keep a box; rhythm tightens (~16 px between sections, 8-12 px between rows) without dropping a
+44 px target or a 16 px field. From `md` today's cards stay. **How:** one module, `src/lib/phoneSection.ts`
+(`PHONE_GUTTER`, `PHONE_SECTION`, `PHONE_ROWS`, `PHONE_INNER_BOX`, `PHONE_BLEED`), applied to every M4 screen; a
+static guard keeps the swept screens on it; rule 15 in `docs/mobile-standard.md`. **Not in M4:** the other student
+pages (the next sprint sweeps them) and a bottom tab bar (the next sprint, Stitch first). **Revisit if:** a
+section needs to stand out on a phone — then a coloured callout, never a second box.
+
 ## Mobile M4: the apply form keeps a draft in THIS TAB only; the award page reads back what the server holds as done; mobile-check counts a file picker's label — 2026-11-01 (owner rulings, Mobile M4)
 
 **1. Where the half-filled apply form is kept — this tab's sessionStorage only (owner: option 1).**

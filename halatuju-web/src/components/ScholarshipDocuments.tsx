@@ -42,6 +42,7 @@ import {
   IncomeProofCard,
 } from './ScholarshipDocuments/cards'
 import IncomeWizard from './ScholarshipDocuments/IncomeWizard'
+import { PHONE_ROWS } from '@/lib/phoneSection'   // rule 15: document rows divided on a phone
 import type { RemoveConfirmProps } from './ScholarshipDocuments/RemoveConfirm'
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -223,7 +224,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     return (
       <section>
         {sectionHead(key)}
-        <div className="space-y-3">{card(dt, { ...extra, required: state === 'required' })}</div>
+        <div className={PHONE_ROWS}>{card(dt, { ...extra, required: state === 'required' })}</div>
       </section>
     )
   }
@@ -238,7 +239,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   const academic = higherState === 'off' ? section('academic', 'results_slip') : (
     <section>
       {sectionHead('academic')}
-      <div className="space-y-3">
+      <div className={PHONE_ROWS}>
         {card('higher_results', {
           required: higherState === 'required',
           helpOverride: t('documentsTab.help.higher_results'),

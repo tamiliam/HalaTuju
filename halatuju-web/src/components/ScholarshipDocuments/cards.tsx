@@ -111,7 +111,7 @@ function FileChip({
 }) {
   return (
     <div>
-    <div className="flex min-h-11 items-center rounded-lg border border-ground-200 bg-ground-50/60 px-3 py-2">
+    <div className="flex min-h-11 items-center md:rounded-lg md:border md:border-ground-200 md:bg-ground-50/60 md:px-3 md:py-2">
       <span className="flex min-w-0 items-center gap-2 text-sm text-ground-600">
         <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
@@ -375,7 +375,7 @@ export function SingleDocCard({
   // ── Collapsed "done" card: green summary, tap to reveal the detail. ──
   if (done) {
     return (
-      <div className="rounded-lg border border-positive-200 overflow-hidden">
+      <div className="rounded-lg border border-positive-200 overflow-hidden" data-doc-card={docType}>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -410,7 +410,7 @@ export function SingleDocCard({
   }
 
   return (
-    <div className="border rounded-lg p-3">
+    <div className="py-3 md:rounded-lg md:border md:p-3" data-doc-card={docType}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <span className="text-sm font-medium text-ground-800">{title}</span>
@@ -470,7 +470,7 @@ export function IncomeProofCard({
   const busy = busyKeys.has(activeType)
 
   return (
-    <div className="border rounded-lg p-3">
+    <div className="py-3 md:rounded-lg md:border md:p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <span className="text-sm font-medium text-ground-800">

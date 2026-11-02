@@ -45,6 +45,7 @@ import { isReferralNotOffered } from '@/lib/referralSources'
 import GiftClosed from '@/components/scholarship/GiftClosed'
 import AlreadyApplied from '@/components/scholarship/AlreadyApplied'
 import { ApplyProgress, ApplyFooter } from '@/components/scholarship/ApplyStepper'
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 // THE DRAFT (Mobile M4, owner: this tab only) - no IC, signature or consent; bound to her id + programme.
 import { readApplyDraft, writeApplyDraft, clearApplyDraft, useApplyDraft } from '@/lib/applyDraft'
 
@@ -280,7 +281,7 @@ export default function ScholarshipApplyPage() {
   // `headed` false: no heading/intro — before the intake answers, and on the chooser (no gift chosen).
   function wrap(children: React.ReactNode, headed = true) {
     return (
-      <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
+      <main className={`container mx-auto ${PHONE_GUTTER} py-10 max-w-2xl lg:max-w-4xl`}>
         {headed && <><h1 className="text-2xl font-bold text-ground-900 mb-2">{card.title}</h1>
           {/* pre-line: the gift's own line breaks and blank lines show (request #34). Text, never HTML. */}
           <p className="text-ground-600 mb-6 whitespace-pre-line" data-testid="apply-intro">{card.intro}</p></>}
@@ -326,7 +327,7 @@ export default function ScholarshipApplyPage() {
     return wrap(
       <>
         {criteria}
-        <div className="bg-ground-0 border rounded-2xl p-6 shadow-sm">
+        <div className={PHONE_SECTION}>
           <p className="text-ground-600 text-sm mb-4">{t('scholarship.apply.gate.readFreely')}</p>
           <button onClick={() => showAuthGate('apply')} className="btn-primary w-full flex items-center justify-center gap-2">
             <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.18v2.92h5.27c-.23 1.46-1.64 4.28-5.27 4.28-3.17 0-5.76-2.62-5.76-5.85s2.59-5.85 5.76-5.85c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.46 3.6 14.43 2.7 12.17 2.7 6.91 2.7 2.7 6.91 2.7 12.45s4.21 9.75 9.47 9.75c5.47 0 9.09-3.84 9.09-9.26 0-.62-.07-1.1-.16-1.84z"/></svg>
@@ -615,7 +616,7 @@ export default function ScholarshipApplyPage() {
       {/* Which gift this is for; "Change" (back to the chooser, edits kept) only when another is open */}
       <ApplyingTo name={gift.name} onChange={gift.canChange ? gift.change : undefined} />
       {/* Context bar — profile is the source of truth */}
-      <div className="flex items-center gap-3 bg-ground-0 border rounded-2xl px-4 py-3 mb-4 shadow-sm">
+      <div className={`${PHONE_SECTION} flex items-center gap-3`}>
         <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
           {(profile?.name || '?').trim().charAt(0).toUpperCase()}
         </div>
@@ -659,7 +660,7 @@ export default function ScholarshipApplyPage() {
           <ApplyProgress index={tabIndex} total={TAB_ORDER.length} label={t(`scholarship.apply.section.${sectionKey(tab)}`)} />
 
           {/* Active section card */}
-          <div className="bg-ground-0 border rounded-2xl p-5 shadow-sm mb-4">
+          <div className={PHONE_SECTION}>
             <div className="mb-3 flex items-start justify-between gap-3">
               <h2 className="font-semibold text-ground-900">{tabIndex + 1}. {t(`scholarship.apply.section.${sectionKey(tab)}`)}</h2>
               {tab === 'plans' && <div ref={setSwitchSlot} />}

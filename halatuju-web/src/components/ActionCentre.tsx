@@ -50,7 +50,7 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { setOnboardingReturn } from '@/lib/scholarship'
-import { uploadRefusal } from '@/lib/uploadCheck'; import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
+import { uploadRefusal } from '@/lib/uploadCheck'; import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'; import { PHONE_SECTION } from '@/lib/phoneSection'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
@@ -334,7 +334,7 @@ function ActionCard({
   }
 
   return (
-    <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
+    <div className={PHONE_SECTION}>
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-shape">
           <KindIcon icon={iconFor(item.kind)} />

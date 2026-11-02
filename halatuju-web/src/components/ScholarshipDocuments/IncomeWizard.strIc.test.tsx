@@ -101,7 +101,7 @@ const student = async (route: 'str' | 'salary', documents: api.ApplicantDocument
 
 /** The card a title sits in — the bordered box that also holds its file input. */
 const cardOf = (titleKey: string): HTMLElement => {
-  const card = screen.getByText(titleKey, { exact: false }).closest('.border.rounded-lg')
+  const card = screen.getByText(titleKey, { exact: false }).closest('[data-doc-card]')   // a hook, not the card's look (rule 15 drops its border on a phone)
   if (!card) throw new Error(`no card around ${titleKey}`)
   return card as HTMLElement
 }

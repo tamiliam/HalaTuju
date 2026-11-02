@@ -1,4 +1,5 @@
 'use client'
+import { PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 
 /**
  * The two POST-AWARD tasks of the Action Centre — the bank-details card and the Vircle eWallet
@@ -113,7 +114,7 @@ export function BankDetailsTask({
     && !accountNumberTooShort
 
   return (
-    <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
+    <div className={PHONE_SECTION}>
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-shape">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
@@ -234,7 +235,7 @@ export function VircleTask({
   }
 
   return (
-    <div className="rounded-2xl border border-ground-200 bg-ground-0 p-4 shadow-sm">
+    <div className={PHONE_SECTION}>
       <div className="flex gap-3">
         <span aria-hidden className="text-xl">💳</span>
         <div className="min-w-0 flex-1">

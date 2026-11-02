@@ -270,6 +270,37 @@ describe('student scholarship screens ask in a Sheet, never window.confirm', () 
   })
 })
 
+// ── Rule 15 (owner, 2026-11-02): one box level; sections on phones ─────────────────────────────
+/**
+ * On a phone a card is a plain full-width SECTION and nothing inside it is boxed again (the Grab
+ * comparison). The classes live in ONE place, `src/lib/phoneSection.ts`. Swept so far: the Mobile M4
+ * screens below — a white bordered card class written by hand there (instead of PHONE_SECTION) fails.
+ * The next sprint adds the other student pages to this list.
+ */
+const RULE15_SWEPT = [
+  'src/app/scholarship/apply/page.tsx', 'src/app/scholarship/award/page.tsx',
+  'src/app/scholarship/application/page.tsx', 'src/components/ScholarshipNextSteps.tsx',
+  'src/components/ActionCentre.tsx', 'src/components/scholarship/PostAwardTasks.tsx',
+]
+describe('rule 15 — one box level; sections on phones', () => {
+  test('the swept screens draw no hand-written white card (they use PHONE_SECTION)', () => {
+    const card = /(?<!md:)rounded-2xl[^"`]*(?<!md:)\bborder\b[^"`]*(?<!md:)bg-ground-0|(?<!md:)bg-ground-0[^"`]*(?<!md:)\bborder\b[^"`]*(?<!md:)rounded-2xl/
+    const offenders = RULE15_SWEPT.filter((rel) => card.test(readWeb(rel, 'a rule-15 screen')
+      .split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')))
+    expect(offenders).toEqual([])
+    for (const rel of RULE15_SWEPT) expect(readWeb(rel, 'a rule-15 screen')).toContain("from '@/lib/phoneSection'")
+  })
+  test('the sections are a card from md, and plain (no border, no rounding) below it', () => {
+    const src = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
+    const section = (src.match(/PHONE_SECTION = '([^']+)'/) ?? [])[1] ?? ''
+    for (const t of section.split(' ')) {
+      if (/^(rounded|shadow|bg-|p-)/.test(t)) throw new Error(`PHONE_SECTION boxes a phone too: ${t}`)
+    }
+    expect(section).toMatch(/md:rounded-2xl/)
+    expect(src).toMatch(/PHONE_GUTTER = 'px-4 md:px-6'/)
+  })
+})
+
 // ── Rule 5: one shared Sheet, no hand-rolled overlays ─────────────────────────────────────────
 /**
  * Every hand-rolled `fixed inset-0` overlay re-decided max height, inner scroll, the close target

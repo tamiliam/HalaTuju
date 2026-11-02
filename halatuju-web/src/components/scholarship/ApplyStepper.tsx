@@ -14,6 +14,7 @@
  * The note is TRUE by construction: the form keeps its draft in this tab only (`lib/applyDraft.ts`).
  */
 import { useT } from '@/lib/i18n'
+import { PHONE_BLEED } from '@/lib/phoneSection'
 
 export function ApplyProgress({ index, total, label }: { index: number; total: number; label: string }) {
   const { t } = useT()
@@ -42,7 +43,7 @@ export function ApplyFooter({ first, last, submitting, onBack, onNext }: {
   const { t } = useT()
   return (
     <div data-testid="apply-footer"
-      className="sticky bottom-0 z-10 -mx-6 mb-4 flex gap-3 border-t border-ground-200 bg-ground-0 px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:mx-0 lg:px-0">
+      className={`sticky bottom-0 z-10 ${PHONE_BLEED} mb-4 flex gap-3 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:mx-0 lg:px-0`}>
       {!first && (
         <button type="button" onClick={onBack} className="btn-secondary min-h-12 flex-1">{t('scholarship.apply.back')}</button>
       )}

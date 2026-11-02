@@ -17,6 +17,7 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 // Already in this route's bundle through AppHeader — no new weight (the route is at its budget).
 import { rememberBursaryFile } from '@/lib/storage'
+import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 
 /**
  * The post-submission home for an applicant. A shortlisted student completes
@@ -97,7 +98,7 @@ export default function ScholarshipApplicationPage() {
     return (
       <div className="flex min-h-screen flex-col">
         <AppHeader />
-        <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
+        <main className={`container mx-auto w-full flex-1 ${PHONE_GUTTER} py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
           <h1 className={`${app?.cohort_name ? 'mb-1' : 'mb-6'} text-2xl font-bold text-ground-900`}>{t('scholarship.application.title')}</h1>
           {/* Which gift (round) this application is for — served on the application itself. */}
           {app?.cohort_name && (
@@ -156,7 +157,7 @@ export default function ScholarshipApplicationPage() {
   // than convenient, and it is unreachable while one programme runs.
   if (!app && severalCount > 1) {
     return wrap(
-      <div className="rounded-2xl border bg-ground-0 p-6 text-center shadow-sm">
+      <div className={`${PHONE_SECTION} text-center`}>
         <p className="mb-2 font-semibold text-ground-900">
           {t('scholarship.application.multiple.title')}
         </p>
@@ -177,7 +178,7 @@ export default function ScholarshipApplicationPage() {
   if (finished) {
     return wrap(
       <>
-        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <div className={PHONE_SECTION}>
           <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.finishedTitle')}</h2>
           <p className="text-ground-700">{t('scholarship.application.finishedBody')}</p>
           <Link href="/scholarship/apply" className="mt-4 inline-block font-medium text-primary-600 hover:underline">
@@ -191,7 +192,7 @@ export default function ScholarshipApplicationPage() {
 
   if (!app) {
     return wrap(
-      <div className="rounded-2xl border bg-ground-0 p-6 text-center shadow-sm">
+      <div className={`${PHONE_SECTION} text-center`}>
         <p className="mb-4 text-ground-700">{t('scholarship.application.none')}</p>
         <Link href="/scholarship/apply" className="btn-primary inline-block">
           {t('scholarship.application.applyCta')}
@@ -260,7 +261,7 @@ export default function ScholarshipApplicationPage() {
         <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.receivedTitle')}</h2>
         <p className="text-ground-700">{t('scholarship.application.receivedBody')}</p>
       </div>
-      <div className="mt-6 rounded-2xl border bg-ground-0 p-5 shadow-sm">
+      <div className={`mt-6 ${PHONE_SECTION}`}>
         <h3 className="mb-3 font-semibold text-ground-900">{t('scholarship.nextSteps.whatNext.title')}</h3>
         <ol className="space-y-3">
           {['step1', 'step2', 'step3', 'step4'].map((s, i) => (

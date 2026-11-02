@@ -30,6 +30,9 @@ holds as done (decisions.md, the Mobile M4 entry). Consent / PII / money / ident
   decline. **API:** `GET /scholarship/award/` → `bursary_preview.comprehension_passed` and
   `.guarantor_phone_verified` (`signing_progress.py`, read-only, the signature's own rules), so a reload skips a
   passed quiz and a still-valid parent PIN.
+- **One box level on phones (rule 15, owner 2026-11-02, the Grab comparison)**: 16 px gutter, cards become plain
+  full-width sections below `md`, nothing boxed inside them (document rows divided, wizard groups and the PIN panel
+  unboxed); `src/lib/phoneSection.ts` is the one home for the next sprint's sweep of the other student pages.
 - **mobile-check** measures the label of a file input (it hid the 20 px Choose / Replace links); sandbox surfaces
   `apply-draft-restored`, `documents-remove`, `award-sign-adult`, `award-sign-minor`, `award-plain-minor`
   (synthetic sign-in, `src/sandbox/scholarshipM4Surfaces.tsx`).

@@ -1,4 +1,5 @@
 'use client'
+import { PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (owner, 2026-11-02)
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -332,7 +333,7 @@ export default function ScholarshipNextSteps({
         <InfoBox kind="info">{t('scholarship.nextSteps.story.langNote')}</InfoBox>
 
         {/* Card A — About your family (structured roster, 2026-06 redesign) */}
-        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-5">
+        <div className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-50 md:p-4 space-y-5">
           <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
 
           <FamilyRosterFields
@@ -371,7 +372,7 @@ export default function ScholarshipNextSteps({
             Layer 0 Sprint 4: drawn only if this programme asks the address question;
             required markers follow the catalogue (the server gate reads the same answer). */}
         {asks('address') && (
-        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-4">
+        <div className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-50 md:p-4 space-y-4">
           <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
           <p className="text-xs text-ground-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
 
@@ -429,7 +430,7 @@ export default function ScholarshipNextSteps({
             switched off is not drawn, and the whole card collapses when none of the four is
             asked (computed here, never stored). */}
         {STORY_QUESTION_CODES.some(asks) && (
-        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-4">
+        <div className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-50 md:p-4 space-y-4">
           <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
 
           {/* aspirations */}
@@ -549,7 +550,7 @@ export default function ScholarshipNextSteps({
             || [pathway, app.pre_u_track, app.pre_u_institution].filter(Boolean).join(' · ')
             || pathway
           return label ? (
-            <div className="rounded-lg border border-ground-200 bg-ground-50 p-3">
+            <div className="md:rounded-lg md:border md:border-ground-200 md:bg-ground-50 md:p-3">
               <p className="text-xs uppercase tracking-wide text-ground-400">
                 {t('scholarship.nextSteps.funding.chosenStudyLabel')}
               </p>
@@ -802,7 +803,7 @@ export default function ScholarshipNextSteps({
           </p>
 
           {/* Active section card */}
-          <div id="next-steps-active" className="bg-ground-0 border rounded-2xl p-5 shadow-sm scroll-mt-6">
+          <div id="next-steps-active" className={`${PHONE_SECTION} scroll-mt-6`}>
             <h2 className="font-semibold text-ground-900 mb-4">
               {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${shownTab}`)}
             </h2>
@@ -818,7 +819,7 @@ export default function ScholarshipNextSteps({
       </div>
 
       {/* Bottom tab bar (mobile only) */}
-      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-6 px-2 lg:hidden mt-4">
+      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-4 md:-mx-6 px-2 lg:hidden mt-4">
         {steps.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">

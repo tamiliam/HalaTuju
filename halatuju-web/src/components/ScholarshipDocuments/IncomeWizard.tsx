@@ -438,7 +438,7 @@ export default function IncomeWizard({
               Each card names the earner ("Father's STR document", "Father's IC"), so the box needs no
               header. Green BORDER (no fill) + a "Complete" badge once every compulsory doc is on file.
               Supplementary income evidence (salary slip / EPF / utilities) renders BELOW, outside the box. */}
-          <div className={`rounded-lg border bg-ground-50/60 p-2.5 space-y-2 ${
+          <div className={`md:rounded-lg md:border md:bg-ground-50/60 md:p-2.5 space-y-2 ${
             strComplete ? 'border-positive-300' : 'border-ground-100'}`}>
             {strComplete && (
               <div className="flex justify-end">
@@ -505,7 +505,7 @@ export default function IncomeWizard({
               <div className="mt-2"><IncomeClusterCoach member={block.member} route="salary" docs={docs} token={token} t={t} lang={lang} /></div>
             )
             return (
-            <div key={block.member} className="rounded-lg border border-ground-100 bg-ground-50/60 p-2.5 space-y-2">
+            <div key={block.member} className="md:rounded-lg md:border md:border-ground-100 md:bg-ground-50/60 md:p-2.5 space-y-2">
               <p className="text-xs font-semibold text-ground-700">{iq(`member.${block.member}`)}</p>
               {block.compulsory.map(({ docType, member }) => (
                 <div key={docKey(docType, member)}>
@@ -541,7 +541,7 @@ export default function IncomeWizard({
             </div>
           )})}
           {strIcMembers.map((m) => (
-            <div key={m} className="rounded-lg border border-ground-100 bg-ground-50/60 p-2.5 space-y-2">
+            <div key={m} className="md:rounded-lg md:border md:border-ground-100 md:bg-ground-50/60 md:p-2.5 space-y-2">
               <p className="text-xs font-semibold text-ground-700">{iq(`member.${m}`)}</p>
               {strIcCard(m)}
             </div>
