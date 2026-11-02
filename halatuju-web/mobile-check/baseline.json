@@ -99,32 +99,32 @@
     "/contact @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/cookies @360 en": {
       "overflow": 0,
@@ -219,32 +219,32 @@
     "/get-started @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/get-started @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/get-started @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/get-started @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/get-started @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/get-started @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/login @360 en": {
       "overflow": 0,
@@ -309,32 +309,32 @@
     "/scholarship @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @360 en": {
       "overflow": 0,
@@ -906,6 +906,96 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:bursary-news @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-news @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-news @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-news @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-news @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-news @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-overview @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:bursary-surveys @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:category-colours @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1236,6 +1326,66 @@
       "smallInputs": 0,
       "smallTargets": 19
     },
+    "sandbox:onboarding-exam-type @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-exam-type @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-exam-type @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-exam-type @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-exam-type @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-exam-type @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:onboarding-grades @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:onboarding-stepper @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1412,6 +1562,36 @@
       "smallTargets": 2
     },
     "sandbox:programme-config-two-gifts @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:quiz @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 2

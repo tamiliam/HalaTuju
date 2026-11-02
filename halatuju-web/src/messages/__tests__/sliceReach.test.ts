@@ -420,7 +420,8 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', S
     loader: path.join(SRC, 'lib', 'messagesBursary.ts'),
     key: /^bursaryTabs\.|\$\{\}bursaryTabs\./,
     notKey: /^bursaryTabs\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
-    owners: ['/scholarship/bursary'],
+    // Plus the sandbox (Mobile M4c: it mounts the My Bursary PAGE itself, which brings the slice with it).
+    owners: ['/sandbox', '/sandbox/[surface]', '/scholarship/bursary'],
     // One route: the page and its two tab components read the keys; only the page imports the loader.
     floors: { keyFiles: 3, importers: 1, loaders: 1 },
   },
