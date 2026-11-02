@@ -5,25 +5,39 @@ for these fixed-format issuers.
 Background: an earlier text-based offer parser (doc_parse P5) was retired 2026-06-18 because the
 offer's 2-D label/value layout doesn't survive flattened OCR. This retry is narrower + issuer-aware:
 the IDENTITY (name/NRIC) and PATHWAY/INTAKE sit on same lines or in the title (easy), and the
-info-block fields (institution, reporting date) are recovered per issuer — index-paired for the
-clean single-line blocks (Matrikulasi/Polytechnic) or by targeted label search (STPM's multi-line
-block). CONSERVATIVE: returns None (→ Gemini) unless it locks a coherent read incl. the fields the
-verdict needs. University (ua_offer) offers vary and stay on Gemini. PISMP deferred (new format).
+info-block fields are read by ONE shared block reader (`_read_block`, S5): every label's value is
+taken by its SHAPE, in letter order, whatever the layout (label block then value block, label and
+value interleaved, label and value glued on one line). CONSERVATIVE: returns None (→ Gemini) unless
+it locks a coherent read incl. the fields the verdict needs. University (ua_offer) offers vary and
+stay on Gemini. PISMP deferred (new format).
 
 Output mirrors the Gemini offer schema fields read by pathway_engine.student_offer_check:
-  candidate_name, candidate_nric, programme, institution, intake, reporting_date,
-  reporting_date_label, offer_date, issuer.
-Pure + deterministic; never raises.
+  candidate_name, candidate_nric, candidate_nric_source, programme, programme_code, institution,
+  campus (always ''), stream, intake, reporting_date, reporting_date_label, offer_date, issuer.
+Pure + deterministic; never raises. The IC guard and the merge over a prior read live in
+`offer_exact` (S5) — the one entry point production and the eval call.
 """
 from __future__ import annotations
 
 import re
 
-_NRIC_RE = re.compile(r'\b(\d{6}[- ]?\d{2}[- ]?\d{4})\b')
+_IC = r'(\d{6}[- ]?\d{2}[- ]?\d{4})'
+_NRIC_RE = re.compile(r'(?<!\d)' + _IC + r'(?!\d)')
 _MALAY_MONTH = (r'(?:JAN\w*|FEB\w*|MAC\w*|APR\w*|MEI|JUN\w*|JUL\w*|OGOS?|OKT\w*|NOV\w*|DIS\w*|'
                 r'MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPT?\w*|OCTOBER|DECEMBER)')
 _DMY_RE = re.compile(r'(\d{1,2}\s+' + _MALAY_MONTH + r'\s+20\d{2})', re.IGNORECASE)
+_NUM_DATE_RE = re.compile(r'(?<!\d)(\d{1,2}[/-]\d{1,2}[/-]20\d{2})(?!\d)')
+#: A day range ("8 HINGGA 9 JUN 2026", "13 MEI HINGGA 6 JUN 2026") — the reporting date is its FIRST
+#: day (the answers' convention and `pathway_engine.parse_reporting_date`'s); 1.3.0 took the last.
+_RANGE_RE = re.compile(r'(\d{1,2})(?:\s+(' + _MALAY_MONTH + r'))?\s*(?:SE)?HINGGA\s*\d{1,2}\s+('
+                       + _MALAY_MONTH + r')\s+(20\d{2})', re.IGNORECASE)
 _NAME_MARKER = re.compile(r'\b(A\s*/\s*[LP]|BIN|BINTI)\b', re.IGNORECASE)
+#: A person's name as these letters print it: letters, spaces and . ' @ / - only (no digit, no colon).
+_NAME_SHAPE = re.compile(r"^[A-Za-z][A-Za-z .'’@/-]*[A-Za-z.]$")
+#: Template words that can sit where a name is expected (a header line, a salutation) — never a name.
+_NOT_NAME = re.compile(r'\b(MALAYSIA|PUTRAJAYA|KEMENTERIAN|PENDIDIKAN|BAHAGIAN|MATRIKULASI|POLITEKNIK|'
+                       r'JABATAN|TARIKH|RUJUKAN|SAUDARA|SAUDARI|TUAN|PUAN|KAMI|NO|NAMA|KOLEJ|SEKOLAH|'
+                       r'JALAN|TAMAN|KAMPUNG|LORONG|SURAT|TAWARAN|PROGRAM)\b', re.IGNORECASE)
 
 
 def _decimal_digits(s: str) -> str:
@@ -46,17 +60,41 @@ def _norm_nric(raw: str) -> str:
     return f'{d[:6]}-{d[6:8]}-{d[8:12]}' if len(d) == 12 else ''
 
 
-def _offer_date(lines):
-    for ln in lines:
-        m = re.match(r'\s*Tarikh\s*:?\s*(.+)', ln, re.IGNORECASE)
-        if m and 'CETAK' not in ln.upper() and _DMY_RE.search(m.group(1) or ''):
-            return _DMY_RE.search(m.group(1)).group(1).strip()
-    return ''
-
-
-def _first_nric(text: str) -> str:
-    m = _NRIC_RE.search(text or '')
+def _first_ic_anywhere(lines) -> str:
+    m = _NRIC_RE.search('\n'.join(lines))
     return _norm_nric(m.group(1)) if m else ''
+
+
+def first_date(s: str) -> str:
+    """The date at the START of a value, as printed and DATE ONLY: a range's first day, else a
+    'D Month YYYY', else a numeric date. A time window after it ("(8.30 PAGI - 11.30 TENGAHARI)",
+    "8.00 PETANG") is never part of it (owner ruling 2026-11-03). '' when the value holds none."""
+    s = s or ''
+    rm = _RANGE_RE.search(s)
+    if rm:
+        return f'{rm.group(1)} {(rm.group(2) or rm.group(3)).upper()} {rm.group(4)}'
+    m = _DMY_RE.search(s) or _NUM_DATE_RE.search(s)
+    return m.group(1).strip() if m else ''
+
+
+#: The issue date: a "Tarikh" that is NOT "Tarikh dan Masa Daftar" / "Tarikh Daftar" / "Tarikh Lapor
+#: Diri" / "Tarikh Kemasukan…" / "Tarikh Cetakan" — i.e. "Tarikh" followed straight by a date (with
+#: or without a colon), glued after the reference number too. 1.3.0 matched "Tarikh dan Masa Daftar"
+#: and so read the polytechnic REGISTRATION date as the offer date (16 of 20 locks).
+_OFFER_DATE_RE = re.compile(r'(?<![A-Za-z])Tarikh\s*:?\s*(?=\d)(.{6,30})', re.IGNORECASE)
+_OFFER_DATE_ALONE = re.compile(r'^\s*Tarikh\s*:?\s*$', re.IGNORECASE)
+
+
+def _offer_date(lines):
+    for i, ln in enumerate(lines):
+        m = _OFFER_DATE_RE.search(ln)
+        if m and first_date(m.group(1)):
+            return first_date(m.group(1))
+        if _OFFER_DATE_ALONE.match(ln):                         # "Tarikh:" / its date on the next line
+            nxt = next((x.strip() for x in lines[i + 1:i + 3] if x.strip()), '')
+            if first_date(nxt) and len(nxt) <= 20:
+                return first_date(nxt)
+    return ''
 
 
 def _detect(up: str):
@@ -69,297 +107,385 @@ def _detect(up: str):
     return ''
 
 
-def _value_after_label(lines, label_re):
-    """Same-line value after a 'Label: value' line, else the next non-empty line."""
+#: The OFFER's own title, per family — a lock requirement since 2.0.0, so a portal page, a slip or a
+#: printout that names the family but is not the offer never locks (it goes to the AI reader).
+_TITLE = {
+    'stpm': re.compile(r'TAWARAN\s+KEMASUKAN\s+KE\s+TINGKATAN\s+ENAM'),
+    'matriculation': re.compile(r'TAWARAN\s+KEMASUKAN\s+PROGRAM|KEPUTUSAN\s+PERTUKARAN\s+PROGRAM'),
+    'polytechnic': re.compile(r'SURAT\s+TAWARAN\s+PENGAJIAN'),
+}
+
+
+def _name_ok(name: str) -> bool:
+    """A strict name shape: letters and . ' @ / - only, at least 3 letters, no template word. One word
+    of more than 10 letters is two words the OCR glued together ("ABUBAKARSIDEK"), not a name to lock."""
+    name = (name or '').strip()
+    return (bool(_NAME_SHAPE.match(name)) and sum(c.isalpha() for c in name) >= 3
+            and not _NOT_NAME.search(name) and (' ' in name or len(name) <= 10))
+
+
+# ── The shared block reader ──────────────────────────────────────────────────────────────────
+# ⚠ THE LABEL→VALUE PAIRING USED TO BE POSITIONAL, SO IT COULD SHIP BY ONE AND NOTHING OBJECTED.
+# #125 (polytechnic) and #142 (matriculation) were the same fault: a zip of the labels to the value
+# lines BY INDEX put the institution in the programme slot, a date in the Jurusan slot. Each was
+# patched in one family's helper, and the same bug came back through the other door. Decision
+# 2026-09-10 deferred a shifted block to Gemini and said: "revisit if the deferral rate climbs:
+# per-label recovery written ONCE, shared". This is that reader (S5): ONE function for all three
+# families, and every label's value must have the label's SHAPE (a date is a date, an institution
+# starts "KOLEJ MATRIKULASI"…). The exit guards in `parse_govt_offer` stay as they were.
+def _label(pattern):
+    """A label at the start of a line, optionally numbered ("2.4."), its value (if any) after it. A
+    value on the label's own line counts only after a colon or a clause number (so a body sentence
+    that happens to start with the label word is never read as a value)."""
+    return re.compile(r'^\s*(?P<num>\d+(?:\.\d+)*\.?\s*)?(?:' + pattern
+                      + r')(?![A-Za-z])(?P<colon>\s*:)?\s*(?P<tail>.*)$', re.IGNORECASE)
+
+
+_CLAUSE_ONLY = re.compile(r'^\s*\(?\d+(?:\.\d+)*\)?\.?\s*$')
+
+
+def _hit(pat, ln):
+    """The label match on a LABEL line: the label alone, or the label + colon / clause number + value.
+    "KOLEJ MATRIKULASI PAHANG" is a value that starts with a label word, not the "Kolej:" label."""
+    m = pat.match(ln)
+    return m if m and (not m.group('tail').strip() or m.group('colon') or m.group('num')) else None
+
+
+def _tokens(lines, spec, fillers=()):
+    """The info block as a stream: ('L', key) for a label, ('V', text) for a value line. Starts at the
+    first label; ends 12 lines after the last one. A bare clause number or a filler label is dropped."""
+    first = last = None
     for i, ln in enumerate(lines):
-        m = label_re.match(ln)
-        if m:
-            tail = (m.group(1) or '').strip(' :').strip()
+        if any(_hit(pat, ln) for _k, pat, _s in spec) or any(_hit(f, ln) for f in fillers):
+            first = i if first is None else first
+            last = i
+    if first is None:
+        return []
+    out = []
+    for ln in lines[first:last + 13]:
+        hit = next(((k, m) for k, pat, _s in spec for m in [_hit(pat, ln)] if m), None)
+        if hit:
+            key, m = hit
+            out.append(('L', key))
+            tail = m.group('tail').strip(' :').strip()
             if tail:
-                return tail
-            for nxt in lines[i + 1:]:
-                if nxt.strip():
-                    return nxt.strip(' :').strip()
-    return ''
-
-
-def _same_line_value(lines, label_re):
-    """The value on the SAME line as a 'Label: value' match (glued OCR) — NEVER the next line. '' if
-    the label is absent or is a label-only line (a block layout, where the value sits in a separate
-    values block and belongs to a different label by index). #117: a glued OCR text layer joined each
-    label to its value, so 'Pusat Tingkatan Enam: KOLEJ …' / '2.1 Bidang SAINS' read on one line."""
-    for ln in lines:
-        m = label_re.match(ln)
-        if m:
-            tail = (m.group(1) or '').strip(' :').strip()
-            if tail:
-                return tail
-    return ''
-
-
-# The STPM letter's section 2 as a label BLOCK (numbered labels alone, values paired by index in the
-# block below) — the AISYAH shape. Read via _info_block_pairs; the glued #117 shape (value on the
-# label's own line) is read by _same_line_value instead, and the two layouts are mutually exclusive.
-_STPM_BLOCK_LABELS = [
-    ('stream', re.compile(r'^\s*[\d.\s]*Bidang\s*:?\s*$', re.IGNORECASE)),
-    ('institution', re.compile(r'^\s*[\d.\s]*Pusat\s+Tingkatan\s+Enam\s*:?\s*$', re.IGNORECASE)),
-    ('reporting', re.compile(r'^\s*[\d.\s]*Tarikh\s+Lapor\s+Diri\s*:?\s*$', re.IGNORECASE)),
-]
-_PUSAT_RE = re.compile(r'\s*[\d.\s]*Pusat\s+Tingkatan\s+Enam\s*:?\s*(.*)', re.IGNORECASE)
-_BIDANG_RE = re.compile(r'\s*[\d.\s]*Bidang\s*:?\s*(.*)', re.IGNORECASE)
-_LAPOR_RE = re.compile(r'\s*[\d.\s]*Tarikh\s+Lapor\s+Diri\s*:?\s*(.*)', re.IGNORECASE)
-# Truncate a value at a following numbered sub-label ('2.2 …') or a glued 'Bidang' — the #117 fix,
-# where a glued OCR line runs 'KOLEJ TINGKATAN ENAM GOMBAK 2.1 Bidang SAINS' together.
-_SUBLABEL_CUT = re.compile(r'\s+\d+\.\d+\s|\bBidang\b', re.IGNORECASE)
-
-
-def _parse_stpm(lines, up):
-    name = _value_after_label(lines, re.compile(r'\s*Nama\s*:?\s*(.*)', re.IGNORECASE))
-    # Glued OCR (#117): 'Nama: X No. Kad Pengenalan: 0801…' on one line → truncate the name at the
-    # following label. A non-glued name has no such substring and is unchanged.
-    name = re.split(r'\bNo\.?\s*Kad\s*Pengenalan\b', name, maxsplit=1, flags=re.IGNORECASE)[0].strip(' :').strip()
-    nric = _value_after_label(lines, re.compile(r'\s*No\.?\s*Kad\s*Pengenalan\s*:?\s*(.*)', re.IGNORECASE))
-    nric = _norm_nric(nric) or _first_nric('\n'.join(lines))
-    m = re.search(r'TINGKATAN ENAM SEMESTER\s+(\d)\s+TAHUN\s+(20\d{2})', up)
-    programme = f'Tingkatan Enam Semester {m.group(1)}' if m else 'Tingkatan Enam'
-    intake = m.group(2) if m else (re.search(r'TAHUN\s+(20\d{2})', up).group(1)
-                                   if re.search(r'TAHUN\s+(20\d{2})', up) else '')
-    pairs = _info_block_pairs(lines, _STPM_BLOCK_LABELS)   # block layout (AISYAH); {} when glued
-    # Institution — glued same-line value → block pair → line-start scan (older shapes). Truncate a
-    # glued trailing sub-label so the institution never swallows '2.1 Bidang SAINS'.
-    institution = (_same_line_value(lines, _PUSAT_RE) or pairs.get('institution', '')
-                   or next((ln.strip() for ln in lines
-                            if re.match(r'\s*(SEKOLAH|SMK|KOLEJ|MAKTAB)\b', ln, re.IGNORECASE)), ''))
-    institution = _SUBLABEL_CUT.split(institution, maxsplit=1)[0].strip(' :').strip()
-    # Bidang → the STPM stream (the Gemini schema already emits `stream`; this catches the
-    # deterministic path up). Glued same-line → block pair. No line-start fallback (Gemini covers it).
-    stream = _same_line_value(lines, _BIDANG_RE) or pairs.get('stream', '')
-    stream = re.split(r'\s+\d+\.\d+\s', stream, maxsplit=1)[0].strip(' :').strip()
-    # Reporting date — read the value after 'Tarikh Lapor Diri' EXPLICITLY (glued or block); the
-    # generic loop below skipped any line containing TARIKH, which also killed this real line.
-    offer_dt = _offer_date(lines)
-    rep = _same_line_value(lines, _LAPOR_RE) or pairs.get('reporting', '')
-    rm = _DMY_RE.search(rep)
-    reporting = rm.group(1).strip() if rm else ''
-    if not reporting:
-        for ln in lines:
-            if 'CETAK' in ln.upper():
-                continue
-            mm = _DMY_RE.search(ln)
-            if mm and mm.group(1).strip() != offer_dt and 'TARIKH' not in ln.upper():
-                reporting = mm.group(1).strip()
-                break
-    return {
-        'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
-        'institution': institution, 'stream': stream, 'intake': intake,
-        'reporting_date': reporting, 'reporting_date_label': 'Tarikh Lapor Diri' if reporting else '',
-        'offer_date': offer_dt, 'issuer': 'Sektor Operasi Sekolah, Kementerian Pendidikan Malaysia',
-    }
-
-
-def _info_block_pairs(lines, label_names):
-    """Pair a block of KNOWN labels with the value lines that follow it (Matrikulasi/Polytechnic:
-    single-line values). Returns {label_key: value}. Labels + values are contiguous blocks."""
-    labels_seen, first_label_i = [], None
-    for i, ln in enumerate(lines):
-        key = next((k for k, pat in label_names if pat.match(ln)), None)
-        if key:
-            labels_seen.append((i, key))
-            if first_label_i is None:
-                first_label_i = i
-    if not labels_seen:
-        return {}
-    last_label_i = labels_seen[-1][0]
-    values = [ln.strip() for ln in lines[last_label_i + 1:] if ln.strip()]
-    out = {}
-    for (_, key), val in zip(labels_seen, values):
-        out[key] = re.sub(r'^\s*:\s*', '', val).strip()
+                out.append(('V', tail))
+        elif any(_hit(f, ln) for f in fillers) or _CLAUSE_ONLY.match(ln) or not ln.strip():
+            continue
+        else:
+            out.append(('V', re.sub(r'^\s*:\s*', '', ln).strip()))
     return out
 
 
-# Anchored to a LABEL-ONLY line (block layout: labels alone, values in the block below) so a value
-# like 'KOLEJ MATRIKULASI PAHANG' can't re-match the 'Kolej:' label and corrupt the pairing.
-#
+#: One word that is never the end of a wrapped name: an address word or a state.
+_NOT_WRAP = re.compile(r'^(?:JALAN|LORONG|TAMAN|KAMPUNG|KG|KM|BATU|PETI|PERSIARAN|LEBUH|LEBUHRAYA|BANDAR|'
+                       r'PULAU|PERAK|SELANGOR|JOHOR|KEDAH|KELANTAN|TERENGGANU|PAHANG|MELAKA|PERLIS|SABAH|'
+                       r'SARAWAK|LABUAN|PUTRAJAYA|MALAYSIA|NEGERI|SEMBILAN|PINANG)$')
+
+
+def _wrapped(line, later):
+    """True when ``line`` is the wrapped end of the value above it (a long school / programme name
+    printed on two lines): ONE capitalised word, no digit, no address word or state, and not the
+    shape of a later label's value."""
+    w = (line or '').strip()
+    return (bool(re.fullmatch(r"[A-Z][A-Z'’.-]+", w)) and not _NOT_WRAP.match(w)
+            and not any(s(w) for s in later))
+
+
+def _read_block(lines, spec, fillers=(), wraps=(), max_skip=8):
+    """{key: value} by SHAPE, in letter order: for each label (as the letter orders them), the next
+    value line after it that has the label's shape. A line with the shape of a LATER label means this
+    label has no value (it stays ''); a line with no label's shape is skipped (an address line under
+    an institution), at most `max_skip` of them. A key in ``wraps`` takes the next line too when
+    that line is its wrapped end (`_wrapped`)."""
+    toks = _tokens(lines, spec, fillers)
+    shape = {k: s for k, _p, s in spec}
+    order = [(i, k) for i, (t, k) in enumerate(toks) if t == 'L']
+    vals = [(i, v) for i, (t, v) in enumerate(toks) if t == 'V']
+    out, cur = {}, 0
+    for n, (pos, key) in enumerate(order):
+        if key in out:                          # a label printed twice is read once
+            continue
+        later = [shape[k] for _p, k in order[n + 1:] if k != key]
+        j = next((j for j, (vi, _v) in enumerate(vals) if j >= cur and vi > pos), len(vals))
+        for j in range(j, min(len(vals), j + max_skip + 1)):
+            v = vals[j][1]
+            if shape[key](v):
+                cur = j + 1
+                if key in wraps and cur < len(vals) and vals[cur][0] == vals[j][0] + 1 \
+                        and _wrapped(vals[cur][1], later):
+                    v, cur = f'{v} {vals[cur][1].strip()}', cur + 1
+                out[key] = v
+                break
+            if any(s(v) for s in later):        # the next label's value: this label has none
+                break
+    return out
+
+
+def _date_shape(v):
+    return bool(re.match(r'\s*\d{1,2}\s*(?:[/-]|\s+' + _MALAY_MONTH + r'|\s*(?:SE)?HINGGA)', v or '', re.I)
+                and first_date(v))
+
+
+def _words_shape(*words):
+    allowed = {w.upper() for w in words}
+    return lambda v: bool(v) and len(v.split()) <= 3 and all(w.upper() in allowed for w in v.split())
+
+
+_STREAM_SHAPE = _words_shape('SAINS', 'SOSIAL', 'PERAKAUNAN', 'KEJURUTERAAN', 'KOMPUTER', 'TEKNIKAL',
+                             'SASTERA', 'HAYAT', 'FIZIKAL')
+
+
+def _starts(pattern):
+    rx = re.compile(r'^\s*(?:' + pattern + r')\b', re.IGNORECASE)
+    return lambda v: bool(rx.match(v or ''))
+
+
+def _has(pattern):
+    rx = re.compile(pattern, re.IGNORECASE)
+    return lambda v: bool(rx.search(v or ''))
+
+
+def _split_glued(text: str, labels) -> str:
+    """A glued text layer (the whole letter on one line, labels run into values) → one label per line:
+    a line break goes in front of every known label that sits mid-line (class B, #117)."""
+    for pat in labels:
+        text = re.sub(r'(?<=\S)[ \t]*(?=' + pat + r')', '\n', text)
+    return text
+
+
+# ── STPM ─────────────────────────────────────────────────────────────────────────────────────
+# Section 2 prints SIX numbered labels (2.1-2.6: Bidang, Pusat Tingkatan Enam, Tarikh Lapor Diri,
+# Masa Lapor Diri, Dokumen diperlukan, Pakaian). 1.3.0 knew three, so the value block started one
+# label too early and "2.4." / "Masa Lapor Diri" landed in stream / institution (class A, S5).
+_STPM_BLOCK = [
+    ('stream', _label(r'Bidang'), _STREAM_SHAPE),
+    ('institution', _label(r'Pusat\s+Tingkatan\s+Enam'),
+     _starts(r'KOLEJ|SEKOLAH|SMK|SMJK|SMKA|SM|SEK\.?|MAKTAB|PUSAT\s+TINGKATAN')),
+    ('reporting', _label(r'Tarikh\s+(?:Me)?lapor\s+Diri'), _date_shape),       # "Melapor" on some
+    ('time', _label(r'Masa\s+(?:Me)?lapor\s+Diri'), _has(r'^\s*\d{1,2}\s*[:.]\s*\d{2}')),
+]
+_STPM_FILLERS = [_label(r'Dokumen\s+diperlukan'), _label(r'\(?Asal\s+dan\s+salinan\)?'), _label(r'Pakaian')]
+_STPM_GLUE = [r'No\.?\s*Kad\s*Pengenalan',
+              r'\d\.\d\.?\s*(?:Bidang|Pusat\s+Tingkatan|Tarikh\s+(?:Me)?lapor|Masa\s+(?:Me)?lapor|Dokumen|Pakaian)\b']
+
+
+def _identity_stpm(lines):
+    name = ''
+    for i, ln in enumerate(lines):
+        m = re.match(r'\s*Nama\s*:?\s*(.*)', ln, re.IGNORECASE)
+        if m:
+            name = m.group(1).strip(' :') or next((x.strip() for x in lines[i + 1:] if x.strip()), '')
+            break
+    for ln in lines:
+        m = re.match(r'\s*No\.?\s*Kad\s*Pengenalan\s*:?\s*' + _IC, ln, re.IGNORECASE)
+        if m:
+            return name, _norm_nric(m.group(1)), 'label'
+    return name, _first_ic_anywhere(lines), 'other'
+
+
+def _parse_stpm(lines, up):
+    m = re.search(r'TINGKATAN\s+ENAM\s+SEMESTER\s+(\d)\s+TAHUN\s+(20\d{2})', up)
+    block = _read_block(lines, _STPM_BLOCK, _STPM_FILLERS, wraps=('institution',))
+    reporting = first_date(block.get('reporting', ''))
+    return {
+        'programme': f'Tingkatan Enam Semester {m.group(1)}' if m else '',
+        'institution': block.get('institution', ''), 'stream': block.get('stream', ''),
+        'intake': f'SEMESTER {m.group(1)} TAHUN {m.group(2)}' if m else '',
+        'reporting_date': reporting, 'reporting_date_label': 'Tarikh Lapor Diri' if reporting else '',
+        'issuer': 'Sektor Operasi Sekolah, Kementerian Pendidikan Malaysia',
+    }
+
+
+# ── Matriculation ────────────────────────────────────────────────────────────────────────────
 # ⚠ THE JURUSAN KEY IS 'stream', NOT 'programme'. The Gemini schema (vision.py) states it plainly:
 # *"stream" = the Form-Six "Bidang" ... OR the matriculation "Jurusan"*. This parser used to file
 # the Jurusan under 'programme' and return NO 'stream' key at all, so a matriculation letter read
 # HERE reached the pathway check with its stream axis empty, while the same letter read by Gemini
 # reached it populated. Measured on production 2026-09-10: 26/26 Gemini-read matric letters carried
 # a stream; 0/4 parser-read ones did. One letter, two readers, two different homes for one fact.
-_MATRIC_LABELS = [
-    ('stream', re.compile(r'^\s*Jurusan\s*:?\s*$', re.IGNORECASE)),
-    ('duration', re.compile(r'^\s*Tempoh\s+Pengajian\s*:?\s*$', re.IGNORECASE)),
-    ('institution', re.compile(r'^\s*Kolej\s*:?\s*$', re.IGNORECASE)),
-    ('online_reg', re.compile(r'^\s*Pendaftaran\s+dalam\s+talian\s*:?\s*$', re.IGNORECASE)),
-    ('reporting', re.compile(r'^\s*Tarikh\s+Kemasukan\s+ke\s+kolej\s*:?\s*$', re.IGNORECASE)),
-    ('fee', re.compile(r'^\s*Yuran\s+Pendaftaran\s*:?\s*$', re.IGNORECASE)),
+_MATRIC_BLOCK = [
+    ('stream', _label(r'Jurusan'), _STREAM_SHAPE),
+    # The engineering matriculation letter adds "Aliran: KEJURUTERAAN AWAM" under the Jurusan.
+    ('aliran', _label(r'Aliran'), _has(r'^[A-Z][A-Z &]+$')),
+    ('duration', _label(r'Tempoh\s+Pengajian'), _has(r'\bSEMESTER\b|\bBULAN\b|\bTAHUN\b')),
+    ('institution', _label(r'Kolej'), _starts(r'KOLEJ\s+MATRIKULASI')),
+    ('online_reg', _label(r'Pendaftaran\s+dalam\s+talian'), _date_shape),
+    ('reporting', _label(r'Tarikh\s+Kemasukan\s+ke\s+kolej'), _date_shape),
+    ('fee', _label(r'Yuran\s+Pendaftaran'), _starts(r'RM')),
 ]
+#: The glued text layer (class B): break before each label, the IC label and the matric number.
+_MATRIC_GLUE = [r'K\s*/\s*P\s*:', r'NO\.?\s*MATRIK\b', r'Jurusan\s*:', r'Aliran\s*:', r'Tempoh\s+Pengajian\s*:',
+                r'(?<![Kk]e )Kolej\s*:', r'Pendaftaran\s+dalam\s+talian\s*:', r'Tarikh\s+Kemasukan\s+ke\s+kolej\s*:',
+                r'Yuran\s+Pendaftaran\s*:', r'Tarikh\s*:', r'Rujukan\s+Kami', r'TAWARAN\s+KEMASUKAN', r'Saudara']
+
+
+def _identity_matric(lines):
+    """The IC from the "K/P:" line; the name is the line DIRECTLY above it, in the strict name shape
+    (no parentage marker needed: a one-word, Chinese or East-Malaysian name has none — class C)."""
+    for i, ln in enumerate(lines):
+        m = re.match(r'\s*K\s*/\s*P\s*:?\s*' + _IC, ln, re.IGNORECASE)
+        if m:
+            above = next((x.strip() for x in reversed(lines[:i]) if x.strip()), '')
+            return (above if _name_ok(above) else ''), _norm_nric(m.group(1)), 'label'
+    return '', _first_ic_anywhere(lines), 'other'
 
 
 def _parse_matric(lines, up):
-    # Name: the line carrying a parentage marker, above 'K/P:'.
-    name = next((ln.strip() for ln in lines[:20]
-                 if _NAME_MARKER.search(ln) and not any(c.isdigit() for c in ln)), '')
-    nric = _value_after_label(lines, re.compile(r'\s*K\s*/\s*P\s*:?\s*(.*)', re.IGNORECASE))
-    nric = _norm_nric(nric) or _first_nric('\n'.join(lines))
-    sm = re.search(r'SESI\D{0,8}(20\d{2}(?:\s*/\s*20\d{2})?)', up)
-    intake = sm.group(1).replace(' ', '') if sm else ''
-    pairs = _info_block_pairs(lines, _MATRIC_LABELS)
-    jurusan = pairs.get('stream', '')
+    sm = re.search(r'SESI\s*(20\d{2})\s*/\s*(20\d{2})', up)
+    block = _read_block(lines, _MATRIC_BLOCK)
+    jurusan = block.get('stream', '')
     # ⚠ THE BRACKET IS OURS, NOT THE LETTER'S. No KPM matriculation letter prints "Program
     # Matrikulasi (SAINS)" — this f-string builds it, and the pathway check then reads whatever is
     # inside the bracket as part of the programme NAME. It is kept because FIVE call sites derive
     # the matric track from this string (`offer_pathway.parse_matric_track`, via services.py:1549 +
     # :1846, offer_pathway.py:562 and the backfill command). The Jurusan is ALSO emitted as
     # `stream` above, which is its proper home; retiring the bracket is a separate, measurable
-    # change and must not be done here as a tidy-up.
-    programme = f'Program Matrikulasi ({jurusan})' if jurusan else 'Program Matrikulasi'
-    # 'Kolej Matrikulasi <state>' is unmistakable — take it directly (robust to a messy value block).
-    institution = next((ln.strip() for ln in lines
-                        if re.match(r'\s*KOLEJ\s+MATRIKULASI\b', ln, re.IGNORECASE)), pairs.get('institution', ''))
-    reporting = pairs.get('reporting', '')
-    rm = _DMY_RE.search(reporting)
+    # change and must not be done here as a tidy-up (decision 2026-09-10, kept in S5).
+    reporting = first_date(block.get('reporting', ''))
     return {
-        'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
-        'institution': institution, 'stream': jurusan, 'intake': intake,
-        'reporting_date': rm.group(1).strip() if rm else '',
-        'reporting_date_label': 'Tarikh Kemasukan ke kolej' if rm else '',
-        'offer_date': _offer_date(lines),
+        'programme': f'Program Matrikulasi ({jurusan})' if jurusan else '',
+        'institution': block.get('institution', ''), 'stream': jurusan,
+        'intake': f'SESI {sm.group(1)}/{sm.group(2)}' if sm else '',
+        'reporting_date': reporting, 'reporting_date_label': 'Tarikh Kemasukan ke kolej' if reporting else '',
         'issuer': 'Bahagian Matrikulasi, Kementerian Pendidikan Malaysia',
     }
 
 
-_POLY_LABELS = [
-    ('programme', re.compile(r'^\s*Program\s*:?\s*$', re.IGNORECASE)),
-    ('mode', re.compile(r'^\s*Mod\s+Pengajian\s*:?\s*$', re.IGNORECASE)),
-    ('institution', re.compile(r'^\s*Institusi\s*:?\s*$', re.IGNORECASE)),
-    ('duration', re.compile(r'^\s*Tempoh\s+Pengajian\s*:?\s*$', re.IGNORECASE)),
+# ── Polytechnic ──────────────────────────────────────────────────────────────────────────────
+_POLY_PROGRAMME_SHAPE = (lambda v: bool(re.search(r'[A-Za-z]{3}', v or '')) and not _date_shape(v)
+                         and not re.match(r'\s*(?:POLITEKNIK|KOLEJ|RM\b|\d+\s+SEMESTER|SEPENUH|SEPARUH)', v, re.I))
+_POLY_BLOCK = [
+    ('programme', _label(r'Program'), _POLY_PROGRAMME_SHAPE),
+    ('mode', _label(r'Mod\s+Pengajian'), _has(r'\bMASA\b')),
+    ('institution', _label(r'Institusi'), _starts(r'POLITEKNIK|KOLEJ\s+KOMUNITI')),
+    ('duration', _label(r'Tempoh\s+Pengajian'), _has(r'\bSEMESTER\b|\bBULAN\b|\bTAHUN\b')),
+    ('session', _label(r'Sesi'), _has(r'20\d{2}\s*/\s*20\d{2}')),
+    # "Tarikh dan Masa Daftar" (1.3.0 knew no other wording) / "Tarikh Daftar" / "Tarikh dan Masa
+    # Pendaftaran", or "Tarikh dan Masa" with "Daftar" on the next line — class E: an unknown wording
+    # shifted the block. Never a bare "Tarikh" (that is the issue date).
+    ('reporting', _label(r'Tarikh\s+dan\s+Masa(?:\s+(?:Daftar|Pendaftaran))?|Tarikh\s+(?:Daftar|Pendaftaran)'),
+     _date_shape),
 ]
+_POLY_FILLERS = [_label(r'Daftar')]
+#: A polytechnic programme printed with its code in front ("DKA - DIPLOMA KEJURUTERAAN AWAM") → the
+#: code goes to `programme_code` (S4's shape; `offer_course_match.programme_line` reads it back). A
+#: photo's OCR can drop the dash ("DKK DIPLOMA …"): a code then still counts before a programme word.
+_POLY_CODE = re.compile(r'^\s*([A-Z][A-Z0-9]{1,5})(?:\s*[-–]\s*(?=[A-Z(])|\s+(?=(?:DIPLOMA|SIJIL|ASASI|IJAZAH)\b))')
+#: "SESI I : 2026/2027", "SESII: …", "SESI 1:2026/2027" (a photo's OCR reads the Roman I as 1 — the
+#: letters print Roman, class D) → "SESI I : 2026/2027". No numeral → "SESI 2026/2027".
+#: An OCR'd "l" for the Roman I ("SESIl") reads as I too.
+_POLY_SESSION = re.compile(r'SESI\s*([IL1]{1,3}|2|3)?\s*:?\s*(20\d{2})\s*/\s*(20\d{2})')
+
+
+def _identity_poly(lines):
+    """'NAME (IC)' — the line above the title, in the strict name shape (no marker needed, class C)."""
+    for ln in lines:
+        if _TITLE['polytechnic'].search(ln.upper()):
+            break
+        m = re.match(r'\s*(.+?)\s*\(\s*' + _IC + r'\s*\)\s*$', ln)
+        if m and _name_ok(m.group(1)):
+            return m.group(1).strip(), _norm_nric(m.group(2)), 'label'
+    return '', _first_ic_anywhere(lines), 'other'
 
 
 def _parse_poly(lines, up):
-    # Name + NRIC on one line: 'NAME (NRIC)'.
-    name, nric = '', ''
-    for ln in lines[:20]:
-        m = re.match(r'\s*([A-Z][A-Z /.\'@-]+?)\s*\((\d{6}[- ]?\d{2}[- ]?\d{4})\)\s*$', ln)
-        if m and _NAME_MARKER.search(m.group(1)):
-            name, nric = m.group(1).strip(), _norm_nric(m.group(2))
-            break
-    if not nric:
-        nric = _first_nric('\n'.join(lines))
-    sm = re.search(r'SESI\D{0,8}(20\d{2}(?:\s*/\s*20\d{2})?)', up)   # SESI / SESII / 'SESI I : 2026/2027'
-    intake = sm.group(1).replace(' ', '') if sm else ''
-    pairs = _info_block_pairs(lines, _POLY_LABELS)
-    reporting = _value_after_label(lines, re.compile(r'\s*Tarikh\s*dan\s*Masa\s*Daftar\s*:?\s*(.*)', re.IGNORECASE))
-    rm = _DMY_RE.search(reporting) or re.search(r'(\d{1,2}[/-]\d{1,2}[/-]20\d{2})', reporting)
-    programme, institution = _guard_poly_slots(pairs.get('programme', ''), pairs.get('institution', ''), lines)
-    # Interleaved layout (label, value, label, value — the #125 Asasi shape) defeats the
-    # block-pairing zip: read the value on/after the 'Program' label directly when the block
-    # left the programme empty. Reject a value that is itself a label / institution / date.
-    if not programme:
-        cand = _value_after_label(lines, re.compile(r'^\s*Program\s*:?\s*(.*)', re.IGNORECASE))
-        cand = (cand or '').strip(' :').strip()
-        from .card_display import looks_like_institution, looks_like_date
-        if cand and not _is_poly_label(cand) and not looks_like_institution(cand) and not looks_like_date(cand):
-            programme = cand
+    sm = _POLY_SESSION.search(up)
+    num = (sm.group(1) or '') if sm else ''
+    roman = {'2': 'II', '3': 'III'}.get(num, 'I' * len(num))
+    years = f'{sm.group(2)}/{sm.group(3)}' if sm else ''
+    intake = (f'SESI {roman} : {years}' if roman else f'SESI {years}') if sm else ''
+    block = _read_block(lines, _POLY_BLOCK, _POLY_FILLERS, wraps=('programme',))
+    programme, code = block.get('programme', ''), ''
+    cm = _POLY_CODE.match(programme)
+    if cm:
+        code, programme = cm.group(1), programme[cm.end():].strip()
+    reporting = first_date(block.get('reporting', ''))
     return {
-        'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
-        'institution': institution, 'intake': intake,
-        'reporting_date': rm.group(1).strip() if rm else '',
-        'reporting_date_label': 'Tarikh dan Masa Daftar' if rm else '',
-        'offer_date': _offer_date(lines),
+        'programme': programme, 'programme_code': code,
+        'institution': block.get('institution', ''), 'intake': intake,
+        'reporting_date': reporting, 'reporting_date_label': 'Tarikh dan Masa Daftar' if reporting else '',
         'issuer': 'Jabatan Pendidikan Politeknik dan Kolej Komuniti',
     }
 
 
-def _is_poly_label(line):
-    """True when a line is itself one of the poly info-block labels (so a per-label value read
-    never grabs the NEXT label as the value)."""
-    return any(pat.match(line) for _k, pat in _POLY_LABELS)
+_FAMILY = {
+    'stpm': (_parse_stpm, _identity_stpm, _STPM_GLUE),
+    'matriculation': (_parse_matric, _identity_matric, _MATRIC_GLUE),
+    'polytechnic': (_parse_poly, _identity_poly, ()),
+}
 
-
-def _guard_poly_slots(programme, institution, lines):
-    """Guard the ``_info_block_pairs`` block misalignment behind app #125 (a JPPKK
-    Asasi-at-Politeknik letter whose value block paired the INSTITUTION into the programme
-    slot and the 'Tarikh dan Masa Daftar…' line into the institution slot). Anchor to SHAPE,
-    never trust the positional pair blindly: a date/'Tarikh' value is not an institution; an
-    institution-shaped value is not a programme. When the programme is cleared, the conservative
-    ``_REQUIRED`` gate makes ``parse_govt_offer`` return None → the Gemini image read (which the
-    clean control #102 handles correctly), rather than locking an incoherent read."""
-    from .card_display import looks_like_institution, looks_like_date
-    prog = (programme or '').strip()
-    inst = (institution or '').strip()
-    if inst and looks_like_date(inst):
-        inst = ''
-    if prog and looks_like_institution(prog):
-        if not inst:
-            inst = prog
-        prog = ''
-    if not inst:
-        inst = next((ln.strip() for ln in lines
-                     if re.match(r'\s*(POLITEKNIK|KOLEJ\s+KOMUNITI)\b', ln, re.IGNORECASE)), '')
-    return prog, inst
-
-
-# The verdict-critical fields a lock REQUIRES (so switching off Gemini can't drop them).
-_REQUIRED = ('candidate_name', 'candidate_nric', 'programme', 'intake')
+# The verdict-critical fields a lock REQUIRES (so switching off Gemini can't drop them). 2.0.0: the
+# institution too, and STPM / matriculation need their stream (the scorer's programme for them, and
+# the pathway check's track axis).
+_REQUIRED = ('candidate_name', 'candidate_nric', 'programme', 'intake', 'institution')
+_REQUIRED_STREAM = ('stpm', 'matriculation')
 
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning
 # rule) so re-runs are traceable. 1.1.0: poly slot-guard for the #125 block-misalignment.
 # 1.2.0: reject a clause-number stream/institution/programme (#47) → defer to Gemini.
-# A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
-# tell that the positional block pairing has shifted if it turns up in a text slot.
-_MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
-
 # 1.3.0 (2026-09-10) — the matriculation Jurusan is emitted as `stream` (its home per the Gemini
 # schema) as well as inside `programme`, and a shifted label→value pairing now defers to Gemini
 # instead of shipping a date as a jurusan.
-PARSER_VERSION = '1.3.0'
+# 2.0.0 (S5, 2026-11-03) — the output shape changes: one shared block reader by shape (classes A-E);
+# `candidate_nric_source`, `programme_code` (the polytechnic code leaves `programme`), `campus` '';
+# the intake keeps its words ("SEMESTER 1 TAHUN 2026", "SESI 2026/2027", "SESI I : 2026/2027"); a
+# range's FIRST day; the offer date never the registration date; dates carry no time; the offer
+# title is required; identity from page 1 (`page1_text`).
+PARSER_VERSION = '2.0.0'
+# A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
+# tell that the positional block pairing has shifted if it turns up in a text slot.
+_MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
+_SPACES = re.compile(r'[^\S\n]')
 
 
-def parse_govt_offer(text: str):
+def parse_govt_offer(text: str, page1_text: str = None):
     """STPM/Matrikulasi/Polytechnic offer OCR text → the offer field dict, or None to defer to
-    Gemini. Conservative: None unless the issuer is recognised AND all of _REQUIRED are read."""
-    up = (text or '').upper()
+    Gemini. Conservative: None unless the issuer and the offer title are recognised AND every
+    required field is read. ``page1_text`` (a digital PDF's page-1 text layer) is where the
+    identity is read (owner rule 2026-11-01: only the offer page counts); default ``text``."""
+    return diagnose(text, page1_text)['locked']
+
+
+def diagnose(text: str, page1_text: str = None) -> dict:
+    """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
+    titled, fields (the read before the exit checks, or None), empty_required, guard, locked}`` —
+    ``locked`` is the lock (the field dict) or None."""
+    text = _SPACES.sub(' ', text or '')         # a text layer's no-break spaces read as spaces
+    page1_text = _SPACES.sub(' ', page1_text or '')
+    up = text.upper()
     fam = _detect(up)
-    if not fam:
-        return None
-    lines = [ln.rstrip() for ln in (text or '').splitlines()]
-    fields = {'stpm': _parse_stpm, 'matriculation': _parse_matric,
-              'polytechnic': _parse_poly}[fam](lines, up)
-    if any(not (fields.get(k) or '').strip() for k in _REQUIRED):
-        return None
+    out = {'family': fam, 'titled': bool(fam) and bool(_TITLE[fam].search(up)), 'fields': None,
+           'empty_required': [], 'guard': None, 'locked': None}
+    if not out['titled']:
+        return out
+    reader, identity, glue = _FAMILY[fam]
+    lines = [ln.rstrip() for ln in _split_glued(text, glue).splitlines()]
+    id_text = page1_text if page1_text.strip() else text
+    name, nric, source = identity([ln.rstrip() for ln in _split_glued(id_text, glue).splitlines()])
+    if name and not _name_ok(re.sub(r'\s+', ' ', name)):
+        name = ''
+    fields = out['fields'] = {
+        'candidate_name': name, 'candidate_nric': nric, 'candidate_nric_source': source if nric else 'none',
+        'programme_code': '', 'campus': '', 'stream': '', **reader(lines, up), 'offer_date': _offer_date(lines)}
+    required = _REQUIRED + (('stream',) if fam in _REQUIRED_STREAM else ())
+    out['empty_required'] = [k for k in required if not (fields.get(k) or '').strip()]
     # A bare numbered-clause header leaked as a field value means the label-anchored layout read
     # went wrong (#47: the STPM section labels '2.4.'/'2.5.' latched as stream/institution). Don't
     # trust a corrupt deterministic read — defer the whole offer to Gemini (which reads the body
     # correctly). A bare N.N. token is NEVER a valid stream / institution / programme.
     from .card_display import looks_like_clause_number, looks_like_date
-    if any(looks_like_clause_number(fields.get(k, '')) for k in ('stream', 'institution', 'programme')):
-        return None
-    # ⚠ THE LABEL→VALUE PAIRING IS POSITIONAL, SO IT CAN SHIP BY ONE AND NOTHING OBJECTS.
-    # `_info_block_pairs` zips the labels to the value lines beneath them BY INDEX — it never asks
-    # whether the value in the "Jurusan" slot could possibly be a jurusan. #142 (2026-09-10): the
-    # value from the "Tarikh Kemasukan ke kolej" slot landed in the Jurusan slot, so the offer read
-    # its programme as "Program Matrikulasi (8 JUN 2026)" AND came back with reporting_date EMPTY —
-    # one shift, two wrong fields, no error anywhere. The Pathway chip then went red on a correct
-    # offer and the Institution tick was withheld behind it.
-    #
-    # ⚠⚠ THIS EXACT FAULT ALREADY HAPPENED ONCE AND THE FIX WAS SCOPED TO ONE PARSER. App #125 was
-    # the polytechnic version of #142 — the same `_info_block_pairs` zip, the same shift, the
-    # institution into the programme slot and a 'Tarikh…' line into the institution slot. It was
-    # fixed by `_guard_poly_slots`, whose docstring states the right rule in general terms
-    # ("anchor to SHAPE, never trust the positional pair blindly") — and then guards ONLY the
-    # polytechnic family. Matriculation uses the same pairing and got nothing, so the same bug came
-    # back through the other door six weeks later. THIS guard is therefore at the single exit point
-    # and covers ALL THREE families; do not move it back into a per-family helper.
-    #
-    # A DATE or a RINGGIT AMOUNT is never a stream, an institution or a programme. Seeing one means
-    # the block pairing went wrong, and a partly-wrong deterministic read is worth less than no
-    # deterministic read: defer the whole offer to Gemini, which reads this template correctly
-    # (measured 2026-09-10: 26/26 Gemini-read matric letters carried a stream, 0/4 parser-read).
-    if any(looks_like_date(fields.get(k, '')) or _MONEY_RE.match((fields.get(k, '') or '').strip())
-           for k in ('stream', 'institution', 'programme')):
-        return None
-    fields['_family'] = fam
-    fields['_offer_parser_version'] = PARSER_VERSION
-    return fields
+    slots = ('stream', 'institution', 'programme')
+    if any(looks_like_clause_number(fields.get(k, '')) for k in slots):
+        out['guard'] = 'clause_number'
+    # ⚠⚠ THE #125 / #142 FAULT HAPPENED TWICE BECAUSE THE FIRST FIX WAS SCOPED TO ONE PARSER. A DATE
+    # or a RINGGIT AMOUNT is never a stream, an institution or a programme; seeing one means the
+    # block read went wrong, and a partly-wrong deterministic read is worth less than no
+    # deterministic read: defer the whole offer to Gemini. THIS guard is at the single exit point and
+    # covers ALL THREE families; do not move it back into a per-family helper (lesson #125 / #142).
+    elif any(looks_like_date(fields.get(k, '')) or _MONEY_RE.match((fields.get(k, '') or '').strip())
+             for k in slots):
+        out['guard'] = 'date_or_money'
+    if not out['empty_required'] and not out['guard']:
+        out['locked'] = {**fields, '_family': fam, '_offer_parser_version': PARSER_VERSION}
+    return out

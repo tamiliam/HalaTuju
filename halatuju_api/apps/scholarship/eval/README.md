@@ -168,7 +168,7 @@ lines wrong per field) and changes no answer file — the lead decides. Tests:
 `snapshots/` (gitignored): a digital PDF's text layer (free); else an earlier page-1 Vision capture
 from `eval/snapshots/` (meta `earlier_vision`, no second call); else Vision, one call per page.
 `--dry-run` first prints the counts and the cost and writes nothing. `offer_replay.py --write` runs
-today's deterministic offer reader (`offer_parse.parse_govt_offer`) and the offer genuineness on the
+today's deterministic offer reader (since S5 `offer_exact.exact_offer_read`: the parser, the IC guard, the merge) and the offer genuineness on the
 text production would feed them (the text layer, or Vision **page 1**), no paid call, and writes
 `<key>.replay.json`: a lock is merged over the stored read as a production re-run does; a fallback
 keeps the stored read as a stand-in for the Gemini read it does not make (`capture: ai_stand_in`).
@@ -193,6 +193,21 @@ python -I apps/scholarship/eval/capture_ocr.py offer_letter --corpus apps/schola
 python -I apps/scholarship/eval/offer_replay.py --write
 python -I apps/scholarship/eval/offer_failure_map.py --split dev
 python -I apps/scholarship/eval/offer_read_check.py --split dev --read file:.replay.json
+```
+
+**The Exact read on the corpus (S5) — free.** `offer_parse_check.py` feeds each letter what production feeds
+the fixed-format reader's one entry point (`offer_exact.exact_offer_read`: the text, a digital PDF's page-1
+layer read from the corpus PDF, the profile IC from `context.json` for the IC guard) and prints per letter
+EXACT / INCOMPLETE / WRONG (a lock with a core field wrong or extra) / CONTROL-LOCKED (a lock on a letter that
+is not STPM / matriculation / polytechnic, or is a portal page / not an offer) / FALLBACK, by split, family and
+input kind; the offer date (scored, not core); the IC guard's outcomes; the pipeline score (the lock merged over
+`--base`, default `.fresh_s4d.json` = reader 2.3.0, else that read); and the stored Exact reads that re-lock.
+Exit 1 on any WRONG or control lock. Keys and field names only. Tune on `--split dev`; run `--split heldout`
+once at the end. `offer_replay.py` calls the same entry point. Tests: `tests/test_offer_parse_check.py`.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_parse_check.py --split dev --eval-dir <corpus>
 ```
 
 **Today's AI reader, measured (S3) — PAID.** `offer_fresh_read.py` runs the production AI offer

@@ -98,6 +98,57 @@ scrolled sideways on a phone.
   +3.32 (the shared `Sheet`, eager on purpose: it is the only way to filter on a phone and the only way to fund).
   No budget raised. mobile-check: 24 sponsor cells lowered (landing, login, register), the eight new surfaces at 0.
 
+## Offer letters read exactly — Sprint 5 (reader round 2: the Exact read covers more letters) (2026-11-03, not yet pushed)
+
+Production code (the free fixed-format reader); no migration; no paid call (cached text only). Plan:
+`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S5 "Plan (2026-11-03)". Part 1 (`56ff0648`) was the
+owner check page for the 71 stored Exact reads; the owner marked every field right (2026-11-03).
+
+- **Owner ruling 2026-11-03: the reporting date is the DATE ONLY** — a polytechnic letter's time window
+  ("15 JUN 2026 (8.30 PAGI - 11.30 PAGI)", "TENGAHARI", "PETANG") is not part of it. The 20 answer files that
+  carried a time were cut to the date as printed (gitignored corpus; 14 of the 71 S5 answers + 6 older ones). The
+  Exact read stores the date only for every family (`offer_parse.first_date`). The AI reader already did: 0 of
+  166 reader-2.3.0 reads and 0 stored reads carry a time (`vision._normalise_reporting_date` strips it), and
+  `pathway_engine.parse_reporting_date` reads either shape — no AI prompt or `OFFER_READER_VERSION` change.
+- **`offer_parse.py` → `PARSER_VERSION` 2.0.0** (output shape changes). ONE shared block reader (`_read_block`,
+  the 2026-09-10 decision's "revisit if": per-label recovery written once): each label's value is taken by its
+  SHAPE in letter order (label block then values, interleaved, or glued on one line); a line with a later label's
+  shape leaves the label empty; address lines are skipped; a long school / programme name wrapped onto a second
+  line is joined. The single-exit clause-number and date/money guards are unchanged. Fixes the five failure
+  classes the corpus showed: **A** STPM's six numbered labels (2.4-2.6 were unknown, so the block started one
+  label early), "Melapor"; **B** the matriculation glued text layer (`_split_glued`), the engineering letter's
+  "Aliran"; **C** names with no parentage marker (matric: the line directly above "K/P:"; poly: the
+  "NAME (IC)" line above the title, anywhere on the page) in a strict name shape — a single word over 10 letters
+  is OCR glue and never locks; **D** the polytechnic session numeral ("SESI 1:", "SESIl:" → "SESI I : …"); **E**
+  "Tarikh Daftar", "Tarikh dan Masa" / "Daftar" split, a "Sesi" row, a label block split in two runs. The two
+  wrong values: the offer date is a "Tarikh" followed by a date, never "Tarikh dan Masa Daftar" (was the
+  registration date on 16 of 20 poly locks); a range's FIRST day ("8 HINGGA 9 JUN" → 8 JUN). Conventions: the
+  poly code leaves `programme` for `programme_code` (dash or not); the intake keeps its words ("SEMESTER 1 TAHUN
+  2026", "SESI 2026/2027", "SESI I : 2026/2027" — the first 20xx the money path reads is unchanged);
+  `candidate_nric_source` (`label` / `other`); `campus` ''. The offer title is a lock requirement (a portal page
+  or slip never locks); the institution, and the stream for STPM / matriculation, are required. The matric
+  "Program Matrikulasi (X)" bracket stays (decision 2026-09-10). `diagnose()` exposes the walk for the eval.
+- **`offer_exact.py` (new) — the ONE entry point** (`vision`, `offer_replay`, `offer_parse_check`): identity from
+  page 1 (a digital PDF's page-1 layer); the IC through `offer_ic.guard_nric` with the profile IC exactly as on
+  the AI path — **a blanked IC means NO lock** (→ the AI reader); the merge writes the parser's keys whole
+  (name, IC + source, programme, `programme_code`, institution, `campus`, stream, intake, issuer) and keeps
+  merge-preserve for the reporting date (+ label) and the offer date; stores `offer_reader_inputs.nric_check`.
+- `vision.py`: the offer branch calls `exact_offer_read` (net −14 lines; `_run_field_extraction_impl` 306 → 303;
+  `_DET_OFFER_STAMP` moved into `offer_exact`).
+- **`eval/offer_parse_check.py` (new, hand-run)** — EXACT / INCOMPLETE / WRONG / CONTROL-LOCKED / FALLBACK per
+  letter by split, family, input kind; the pipeline score (the lock merged over the 2.3.0 AI read); the stored
+  Exact reads that re-lock; exit 1 on a WRONG or a control lock; keys and field names only. `offer_replay.py`
+  calls the same entry point (profile IC from `context.json`, page 1 from the corpus PDF); new reason guard
+  `ic_guard`.
+- **Measured (free, cached text):** dev 0 WRONG, 0 control locks (86 EXACT); held-out 0 WRONG, 0 control locks
+  (10 EXACT; see the held-out note in the sprint report). Corpus locks 51 → 96 of 287; the 21 at-risk stored
+  Exact reads 21/21 re-lock exact (70 of the 71 stored Exact reads re-lock; the one that does not was a wrong
+  1.3.0 lock on a noisy OCR layer); dev real known-format 16 of 17. Pipeline fully exact: dev 89 → 92 of 126,
+  held-out 63 → 66 of 90, no core field down.
+- Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
+  `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
+  `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.
+
 ## Student maintenance Sprint 10 — development modules — LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK)
 
 Owner rulings and the approved ModulesAdmin / ModuleStudent / ModuleProgress boards, 2026-11-02 (decisions.md, the

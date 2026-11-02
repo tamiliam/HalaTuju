@@ -116,9 +116,13 @@ class TestReplayLetter(SimpleTestCase):
         self.assertNotEqual(auth['status'], 'unrecognised')
 
     def test_the_merge_rule_is_production_s(self):
-        self.assertEqual(rp.merged_over_stored({'a': '1', 'b': '2'}, {'a': '', 'b': '3', '_family': 'x'}),
-                         {'a': '1', 'b': '3'})
-        self.assertEqual(rp.merged_over_stored(None, {'a': '9', '_family': 'x'}), {'a': '9'})
+        # S5: `offer_exact.merge_over` — the parser's own keys whole (a stale AI campus is cleared),
+        # the reporting date merge-preserve (the stored one stays when the parser read none).
+        rec = rp.replay_letter(MATRIC_TWIN.replace('17 OGOS 2031\n', ''), 'vision',
+                               _stored(campus='STALE CAMPUS', programme_code='X1'))
+        self.assertEqual(rec['capture'], 'deterministic')
+        self.assertEqual((rec['fields']['campus'], rec['fields']['programme_code']), ('', ''))
+        self.assertEqual(rec['fields']['reporting_date'], '17 Ogos 2031')
 
 
 class TestMissReason(SimpleTestCase):
@@ -148,12 +152,19 @@ class TestMissReason(SimpleTestCase):
         no_label = MATRIC_TWIN.replace(f'K/P: {SECRET_NRIC}\n', '')
         self.assertEqual(self._reason(no_label), 'layout_variant')
 
-    def test_a_tripped_guard_on_vision_text_is_photo_ocr_noise(self):
+    def test_a_shifted_block_on_vision_text_is_photo_ocr_noise(self):
+        # S5: the shape reader leaves the Jurusan EMPTY rather than shifting a ringgit amount into it.
         shifted = MATRIC_TWIN.replace('SAINS\n', 'RM499.00\n', 1)
         diag = rp.parser_diagnosis(shifted)
-        self.assertEqual(diag['guard'], 'date_or_money')
+        self.assertEqual(diag['empty_required'], ['programme', 'stream'])   # the bracket needs a Jurusan
         self.assertFalse(diag['locked'])
         self.assertEqual(self._reason(shifted), 'photo_ocr_noise')
+
+    def test_an_ic_the_guard_refuses_is_guard_ic_guard(self):
+        # A labelled IC that is malformed (no real birth date) and is not the profile's: blanked → no lock.
+        bad = MATRIC_TWIN.replace(SECRET_NRIC, '019999-14-5678')
+        diag = rp.parser_diagnosis(bad, profile_nric='020304-14-5678')
+        self.assertEqual((diag['guard'], diag['locked']), ('ic_guard', False))
 
 
 class _Corpus:
