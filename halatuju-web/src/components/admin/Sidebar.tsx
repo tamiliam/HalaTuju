@@ -36,6 +36,10 @@ import { Icon } from '@/components/admin/icons'
  * unmounting them would take the row's layout with it — and a plain prop keeps that legible in
  * the one place each element is written.
  *
+ * ⚠ TWO SIZES, ONE COMPONENT (Mobile M6a). Below `lg` only the phone drawer draws this (the rail is
+ * `lg:block`), so the bare classes are the DRAWER's — 44 px rows, 15 px words, 12 px headings (rules 3 and
+ * 12) — and the `lg:` ones are the rail's, unchanged.
+ *
  * Individual groups no longer collapse. That control existed to shorten a long wide sidebar;
  * the rail is short by construction, and two collapse mechanisms in one component is one too
  * many. The pin (open ↔ hover) is the only state a person now sets.
@@ -64,7 +68,7 @@ function NavRow({ item, active, badge, open, chordHint, focusChip, onNavigate }:
     return (
       <span
         aria-disabled="true"
-        className="flex h-8 cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm text-ground-400"
+        className="flex h-11 cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm text-ground-400 lg:h-8"
       >
         {icon}{label}
         <span className={`shrink-0 rounded border border-ground-200 bg-ground-50 px-1 text-[9px] font-bold uppercase tracking-wide text-ground-400 ${fade(open)}`}>
@@ -79,7 +83,7 @@ function NavRow({ item, active, badge, open, chordHint, focusChip, onNavigate }:
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`group/row relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors
+      className={`group/row relative flex h-11 items-center gap-2.5 rounded-lg px-2.5 text-[15px] transition-colors lg:h-8 lg:text-sm
         ${active
           ? 'bg-primary-50 font-semibold text-primary-800 shadow-[inset_2px_0_0_theme(colors.primary.600)]'
           : 'text-ground-700 hover:bg-primary-50 hover:text-primary-800'}`}
@@ -138,8 +142,10 @@ function NavRow({ item, active, badge, open, chordHint, focusChip, onNavigate }:
 
 export function Sidebar({
   groups, activeId, badgeCounts, orgName, programmeName,
-  pinned = false, chords = true, onNavigate,
+  pinned = false, chords = true, fill = false, onNavigate,
 }: {
+  /** The phone drawer (Mobile M6a): as wide as the drawer, with no rail border of its own. */
+  fill?: boolean
   groups: VisibleNavGroup[]
   activeId?: string
   /** Count per badge key. A row looks up its OWN key, so adding a badge is a registry entry and
@@ -205,9 +211,10 @@ export function Sidebar({
        * menu, super's, is 19 rows), and if that ever changes the chip has to move into a portal
        * rather than the overflow being tightened here.
        */
-      className={`flex h-full flex-col gap-1 border-r border-ground-200 bg-ground-0 p-2 transition-[width] duration-150 ease-out
+      className={`flex h-full flex-col gap-1 bg-ground-0 p-2 transition-[width] duration-150 ease-out
+        ${fill ? '' : 'border-r border-ground-200'}
         ${open && !pinned ? 'shadow-[6px_0_24px_rgba(0,0,0,0.10)]' : ''}`}
-      style={{ width: open ? 216 : 48 }}
+      style={{ width: fill ? '100%' : open ? 216 : 48 }}
     >
       {shown.map((g, gi) => {
         const { name, tag } = heading(g)
@@ -224,10 +231,10 @@ export function Sidebar({
                 className={`mx-1.5 my-1.5 h-px bg-ground-200 transition-opacity duration-100 ${open ? 'opacity-0' : 'opacity-100'}`}
               />
             )}
-            <p className={`flex h-5 items-center gap-2 px-2 text-[10.5px] font-bold uppercase tracking-wider text-ground-400 ${fade(open)}`}>
+            <p className={`flex min-h-5 items-center gap-2 px-2 text-xs lg:text-[10.5px] font-bold uppercase tracking-wider text-ground-400 ${fade(open)}`}>
               <span className="min-w-0 truncate">{name}</span>
               {tag && (
-                <span className="shrink-0 rounded border border-ground-200 px-1 text-[8.5px] font-semibold uppercase tracking-wide">
+                <span className="shrink-0 rounded border border-ground-200 px-1 text-[10px] font-semibold uppercase tracking-wide lg:text-[8.5px]">
                   {tag}
                 </span>
               )}

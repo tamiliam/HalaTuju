@@ -19,6 +19,10 @@ import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
 import { BreadcrumbScopes } from '@/components/admin/ScopeSwitcher'
 import { SystemHealthLight } from '@/components/admin/SystemHealthLight'
+import StaffAvatar from '@/components/admin/StaffAvatar'
+import { Icon } from '@/components/admin/icons'
+import { ThemeSegments } from '@/components/DisplaySegments'
+import Link from 'next/link'
 
 /**
  * The console shell: breadcrumb + scope sidebar + the account cluster.
@@ -47,7 +51,11 @@ import { SystemHealthLight } from '@/components/admin/SystemHealthLight'
  * mounting. Lifting that state up here instead would have given the crumb and the pages two
  * holders for one answer — the exact thing `ScopeSwitcher`'s docstring forbids.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+/**
+ * `path` is for the design SANDBOX only (Mobile M6a): a surface lives at `/sandbox/[surface]`, and Next's
+ * pathname context does not reach it, so it names the console route it stands for. Pages never pass it.
+ */
+export function AppShell({ children, path }: { children: ReactNode; path?: string }) {
   const { token: authToken, role } = useAdminAuth()
   // A MENTOR has no gift to scope (S7a): the scope list is a staff endpoint that refuses the role.
   const token = role?.role === 'mentor' ? null : authToken
@@ -116,19 +124,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes} settled={scopesSettled}
       failed={scopesFailed}>
-      <Chrome scopes={scopes} scopesLoaded={scopesLoaded}>{children}</Chrome>
+      <Chrome scopes={scopes} scopesLoaded={scopesLoaded} path={path}>{children}</Chrome>
     </ProgrammeScopeProvider>
   )
 }
 
 /** Everything that reads the programme context — see the split note on `AppShell`. */
 function Chrome(
-  { scopes, scopesLoaded, children }:
-  { scopes: AdminScopes; scopesLoaded: boolean; children: ReactNode },
+  { scopes, scopesLoaded, path, children }:
+  { scopes: AdminScopes; scopesLoaded: boolean; path?: string; children: ReactNode },
 ) {
   const { role, token, photoUrl } = useAdminAuth()
   const { t } = useT()
-  const pathname = usePathname()
+  const routerPath = usePathname()
+  const pathname = path ?? routerPath
   const router = useRouter()
 
   const [pendingSponsors, setPendingSponsors] = useState(0)
@@ -325,10 +334,35 @@ function Chrome(
   const utility = groups.find((g) => g.scope === 'utility')
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href
 
+  // ⚠ ONE SIGN-OUT, TWO DOORS (Mobile M6a). The account menu and the phone menu's Log out call THIS
+  // function — the exact body the account menu always ran — so the two can never drift apart.
+  const signOut = async () => { await adminSignOut(); router.replace('/admin/login') }
+
+  const orgName = role?.owning_org_name ?? role?.org_name
+  // The phone row's two lines: the page's own name from the registry, then the gift on a programme
+  // page, else the organisation. Text only; the switchers are in the phone menu.
+  const phoneTitle = active ? t(active.labelKey) : 'HalaTuju'
+  const phoneSub = active?.scope === 'programme' ? (programme?.name ?? orgName) : orgName
+  const scopeSwitchers = scopes.organisations.length || scopes.programmes.length ? (
+    <BreadcrumbScopes
+      organisations={scopes.organisations}
+      selectedOrg={selectedOrg}
+      onSelectOrg={setSelectedOrg}
+      scope={active?.scope}
+      pathname={pathname}
+    />
+  ) : undefined
+  const guideHref = hrefOf('guide')
+  const faqHref = hrefOf('faq')
+  const profileHref = hrefOf('profile') ?? '/admin/profile'
+  const drawerLink = 'flex min-h-11 items-center gap-3 rounded-lg px-2.5 text-[15px] text-ground-700 hover:bg-primary-50'
+
   return (
-    <div className="flex min-h-screen flex-col bg-ground-50">
+    // Rule 15 (Mobile M6a): a phone reads the console on the plain ground, sections not cards; from
+    // `md` it is the grey desk it always was.
+    <div className="flex min-h-screen flex-col bg-ground-0 md:bg-ground-50">
       <Topbar
-        orgName={role?.owning_org_name ?? role?.org_name}
+        orgName={orgName}
         programmeName={undefined}
         adminName={role?.admin_name}
         photoUrl={photoUrl}
@@ -336,26 +370,18 @@ function Chrome(
         attention={attention}
         onOpenSearch={() => setPaletteOpen(true)}
         onOpenMobileNav={() => setMobileNav(true)}
-        scopes={
-          scopes.organisations.length || scopes.programmes.length ? (
-            <BreadcrumbScopes
-              organisations={scopes.organisations}
-              selectedOrg={selectedOrg}
-              onSelectOrg={setSelectedOrg}
-              scope={active?.scope}
-              pathname={pathname}
-            />
-          ) : undefined
-        }
+        scopes={scopeSwitchers}
         navPinned={pinned}
         onTogglePin={togglePin}
-        onSignOut={async () => { await adminSignOut(); router.replace('/admin/login') }}
+        onSignOut={signOut}
         // SUPER ONLY: no other admin mounts the light, so no other browser ever asks for it.
         // (`r` is `effectiveRole`: the flag OR role 'super', the server's own `is_super` rule.)
         healthLight={r === 'super' ? <SystemHealthLight token={token} /> : undefined}
-        guideHref={hrefOf('guide')}
-        faqHref={hrefOf('faq')}
-        profileHref={hrefOf('profile') ?? '/admin/profile'}
+        guideHref={guideHref}
+        faqHref={faqHref}
+        profileHref={profileHref}
+        phoneTitle={phoneTitle}
+        phoneSub={phoneSub}
       />
 
       <div className="relative flex flex-1">
@@ -377,7 +403,7 @@ function Chrome(
               groups={groups}
               activeId={activeId}
               badgeCounts={badgeCounts}
-              orgName={role?.owning_org_name ?? role?.org_name}
+              orgName={orgName}
               programmeName={programme?.name}
               pinned={pinned}
             />
@@ -394,17 +420,52 @@ function Chrome(
             />
             {/* The drawer is always open and never chorded: there is no hover on a phone and
                 no keyboard to press G on. Same component, different truth about the device. */}
-            <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-ground-0 shadow-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
-              <Sidebar
-                groups={groups}
-                activeId={activeId}
-                badgeCounts={badgeCounts}
-                orgName={role?.owning_org_name ?? role?.org_name}
-                programmeName={programme?.name}
-                pinned
-                chords={false}
-                onNavigate={() => setMobileNav(false)}
-              />
+            {/* THE PHONE MENU (Mobile M6a, owner-approved mock-up): who you are and a 44 px close, the
+                scope switchers (below `md` they are not in the bar), every destination, then Help, your
+                Profile, the theme and Log out — what the bar holds from `md`, so nothing is out of reach. */}
+            <div data-admin-drawer className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-ground-0 shadow-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
+              <div className="flex min-h-14 shrink-0 items-center gap-3 border-b border-ground-100 py-2 pl-4 pr-1">
+                <StaffAvatar name={role?.admin_name} photoUrl={photoUrl} size={36} />
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-sm font-semibold text-ground-900">{role?.admin_name}</p>
+                  <p className="truncate text-xs text-ground-500">{roleLabel}</p>
+                </div>
+                <button type="button" onClick={() => setMobileNav(false)} aria-label={t('common.dismiss')}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-500 hover:bg-ground-50">
+                  <span aria-hidden className="text-lg leading-none">✕</span>
+                </button>
+              </div>
+              {scopeSwitchers && (
+                <div data-drawer-scopes className="flex min-w-0 flex-wrap items-center gap-x-1 border-b border-ground-100 px-3 py-1 text-sm md:hidden [&>span:first-child]:hidden">
+                  {scopeSwitchers}
+                </div>
+              )}
+              <div className="flex-1">
+                <Sidebar
+                  groups={groups}
+                  activeId={activeId}
+                  badgeCounts={badgeCounts}
+                  orgName={orgName}
+                  programmeName={programme?.name}
+                  pinned
+                  chords={false}
+                  fill
+                  onNavigate={() => setMobileNav(false)}
+                />
+              </div>
+              <div data-drawer-foot className="shrink-0 space-y-1 border-t border-ground-200 px-2 pb-3 pt-2">
+                {guideHref && <Link href={guideHref} onClick={() => setMobileNav(false)} className={drawerLink}><Icon name="guide" />{t('admin.guideNav')}</Link>}
+                {faqHref && <Link href={faqHref} onClick={() => setMobileNav(false)} className={drawerLink}><Icon name="help" />{t('admin.faqNav')}</Link>}
+                <Link href={profileHref} onClick={() => setMobileNav(false)} className={drawerLink}><Icon name="profile" />{t('admin.profile')}</Link>
+                <div className="px-2.5 pt-2">
+                  <p className="pb-1.5 text-xs font-semibold uppercase tracking-wide text-ground-500">{t('theme.label')}</p>
+                  <ThemeSegments />
+                </div>
+                <button type="button" onClick={signOut}
+                  className="flex min-h-11 w-full items-center gap-3 rounded-lg px-2.5 text-left text-[15px] font-medium text-critical-600 hover:bg-critical-50">
+                  <Icon name="signOut" />{t('header.logout')}
+                </button>
+              </div>
             </div>
           </div>
         )}

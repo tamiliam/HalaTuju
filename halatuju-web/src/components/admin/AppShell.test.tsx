@@ -24,13 +24,14 @@ let mockRole: Record<string, unknown> = {}
 let mockToken: string | null = null
 
 const mockPush = jest.fn()
+const mockReplace = jest.fn()
 
 // A programme page by default, so the scope tests below see all three groups. A test that needs
 // the shell OUTSIDE a gift sets this and restores it — see `folds the Programme group away`.
 let mockPath = '/admin/scholarship'
 jest.mock('next/navigation', () => ({
   usePathname: () => mockPath,
-  useRouter: () => ({ push: mockPush, replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: mockRole, token: mockToken }) }))
@@ -345,8 +346,9 @@ describe('the rail waits for a gift before offering Configuration', () => {
     asRole('org_admin')
     render(<AppShell>content</AppShell>)
     // Applications STAYS — a list of every gift is a true answer, and it is the row that keeps
-    // the group from emptying.
-    expect(await screen.findByText('admin.scholarship.nav')).toBeTruthy()
+    // the group from emptying. In the RAIL: since Mobile M6a the phone row names the page too.
+    const rail = await screen.findByRole('navigation', { name: 'admin.shell.primaryNav' })
+    expect(within(rail).getByText('admin.scholarship.nav')).toBeTruthy()
     // ⚠ Await the REMOVAL itself, not a neighbour. Configuration is on screen from the first
     // paint by design (see the third case below), so "the fetch has landed" is the moment this
     // row goes, and no other row marks it: Applications is painted before the fetch too, so
@@ -494,4 +496,53 @@ describe('the System health light is for a super admin alone', () => {
       expect(screen.queryByTestId('system-health-light')).toBeNull()
       expect(api.getSystemHealth).not.toHaveBeenCalled()
     })
+})
+
+/*
+ * Mobile M6a: the phone menu carries what the bar holds from md — who you are, Guide, FAQ, Profile, the
+ * theme and Log out. Its Log out is the ACCOUNT MENU's Log out, not a second copy: both run the one
+ * `signOut` (adminSignOut, THEN replace to /admin/login), which this pins from the outside.
+ */
+describe('the phone menu (Mobile M6a)', () => {
+  const signOutMock = () => jest.requireMock('@/lib/admin-supabase').adminSignOut as jest.Mock
+  beforeEach(() => { mockReplace.mockClear(); signOutMock().mockClear() })
+  const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'common.menu' }))
+  const drawer = () => screen.getByRole('dialog', { name: 'admin.shell.primaryNav' })
+
+  it('names who you are and offers Guide, FAQ, Profile, the theme and Log out', async () => {
+    asRole('org_admin', { org_name: 'Yayasan Contoh' })
+    render(<AppShell>content</AppShell>)
+    openMenu()
+    const d = drawer()
+    expect(within(d).getByText('Test Person')).toBeTruthy()
+    expect(within(d).getByRole('link', { name: /admin\.profile/ }).getAttribute('href')).toBe('/admin/profile')
+    expect(within(d).getByRole('radiogroup', { name: 'theme.label' })).toBeTruthy()
+    expect(within(d).getByRole('button', { name: /header\.logout/ })).toBeTruthy()
+  })
+
+  it('Log out there signs out FIRST, then goes to the sign-in page — exactly what the account menu does', async () => {
+    const order: string[] = []
+    signOutMock().mockImplementation(async () => { order.push('signOut') })
+    mockReplace.mockImplementation((to: string) => { order.push(`replace ${to}`) })
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    openMenu()
+    fireEvent.click(within(drawer()).getByRole('button', { name: /header\.logout/ }))
+    await waitFor(() => expect(order).toEqual(['signOut', 'replace /admin/login']))
+
+    // The account menu's door, for comparison: the same two steps in the same order.
+    order.length = 0
+    fireEvent.click(within(drawer()).getByRole('button', { name: 'common.dismiss' }))
+    fireEvent.click(screen.getByRole('button', { name: 'admin.shell.account' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: /header\.logout/ }))
+    await waitFor(() => expect(order).toEqual(['signOut', 'replace /admin/login']))
+  })
+
+  it('the phone row names the page from the registry, and the gift-less organisation under it', () => {
+    asRole('org_admin', { owning_org_name: 'Yayasan Contoh' })
+    render(<AppShell>content</AppShell>)
+    const where = document.querySelector('[data-phone-where]') as HTMLElement
+    expect(where.textContent).toContain('admin.scholarship.nav')
+    expect(where.textContent).toContain('Yayasan Contoh')
+  })
 })

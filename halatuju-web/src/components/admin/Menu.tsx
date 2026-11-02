@@ -52,7 +52,7 @@ export function MenuItem({ icon, children, sub, onClick, href, danger, disabled,
   /** Why it is asleep. Rendered under the item — a `title` needs a hover a touch screen cannot give. */
   reason?: string
 }) {
-  const cls = `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors
+  const cls = `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 max-md:min-h-11 text-left text-sm transition-colors
     ${danger
       ? 'text-critical-600 hover:bg-critical-50'
       : 'text-ground-700 hover:bg-primary-50 hover:text-primary-800'}`
@@ -93,7 +93,7 @@ export function MenuItem({ icon, children, sub, onClick, href, danger, disabled,
 /** A labelled divider inside a menu. */
 export function MenuHeading({ children }: { children: ReactNode }) {
   return (
-    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-ground-400">
+    <p className="px-3 pb-1 pt-2 text-xs md:text-[10px] font-bold uppercase tracking-wider text-ground-400">
       {children}
     </p>
   )
@@ -232,7 +232,8 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
             setTimeout(() => move(e.key === 'ArrowDown' ? 1 : -1), 0)
           }
         }}
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-ground-500 transition-colors hover:bg-primary-50 hover:text-primary-700 aria-expanded:bg-primary-50 aria-expanded:text-primary-700"
+        // Mobile M6a: a 44 px target on a phone (rule 3); the desktop keeps its compact trigger.
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 max-md:min-h-11 max-md:min-w-11 max-md:justify-center text-ground-500 transition-colors hover:bg-primary-50 hover:text-primary-700 aria-expanded:bg-primary-50 aria-expanded:text-primary-700"
       >
         {trigger}
       </button>

@@ -30,7 +30,7 @@ function Breadcrumb({ orgName, programmeName, scopes }: {
   )
   const sep = <span aria-hidden className="shrink-0 text-ground-300">/</span>
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[13px]">
+    <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-2 text-[13px] md:flex">
       <span className="flex shrink-0 items-center gap-1.5 font-bold text-ground-900">
         <span aria-hidden className="grid h-5 w-5 place-items-center rounded bg-brand-fill text-[10px] font-extrabold text-brand-fill-ink">H</span>
         HalaTuju
@@ -45,10 +45,27 @@ function Breadcrumb({ orgName, programmeName, scopes }: {
   )
 }
 
+/**
+ * WHERE YOU ARE, on a phone (Mobile M6a, owner-approved mock-up): the H mark, the page's name and, under
+ * it, the gift or organisation — plain text, truncated, never a control. The scope SWITCHERS move into
+ * the phone menu (AppShell): two menus side by side cannot fit a 360 px row in Tamil.
+ */
+function PhoneWhere({ title, sub }: { title: string; sub?: string | null }) {
+  return (
+    <div data-phone-where className="flex min-w-0 flex-1 items-center gap-2 pl-0.5 md:hidden">
+      <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded bg-brand-fill text-xs font-extrabold text-brand-fill-ink">H</span>
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block truncate text-sm font-semibold text-ground-800">{title}</span>
+        {sub && <span className="block truncate text-xs text-ground-500">{sub}</span>}
+      </span>
+    </div>
+  )
+}
+
 export function Topbar({
   orgName, programmeName, adminName, photoUrl, roleLabel, attention,
   onOpenSearch, onOpenMobileNav, onSignOut, guideHref, faqHref, profileHref,
-  navPinned, onTogglePin, scopes, healthLight,
+  navPinned, onTogglePin, scopes, healthLight, phoneTitle, phoneSub,
 }: {
   orgName?: string | null
   programmeName?: string
@@ -72,6 +89,9 @@ export function Topbar({
   guideHref?: string
   faqHref?: string
   profileHref: string
+  /** The phone row's two lines (Mobile M6a): the page's name, and the gift or organisation. */
+  phoneTitle: string
+  phoneSub?: string | null
 }) {
   const { t } = useT()
   const router = useRouter()
@@ -80,12 +100,16 @@ export function Topbar({
     tone === 'crit' ? 'bg-critical-500' : tone === 'warn' ? 'bg-caution-500' : 'bg-brand-shape'
 
   return (
-    <header className="flex h-13 items-center gap-2 border-b border-ground-200 bg-ground-0 px-3 py-2">
+    // ⚠ ONE ROW ON A PHONE, PINNED (Mobile M6a): Menu · where you are · Search · Notifications · Account,
+    // each 44 × 44 (rule 3), measured in Tamil at 360. The theme, Help, the pin and Ctrl K are `md:` only;
+    // the theme and Help live in the phone menu (AppShell), so nothing is lost. From `md` the bar is the
+    // one it always was, and not sticky.
+    <header data-admin-topbar className="flex h-13 items-center gap-2 border-b border-ground-200 bg-ground-0 px-3 py-2 max-md:sticky max-md:top-0 max-md:z-30 max-md:h-auto max-md:min-h-14 max-md:gap-0.5 max-md:px-1.5 max-md:pb-1.5 max-md:pt-[max(0.375rem,env(safe-area-inset-top))]">
       <button
         type="button"
         onClick={onOpenMobileNav}
         aria-label={t('common.menu')}
-        className="-ml-1 rounded-lg p-2 text-ground-600 hover:bg-ground-50 lg:hidden"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ground-600 hover:bg-ground-50 md:-ml-1 lg:hidden"
       >
         <Icon name="menu" size={20} />
       </button>
@@ -105,18 +129,20 @@ export function Topbar({
         <Icon name={navPinned ? 'pinned' : 'pin'} size={16} />
       </button>
 
+      <PhoneWhere title={phoneTitle} sub={phoneSub} />
       <Breadcrumb orgName={orgName} programmeName={programmeName} scopes={scopes} />
 
-      <div className="flex-1" />
+      <div className="hidden flex-1 md:block" />
 
       {/* Search — a button, not an input: the palette owns the input so ⌘K and a click open
           exactly the same thing. */}
       <button
         type="button"
         onClick={onOpenSearch}
-        className="flex items-center gap-2 rounded-lg border border-ground-200 bg-ground-50 px-2.5 py-1.5 text-[12.5px] text-ground-400 transition-colors hover:border-primary-200 hover:text-primary-700"
+        aria-label={t('admin.shell.search')}
+        className="flex items-center gap-2 rounded-lg border border-ground-200 bg-ground-50 px-2.5 py-1.5 text-[12.5px] text-ground-400 transition-colors hover:border-primary-200 hover:text-primary-700 max-md:h-11 max-md:w-11 max-md:shrink-0 max-md:justify-center max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:text-ground-600"
       >
-        <Icon name="search" size={14} />
+        <Icon name="search" size={18} className="md:h-3.5 md:w-3.5" />
         <span className="hidden sm:inline">{t('admin.shell.search')}</span>
         <kbd className="ml-1 hidden rounded border border-ground-200 bg-ground-0 px-1 font-mono text-[10px] text-ground-400 sm:inline">
           Ctrl K
@@ -126,12 +152,12 @@ export function Topbar({
       {/* Light / Dark / Auto (Layer 1 F7d). It sits in the bar rather than in the account menu
           because a reviewer changing it is changing the thing in front of them — the same reason
           the nav pin is not buried either. A reviewer reads documents on this shell for hours. */}
-      <ThemeSelector />
+      <div className="hidden md:block"><ThemeSelector /></div>
 
       {healthLight}
 
       {(guideHref || faqHref) && (
-        <Menu label={t('admin.shell.help')} trigger={<Icon name="help" size={17} />}>
+        <div className="hidden md:block"><Menu label={t('admin.shell.help')} trigger={<Icon name="help" size={17} />}>
           <MenuHeading>{t('admin.shell.help')}</MenuHeading>
           {guideHref && (
             <MenuItem icon={<Icon name="guide" />} onClick={() => router.push(guideHref)} sub={t('admin.shell.guideSub')}>
@@ -141,7 +167,7 @@ export function Topbar({
           {faqHref && (
             <MenuItem icon={<Icon name="help" />} onClick={() => router.push(faqHref)}>{t('admin.faqNav')}</MenuItem>
           )}
-        </Menu>
+        </Menu></div>
       )}
 
       <Menu
