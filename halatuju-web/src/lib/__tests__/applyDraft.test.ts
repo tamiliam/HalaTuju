@@ -119,6 +119,10 @@ describe('who gets it back', () => {
     writeApplyDraft({ ...FORM, school: 'SMK Taman Desa' }, HER, 'results')
     expect(peekApplyDraft('u1')?.school).toBe('SMK Taman Desa')
     expect(peekApplyDraft('u2')).toBeNull()
+    // Review F2: no user id yet (sign-in loading) is not a match — never someone else's draft.
+    expect(peekApplyDraft(undefined)).toBeNull()
+    expect(peekApplyDraft(null)).toBeNull()
+    expect(peekApplyDraft('')).toBeNull()
     expect(raw()).not.toBeNull()
   })
 

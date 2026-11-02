@@ -60,7 +60,11 @@ export default function ScholarshipAwardPage() {
   const [declining, setDeclining] = useState(false)   // the decline question's sheet (Mobile M4)
   // ONE accept / sign / decline at a time (Mobile M4): read synchronously, so two taps in the same frame
   // (before `submitting` re-renders the button disabled) cannot send two answers to the award.
-  const acting = useRef(false)
+  const acting = useRef(false)   // released on a refusal only: never during the navigation that follows success
+  const errorRef = useRef<HTMLDivElement>(null)
+  // The agreement must have been SHOWN before she can agree to it (review M1): the phone reader opened
+  // once, or the inline frame on a wider screen. On screen only — never stored.
+  const [agreementShown, setAgreementShown] = useState(false)
 
   // Guardian modal (minors, plain flow only — used when there's no agreement)
   const [showGuardian, setShowGuardian] = useState(false)
@@ -210,8 +214,7 @@ export default function ScholarshipAwardPage() {
     } catch (e) {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
-    } finally {
-      acting.current = false; setSubmitting(false)
+      acting.current = false; setSubmitting(false)   // released on a REFUSAL only (review M2)
     }
   }
 
@@ -262,8 +265,9 @@ export default function ScholarshipAwardPage() {
       setError(messageForCode(code))
       // The PIN no longer vouches for the number on file (changed, or gone stale): show the PIN step again.
       if (code === 'guarantor_phone_changed' || code === 'guarantor_phone_unverified') { setPhoneVerified(false); setPinSent(false); setPinCode('') }
-    } finally {
       acting.current = false; setSubmitting(false)
+      // She pressed a sticky bar at the bottom; the refusal sits up the page — bring it to her (review M3).
+      requestAnimationFrame(() => errorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }))
     }
   }
 
@@ -280,7 +284,6 @@ export default function ScholarshipAwardPage() {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
       setDeclining(false)
-    } finally {
       acting.current = false; setSubmitting(false)
     }
   }
@@ -378,7 +381,7 @@ export default function ScholarshipAwardPage() {
     // always required (the guardian is the surety for a minor too).
     const studentNameOk = isMinor || studentName.trim().length > 0
     const guarantorOk = guarantorName.trim().length > 0 && guarantorNric.trim().length > 0 && !!guarantorRel
-    const canSubmit = studentAgreed && guarantorAgreed && studentNameOk && guarantorOk && phoneVerified && !submitting
+    const canSubmit = agreementShown && studentAgreed && guarantorAgreed && studentNameOk && guarantorOk && phoneVerified && !submitting
 
     return wrap(
       <form onSubmit={signAndAccept} className="md:space-y-6">
@@ -414,9 +417,9 @@ export default function ScholarshipAwardPage() {
 
         {/* The full agreement — server-rendered HTML in a SANDBOXED frame (no script, no way into the
             page). On a phone, a button opens it in a tall reader sheet; its text is never changed. */}
-        <AwardContractReader html={preview.rendered_html} />
+        <AwardContractReader html={preview.rendered_html} onShown={() => setAgreementShown(true)} />
 
-        {error && <InfoBox kind="block">{error}</InfoBox>}
+        <div ref={errorRef}>{error && <InfoBox kind="block">{error}</InfoBox>}</div>
 
         {/* STUDENT signature */}
         <div className={PHONE_SECTION}>
@@ -452,8 +455,8 @@ export default function ScholarshipAwardPage() {
             <input
               type="checkbox"
               className="mt-0.5 h-5 w-5 shrink-0"
-              checked={studentAgreed}
-              onChange={(e) => setStudentAgreed(e.target.checked)}
+              checked={studentAgreed} disabled={!agreementShown}
+              onChange={(e) => setStudentAgreed(agreementShown && e.target.checked)}
             />
             <span className="text-sm text-ground-800">{t('scholarship.award.bursary.student.agree')}</span>
           </label>
@@ -570,8 +573,8 @@ export default function ScholarshipAwardPage() {
             <input
               type="checkbox"
               className="mt-0.5 h-5 w-5 shrink-0"
-              checked={guarantorAgreed}
-              onChange={(e) => setGuarantorAgreed(e.target.checked)}
+              checked={guarantorAgreed} disabled={!agreementShown}
+              onChange={(e) => setGuarantorAgreed(agreementShown && e.target.checked)}
             />
             <span className="text-sm text-ground-800">{t('scholarship.award.bursary.guarantor.agree')}</span>
           </label>

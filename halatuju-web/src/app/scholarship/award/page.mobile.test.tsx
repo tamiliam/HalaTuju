@@ -151,6 +151,7 @@ describe('one answer to the award, however many taps (Mobile M4 latch)', () => {
     serve({ bursary_preview: preview({ comprehension_passed: true, guarantor_phone_verified: true }) })
     render(<ScholarshipAwardPage />)
     await screen.findByText('scholarship.award.bursary.student.title')
+    fireEvent.click(screen.getByTestId('award-read-agreement'))        // review M1: shown before agreeing
     fireEvent.change(screen.getByPlaceholderText('scholarship.award.bursary.student.signPlaceholder'), { target: { value: 'Zxq Student' } })
     fireEvent.change(screen.getByPlaceholderText('scholarship.award.bursary.guarantor.namePlaceholder'), { target: { value: 'Rahmah' } })
     fireEvent.change(screen.getByDisplayValue('scholarship.award.guardian.relationshipPlaceholder'), { target: { value: 'mother' } })
@@ -162,6 +163,82 @@ describe('one answer to the award, however many taps (Mobile M4 latch)', () => {
     await act(async () => { finish() })
     expect(mockApi.respondToAward).toHaveBeenCalledTimes(1)
     expect(mockApi.respondToAward.mock.calls[0][0]).toMatchObject({ action: 'accept', guarantor_name: 'Rahmah' })
+  })
+})
+
+/** Fill the signing form completely (PIN already valid from the server). */
+async function fillSigning() {
+  await screen.findByText('scholarship.award.bursary.student.title')
+  fireEvent.change(screen.getByPlaceholderText('scholarship.award.bursary.student.signPlaceholder'), { target: { value: 'Zxq Student' } })
+  fireEvent.change(screen.getByPlaceholderText('scholarship.award.bursary.guarantor.namePlaceholder'), { target: { value: 'Rahmah' } })
+  fireEvent.change(screen.getByDisplayValue('scholarship.award.guardian.relationshipPlaceholder'), { target: { value: 'mother' } })
+  const nrics = screen.getAllByPlaceholderText('XXXXXX-XX-XXXX')
+  fireEvent.change(nrics[nrics.length - 1], { target: { value: '700101105555' } })
+}
+const signButton = () => screen.getByRole('button', { name: 'scholarship.award.bursary.signSubmit' }) as HTMLButtonElement
+
+describe('review M1 — she can agree only to an agreement that was put in front of her', () => {
+  it('phone: the agree ticks and Sign stay off until "Read the full agreement" is opened', async () => {
+    serve({ bursary_preview: preview({ comprehension_passed: true, guarantor_phone_verified: true }) })
+    render(<ScholarshipAwardPage />)
+    await fillSigning()
+    const boxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
+    expect(boxes.every((b) => b.disabled)).toBe(true)
+    for (const b of boxes) fireEvent.click(b)
+    expect(boxes.some((b) => b.checked)).toBe(false)
+    expect(signButton().disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('award-read-agreement'))
+    fireEvent.click(screen.getByRole('button', { name: 'scholarship.actionCentre.done' }))
+    for (const b of screen.getAllByRole('checkbox')) fireEvent.click(b)
+    expect(signButton().disabled).toBe(false)
+  })
+
+  it('a wider screen shows the agreement inline — that counts as shown', async () => {
+    const mm = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: q.includes('768'), media: q, addEventListener() {}, removeEventListener() {} })) as never
+    try {
+      serve({ bursary_preview: preview({ comprehension_passed: true, guarantor_phone_verified: true }) })
+      render(<ScholarshipAwardPage />)
+      await fillSigning()
+      await waitFor(() => expect((screen.getAllByRole('checkbox') as HTMLInputElement[]).every((b) => !b.disabled)).toBe(true))
+    } finally {
+      window.matchMedia = mm
+    }
+  })
+})
+
+describe('review M2 / M3 — after an answer, and after a refusal', () => {
+  it('M2: a tap during the navigation that follows a successful accept sends nothing', async () => {
+    serve({})
+    render(<ScholarshipAwardPage />)
+    const accept = await screen.findByRole('button', { name: 'scholarship.award.confirmed.accept' })
+    await act(async () => { fireEvent.click(accept) })
+    await waitFor(() => expect(mockApi.respondToAward).toHaveBeenCalledTimes(1))
+    await act(async () => { fireEvent.click(accept) })                   // the page has not gone yet
+    expect(mockApi.respondToAward).toHaveBeenCalledTimes(1)
+  })
+
+  it('M3: a refused signature brings the reason into view (it sits up the page, the button at the bottom)', async () => {
+    const scroll = jest.fn()
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = scroll
+    const raf = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0 })
+    try {
+      mockApi.respondToAward.mockRejectedValueOnce(Object.assign(new Error('400'), { code: 'parent_ic_name_mismatch' }))
+      serve({ bursary_preview: preview({ comprehension_passed: true, guarantor_phone_verified: true }) })
+      render(<ScholarshipAwardPage />)
+      await fillSigning()
+      fireEvent.click(screen.getByTestId('award-read-agreement'))
+      for (const b of screen.getAllByRole('checkbox')) fireEvent.click(b)
+      await act(async () => { fireEvent.submit(signButton().closest('form') as HTMLFormElement) })
+      expect(await screen.findByText('scholarship.award.error.parent_ic_name_mismatch')).toBeTruthy()
+      expect(scroll).toHaveBeenCalled()
+      // ...and the lock is released: she can correct and sign again.
+      expect(signButton().disabled).toBe(false)
+    } finally {
+      Element.prototype.scrollIntoView = orig
+      raf.mockRestore()
+    }
   })
 })
 

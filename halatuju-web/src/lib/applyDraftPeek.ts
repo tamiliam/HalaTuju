@@ -10,5 +10,7 @@ import { parse, strip, type DraftForm } from './applyDraft'
 
 export function peekApplyDraft(uid?: string | null): DraftForm | null {
   const e = parse()
-  return e && (!uid || e.uid === uid) ? strip(e.form) : null
+  // No user id yet (sign-in still loading) is NOT a match (review F2): someone else's draft must never
+  // pre-fill this person's onboarding while the session settles.
+  return e && uid && e.uid === uid ? strip(e.form) : null
 }

@@ -117,26 +117,46 @@ export default function ScholarshipApplyPage() {
   // has no NRIC; seeding (and locking populatedRef) on it would leave the box blank. And wait for the
   // programme: a draft is only ever restored onto the form for the programme it was typed for.
   const baseFormRef = useRef<ApplyFormState | null>(null)
+  const referralSeeded = useRef(false)
+  // WHOSE form this is (review F1): the user id that filled it. Another account signing in on this
+  // browser (another tab) changes `uid` under a form still holding HER answers — they are thrown away,
+  // her draft with them, and the next profile (not the one already in memory) seeds the form afresh.
+  const fillerRef = useRef<string | null>(null)
+  const staleProfileRef = useRef<unknown>(undefined)
+  useEffect(() => {
+    if (fillerRef.current === null || fillerRef.current === (uid ?? null)) return
+    clearApplyDraft()
+    fillerRef.current = null
+    populatedRef.current = false
+    baseFormRef.current = null
+    referralSeeded.current = false
+    staleProfileRef.current = profile   // the profile in memory is still the last person's
+    setForm(profileToApplyDefaults(null))
+    setTab('personal')
+  }, [uid, profile])   // acts only when the filler and the signed-in id differ
   useEffect(() => {
     // Not while the chooser is up (several open, none picked): no programme yet to read a draft for.
     if (!profile?.nric || populatedRef.current || !gift.settled || gift.choices.length > 1 || !uid) return
+    if (profile === staleProfileRef.current) return   // wait for the NEW account's profile
     const draft = readApplyDraft({ uid, programme: gift.code })
     const seeded = draft ? { ...profileToApplyDefaults(profile), ...draft.form } : profileToApplyDefaults(profile)
     setForm(seeded)
     baseFormRef.current = seeded
+    fillerRef.current = uid
     if (draft && (TAB_ORDER as string[]).includes(draft.step)) setTab(draft.step as TabKey)
     populatedRef.current = true
   }, [profile, gift.settled, gift.choices.length, gift.code, uid])
-  // Kept as she types - only once she has changed something, and never once the form is sent.
+  // Kept as she types - only once she has changed something, never once the form is sent, and never
+  // under any user id but the one that filled it.
   const [sent, setSent] = useState(false)
-  useApplyDraft(form, uid, gift.code, tab, populatedRef.current && !sent && baseFormRef.current !== form)
+  useApplyDraft(form, uid, gift.code, tab,
+    populatedRef.current && !sent && baseFormRef.current !== form && fillerRef.current === (uid ?? null))
   // A form that will not be sent from here - already applied, programme closed, sent away - keeps no draft.
   useEffect(() => {
     if (gate.state === 'already_applied' || gift.closed || exit) clearApplyDraft()
   }, [gate.state, gift.closed, exit])
   // "Who referred you?" is pre-filled ONCE, only from her own earlier answer to THIS organisation
   // (the gate's `referral`) — never a `?ref=` code (sources Sprint C) — and never over a choice made.
-  const referralSeeded = useRef(false)
   useEffect(() => {
     if (referralSeeded.current || !gate.referral || !populatedRef.current) return
     referralSeeded.current = true

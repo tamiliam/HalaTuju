@@ -127,6 +127,47 @@ describe('an iOS tab kill (a remount, the tab storage kept)', () => {
   })
 })
 
+describe('review F1 — another account signs in (in another tab) while this form is open', () => {
+  it("A's typing is dropped, nothing is stored under B, and the form starts from B's own profile", async () => {
+    seedApplyDraft(complete, 'family', 'bp')                       // A's draft (TEST_UID), on My Family
+    const ctx = (session: object | null, prof: object) => (
+      <AuthContext.Provider value={{ status: 'ready', profile: prof, token: 'tkn', session, showAuthGate: () => {} } as never}>
+        <ScholarshipApplyPage />
+      </AuthContext.Provider>
+    )
+    const view = render(ctx(testSession, profile))
+    fireEvent.change(await screen.findByDisplayValue('Rajan'), { target: { value: 'Rajan a/l Muthu' } })
+
+    // B signs in: the context's id changes first, the old profile is still in memory for a moment...
+    const B = { user: { id: 'student-b' } }
+    view.rerender(ctx(B, profile))
+    act(() => { window.dispatchEvent(new Event('pagehide')) })           // a flush at the worst moment
+    expect(screen.queryByDisplayValue('Rajan a/l Muthu')).toBeNull()
+    expect(sessionStorage.getItem(APPLY_DRAFT_KEY)).toBeNull()
+
+    // ...then B's own profile arrives and seeds the form — on About Me, with B's name.
+    const profileB = { ...profile, name: 'Siti Contoh', nric: '090202-10-2222' }
+    view.rerender(ctx(B, profileB))
+    expect(await screen.findByDisplayValue('Siti Contoh')).toBeTruthy()
+    expect(stepLine()).toContain('scholarship.apply.section.personal')
+    act(() => { window.dispatchEvent(new Event('pagehide')) })
+    expect(sessionStorage.getItem(APPLY_DRAFT_KEY)).toBeNull()        // nothing changed by B: nothing kept
+    expect(screen.queryByDisplayValue('Rajan a/l Muthu')).toBeNull()
+  })
+
+  it('signing out (id gone) drops the form as well', async () => {
+    seedApplyDraft(complete, 'family', 'bp')
+    const view = mount()
+    await screen.findByDisplayValue('Rajan')
+    view.rerender(
+      <AuthContext.Provider value={{ status: 'ready', profile, token: 'tkn', session: null, showAuthGate: () => {} } as never}>
+        <ScholarshipApplyPage />
+      </AuthContext.Provider>)
+    expect(screen.queryByDisplayValue('Rajan')).toBeNull()
+    expect(sessionStorage.getItem(APPLY_DRAFT_KEY)).toBeNull()
+  })
+})
+
 describe('when it goes', () => {
   it('a successful submit deletes it — nothing of the form stays on the phone', async () => {
     seedApplyDraft(complete, 'support', 'bp')

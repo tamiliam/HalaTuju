@@ -23,8 +23,9 @@ const push = jest.fn()
 
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
+let mockSession: unknown = { user: { id: 'stu-apply-test' } }
 jest.mock('@/lib/auth-context', () => ({
-  useAuth: () => ({ token: 'tkn', isAnonymous: false, session: { user: { id: 'stu-apply-test' } }, refreshProfile: jest.fn(() => Promise.resolve()) }),
+  useAuth: () => ({ token: 'tkn', isAnonymous: false, session: mockSession, refreshProfile: jest.fn(() => Promise.resolve()) }),
 }))
 jest.mock('@/lib/api', () => ({
   getProfile: jest.fn(),
@@ -83,6 +84,18 @@ describe('(a) the apply stash prefills the school', () => {
     sessionStorage.removeItem(APPLY_RETURN_KEY)      // shown, so the prefill can be seen
     await mount()
     expect(schoolInput().value).toBe('SMK Taman Desa')
+  })
+
+  it('review F2: while the session has no user id yet, a draft pre-fills NOTHING (it may belong to another person)', async () => {
+    detourFrom('SMK Taman Desa')
+    sessionStorage.removeItem(APPLY_RETURN_KEY)
+    mockSession = null
+    try {
+      await mount()
+      expect(schoolInput().value).toBe('')
+    } finally {
+      mockSession = { user: { id: 'stu-apply-test' } }
+    }
   })
 
   it("the profile's own school wins over the stash", async () => {

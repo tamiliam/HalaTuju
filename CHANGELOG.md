@@ -33,6 +33,12 @@ holds as done (decisions.md, the Mobile M4 entry). Consent / PII / money / ident
 - **One box level on phones (rule 15, owner 2026-11-02, the Grab comparison)**: 16 px gutter, cards become plain
   full-width sections below `md`, nothing boxed inside them (document rows divided, wizard groups and the PIN panel
   unboxed); `src/lib/phoneSection.ts` is the one home for the next sprint's sweep of the other student pages.
+- **Adversarial review fixes (2026-11-02):** F1 — the apply form remembers whose it is; another account signing
+  in (another tab) or a sign-out throws the typed form and its draft away, never writes it under the new id,
+  and waits for the NEW account's profile; F2 — the onboarding detour peek needs a matching user id (none while
+  sign-in loads); M1 — the award's agree ticks and Sign work only after the agreement was shown (the phone reader
+  opened, or the inline frame from `md`; on screen only); M2 — the accept / sign / decline lock is released on a
+  refusal only, never during the navigation after success; M3 — a refused signature scrolls its reason into view.
 - **mobile-check** measures the label of a file input (it hid the 20 px Choose / Replace links); sandbox surfaces
   `apply-draft-restored`, `documents-remove`, `award-sign-adult`, `award-sign-minor`, `award-plain-minor`
   (synthetic sign-in, `src/sandbox/scholarshipM4Surfaces.tsx`).

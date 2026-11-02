@@ -13,7 +13,7 @@
  * trapping the thumb inside the page. From `md` the inline frame stays as it was. The frame keeps
  * `sandbox=""`: the document cannot run script or reach the page.
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Sheet from '@/components/Sheet'
 import { useT } from '@/lib/i18n'
 
@@ -30,16 +30,21 @@ export function phoneContractHtml(html: string): string {
   return PHONE_CONTRACT_CSS + html
 }
 
-export function AwardContractReader({ html }: { html: string }) {
+/** `onShown`: the agreement has been put in front of her — the phone reader opened, or (from `md`) the
+ *  inline frame on screen. The page lets her agree only after that (review M1). */
+export function AwardContractReader({ html, onShown }: { html: string; onShown?: () => void }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    try { if (window.matchMedia('(min-width: 768px)').matches) onShown?.() } catch { /* no matchMedia: the reader decides */ }
+  }, [onShown])
   const title = t('scholarship.award.bursary.documentTitle')
   const doc = phoneContractHtml(html)
   return (
     <div>
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ground-500">{title}</h2>
       {/* Phones: one big button → the reader sheet. */}
-      <button type="button" onClick={() => setOpen(true)} data-testid="award-read-agreement"
+      <button type="button" onClick={() => { setOpen(true); onShown?.() }} data-testid="award-read-agreement"
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-brand-shape bg-ground-0 px-4 font-semibold text-primary-600 hover:bg-primary-50 md:hidden">
         <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM9 13h6M9 17h6" />
