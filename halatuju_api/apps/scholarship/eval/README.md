@@ -268,6 +268,20 @@ cd halatuju_api
 python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--keys K1,K2] [--json]
 ```
 
+**S5 on live records (the same dry run).** `offer_s5_caches.py --write` (free, no database) writes
+`<key>.s5_exact.json` for every letter the S5 Exact read locks, and for every stored Exact read it no longer
+locks (a fallback: the corpus's AI read, else the stored read — a flagged GUESS). `offer_s4_dry_run.py --suffix
+.s5_exact.json` then RE-DERIVES each lock against the live row (production profile IC for the IC guard, the
+live `vision_fields` as the merge prior). Every run also counts the money reach per document — whether
+`parse_reporting_date(reporting_date)` and the intake year change (changed / unchanged, never the value) —
+and `new_red:name` / `new_red:ic` (a Name / IC tick that becomes a wrong-person `mismatch`).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_s5_caches.py --eval-dir <corpus> --write
+python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> --suffix .s5_exact.json
+```
+
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on
 an empty page): the server caps a response at 1,000 rows whatever `limit` says, which silently
 dropped most profiles before 2026-11-01.

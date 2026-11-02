@@ -176,6 +176,12 @@ owner check page for the 71 stored Exact reads; the owner marked every field rig
   Tawaran", "Tarikh / Portal Semakan", wider spacing in "Sila Cetak" / "Layak Menerima"), zero-width characters
   stripped before any match; a bare "semakan" is no tell (a real polytechnic letter says it). Dev unchanged (86
   EXACT, 96 corpus locks, 0 WRONG, 0 control locks, pipeline 92/126), so held-out was not re-run.
+- **The S5 production dry run, prepared (no database touched by the builder):** `eval/offer_s5_caches.py` (new,
+  free) writes `<key>.s5_exact.json` — 96 locks and 1 fallback guess (`offer_letter__a30__d384`, stored read
+  unchanged: the corpus holds no AI read for it). `offer_s4_dry_run.py --suffix .s5_exact.json` re-derives each lock
+  against the live row with the production profile IC; every run now counts the money reach (reporting date as
+  `parse_reporting_date` reads it, intake year) and `new_red:name` / `new_red:ic`. Fixed: `s4_keys` cut every key
+  by the S4 suffix's length whatever `--suffix` was given.
 - Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
   `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
   `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.
