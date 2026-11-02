@@ -1,5 +1,8 @@
 const path = require('path')
 
+/** NEXT_PUBLIC_ names the app reads that a build may leave unset — defined as '' then (TD-470, see `webpack`). */
+const EMPTY_WHEN_UNSET = ['NEXT_PUBLIC_ORG_CODE', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'NEXT_PUBLIC_APP_VERSION']
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable React strict mode
@@ -14,6 +17,7 @@ const nextConfig = {
     // Per-org branding delivery (Sprint 6, D1). Unset or 'brightpath' ⇒ platform mode: the app
     // renders baked platform defaults and NEVER fetches (zero flash for BrightPath). Deliberately
     // unset on Cloud Run.
+    // ⚠ '' HERE DEFINES NOTHING: Next skips a falsy `env` value. EMPTY_WHEN_UNSET below covers it.
     NEXT_PUBLIC_ORG_CODE: process.env.NEXT_PUBLIC_ORG_CODE || '',
   },
 
@@ -38,12 +42,30 @@ const nextConfig = {
    * themselves are never changed or copied. `codeStandards.test.ts` asserts this rule exists and
    * points at the loader — a loader nobody wires is the TD-281 failure.
    */
-  webpack(config) {
+  webpack(config, options) {
     config.module.rules.push({
       test: /[\\/]messages[\\/](en|ms|ta)\.json$/,
       resourceQuery: /slice=/,
       use: [{ loader: path.join(__dirname, 'scripts', 'messages-slice-loader.js') }],
     })
+    /*
+     * TD-470 (2026-11-03): a NEXT_PUBLIC_ name the build has NO value for stays a live
+     * `process.env.X` read, and webpack then ships its `process` polyfill (~0.8 kB gz) — copied
+     * into 73 chunks, on 89 of 102 routes and the root layout. Next will not inline '' (it skips
+     * falsy `env` values), so each name the app may leave empty is defined as '' here when unset.
+     * `NEXT_PUBLIC_ORG_CODE` is unset on Cloud Run on purpose, so production paid this too; the
+     * Turnstile key and the version are set only by the Dockerfile, so the deploy gate's budget
+     * build (the repo's .env files) paid it on top. '' and unset read alike: every reader tests
+     * truthiness (`branding-context.tsx`, `turnstile.ts`, `appVersion.ts`). A SET value is left to
+     * Next, so the two never define the same key. `publicEnv.test.ts` fails on a client read of a
+     * NEXT_PUBLIC_ name nothing defines.
+     */
+    const unset = EMPTY_WHEN_UNSET.filter((name) => !process.env[name])
+    if (unset.length && options && options.webpack) {
+      config.plugins = config.plugins || []
+      config.plugins.push(new options.webpack.DefinePlugin(
+        Object.fromEntries(unset.map((name) => [`process.env.${name}`, JSON.stringify('')]))))
+    }
     return config
   },
 }

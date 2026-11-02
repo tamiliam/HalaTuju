@@ -1158,7 +1158,9 @@ of My Account (`DisplaySegments.tsx`, `SponsorLogOut.tsx`); every pinned bar on 
 `data-page-bar` (guarded); funding = sticky fund bar + one `dismissible={false}` confirm Sheet with a ref lock
 (desktop uses the same Sheet — owner 2026-11-03); without `:has()` the sponsor bar sits in the flow at the page end;
 portalled sponsor Sheets carry `.font-sponsor`; `sponsorSignOut` clears `halatuju_sponsor_pending`.
-`/scholarship/apply` has only ~0.19 kB under its line after M5 (TD-470) — take weight off before adding any.
+TD-470 closed (M6 phase 1): `/scholarship/apply` has ~1.8 kB under its line; budgets now median 145, `/profile` 193,
+`/scholarship/application` 206. Every `NEXT_PUBLIC_` name a build may leave unset is defined as `''` in `next.config.js`
+(else webpack ships its `process` polyfill to every route) — guarded by `publicEnv.test.ts`.
 NEXT: M6 admin + reviewer cockpit (may split), M7, M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)

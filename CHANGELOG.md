@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M6 — phase 1 (branch mobile-m6, not pushed)
+
+- **TD-470 closed: no `process` polyfill on any route.** Three `NEXT_PUBLIC_` names a build may leave unset
+  (`ORG_CODE`, unset on Cloud Run on purpose; the Turnstile key and the app version, set only by the Dockerfile) were
+  live `process.env` reads, so webpack copied its `process` polyfill (~0.8 kB gz) into 73 chunks — 89 of 102 routes
+  and the root layout, in production as well as in the deploy gate's budget build. Next will not inline `''` (it skips
+  a falsy `env` value), so `next.config.js` now defines each as `''` when unset with webpack's DefinePlugin; every
+  reader already tested truthiness, so nothing behaves differently. Guard: `src/lib/__tests__/publicEnv.test.ts`
+  (every client-read `NEXT_PUBLIC_` name is defined with none set; bite-checked: red on all three names against the
+  old config). Measured on e8c0d8dd: `/scholarship/apply` 186.758 → 185.207 kB (room 0.242 → 1.793; its 187 line
+  unchanged), median 145.296 → 143.753. Lines LOWERED: median 147 → 145, `/profile` 194 → 193,
+  `/scholarship/application` 208 → 206. No line raised.
+
 ## Team tables T1 — hats plumbing (LIVE 2026-11-03; main 83cddf96; api-01239-5jr, web-01067-6fr)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T1). Owner ruling 2026-11-03 (option B; decisions.md the same

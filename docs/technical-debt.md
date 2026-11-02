@@ -7457,7 +7457,17 @@ width (an owner call: "desktop top row unchanged" was the M5 ruling). (2) ~~The 
 CLOSED in the M5 review: `.font-sponsor` (globals.css) on the fund confirm and the filter Sheet, guarded. (3) The admin-side sponsor screens
 (`sponsors/SponsorEmailsCard.tsx`, `sponsors/terms/*`) keep 10-11 px labels — M7's sweep. *(B · S)*
 
-### [TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium
+### ~~[TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium~~ CLOSED 2026-11-03
+
+**CLOSED 2026-11-03 by Mobile M6 phase 1.** M5 did not add the weight: its builder's exact readings were 186.686 before
+and after M5, and `DisplaySegments` reaches the route only through the lazy `StudentMenus` chunk. The route was 186.758
+on e8c0d8dd (0.242 kB of room). What WAS on it: webpack's `process` polyfill (~0.8 kB gz), copied into 73 chunks on 89
+of 102 routes and the root layout, because three `NEXT_PUBLIC_` names stayed live `process.env` reads when unset
+(`ORG_CODE`, unset on Cloud Run, so production paid it too; the Turnstile key and the version, set only by the
+Dockerfile, so the gate's budget build paid it as well). Next skips a falsy `env` value, so `next.config.js` defines
+each as `''` when unset (webpack DefinePlugin); readers test truthiness, so behaviour is unchanged. Guard:
+`publicEnv.test.ts`. After: `/scholarship/apply` 185.207 kB (1.793 kB of room, line 187 unchanged), median 143.753;
+lowered median 147 → 145, `/profile` 194 → 193, `/scholarship/application` 208 → 206.
 
 **Raised 2026-11-03 at the Mobile M5 close** (measured by the Maintenance session on clean main d16399a9): 186.809 kB
 against the 187 kB line — under the 0.25 kB near-line rule (it had 0.262 before M5). The likely source is the shared
