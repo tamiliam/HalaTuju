@@ -230,6 +230,10 @@ Three kinds of check, from cheapest to most human:
   `PHONE_SECTION` (whose `md:p-5` would double it — `RequirementsCard.tsx`'s `REQ_SECTION`); read-only particulars are
   hairline rows on a phone (`profile/page.tsx`'s `PROFILE_ROWS`); a list of boxed items becomes `PHONE_ROWS` with each
   item's box `md:`-only (the institution cards); a section's icon tile is `hidden md:flex`; its Edit is a 44 px text button.
+  ⚠ **Dividers are `max-md:` only** (`max-md:divide-y max-md:divide-ground-100`), never `divide-y … md:divide-y-0`:
+  Tailwind's divide selector is stronger than a child's own `md:border`, so the `md:` reset strips the borders of every
+  box after the first from `md` (guarded). A section inside a parent that already spaces its children takes
+  `PHONE_SECTION_NO_GAP`, so the desktop keeps its old spacing.
 
 ## Tamil type
 

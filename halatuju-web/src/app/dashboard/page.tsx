@@ -32,7 +32,7 @@ import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { useCachedResults } from '@/hooks/useCachedResults'
 import { abandonApplyDetour } from '@/lib/applyReturn'   // the leaf, not @/lib/scholarship (6 kB)
-import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
+import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -328,7 +328,7 @@ export default function DashboardPage() {
       <AppHeader />
 
       {/* Main Content */}
-      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
+      <div className={`container mx-auto ${PHONE_GUTTER} pt-4 pb-6 md:py-8`}>
         {/* B40 application status — renders only when shortlisted/accepted */}
         <ScholarshipBanner />
 
@@ -393,7 +393,7 @@ export default function DashboardPage() {
 
         {/* Compact Dashboard Header */}
         {examType === 'spm' && eligibilityData && (
-          <div className={`${PHONE_SECTION} mb-2 md:mb-6`}>
+          <div className={`${PHONE_SECTION_NO_GAP} mb-2 md:mb-6`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left: headline + chance pills */}
               <div>
@@ -644,7 +644,7 @@ function StpmDashboardCards({
   return (
     <div>
       {/* Header */}
-      <div className={`${PHONE_SECTION} mb-2 md:mb-6`}>
+      <div className={`${PHONE_SECTION_NO_GAP} mb-2 md:mb-6`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             {framing && quizSignals ? (

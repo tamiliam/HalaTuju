@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRef } from 'react'
 import { useT } from '@/lib/i18n'
 import { useBottomBarInset } from '@/lib/bottomBarInset'
-import { PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 /**
  * Shared building blocks for SPM and STPM course detail pages.
@@ -56,7 +56,7 @@ interface CourseActionsProps {
 export function CourseActions({ isSaved, isHovering, onSave, onHoverStart, onHoverEnd }: CourseActionsProps) {
   const { t } = useT()
   return (
-    <section className={PHONE_SECTION}>
+    <section className={PHONE_SECTION_NO_GAP}>
       <h2 className="text-lg font-semibold text-ground-900 mb-4">
         {t('courseDetail.actions')}
       </h2>

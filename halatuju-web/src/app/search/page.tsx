@@ -19,7 +19,7 @@ import { useT } from '@/lib/i18n'
 import { isThirdRoute } from '@/lib/qualification'
 import { isBumiputera } from '@/lib/bumiputera'
 import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
-import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
+import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
 
 export default function SearchPage() {
   return (
@@ -319,7 +319,7 @@ function SearchPageInner() {
         </div>
 
         {/* Search + Filter container */}
-        <div className={`${PHONE_SECTION} mb-1 pt-0 md:pt-5`}>
+        <div className={`${PHONE_SECTION_NO_GAP} mb-1 pt-0 md:mb-4 md:pt-5`}>
           {/* Search bar — on a phone with the Filters button beside it */}
           <div className="mb-3 flex gap-2">
           <div className="relative min-w-0 flex-1">

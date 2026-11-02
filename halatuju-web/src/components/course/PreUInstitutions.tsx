@@ -12,7 +12,7 @@ import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
 import { MATRIC_TRACK_MAP, TRACK_CHIP, TRACK_LABELS, type TrackId } from '@/lib/matricTracks'
-import { PHONE_ROWS, PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_ROWS, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 // ── STPM rich institution section ────────────────────────────────────────
 
@@ -20,7 +20,7 @@ export function SubjectLegend({ stream }: { stream: string }) {
   const subjects = legendSubjects(stream)
 
   return (
-    <section className={PHONE_SECTION}>
+    <section className={PHONE_SECTION_NO_GAP}>
       <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
       <div className="space-y-2">
         {subjects.map(code => (
@@ -84,7 +84,7 @@ export function StpmInstitutionsSection({ courseId }: { courseId: string }) {
   const remaining = filteredSchools.length - displayCount
 
   return (
-    <section className={PHONE_SECTION}>
+    <section className={PHONE_SECTION_NO_GAP}>
       <h2 className="text-xl font-semibold text-ground-900 mb-4">
         {t('courseDetail.whereToStudy')}
         <span className="text-ground-500 font-normal ml-2">
@@ -208,7 +208,7 @@ export function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   }, [trackId])
 
   return (
-    <section className={PHONE_SECTION}>
+    <section className={PHONE_SECTION_NO_GAP}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold text-ground-900">
           {t('courseDetail.whereToStudy')}

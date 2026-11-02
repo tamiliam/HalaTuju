@@ -18,7 +18,7 @@ import { useState, useCallback } from 'react'
 import { StpmInstitutionsSection, MatricInstitutionsSection, SubjectLegend } from '@/components/course/PreUInstitutions'
 // Mobile M3: "show all" on a phone (the `discovery` slice), loaded by this PAGE.
 import '@/lib/messagesDiscovery'
-import { PHONE_GUTTER, PHONE_ROWS, PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 export default function CourseDetailPage() {
   const params = useParams()
@@ -92,7 +92,7 @@ export default function CourseDetailPage() {
           <div className="contents md:col-span-2 md:block md:min-w-0 md:space-y-8">
             {/* About */}
             <div className="order-4 min-w-0 md:order-none">
-            <section className={PHONE_SECTION}>
+            <section className={PHONE_SECTION_NO_GAP}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.aboutTitle')}
               </h2>
@@ -130,7 +130,7 @@ export default function CourseDetailPage() {
             ) : courseId.startsWith('matric-') ? (
               <MatricInstitutionsSection courseId={courseId} />
             ) : (
-              <section className={PHONE_SECTION}>
+              <section className={PHONE_SECTION_NO_GAP}>
                 <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.whereToStudy')}
                   {institutions && (
@@ -155,7 +155,7 @@ export default function CourseDetailPage() {
           <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
             <div className="order-1 min-w-0 md:order-none">
-            <section className={PHONE_SECTION}>
+            <section className={PHONE_SECTION_NO_GAP}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
@@ -249,15 +249,19 @@ function InstitutionList({ institutions }: { institutions: Institution[] }) {
   const [all, setAll] = useState(false)
   const hidden = institutions.length - PHONE_INSTITUTIONS
   return (
-    <div className={PHONE_ROWS}>
-      {institutions.map((inst, i) => (
-        <div key={inst.institution_id} className={!all && i >= PHONE_INSTITUTIONS ? 'hidden md:block' : undefined}>
-          <InstitutionCard institution={inst} />
-        </div>
-      ))}
+    <div>
+      {/* Divided on a phone only (max-md:, never a divider switched off from md — it stripped the cards' borders; M4b review). */}
+      <div className="max-md:divide-y max-md:divide-ground-100 md:space-y-4">
+        {institutions.map((inst, i) => (
+          <div key={inst.institution_id} className={!all && i >= PHONE_INSTITUTIONS ? 'hidden md:block' : undefined}>
+            <InstitutionCard institution={inst} />
+          </div>
+        ))}
+      </div>
+      {/* Outside the divided list: a row of its own would get a divider and no gap. */}
       {!all && hidden > 0 && (
         <button type="button" onClick={() => setAll(true)}
-          className="flex min-h-11 w-full items-center justify-center rounded-lg border border-ground-300 px-4 text-sm font-medium text-primary-600 hover:bg-ground-50 md:hidden">
+          className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg border border-ground-300 px-4 text-sm font-medium text-primary-600 hover:bg-ground-50 md:hidden">
           {t('discovery.showAllInstitutions', { count: String(institutions.length) })}
         </button>
       )}

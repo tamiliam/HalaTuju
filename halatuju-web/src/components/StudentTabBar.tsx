@@ -65,7 +65,9 @@ export default function StudentTabBar() {
   return (
     <nav data-tab-bar aria-label={t('common.menu')}>
       {tabs.map(([href, label, here], i) => (
-        <Link key={i} href={href} aria-current={here ? 'page' : undefined}
+        // `prefetch={false}`: four links on every page would otherwise fetch four routes' code on each
+        // view in production (the phone's data); a tap loads the one she chose (M4b review).
+        <Link key={i} href={href} prefetch={false} aria-current={here ? 'page' : undefined}
           // Saved needs an account: signed out it opens the sign-in sheet — or, with no results yet,
           // onboarding — exactly as the header menu's Saved does.
           onClick={i === 2 && !isAuthenticated ? (e) => {

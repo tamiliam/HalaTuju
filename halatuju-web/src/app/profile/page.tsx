@@ -44,9 +44,9 @@ import { useToast } from '@/components/ToastContext'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
 import { usePostcodeAutofill } from '@/lib/usePostcodeAutofill'
-import { PHONE_GUTTER, PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 /** Rule 15 (Mobile M4b): a section's read-only rows, divided by hairlines on a phone (never boxed). */
-const PROFILE_ROWS = 'divide-y divide-ground-100 md:divide-y-0 [&>*]:py-2.5 md:[&>*]:py-0'
+const PROFILE_ROWS = 'max-md:divide-y max-md:divide-ground-100 max-md:[&>*]:py-2.5'   // phones only: md+ keeps its own borders and spacing
 
 type EditingSection = 'identity' | 'contactDetails' | 'contact' | 'family' | 'application' | null
 
@@ -491,7 +491,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 1: Personal Details (Identity) */}
-          <div className={`${PHONE_SECTION} ${identityIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+          <div className={`${PHONE_SECTION_NO_GAP} md:mb-5 ${identityIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -719,7 +719,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 2: Contact Details (NEW) */}
-          <div className={`${PHONE_SECTION} ${contactDetailsIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+          <div className={`${PHONE_SECTION_NO_GAP} md:mb-5 ${contactDetailsIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -936,7 +936,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 3: Contact & Location */}
-          <div className={`${PHONE_SECTION} ${contactIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+          <div className={`${PHONE_SECTION_NO_GAP} md:mb-5 ${contactIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -1035,7 +1035,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 4: Family & Background */}
-          <div className={`${PHONE_SECTION} ${familyIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+          <div className={`${PHONE_SECTION_NO_GAP} md:mb-5 ${familyIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -1151,7 +1151,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 5: Application Tracking */}
-          <div className={`${PHONE_SECTION} ${appIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
+          <div className={`${PHONE_SECTION_NO_GAP} md:mb-5 ${appIncomplete > 0 ? 'md:border-l-4 md:border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between gap-2 mb-1 md:mb-5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="hidden w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover md:flex items-center justify-center shadow-sm shadow-primary-500/20">

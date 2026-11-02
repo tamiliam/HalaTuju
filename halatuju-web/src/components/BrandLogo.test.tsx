@@ -21,6 +21,18 @@ it('asks the optimiser for 1x and 2x at Next\'s own sizes (120 px → 128 and 25
     '/_next/image?url=%2Flogo-icon.png&w=128&q=75 1x, /_next/image?url=%2Flogo-icon.png&w=256&q=75 2x')
   expect(img.getAttribute('width')).toBe('120')
   expect(img.getAttribute('loading')).toBe('eager')
+  expect(img.getAttribute('fetchpriority')).toBe('high')
+})
+
+it.each([
+  ['data:image/png;base64,AAAA'], ['blob:https://halatuju.xyz/1234'], ['/logos/tenant.svg'], ['/logos/tenant.SVG?v=2'],
+])('passes %s through as it is, as next/image did (no optimiser, no srcset)', (src) => {
+  mockLogo = src
+  render(<BrandLogo width={120} height={40} />)
+  const img = screen.getByAltText('HalaTuju')
+  expect(img.getAttribute('src')).toBe(src)
+  expect(img.getAttribute('srcset')).toBeNull()
+  expect(img.getAttribute('fetchpriority')).toBeNull()
 })
 
 it('rounds each width UP to a size the optimiser serves', () => {

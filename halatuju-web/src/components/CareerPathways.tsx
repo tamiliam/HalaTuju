@@ -2,7 +2,7 @@
 
 import { type MascoOccupation } from '@/lib/api'
 import { useT } from '@/lib/i18n'
-import { PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 interface CareerPathwaysProps {
   occupations: MascoOccupation[]
@@ -14,7 +14,7 @@ export default function CareerPathways({ occupations }: CareerPathwaysProps) {
   if (!occupations || occupations.length === 0) return null
 
   return (
-    <section className={PHONE_SECTION}>
+    <section className={PHONE_SECTION_NO_GAP}>
       <h2 className="text-xl font-semibold text-ground-900 mb-2">
         {t('courseDetail.careerPathways')}
       </h2>

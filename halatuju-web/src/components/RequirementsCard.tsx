@@ -8,7 +8,7 @@ import { PHONE_INNER_BOX } from '@/lib/phoneSection'
 
 /** Rule 15 (Mobile M4b): a plain section on a phone, the card from `md` — its own padding sits on
  *  the header and body rows inside (so not `PHONE_SECTION`, whose `md:p-5` would double it). */
-const REQ_SECTION = 'border-b border-ground-100 py-4 md:mb-0 md:overflow-hidden md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:py-0'
+const REQ_SECTION = 'border-b border-ground-100 py-4 md:overflow-hidden md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:py-0'
 
 // --- Types matching backend CourseRequirementSerializer output ---
 
@@ -432,7 +432,7 @@ function OrGroupSection({
       <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
         {label}
       </h3>
-      <div className="divide-y divide-ground-100 md:divide-y-0 md:space-y-2">
+      <div className="max-md:divide-y max-md:divide-ground-100 md:space-y-2">
         {displayGroups.map((group, idx) => (
           <div key={idx} className={`py-2 ${PHONE_INNER_BOX}`}>
             <GroupBody group={group} locale={locale} number={idx + 1} />
@@ -518,7 +518,7 @@ function PismpSection({
           {label}
         </h3>
       )}
-      <div className="divide-y divide-ground-100 md:divide-y-0 md:space-y-2">
+      <div className="max-md:divide-y max-md:divide-ground-100 md:space-y-2">
         {displayRules.map((rule, idx) => {
           const isGenericRule = rule.subjects.length === 0
 

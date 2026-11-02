@@ -42,6 +42,16 @@ instead of My Bursary (M4c).
   profile's contact rows were found by the new surfaces and fixed in this sprint.
 - **Also:** the profile's Edit buttons (incl. the parent / guardian one) are 44 × 44; the profile's contact rows wrap.
 - New TD-464 (the shared selects; mobile-check names a fixed bar's child as "widest").
+- **Review fixes (2026-11-02):** row dividers are phones-only (`max-md:divide-y`; `PHONE_ROWS` too): Tailwind's divide
+  selector beat each box's `md:border`, so from `md` every institution / school / requirement box after the first lost
+  its top and bottom border, and the profile's family blocks lost theirs — this also fixes M4's document rows from `md`;
+  guarded. "Show all N institutions" sits outside the divided list. Desktop spacing back to before
+  (`PHONE_SECTION_NO_GAP` inside spaced columns; Settings 24 px, Profile 20 px). mobile-check counts ANY sticky / fixed
+  bar on the screen's foot, marked or not (bite-checked: an unmarked Save bar fails); the static guard reads any
+  `bottom-*` offset and form / aside / header too. A select no longer hides the tabs (Android keeps it focused); the
+  toast clears the bar on home-bar iPhones; the dashboard has top padding on a phone; the tab links do not prefetch;
+  `BrandLogo` passes `data:`, `blob:` and SVG logos through as next/image did and marks the header logo
+  `fetchpriority="high"`. The tab bar keeps the label "Menu" (no navigation key exists outside the console words).
 
 ## Mobile M4 — scholarship apply, documents, award on a phone (2026-11-01, not yet pushed)
 

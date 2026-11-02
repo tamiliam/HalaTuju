@@ -14,7 +14,7 @@ import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useCallback } from 'react'
 import { institutionTypeChip } from '@/lib/courseBadges'
-import { PHONE_GUTTER, PHONE_INNER_BOX, PHONE_SECTION } from '@/lib/phoneSection'
+import { PHONE_GUTTER, PHONE_INNER_BOX, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 export default function StpmCourseDetailPage() {
   const params = useParams()
@@ -59,7 +59,7 @@ export default function StpmCourseDetailPage() {
             {/* About */}
             {data.description && (
               <div className="order-4 min-w-0 md:order-none">
-              <section className={PHONE_SECTION}>
+              <section className={PHONE_SECTION_NO_GAP}>
                 <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.aboutTitle')}
                 </h2>
@@ -89,7 +89,7 @@ export default function StpmCourseDetailPage() {
 
             {/* Institution */}
             <div className="order-6 min-w-0 md:order-none">
-            <section className={PHONE_SECTION}>
+            <section className={PHONE_SECTION_NO_GAP}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.whereToStudy')}
                 <span className="text-ground-500 font-normal ml-2">(1 institution)</span>
@@ -146,7 +146,7 @@ export default function StpmCourseDetailPage() {
           <div className="contents md:block md:min-w-0 md:space-y-6">
             {/* Quick Facts */}
             <div className="order-1 min-w-0 md:order-none">
-            <section className={PHONE_SECTION}>
+            <section className={PHONE_SECTION_NO_GAP}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>

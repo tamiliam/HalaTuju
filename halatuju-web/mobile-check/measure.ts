@@ -149,7 +149,8 @@ export function measurePage(scopeSelector: string): Measurement {
  * scrolls). Self-contained like `measurePage`.
  *
  *  - bottomBars — how many bottom bars are drawn at once: the tab bar (`[data-tab-bar]`) and a page's
- *    own bar (`[data-page-bar]`, any number of them counting as one). More than 1 means the swap rule
+ *    own bar (`[data-page-bar]`, OR any sticky / fixed bar resting on the foot of the screen, marked or
+ *    not — any number of them counting as one). More than 1 means the swap rule
  *    failed: two bars stacked, the page's main action fighting the tabs.
  *  - coveredByBar — scrolled to the very end, how many CSS px of the page's own content (the last
  *    lines, the footer) lie UNDER the fixed tab bar. 0 means the page is padded by the bar's height.
@@ -169,6 +170,20 @@ export function measureBars(): BarCheck {
   }
   const tabs = Array.from(document.querySelectorAll('[data-tab-bar]')).filter(drawn)
   const pageBars = Array.from(document.querySelectorAll('[data-page-bar]')).filter(drawn)
+  // ANY bar resting on the foot of the screen counts as a page bar, marked or not (M4b review: an
+  // UNMARKED page bar is exactly the bug — the tabs would not give way to it). A bar: sticky or fixed,
+  // its bottom on the screen's bottom, at least half the screen wide and 20 px to 40 % of it tall (a
+  // sheet's full-screen backdrop is not a bar), not inside the tab bar or a dialog.
+  const vh = window.innerHeight
+  const vw = document.documentElement.clientWidth
+  for (const el of Array.from(document.body.querySelectorAll('*'))) {
+    if (el.closest('[data-tab-bar], [role="dialog"]') || pageBars.some((b) => b.contains(el) || el.contains(b))) continue
+    const pos = getComputedStyle(el).position
+    if (pos !== 'sticky' && pos !== 'fixed') continue
+    const r = el.getBoundingClientRect()
+    if (!drawn(el) || Math.abs(r.bottom - vh) > 2 || r.width < vw / 2 || r.height < 20 || r.height > vh * 0.4) continue
+    pageBars.push(el)
+  }
   const bottomBars = tabs.length + (pageBars.length > 0 ? 1 : 0)
   if (tabs.length === 0) return { bottomBars, coveredByBar: 0, covered: null }
 

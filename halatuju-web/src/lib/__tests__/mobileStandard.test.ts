@@ -309,12 +309,28 @@ describe('rule 15 — one box level; sections on phones', () => {
     expect(gutters).toEqual([])
     for (const rel of RULE15_SWEPT) expect(readWeb(rel, 'a rule-15 screen')).toContain("from '@/lib/phoneSection'")
   })
+  test('row dividers are phones-only (max-md:), never `divide-y … md:divide-y-0`', () => {
+    // M4b review: Tailwind's divide selector (`> :not([hidden]) ~ :not([hidden])`) beats an item's own
+    // `md:border`, so `md:divide-y-0` stripped every md box after the first of its top and bottom border,
+    // and an unprefixed `divide-ground-*` recoloured them at every width. Dividers are `max-md:` only.
+    const src = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
+    const rows = (src.match(/PHONE_ROWS = '([^']+)'/) ?? [])[1] ?? ''
+    expect(rows.split(' ').filter((t) => /^divide-/.test(t))).toEqual([])
+    expect(rows).toMatch(/max-md:divide-y\b/)
+    const files = [...RULE15_SWEPT, ...RULE15_SWEPT_PARTS, 'src/lib/phoneSection.ts', 'src/components/ScholarshipDocuments.tsx']
+    const offenders = files.filter((rel) => /\bmd:divide-y-0\b/.test(readWeb(rel, 'a rule-15 screen')
+      .split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')))
+    expect(offenders).toEqual([])
+  })
   test('the sections are a card from md, and plain (no border, no rounding) below it', () => {
     const src = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
     const section = (src.match(/PHONE_SECTION = '([^']+)'/) ?? [])[1] ?? ''
-    for (const t of section.split(' ')) {
+    const noGap = (src.match(/PHONE_SECTION_NO_GAP = '([^']+)'/) ?? [])[1] ?? ''
+    for (const t of [...section.split(' '), ...noGap.split(' ')]) {
       if (/^(rounded|shadow|bg-|p-)/.test(t)) throw new Error(`PHONE_SECTION boxes a phone too: ${t}`)
     }
+    // The no-gap section is the same section with no margin of its own (M4b: the desktop keeps its spacing).
+    expect(noGap).toBe(section.replace(' md:mb-4', ''))
     expect(section).toMatch(/md:rounded-2xl/)
     expect(src).toMatch(/PHONE_GUTTER = 'px-4 md:px-6'/)
   })
@@ -331,14 +347,20 @@ const STUDENT_SCOPE = (rel: string) => /^src\/(app|components)\//.test(rel)
   && !/^src\/(app|components)\/(admin|sponsor)\//.test(rel)
 const PINNED_BOTTOM = (cls: string) => {
   const t = cls.split(/\s+/)
-  return t.includes('bottom-0') && (t.includes('sticky') || t.includes('fixed'))
+  // Any foot offset (`bottom-0`, `bottom-2`, `bottom-[max(…)]`), unprefixed: a phone draws it (M4b review).
+  // (`hidden` unprefixed: not drawn on a phone at all — the saved page's desktop compare bar.)
+  return t.some((x) => /^bottom-(\d|\[|px)/.test(x)) && (t.includes('sticky') || t.includes('fixed')) && !t.includes('hidden')
+}
+/** Pinned to the foot but not a bar, with the reason. */
+const NOT_A_PAGE_BAR: Record<string, string> = {
+  'src/components/Toast.tsx': 'the toast stack floats ABOVE every bar (--bottom-bar); it is not one',
 }
 describe('rule 11 — the student tab bar gives way to a page\'s own bar', () => {
   test('every bar pinned to the foot of a student screen carries data-page-bar', () => {
     const bars: string[] = []
     const offenders: Offender[] = []
-    for (const f of TSX.filter((x) => STUDENT_SCOPE(x.rel))) {
-      for (const name of ['div', 'nav', 'footer', 'section']) {
+    for (const f of TSX.filter((x) => STUDENT_SCOPE(x.rel) && !(x.rel in NOT_A_PAGE_BAR))) {
+      for (const name of ['div', 'nav', 'footer', 'section', 'form', 'aside', 'header']) {
         for (const tag of openTags(f.code, name)) {
           if (!PINNED_BOTTOM(classText(f, tag, resolve))) continue
           bars.push(f.rel)
@@ -349,6 +371,7 @@ describe('rule 11 — the student tab bar gives way to a page\'s own bar', () =>
     // The five of M4b: course Save, saved compare, apply Back / Continue, award sign, post-award steps.
     expect(bars.length).toBeGreaterThanOrEqual(5)
     expect(offenders).toEqual([])
+    for (const rel of Object.keys(NOT_A_PAGE_BAR)) expect(readWeb(rel, 'a named exemption must still exist')).toMatch(/\bfixed\b[^"`]*\bbottom-/)
   })
   test('the tab bar is mounted by the student header only, which a flow or the sponsor side turns off', () => {
     const users = FILES.filter((f) => /from '(@\/components|\.)\/StudentTabBar'/.test(f.code)).map((f) => f.rel)
@@ -380,8 +403,11 @@ describe('rule 11 — the student tab bar gives way to a page\'s own bar', () =>
     expect(block.length).toBeGreaterThan(30)
     expect(block).toMatch(/@media \(max-width: 767\.98px\)/)
     expect(block).toMatch(/html:not\(:has\(\[data-page-bar\]\)\) \[data-tab-bar\] \{\s*display: grid;/)
-    expect(block).toMatch(/textarea, select, \[contenteditable='true'\]\):focus\) \[data-tab-bar\] \{\s*display: none;/)
-    expect(block).toMatch(/--bottom-bar: 4rem;/)
+    expect(block).toMatch(/textarea, \[contenteditable='true'\]\):focus\) \[data-tab-bar\] \{\s*display: none;/)
+    // Not a select: Android keeps it focused after the pick, and the bar would stay away (M4b review).
+    expect(block).not.toMatch(/\bselect\b[^{]*:focus\) \[data-tab-bar\]/)
+    // The bar's full height (home-bar inset included), so the toast keeps its gap above it on an iPhone.
+    expect(block).toMatch(/--bottom-bar: calc\(4rem \+ env\(safe-area-inset-bottom\)\);/)
     expect(block).toMatch(/padding-bottom: calc\(4rem \+ env\(safe-area-inset-bottom\)\);/)
     expect(css).toMatch(/\[data-tab-bar\] a \{[^}]*min-height: 4rem;/)
     expect(css).toMatch(/\[data-tab-bar\] \{[^}]*padding-bottom: env\(safe-area-inset-bottom\);/)

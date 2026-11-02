@@ -10,7 +10,7 @@
  * picture. The bundled platform asset still goes through Next's image optimiser exactly as before:
  * the same `/_next/image?url=…&w=…&q=75` addresses `next/image` wrote for a fixed-width image (1x and
  * 2x, each rounded up to the next of Next's default sizes — there is no `images` block in
- * next.config.js). A remote tenant URL is used as it is, as it always was (`unoptimized`).
+ * next.config.js). A remote tenant URL, a `data:` / `blob:` URL or an SVG is used as it is, as next/image did.
  * That weight paid for the phone tab bar (`StudentTabBar`) on every route; `brandLogo.test.tsx` pins
  * the addresses.
  */
@@ -35,7 +35,9 @@ export function optimised(src: string, w: number): string {
 export default function BrandLogo({ width, height, priority, className }: BrandLogoProps) {
   const branding = useBranding()
   const src = branding.logoUrl
-  const local = !/^https?:\/\//.test(src)
+  // What next/image sent to the optimiser: not a remote URL (a tenant's, `unoptimized` as before), not a
+  // `data:` / `blob:` URL and not an SVG (next/image passes those through as they are — M4b review).
+  const local = !/^(https?:|data:|blob:)/.test(src) && !/\.svg($|\?)/i.test(src)
   return (
     // A plain <img>, as `CourseCard` draws its pictures: deliberate (the header above).
     <img
@@ -45,6 +47,9 @@ export default function BrandLogo({ width, height, priority, className }: BrandL
       width={width}
       height={height}
       loading={priority ? 'eager' : 'lazy'}
+      // The header's logo is the first picture on every page (next/image's `priority` did this). React 18
+      // does not know the camelCase prop, so the attribute is written in lower case, as next/image does.
+      {...(priority ? { fetchpriority: 'high' } : {})}
       decoding="async"
       className={className}
       style={{ color: 'transparent' }}

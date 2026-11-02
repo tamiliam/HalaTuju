@@ -639,9 +639,11 @@
    - ONE BOTTOM BAR AT A TIME (the owner's swap rule): a page's own bar — any element marked
      `data-page-bar` (the course Save bar, the saved compare bar, apply Back / Continue, the award's
      sign bar, the post-award step tabs) — replaces the tabs while it is on the page.
-   - Hidden while she types (a focused text field): a fixed bar would ride up on the keyboard.
+   - Hidden while she types (a focused text field or textarea): a fixed bar would ride up on the keyboard.
+     NOT a select: Android keeps a select focused after the pick, so the bar would stay away (M4b review).
    - The page is padded by the bar's height (4rem + the home-bar inset) so its last lines and the footer
-     never end under it, and `--bottom-bar` lifts the toast above it (`Toast.tsx`). A page bar's own
+     never end under it, and `--bottom-bar` lifts the toast above it (`Toast.tsx`) — the bar's FULL height,
+     home-bar inset included, so the toast keeps its own gap above the bar on an iPhone with a home bar. A page bar's own
      `useBottomBarInset` writes `--bottom-bar` inline on <html>, which wins over this.
    `mobileStandard.test.ts` ("the student tab bar") pins every part of this block. */
 [data-tab-bar] {
@@ -698,11 +700,11 @@
     }
     html:has(:is(input:not(:is([type='checkbox'], [type='radio'], [type='range'], [type='file'],
       [type='hidden'], [type='button'], [type='submit'], [type='reset'], [type='image'], [type='color'])),
-      textarea, select, [contenteditable='true']):focus) [data-tab-bar] {
+      textarea, [contenteditable='true']):focus) [data-tab-bar] {
       display: none;
     }
     html:has([data-tab-bar]):not(:has([data-page-bar])) {
-      --bottom-bar: 4rem;
+      --bottom-bar: calc(4rem + env(safe-area-inset-bottom));
     }
     html:has([data-tab-bar]):not(:has([data-page-bar])) body {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom));
