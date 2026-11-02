@@ -1,7 +1,7 @@
 'use client'
 
 import '@/lib/messagesSponsor'   // TD-416: this page's sponsor* words (their own slice)
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
@@ -13,6 +13,9 @@ import { conceptFieldImageUrl } from '@/lib/fieldImage'
 import { FundingBar } from '@/components/FundingBar'
 import { rmWhole } from '@/lib/poolCard'
 import { formatDate } from '@/lib/formatDate'
+import Sheet from '@/components/Sheet'
+import { useBottomBarInset } from '@/lib/bottomBarInset'
+import { PHONE_BLEED, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
 
 // The sponsorship pays a flat RM200/month, so the funded duration = amount ÷ 200
 // (RM1,000→5, RM2,000→10, RM3,000→15 months).
@@ -48,6 +51,9 @@ export default function StudentDetailPage() {
   const [funding, setFunding] = useState(false)
   const [funded, setFunded] = useState(false)
   const [errCode, setErrCode] = useState<string | null>(null)
+  // ONE award request per tap burst (Mobile M5, owner): a second tap before React has re-rendered the
+  // disabled button must not send a second request. State is too late for that; a ref is not.
+  const inFlight = useRef(false)
 
   useEffect(() => {
     if (!token || !id) return
@@ -62,7 +68,8 @@ export default function StudentDetailPage() {
   }, [token, id])
 
   const doFund = async () => {
-    if (!token) return
+    if (!token || inFlight.current) return
+    inFlight.current = true
     setFunding(true)
     setErrCode(null)
     try {
@@ -76,6 +83,7 @@ export default function StudentDetailPage() {
     } catch (e) {
       setErrCode((e as Error & { code?: string }).code || 'generic')
     } finally {
+      inFlight.current = false
       setFunding(false)
     }
   }
@@ -85,28 +93,33 @@ export default function StudentDetailPage() {
   // The trust strip's core ticks — every pooled student has passed QC by construction.
   const CHECKS = ['checkIdentity', 'checkAcademic', 'checkPathway', 'checkFinancial'] as const
 
+  // The fund action is offered while the student is still fundable and this tab has not funded them.
+  const canFund = !!detail && !funded && !detail.funded
+  const openConfirm = () => { setConfirming(true); setErrCode(null) }
+
   return (
     <div className="max-w-4xl">
-      <Link href="/sponsor/students" className="text-sm text-primary-600 hover:underline">← {t('sponsorPool.back')}</Link>
+      <Link href="/sponsor/students" className="inline-flex min-h-11 items-center text-sm text-primary-600 hover:underline">← {t('sponsorPool.back')}</Link>
 
       {unavailable ? (
         <p className="text-center text-ground-500 mt-12">{t('sponsorPool.notAvailable')}</p>
       ) : detail === null ? (
         <p className="text-center text-ground-500 mt-12">{t('common.loading')}</p>
       ) : (
-        <div className="mt-4 grid lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 space-y-4">
-            {/* Header card: slim banner strip + title + chips */}
-            <div className="overflow-hidden rounded-2xl border bg-ground-0">
-              <div className="relative h-24">
+        // Rule 15 (Mobile M5): full-width sections on a phone, the cards they were from md.
+        <div className="md:mt-4 grid lg:grid-cols-3 md:gap-5">
+          <div className="lg:col-span-2 md:space-y-4">
+            {/* Header card: slim banner strip + title + chips. On a phone the banner runs edge to edge. */}
+            <div className="overflow-hidden border-b border-ground-100 md:rounded-2xl md:border md:bg-ground-0">
+              <div className="relative h-24 -mx-4 md:mx-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={conceptFieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <span className="absolute bottom-2 left-4 rounded-md bg-ground-0/90 px-2.5 py-0.5 text-xs font-bold text-ground-900 shadow-sm">{detail.ref}</span>
               </div>
-              <div className="p-6">
+              <div className="py-4 md:p-6">
                 {detail.academic && (
-                  <span className="rounded-md bg-ground-100 px-2 py-0.5 text-[11px] font-medium text-ground-700">{detail.academic}</span>
+                  <span className="rounded-md bg-ground-100 px-2 py-0.5 text-xs font-medium text-ground-700">{detail.academic}</span>
                 )}
                 {/* The programme links to its public HalaTuju course page when it has one
                     (`course_href`, server-computed) — a new tab, so the sponsor doesn't lose the
@@ -123,41 +136,43 @@ export default function StudentDetailPage() {
               </div>
             </div>
 
-            {/* Verification strip — our differentiator */}
-            <div className="rounded-2xl border border-positive-100 bg-positive-50/60 p-5">
-              <p className="flex items-center gap-2 text-sm font-semibold text-positive-800">
-                🛡️ {t('sponsorPool.verifiedByBrightPath')}
-              </p>
-              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
-                {CHECKS.map((c) => (
-                  <li key={c} className="flex items-center gap-2 text-sm text-ground-700">
-                    <span className="text-positive-700">✓</span> {t(`sponsorPool.${c}`)}
-                  </li>
-                ))}
-                {detail.enrolment_verified && (
-                  <li className="flex items-center gap-2 text-sm text-ground-700">
-                    <span className="text-positive-700">✓</span> {t('sponsorPool.checkEnrolment')}
-                  </li>
-                )}
-              </ul>
-              <p className="mt-3 text-xs text-positive-700/80">{t('sponsorPool.verifyCaption')}</p>
+            {/* Verification strip — our differentiator (a coloured callout at every width) */}
+            <div className="border-b border-ground-100 py-4 md:border-0 md:py-0">
+              <div className="rounded-2xl border border-positive-100 bg-positive-50/60 p-4 md:p-5">
+                <p className="flex items-center gap-2 text-sm font-semibold text-positive-800">
+                  🛡️ {t('sponsorPool.verifiedByBrightPath')}
+                </p>
+                <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                  {CHECKS.map((c) => (
+                    <li key={c} className="flex items-center gap-2 text-sm text-ground-700">
+                      <span className="text-positive-700">✓</span> {t(`sponsorPool.${c}`)}
+                    </li>
+                  ))}
+                  {detail.enrolment_verified && (
+                    <li className="flex items-center gap-2 text-sm text-ground-700">
+                      <span className="text-positive-700">✓</span> {t('sponsorPool.checkEnrolment')}
+                    </li>
+                  )}
+                </ul>
+                <p className="mt-3 text-xs text-positive-700/80">{t('sponsorPool.verifyCaption')}</p>
+              </div>
             </div>
 
             {/* Narrative */}
             {detail.anon_profile && (
-              <div className="bg-ground-0 rounded-2xl border p-6">
-                <div className="text-sm text-ground-800 leading-relaxed [&_p]:mt-2 [&_p:first-child]:mt-0">
+              <div className={PHONE_SECTION_NO_GAP}>
+                <div className="text-sm text-ground-800 leading-relaxed [&_p]:mt-2 [&_p:first-child]:mt-0 md:p-1">
                   <ReactMarkdown>{detail.anon_profile}</ReactMarkdown>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Sidebar action card */}
-          <div className="bg-ground-0 rounded-2xl border p-6 h-fit space-y-5">
+          {/* Sidebar action card — a plain section on a phone, whose fund button is the sticky bar below */}
+          <div className="py-4 h-fit space-y-5 md:rounded-2xl md:border md:bg-ground-0 md:p-6">
             {/* Support block */}
             <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{t('sponsorPool.supportNeeded')}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-ground-400">{t('sponsorPool.supportNeeded')}</p>
               {detail.award_amount && (
                 <div>
                   <p className="text-3xl font-bold text-ground-900">RM{rmWhole(detail.award_amount)}</p>
@@ -179,29 +194,16 @@ export default function StudentDetailPage() {
                   <div className="rounded-md bg-ground-50 border border-ground-200 px-3 py-2.5 text-xs font-medium text-ground-600">
                     ✓ {t('sponsorPool.fundedBody')}
                   </div>
-                ) : confirming ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-ground-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
-                    <div className="flex gap-2">
-                      <button disabled={funding} onClick={doFund}
-                        className="flex-1 rounded-md bg-brand-fill px-3 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-60">
-                        {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
-                      </button>
-                      <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
-                        className="rounded-md border px-3 py-2.5 text-sm font-semibold text-ground-700 hover:bg-ground-50 disabled:opacity-60">
-                        {t('common.cancel')}
-                      </button>
-                    </div>
-                  </div>
                 ) : (
-                  <button onClick={() => { setConfirming(true); setErrCode(null) }}
-                    className="w-full rounded-md bg-brand-fill px-3 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
+                  // From md the button lives here; on a phone it is the sticky bar. Both open ONE confirm.
+                  <button type="button" onClick={openConfirm}
+                    className="hidden md:block w-full min-h-11 rounded-md bg-brand-fill px-3 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
                     {t('sponsorPool.fullyFund')}
                   </button>
                 )}
               </div>
 
-              {errCode && (
+              {errCode && !confirming && (
                 <p className="mt-2 rounded-md bg-critical-50 border border-critical-100 px-3 py-2 text-xs text-critical-700">
                   {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
                 </p>
@@ -252,6 +254,61 @@ export default function StudentDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Phones: the fund action as the page's own sticky bar — it replaces the tab bar (one bottom
+          bar at a time, `data-page-bar`). Balance on the left, the action on the right. */}
+      {canFund && <FundBar balance={balance} onFund={openConfirm} t={t} />}
+
+      {/* ONE confirm for both widths (Mobile M5, owner): a Sheet that cannot be swiped or Escaped away
+          (`dismissible={false}`) and cannot close while the award is being sent (`busy`). The amount it
+          names is the server's `award_amount`, as before; nothing is computed here. */}
+      {detail && (
+        <Sheet open={confirming} onClose={() => { if (!funding) { setConfirming(false); setErrCode(null) } }}
+          title={t('sponsorPool.fullyFund')} dismissible={false} busy={funding} role="alertdialog"
+          testId="fund-confirm"
+          footer={(
+            <>
+              <button type="button" disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
+                className="min-h-12 flex-1 rounded-lg border border-ground-300 px-4 py-2 text-sm font-semibold text-ground-700 hover:bg-ground-50 disabled:opacity-60">
+                {t('common.cancel')}
+              </button>
+              <button type="button" disabled={funding} onClick={doFund} data-testid="fund-confirm-award"
+                className="min-h-12 flex-[1.4] rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-60">
+                {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
+              </button>
+            </>
+          )}>
+          <p className="text-sm text-ground-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
+          {balance !== null && (
+            <p className="mt-3 text-sm text-ground-500">{t('sponsorPortal.students.balanceLabel')}: <b className="text-ground-900">RM{rmWhole(balance)}</b></p>
+          )}
+          {errCode && (
+            <p className="mt-3 rounded-md bg-critical-50 border border-critical-100 px-3 py-2 text-sm text-critical-700" role="alert">
+              {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
+            </p>
+          )}
+        </Sheet>
+      )}
+    </div>
+  )
+}
+
+/** The phone's sticky fund bar (rule 6's sticky page bar; `data-page-bar` swaps the tabs out). */
+function FundBar({ balance, onFund, t }: { balance: string | null; onFund: () => void; t: (k: string) => string }) {
+  const bar = useRef<HTMLDivElement>(null)
+  useBottomBarInset(bar)
+  return (
+    <div ref={bar} data-page-bar data-testid="fund-bar"
+      className={`sticky bottom-0 z-10 mt-4 flex items-center gap-3 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:hidden ${PHONE_BLEED}`}>
+      <div className="min-w-0 flex-1">
+        {balance !== null && (
+          <p className="text-xs text-ground-500">{t('sponsorPortal.students.balanceLabel')}<b className="block text-sm text-ground-900">RM{rmWhole(balance)}</b></p>
+        )}
+      </div>
+      <button type="button" onClick={onFund}
+        className="min-h-12 flex-[1.6] rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
+        {t('sponsorPool.fullyFund')}
+      </button>
     </div>
   )
 }
