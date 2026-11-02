@@ -32,6 +32,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
 import { signOutStudent } from '@/lib/studentSignOut'
+import StudentTabBar from './StudentTabBar'
 import type { Who } from './StudentMenus'
 
 type Menus = typeof import('./StudentMenus')
@@ -39,9 +40,14 @@ type Menus = typeof import('./StudentMenus')
 /** The `lg` breakpoint, where the desktop row takes over from the phone bar. */
 const DESKTOP = '(min-width: 1024px)'
 
-export default function AppHeader({ defaultMenuOpen = false }: {
+export default function AppHeader({ defaultMenuOpen = false, tabs = true }: {
   /** Opens the phone menu on mount. The design sandbox's "menu open" surfaces only. */
   defaultMenuOpen?: boolean
+  /**
+   * The phone's bottom tab bar (`StudentTabBar`, Mobile M4b). Off for a focused flow that keeps the
+   * student header (scholarship onboarding) and for the sponsor side (M5 gives sponsors their own).
+   */
+  tabs?: boolean
 }) {
   const { t } = useT()
   const pathname = usePathname()
@@ -107,6 +113,7 @@ export default function AppHeader({ defaultMenuOpen = false }: {
   const fallback = failed && !menus
 
   return (
+    <>
     <header className="sticky top-0 z-10 border-b bg-ground-0 pt-[env(safe-area-inset-top)]">
       {/* ⚠ ONE ROW, NO WRAP. Every item but the logo is a fixed, measured width (navLayout.test.ts). */}
       <div className="container mx-auto flex items-center gap-2 px-4 py-3 sm:px-6">
@@ -156,5 +163,7 @@ export default function AppHeader({ defaultMenuOpen = false }: {
         <menus.PhoneMenu open={menuOpen} onClose={() => setMenuOpen(false)} who={who} incompleteCount={incompleteCount} />
       )}
     </header>
+    {tabs && <StudentTabBar />}
+    </>
   )
 }

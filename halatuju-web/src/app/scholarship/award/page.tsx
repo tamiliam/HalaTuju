@@ -584,7 +584,7 @@ export default function ScholarshipAwardPage() {
           <p className="text-sm text-ground-500">{t('scholarship.award.confirmed.acceptBy', { date: deadline })}</p>
         )}
 
-        <div className={`sticky bottom-0 z-10 ${PHONE_BLEED} space-y-1 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0`}>
+        <div data-page-bar className={`sticky bottom-0 z-10 ${PHONE_BLEED} space-y-1 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pb-0`}>
           <button type="submit" disabled={!canSubmit} className="btn-primary min-h-12 w-full disabled:opacity-50">
             {submitting ? t('scholarship.award.bursary.signing') : t('scholarship.award.bursary.signSubmit')}
           </button>

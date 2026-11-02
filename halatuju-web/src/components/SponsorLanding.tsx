@@ -31,7 +31,7 @@ export default function SponsorLanding({ count }: { count: number }) {
     <>
       {/* Unified app header (carries the Student/Sponsor/Partner "Log in" dropdown +
           the BrightPath Bursary nav). The page's own hero/CTAs handle "Become a sponsor". */}
-      <AppHeader />
+      <AppHeader tabs={false} />
 
       <main className="bg-ground-50">
         {/* Hero — text + image, with a live "students waiting" counter under the CTAs */}

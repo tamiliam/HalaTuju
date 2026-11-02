@@ -819,7 +819,7 @@ export default function ScholarshipNextSteps({
       </div>
 
       {/* Bottom tab bar (mobile only) */}
-      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-4 md:-mx-6 px-2 lg:hidden mt-4">
+      <nav data-page-bar className="sticky bottom-0 bg-ground-0 border-t flex justify-around pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-4 md:-mx-6 px-2 lg:hidden mt-4">
         {steps.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">

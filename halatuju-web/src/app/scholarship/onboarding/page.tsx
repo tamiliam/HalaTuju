@@ -90,7 +90,7 @@ export default function ScholarshipOnboardingPage() {
   function wrap(children: React.ReactNode) {
     return (
       <div className="flex min-h-screen flex-col">
-        <AppHeader />
+        <AppHeader tabs={false} />
         <main className="container mx-auto w-full max-w-2xl flex-1 px-6 py-10">
           {children}
         </main>

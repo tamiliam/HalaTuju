@@ -630,11 +630,96 @@
   }
 }
 
+/* THE STUDENT TAB BAR (Mobile M4b) — `components/StudentTabBar.tsx` draws four links; THIS decides when
+   they show, so the eager bar carries no JavaScript for it.
+
+   - Phones only (below `md`, like every page bar's `md:hidden`). Never without `:has()` (Safari < 15.4,
+     Chrome < 105): there the bar could not give way to a page's own bar, so it does not show at all —
+     the header menu is still the way around, and a fixed bar can never cover a Save button.
+   - ONE BOTTOM BAR AT A TIME (the owner's swap rule): a page's own bar — any element marked
+     `data-page-bar` (the course Save bar, the saved compare bar, apply Back / Continue, the award's
+     sign bar, the post-award step tabs) — replaces the tabs while it is on the page.
+   - Hidden while she types (a focused text field): a fixed bar would ride up on the keyboard.
+   - The page is padded by the bar's height (4rem + the home-bar inset) so its last lines and the footer
+     never end under it, and `--bottom-bar` lifts the toast above it (`Toast.tsx`). A page bar's own
+     `useBottomBarInset` writes `--bottom-bar` inline on <html>, which wins over this.
+   `mobileStandard.test.ts` ("the student tab bar") pins every part of this block. */
+[data-tab-bar] {
+  display: none;
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid rgb(var(--ground-200));
+  background: rgb(var(--ground-0));
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 10px rgb(0 0 0 / 0.04);
+}
+/* Each tab: 64 px tall (a 44 px target and more), its icon over its word. A long word wraps onto a
+   second line (Tamil "முகப்புப் பலகை" at 360 px) — never sideways, never cut. */
+[data-tab-bar] a {
+  display: flex;
+  min-height: 4rem;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.125rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  color: rgb(var(--ground-500));
+}
+[data-tab-bar] a[aria-current='page'] {
+  font-weight: 600;
+  color: rgb(var(--brand-600));
+}
+[data-tab-bar] svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+[data-tab-bar] a[aria-current='page'] svg {
+  fill: currentColor;
+  fill-opacity: 0.15;
+}
+@supports selector(:has(*)) {
+  @media (max-width: 767.98px) {
+    html:not(:has([data-page-bar])) [data-tab-bar] {
+      display: grid;
+    }
+    html:has(:is(input:not(:is([type='checkbox'], [type='radio'], [type='range'], [type='file'],
+      [type='hidden'], [type='button'], [type='submit'], [type='reset'], [type='image'], [type='color'])),
+      textarea, select, [contenteditable='true']):focus) [data-tab-bar] {
+      display: none;
+    }
+    html:has([data-tab-bar]):not(:has([data-page-bar])) {
+      --bottom-bar: 4rem;
+    }
+    html:has([data-tab-bar]):not(:has([data-page-bar])) body {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
+}
+
 /* Print styles for report PDF download */
 @media print {
   body {
     background: white !important;
     font-size: 12pt;
+  }
+
+  /* Never on paper (a printed report). */
+  [data-tab-bar] {
+    display: none !important;
   }
 
   @page {

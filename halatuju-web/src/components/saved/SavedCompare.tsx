@@ -52,7 +52,7 @@ export function CompareBar({ count, onCancel, onCompare }: {
   if (count === 0) return null
   return (
     <>
-      <div ref={bar} data-testid="compare-bar-phone"
+      <div ref={bar} data-page-bar data-testid="compare-bar-phone"
         className="sticky bottom-0 z-10 -mx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-ground-200 bg-ground-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] sm:-mx-6 sm:px-6 md:hidden">
         {/* Its natural width, never squeezed: in Tamil "தேர்ந்தெடுக்கப்பட்டன" is one long word that
             cannot break, and a shrinking span let "Cancel" paint over it at 360. The row wraps instead. */}

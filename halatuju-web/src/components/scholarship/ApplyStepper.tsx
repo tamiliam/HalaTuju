@@ -42,7 +42,7 @@ export function ApplyFooter({ first, last, submitting, onBack, onNext }: {
 }) {
   const { t } = useT()
   return (
-    <div data-testid="apply-footer"
+    <div data-page-bar data-testid="apply-footer"
       className={`sticky bottom-0 z-10 ${PHONE_BLEED} mb-4 flex gap-3 border-t border-ground-200 bg-ground-0 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:mx-0 lg:px-0`}>
       {!first && (
         <button type="button" onClick={onBack} className="btn-secondary min-h-12 flex-1">{t('scholarship.apply.back')}</button>
