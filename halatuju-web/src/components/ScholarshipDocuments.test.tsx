@@ -75,6 +75,11 @@ const HEAD = {
 const render_ = async (app: ScholarshipApplication) => {
   render(<ScholarshipDocuments token="sandbox-token" app={app} />)
   await waitFor(() => expect(screen.getByText(HEAD.identity)).toBeTruthy())
+  // …AND for the document list to land. The headings draw before `listDocuments` resolves, so a
+  // tick that depends on a document read "not shown" on a slow machine: the deploy gate refused
+  // M4 (9f65d503) on exactly that race while every local run passed.
+  await waitFor(() => expect(mockApi.listDocuments).toHaveBeenCalled())
+  await act(async () => { await mockApi.listDocuments.mock.results.at(-1)?.value })
 }
 
 describe('what the programme asks for decides what is drawn', () => {
