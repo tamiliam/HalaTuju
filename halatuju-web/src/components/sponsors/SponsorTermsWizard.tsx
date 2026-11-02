@@ -25,10 +25,11 @@ import {
 type Phase = 'read' | 'quiz' | 'sign' | 'done'
 
 /**
- * Mobile M5: on a phone the wizard runs the full width of the screen (no card around it) and its
- * forward action — "Start the quiz", the quiz's progress + Next — sits in a sticky bar at the foot,
- * marked `data-page-bar` (rule 6/11: one bottom bar at a time). From md it is the inline row it always
- * was. The sign step keeps its button inline: the keyboard is up while the name is typed.
+ * Mobile M5: on a phone the wizard runs the full width of the screen (no card around it), and the quiz's
+ * progress + Next sit in a sticky bar at the foot, marked `data-page-bar` (rule 6/11: one bottom bar at a
+ * time). From md it is the inline row it always was. "Start the quiz" stays INLINE after the terms and the
+ * privacy line (M5 review: it must come after what is being agreed to), and the sign step keeps its
+ * button inline (the keyboard is up while the name is typed).
  */
 const BAR = 'sticky bottom-0 z-10 -mx-4 border-t border-ground-200 bg-ground-0 px-4 pt-3 '
   + 'pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.06)] '
@@ -50,9 +51,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // The two sticky bars lift the toast while they are on screen (rule 6).
-  const readBar = useRef<HTMLDivElement>(null)
   const quizBar = useRef<HTMLDivElement>(null)
-  useBottomBarInset(readBar, phase === 'read' && !!doc)
   useBottomBarInset(quizBar, phase === 'quiz')
 
   const load = useCallback(() => {
@@ -126,14 +125,14 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
               {t('sponsorAuth.privacyNotice')}
             </Link>.
           </p>
-          <div ref={readBar} data-page-bar data-testid="terms-read-bar" className={`${BAR} md:border-0 md:bg-transparent md:p-0`}>
-            <button type="button" onClick={() => setPhase('quiz')}
-              className="w-full min-h-12 px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover md:w-auto">
-              {checkpoints.length > 0
-                ? t('sponsorPortal.terms.startQuiz', { n: String(checkpoints.length) })
-                : t('sponsorPortal.terms.continue')}
-            </button>
-          </div>
+          {/* INLINE, after the terms and the privacy line — never a sticky bar (M5 review: a pinned Start let a
+              sponsor go on without ever scrolling past what they are agreeing to). */}
+          <button type="button" onClick={() => setPhase('quiz')} data-testid="terms-start"
+            className="w-full min-h-12 px-6 py-3 bg-brand-fill text-brand-fill-ink rounded-xl font-medium hover:bg-brand-fill-hover md:w-auto md:self-start">
+            {checkpoints.length > 0
+              ? t('sponsorPortal.terms.startQuiz', { n: String(checkpoints.length) })
+              : t('sponsorPortal.terms.continue')}
+          </button>
         </>
       )}
 

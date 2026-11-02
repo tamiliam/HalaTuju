@@ -56,6 +56,9 @@ export default function StudentDetailPage() {
   const inFlight = useRef(false)
 
   useEffect(() => {
+    // A different student (the address changed in place): forget the last one FIRST, so nothing — above
+    // all the confirm's amount — can show the previous student's figures while this one loads (M5 review).
+    setDetail(null); setUnavailable(false); setFunded(false); setConfirming(false); setErrCode(null)
     if (!token || !id) return
     let cancelled = false
     getSponsorPoolDetail(id, { token })
@@ -266,7 +269,7 @@ export default function StudentDetailPage() {
       {detail && (
         <Sheet open={confirming} onClose={() => { if (!funding) { setConfirming(false); setErrCode(null) } }}
           title={t('sponsorPool.fullyFund')} dismissible={false} busy={funding} role="alertdialog"
-          testId="fund-confirm"
+          testId="fund-confirm" className="font-sponsor"
           footer={(
             <>
               <button type="button" disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}

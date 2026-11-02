@@ -11,7 +11,8 @@ import { act, render, screen, fireEvent, waitFor, within } from '@testing-librar
 import StudentDetailPage from './page'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet } from '@/lib/api'
 
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: '5' }) }))
+let routeId = '5'
+jest.mock('next/navigation', () => ({ useParams: () => ({ id: routeId }) }))
 jest.mock('next/link', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
 jest.mock('react-markdown', () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => children }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string, v?: Record<string, string>) => (v ? `${k} ${JSON.stringify(v)}` : k) }) }))
@@ -35,6 +36,7 @@ const mockWallet = getSponsorWallet as jest.Mock
 
 beforeEach(() => {
   jest.clearAllMocks()
+  routeId = '5'
   mockDetail.mockResolvedValue({
     ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
     institution: 'Politeknik Ungku Omar', school: 'SMK Test', reporting_date: '2026-09-01',
@@ -169,4 +171,31 @@ it('offers no fund action for a student already funded in the grace window', asy
   await screen.findByText('sponsorPool.fundedBody', { exact: false })
   expect(screen.queryByTestId('fund-bar')).toBeNull()
   expect(screen.queryByText('sponsorPool.fullyFund', { selector: 'button' })).toBeNull()
+})
+
+// ── M5 review: a different student in place must never show the previous one's figures ─────────────
+it('forgets the previous student at once when the address names another one', async () => {
+  const { rerender } = render(<StudentDetailPage />)
+  fireEvent.click(within(await screen.findByTestId('fund-bar')).getByRole('button'))
+  expect((await screen.findByTestId('fund-confirm')).textContent).toContain('{"amount":"3,000"}')
+  // Student 6 is slow to arrive; until it does, neither its page nor the confirm may show student 5's RM 3,000.
+  let arrive: (v: unknown) => void = () => {}
+  mockDetail.mockImplementation(() => new Promise((r) => { arrive = r }))
+  routeId = '6'
+  rerender(<StudentDetailPage />)
+  await waitFor(() => expect(screen.queryByTestId('fund-confirm')).toBeNull())
+  expect(screen.getByText('common.loading')).toBeTruthy()
+  expect(document.body.textContent).not.toContain('3,000')
+  await act(async () => { arrive({ ref: 'Student B2', state: 'Kedah', field: 'Health', academic: '5A', institution: 'X', school: 'Y',
+    reporting_date: null, funding_categories: [], programme_months: 12, enrolment_verified: false, anon_profile: '', award_amount: '2000' }) })
+  expect(mockDetail).toHaveBeenLastCalledWith(6, { token: 'tok' })
+  expect(document.body.textContent).toContain('RM2,000')
+})
+
+it('paints the confirm in the sponsor portal face (the Sheet is portalled out of the shell)', async () => {
+  render(<StudentDetailPage />)
+  fireEvent.click(within(await screen.findByTestId('fund-bar')).getByRole('button'))
+  // (`testId` marks the Sheet's outer layer; `className` dresses its panel, inside it.)
+  const sheet = await screen.findByTestId('fund-confirm')
+  expect(sheet.querySelector('.font-sponsor')).not.toBeNull()
 })

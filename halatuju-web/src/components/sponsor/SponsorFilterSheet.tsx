@@ -35,6 +35,7 @@ export default function SponsorFilterSheet({ open, onClose, groups, count, onCle
   return (
     <Sheet open={open} onClose={onClose} title={t('sponsorPortal.students.filters')}
       initialFocus={firstChip as RefObject<HTMLElement>} testId="sponsor-filter-sheet"
+      className="font-sponsor"
       footer={(
         <>
           <button type="button" onClick={onClear} disabled={!canClear}

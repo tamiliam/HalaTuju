@@ -1,5 +1,6 @@
 import { createAuthOnlyClient, type AuthOnlyClient } from '@/lib/supabaseAuthClient'
 import { getTurnstileToken } from '@/lib/turnstile'
+import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 let _sponsorSupabase: AuthOnlyClient | null = null
 
@@ -85,6 +86,11 @@ export async function sponsorResetPassword(email: string) {
 }
 
 export async function sponsorSignOut() {
+  // The registration form's stash (name, phone, country, source — `register/page.tsx`) waits in this tab
+  // for the details step; on a shared phone it must not outlive the person who typed it (M5 review). It
+  // goes first and whatever the sign-out returns. (The invite-link referral code, KEY_SPONSOR_REF, holds
+  // no person's details and stays, so an invited visitor who signs out before registering keeps it.)
+  try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* storage blocked: nothing was kept */ }
   // scope: 'local' — end only the sponsor session, not the user's student/admin
   // sessions (same Supabase identity across the three isolated clients).
   const { error } = await getSponsorSupabase().auth.signOut({ scope: 'local' })

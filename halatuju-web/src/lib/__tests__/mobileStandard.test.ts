@@ -522,6 +522,11 @@ describe('rule 11 — the sponsor tab bar', () => {
     const css = readWeb('src/app/globals.css', 'the stylesheet').replace(/\/\*[\s\S]*?\*\//g, '')
     expect(css).toMatch(/\[data-tab-bar='sponsor'\] \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/)
     expect(css).toMatch(/@media print \{[\s\S]*\[data-tab-bar\] \{\s*display: none !important;/)
+    // M5 review: without :has() the sponsor's phone header is the logo alone, so the bar is the only way to
+    // My Account and Log out — there it is drawn in the flow (never fixed: it could not give way to a page bar).
+    const fallback = css.slice(css.indexOf('@supports not selector(:has(*))'))
+    expect(css).toContain('@supports not selector(:has(*))')
+    expect(fallback).toMatch(/^@supports not selector\(:has\(\*\)\) \{\s*@media \(max-width: 767\.98px\) \{\s*\[data-tab-bar='sponsor'\] \{\s*display: grid;\s*position: static;/)
   })
   test('every bar pinned to the foot of a sponsor screen carries data-page-bar', () => {
     const bars: string[] = []
@@ -535,9 +540,25 @@ describe('rule 11 — the sponsor tab bar', () => {
         }
       }
     }
-    // M5: the fund bar (one pool student) and the terms wizard's two bars.
-    expect(bars.length).toBeGreaterThanOrEqual(3)
+    // M5: the fund bar (one pool student) and the terms quiz's bar.
+    expect(bars.length).toBeGreaterThanOrEqual(2)
+    // M5 review (consent): "Start the quiz" is INLINE after the terms and the privacy line, never pinned.
+    const wizard = readWeb('src/components/sponsors/SponsorTermsWizard.tsx', 'the terms wizard')
+    const at = wizard.indexOf('data-testid="terms-start"')
+    const start = at < 0 ? '' : wizard.slice(wizard.lastIndexOf('<button', at), wizard.indexOf('</button>', at))
+    expect(start).not.toBe('')
+    expect(start).not.toMatch(/\bsticky\b|\bfixed\b/)
+    expect(wizard.indexOf("t('sponsorPortal.terms.privacyNote')")).toBeLessThan(wizard.indexOf('data-testid="terms-start"'))
+    expect(wizard.slice(wizard.indexOf("{phase === 'read'"), wizard.indexOf("{phase === 'quiz'"))).not.toContain('data-page-bar')
     expect(offenders).toEqual([])
+  })
+  test('a Sheet on a portal screen keeps the portal face (it is portalled out of the shell)', () => {
+    const portal = FILES.filter((f) => /^src\/(app\/sponsor\/\(portal\)|components\/sponsor)\//.test(f.rel))
+    const sheets = portal.flatMap((f) => openTags(f.code, 'Sheet').map((tag) => ({ f, tag })))
+    expect(sheets.length).toBeGreaterThanOrEqual(2)   // the fund confirm and the filter Sheet
+    expect(sheets.filter(({ tag }) => !/className="[^"]*\bfont-sponsor\b/.test(tag.attrs)).map(({ f, tag }) => where(f, tag.start, tag.attrs))).toEqual([])
+    const css = readWeb('src/app/globals.css', 'the stylesheet')
+    expect(css).toMatch(/\.font-sponsor \{\s*font-family: var\(--font-tamil\), var\(--font-inter\), system-ui, sans-serif;/)
   })
   test('a synthetic sponsor identity is supplied by the sandbox only', () => {
     // Product code provides it in ONE place — the real provider, which reads the Supabase session.

@@ -216,7 +216,7 @@ export const SPONSOR_PORTAL_SURFACES: Surface[] = [
         <SponsorCard>
           <SponsorTermsWizard token={TOKEN} accountName={ACCOUNT.name || ''} onAccepted={() => {}} />
         </SponsorCard>
-        <TapOnce selector="[data-testid=terms-read-bar] button" />
+        <TapOnce selector="[data-testid=terms-start]" />
       </Portal>
     ),
   },

@@ -9,6 +9,13 @@
    surface on a face that has `tnum` keeps it via `--figures-face` (the sponsor portal: Inter). */
 :root { --figures-face: var(--font-tamil), var(--font-ibm-plex-sans), 'IBM Plex Sans', system-ui, sans-serif; }
 .tabular-nums:not(.font-mono) { font-family: var(--figures-face); }
+/* The sponsor portal's face (Inter, Tamil in Mukta Malar) for what is PORTALLED out of its shell — the
+   shared Sheet renders on <body>, so the confirm and the filter Sheet pass this (Mobile M5 review). The
+   same stack `SponsorShell` sets inline. */
+.font-sponsor {
+  font-family: var(--font-tamil), var(--font-inter), system-ui, sans-serif;
+  --figures-face: var(--font-tamil), var(--font-inter), system-ui, sans-serif;
+}
 
 /* Brand colour channels (platform Sprint 6, decision D3). Space-separated RGB triplets converted
    from today's EXACT platform hexes — static CSS so first paint is correct + SSR-safe. A tenant
@@ -715,6 +722,18 @@
     }
     html:has([data-tab-bar]):not(:has([data-page-bar])) body {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+  }
+}
+/* THE SPONSOR'S FALLBACK (Mobile M5 review). Without `:has()` the student keeps her header menu, but the
+   sponsor's phone header is the logo alone: the tab bar is the ONLY way to My Account and Log out (a shared
+   phone). So there, the sponsor bar is drawn IN THE FLOW at the end of the page — never fixed, so it can
+   never cover a page's own bar it cannot give way to — and a sponsor reaches it by scrolling to the end. */
+@supports not selector(:has(*)) {
+  @media (max-width: 767.98px) {
+    [data-tab-bar='sponsor'] {
+      display: grid;
+      position: static;
     }
   }
 }
