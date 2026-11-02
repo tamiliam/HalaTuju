@@ -520,10 +520,10 @@ def costs(eval_dir, keys, pair=('current', 'new')):
     """Per letter holding both caches: (key, ``pair[0]`` usage, ``pair[1]`` usage, pages, text chars)."""
     rows = []
     for k in keys:
-        pair = [orc.read_json_file(fresh_path(eval_dir, k, READERS[r])) for r in pair]
-        if all(pair):
-            shown = pair[1].get('offer_reader_inputs') or {}
-            rows.append((k, pair[0].get('usage') or {}, pair[1].get('usage') or {},
+        two = [orc.read_json_file(fresh_path(eval_dir, k, READERS[r])) for r in pair]
+        if all(two):
+            shown = two[1].get('offer_reader_inputs') or {}
+            rows.append((k, two[0].get('usage') or {}, two[1].get('usage') or {},
                          shown.get('pages'), shown.get('text_layer_chars')))
     return rows
 
