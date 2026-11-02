@@ -966,6 +966,36 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:dashboard @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:dashboard @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:dashboard @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:dashboard @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:dashboard @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:dashboard @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:documents @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1266,6 +1296,36 @@
       "smallInputs": 0,
       "smallTargets": 2
     },
+    "sandbox:profile @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:profile @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:profile @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:profile @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:profile @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:profile @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:programme-config @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1476,6 +1536,36 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:settings @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:settings @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:settings @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:settings @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:settings @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
+    "sandbox:settings @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 2
+    },
     "sandbox:sheet-locked-confirm @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1652,6 +1742,66 @@
       "smallTargets": 0
     },
     "sandbox:stpm-grade-rows @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-in @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:tab-bar-signed-out @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0

@@ -89,9 +89,9 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/login': { cls: 'must', sprint: 'M6', visit: '/admin/login' },
 
   // ── Students, signed in ───────────────────────────────────────────────────────────────────────
-  '/dashboard': { cls: 'must', sprint: 'M2' },
-  '/profile': { cls: 'must', sprint: 'M2' },
-  '/settings': { cls: 'must', sprint: 'M2' },
+  '/dashboard': { cls: 'must', sprint: 'M2', surfaces: ['dashboard'] },
+  '/profile': { cls: 'must', sprint: 'M2', surfaces: ['profile'] },
+  '/settings': { cls: 'must', sprint: 'M2', surfaces: ['settings'] },
   '/verify-email': { cls: 'must', sprint: 'M2' },
   '/auth/callback': { cls: 'must', sprint: 'M2' },
   '/r/[code]': { cls: 'must', sprint: 'M2', redirect: '/' },

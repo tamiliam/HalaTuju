@@ -143,3 +143,66 @@ export function measurePage(scopeSelector: string): Measurement {
     smallTargetExamples: tiny.slice(0, 8).map(describe),
   }
 }
+
+/**
+ * Mobile M4b: the student tab bar's two promises, measured in the page AFTER the screenshot (it
+ * scrolls). Self-contained like `measurePage`.
+ *
+ *  - bottomBars — how many bottom bars are drawn at once: the tab bar (`[data-tab-bar]`) and a page's
+ *    own bar (`[data-page-bar]`, any number of them counting as one). More than 1 means the swap rule
+ *    failed: two bars stacked, the page's main action fighting the tabs.
+ *  - coveredByBar — scrolled to the very end, how many CSS px of the page's own content (the last
+ *    lines, the footer) lie UNDER the fixed tab bar. 0 means the page is padded by the bar's height.
+ *    Anything fixed itself (a toast, a sheet) is not page content and is skipped.
+ */
+export interface BarCheck {
+  bottomBars: number
+  coveredByBar: number
+  covered: string | null
+}
+
+export function measureBars(): BarCheck {
+  const drawn = (el: Element): boolean => {
+    const r = el.getBoundingClientRect()
+    const cs = getComputedStyle(el)
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width >= 2 && r.height >= 2
+  }
+  const tabs = Array.from(document.querySelectorAll('[data-tab-bar]')).filter(drawn)
+  const pageBars = Array.from(document.querySelectorAll('[data-page-bar]')).filter(drawn)
+  const bottomBars = tabs.length + (pageBars.length > 0 ? 1 : 0)
+  if (tabs.length === 0) return { bottomBars, coveredByBar: 0, covered: null }
+
+  window.scrollTo(0, document.documentElement.scrollHeight)
+  const top = tabs[0].getBoundingClientRect().top
+  const fixedCache = new Map<Element, boolean>()
+  const inFixed = (el: Element): boolean => {
+    const chain: Element[] = []
+    let cur: Element | null = el
+    let found = false
+    while (cur && cur !== document.body) {
+      const known = fixedCache.get(cur)
+      if (known !== undefined) { found = known; break }
+      chain.push(cur)
+      if (getComputedStyle(cur).position === 'fixed') { found = true; break }
+      cur = cur.parentElement
+    }
+    for (const c of chain) fixedCache.set(c, found)
+    return found
+  }
+  let worst = 0
+  let covered: string | null = null
+  for (const el of Array.from(document.body.querySelectorAll('*'))) {
+    if (el.children.length > 0) continue            // leaves only: the words and controls themselves
+    const r = el.getBoundingClientRect()
+    if (r.width < 2 || r.height < 2 || r.bottom <= top + 0.5) continue
+    if (inFixed(el)) continue
+    const cs = getComputedStyle(el)
+    if (cs.visibility === 'hidden' || cs.opacity === '0') continue
+    const over = r.bottom - top
+    if (over > worst) {
+      worst = over
+      covered = `${el.tagName.toLowerCase()} “${(el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40)}”`
+    }
+  }
+  return { bottomBars, coveredByBar: Math.round(worst), covered }
+}

@@ -46,6 +46,7 @@ import { SHEET_SURFACES } from './sheetSurfaces'
 import { HEADER_SURFACES } from './headerSurfaces'
 import { DISCOVERY_SURFACES } from './discoverySurfaces'
 import { SCHOLARSHIP_APPLY_SURFACES } from './scholarshipM4Surfaces'
+import { STUDENT_PAGE_SURFACES } from './studentM4bSurfaces'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
@@ -421,7 +422,7 @@ export const SURFACES: Surface[] = [
       </WithAdminAuth>
     ),
   },
-  ...SHEET_SURFACES, ...HEADER_SURFACES, ...DISCOVERY_SURFACES, ...SCHOLARSHIP_APPLY_SURFACES,
+  ...SHEET_SURFACES, ...HEADER_SURFACES, ...DISCOVERY_SURFACES, ...SCHOLARSHIP_APPLY_SURFACES, ...STUDENT_PAGE_SURFACES,
 ]
 
 /**

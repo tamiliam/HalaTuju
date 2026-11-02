@@ -21,7 +21,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { expect, test, type Page } from '@playwright/test'
-import { measurePage, type Measurement } from './measure'
+import { measureBars, measurePage, type Measurement } from './measure'
 import {
   APP_API, BASE, EXPECTED_LANG, LOCALE_KEY, LOCALES, PROXY_API, PUBLIC_BASE, RESULTS_DIR, SANDBOX_ON,
   SHOTS_DIR, WIDTHS, cellKey, fileSafe, liveApi, publicTargets, readBaseline, sandboxSlugs, sandboxTargets, worseThan,
@@ -201,7 +201,13 @@ for (const target of targets) {
           const dialog = (await page.locator('[role="dialog"]').count()) > 0
           if (target.kind === 'sandbox' && !dialog) await page.locator('main').first().screenshot({ path: shot })
           else await page.screenshot({ path: shot })
-          fs.writeFileSync(path.join(RESULTS_DIR, `${file}.json`), JSON.stringify({ key, ...m }, null, 2))
+          // Mobile M4b — hard rules, not ratchets: one bottom bar at a time, and nothing of the page
+          // left under the fixed tab bar at its end. Measured after the screenshot (it scrolls).
+          const bars = await page.evaluate(measureBars)
+          fs.writeFileSync(path.join(RESULTS_DIR, `${file}.json`), JSON.stringify({ key, ...m, ...bars }, null, 2))
+          expect(bars.bottomBars, `${key}: the tab bar and a page's own bar are drawn together (the swap rule)`)
+            .toBeLessThanOrEqual(1)
+          expect(bars.coveredByBar, `${key}: the page ends under the tab bar — ${bars.covered}`).toBe(0)
 
           const now = { overflow: m.overflow, smallInputs: m.smallInputs, smallTargets: m.smallTargets }
           const worse = worseThan(now, BASELINE.cells[key])
