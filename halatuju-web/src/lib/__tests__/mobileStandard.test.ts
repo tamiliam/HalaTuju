@@ -299,10 +299,19 @@ const RULE15_SWEPT = [
   'src/app/onboarding/grades/page.tsx', 'src/app/onboarding/higher-grades/page.tsx',
   'src/app/onboarding/stpm-grades/page.tsx', 'src/app/onboarding/profile/page.tsx',
   'src/app/scholarship/onboarding/page.tsx', 'src/app/quiz/page.tsx', 'src/app/stpm/quiz/page.tsx',
+  // Mobile M5: the sponsor portal — its shell, My Giving, one pool student, My Account, Trust, the landing.
+  'src/components/sponsor/SponsorShell.tsx', 'src/app/sponsor/(portal)/page.tsx',
+  'src/app/sponsor/(portal)/students/[id]/page.tsx', 'src/app/sponsor/(portal)/account/page.tsx',
+  'src/app/sponsor/(portal)/trust/page.tsx', 'src/components/SponsorLanding.tsx',
 ]
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
 const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
-  'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx', 'src/components/ReportView.tsx']
+  'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx', 'src/components/ReportView.tsx',
+  // Mobile M5: sponsor screens with no section or gutter of their own.
+  'src/app/sponsor/(portal)/students/page.tsx', 'src/app/sponsor/(portal)/my-students/[id]/page.tsx',
+  'src/components/sponsors/SponsorTermsWizard.tsx', 'src/components/sponsor/JourneyLine.tsx',
+  'src/components/SponsorDetailsForm.tsx',
+  'src/app/sponsor/login/page.tsx', 'src/app/sponsor/register/page.tsx', 'src/app/sponsor/auth/reset/page.tsx']
 /** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
 const CONTROL_CONSTS: Record<string, string[]> = {
   'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS
@@ -476,6 +485,65 @@ describe('rule 11 — the student tab bar gives way to a page\'s own bar', () =>
     expect(block).toMatch(/padding-bottom: calc\(4rem \+ env\(safe-area-inset-bottom\)\);/)
     expect(css).toMatch(/\[data-tab-bar\] a \{[^}]*min-height: 4rem;/)
     expect(css).toMatch(/\[data-tab-bar\] \{[^}]*padding-bottom: env\(safe-area-inset-bottom\);/)
+  })
+})
+
+// ── Rule 11 (Mobile M5): the sponsor's own tab bar ───────────────────────────────────────────────
+/**
+ * The sponsor portal's phone navigation is `SponsorTabBar` (three tabs), drawn ONLY by `SponsorShell`,
+ * which ONLY the portal layout (and the design sandbox) mounts. It is the student bar's PATTERN — the
+ * same `data-tab-bar` CSS — never the student bar: `StudentTabBar` must not reach a sponsor screen. The
+ * student guard above skips `src/(app|components)/sponsor/`, so the sponsor side is checked here: every
+ * bar pinned to the foot of a sponsor screen carries `data-page-bar`, or it would sit on the tabs.
+ */
+const SPONSOR_SCOPE = (rel: string) => /^src\/(app\/sponsor|components\/sponsors?)\//.test(rel)
+  || /^src\/components\/Sponsor\w*\.tsx$/.test(rel)
+describe('rule 11 — the sponsor tab bar', () => {
+  test('mounted by the portal shell only; the shell by the portal layout (and the sandbox) only', () => {
+    const importers = (mod: string) => FILES.filter((f) => new RegExp(`from '@/components/sponsor/${mod}'`).test(f.code)).map((f) => f.rel).sort()
+    expect(importers('SponsorTabBar')).toEqual(['src/components/sponsor/SponsorShell.tsx'])
+    expect(importers('SponsorShell')).toEqual(['src/app/sponsor/(portal)/layout.tsx'])
+    // (The design sandbox mounts it too; the sandbox is outside this walk, so it is read by name.)
+    expect(readWeb('src/sandbox/sponsorM5Surfaces.tsx', 'the M5 surfaces')).toMatch(/from '@\/components\/sponsor\/SponsorShell'/)
+    const shell = readWeb('src/components/sponsor/SponsorShell.tsx', 'the sponsor shell')
+    expect(shell).toMatch(/\{nav && <SponsorTabBar path=\{here\} \/>\}/)
+  })
+  test('never the student bar on a sponsor screen', () => {
+    const sponsorSide = FILES.filter((f) => SPONSOR_SCOPE(f.rel))
+    expect(sponsorSide.length).toBeGreaterThanOrEqual(15)
+    expect(sponsorSide.filter((f) => /StudentTabBar/.test(f.code)).map((f) => f.rel)).toEqual([])
+    // The landing keeps the student header (signed-out visitors), with its tabs turned off.
+    expect(readWeb('src/components/SponsorLanding.tsx', 'the sponsor landing')).toContain('<AppHeader tabs={false} />')
+  })
+  test('it is the student bar\'s CSS with three columns; the giving statement prints without it', () => {
+    const bar = readWeb('src/components/sponsor/SponsorTabBar.tsx', 'the sponsor tab bar')
+    expect(bar).toMatch(/<nav data-tab-bar="sponsor"/)
+    expect((bar.match(/href: '\/sponsor[^']*'/g) ?? []).length).toBe(3)
+    const css = readWeb('src/app/globals.css', 'the stylesheet').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(css).toMatch(/\[data-tab-bar='sponsor'\] \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/)
+    expect(css).toMatch(/@media print \{[\s\S]*\[data-tab-bar\] \{\s*display: none !important;/)
+  })
+  test('every bar pinned to the foot of a sponsor screen carries data-page-bar', () => {
+    const bars: string[] = []
+    const offenders: Offender[] = []
+    for (const f of TSX.filter((x) => SPONSOR_SCOPE(x.rel))) {
+      for (const name of ['div', 'nav', 'footer', 'section', 'form', 'aside', 'header']) {
+        for (const tag of openTags(f.code, name)) {
+          if (!PINNED_BOTTOM(classText(f, tag, resolve))) continue
+          bars.push(f.rel)
+          if (!/(^|\s)data-page-bar(\s|=|$)/.test(tag.attrs)) offenders.push(where(f, tag.start, tag.attrs))
+        }
+      }
+    }
+    // M5: the fund bar (one pool student) and the terms wizard's two bars.
+    expect(bars.length).toBeGreaterThanOrEqual(3)
+    expect(offenders).toEqual([])
+  })
+  test('a synthetic sponsor identity is supplied by the sandbox only', () => {
+    // Product code provides it in ONE place — the real provider, which reads the Supabase session.
+    const providers = FILES.filter((f) => /SponsorAuthContext\.Provider/.test(f.code)).map((f) => f.rel)
+    expect(providers).toEqual(['src/lib/sponsor-auth-context.tsx'])
+    expect(readWeb('src/lib/sponsor-auth-context.tsx', 'the sponsor auth context')).toMatch(/export function SponsorAuthProvider[\s\S]*getSponsorSession\(\)/)
   })
 })
 

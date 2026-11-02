@@ -399,92 +399,92 @@
     "/sponsor @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/sponsor/login @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/login @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/login @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/login @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/login @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/login @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/sponsor/register @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/sponsor/register @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/sponsor/register @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/sponsor/register @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/sponsor/register @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/sponsor/register @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "/stpm/[id] @360 en": {
       "overflow": 0,
@@ -2106,6 +2106,36 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:sponsor-account @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-account @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-account @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-account @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-account @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-account @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:sponsor-browse @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -2136,35 +2166,245 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:sponsor-filters @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-filters @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-filters @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-filters @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-filters @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-filters @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-fund-confirm @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-giving @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:sponsor-landing @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:sponsor-landing @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:sponsor-landing @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:sponsor-landing @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:sponsor-landing @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:sponsor-landing @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-my-student @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-pool-student @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-students @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:sponsor-terms-quiz @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     },
     "sandbox:stpm-grade-rows @360 en": {
       "overflow": 0,

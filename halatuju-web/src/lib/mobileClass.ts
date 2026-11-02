@@ -83,7 +83,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
     cls: 'must', sprint: 'M4', visit: '/scholarship/apply',
     surfaces: ['apply-results', 'apply-results-stpm', 'apply-results-form-six'],
   },
-  '/sponsor': { cls: 'must', sprint: 'M5', visit: '/sponsor', surfaces: ['sponsor-landing'] },
+  '/sponsor': { cls: 'must', sprint: 'M5', visit: '/sponsor', surfaces: ['sponsor-landing', 'sponsor-giving', 'sponsor-terms-quiz'] },
   '/sponsor/register': { cls: 'must', sprint: 'M5', visit: '/sponsor/register' },
   '/sponsor/login': { cls: 'must', sprint: 'M5', visit: '/sponsor/login' },
   '/admin/login': { cls: 'must', sprint: 'M6', visit: '/admin/login' },
@@ -119,10 +119,10 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/scholarship/in-programme': { cls: 'must', sprint: 'M4', redirect: '/scholarship/bursary' },
 
   // ── Sponsors, signed in (the portal) and their auth pages ─────────────────────────────────────
-  '/sponsor/students': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-browse'] },
-  '/sponsor/students/[id]': { cls: 'must', sprint: 'M5' },
-  '/sponsor/my-students/[id]': { cls: 'must', sprint: 'M5' },
-  '/sponsor/account': { cls: 'must', sprint: 'M5' },
+  '/sponsor/students': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-browse', 'sponsor-students', 'sponsor-filters'] },
+  '/sponsor/students/[id]': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-pool-student', 'sponsor-fund-confirm'] },
+  '/sponsor/my-students/[id]': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-my-student'] },
+  '/sponsor/account': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-account'] },
   '/sponsor/terms': { cls: 'must', sprint: 'M5' },
   '/sponsor/trust': { cls: 'must', sprint: 'M5' },
   '/sponsor/[...notFound]': { cls: 'must', sprint: 'M5' },
