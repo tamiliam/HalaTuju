@@ -608,7 +608,7 @@ def course_start_year(application):
     letter cannot.
     """
     offer = _latest_offer(application)
-    if offer is not None:
+    if offer is not None and offer_band(offer) != 'not_offer_letter':   # a non-offer never dates the course (S4 review M2)
         iy = (student_offer_check(offer).get('intake_year') or '').strip()
         if iy.isdigit():
             return int(iy)
