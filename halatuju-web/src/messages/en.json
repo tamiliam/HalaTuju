@@ -882,7 +882,8 @@
       "allowance": "Allowance",
       "merit": "Merit",
       "requirements": "Entry requirements"
-    }
+    },
+    "quizNext": "Next"
   },
   "scholarship": {
     "nav": "{programmeName}",

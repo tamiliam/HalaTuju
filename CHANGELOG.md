@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M4c follow-up — the quizzes on a phone (2026-11-02, not yet pushed)
+
+- **Owner's decision (closes TD-466 item 1):** both quizzes (`/quiz`, `/stpm/quiz`) hide the row of 10 px question dots
+  below `md`; the header's progress bar and "Question n of N" (existing `quiz.questionOf`) say where she is, and she moves
+  with a 44 px **Next** (phones only, enabled once the question has an answer; single-choice questions still advance by
+  themselves) and Previous. From `md` the dots and the old layout stay. One new string, `discovery.quizNext` (en "Next",
+  ms "Seterusnya", ta "அடுத்து"), in the page-loaded `discovery` slice — both quiz pages now load it (`sliceReach` owners).
+  Pinned by `app/quiz/page.test.tsx` (render) and `mobileStandard.test.ts` (both files); bite-checked (dots on a phone,
+  Next on desktop, Next without an answer — all red, restored by checksum).
+
 ## Mobile M4c — one box level on the rest of the student pages (2026-11-02, not yet pushed)
 
 No new design: the M4 / M4b pattern the owner approved (decisions.md, "One box level; sections on phones"). Below `md`

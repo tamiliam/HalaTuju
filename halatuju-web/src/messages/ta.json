@@ -882,7 +882,8 @@
       "allowance": "உதவித்தொகை",
       "merit": "தகுதிப் புள்ளி",
       "requirements": "நுழைவுத் தேவைகள்"
-    }
+    },
+    "quizNext": "அடுத்து"
   },
   "scholarship": {
     "nav": "{programmeName}",

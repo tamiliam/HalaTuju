@@ -11,6 +11,7 @@ import {
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import '@/lib/messagesDiscovery'   // its Next on a phone (`discovery.quizNext`, page-loaded slice)
 import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { STPM_SUBJECT_TO_API_KEY } from '@/lib/stpmResultsSubjects'
 import {
@@ -178,6 +179,7 @@ export default function StpmQuizPage() {
 
   const question = currentStep < allQuestions.length ? allQuestions[currentStep] : null
   const currentAnswer = currentStep < answers.length ? answers[currentStep] : null
+  const currentAnswered = currentAnswer !== null && currentAnswer !== undefined
 
   function handleCardClick(optIdx: number) {
     if (!question) return
@@ -306,8 +308,9 @@ export default function StpmQuizPage() {
       </header>
 
       <div className={`container mx-auto ${PHONE_GUTTER} py-4 max-w-md md:py-6`}>
-        {/* Step dots */}
-        <div className="flex justify-center gap-2 mb-6">
+        {/* Step dots — md and up only (owner, 2026-11-02): ten 10 px dots cannot be 44 px targets on a phone,
+            so a phone shows the header's progress bar and "Question n of N" and moves with Next / Previous. */}
+        <div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">
           {allQuestions.map((q, i) => {
             const hasAnswer = answers[i] !== null
             return (
@@ -390,7 +393,18 @@ export default function StpmQuizPage() {
               {submitting ? t('quiz.submitting') : t('quiz.seeResults')}
             </button>
           ) : (
-            <div />
+            <>
+              {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
+              <button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={!currentAnswered}
+                className="btn-primary min-h-11 md:hidden disabled:opacity-40"
+                data-testid="quiz-next"
+              >
+                {t('discovery.quizNext')}
+              </button>
+              <div className="hidden md:block" /> {/* Spacer for flex alignment (desktop, as before) */}
+            </>
           )}
         </div>
       </div>

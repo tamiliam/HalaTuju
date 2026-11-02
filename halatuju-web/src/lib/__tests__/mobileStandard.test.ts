@@ -380,6 +380,27 @@ describe('rule 15 — one box level; sections on phones', () => {
   })
 })
 
+// ── Rule 3 (owner, 2026-11-02, M4c follow-up): the quizzes on a phone ──────────────────────────
+/**
+ * Ten 10 px question dots cannot be 44 px targets on a phone, so BOTH quizzes hide the dot row below
+ * `md` and move with a 44 px Next (phones only) and Previous; the header's progress bar and "Question n
+ * of N" say where she is. From `md` the dots stay. `/quiz` is render-tested in `app/quiz/page.test.tsx`;
+ * this pins the same shape in both files.
+ */
+describe('rule 3 — the quizzes trade the dot row for Next on a phone', () => {
+  for (const rel of ['src/app/quiz/page.tsx', 'src/app/stpm/quiz/page.tsx']) {
+    test(rel, () => {
+      const src = readWeb(rel, 'a quiz page')
+      expect(src).toMatch(/<div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">/)
+      expect(src).toMatch(/className="btn-primary min-h-11 md:hidden[^"]*"\s+data-testid="quiz-next"/)
+      expect(src).toMatch(/disabled=\{!currentAnswered\}/)
+      expect(src).toContain("t('discovery.quizNext')")
+      expect(src).toContain("import '@/lib/messagesDiscovery'")
+      expect(src).toMatch(/t\('quiz\.questionOf'/)
+    })
+  }
+})
+
 // ── Rule 11 (Mobile M4b): the student tab bar, and ONE bottom bar at a time ──────────────────
 /**
  * The phone's tab bar (`StudentTabBar`) is mounted by the student header only, and gives way to a

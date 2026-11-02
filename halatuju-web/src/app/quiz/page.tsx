@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import '@/lib/messagesDiscovery'   // its Next on a phone (`discovery.quizNext`, page-loaded slice)
 import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { KEY_QUIZ_SIGNALS, KEY_SIGNAL_STRENGTH, KEY_REPORT_GENERATED } from '@/lib/storage'
 
@@ -81,6 +82,7 @@ export default function QuizPage() {
   const question = origIdx >= 0 ? questions[origIdx] : null
   const isMultiSelect = question?.select_mode === 'multi'
   const currentAnswer = origIdx >= 0 ? answers[origIdx] : null
+  const currentAnswered = currentAnswer != null && (!Array.isArray(currentAnswer) || currentAnswer.length > 0)
 
   function isOptionSelected(optIdx: number): boolean {
     if (currentAnswer == null) return false
@@ -283,8 +285,9 @@ export default function QuizPage() {
       </header>
 
       <div className={`container mx-auto ${PHONE_GUTTER} py-4 max-w-md md:py-6`}>
-        {/* Step dots */}
-        <div className="flex justify-center gap-2 mb-6">
+        {/* Step dots — md and up only (owner, 2026-11-02): ten 10 px dots cannot be 44 px targets on a phone,
+            so a phone shows the header's progress bar and "Question n of N" and moves with Next / Previous. */}
+        <div className="hidden md:flex justify-center gap-2 mb-6" data-testid="quiz-dots">
           {visibleQuestions.map((q, i) => {
             const qOrigIdx = questions.indexOf(q)
             const a = answers[qOrigIdx]
@@ -379,7 +382,7 @@ export default function QuizPage() {
           </div>
         )}
 
-        {/* Navigation — Previous + Submit only (no Next button, auto-advance handles it) */}
+        {/* Navigation — Previous + Submit; on a phone also Next (desktop: the dots, and auto-advance) */}
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
@@ -401,7 +404,18 @@ export default function QuizPage() {
                 : t(returnTo === 'application' ? 'quiz.returnToApplication' : 'quiz.seeResults')}
             </button>
           ) : (
-            <div /> /* Spacer for flex alignment */
+            <>
+              {/* Phones (owner, 2026-11-02): no dot row, so Next moves on — once this question has an answer. */}
+              <button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                disabled={!currentAnswered}
+                className="btn-primary min-h-11 md:hidden disabled:opacity-40"
+                data-testid="quiz-next"
+              >
+                {t('discovery.quizNext')}
+              </button>
+              <div className="hidden md:block" /> {/* Spacer for flex alignment (desktop, as before) */}
+            </>
           )}
         </div>
       </div>

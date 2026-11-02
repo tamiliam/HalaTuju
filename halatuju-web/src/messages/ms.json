@@ -882,7 +882,8 @@
       "allowance": "Elaun",
       "merit": "Merit",
       "requirements": "Syarat kemasukan"
-    }
+    },
+    "quizNext": "Seterusnya"
   },
   "scholarship": {
     "nav": "{programmeName}",

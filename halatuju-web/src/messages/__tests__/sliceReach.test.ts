@@ -431,9 +431,10 @@ const SLICE_RULES: Record<'scholarship' | 'sponsor' | 'bursary' | 'discovery', S
     loader: path.join(SRC, 'lib', 'messagesDiscovery.ts'),
     key: /^discovery\.|\$\{\}discovery\./,
     notKey: /^discovery\.(ts|tsx|js|jsx|json|py|md|css|html)$/,
-    owners: ['/course/[id]', '/sandbox', '/sandbox/[surface]', '/saved', '/search'],
-    // The two search files, the course pages and their shared pieces, the saved page and compare.
-    floors: { keyFiles: 4, importers: 4, loaders: 5 },
+    // Plus both quizzes (Mobile M4c follow-up, owner 2026-11-02): their phone Next (`discovery.quizNext`).
+    owners: ['/course/[id]', '/quiz', '/sandbox', '/sandbox/[surface]', '/saved', '/search', '/stpm/quiz'],
+    // The two search files, the course pages and their shared pieces, the saved page and compare, the quizzes.
+    floors: { keyFiles: 6, importers: 6, loaders: 7 },
   },
 }
 

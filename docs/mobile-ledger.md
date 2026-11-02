@@ -8,7 +8,7 @@ Baseline last updated **2026-11-02** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **99 routes:** 66 Must · 27 Can · 6 Desktop-only.
-**36 measured** (public page or sandbox surface), **27 fully green.**
+**36 measured** (public page or sandbox surface), **28 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -85,7 +85,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/pathway/stpm` | Must | M3 | 6 (sandbox `pathway-stpm`) | 0 | 0 | 0 | ✅ |  |
 | `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/profile` | Must | M2 | 6 (sandbox `profile`) | 0 | 0 | 0 | ✅ |  |
-| `/quiz` | Must | M3 | 6 (sandbox `quiz`) | 0 | 0 | 2 | ❌ |  |
+| `/quiz` | Must | M3 | 6 (sandbox `quiz`) | 0 | 0 | 0 | ✅ |  |
 | `/r/[code]` | Must | M2 | — | — | — | — | n/a (redirect only) | redirects to `/` |
 | `/report/[id]` | Must | M3 | 6 (sandbox `report`) | 0 | 0 | 0 | ✅ |  |
 | `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | ✅ |  |
