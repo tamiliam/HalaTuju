@@ -6445,8 +6445,7 @@
         "executed": "Signed and executed"
       },
       "later": {
-        "letters": "Letters are coming in a later update.",
-        "surveys": "Surveys are coming in a later phase."
+        "letters": "Letters are coming in a later update."
       },
       "activity": {
         "title": "Activity",
@@ -6782,7 +6781,15 @@
       },
       "askedForHelp": "Asked for help",
       "askedForHelpNote": "\"Asked for help\" means the student said yes or not sure to help with university or scholarship applications when applying, or staff flagged them for mentoring. Mentors and meetings never reach sponsors or partners.",
-      "mentorConcerned": "Mentor concerned"
+      "mentorConcerned": "Mentor concerned",
+      "surveys": {
+        "card": "This scholar’s answers to your surveys are on the Surveys tab.",
+        "open": "Open Surveys",
+        "loadError": "The surveys could not be loaded.",
+        "waiting": "Still to answer: {list}",
+        "none": "No survey answered yet.",
+        "sent": "answered {date}"
+      }
     },
     "contracts": {
       "title": "Contract templates",
@@ -7808,7 +7815,8 @@
           "closed_by_officer": "Application closed by our team",
           "letter_issued": "A letter has been issued",
           "mentor_assigned": "You have a mentor",
-          "announcement": "An announcement"
+          "announcement": "An announcement",
+          "survey_open": "A survey for you"
         },
         "when": {
           "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
@@ -7842,7 +7850,8 @@
           "closed_by_officer": "When an officer closes an application before an award: stalled, or at her request.",
           "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date.",
           "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor.",
-          "announcement": "Sent within the hour of an announcement going out, when staff choose to email it, once to each scholar it is for (Programme → Announcements). The announcement's own title and message go inside. Safe to switch off — the news is on My Bursary either way."
+          "announcement": "Sent within the hour of an announcement going out, when staff choose to email it, once to each scholar it is for (Programme → Announcements). The announcement's own title and message go inside. Safe to switch off — the news is on My Bursary either way.",
+          "survey_open": "Sent within the hour of a survey opening, when staff choose to email it, once to each scholar it is for (Programme → Surveys) — and, when staff ask for it, a reminder 3 days before it closes to those who have not answered. The same wording serves both; the first line says which. Safe to switch off — the survey is on My Bursary either way."
         },
         "language": {
           "en": "English",
@@ -8205,7 +8214,8 @@
         "issue-monthly-invoices": "Monthly invoices",
         "refresh-reminder": "Course catalogue reminder",
         "decision-emails": "Decision emails",
-        "announcement-emails": "Announcement emails"
+        "announcement-emails": "Announcement emails",
+        "survey-emails": "Survey emails"
       }
     },
     "platformBilling": {
@@ -8688,6 +8698,170 @@
         "badTime": "Enter a date, and the time as HH:MM (for example 09:30).",
         "generic": "Could not save. Please try again."
       }
+    },
+    "surveys": {
+      "nav": "Surveys",
+      "title": "Surveys",
+      "intro": "Ask your funded scholars questions. They answer on My Bursary → Surveys.",
+      "new": "New survey",
+      "tabsAria": "Surveys by status",
+      "tab": {
+        "open": "Open",
+        "scheduled": "Scheduled",
+        "draft": "Drafts",
+        "closed": "Closed"
+      },
+      "col": {
+        "survey": "Survey",
+        "for": "For",
+        "dates": "Open",
+        "answered": "Answered",
+        "actions": "Actions"
+      },
+      "forAll": "All scholars ({count})",
+      "forGift": "{name} ({count})",
+      "by": "by {name}",
+      "byRole": "by {name} ({role})",
+      "questions": "{count} questions",
+      "oneQuestion": "1 question",
+      "locked": "questions locked",
+      "answeredOf": "{n} of {count}",
+      "yes": "Yes",
+      "no": "No",
+      "action": {
+        "results": "Results",
+        "edit": "Edit",
+        "close": "Close now",
+        "delete": "Delete"
+      },
+      "confirm": {
+        "close": "Close “{title}” now? Scholars can no longer answer or change their answers; what they sent stays.",
+        "delete": "Delete “{title}”? This cannot be undone."
+      },
+      "done": {
+        "published": "Published. Scholars can answer it on My Bursary → Surveys now.",
+        "scheduled": "Scheduled. It opens at the time you chose.",
+        "draft": "Saved as a draft. Scholars do not see it.",
+        "saved": "Saved.",
+        "closed": "Closed. Scholars can no longer answer.",
+        "deleted": "Deleted."
+      },
+      "empty": {
+        "open": "No survey is open.",
+        "scheduled": "Nothing scheduled.",
+        "draft": "No drafts.",
+        "closed": "No closed surveys yet."
+      },
+      "loadError": "The surveys could not be loaded.",
+      "chooseGift": "Choose a programme first (Programmes), so we know which organisation’s scholars this is for.",
+      "footnote": "Only funded scholars (My Bursary) see surveys. Their answers carry their name and are seen by your staff only — never by sponsors or partners. Once a survey has an answer, its questions are locked; a survey with answers is closed, never deleted.",
+      "kind": {
+        "one": "One choice",
+        "many": "Several choices",
+        "rating": "Rating 1–5",
+        "yes_no": "Yes or no",
+        "short": "Short answer",
+        "long": "Long answer"
+      },
+      "form": {
+        "newTitle": "New survey",
+        "editTitle": "Edit survey",
+        "title": "Title",
+        "intro": "Short introduction (shown above the questions)",
+        "for": "For",
+        "opens": "Opens",
+        "now": "Now",
+        "asIs": "As it is",
+        "later": "Later: pick a date and time",
+        "openDate": "Opens on",
+        "closeDate": "Closes on",
+        "time": "Time (24-hour, e.g. 21:30)",
+        "questions": "Questions",
+        "questionType": "Type",
+        "questionText": "Question",
+        "hint": "Hint (optional)",
+        "hintRating": "1 = not useful, 5 = very useful",
+        "options": "Choices, one per line (2 to {max})",
+        "required": "Required",
+        "optional": "Optional",
+        "mentorOnly": "Only for scholars with a mentor",
+        "mentorOnlyShort": "scholars with a mentor only",
+        "doneQuestion": "Done",
+        "untitled": "(no question yet)",
+        "edit": "Edit",
+        "moveUp": "Move up",
+        "remove": "Remove",
+        "addQuestion": "+ Add a question",
+        "types": "Types: one choice, several choices, rating 1–5, yes/no, short answer, long answer",
+        "emailOpen": "Email the scholars when it opens",
+        "emailNote": "Sent within the hour of opening, once to each scholar it is for, while “A survey for you” is switched on in Student communications.",
+        "emailOff": "The “A survey for you” email is switched off in Student communications, so nobody will be emailed.",
+        "remind": "Remind those who have not answered, 3 days before it closes",
+        "lockNote": "Once a survey has an answer, its questions are locked (so answers stay comparable). You can still change the title, the introduction and the closing date.",
+        "lockedNote": "Somebody has answered: the questions, who it is for and the opening time are locked. The title, the introduction, the closing date and the emails can still change."
+      },
+      "btn": {
+        "publish": "Publish",
+        "schedule": "Schedule",
+        "draft": "Save as draft",
+        "save": "Save changes"
+      },
+      "error": {
+        "title_required": "Write a title.",
+        "title_too_long": "The title is too long (at most 150 characters).",
+        "title_newline": "Keep the title on one line.",
+        "intro_too_long": "The introduction is too long (at most 1,000 characters).",
+        "bad_audience": "Choose who it is for again.",
+        "bad_opens_at": "Choose when it opens.",
+        "bad_closes_at": "Choose when it closes.",
+        "closes_at_past": "Choose a closing time in the future.",
+        "closes_before_opens": "It must close after it opens.",
+        "no_questions": "Add at least one question before publishing.",
+        "too_many_questions": "A survey has at most 30 questions.",
+        "bad_question_kind": "Choose a type for each question.",
+        "question_required": "Write the question.",
+        "question_too_long": "The question is too long (at most 300 characters).",
+        "question_newline": "Keep each question on one line.",
+        "hint_too_long": "The hint is too long (at most 200 characters).",
+        "options_count": "A choice question needs 2 to 12 choices.",
+        "option_required": "A choice cannot be empty.",
+        "option_too_long": "A choice is too long (at most 120 characters).",
+        "option_duplicate": "Two choices are the same.",
+        "bad_options": "Write the choices, one per line.",
+        "questions_locked": "Somebody has answered, so the questions cannot change.",
+        "answered_locked": "Somebody has answered, so who it is for and when it opens cannot change.",
+        "badTime": "Enter a date, and the time as HH:MM (for example 09:30).",
+        "atQuestion": "(question {n})",
+        "generic": "Could not save. Please try again."
+      },
+      "results": {
+        "title": "{title} · results",
+        "dates": "open {from} – {to}",
+        "answered": "{n} of {count} answered ({pct}%)",
+        "csv": "Download CSV",
+        "csvFailed": "The CSV could not be downloaded. Please try again.",
+        "remind": "Remind those who have not answered",
+        "remindOff": "Reminders are off: the “A survey for you” email is switched off in Student communications.",
+        "confirmRemind": "Email a reminder to the {count} scholars who have not answered? Each is reminded once only.",
+        "reminded": "Reminders sent: {count}.",
+        "remindFailed": "The reminders could not be sent. Please try again.",
+        "remindedOne": "reminded",
+        "tabsAria": "Results views",
+        "tab": {
+          "summary": "Summary",
+          "each": "Each scholar",
+          "pending": "Not answered"
+        },
+        "who": "who",
+        "noneYet": "No answers yet.",
+        "showAll": "Show all {count} answers",
+        "answersCount": "{count} answers",
+        "average": "Average {avg} of 5",
+        "sent": "sent {date}",
+        "everyone": "Everyone it is for has answered.",
+        "loadError": "The results could not be loaded.",
+        "footnote": "Each scholar’s answers are also on their file (Surveys tab). Staff only; never sponsors or partners."
+      }
     }
   },
   "documentsTab": {
@@ -8861,6 +9035,34 @@
       "empty": "No news yet.",
       "loadFailed": "Your news could not be loaded. Please try again.",
       "readNote": "An announcement counts as read once it is shown here. The red number counts the unread ones."
+    },
+    "surveys": {
+      "tab": "Surveys",
+      "toAnswer": "{count} to answer",
+      "openUntil": "Open until {date}",
+      "closed": "Closed {date}",
+      "questions": "{count} questions",
+      "oneQuestion": "1 question",
+      "answered": "answered {date}",
+      "noAnswer": "Not answered",
+      "yes": "Yes",
+      "no": "No",
+      "needThis": "Please answer this one.",
+      "thanks": "Thank you. Your answers are saved — you can change them until {date}.",
+      "send": "Send my answers",
+      "change": "Save my changes",
+      "who": "Your answers go to the {org} team (they see your name). You can change them until {date}. Sponsors never see them.",
+      "yourAnswers": "Your answers",
+      "error": {
+        "required": "Please answer every question marked *.",
+        "bad_answer": "Please check your answer.",
+        "answer_too_long": "That answer is too long.",
+        "survey_closed": "This survey has closed, so answers can no longer be sent.",
+        "generic": "Your answers could not be sent. Please try again."
+      },
+      "loadFailed": "Your surveys could not be loaded. Please try again.",
+      "empty": "No surveys for you right now.",
+      "footnote": "The red number counts the open surveys you have not answered yet."
     }
   }
 }

@@ -436,6 +436,7 @@ class StudentEmailTemplate(models.Model):
         ('letter_issued', 'A letter has been issued'),   # S6b: always sent (locked in the catalogue)
         ('mentor_assigned', 'You have a mentor'),        # S7b: switchable (the catalogue)
         ('announcement', 'An announcement'),             # S8: switchable; the post's own text inside
+        ('survey_open', 'A survey for you'),             # S9: switchable; the opening email AND the reminder
     ]
     LANGUAGE_CHOICES = [('en', 'English'), ('ms', 'Malay'), ('ta', 'Tamil')]
     organisation = models.ForeignKey(

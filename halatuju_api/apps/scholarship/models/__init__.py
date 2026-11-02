@@ -118,3 +118,7 @@ from .staff_activity import StaffActivity, StaffActivitySubject, StaffActivityVe
 # its scholars, who has been shown each one, and each scholar's copy of its email. Point at
 # `courses.PartnerOrganisation`, Programme and ScholarshipApplication by string.
 from .announcements import Announcement, AnnouncementEmail, AnnouncementRead
+# Student maintenance S9 (2026-11-02) — models 78 to 82, NEW: an organisation's surveys to its scholars,
+# their questions, each scholar's response and answers, and each scholar's copy of the survey emails.
+# Point at `courses.PartnerOrganisation`, Programme and ScholarshipApplication by string.
+from .surveys import Survey, SurveyAnswer, SurveyEmail, SurveyQuestion, SurveyResponse

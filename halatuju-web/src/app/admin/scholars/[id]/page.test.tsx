@@ -3,7 +3,7 @@
  *
  * One scholar's maintenance file (student maintenance Sprint 2). Pinned:
  *  * the header and the Results / Money / Contract cards read the server's payload;
- *  * the areas not built yet (Surveys) say so — no sample data;
+ *  * S9: the Surveys card and the Surveys tab (its own chunk) for super / org_admin / admin only;
  *  * S7b: the mentor card and the Mentoring tab (its own chunk) for super / org_admin / admin only;
  *  * "No contract on file" when there is none (owner ruling 2026-10-29);
  *  * the status is READ-ONLY here (no sub-state control, no Close) — "View application" goes to the
@@ -56,7 +56,7 @@ it('draws the header and the cards from the payload', async () => {
   expect(screen.getByText('RM800.00')).toBeTruthy()
   expect(screen.getByText('admin.scholars.file.noResult')).toBeTruthy()
   expect(screen.getByText('admin.scholars.contract.none')).toBeTruthy()
-  expect(screen.getByText('admin.scholars.later.surveys')).toBeTruthy()
+  expect(screen.getByTestId('card-surveys').textContent).toContain('admin.scholars.surveys.card')
   expect(screen.getByTestId('card-mentor').textContent).toContain('admin.scholars.mentoring.none.title')
   // S6b: Letters is no longer a "later" card — it reads the file's own letters summary.
   expect(screen.queryByText('admin.scholars.later.letters')).toBeNull()
@@ -169,4 +169,27 @@ it('S7b: a reviewer or QC sees no Mentoring tab and no mentor card', async () =>
     unmount()
   }
   expect(mockApi.getScholarMentoring).not.toHaveBeenCalled()
+})
+
+it('S9: the Surveys tab reads the answers of this scholar, for super / org_admin / admin only', async () => {
+  mockApi.getScholarSurveys.mockResolvedValue({ waiting: [], answered: [{ id: 7, title: 'Check-in', status: 'open',
+    submitted_at: '2026-11-02T00:00:00Z', updated_at: '2026-11-02T00:00:00Z',
+    answers: [{ question_id: 1, text: 'In a hostel?', kind: 'yes_no', value: true }] }] })
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+  fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.surveys' }))
+  expect((await screen.findByTestId('scholar-survey-7')).textContent).toContain('admin.surveys.yes')
+  expect(mockApi.getScholarSurveys).toHaveBeenCalledWith(104, { token: 'tok' })
+})
+
+it('S9: a reviewer or QC sees no Surveys tab and no Surveys card', async () => {
+  for (const r of ['reviewer', 'qc']) {
+    mockRole = { role: r, owning_org_id: 11 }
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.surveys' })).toBeNull()
+    expect(screen.queryByTestId('card-surveys')).toBeNull()
+    unmount()
+  }
+  expect(mockApi.getScholarSurveys).not.toHaveBeenCalled()
 })

@@ -126,6 +126,10 @@ export interface BursarySummary {
   /** S8: the News tab shows (at least one announcement is hers), and how many her tab has not shown yet. */
   news_tab?: boolean
   news_unread?: number
+  /** S9: the Surveys tab shows (an open survey for her, or one she answered), and how many open ones she
+   *  has not answered yet. */
+  surveys_tab?: boolean
+  surveys_to_answer?: number
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

@@ -1,5 +1,49 @@
 # Architectural Decisions — HalaTuju
 
+## Surveys: status from the dates, questions lock at the first answer, one response per scholar, emails once per kind behind one switch — 2026-11-02 (owner rulings, student maintenance S9)
+
+**Decision:** (1) **Who makes surveys:** super, org_admin and admin, org-fenced (another organisation 404 on every
+door, the CSV and the scholar file's tab included); every other role 403. ONE helper, `surveys.may_make` (Sprint 8's
+`may_post` shape). (2) **Answers carry the scholar's name** and are STAFF ONLY: the Results page, the CSV and the
+scholar file's Surveys tab (same three roles). Sponsors, partners and sources never read any of it (payload test +
+module scan). (3) **Audience** = Sprint 8's rule, ONE home (`announcements.audience_apps`): all the organisation's
+scholars in maintenance, or ONE gift (the application's or its round's), decided when READ. A closed survey, or a
+closed file, keeps a read-only sight of what it already answered; nothing new. (4) **Status** is stored only as
+draft / published; scheduled / open / closed are READ from `opens_at` / `closes_at` (nothing waits for a job).
+"Close now" sets `closes_at` to now; publishing with an opening time in the past opens it NOW. (5) **Questions**
+(<= 30; one / many / rating 1-5 / yes_no / short <= 300 / long <= 3,000; required or optional; choices 2-12, <= 120)
+**lock at the first answer**, with the audience and the opening time (409 `questions_locked` / `answered_locked`);
+title, introduction, closing date and the email choices still change. Sending the same questions back is not a
+change. Delete only while nobody has answered (409 `close_instead`). (6) **"Only for scholars with a mentor"**
+was built (cheap: an open `MentorAssignment` now): such a question is asked only of a scholar with a mentor, and
+an answer she already gave is never hidden from her. (7) **Answering:** one `SurveyResponse` per survey x application
+(unique); answers are REPLACED whole in one transaction under `select_for_update` on the survey row — so two submits,
+or a submit racing a staff edit of the questions, never interleave. Values validated per type (a choice must be an
+option; ratings are integers 1-5, never a bool; required present); a question id she is not asked is
+`bad_question`. A survey she may not see is 404 (never a refusal that confirms it exists); closed is 409
+`survey_closed`. (8) **Her tab** (lazy) shows when one is open for her or she answered one; the red number counts the
+open ones not answered. (9) **The emails:** ONE switchable catalogue kind `survey_open` (owner's name, roadmap comms
+list) governs BOTH emails — "it is open" (on opening, when asked) and the reminder 3 days before closing (when
+asked, to those who have not answered) — with ONE editable wording; the line that differs is `{survey_note}`, filled
+in her language by the code (`survey_emails.NOTES`). Once per scholar per kind: a `SurveyEmail` row (unique survey
+x application x kind) CLAIMED before the send; the Results page's "Remind" is the same reminder, now, so it and the
+job never double. Switched off when reached: rows `switched_off`, nobody emailed, never later. A survey closed or
+taken back to draft mid-run stops the rest. (10) **Activity:** audit log lines only (`AUDIT survey_*`).
+
+**Why one wording for two emails:** the owner named one switchable kind; a second catalogue entry would have
+added a second switch the owner did not ask for, and the Student communications page shows one wording per
+catalogue row. **Why `select_for_update` on the survey, not only the unique row:** the unique constraint stops two
+rows, but two concurrent replacements of the SAME row's answers (or answers written against questions a staff edit
+just replaced) also need ordering. **Skipped:** "Preview as a scholar" (the board's third button) — staff see the
+same questions on the form; revisit if asked.
+
+**Bundle note:** lazy admin screens that only READ the session import `useAdminAuth` from the leaf
+`lib/adminAuthCore.ts`, not the provider module — two more chunks carrying `admin-supabase` regrouped webpack's
+shared chunks and put ~0.9 kB on every student route.
+
+**Revisit if:** the owner wants per-email switches, anonymous surveys, branching questions, or a survey frozen to
+the scholars of the day it opened.
+
 ## Mobile M4b: a four-tab bar at the foot of every student page; a page's own bar replaces it; the logo leaves next/image — 2026-11-02 (owner approved the mock-ups, the tabs, the swap rule and the split)
 
 **Context:** the owner compared HalaTuju with the Grab app: Grab has a fixed bottom tab bar on its main screens, and

@@ -1151,6 +1151,29 @@ quiz / valid PIN (`signing_progress.py`). **Since M4b:** a student bottom tab ba
 phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` is a plain `<img>` on the optimiser.
 Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. NEXT: M4c (My Bursary, Home, landing,
 report, info/legal, pathway, onboarding, quizzes) with the M4b pattern.
+
+### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 9 LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK) — surveys
+
+**Next free migration numbers: scholarship 0201, courses 0092.** **scholarship 0200_surveys — MIGRATE FIRST by hand**
+(five new tables `surveys`, `survey_questions`, `survey_responses`, `survey_answers`, `survey_emails`, each RLS + one
+service_role policy; the `student_email_templates.kind` choice `survey_open` needs no SQL; DDL, pre-check, ledger row
+and rollback in its docstring), then the Security Advisor, then API, then web, then **create the hourly Cloud
+Scheduler job `halatuju-survey-emails`** (job `survey-emails`; `CronRunView.JOBS` -> `send_survey_emails`;
+`cron_health.EXPECTED_CADENCE` HOURLY already expects it, so the health light goes red after two missed hours
+without it). Rules: `apps/scholarship/surveys.py` (`may_make`, `effective_status`, `surveys_for_file`, `submit`,
+create / update / close_now / delete), `survey_results.py` (staff rows, results, CSV, `scholar_file_payload`),
+`survey_emails.py` (`send_due_emails`, `remind_now`); staff fence `views_admin/surveys.py`
+(`admin/scholarship/surveys/`, `<id>/` PATCH/DELETE, `<id>/results/`, `<id>/csv/`, `<id>/close/`, `<id>/remind/`,
+`admin/scholarship/scholars/<id>/surveys/`); her `scholarship/bursary/surveys/` + `surveys/<id>/answers/`; summary
+keys `surveys_tab`, `surveys_to_answer`. Routes in `urls_surveys.py` (`urls.py` is at 600). Student communications
+gains the switchable `survey_open` kind under News (ONE wording for the opening email and the reminder). Web:
+`/admin/programme/surveys` and `/admin/programme/surveys/[id]` (lazy, Mobile `can`), the scholar file's Surveys tab
+(lazy `ScholarSurveys`), the bursary Surveys tab (lazy, `bursaryTabs.surveys`). ⚠ A lazy admin screen that only
+reads the session imports `useAdminAuth` from the leaf `src/lib/adminAuthCore.ts` (the provider module drags
+`admin-supabase` in, and enough such chunks regroup webpack's shared chunks onto every student route).
+**NEXT (maintenance stream): Sprint 10 — development modules, design first; then the parked Team tables T1–T4
+(`docs/plans/2026-11-01-team-tables-roadmap.md`) only on the owner's word.**
+
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200) — announcements
 
 **Next free migration numbers: scholarship 0200, courses 0092.** **scholarship 0199_announcements — MIGRATE FIRST by

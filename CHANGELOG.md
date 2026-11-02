@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## Student maintenance Sprint 9 — surveys — LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK)
+
+Owner rulings and the approved SurveysAdmin / SurveyStudent / SurveyResults boards, 2026-11-02 (decisions.md, the S9
+entry). **scholarship 0200_surveys — migrate first, by hand** (DDL, RLS, pre-check, ledger row and rollback in its
+docstring), then create the hourly Cloud Scheduler job `halatuju-survey-emails` (job `survey-emails`).
+
+- **Programme → Surveys** (`/admin/programme/surveys`, nav row after Announcements; super / org_admin / admin —
+  `surveys.may_make`, every other role 403, another organisation 404 on every door incl. the CSV). Title (<= 150),
+  introduction (<= 1,000), For = all the organisation's scholars or one gift (live counts), opens now or later,
+  closes (after it opens), up to 30 questions (one choice, several choices, rating 1-5, yes/no, short <= 300, long
+  <= 3,000; required or optional; choices 2-12, <= 120 each; optional "only for scholars with a mentor"), "Email the
+  scholars when it opens", "Remind those who have not answered, 3 days before it closes". Tabs Open / Scheduled /
+  Drafts / Closed (status read from the dates); "N of M" answered; Results, Edit, Close now (open), Delete (nobody
+  answered). Questions, audience and opening time LOCK at the first answer (`questions_locked` / `answered_locked`);
+  title, introduction, closing date and the emails still change. A survey with answers is closed, never deleted.
+- **Results** (`/admin/programme/surveys/<id>`): Summary (per question counts and bars with "who", the rating's
+  average, the written answers with names linking to the scholar file), Each scholar, Not answered (with "Remind
+  those who have not answered" — the job's own reminder, once per scholar), Download CSV (one row per response, one
+  column per question; cells starting = + - @ escaped).
+- **The scholar file's Surveys tab** (was a placeholder): each survey answered with the answers, and the open ones
+  still waiting (super / org_admin / admin; reviewers and QC see neither tab nor card).
+- **Her My Bursary → Surveys** (lazy chunk; words in the `bursaryTabs` slice): shown when one is open for her or
+  she answered one; red number = open ones not answered. Phone-first answering (44 px choices, five 48 px rating
+  buttons, 16 px fields, one box level on a phone); "Send my answers", then change them until it closes (one
+  response row per survey x application, answers replaced in one transaction under a lock on the survey row); after
+  it closes, or once her file closes, a read-only "Your answers".
+- **The emails**: hourly `survey-emails` (`CronRunView.JOBS`, `cron_health.EXPECTED_CADENCE`), once per scholar per
+  kind (a `SurveyEmail` row claimed before the send), metered and logged via `send_student_email`, only while the
+  organisation's new switchable `survey_open` kind is on (Student communications → News; ONE wording for both
+  emails, `{survey_note}` says which). The reminder skips those who answered; a survey closed mid-run stops the rest.
+  Links to `/scholarship/bursary?tab=surveys`.
+- New tables `surveys`, `survey_questions`, `survey_responses`, `survey_answers`, `survey_emails` (RLS + one
+  service_role policy each). Rules split three ways: `surveys.py` (rules, answers, staff writes), `survey_results.py`
+  (staff payloads, CSV, file tab), `survey_emails.py`. Sponsors, partners and sources never read any of it.
+- **First-load JS:** the new lazy admin screens read the session through a new leaf `src/lib/adminAuthCore.ts`
+  (the context + `useAdminAuth`, no Supabase client; `admin-auth-context.tsx` re-exports both). Importing the
+  provider module from them made webpack pull the admin/sponsor session modules into a new shared chunk on
+  every student route (+0.9 kB on /scholarship/application and /scholarship/apply, over both lines); with the
+  leaf the build reads median 147.683 kB (HEAD 147.721), budget ok. The pages read the gift from
+  `programmeScopeCore`.
+- **Review fixes:** a published survey can no longer be emptied (`no_questions` on edit; the form keeps its last
+  question), and a scholar asked no question gets 409 `no_questions`, never an empty response that locks it;
+  Remind with the switch off writes nothing and answers 409 `switched_off` (the page shows why instead of the
+  button — only the hourly job records `switched_off`); a survey deleted mid-request is 404, not a 500, and her
+  audience is checked again under the lock; "opens now" on a draft or scheduled survey sends `opens_now`.
+- Tests: `test_surveys.py` (38), `SurveysAdmin.test.tsx`, `SurveyResults.test.tsx`, `BursarySurveys.test.tsx`,
+  bursary page, scholar file page, navigation snapshot. Admin FAQ: "How do I ask our scholars questions (a survey)?".
+
 ## Mobile M4b — a bottom tab bar for students, and one box level on six more pages (2026-11-02, not yet pushed)
 
 Owner approved the HTML mock-ups, four tabs, the swap rule and the split on 2026-11-02 (decisions.md, the Mobile

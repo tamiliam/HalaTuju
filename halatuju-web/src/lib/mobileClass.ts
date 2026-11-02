@@ -154,6 +154,8 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/scholars': { cls: 'can', sprint: 'M7' },
   '/admin/scholars/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/programme/announcements': { cls: 'can', sprint: 'M7' },   // maintenance S8: staff write news here
+  '/admin/programme/surveys': { cls: 'can', sprint: 'M7' },   // maintenance S9: staff make surveys here
+  '/admin/programme/surveys/[id]': { cls: 'can', sprint: 'M7' },   // maintenance S9: one survey's results
   '/admin/sponsors': { cls: 'can', sprint: 'M7' },
   '/admin/sponsors/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/payments': { cls: 'can', sprint: 'M7' },
