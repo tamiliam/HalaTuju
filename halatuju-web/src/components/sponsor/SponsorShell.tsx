@@ -20,9 +20,12 @@ import SponsorLogOut from '@/components/sponsor/SponsorLogOut'
 import { PHONE_GUTTER } from '@/lib/phoneSection'
 import { useT } from '@/lib/i18n'
 
-export default function SponsorShell({ children, nav = false }: { children: ReactNode; nav?: boolean }) {
+/** `path` is for the design sandbox only (its address is `/sandbox/…`, and Next's pathname context does
+ *  not reach a surface), so a surface can name the tab it shows; the portal never passes it. */
+export default function SponsorShell({ children, nav = false, path }: { children: ReactNode; nav?: boolean; path?: string }) {
   const { t } = useT()
-  const here = usePathname() || ''
+  const realPath = usePathname() || ''
+  const here = path ?? realPath
 
   return (
     // Sponsor portal typeface (owner 2026-07-18): Inter — crisp at small sizes, trustworthy

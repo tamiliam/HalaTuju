@@ -110,7 +110,7 @@ export default function StudentDetailPage() {
         <div className="md:mt-4 grid lg:grid-cols-3 md:gap-5">
           <div className="lg:col-span-2 md:space-y-4">
             {/* Header card: slim banner strip + title + chips. On a phone the banner runs edge to edge. */}
-            <div className="overflow-hidden border-b border-ground-100 md:rounded-2xl md:border md:bg-ground-0">
+            <div className="border-b border-ground-100 md:overflow-hidden md:rounded-2xl md:border md:bg-ground-0">
               <div className="relative h-24 -mx-4 md:mx-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={conceptFieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -209,8 +209,9 @@ export default function StudentDetailPage() {
                 </p>
               )}
 
+              {/* On a phone the fund bar shows the balance (while the student is fundable). */}
               {balance !== null && (
-                <p className="mt-3 text-center text-xs text-ground-500">
+                <p className={`mt-3 text-center text-xs text-ground-500 ${canFund ? 'hidden md:block' : ''}`}>
                   {t('sponsorPortal.students.balanceLabel')}: RM{rmWhole(balance)}
                 </p>
               )}

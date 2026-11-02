@@ -12,15 +12,15 @@
  * The network is the sandbox's stub (`stubFetch.ts`); every sponsor endpoint these pages read is
  * answered here with invented references and numbers, and a write (the fund, a save) is discarded.
  *
- * ⚠ THE ADDRESS: the sandbox lives at `/sandbox/[surface]`, so a surface hands the pages the address
- * they would have — `usePathname()` (which tab is current) and `useParams()` (which student) — through
- * Next's own two contexts. Sandbox-only; the pages are unchanged.
+ * ⚠ THE ADDRESS: the sandbox lives at `/sandbox/[surface]`, so a surface hands the pages the student they
+ * would have through Next's own `useParams()` context, and names the current tab with `SponsorShell`'s
+ * sandbox-only `path` (Next's pathname context does not reach a surface — measured).
  *
  * Kept out of `surfaces.tsx` (on the oversize ledger); `SURFACES` spreads these in, and
  * `mobile-check/targets.ts` reads this file's list too.
  */
 import { useEffect, useState, type ReactNode } from 'react'
-import { PathnameContext, PathParamsContext } from 'next/dist/shared/lib/hooks-client-context.shared-runtime'
+import { PathParamsContext } from 'next/dist/shared/lib/hooks-client-context.shared-runtime'
 import SponsorShell, { SponsorCard } from '@/components/sponsor/SponsorShell'
 import SponsorTermsWizard from '@/components/sponsors/SponsorTermsWizard'
 import MyGivingPage from '@/app/sponsor/(portal)/page'
@@ -123,17 +123,15 @@ const TERMS = {
 /** A synthetic approved sponsor at `path` (and `params`), inside the real shell. */
 function Portal({ path, params, nav = true, children }: { path: string; params?: Record<string, string>; nav?: boolean; children: ReactNode }) {
   return (
-    <PathnameContext.Provider value={path}>
-      <PathParamsContext.Provider value={params ?? {}}>
+    <PathParamsContext.Provider value={params ?? {}}>
         <SponsorAuthContext.Provider value={{
           session: null, token: TOKEN, isLoading: false, isSignedIn: true, account: ACCOUNT, refreshAccount: async () => {},
         }}>
           <SponsorPortalContext.Provider value={PORTAL}>
-            <SponsorShell nav={nav}>{children}</SponsorShell>
+            <SponsorShell nav={nav} path={path}>{children}</SponsorShell>
           </SponsorPortalContext.Provider>
         </SponsorAuthContext.Provider>
-      </PathParamsContext.Provider>
-    </PathnameContext.Provider>
+    </PathParamsContext.Provider>
   )
 }
 
