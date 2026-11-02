@@ -12,7 +12,9 @@ sideways; the terms wizard sat in a card in a card (~220 px of text); My Giving'
    the student bar: the same `data-tab-bar` CSS with three columns (`data-tab-bar="sponsor"`), so the swap rule, the
    typing rule, the padding, the toast and print all hold unchanged. `StudentTabBar` never reaches a sponsor screen.
    Trust stays a link (My Giving's assurance strip, the footer, My Account). My Giving is current on a supported
-   student's page (where the sponsor came from).
+   student's page (where the sponsor came from). Unlike the student bar, a browser without `:has()` still draws it —
+   in the flow at the end of the page, never fixed — because it is the sponsor's only way to My Account and Log out
+   (adversarial review).
 2. **The phone header is the logo and "Sponsor" only.** The theme, the language (the portal had no language control
    before) and Log out are at the end of My Account on a phone; on the screens without tabs (details, terms wizard,
    pending, inactive) the header keeps a 44 px Log out. **From `md` the top row is unchanged.** A header menu Sheet

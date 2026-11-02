@@ -193,7 +193,10 @@ Three kinds of check, from cheapest to most human:
   `SponsorShell`): My Giving · Students · My Account — the same `data-tab-bar` CSS with `data-tab-bar="sponsor"` (three
   columns), so every rule above holds. The phone header is the logo only; the theme, the language
   (`src/components/DisplaySegments.tsx`, shared with the student menus) and Log out are at the end of My Account; a screen
-  without tabs keeps a 44 px Log out in the header. Guarded: `mobileStandard.test.ts`, "rule 11 — the sponsor tab bar".
+  without tabs keeps a 44 px Log out in the header. A browser without `:has()` draws the sponsor bar IN THE FLOW at the
+  end of the page (never fixed — it could not give way to a page bar), because there it is the sponsor's only way to My
+  Account and Log out. A Sheet on a portal screen passes `className="font-sponsor"` (it is portalled out of the shell).
+  Guarded: `mobileStandard.test.ts`, "rule 11 — the sponsor tab bar".
   Sandbox: `sponsor-giving`, `sponsor-account`.
 
 ### 12. Body text is 12 px or more on phones

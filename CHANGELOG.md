@@ -34,8 +34,9 @@ scrolled sideways on a phone.
   `dismissible={false}` and `busy` while the award is sent, naming the server's `award_amount` and the wallet's
   balance through the same formatting as before; a burst of taps sends ONE request (a ref lock); a refusal keeps the
   Sheet open with the reason. The request, the refresh of the pool and wallet, and the server's checks are unchanged.
-- **The terms wizard** runs the full width of a phone (no card in a card): "Start the quiz" and the quiz's progress +
-  Next sit in sticky page bars; the options are 48 px; the signature step is unchanged (inline, keyboard up).
+- **The terms wizard** runs the full width of a phone (no card in a card): the quiz's progress + Next sit in a sticky
+  page bar; "Start the quiz" stays inline after the terms and the privacy line; the options are 48 px; the signature
+  step is unchanged (inline, keyboard up).
 - **Sign-in screens** (login, register, password reset, the details form): no card on a phone, the fields full width
   and 48 px, every link and text button 44 px; the privacy consent tick box is 20 px in a 44 px row (size only).
 - **The public landing**: 16 px gutter; promises, steps and FAQ are divided rows on a phone (cards from `md`); "How
@@ -48,6 +49,14 @@ scrolled sideways on a phone.
   foot of a sponsor screen carries `data-page-bar`; the sponsor identity context is provided by its real provider
   only; rule 15 now sweeps the sponsor files. Tests: `SponsorShell.test.tsx` (tabs, current tab, Log out), the pool
   student page (fund bar, one request per burst, the Sheet cannot be dismissed, refusal, grace-window funded).
+- **Adversarial review fixes** (no blockers; five raised, all fixed): without `:has()` (Safari < 15.4, Chrome < 105)
+  the sponsor tab bar is drawn in the flow at the end of the page (`globals.css`), so a sponsor on an old phone still
+  reaches My Account and Log out; "Start the quiz" is inline again after the terms and the privacy link (a pinned
+  Start let a sponsor go on without scrolling past them); the fund confirm and the filter Sheet keep the portal's
+  face (`.font-sponsor`, Inter with Tamil in Mukta Malar — the Sheet is portalled out of the shell); the pool
+  student's page forgets the last student at once when the address names another (before M5 the confirm could
+  show the previous amount); sponsor Log out removes the registration form's stash (`halatuju_sponsor_pending`: name,
+  phone) from the tab, in `sponsorSignOut` itself. Guards and tests for each, every one bite-checked red.
 - **Weight** (exact page entry): the route median 145.182 → 145.218 kB (1.78 kB under its 147 line); `/scholarship/bursary`
   unchanged (191.46); sponsor routes +0.07 to +1.8 kB, except `/sponsor/students` +3.37 and `/sponsor/students/[id]`
   +3.32 (the shared `Sheet`, eager on purpose: it is the only way to filter on a phone and the only way to fund).
