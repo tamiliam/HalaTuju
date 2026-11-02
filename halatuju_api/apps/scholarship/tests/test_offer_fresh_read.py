@@ -368,11 +368,11 @@ class TestNewReader(SimpleTestCase):
         self.assertFalse(os.path.exists(fr.fresh_path(self.c.dir, k, fr.READERS['s4'])))   # never written
         shutil.copy(fr.fresh_path(self.c.dir, k, fr.READERS['new']), fr.fresh_path(self.c.dir, k, fr.READERS['s4']))
         c = fr.compare(self.c.dir, 'all', self.split, reader='new')
-        self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4', 's4b')))
+        self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4', 's4c')))
         self.assertEqual(c['fields']['fresh']['institution']['wrong'], 1)
-        self.assertEqual(c['fields']['s4b']['institution']['exact'], 1)
+        self.assertEqual(c['fields']['s4c']['institution']['exact'], 1)
         self.assertEqual(c['changed_by_read']['s4']['institution'], {'fixed': 1, 'broke': 0, 'same': 0})
-        self.assertEqual(c['changed_by_read']['s4b']['institution'], {'fixed': 0, 'broke': 0, 'same': 1})
+        self.assertEqual(c['changed_by_read']['s4c']['institution'], {'fixed': 0, 'broke': 0, 'same': 1})
         self.assertEqual(c['changed_by_read']['fresh']['nric'], {'fixed': 1, 'broke': 0, 'same': 0})
         rows = fr.costs(self.c.dir, ['offer_letter__a1__d11'])
         self.assertEqual((rows[0][1]['input_tokens'], rows[0][2]['input_tokens'], rows[0][3]), (1500, 9000, 1))
@@ -387,3 +387,18 @@ class TestNewReader(SimpleTestCase):
         e = fr.estimate(self.c.dir, ['offer_letter__a1__d11'])
         self.assertGreaterEqual(e['image_tokens_est_mean'], fr.IMAGE_TOKENS_HIGH_A4)
         self.assertEqual(fr.image_tokens_estimate(1, 1, 'MEDIA_RESOLUTION_HIGH'), fr.IMAGE_TOKENS_HIGH_A4)
+
+
+@override_settings(GEMINI_API_KEY='fake-key-for-tests')
+class TestCostCap(SimpleTestCase):
+    def test_the_run_stops_at_its_cap(self):
+        with tempfile.TemporaryDirectory() as root:
+            c = _Corpus(root)
+            for i in (1, 2, 3):
+                c.letter(f'offer_letter__a{i}__d1{i}', ext='png')
+            lines = []
+            code, done = fr.read_letters(root, [f'offer_letter__a{i}__d1{i}' for i in (1, 2, 3)],
+                                         client_factory=FakeGemini([_resp(), _resp(), _resp()]),
+                                         out=lines.append, versions=VERSIONS, max_usd=0.0001)
+            self.assertEqual((code, len(done)), (fr.EXIT_STOPPED, 1))
+            self.assertTrue(any(line.startswith('STOP: the run has cost') for line in lines))

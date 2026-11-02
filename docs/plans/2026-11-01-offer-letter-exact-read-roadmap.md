@@ -386,6 +386,13 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   later-pages calls the full set will need. **Before that re-run** the issuer rule should keep the office WITH
   its institution ("never an office ALONE"), and the PISMP rule should say "without a PROGRAM wrapper"
   (dev evidence only; the held-out pilot letters are not used to tune).
+- **Owner rulings 2026-11-02.** (1) A document scored `not_offer_letter` never sets `course_start_year`, so it
+  never feeds `award.proposed_award_amount`, `award.course_start_unknown` or `epf_evidence` (`docs/decisions.md`;
+  stored reads too; the live reach is measured by the dry run, `not_offer_dated`). (2) The full re-run is
+  approved, about RM6–7, hard cap RM9 for the tuning pilots and the run together.
+- **Reader 2.2.0** — wording tuned on DEV letters only (5-letter dev pilot, US$0.0297): issuer keeps an office
+  printed WITH its institution or ministry, never an office alone; PISMP programme without a "PROGRAM" wrapper;
+  a programme stops before a faculty line; a Roman session numeral stays Roman.
 - **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
   the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 

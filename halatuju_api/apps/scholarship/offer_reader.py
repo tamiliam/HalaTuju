@@ -42,6 +42,11 @@ got worse on 4 and the IC on 4, none better (H1). So:
   * **The text layer is DATA** (M4), fenced, and the image wins on any conflict.
   * The model that answered is recorded (L1); each prompt names the pages it actually shows (L6).
 
+2.2.0 — wording tuned on DEV letters only (the 2.1.0 pilot): the issuer keeps an office printed WITH its
+institution or ministry ("Bahagian Pengambilan Pelajar, Universiti Teknologi MARA" — the answers' convention)
+but is never an office alone; PISMP's programme carries no "PROGRAM" wrapper; a programme stops before a
+faculty line printed after it; a Roman session numeral stays Roman.
+
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
 `vision_fields['offer_reader_inputs']`. Bump it on ANY change to the prompt, the schema, the inputs or
@@ -54,7 +59,7 @@ from __future__ import annotations
 import re
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.1.0'
+OFFER_READER_VERSION = '2.2.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3
@@ -117,18 +122,25 @@ OFFER_HINT = (
     'specific part ("KAMPUS KOTA KINABALU"); empty when the letter names no campus. NEVER put a hostel '
     'or residential college ("Kolej Kediaman", "KOLEJ DAHLIA", "Desasiswa"), a faculty, a hall or any '
     'reporting / registration venue in "institution" or "campus": that place, if printed, goes in '
-    '"reporting_venue", as printed. "issuer" = the NAME of the institution or ministry on the '
-    'letterhead, as printed (e.g. "UNIVERSITI MALAYSIA SABAH", "KEMENTERIAN PENDIDIKAN MALAYSIA", '
-    '"INSTITUT PENDIDIKAN GURU MALAYSIA") — never an office, division, registrar or faculty on its own '
-    '("Bahagian Pengambilan Pelajar", "Pejabat Pendaftar" alone are not an issuer). '
-    '"programme" = the programme / course title as printed, WITHOUT a course code; a printed code '
+    '"reporting_venue", as printed. "issuer" = the issuing body named on the LETTERHEAD, as printed: '
+    'the institution or ministry (e.g. "Universiti Malaysia Sabah", "Institut Pendidikan Guru Malaysia", '
+    '"Kementerian Pendidikan Malaysia"), or a ministry department that names itself in full ("Jabatan '
+    'Pendidikan Politeknik dan Kolej Komuniti", "Bahagian Matrikulasi KPM"). When the letterhead prints an '
+    'office or division TOGETHER WITH its institution or ministry, keep both, the office first, joined with '
+    '", " (e.g. "Bahagian Pengambilan Pelajar, Universiti Teknologi MARA"). NEVER an office alone, with no '
+    'institution or ministry ("Pejabat Pendaftar" or "Bahagian Pengambilan Pelajar" on its own is not an '
+    'issuer). '
+    '"programme" = the programme / course title as printed, WITHOUT a course code and without a faculty '
+    'or school line printed after it ("FAKULTI ...", "PUSAT PENGAJIAN ..."); a printed code '
     '("UH6481001", "BA272") goes in "programme_code" (several joined with ", "; empty when none). '
-    'PISMP: "programme" = the degree title as printed (e.g. "IJAZAH SARJANA MUDA PERGURUAN"), the '
+    'PISMP: "programme" = the degree title as printed, WITHOUT a "PROGRAM" wrapper or a "(PISMP)" tail '
+    '(e.g. "IJAZAH SARJANA MUDA PERGURUAN", never "PROGRAM IJAZAH SARJANA MUDA PERGURUAN"), the '
     'specialisation goes in "bidang_pengkhususan" (e.g. "Bahasa Tamil Pendidikan Rendah"), "elektif" = '
     'the elective subject, "aliran" = the school stream ("SK" / "SJKC" / "SJKT"). "stream" = the '
     'Form-Six "Bidang" (Sains / Sains Sosial) or the matriculation "Jurusan". '
     '"intake" = the session / intake exactly as printed WITH its label and any semester words (e.g. '
-    '"SESI 1-2026/2027", "SEMESTER 1 TAHUN 2026", "SESI AKADEMIK 2026/2027", "AMBILAN 2026"). Write a '
+    '"SESI 1-2026/2027", "SEMESTER 1 TAHUN 2026", "SESI AKADEMIK 2026/2027", "AMBILAN 2026"); a session '
+    'printed with a Roman numeral keeps it ("SESI I : 2026/2027" stays "I", never "1"). Write a '
     'date without its weekday or time. "offer_date" = the date the letter was ISSUED ("Tarikh" in the '
     'reference block), NOT "Tarikh Cetakan" (the print date). "reporting_date" = ONLY the date the '
     'student must REPORT / REGISTER, labelled e.g. "Tarikh Lapor Diri", "Tarikh Pendaftaran", "Tarikh '

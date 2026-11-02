@@ -111,11 +111,20 @@ class PromptRulesTest(SimpleTestCase):
         self.assertIn('not the rest of a reference line', p)
         self.assertNotIn('Never a matric, student, application or reference number', p)   # the contradiction
 
-    def test_the_issuer_is_a_name_never_an_office(self):                                # review M3
+    def test_the_issuer_is_the_letterhead_body_never_an_office_alone(self):            # review M3, 2.2.0
         p = orr.OFFER_HINT
-        self.assertIn('"issuer" = the NAME of the institution or ministry on the letterhead', p)
-        self.assertIn('never an office, division, registrar or faculty on its own', p)
+        self.assertIn('"issuer" = the issuing body named on the LETTERHEAD', p)
+        self.assertIn('keep both, the office first, joined with ", "', p)
+        self.assertIn('"Bahagian Pengambilan Pelajar, Universiti Teknologi MARA"', p)
+        self.assertIn('NEVER an office alone', p)
         self.assertNotIn('admissions office)', p)
+
+    def test_pismp_has_no_program_wrapper_and_a_roman_session_stays_roman(self):       # 2.2.0
+        p = orr.OFFER_HINT
+        self.assertIn('WITHOUT a "PROGRAM" wrapper', p)
+        self.assertIn('never "PROGRAM IJAZAH SARJANA MUDA PERGURUAN"', p)
+        self.assertIn('stays "I", never "1"', p)
+        self.assertIn('without a faculty or school line printed after it', p)
 
     def test_the_text_layer_is_fenced_data_and_the_image_wins(self):                    # review M4
         p = orr.image_prompt(3, 'LAYER TEXT QORVANE')

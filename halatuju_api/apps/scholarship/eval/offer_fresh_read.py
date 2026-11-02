@@ -111,12 +111,14 @@ FRESH_SUFFIX = '.fresh.json'
 #: The readers this tool knows: `current` = S3's page-1 reader (caches only), `new` = S4's reader.
 #: `s4` = the S4 reader as first built (2.0.0, caches only); `new` = this checkout's reader (2.1.0+,
 #: the review fixes: page 1 alone, the IC guard), cached apart so no earlier cache is ever overwritten.
-READERS = {'current': FRESH_SUFFIX, 's4': '.fresh_s4.json', 'new': '.fresh_s4b.json'}
+READERS = {'current': FRESH_SUFFIX, 's4': '.fresh_s4.json', 's4b': '.fresh_s4b.json',
+           'new': '.fresh_s4c.json'}
 PAID_READERS = ('new',)
 #: compare: the reads shown for each --reader, oldest first.
 COMPARE_READS = {'current': ('stored', 'fresh'), 's4': ('stored', 'fresh', 's4'),
-                 'new': ('stored', 'fresh', 's4', 's4b')}
-_COMPARE_SUFFIX = {'fresh': READERS['current'], 's4': READERS['s4'], 's4b': READERS['new']}
+                 's4b': ('stored', 'fresh', 's4', 's4b'), 'new': ('stored', 'fresh', 's4', 's4c')}
+_COMPARE_SUFFIX = {'fresh': READERS['current'], 's4': READERS['s4'], 's4b': READERS['s4b'],
+                   's4c': READERS['new']}
 LOG_NAME = 'offer_fresh_read.log'
 DOC_TYPE = 'offer_letter'
 #: Exit codes: 0 done, 2 no corpus / bad arguments, 3 stopped on a 402/429, 4 calls failed.
@@ -299,9 +301,9 @@ def _log_entry(rec, outcome):
 
 
 def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, versions=None,
-                 suffix=READERS['new']):
+                 suffix=READERS['new'], max_usd=None):
     """Read each key not yet cached under `suffix` (all with `force`) with this checkout's reader.
-    Returns (exit code, records read now)."""
+    ``max_usd``: stop (exit 3) once the run's measured cost reaches it. Returns (exit code, records)."""
     log_path = os.path.join(eval_dir, LOG_NAME)
     versions = versions if versions is not None else code_versions()
     todo = [k for k in keys if force or not os.path.exists(fresh_path(eval_dir, k, suffix))]
@@ -327,6 +329,11 @@ def read_letters(eval_dir, keys, *, client_factory, force=False, out=print, vers
                 outcome, failed = 'not_cached_all_calls_raised', failed + 1
             _append_log(log_path, _log_entry(rec, outcome))
             out(_call_line(rec, outcome))
+            spent = sum((r.get('usage') or {}).get('cost_usd') or 0.0 for r in done)
+            if max_usd is not None and spent >= max_usd:
+                out(f'STOP: the run has cost US${spent:.4f}, at its cap US${max_usd:.4f} - nothing more read')
+                _print_calls(done, out)
+                return EXIT_STOPPED, done
     _print_calls(done, out)
     return (EXIT_FAILED if failed else 0), done
 
@@ -545,7 +552,9 @@ def main(argv=None, *, client_factory=None, out=print):
     ap.add_argument('--reader', choices=tuple(READERS), default='new',
                     help="new = this checkout's reader (S4, paid); current = S3's caches (read-only)")
     ap.add_argument('--costs', action='store_true', help='per-letter tokens + cost, --against vs new')
-    ap.add_argument('--against', choices=('current', 's4'), default='current',
+    ap.add_argument('--max-usd', type=float, default=None, help='stop once the run has cost this much')
+    ap.add_argument('--suffix', default='', help="cache suffix override for a paid read (a pilot's own cache)")
+    ap.add_argument('--against', choices=('current', 's4', 's4b'), default='current',
                     help='--costs: the earlier reader to put beside the new one')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--env-file', default=DEFAULT_ENV_FILE)
@@ -578,7 +587,7 @@ def main(argv=None, *, client_factory=None, out=print):
         out('GEMINI_API_KEY is not set - nothing read.')
         return 2
     code, _ = read_letters(args.eval_dir, keys, client_factory=client_factory, force=args.force, out=out,
-                           suffix=READERS[args.reader])
+                           suffix=args.suffix or READERS[args.reader], max_usd=args.max_usd)
     return code
 
 

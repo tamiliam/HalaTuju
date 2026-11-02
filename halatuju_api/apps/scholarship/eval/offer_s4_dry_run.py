@@ -51,7 +51,8 @@ _API_ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 if _API_ROOT not in sys.path:
     sys.path.insert(0, _API_ROOT)
 
-S4_SUFFIX = '.fresh_s4.json'
+#: The final S4 reader's caches (2.2.0, `offer_fresh_read.py --reader new`); `--suffix` for another.
+S4_SUFFIX = '.fresh_s4c.json'
 DEFAULT_EVAL_DIR = os.path.join(HERE, 'fixtures', 'offer_letters_2026-11-01')
 TICKS = ('name', 'ic', 'pathway', 'institution_status', 'chosen_institution_status',
          'intake_year_status', 'reporting_official')
@@ -121,13 +122,13 @@ def doc_id_of(key):
     return int(m.group(1)) if m else None
 
 
-def s4_keys(eval_dir):
+def s4_keys(eval_dir, suffix=S4_SUFFIX):
     return sorted(os.path.basename(p)[:-len(S4_SUFFIX)]
-                  for p in glob.glob(os.path.join(eval_dir, 'snapshots', '*' + S4_SUFFIX)))
+                  for p in glob.glob(os.path.join(eval_dir, 'snapshots', '*' + suffix)))
 
 
-def s4_fields(eval_dir, key):
-    with open(os.path.join(eval_dir, 'snapshots', key + S4_SUFFIX), encoding='utf-8') as fh:
+def s4_fields(eval_dir, key, suffix=S4_SUFFIX):
+    with open(os.path.join(eval_dir, 'snapshots', key + suffix), encoding='utf-8') as fh:
         return (json.load(fh).get('fields') or {})
 
 
@@ -171,6 +172,11 @@ def plan_offer_doc(doc, fields=None):
         out.update(link=l_reason or 'link', link_course=(l_cp or {}).get('course_id') or '-',
                    link_campus=campus_token(l_cp) if l_cp else '-')
     out['fill'] = _name_token(institution_fill(app, offer=d, offer_check=chk))
+    # The owner's money ruling (2026-11-02): a not_offer_letter document never dates the course. Shown
+    # per letter: the start year this letter WOULD give if it were allowed to (the ruling's reach).
+    from apps.scholarship.pathway_engine import offer_band
+    iy = (chk.get('intake_year') or '').strip()
+    out['not_offer_dated'] = bool(iy and offer_band(d) == 'not_offer_letter')
     return out
 
 
@@ -184,7 +190,7 @@ def compare_one(doc, fields):
             'stored': stored, 's4': s4, 'changed': changed}
 
 
-def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print):
+def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print, suffix=S4_SUFFIX):
     from apps.scholarship.models import ApplicantDocument
     rows, totals = {}, Counter()
     with session():
@@ -196,11 +202,13 @@ def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print):
                 totals['no_document'] += 1
                 out(f'  {key:<32} no offer document in this database')
                 continue
-            r = compare_one(doc, s4_fields(eval_dir, key))
+            r = compare_one(doc, s4_fields(eval_dir, key, suffix))
             rows[key] = r
             totals['letters'] += 1
             totals['live' if r['live'] else 'superseded'] += 1
             totals['changed' if r['changed'] else 'unchanged'] += 1
+            for which in ('stored', 's4'):
+                totals[f'not_offer_dated:{which}'] += r[which]['not_offer_dated']
             for c in r['changed']:
                 totals[f'changed:{c}'] += 1
             out(_line(key, r))
@@ -223,15 +231,17 @@ def main(argv=None, *, session=None, out=print):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--eval-dir', default=DEFAULT_EVAL_DIR)
     ap.add_argument('--keys', default='')
+    ap.add_argument('--suffix', default=S4_SUFFIX, help='the S4 cache suffix (default: the final reader)')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--allow-sqlite', action='store_true', help='tests only')
     args = ap.parse_args(argv)
-    keys = [k.strip() for k in args.keys.split(',') if k.strip()] or s4_keys(args.eval_dir)
+    keys = [k.strip() for k in args.keys.split(',') if k.strip()] or s4_keys(args.eval_dir, args.suffix)
     if not keys:
         out(f'No {S4_SUFFIX} caches in {args.eval_dir}.')
         return 2
     sess = session or (lambda: read_only_rollback(allow_sqlite=args.allow_sqlite))
-    rows, totals = dry_run(args.eval_dir, keys, session=sess, out=(lambda *_: None) if args.json else out)
+    rows, totals = dry_run(args.eval_dir, keys, session=sess, out=(lambda *_: None) if args.json else out,
+                           suffix=args.suffix)
     if args.json:
         out(json.dumps({'rows': rows, 'totals': dict(totals)}, indent=1, sort_keys=True, default=str))
     return 0

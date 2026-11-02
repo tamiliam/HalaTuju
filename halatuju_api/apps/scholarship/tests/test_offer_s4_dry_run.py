@@ -138,12 +138,23 @@ class RunTest(TestCase):
         self.assertEqual(r['stored']['ticks']['name'], r['s4']['ticks']['name'])
         self.assertEqual(r['stored']['ticks']['ic'], r['s4']['ticks']['ic'])
         self.assertEqual(totals['letters'], 1)
+        self.assertEqual((r['stored']['not_offer_dated'], totals['not_offer_dated:s4']), (False, 0))
+        self.assertEqual(dr.S4_SUFFIX, '.fresh_s4c.json')               # the final reader's caches
         text = '\n'.join(lines).upper()
         prof = self.app.profile
         for secret in (prof.name.upper(), prof.nric.replace('-', ''), 'SRI RAJANG', 'BINTULU', 'PEMBANGUNAN'):
             self.assertNotIn(secret, text)
         self.assertIn(f'doc={self.doc.id}', text.lower())
         self.assertTrue(lines[-1].startswith('totals: '))
+
+    def test_the_money_ruling_reach_is_counted(self):
+        self.doc.vision_fields = {**self.doc.vision_fields, 'authenticity': {'status': 'not_offer_letter'},
+                                  'fields': {**self.stored, 'intake': 'SESI 2025/2026'}}
+        self.doc.save(update_fields=['vision_fields'])
+        rows, totals = dr.dry_run(self._tmp.name, [self.key], session=lambda: dr.read_only_rollback(allow_sqlite=True),
+                                  out=lambda *_: None)
+        self.assertTrue(rows[self.key]['stored']['not_offer_dated'])
+        self.assertEqual(totals['not_offer_dated:stored'], 1)
 
     def test_a_key_with_no_document_is_counted_not_guessed(self):
         lines = []
