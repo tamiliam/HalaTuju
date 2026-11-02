@@ -297,7 +297,8 @@ class BursarySurveyAnswersView(APIView):
         except SurveyError as e:
             if e.code == 'not_found':
                 return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-            code = status.HTTP_409_CONFLICT if e.code == 'survey_closed' else status.HTTP_400_BAD_REQUEST
+            code = (status.HTTP_409_CONFLICT if e.code in ('survey_closed', 'no_questions')
+                    else status.HTTP_400_BAD_REQUEST)
             body = {'error': e.code, 'code': e.code}
             if e.detail is not None:
                 body['detail'] = e.detail

@@ -8841,6 +8841,7 @@
         "csv": "Download CSV",
         "csvFailed": "The CSV could not be downloaded. Please try again.",
         "remind": "Remind those who have not answered",
+        "remindOff": "Reminders are off: the “A survey for you” email is switched off in Student communications.",
         "confirmRemind": "Email a reminder to the {count} scholars who have not answered? Each is reminded once only.",
         "reminded": "Reminders sent: {count}.",
         "remindFailed": "The reminders could not be sent. Please try again.",

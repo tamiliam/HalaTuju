@@ -8841,6 +8841,7 @@
         "csv": "Muat turun CSV",
         "csvFailed": "CSV tidak dapat dimuat turun. Sila cuba lagi.",
         "remind": "Ingatkan mereka yang belum menjawab",
+        "remindOff": "Peringatan dimatikan: e-mel “Tinjauan untuk anda” dimatikan dalam Komunikasi pelajar.",
         "confirmRemind": "Hantar e-mel peringatan kepada {count} penerima biasiswa yang belum menjawab? Setiap orang diingatkan sekali sahaja.",
         "reminded": "Peringatan dihantar: {count}.",
         "remindFailed": "Peringatan tidak dapat dihantar. Sila cuba lagi.",

@@ -145,6 +145,9 @@ export default function SurveyForm({ row, audiences, emailOn, limits, programme,
       if (opensAt && (!row || openDate !== opens.date || openTime !== opens.time || row.status === 'draft')) {
         payload.opens_at = opensAt
       }
+      // Review 4: "Now" on a draft or a scheduled one is said OUTRIGHT — sending no time kept the one an
+      // earlier save left, so a draft saved for later published as scheduled.
+      if (!later && row && (row.status === 'draft' || row.status === 'scheduled')) payload.opens_now = true
     }
     if (action !== 'edit') payload.action = action
     setBusy(true)
@@ -245,6 +248,8 @@ export default function SurveyForm({ row, audiences, emailOn, limits, programme,
                     {i > 0 && <button type="button" className={LINK} data-testid={`survey-qup-${i}`}
                       onClick={() => { move(i, -1); setEditingQ(null) }}>{t(`${K}.form.moveUp`)}</button>}
                     <button type="button" className={LINK} data-testid={`survey-qremove-${i}`}
+                      // Review 1: a published survey keeps at least one question (the server says no_questions).
+                      disabled={published && questions.length === 1}
                       onClick={() => { setQuestions((qs) => qs.filter((_x, j) => j !== i)); setEditingQ(null) }}>
                       {t(`${K}.form.remove`)}
                     </button>

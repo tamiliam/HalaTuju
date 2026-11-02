@@ -121,3 +121,23 @@ it('sends a choice list only for a choice question', () => {
   expect(cleanQuestion({ kind: 'rating', text: ' Rate ', hint: '', required: true, mentor_only: true, options: ['a'] }))
     .toEqual({ kind: 'rating', text: 'Rate', hint: '', required: true, mentor_only: true, options: [] })
 })
+
+it('review 1: an unanswered published survey keeps its last question', async () => {
+  mockApi.getSurveys.mockResolvedValue(payload([row({ locked: false, answered_count: 0, can_delete: true })]))
+  render(<SurveysAdmin />)
+  fireEvent.click(await screen.findByTestId('survey-edit-1'))
+  expect((screen.getByTestId('survey-qremove-0') as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('review 4: "now" on a draft saved for later says opens_now outright', async () => {
+  mockApi.getSurveys.mockResolvedValue(payload([row({ status: 'draft', locked: false, answered_count: 0,
+    can_close: false, can_delete: true, opens_at: '2026-11-20T01:00:00Z' })]))
+  mockApi.updateSurvey.mockResolvedValue(row({}))
+  render(<SurveysAdmin />)
+  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`${K}.tab.draft`) }))
+  fireEvent.click(await screen.findByTestId('survey-edit-1'))
+  expect((screen.getByTestId('survey-when') as HTMLSelectElement).value).toBe('now')
+  fireEvent.click(screen.getByTestId('survey-primary'))
+  await waitFor(() => expect(mockApi.updateSurvey).toHaveBeenCalled())
+  expect(mockApi.updateSurvey.mock.calls[0][1]).toMatchObject({ action: 'publish', opens_now: true })
+})

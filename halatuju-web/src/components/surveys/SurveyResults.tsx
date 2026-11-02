@@ -156,7 +156,12 @@ export default function SurveyResults({ id, programme }: { id: number; programme
     }
   }
 
-  const remindButton = data.can_remind && (
+  // Review 2: with the organisation's survey email switched off, the button is not offered (the server
+  // refuses it, 409 switched_off) — a short reason stands in its place.
+  const switchedOff = data.email_switch_on === false
+  const remindButton = switchedOff ? (
+    data.can_remind && <p className="text-xs text-ground-600" data-testid="survey-remind-off">{t(`${K}.remindOff`)}</p>
+  ) : data.can_remind && (
     <button type="button" disabled={busy} onClick={remind} className={BTN} data-testid="survey-remind">{t(`${K}.remind`)}</button>
   )
 

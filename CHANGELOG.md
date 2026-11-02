@@ -42,7 +42,12 @@ docstring), then create the hourly Cloud Scheduler job `halatuju-survey-emails` 
   every student route (+0.9 kB on /scholarship/application and /scholarship/apply, over both lines); with the
   leaf the build reads median 147.683 kB (HEAD 147.721), budget ok. The pages read the gift from
   `programmeScopeCore`.
-- Tests: `test_surveys.py` (34), `SurveysAdmin.test.tsx`, `SurveyResults.test.tsx`, `BursarySurveys.test.tsx`,
+- **Review fixes:** a published survey can no longer be emptied (`no_questions` on edit; the form keeps its last
+  question), and a scholar asked no question gets 409 `no_questions`, never an empty response that locks it;
+  Remind with the switch off writes nothing and answers 409 `switched_off` (the page shows why instead of the
+  button — only the hourly job records `switched_off`); a survey deleted mid-request is 404, not a 500, and her
+  audience is checked again under the lock; "opens now" on a draft or scheduled survey sends `opens_now`.
+- Tests: `test_surveys.py` (38), `SurveysAdmin.test.tsx`, `SurveyResults.test.tsx`, `BursarySurveys.test.tsx`,
   bursary page, scholar file page, navigation snapshot. Admin FAQ: "How do I ask our scholars questions (a survey)?".
 
 ## Mobile M4b — a bottom tab bar for students, and one box level on six more pages (2026-11-02, not yet pushed)

@@ -26,10 +26,12 @@ from .scholars import _ScholarsBase
 
 logger = logging.getLogger('apps.scholarship.views_admin')
 
-_CONFLICT = {'questions_locked', 'answered_locked', 'close_instead', 'not_open'}
+_CONFLICT = {'questions_locked', 'answered_locked', 'close_instead', 'not_open', 'switched_off'}
 
 
 def _survey_refusal(e):
+    if e.code == 'not_found':   # deleted while the request was in flight (review 3)
+        return _not_found()
     body = {'error': e.code, 'code': e.code}
     if e.detail is not None:
         body['detail'] = e.detail
@@ -161,7 +163,7 @@ class AdminSurveyActionView(_SurveysBase):
             sent = survey_emails.remind_now(s, by_email=admin.email or '')
         except svc.SurveyError as e:
             return _survey_refusal(e)
-        return Response({'sent': sent, **survey_results.results(s)})
+        return Response({'sent': sent, 'email_switch_on': True, **survey_results.results(s)})
 
 
 class AdminSurveyResultsView(_SurveysBase):
@@ -172,7 +174,9 @@ class AdminSurveyResultsView(_SurveysBase):
         admin, s, err = self._survey(request, pk)
         if err:
             return err
-        return Response({'survey': self._row(s), **survey_results.results(s)})
+        from ..student_email_catalogue import may_send
+        return Response({'survey': self._row(s), 'email_switch_on': may_send(s.organisation, svc.EMAIL_KEY),
+                         **survey_results.results(s)})
 
 
 class AdminSurveyCsvView(_SurveysBase):

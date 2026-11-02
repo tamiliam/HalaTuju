@@ -93,3 +93,11 @@ it('refuses the other roles and calls nothing', () => {
   }
   expect(mockApi.getSurveyResults).not.toHaveBeenCalled()
 })
+
+it('review 2: with the survey email switched off, Remind is not offered and the reason is', async () => {
+  mockApi.getSurveyResults.mockResolvedValue({ ...results(), email_switch_on: false })
+  render(<SurveyResults id={5} />)
+  await screen.findByTestId('summary-1')
+  expect(screen.queryByTestId('survey-remind')).toBeNull()
+  expect(screen.getByTestId('survey-remind-off').textContent).toBe(`${K}.remindOff`)
+})

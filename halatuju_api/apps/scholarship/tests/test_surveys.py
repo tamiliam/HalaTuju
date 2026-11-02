@@ -578,3 +578,69 @@ class TestNeverASponsorPartnerOrSourceReader(_Base):
                 for needle in ('SurveyResponse', 'SurveyAnswer', 'import surveys', 'from .surveys', 'from ..surveys',
                                'survey_results', 'survey_emails'):
                     self.assertNotIn(needle, text)
+
+
+class TestReviewFixes(_Base):
+    """Sprint 9 review (2026-11-02): four fixes, one regression test each."""
+
+    def test_1_a_published_survey_cannot_be_emptied_and_no_question_means_no_response(self):
+        s = self.create().json()
+        c = authed_client(self.org_admin)
+        r = c.patch(f'{STAFF}{s["id"]}/', {'questions': []}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'no_questions'))
+        self.assertEqual(SurveyQuestion.objects.filter(survey_id=s['id']).count(), len(QUESTIONS))
+        # A survey whose only question is for scholars with a mentor asks her nothing: no empty response.
+        only_mentor = _survey(self.org, 'Mentors',
+                              questions=[{'kind': 'rating', 'text': 'Mentor?', 'mentor_only': True}])
+        r = self.answer(only_mentor, {})
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'no_questions'))
+        self.assertFalse(SurveyResponse.objects.filter(survey=only_mentor).exists())
+
+    @LOCMEM
+    def test_2_remind_with_the_switch_off_writes_nothing_and_says_so(self):
+        s = _survey(self.org, remind_before_close=True, closes_at=timezone.now() + 2 * DAY)
+        student_email_catalogue.set_switch(self.org, 'survey_open', False)
+        c = authed_client(self.org_admin)
+        r = c.post(f'{STAFF}{s.id}/remind/')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'switched_off'))
+        self.assertFalse(SurveyEmail.objects.exists())
+        body = c.get(f'{STAFF}{s.id}/results/').json()
+        self.assertFalse(body['email_switch_on'])
+        self.assertTrue(body['can_remind'])
+        self.assertFalse(any(p['reminded'] for p in body['not_answered']))
+        # Switched back on, the hourly reminder still reaches everybody.
+        student_email_catalogue.set_switch(self.org, 'survey_open', True)
+        _run_job()
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_3_a_survey_deleted_mid_request_is_404_never_a_500(self):
+        from unittest.mock import patch
+        s = _survey(self.org)
+        gone = Survey.objects.get(pk=s.pk)
+        Survey.objects.filter(pk=s.pk).delete()
+        for call in (lambda: surveys.update(gone, {'title': 'X'}), lambda: surveys.close_now(gone),
+                     lambda: surveys.delete(gone)):
+            with self.assertRaises(surveys.SurveyError) as e:
+                call()
+            self.assertEqual(e.exception.code, 'not_found')
+        # Her audience is asked again under the lock: moved out between the check and the lock -> 404.
+        s = _survey(self.org)
+        real = surveys.surveys_for_file
+        calls = []
+
+        def first_yes_then_no(app, now=None):
+            calls.append(1)
+            qs = real(app, now)
+            return qs if len(calls) == 1 else qs.none()
+        with patch.object(surveys, 'surveys_for_file', side_effect=first_yes_then_no):
+            r = self.answer(s, _answers(s))
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(SurveyResponse.objects.filter(survey=s).exists())
+
+    def test_4_a_draft_saved_for_later_can_open_now(self):
+        later = (timezone.now() + 5 * HOUR).isoformat()
+        d = self.create(action='draft', opens_at=later).json()
+        r = authed_client(self.org_admin).patch(f'{STAFF}{d["id"]}/', {'action': 'publish', 'opens_now': True},
+                                                format='json')
+        self.assertEqual((r.status_code, r.json()['status']), (200, 'open'))
+        self.assertIn(d['id'], self.ids())

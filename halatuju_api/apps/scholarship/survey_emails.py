@@ -70,6 +70,11 @@ def remind_now(s, *, by_email=''):
     yet reminded (the claim rows make it idempotent with the job — nobody is reminded twice)."""
     if effective_status(s) != 'open':
         raise SurveyError('not_open')
+    from .student_email_catalogue import may_send
+    if not may_send(s.organisation, EMAIL_KEY):
+        # Review 2: the BUTTON writes nothing when the switch is off — `switched_off` rows would mark every
+        # scholar "reminded" and the hourly reminder would never come. Only the job records switched_off.
+        raise SurveyError('switched_off')
     sent = _send_kind(s, 'reminder', mark=None)
     logger.warning('AUDIT survey_reminded id=%s org=%s sent=%s by=%s', s.id, s.organisation_id, sent, by_email)
     return sent

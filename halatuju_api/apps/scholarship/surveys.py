@@ -220,6 +220,15 @@ def clean_value(q, raw):
     return _written(raw, SHORT_MAX if q.kind == 'short' else LONG_MAX, q.id)
 
 
+def _locked_survey(pk):
+    """The survey row under `select_for_update`, or `not_found` — it may have been deleted since the caller
+    read it (review 3: `.get()` here turned that race into a 500)."""
+    s = Survey.objects.filter(pk=pk).select_for_update().first()
+    if s is None:
+        raise SurveyError('not_found')
+    return s
+
+
 def submit(app, survey_id, answers):
     """Save (or change) her answers to one survey. Only one she may see, only while it is open and her file
     is in maintenance. Returns the response. Answers are replaced whole."""
@@ -235,13 +244,18 @@ def submit(app, survey_id, answers):
         raise SurveyError('bad_answers')
     with transaction.atomic():
         # The lock serialises her two submits AND a staff edit of the questions (`update`).
-        s = Survey.objects.select_for_update().get(pk=s.pk)
+        s = _locked_survey(s.pk)
+        # Review 3: who may see it is asked AGAIN under the lock (the audience or her file may have moved).
+        if not surveys_for_file(app, timezone.now()).filter(pk=s.pk).exists():
+            raise SurveyError('not_found')
         if s.status != 'published' or effective_status(s, timezone.now()) != 'open':
             raise SurveyError('survey_closed')
         resp = SurveyResponse.objects.filter(survey=s, application=app).first()
         before = set(resp.answers.values_list('question_id', flat=True)) if resp else set()
         questions = list(s.questions.all())
         asked = _asked_of(questions, has_mentor(app) if any(q.mentor_only for q in questions) else False, before)
+        if not asked:
+            raise SurveyError('no_questions')   # review 1: never an empty response that locks the survey
         by_id = {str(q.id): q for q in asked}
         if any(str(k) not in by_id for k in answers):
             raise SurveyError('bad_question')
@@ -398,7 +412,7 @@ def update(s, data, *, by_email=''):
     and the two email choices; the questions, the audience and the opening time are locked."""
     now = timezone.now()
     with transaction.atomic():
-        s = Survey.objects.select_for_update().get(pk=s.pk)
+        s = _locked_survey(s.pk)
         locked = has_answers(s)
         if 'questions' in data:
             cleaned = clean_questions(data['questions'])
@@ -440,6 +454,15 @@ def update(s, data, *, by_email=''):
             if locked:
                 raise SurveyError('answered_locked')
             s.status = 'draft'
+        # Review 4: "opens now" on a draft or a scheduled one — the opening time becomes now, not the time
+        # an earlier save left (which would publish it as scheduled).
+        if data.get('opens_now') is True and s.opens_at > now:
+            if locked:
+                raise SurveyError('answered_locked')
+            s.opens_at = now
+        # Review 1: a published survey always has a question (an empty one could take an empty response).
+        if s.status == 'published' and not s.questions.exists():
+            raise SurveyError('no_questions')
         _check_dates(s, now, s.status == 'published' and (closes_changed or action == 'publish'))
         s.save()
     return s
@@ -449,7 +472,7 @@ def close_now(s, *, by_email=''):
     """"Close now": an open survey's closing time becomes now. Answers stop; what she sent stays."""
     now = timezone.now()
     with transaction.atomic():
-        s = Survey.objects.select_for_update().get(pk=s.pk)
+        s = _locked_survey(s.pk)
         if effective_status(s, now) != 'open':
             raise SurveyError('not_open')
         s.closes_at = now
@@ -460,7 +483,7 @@ def close_now(s, *, by_email=''):
 def delete(s):
     """A draft, or any survey nobody has answered. One with answers is closed, never deleted."""
     with transaction.atomic():
-        s = Survey.objects.select_for_update().get(pk=s.pk)
+        s = _locked_survey(s.pk)
         if has_answers(s):
             raise SurveyError('close_instead')
         s.delete()

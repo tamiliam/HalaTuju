@@ -88,6 +88,8 @@ export interface SurveyInput {
   remind: boolean
   questions: SurveyQuestionInput[]
   action?: SurveyAction
+  /** "Opens now" on a draft or a scheduled one: the server sets the opening time to now (review 4). */
+  opens_now?: boolean
 }
 
 export interface SurveyWho {
@@ -113,6 +115,8 @@ export interface SurveyResults {
   responses: (SurveyWho & { submitted_at: string; updated_at: string; answers: Record<string, AnswerValue> })[]
   not_answered: (SurveyWho & { reminded: boolean })[]
   can_remind: boolean
+  /** The organisation's "A survey for you" email is on; off, Remind is not offered (review 2). */
+  email_switch_on?: boolean
 }
 
 export interface ScholarSurveys {
