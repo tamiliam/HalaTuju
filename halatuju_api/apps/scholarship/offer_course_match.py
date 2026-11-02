@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from difflib import SequenceMatcher
 
 from .catalogue_levels import (
     course_levels, names_a_specialisation_the_letter_does_not, private_arm_letter)
@@ -410,13 +411,18 @@ def _institutions(hint, index=None):
 
 
 def _named_courses(pj, ltype, institutions):
-    """{course_id: row} for every course at ``institutions`` whose name the letter's words name."""
+    """{course_id: row} for every course at ``institutions`` whose name the letter's words name.
+
+    OUTVOTED (2026-11-02, #337): the letter "LINGUSTIK TERAPAN DAN PENTADBIRAN PERNIAGAAN" (its own
+    typo) named plain "Pentadbiran Perniagaan", while "Linguistik Terapan dan Pentadbiran Perniagaan"
+    was missed by one letter. See ``_outvoted``. Then the hits come back with no row (``None``), so
+    the caller resolves nothing and searches no lower tier: a wrong ``course_id`` is worse than none."""
     from apps.courses.models import CourseInstitution, StpmCourse
     if not institutions:
         return {}
     ids = [iid for iid, _n in institutions]
     tertiary = ltype in _TERTIARY
-    uniq, campuses = {}, {}
+    uniq, campuses, others = {}, {}, []
     offers = CourseInstitution.objects.filter(institution_id__in=ids)
     if tertiary:
         offers = offers.exclude(course_id__in=PREU_COURSE_SLUG.values())
@@ -427,15 +433,61 @@ def _named_courses(pj, ltype, institutions):
             uniq[off.course.course_id] = {'course_id': off.course.course_id,
                                           'course_name': off.course.course, 'institution': ''}
             campuses.setdefault(off.course.course_id, set()).add(off.institution.institution_name)
+        else:
+            others.append(off.course.course)
     for cid, named in campuses.items():          # a campus only when the letter names exactly ONE
         uniq[cid]['institution'] = next(iter(named)) if len(named) == 1 else ''
-    if ltype not in ('degree', ''):
-        return uniq                                # StpmCourse holds degrees only
-    for cid, cname, uni in StpmCourse.objects.filter(institution_id__in=ids).values_list(
-            'course_id', 'course_name', 'university'):
-        if _names(pj, cname):
-            uniq[cid] = {'course_id': cid, 'course_name': cname, 'institution': (uni or '').strip()}
+    if ltype in ('degree', ''):                    # StpmCourse holds degrees only
+        for cid, cname, uni in StpmCourse.objects.filter(institution_id__in=ids).values_list(
+                'course_id', 'course_name', 'university'):
+            if _names(pj, cname):
+                uniq[cid] = {'course_id': cid, 'course_name': cname, 'institution': (uni or '').strip()}
+            else:
+                others.append(cname)
+    if _outvoted(pj, [r['course_name'] for r in uniq.values()], others):
+        return dict.fromkeys(uniq)                 # outvoted: named, but by no one course
     return uniq
+
+
+def _outvoted(pj, named, others):
+    """Is a named course only a SUBSET match that another course here explains better? Either
+    (a) a course not named shares MORE of the letter's words, or (b) a letter word the named course
+    lacks is a near-spelling of a word another course has ("LINGUSTIK" / "linguistik", "PEMASARRAN" /
+    "pemasaran" — review 2026-11-02: a typo in the ONE word that tells two courses apart ties on
+    (a)). A course the letter's words align with but that names a specialisation the letter does
+    not state (TD-150) counts for neither: "Sains Komputer dengan Kepujian" is not outvoted by
+    "Sains Komputer (Rangkaian Komputer) dengan Kepujian"."""
+    rest = [t for t in (distinctive_tokens(catalogue_name(o)) for o in others) if not _name_aligns(pj, t)]
+    for name in named:
+        nt = distinctive_tokens(catalogue_name(name))
+        extra = pj - nt
+        if not extra:
+            continue
+        if any(len(pj & t) > len(pj & nt) for t in rest):
+            return True
+        words = {w for t in rest for w in t - nt - pj}
+        if any(_near_spelling(e, w) for e in extra for w in words):
+            return True
+    return False
+
+
+def _near_spelling(a, b):
+    """One word a typo of the other: both 5+ letters, and ONE letter added, dropped or changed, or at
+    least 85% alike (``difflib``). The one-edit test is for short words, where a single misread letter
+    scores under 85% ("GUNAAM" / "gunaan", "ISIAM" / "islam" — round-2 review, 2026-11-02). Refusing
+    is the safe side: the letter goes to a human, never to a wrong course."""
+    if min(len(a), len(b)) < 5:
+        return False
+    return _one_edit(a, b) or SequenceMatcher(None, a, b).ratio() >= 0.85
+
+
+def _one_edit(a, b):
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) == 1
+    short, long_ = sorted((a, b), key=len)
+    return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
 def _names(pj, course_name):

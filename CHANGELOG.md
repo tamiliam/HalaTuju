@@ -125,6 +125,20 @@ docstring), then create the hourly Cloud Scheduler job `announcement-emails`.
 - Tests: `test_announcements.py` (29), `AnnouncementsAdmin.test.tsx`, `BursaryNews.test.tsx`, bursary page,
   navigation snapshot. Admin FAQ: "How do I send news to all our scholars?".
 
+## Offer matcher: a shorter course never wins by a subset of a longer letter name (2026-11-02) — no migration
+
+- Found by the S4 production dry run (#337): the UUM letter prints "LINGUSTIK TERAPAN DAN PENTADBIRAN PERNIAGAAN"
+  (its own typo). The typo hid "Linguistik Terapan dan Pentadbiran Perniagaan" (UU6224001), and the subset rule named
+  plain "Pentadbiran Perniagaan" (UU6345003) — a wrong realign. `offer_course_match._named_courses` now refuses
+  ("outvoted"): when a course at that institution that is not named shares MORE of the letter's words than a named
+  course, nothing resolves and no lower tier is searched. No fuzzy match: the letter stays unresolved for a human.
+- Review round (same day): a typo in the ONE word that tells two courses apart ("PEMASARRAN") tied on the word count,
+  so a second test refuses when a letter word the named course lacks is a near-spelling (5+ letters; one letter
+  added, dropped or changed, or difflib >= 0.85 — round 2: "GUNAAM" / "gunaan" is one edit at 83%) of another
+  course's word. A specialised sibling that TD-150 already refuses no longer outvotes the plain
+  course ("Sains Komputer dengan Kepujian").
+- Tests: `test_offer_match_outvoted.py`.
+
 ## Offer matcher reads the S4 programme_code field (2026-11-02) — no migration
 
 - Offer reader S4 moves a printed course code out of `programme` into a new `programme_code` ("UW6526001", "BA272",
