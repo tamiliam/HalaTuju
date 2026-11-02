@@ -20,7 +20,7 @@ SECRET_NRIC = '010203-14-5678'
 SECRET_INST = 'UNIVERSITI QORVANE PERLAK'
 SECRET_PROG = 'IJAZAH SARJANA MUDA ZANTHARION'
 
-FIELDS = {'candidate_name': SECRET_NAME, 'candidate_nric': SECRET_NRIC,
+FIELDS = {'candidate_name': SECRET_NAME, 'candidate_nric': SECRET_NRIC, 'candidate_nric_source': 'label',
           'institution': SECRET_INST, 'programme': SECRET_PROG, 'intake': 'SESI 2031/2032',
           'reporting_date': '17 Ogos 2031', 'offer_date': '3 Mac 2031', 'issuer': SECRET_INST,
           'warnings': []}

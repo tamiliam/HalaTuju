@@ -17,13 +17,18 @@ Vision OCR of page 1):
      applies, so an OCR slip still reads `match`), or when it is a well-formed IC (`plausible_ic`):
      12 digits, a real YYMMDD date, a real place-of-birth code and a birth year 14-70 years ago. A
      well-formed IC of someone else is kept on purpose: that IS a wrong-person letter.
-  3. **An IC from the reference line** (UPM "[IC]/UP…", source ``reference_line``) or from anywhere
-     else is CORROBORATE-ONLY: kept only when it equals or is one digit off the profile IC, so it can
-     produce `match` and never `mismatch`; otherwise blanked.
+  3. **An IC from the reference line** (UPM "[IC]/UP…", source ``reference_line``), from anywhere
+     else (``other``), or with NO stated source (S4 re-review M1: a missing or unknown source is
+     ``other``, never ``label``) is CORROBORATE-ONLY: kept only when it EXACTLY equals the profile IC
+     (owner rule; re-review L2 — not one digit off), so it can produce `match` and never `mismatch`;
+     otherwise blanked.
   4. **Cross-check (M4).** When the page-1 text carries IC-shaped runs and the read number is none of
      them (nor one digit off one), it is blanked: the model read a number the page does not print.
   5. **Backstop (H2).** A blank IC is filled ONLY from a well-formed 12-digit run on PAGE 1's TEXT
-     LAYER that equals the profile IC (source ``text_layer``) — never from a photo's OCR, never a guess.
+     LAYER that equals the profile IC (source ``text_layer``) — never from a photo's OCR, never a guess,
+     and ONLY when the model returned no usable number (no IC, or a malformed one). An IC the model DID
+     read and the guard blanked — another person's, uncorroborated, or one the page does not print — is
+     never replaced by the profile's (S4 re-review M2: that would turn a wrong-person read into `match`).
 
 Each outcome is recorded in ``nric_check`` (never the number).
 """
@@ -66,6 +71,10 @@ def _close(a, b) -> bool:
     return bool(a) and bool(b) and (nric_match(a, b) or nric_close(a, b))
 
 
+def _exact(a, b) -> bool:
+    return bool(digits(a)) and digits(a) == digits(b)
+
+
 def ic_runs(text) -> list:
     """Every IC-shaped 12-digit run in ``text`` (dashes / spaces between the groups allowed)."""
     return [''.join(m.groups()) for m in _IC_RUN.finditer(text or '')]
@@ -76,13 +85,13 @@ def guard_nric(fields: dict, *, profile_nric: str = '', page1_text: str = '',
     """Apply the rules above to ``fields`` IN PLACE (``candidate_nric``, ``candidate_nric_source``)
     and return the outcome recorded in ``nric_check``."""
     value = str(fields.get('candidate_nric') or '').strip()
-    source = str(fields.get('candidate_nric_source') or '').strip().lower() or ('label' if value else 'none')
-    source = source if source in SOURCES else 'other'
+    source = str(fields.get('candidate_nric_source') or '').strip().lower() or ('other' if value else 'none')
+    source = source if source in SOURCES and (source != 'none' or not value) else 'other'
     outcome = 'blank'
     if value:
         mine = _close(value, profile_nric)
-        if source != 'label':
-            outcome = 'kept_corroborated' if mine else 'blanked_uncorroborated'
+        if source != 'label':      # corroborate-only: the profile IC EXACTLY (owner rule, re-review L2)
+            outcome = 'kept_corroborated' if _exact(value, profile_nric) else 'blanked_uncorroborated'
         elif mine:
             outcome = 'kept_profile'
         elif plausible_ic(value, today):
@@ -95,7 +104,8 @@ def guard_nric(fields: dict, *, profile_nric: str = '', page1_text: str = '',
     if outcome.startswith('blanked') or outcome == 'blank':
         fields['candidate_nric'], fields['candidate_nric_source'] = '', 'none'
         want = digits(profile_nric)
-        if page1_is_text_layer and want and plausible_ic(want, today) and want in ic_runs(page1_text):
+        refill = outcome in ('blank', 'blanked_malformed')          # never over a read the guard refused
+        if refill and page1_is_text_layer and want and plausible_ic(want, today) and want in ic_runs(page1_text):
             fields['candidate_nric'], fields['candidate_nric_source'] = want, 'text_layer'
             outcome += '+backstop'
     else:

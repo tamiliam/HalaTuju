@@ -41,7 +41,8 @@ def sync_reporting_date_from_offer(application, offer=None):
         offer = (ApplicantDocument.objects.filter(
                     application=application, doc_type='offer_letter', superseded_at__isnull=True)
                  .order_by(*SNAPSHOT_ORDER).first())
-    if offer is None:
+    from ..course_start import dates_the_course
+    if offer is None or not dates_the_course(offer):   # owner 2026-11-02: a non-offer's date is never copied
         return False
     rd = parse_reporting_date(student_offer_check(offer).get('reporting_date'))
     if rd is None or application.reporting_date == rd:

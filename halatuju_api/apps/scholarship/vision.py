@@ -1991,7 +1991,10 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
 
 
 def _offer_context(doc, page1_text):
-    """What the offer reader's IC guard needs (`offer_ic`): the student's own IC and page 1's text."""
+    """What the offer reader's IC guard needs (`offer_ic`): the student's own IC and page 1's text. For a
+    photo or a scan ``page1_text`` IS page 1 (`_vision_words` rasterises page 1 only); for a digital PDF it
+    is the whole text layer, but the reader then uses its OWN page-1 layer and falls back to this only when
+    page 1 has none (S4 re-review L3: there it can only make the cross-check more lenient, never refill)."""
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
     return {'profile_nric': getattr(profile, 'nric', '') or '', 'page1_ocr': page1_text or ''}
 

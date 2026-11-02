@@ -86,3 +86,26 @@ class CrossCheckAndBackstopTest(SimpleTestCase):
 
     def test_a_blank_stays_blank(self):
         self.assertEqual(guard('', source='none'), ('', 'none', 'blank'))
+
+
+class ReReviewTest(SimpleTestCase):
+    """The S4 adversarial re-review (2026-11-02): M1, M2, L2."""
+
+    def test_m1_a_missing_or_unknown_source_is_corroborate_only_never_label(self):
+        for source in ('', 'none', 'made-up'):
+            self.assertEqual(guard(OTHER, source=source), ('', 'none', 'blanked_uncorroborated'), source)
+        f = {'candidate_nric': OTHER}                       # no source key at all
+        self.assertEqual(guard_nric(f, profile_nric=MINE, today=TODAY), 'blanked_uncorroborated')
+        self.assertEqual(guard(MINE, source=''), (MINE, 'other', 'kept_corroborated'))
+
+    def test_m2_a_refused_read_is_never_refilled_from_the_text_layer(self):
+        page = PAGE + f' No. K/P {MINE}'
+        self.assertEqual(guard(OTHER, text=page, layer=True), ('', 'none', 'blanked_not_on_page'))
+        self.assertEqual(guard(OTHER, source='reference_line', text=page, layer=True)[0], '')
+        # …but a read that gave nothing usable still is (the backstop's own case).
+        self.assertEqual(guard('', text=page, layer=True)[2], 'blank+backstop')
+        self.assertEqual(guard('UPM/BPA/S/3-1', text=page, layer=True)[2], 'blanked_malformed+backstop')
+
+    def test_l2_corroborate_only_is_exact_not_one_digit_off(self):
+        self.assertEqual(guard('080102-10-5679', source='reference_line')[2], 'blanked_uncorroborated')
+        self.assertEqual(guard('080102-10-5679', source='label')[2], 'kept_profile')     # a label keeps the tolerance

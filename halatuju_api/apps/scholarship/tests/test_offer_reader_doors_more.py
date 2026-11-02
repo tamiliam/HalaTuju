@@ -11,6 +11,7 @@
   `promotion.is_pathway_switch` across versions (L4).
 
 Synthetic twins only (`test_no_gitignored_corpus.py`)."""
+import datetime
 from types import SimpleNamespace
 
 from django.test import TestCase
@@ -54,11 +55,32 @@ class CourseStartYearTest(TestCase):
         self.assertIsNone(course_start_year(app))
         self.assertTrue(course_start_unknown(app))          # the award waits, never sized off a non-offer
 
-    def test_the_officer_date_still_answers_when_the_letter_does_not(self):
+    def test_an_officer_typed_date_still_answers_when_the_letter_does_not(self):
         app = self._app()
-        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026')
-        app.reporting_date = timezone.now().date().replace(year=2024)
+        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026', reporting_date='17 Aug 2025')
+        app.reporting_date = datetime.date(2024, 3, 4)          # differs from the letter's: typed by a person
         self.assertEqual(course_start_year(app), 2024)
+
+    def test_a_date_synced_from_the_non_offer_itself_does_not_date_the_course(self):   # S4 re-review H1
+        app = self._app()
+        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026', reporting_date='17 Aug 2025')
+        app.reporting_date = datetime.date(2025, 8, 17)         # the letter's own date, copied before scoring
+        self.assertIsNone(course_start_year(app))
+        self.assertTrue(course_start_unknown(app))
+
+    def test_the_sync_and_the_backfill_never_copy_a_non_offers_date(self):           # S4 re-review H1
+        from apps.scholarship.pathway_engine import offer_reporting_date
+        from apps.scholarship.services.offer_sync import sync_reporting_date_from_offer
+        app = self._app()
+        fake = _offer(app, status='not_offer_letter', reporting_date='17 Aug 2025')
+        self.assertFalse(sync_reporting_date_from_offer(app, offer=fake))
+        app.refresh_from_db()
+        self.assertIsNone(app.reporting_date)
+        self.assertIsNone(offer_reporting_date(app))            # what backfill_reporting_dates reads
+        real = self._app()
+        good = _offer(real, status='genuine', reporting_date='17 Aug 2025')
+        self.assertTrue(sync_reporting_date_from_offer(real, offer=good))
+        self.assertEqual(offer_reporting_date(real), datetime.date(2025, 8, 17))
 
 
 class OtherDoorsTest(TestCase):

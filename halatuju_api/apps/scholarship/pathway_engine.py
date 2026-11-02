@@ -568,7 +568,7 @@ def _latest_offer(application):
 def offer_reporting_date(application):
     """The normalised reporting date from the application's latest offer letter, or None."""
     offer = _latest_offer(application)
-    if offer is None:
+    if offer is None or offer_band(offer) == 'not_offer_letter':   # owner 2026-11-02: never copied from a non-offer
         return None
     return parse_reporting_date(student_offer_check(offer).get('reporting_date'))
 
@@ -606,14 +606,12 @@ def course_start_year(application):
     a confirmation letter, not the date he started — parsing that would have sized his bursary at
     RM3,000 instead of RM1,000, confidently and wrongly. A student can misread the question; the
     letter cannot.
+
+    Owner 2026-11-02: a not_offer_letter document never dates the course — nor a date synced from it
+    (`course_start.py`, which holds the logic).
     """
-    offer = _latest_offer(application)
-    if offer is not None and offer_band(offer) != 'not_offer_letter':   # a non-offer never dates the course (S4 review M2)
-        iy = (student_offer_check(offer).get('intake_year') or '').strip()
-        if iy.isdigit():
-            return int(iy)
-    rd = getattr(application, 'reporting_date', None)
-    return rd.year if rd else None
+    from .course_start import course_start_year as _start_year
+    return _start_year(application, _latest_offer(application))
 
 
 def started_before_cohort(application):
