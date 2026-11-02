@@ -288,7 +288,7 @@ Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not dep
   `exam_year` only).
 - Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
 
-## Offer letters read exactly — Sprint 4 (reader round 1) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 4 (reader round 1) — LIVE 2026-11-02 (main cfd02d91; api-01237-gdp; reader 2.4.0; no migration; money as main)
 
 Production code (the AI offer read); no migration; not pushed. Ships only after the matcher session reads
 `campus` / `programme_code` (roadmap S4 door list). Paid: a 10-letter pilot, US$0.0615 (RM0.27), plus a
@@ -338,7 +338,7 @@ US$0.001 synthetic-image probe.
   `tests/test_offer_reader.py`, `tests/test_offer_reader_doors.py` (every reader of the fields),
   `tests/test_offer_fresh_read.py` (synthetic twins).
 
-## Offer letters read exactly — Sprint 3 (today's AI reader measured) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 3 (today's AI reader measured) — 2026-11-01 — LIVE 2026-11-02 with S4 (eval only)
 
 Measurement only; no production code. Paid: RM3.72 of Gemini (owner yes, RM3–9).
 
@@ -350,7 +350,7 @@ Measurement only; no production code. Paid: RM3.72 of Gemini (owner yes, RM3–9
   US$0.0039 a letter. Images are sent as 258 tokens each. The live usage meter misses thinking tokens (TD-459).
 - `tests/test_offer_fresh_read.py` (fake Gemini client).
 
-## Offer letters read exactly — Sprint 2 (answers, failure map, owner checks) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 2 (answers, failure map, owner checks) — 2026-11-01 — LIVE 2026-11-02 with S4 (eval only)
 
 Measurement tooling only; no production code, no migration, no Gemini call.
 
@@ -374,7 +374,7 @@ Measurement tooling only; no production code, no migration, no Gemini call.
 - **NRIC map:** 157 of 187 offers print it, 30 print none (correct blanks); the only gaps are an NRIC inside the
   reference line (UPM 2, Netherlands Maritime 1).
 
-## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — BUILT, not deployed
+## Offer letters read exactly — Sprint 1 (tooling) — 2026-11-01 — LIVE 2026-11-02 with S4 (eval only)
 
 Measurement tooling only; no production code, no migration, no paid call
 (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, approved D1–D6 a).
