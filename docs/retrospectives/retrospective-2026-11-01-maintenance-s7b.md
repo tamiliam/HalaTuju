@@ -66,3 +66,13 @@ row locks and a refusal for login-less or inactive mentors). **Lesson:** when on
 
 ## Next
 Sprint 8 (Announcements) or 7c (mentors see their students and log meetings), on the owner's choice.
+
+## Sprint 8 (2026-11-02) — announcements
+LIVE main adfeddc7; api-01232-zdb, web-01059-4vp; scholarship 0199 applied by hand; Cloud Scheduler job
+`halatuju-announcement-emails` (hourly, first run 200). Org admins and admins post to all funded scholars or one
+programme; one text for all; publish now or later; pin; edit (never re-emails) and withdraw; students read on My
+Bursary → News with an unread badge; optional email claimed once per scholar before sending, behind the
+`announcement` switch, metered. The owner paused the build mid-way and resumed it; the half-built work survived
+untouched in the worktree. Review found no hole (five low notes, recorded in decisions.md). pytest 11499, jest 6012.
+**Lesson:** a new cron job is two deploy steps — the code AND the Scheduler job; the health light going red is the
+reminder, but name the job in the push plan so it is never left out.

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Student maintenance Sprint 8 — announcements (not yet live)
+## Student maintenance Sprint 8 — announcements — LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200)
 
 Owner rulings and the approved AnnouncementsAdmin / StudentNews boards, 2026-11-01 (decisions.md, the S8 entry).
 **scholarship 0199_announcements — migrate first, by hand** (DDL, RLS, pre-check, ledger row and rollback in its

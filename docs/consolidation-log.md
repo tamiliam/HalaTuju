@@ -21,6 +21,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 ## Sprints since the last review
 
 _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM-DD <sprint> — <short SHA of every fix:/feat:/perf:/refactor: commit>`. Not counted as backlog; `wat_lint --project` reads the SHAs so sprint work is never reported as unlogged. Cleared at each review. **A sprint's commits go HERE, never under `## Pending`, even when you log them for another session** (the 2026-10-28 review moved four such lines)._
+- 2026-11-01 Mobile-native Sprint M4 part 0 (shared-phone privacy: sign-out and any SIGNED_OUT wipe the stashed apply form) — 1c6ecf40
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 
