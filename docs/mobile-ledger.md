@@ -4,11 +4,11 @@
 > `halatuju-web/src/lib/mobileClass.ts`; numbers in `halatuju-web/mobile-check/baseline.json`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **2026-11-01** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
+Baseline last updated **2026-11-02** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **96 routes:** 66 Must · 24 Can · 6 Desktop-only.
-**24 measured** (public page or sandbox surface), **13 fully green.**
+**24 measured** (public page or sandbox surface), **14 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -87,7 +87,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/report/[id]` | Must | M3 | 6 (sandbox `report`) | 0 | 0 | 0 | ✅ |  |
 | `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 1 | ❌ |  |
-| `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 55 | 0 | 7 | ❌ |  |
+| `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 1 | ❌ |  |
 | `/scholarship/award` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/scholarship/bursary` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
@@ -121,8 +121,13 @@ Component galleries — measured, but no single route is "them".
 
 | Surface | Cells | Overflow px | Small fields | Small targets | Status |
 |---|---|---|---|---|---|
+| `apply-draft-restored` | 6 | 0 | 0 | 0 | ✅ |
+| `award-plain-minor` | 6 | 0 | 0 | 0 | ✅ |
+| `award-sign-adult` | 6 | 0 | 0 | 0 | ✅ |
+| `award-sign-minor` | 6 | 0 | 0 | 0 | ✅ |
 | `category-colours` | 6 | 0 | 0 | 0 | ✅ |
 | `course-guide` | 6 | 0 | 0 | 0 | ✅ |
+| `documents-remove` | 6 | 0 | 0 | 0 | ✅ |
 | `header-signed-in-menu` | 6 | 0 | 0 | 0 | ✅ |
 | `header-signed-in-menu-bursary` | 6 | 0 | 0 | 0 | ✅ |
 | `header-signed-out` | 6 | 0 | 0 | 0 | ✅ |

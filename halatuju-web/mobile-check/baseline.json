@@ -3,7 +3,7 @@
   "measured": {
     "public": "http://localhost:3100",
     "sandbox": "http://localhost:3100",
-    "updated": "2026-11-01"
+    "updated": "2026-11-02"
   },
   "cells": {
     "/ @360 en": {
@@ -579,32 +579,32 @@
     "sandbox:action-centre @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre @360 ms": {
-      "overflow": 55,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre @360 ta": {
-      "overflow": 41,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre @390 ms": {
-      "overflow": 25,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre @390 ta": {
-      "overflow": 11,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:action-centre-clear @360 en": {
       "overflow": 0,
@@ -637,62 +637,92 @@
       "smallTargets": 0
     },
     "sandbox:application-steps @360 en": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps @360 ms": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps @360 ta": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps @390 en": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps @390 ms": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps @390 ta": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @360 en": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @360 ms": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @360 ta": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @390 en": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @390 ms": {
-      "overflow": 8,
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
     "sandbox:application-steps-lean @390 ta": {
-      "overflow": 8,
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:apply-draft-restored @390 ta": {
+      "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
     },
@@ -786,6 +816,96 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:award-plain-minor @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-plain-minor @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-plain-minor @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-plain-minor @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-plain-minor @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-plain-minor @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-adult @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:award-sign-minor @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:category-colours @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -849,62 +969,92 @@
     "sandbox:documents @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 7
+      "smallTargets": 0
     },
     "sandbox:documents-lean @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:documents-lean @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:documents-lean @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:documents-lean @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:documents-lean @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "sandbox:documents-lean @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:documents-remove @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
     },
     "sandbox:header-signed-in-menu @360 en": {
       "overflow": 0,

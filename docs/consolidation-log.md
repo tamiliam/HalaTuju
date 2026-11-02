@@ -67,6 +67,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-11-01 Offer date rule + offer link + one campus test (#243 link, owner date rule, #168 false tick; review rounds 3–5; no migration; both commands --apply on live) — 3aa80e5a 170db26f bc440b88 9969c1f3
 - 2026-11-01 Empty-pick fill (#202; owner: Check 1 records facts; review round 6; no migration; link_offer_courses --apply filled #202) — 3eba43b6 b19577ea
 - 2026-11-01 Route-aware exam-year colours (owner table; display only; no migration) — 49e50778
+- 2026-11-02 Mobile-native Sprint M4 part 0 + M4 (shared-phone privacy fix; apply draft in this tab, one step per screen; document cards, Action Centre, award reader; award read-back of a passed quiz and a valid PIN; rule 15 one box level on phones; not pushed) — 1c6ecf40 22cf678e 7e5dce9f 70a0ab05 dbf092b5
 
 ## Reviews
 

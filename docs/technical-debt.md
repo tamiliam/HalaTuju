@@ -7358,8 +7358,8 @@ and decide (owner) whether a pre-fill may be stored before the student confirms 
 
 **Raised 2026-11-01 by Mobile M4.** M4 replaced the APPLY form's 6 × 56 px bottom tab bar (10 px labels) with a step
 line and a sticky Back / Continue bar. `components/ScholarshipNextSteps.tsx` (the shortlisted student's five steps:
-story, funding, documents, consent, review) keeps the same bar, and its `-mx-6` overflows the sandbox's narrower
-padding by 8 px (`sandbox:application-steps`, mobile-check). It saves each step to the server, so the iOS tab-kill loss
+story, funding, documents, consent, review) keeps the same bar (its 8 px sandbox overflow went with rule 15's
+16 px gutter, Mobile M4). It saves each step to the server, so the iOS tab-kill loss
 is only the unsaved step. Fix: reuse `ApplyStepper`'s pattern — but the bar there is also how a student JUMPS to the
 Documents step from an Action Centre query, so it needs its own design (Stitch). *(B · M)*
 
