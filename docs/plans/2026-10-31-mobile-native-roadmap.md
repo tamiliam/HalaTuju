@@ -85,8 +85,9 @@ Each sprint: tests + `mobile-check` green, owner sees phone screenshots, **owner
 
 **M3 — Student discovery** — DONE, live 2026-11-01 (main 56173595; retrospective `docs/retrospectives/retrospective-2026-11-01-mobile-m3.md`). Filters in a sheet, course pages reordered with a sticky Save bar and no inner scroll box, saved compare on phones (two columns), report width, 44 px footer.
 
-**M4 — Scholarship apply, documents, award** (high; consent/PII → adversarial review)
-Apply form keeps a draft through an iOS tab kill (owner decision below); bottom tab bar fits + safe area; document cards get full-size action buttons; income wizard text sizes; award: contract readable at phone width, guardian form in `Sheet`, PIN keyboard.
+**M4 — Scholarship apply, documents, award** — DONE, live 2026-11-02 (main 86423305; retrospective `docs/retrospectives/retrospective-2026-11-02-mobile-m4.md`). Tab-only apply draft, one step per screen, document and award flows on phones, rule 15 (one box level).
+
+**M4b — Student bottom tab bar + rule-15 sweep** (owner, 2026-11-02, from the Grab app; mock-up first) — a context-aware bottom bar for students (a page's own action bar replaces it where there is one) and the other student pages swept to one box level.
 
 **M5 — Sponsor portal** (medium; Stitch first)
 New phone nav (bottom tabs: My Giving / Students / Account); terms wizard full width; 9 px labels; filters; login card padding.

@@ -7369,3 +7369,9 @@ Documents step from an Action Centre query, so it needs its own design (Stitch).
 (`lib/uploadCheck.ts`, the documents tab's rule). The post-award bank-statement card
 (`components/scholarship/PostAwardTasks.tsx`, a lazy chunk) still sends any file and lets the server refuse it.
 Fix: the same `uploadRefusal` call before `signUploadDocument`. *(B · S)*
+
+### [TD-463] The award page's payment schedule is served in English - low
+
+**Raised 2026-11-02 at the Mobile M4 close.** `bursary_preview.payment_schedule` ("RM 500 a month, 12 months") is a
+server-composed English string, so the Tamil and Malay award pages show it in English among translated labels.
+**Fix:** serve the parts (amount, cadence, count) and compose the sentence in the web catalogue. *(B · S)*

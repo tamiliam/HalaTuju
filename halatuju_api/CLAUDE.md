@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0–M3 DONE (M3 live 2026-11-01, main 56173595), NEXT = M4 scholarship apply / documents / award
+### Mobile-native arc (separate stream) — M0–M4 DONE (M4 live 2026-11-02, main 86423305), NEXT = student bottom tab bar + rule-15 sweep
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1143,9 +1143,11 @@ on every student page incl. Home; its menus, desktop row, nav lists and theme/la
 (forgets the session on the device even when the server is unreachable); onboarding uses `FlowHeader`. **Since M3:** search
 filters are `SearchFilterSheet.tsx` (Sheet) on phones; course pages save from a sticky `CourseSaveBar` (the toast
 rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare.tsx`); new words for these pages go
-in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
-apply-form draft storage (rec. tab-only sessionStorage).
-
+in the page-loaded `discovery` slice. **Since M4:** the apply form keeps a draft in THIS TAB only (`src/lib/applyDraft.ts`: no IC,
+signature or consent; keyed to the user id that filled it; cleared on submit and any sign-out); rule 15 — one box
+level on phones (16 px gutter, sections not cards, no bordered box in a box); the award page reads back a passed
+quiz / valid PIN (`signing_progress.py`). NEXT (owner, 2026-11-02): a context-aware student bottom tab bar + the
+rule-15 sweep of the other student pages, mock-up first (Stitch has failed three sprints running).
 ### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200) — announcements
 
 **Next free migration numbers: scholarship 0200, courses 0092.** **scholarship 0199_announcements — MIGRATE FIRST by

@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-02 | 8642330 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 175 | 0 | 0 | ok | ok |
 | 2026-11-01 | 5617359 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 170 | 0 | 0 | ok | ok |
 | 2026-11-01 | ab1aebc | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 81 | 92 | 0 | 3 | 12 | 167 | 0 | 0 | ok | ok |
 | 2026-11-01 | 49ec378 | 90 | 51 | officerCockpit.ts 28.2 | 15 | 15 | 4 | 80 | 92 | 0 | 3 | 12 | 163 | 0 | 0 | ok | ok |
@@ -119,7 +120,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-01, 5617359, window 2026-08-03 onward)
+## Latest run (2026-11-02, 8642330, window 2026-08-04 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -127,19 +128,19 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
 | `halatuju_api/apps/scholarship/vision.py` | 12 | 2338 | 28.1 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 17 | 1356 | 23.1 |
-| `halatuju_api/apps/scholarship/views.py` | 9 | 2435 | 21.9 |
+| `halatuju_api/apps/scholarship/views.py` | 9 | 2440 | 22 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
+| `halatuju_api/apps/courses/views_admin.py` | 10 | 808 | 8.1 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
-| `halatuju_api/apps/courses/views_admin.py` | 9 | 794 | 7.1 |
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 266 fix / 255 feat commits since 2026-08-03
+- 270 fix / 259 feat commits since 2026-08-04
 
 ### Files over 1000 lines
-- `2435  halatuju_api/apps/scholarship/views.py`
+- `2440  halatuju_api/apps/scholarship/views.py`
 - `2338  halatuju_api/apps/scholarship/vision.py`
 - `2190  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
@@ -152,7 +153,6 @@ drift tests are counted as the habit they cure). See TD-284.
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
 - `1026  halatuju_api/apps/scholarship/serializers_admin.py`
 - `1010  halatuju_api/apps/scholarship/sponsorship.py`
-- `1005  halatuju-web/src/lib/scholarship.ts`
 - `1004  halatuju_api/apps/scholarship/verdict_engine.py`
 
 ### Python functions of 150+ lines
@@ -170,7 +170,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `165  halatuju_api/apps/courses/views.py:1017 get`
 - `162  halatuju_api/apps/scholarship/help_engine.py:342 verdict_for_document`
 - `153  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
-- `151  halatuju_api/apps/courses/views_staff.py:192 post`
+- `151  halatuju_api/apps/courses/views_staff.py:195 post`
 
 ### Function names with 3+ homes in one app
 - _gemini_generate x3 (scholarship): apply_copy_draft.py, contracts.py, sponsor_terms.py
@@ -179,10 +179,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - unknown_placeholders x3 (scholarship): email_templates.py, partner_comms.py, sponsor_comms.py
 
 ### Cross-app imports
-- courses -> scholarship: 18 edges (25 import statements)
+- courses -> scholarship: 19 edges (26 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 53 edges (260 import statements)
+- scholarship -> courses: 53 edges (262 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -201,10 +201,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 41 of 346 web test files read source text (signals: readFileSync, apiSource); drift 27 (*Drift.test.ts, counted apart)
+- 42 of 357 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 454 entries have a defining line; 170 carry no resolution marker on it
+- 459 entries have a defining line; 175 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -231,7 +231,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at ab1aebc
+- budgets no looser than at 5617359
 
 ### tsc
 - 0 errors in 0 files
@@ -239,7 +239,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 6993
+- Total keys per locale: 7118
 
 ## Reviews
 
@@ -251,6 +251,19 @@ _Decisions per run, newest first. Written by a person or the agent — never by 
 this follow-up. `xapp` 79 -> 81 within tolerance (the new `services/offer_link.py` reads the courses catalogue, as
 the matcher does; other streams' imports too). `td_open` 163 -> 164 (TD-451, TD-452 here; others' resolutions
 offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files across streams). No decision needed.
+
+### 2026-11-02 (8642330, Mobile-native M4 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since 5617359 holds Mobile M4 (with its part-0
+privacy fix), Sprints 7c–8 and the offer-matcher joins. Moved:
+
+- **`big` 15 -> 14 (better).** M4 moved the new API code out of `bursary.py` into `signing_progress.py` and split the
+  web pieces into small modules rather than growing pages on the oversize list.
+- **`xapp` 81 -> 82.** Not M4's import (its one API addition stays inside the scholarship app); the window's other
+  sprints. **Accepted** here as not this sprint's.
+- **`td_open` 170 -> 175.** TD-458 (part-0 review gaps), TD-460–TD-463 (income wizard writes on open; the step
+  wizard's icon bar; bank statement early check; the English payment schedule), plus other sessions' items. All
+  low or medium. **Accepted.**
 
 ### 2026-11-01 (5617359, Mobile-native M3 close) — 0 FAIL
 
