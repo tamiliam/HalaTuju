@@ -257,6 +257,13 @@ US$0.001 synthetic-image probe.
   Rebased again on the live `programme_line` join (main cddb4661): the printed-code tier survives.
 - **Full run (the lead, RM5.23):** held-out 66/90 fully exact (current 18), dev 90/126 (current 35); name and
   NRIC fell by 1–3 letters and one held-out name now reads mismatch — for the adversarial review.
+- **Reader 2.1.0 — the adversarial review's fixes** (deploy was blocked): page 1 alone at high detail for every
+  identity field, later pages only to fill a blank reporting date / intake; the IC guard `offer_ic.py`
+  (reference line corroborate-only, well-formed shape, not-on-page blanked, text-layer backstop for the
+  profile's own IC); issuer a name, never an office alone; the text layer fenced as data; the model recorded.
+  2.1.0 pilot: 6/10 fully exact (2.0.0: 9/10 — issuer wording, a PISMP "PROGRAM" wrapper, one intake), US$0.00558
+  a letter. **Money door (needs the owner):** a `not_offer_letter` document no longer sets the course-start year
+  (`course_start_year` → award size, EPF evidence).
 - **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
   fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
   rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.

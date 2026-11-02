@@ -363,6 +363,29 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   cache, realign / link / institution fill / the ticks on the stored fields and on the S4 fields (in memory), in
   ONE transaction set READ ONLY at the transaction level and always rolled back; non-read SQL, Storage, Gemini
   and the meter refused. Prints ids and outcomes only. Tests: `tests/test_offer_s4_dry_run.py`.
+- **Adversarial review (2026-11-02) blocked deploy; fixed in reader 2.1.0** (`d0b3f34e`) and `c4165cd2`:
+  H1 page 1 alone at high detail for every identity field, pages 2-3 in a second call only to fill a blank
+  reporting date / intake; H2 + M1 + M4 the IC guard (`offer_ic.guard_nric`: the reference line an explicit,
+  corroborate-only exception; well-formed shape; not-on-page blanked; text-layer backstop only for the
+  profile's own IC) and the text layer fenced as data; M3 issuer = a name, never an office alone; L1 / L2 / L3 /
+  L6. **More doors (M2), tested in `tests/test_offer_reader_doors_more.py`:** `course_start_year` /
+  `started_before_cohort` → `award.proposed_award_amount`, `award.course_start_unknown`, `epf_evidence` (MONEY:
+  a `not_offer_letter` document no longer dates the course — a behaviour change on main for stored reads too,
+  **needs the owner**); `blockers.document_unreadable_blockers`; the reporting bonus (`verdict_ladder`,
+  `promotion._offer_quality`); the IC shown to the student (`serializers` → `checklistsPathway.tsx`); the
+  intake-year chip; `offer_pathway_switch` across versions (a hostel-only old line vs the new name + campus
+  reads as a switch with the SAME programme — documented, not changed; it needs a second upload);
+  `promotion.is_pathway_switch` reads codes across versions (L4).
+- **2.1.0 pilot (S3's same 10 letters; US$0.0558 = RM0.25).** Fully exact **6/10** (S4 2.0.0: 9/10). Name,
+  NRIC, institution (9), reporting date (10) unchanged; campus 10 (S4 9); programme 8 (S4 10: two PISMP reads
+  gained a leading "PROGRAM"); intake 9 (S4 10: a roman "I" read as "1"); issuer 3 (S4 4: the M3 rule drops the
+  office the answers keep, e.g. "Bahagian Pengambilan Pelajar, Universiti Teknologi MARA" → "Universiti
+  Teknologi MARA"). Both 2-page letters now send page 1 at 3,354 image tokens (was 258); no letter needed the
+  later-pages call. Cost US$0.00558 a letter vs US$0.00615 (input 4,522 vs 3,935; output 305 vs 281; thinking
+  1,384 vs 1,707). Projected re-run: dev 126 ≈ US$0.70, held-out 90 ≈ US$0.50 — ≈ US$1.2–1.35 (RM5.3–6) with the
+  later-pages calls the full set will need. **Before that re-run** the issuer rule should keep the office WITH
+  its institution ("never an office ALONE"), and the PISMP rule should say "without a PROGRAM wrapper"
+  (dev evidence only; the held-out pilot letters are not used to tune).
 - **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
   the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 
