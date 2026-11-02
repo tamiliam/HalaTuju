@@ -139,7 +139,7 @@ class RunTest(TestCase):
         self.assertEqual(r['stored']['ticks']['ic'], r['s4']['ticks']['ic'])
         self.assertEqual(totals['letters'], 1)
         self.assertEqual((r['stored']['not_offer_dated'], totals['not_offer_dated:s4']), (False, 0))
-        self.assertEqual(dr.S4_SUFFIX, '.fresh_s4c.json')               # the final reader's caches
+        self.assertEqual(dr.S4_SUFFIX, '.fresh_s4d.json')               # the final reader's caches
         text = '\n'.join(lines).upper()
         prof = self.app.profile
         for secret in (prof.name.upper(), prof.nric.replace('-', ''), 'SRI RAJANG', 'BINTULU', 'PEMBANGUNAN'):

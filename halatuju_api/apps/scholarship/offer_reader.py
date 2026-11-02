@@ -47,6 +47,11 @@ institution or ministry ("Bahagian Pengambilan Pelajar, Universiti Teknologi MAR
 but is never an office alone; PISMP's programme carries no "PROGRAM" wrapper; a programme stops before a
 faculty line printed after it; a Roman session numeral stays Roman.
 
+2.3.0 — the IC prompt only (owner GO 2026-11-02; the guard and its source values unchanged): look for the IC
+on page 1 including an UNLABELLED copy in the address block (source "other" — still corroborate-only, so it
+can read `match` and never `mismatch`); when the IC is printed both in the reference line and elsewhere,
+report the copy outside the reference line.
+
 VERSIONING (memory: feedback_doc_recognition_versioning). `OFFER_READER_VERSION` is semantic and is
 stored on every AI offer read as `vision_fields['offer_reader_version']`, with what was shown in
 `vision_fields['offer_reader_inputs']`. Bump it on ANY change to the prompt, the schema, the inputs or
@@ -59,7 +64,7 @@ from __future__ import annotations
 import re
 
 #: Semantic version of the AI offer reader — see the module docstring.
-OFFER_READER_VERSION = '2.2.0'
+OFFER_READER_VERSION = '2.3.0'
 #: Pages of a PDF shown to Gemini: an e-registration slip can sit in front of the offer and the
 #: reporting date can be on page 2 (owner notes, S1); later pages are mostly reply forms.
 MAX_PAGES = 3
@@ -107,7 +112,11 @@ OFFER_HINT = (
     '"MyKad"), with "candidate_nric_source" = "label". ONE EXCEPTION: when the offer prints the IC '
     'nowhere else but INSIDE its reference line ("Rujukan Kami", "No. Rujukan", "Our Reference", e.g. '
     '"<12 digits>/UP..." or ".../<12 digits>"), take just those 12 digits and set '
-    '"candidate_nric_source" = "reference_line". Nothing else is the IC: not a matric, student or '
+    '"candidate_nric_source" = "reference_line". LOOK FOR THE IC ON PAGE 1, including the address block: many '
+    'letters print it with NO label, on its own line under or beside the student\'s name and address — '
+    'read it there too and set "candidate_nric_source" = "other". When the IC is printed BOTH inside the '
+    'reference line and anywhere else, report the copy printed outside the reference line, with the source '
+    'where THAT copy is printed. Nothing else is the IC: not a matric, student or '
     'application number, not the rest of a reference line, not a number written on a reply or '
     'acceptance form. When the offer prints no IC, leave "candidate_nric" EMPTY and set '
     '"candidate_nric_source" = "none" — never guess one. '

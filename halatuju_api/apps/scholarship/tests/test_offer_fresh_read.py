@@ -366,8 +366,10 @@ class TestNewReader(SimpleTestCase):
         import shutil
         k = 'offer_letter__a1__d11'
         self.assertFalse(os.path.exists(fr.fresh_path(self.c.dir, k, fr.READERS['s4'])))   # never written
-        shutil.copy(fr.fresh_path(self.c.dir, k, fr.READERS['new']), fr.fresh_path(self.c.dir, k, fr.READERS['s4']))
-        c = fr.compare(self.c.dir, 'all', self.split, reader='new')
+        for older in ('s4', 's4c'):
+            shutil.copy(fr.fresh_path(self.c.dir, k, fr.READERS['new']), fr.fresh_path(self.c.dir, k, fr.READERS[older]))
+        c = fr.compare(self.c.dir, 'all', self.split, reader='s4c')
+        self.assertEqual(fr.compare(self.c.dir, 'all', self.split, reader='new')['reads'], ('stored', 's4c', 's4d'))
         self.assertEqual((c['letters'], c['reads']), (1, ('stored', 'fresh', 's4', 's4c')))
         self.assertEqual(c['fields']['fresh']['institution']['wrong'], 1)
         self.assertEqual(c['fields']['s4c']['institution']['exact'], 1)

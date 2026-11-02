@@ -112,13 +112,13 @@ FRESH_SUFFIX = '.fresh.json'
 #: `s4` = the S4 reader as first built (2.0.0, caches only); `new` = this checkout's reader (2.1.0+,
 #: the review fixes: page 1 alone, the IC guard), cached apart so no earlier cache is ever overwritten.
 READERS = {'current': FRESH_SUFFIX, 's4': '.fresh_s4.json', 's4b': '.fresh_s4b.json',
-           'new': '.fresh_s4c.json'}
+           's4c': '.fresh_s4c.json', 'new': '.fresh_s4d.json'}
 PAID_READERS = ('new',)
 #: compare: the reads shown for each --reader, oldest first.
 COMPARE_READS = {'current': ('stored', 'fresh'), 's4': ('stored', 'fresh', 's4'),
-                 's4b': ('stored', 'fresh', 's4', 's4b'), 'new': ('stored', 'fresh', 's4', 's4c')}
+                 's4c': ('stored', 'fresh', 's4', 's4c'), 'new': ('stored', 's4c', 's4d')}
 _COMPARE_SUFFIX = {'fresh': READERS['current'], 's4': READERS['s4'], 's4b': READERS['s4b'],
-                   's4c': READERS['new']}
+                   's4c': READERS['s4c'], 's4d': READERS['new']}
 LOG_NAME = 'offer_fresh_read.log'
 DOC_TYPE = 'offer_letter'
 #: Exit codes: 0 done, 2 no corpus / bad arguments, 3 stopped on a 402/429, 4 calls failed.
@@ -554,7 +554,7 @@ def main(argv=None, *, client_factory=None, out=print):
     ap.add_argument('--costs', action='store_true', help='per-letter tokens + cost, --against vs new')
     ap.add_argument('--max-usd', type=float, default=None, help='stop once the run has cost this much')
     ap.add_argument('--suffix', default='', help="cache suffix override for a paid read (a pilot's own cache)")
-    ap.add_argument('--against', choices=('current', 's4', 's4b'), default='current',
+    ap.add_argument('--against', choices=('current', 's4', 's4b', 's4c'), default='current',
                     help='--costs: the earlier reader to put beside the new one')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--env-file', default=DEFAULT_ENV_FILE)

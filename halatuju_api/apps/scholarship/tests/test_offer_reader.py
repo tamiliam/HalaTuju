@@ -112,6 +112,15 @@ class PromptRulesTest(SimpleTestCase):
         self.assertIn('not the rest of a reference line', p)
         self.assertNotIn('Never a matric, student, application or reference number', p)   # the contradiction
 
+    def test_an_unlabelled_ic_is_looked_for_and_stays_corroborate_only(self):          # 2.3.0
+        p = orr.OFFER_HINT
+        self.assertIn('LOOK FOR THE IC ON PAGE 1, including the address block', p)
+        self.assertIn("with NO label, on its own line under or beside the student's name", p)
+        self.assertIn('set "candidate_nric_source" = "other"', p)
+        self.assertIn('report the copy printed outside the reference line', p)
+        self.assertEqual(orr.OFFER_SCHEMA['properties']['candidate_nric_source']['enum'],
+                         ['label', 'reference_line', 'other', 'none'])          # no new trusted source
+
     def test_the_issuer_is_the_letterhead_body_never_an_office_alone(self):            # review M3, 2.2.0
         p = orr.OFFER_HINT
         self.assertIn('"issuer" = the issuing body named on the LETTERHEAD', p)

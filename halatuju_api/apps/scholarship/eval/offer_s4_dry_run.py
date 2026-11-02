@@ -51,8 +51,8 @@ _API_ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 if _API_ROOT not in sys.path:
     sys.path.insert(0, _API_ROOT)
 
-#: The final S4 reader's caches (2.2.0, `offer_fresh_read.py --reader new`); `--suffix` for another.
-S4_SUFFIX = '.fresh_s4c.json'
+#: The final S4 reader's caches (2.3.0, `offer_fresh_read.py --reader new`); `--suffix` for another.
+S4_SUFFIX = '.fresh_s4d.json'
 DEFAULT_EVAL_DIR = os.path.join(HERE, 'fixtures', 'offer_letters_2026-11-01')
 TICKS = ('name', 'ic', 'pathway', 'institution_status', 'chosen_institution_status',
          'intake_year_status', 'reporting_official')
