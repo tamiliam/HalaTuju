@@ -451,6 +451,173 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Acceptance:** 0 WRONG on dev and held-out; lock rate up; held-out exact score not down.
 - **Owner:** adversarial review (identity fields); deploy go.
 
+#### Plan (2026-11-03)
+Phase 1 (measure + plan) on `offer-read-s1` = origin/main `53f1d289`; free (cached text, no Gemini, no
+Vision, no database). Keys and counts only. Builder: s5-builder. **Nothing built yet — owner approves first.**
+
+**Baselines (measured 2026-11-03).**
+- Tests: `python -m pytest apps/scholarship -q -p no:cacheprovider -n auto` (worktree, development
+  settings): **9899 passed, 3 skipped, 5152 subtests passed** (26 min).
+- Today's free readers on the cached text (`offer_replay.py`, PARSER 1.3.0): **51 of 287 lock** (STPM 13,
+  matriculation 18, polytechnic 20), 235 fall back, 1 no text. Of the 71 stored Exact reads, 50 re-lock and
+  **21 would fall back**. Locks among ANSWERED letters: **dev 1 of 126 (0 WRONG), held-out 0 of 90.**
+- Production pipeline score (an Exact lock merged over the 2.3.0 AI read, else the 2.3.0 read): fully exact
+  **dev 89/126, held-out 63/90** — S5 must not lower either.
+- AI reader 2.3.0 on the fixed formats (all answered letters, portal pages and not-offers included): dev
+  STPM 3/6 fully exact, matriculation 9/10, polytechnic 3/7; held-out 3/5, 4/5, 2/5. The Exact read has room.
+
+**Why "48" and "38" differ.** 48 = family from the stored genuineness fingerprint (`doc_seen`); 38 = the
+answer's family (the scorer's). 14 of the 48 are NOT fixed-format letters (private colleges / universities /
+IKM / IKBN that the fingerprint calls polytechnic, matriculation or STPM — an S6 input) and 4 of the 38 are
+fixed-format portal pages the fingerprint calls university. Of the 38: **11 must not lock** (portal pages 6,
+not an offer 5), **1 locks today, 26 are real letters to close** (dev 17 incl. the lock: STPM 3, matric 9,
+poly 5; held-out 10: STPM 2, matric 4, poly 4).
+
+**Failure classes — the 26 real known-format letters that do not lock (keys in the scratch table; reason →
+count → fix):**
+| Class | n | Families / input | Fix (free) |
+|---|---|---|---|
+| A. STPM six-label block: section 2 prints 2.1-2.6 (Bidang, Pusat, Tarikh Lapor Diri, **Masa Lapor Diri, Dokumen diperlukan, Pakaian**); the parser knows 3, so the values start one block too early and "2.4." / "Masa Lapor Diri" land in stream / institution → the clause-number guard trips | 5 | STPM, all photos | label set = all six numbered labels; values paired after the LAST numbered label |
+| B. Matriculation glued text layer: the whole letter on one line ("…K/P : <IC>NO MATRIK…", "Jurusan: X Tempoh Pengajian: …"); `\b` cannot see the IC, no label-only lines exist | 7 | matric, text PDF | glued-label reader: split on the known label sequence (as STPM #117 does) |
+| C. Name not found: no parentage marker (a one-word name, a Chinese or East-Malaysian name, "BTE"), or the name sits below line 20 (phone status-bar noise) | 10 | matric 4, poly 6 (photo / scan / text PDF) | matric: the line directly above "K/P:"; poly: the "NAME (IC)" line without the marker; strict name shape |
+| D. Polytechnic session numeral ("SESI 1:2026/2027") — `SESI\D{0,8}` cannot pass a digit | 3 | poly photos (1 also in C) | intake regex allows I / II / 1 / 2, output "SESI I : 2026/2027" (letters print Roman) |
+| E. Block split or label variant: Vision splits the matric label block into two runs; poly "Tarikh Daftar" (no "dan Masa") is not a known label, so the block shifts | 2 | matric scan 1, poly photo 1 | pair alternating label-run / value-run blocks; add "Tarikh Daftar" / "Tarikh dan Masa Daftar" to the poly labels |
+| Total | 26 | 5 + 7 + 10 + 2 (D only) + 2 = 26 unique | every class has dev examples; held-out text was opened only to confirm its class, never to tune |
+
+**The 21 stored Exact reads that would now fall back** (S7 regression risk — a live re-read today sends them to
+Gemini and loses "Exact"): 15 STPM photos = class A (the #47 clause-number guard of 2026-07-17 and the
+date/money guard of 2026-09-10 came AFTER these were stored in June-July; 2 of the 15 stored reads still carry
+the corrupt slot today); 1 polytechnic photo = class E (its stored read holds a date in institution and
+programme); 5 matriculation text PDFs = class B (stored June-July, before the PDF library was pinned on
+2026-09-18; today's pinned pypdf 5.9.0 returns the glued layer). All 21 are fixed by A, B and E. **S7 must
+not re-read these before S5 ships.** Live stored Exact reads with a date / clause / ringgit in a text slot: 6.
+
+**Wrong VALUES in today's locks (no answers exist for them — measured by rule):** polytechnic `offer_date` =
+the registration date on 16 of 20 locks ("Tarikh dan Masa Daftar" matches the "Tarikh" offer-date rule; shown
+in the cockpit); matriculation reporting date = the LAST day of a range ("8 HINGGA 9 JUN") on 2 locks
+(the answers take the first day; feeds `sync_reporting_date_from_offer`). Convention gaps the scorer counts
+as wrong: polytechnic programme keeps its code (18; S4's shape puts it in `programme_code`), polytechnic
+intake drops the session numeral (14), STPM intake drops "Semester 1 Tahun" (13). Each keeps the year the
+money path reads (`intake_year` = the first 20xx).
+
+**What needs paid OCR: nothing.** Every letter in the corpus has text (S2's Vision capture); production
+already runs Vision on every photo / scan before the parser (`ocr_document_full`, ~US$0.0015 a page), so a
+photo never reaches the parser with no text. The 1 no-text letter is the not-a-PDF file. Each new lock
+SAVES a Gemini call (≈US$0.0064 at 2.3.0).
+
+**Then (government families / university templates).** Data gate: UMS has 64 letters (41 text PDFs, 20 dev),
+UiTM 11 text PDFs, UM 6; but 2.3.0 is already fully exact on UMS dev 30/30 and UM dev 6/6 — a UMS reader would
+only save ≈US$0.26 per corpus pass at new identity risk. PISMP has 5 text PDFs (3 dev) — under the gate.
+**Recommendation: no university or PISMP reader in S5**; record UMS as the one candidate if cost ever
+matters.
+
+**Lessons and decisions that bind S5, and how the plan meets each.**
+- Decision 2026-09-10 (a shifted block defers to Gemini; guard at the single exit, all three families; "revisit
+  if the deferral rate climbs: per-label recovery written ONCE, shared") → S5 IS that revisit: one shared block
+  reader, the exit guards untouched.
+- Lesson "a guard in a per-family helper is not a guard" (#125 / #142) → new shape checks go at the exit or in
+  the shared reader, never in one family's helper.
+- Decision 2026-07-10 + lesson "merge-preserve before overwriting a field set" → reporting / offer date keep
+  merge-preserve; the identity and shape keys the parser owns are written whole (step 4), so no stale AI value
+  survives under an "Exact" chip.
+- Decision 2026-09-10 (the matric "Program Matrikulasi (X)" bracket feeds five call sites; retire it only in
+  its own measured change) → kept as is.
+- Lessons on OCR-read identifiers (#36: never exact-compare a noisy IC; a wrong IC is worse than a blank) and
+  S4's `offer_ic` rules → the Exact IC goes through `guard_nric`; a blanked IC defers instead of merging.
+- Lesson "validate a heuristic on real documents, not only synthetic twins" + "validate on held-out" → the real
+  corpus check (step 1) gates the build; held-out run once, at the end.
+- Lesson "a parser fix does not recover the rows it already read" → the S7 list must include every live
+  letter whose Exact read changes (the 21, the 2 range dates, the 16 poly offer dates, the code / intake
+  convention moves), not only today's AI reads.
+- Lesson "ask where the corrections go — version what is scored" + roadmap rule 3 → `PARSER_VERSION` 2.0.0,
+  and the eval prints it.
+- Rule 1 / `test_no_gitignored_corpus.py` → tests use synthetic twins; the check prints keys and field names.
+- Rule 2 (never re-extract from a local checkout) → nothing in S5 writes to production.
+
+**Steps.**
+1. `eval/offer_parse_check.py` (new, hand-run, like `stpm_parse_check.py`): feeds each letter the text
+   production feeds (`offer_replay.production_text`); per letter EXACT / FALLBACK / **WRONG** (a lock with a core
+   field — name, NRIC, institution, programme/stream, intake, reporting date — that differs from the answer) /
+   **CONTROL-LOCKED** (a lock on a letter whose answer family is not STPM / matric / poly, or whose
+   `is_offer_letter` is portal_page / not_offer); by split, family, input kind; offer date scored, not core;
+   `--split dev|heldout|all`; exit 1 on any WRONG or control lock; prints keys and field names only. Tests:
+   `tests/test_offer_parse_check.py` (synthetic twins).
+2. **Answers for the 71 stored Exact reads (dev; free, D1 route: drafted from the image before looking at the
+   stored read, owner spot-check ~10).** Today no answer exists for any of them, so "0 WRONG on dev" could not
+   be measured on the letters the parser already locks. All 71 are dev (the held-out was drawn from AI reads).
+3. `offer_parse.py` — the fixes A-E, written ONCE in a shared block reader (the 2026-09-10 decision's
+   "revisit if": per-label recovery shared across the three families), the single-exit guards kept; plus the
+   two value bugs (offer date only from a "Tarikh :" line that is not "Tarikh dan Masa Daftar" / "Tarikh
+   Daftar" / "Tarikh Lapor Diri", numeric dates accepted; a range's FIRST day) and the conventions (programme
+   code → `programme_code`; intake with its session / semester words). The offer-title phrase becomes a lock
+   requirement (portal pages and slips never lock). `PARSER_VERSION` 1.3.0 → **2.0.0** (output shape changes:
+   `programme_code`, intake wording, `candidate_nric_source`). The matriculation `programme` bracket stays
+   (decision 2026-09-10, five call sites).
+4. **The IC guard on the Exact path** (new `offer_exact.py`, ≈60 lines): the parser labels its IC source —
+   `label` for "No. Kad Pengenalan:", "K/P:" and the poly "NAME (IC)" line, `other` for the first-IC-anywhere
+   fallback — and `offer_ic.guard_nric` runs on it with the profile IC and the page-1 text, exactly as on the
+   AI path. **If the guard blanks the IC the letter is NOT locked** (→ the AI read, which has its own guard):
+   a blank IC merged over a prior read would keep the prior AI number. Identity fields are read from page 1
+   only (owner rule 2026-11-01). The merge moves here too: the parser OWNS name, IC + source, programme,
+   `programme_code`, institution, `campus` (always ''), stream, intake (written even when blank, so a stale
+   AI campus / code / IC source cannot survive under an Exact chip); reporting date and offer date keep the
+   merge-preserve rule (lesson 2026-07-10). `vision.py` calls one function instead of its 13-line block.
+5. Dev tuning loop: `offer_parse_check.py --split dev` + `offer_replay.py` until 0 WRONG / 0 control locks;
+   then ONE held-out run for the final numbers. Synthetic twins for every class in `tests/test_offer_parser.py`
+   (and a new `tests/test_offer_parse_glued.py` if that file passes ~600 lines).
+6. Doors re-checked (below); adversarial review (identity); CHANGELOG, README section, decisions entry.
+
+**Files.** `offer_parse.py` (365 → ≤ 560; if it would pass 560 the family readers move verbatim to a new
+`offer_parse_families.py` first, a moves-only step), `offer_exact.py` (new), `offer_ic.py` (unchanged unless a
+`source` value is needed), `vision.py` (offer branch only; **net lines ≤ 0**, `_run_field_extraction_impl`
+budget 306 not grown), `eval/offer_parse_check.py` (new), `eval/offer_replay.py` (call the same entry point;
+reason rules updated), `eval/README.md`, tests above. Budgets checked: `vision.py` is in `oversize_files`
+(2321) and `long_functions` (`_run_field_extraction_impl` 306) — both must not grow (`code-health.md`: vision.py
+is hot#1, 28.1); `offer_parse.py`, `offer_ic.py`, `offer_reader.py`, the eval files are in no ledger and must
+stay under 600 lines / functions under 150. `pathway_engine.py` (613, ledger) is NOT touched.
+
+**Doors (sprint-start 3b) — a lock sets name, IC, institution, programme, stream, intake, reporting date with
+no model.** The parser's output enters through ONE door, `vision._run_field_extraction_impl` (upload, Re-run,
+sweep, `reextract_documents`, `release-decisions`), and `offer_replay` (eval). Readers of the stored fields:
+- **Identity:** `doc_student_verdict` (name, at extraction); `pathway_engine.student_offer_check` →
+  `_name_status` / `_ic_status` → `verdict_engine`, `verdict_ladder` (+ `_OFFER_CHIP_RED`),
+  `doc_red_keys.person_red` (wrong-person gate), `resolution` (Action Centre), `help_engine`, `blockers`,
+  the IC shown to the student (`serializers` → `checklistsPathway.tsx`). Today the Exact IC skips
+  `guard_nric`; step 4 adds it, so a deterministic IC can produce `match` or blank → AI, never a new
+  `mismatch` from an unlabelled or not-on-page number. A well-formed labelled IC of another person still
+  reads `mismatch` (that IS a wrong-person letter).
+- **Pathway / picks:** `offer_course_match` (`letter_institution` = institution + campus, `programme_line` =
+  programme + `programme_code`, `match_offer_course`, `pinned_match`, `letter_place`, `CampusReader`),
+  `offer_pathway` (`parse_matric_track` reads the bracket), `offer_sync` (autofill, Bumi realign,
+  `institution_fill`), `offer_link`, `services/confirmation`, `promotion.is_pathway_switch` (codes first),
+  `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`. Step 3 moves the poly code
+  into `programme_code` — the S4 joins put it back where the matcher reads it; to be proved by the S4 dry-run
+  tool on the changed letters before the push (rule 5), and sent to the matcher session.
+- **Money:** `intake` → `intake_year` → `course_start_year` / `started_before_cohort` → `award`,
+  `epf_evidence`; `reporting_date` → `sync_reporting_date_from_offer`, Check 2 `offer_reporting_date_unknown`,
+  `offer_reporting_bonus` / `verdict_ladder` / `promotion._offer_quality`. Every intake keeps its first 20xx;
+  2 matric reporting dates move one day earlier (range first day) — listed for the owner.
+- **The "Exact" chip:** `vision_fields.capture == 'deterministic'` (+ `offer_reader_inputs.reader`) →
+  `DocumentsDrawer.tsx` (cockpit badge), `services/outage.gemini_read_outcome` (the Gemini health window and System health light skip Exact reads —
+more locks = fewer Gemini samples),
+  `reextract_documents` (prints it), `offer_read_check` / `offer_replay` (eval). `_offer_parser_version` is read
+  by nothing live (traceability only).
+- Display: `checklistsPathway.tsx` shows `offer_date` (fixes the 16 wrong poly dates).
+
+**Acceptance numbers.** (1) 0 WRONG and 0 control locks on dev (126 answered + the 71 new answers) and on
+held-out (90). (2) Lock rate: corpus 51 → **≥ 85 of 287**; the 21 at-risk reads re-lock ≥ 20; dev real
+known-format ≥ 14 of 17. (3) Pipeline fully exact: dev ≥ 89/126, held-out ≥ 63/90, no core field down on
+held-out. (4) The scholarship suite green, budgets unchanged or tighter.
+
+**Risks.** (a) Relaxing the name anchor can read an address line as a name → a false `name_mismatch` (a
+yellow/red chip, not a block); mitigated by the strict shape, the line-above-K/P anchor, and the 71 + 27 answer
+checks; adversarial review. (b) Glued-text splitting is new parsing on the path that broke twice (#125, #142);
+mitigated by the single-exit shape guards and the control set. (c) The poly code move changes what
+`programme` holds for the matcher on live re-reads — the dry run before the push. (d) The held-out has 10
+fixed-format letters only, so its lock number is small; dev must carry the evidence. (e) Live letters with
+other layouts (a 2027 template) — conservative None remains the default. (f) Labelling 71 letters costs
+~2-3 h of agent time and ~20 min of the owner's.
+
 ### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional)
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
