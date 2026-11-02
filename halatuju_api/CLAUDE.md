@@ -1146,7 +1146,7 @@ rises above it via `--bottom-bar`); saved compare works on phones (`SavedCompare
 in the page-loaded `discovery` slice. M4 touches consent/PII: adversarial review before push; owner pick due on
 apply-form draft storage (rec. tab-only sessionStorage).
 
-### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 BUILT, NOT LIVE — announcements
+### ⚠ STATE AT 2026-11-01 — STUDENT MAINTENANCE SPRINT 8 LIVE 2026-11-02 (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200) — announcements
 
 **Next free migration numbers: scholarship 0200, courses 0092.** **scholarship 0199_announcements — MIGRATE FIRST by
 hand** (three new tables `announcements`, `announcement_reads`, `announcement_emails`, each RLS + one service_role
