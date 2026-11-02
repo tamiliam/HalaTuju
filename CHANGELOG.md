@@ -264,6 +264,9 @@ US$0.001 synthetic-image probe.
   2.1.0 pilot: 6/10 fully exact (2.0.0: 9/10 — issuer wording, a PISMP "PROGRAM" wrapper, one intake), US$0.00558
   a letter. **Money door (needs the owner):** a `not_offer_letter` document no longer sets the course-start year
   (`course_start_year` → award size, EPF evidence).
+- **Reader 2.2.0** (dev-tuned wording) **full run, RM6.09:** held-out 63/90 fully exact (stored 19), dev 91/126
+  (stored 31). Name never worse; NRIC blank on 16 letters that stored had right (never wrong) — 10 for want of
+  a profile IC in the corpus. Owner ruling recorded: a not_offer_letter document never sets the course-start year.
 - **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
   fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
   rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.

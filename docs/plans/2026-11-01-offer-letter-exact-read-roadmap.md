@@ -393,6 +393,21 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Reader 2.2.0** — wording tuned on DEV letters only (5-letter dev pilot, US$0.0297): issuer keeps an office
   printed WITH its institution or ministry, never an office alone; PISMP programme without a "PROGRAM" wrapper;
   a programme stops before a faculty line; a Roman session numeral stays Roman.
+- **Reader 2.2.0, full run (2026-11-02; 216 letters, `.fresh_s4c.json`; US$1.384 = RM6.09, plus the RM0.13 dev
+  pilot = RM6.22 of the RM9 cap; US$0.00641 a letter; no 402/429; 1 letter unreadable — the not-a-PDF file).**
+  Fully exact **held-out 63/90** (stored 19, S4 2.0.0 66) and **dev 91/126** (stored 31, S4 90). Right, stored →
+  2.2.0 — held-out: name 85 → 87, NRIC 89 → 85, institution 42 → 81, programme 66 → 86, intake 73 → 81,
+  reporting date 87 → 87, offer date 86 → 87, issuer 19 → 50, campus 47 → 80; dev: name 120 → 122, NRIC
+  124 → 113, institution 57 → 116, programme 86 → 121, intake 111 → 117, reporting date 124 → 122, offer date
+  122 → 123, issuer 43 → 46, campus 69 → 111.
+- **Name / NRIC per letter vs stored.** Name: none worse (held-out +2, dev +2). NRIC: **16 letters worse, all
+  exact → BLANK, none wrong** — held-out a184, a289, a365, a413; dev a102, a113, a121, a128, a137, a16, a181,
+  a408, a4, a87, a8, a93. Downstream: each reads `unreadable` — a red Name·IC chip that the verdict ladder counts,
+  never a wrong-person block (`person_red`), never a realign / link refusal (those refuse on `mismatch`). Why: 10
+  are `blanked_uncorroborated` — the model gave a source other than "label" and the CORPUS holds no profile IC for
+  them (the fetch gap, §2), so the guard could not corroborate; live, every application has its profile IC, so
+  those that are the student's own would read `match`. 6 are a blank read (no IC returned; one has a profile
+  and read `match` before). So the true loss live is likely ~6, and the source labelling needs a look first.
 - **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
   the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 
