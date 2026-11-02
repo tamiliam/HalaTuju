@@ -7397,3 +7397,15 @@ when it names the widest element, but not that element's CHILDREN: when a page o
 contact rows, fixed in M4b), it named a tab of the fixed tab bar instead of the real offender. Skip anything inside a
 fixed ancestor (the `measureBars` walk already does). (3) The rest of the student pages are M4c (roadmap), not debt.
 *(W · S)*
+
+### [TD-465] A course-start year can set the award by itself; QC and payments read reporting_date directly - high (money)
+
+**Raised 2026-11-02 by the offer exact-read S4 adversarial re-review.** (1) `award.course_start_unknown` has no
+production caller, so when `pathway_engine.course_start_year` returns `None`, `award.proposed_award_amount`
+pays an STPM student RM3,000 instead of RM1,000 — nothing holds the award for a human. (2) QC (`verdict.py`)
+and the payments screen (`views_admin/payments.py`) read `application.reporting_date` directly, so any rule about
+which dates count (e.g. "a not_offer_letter document never dates the course", deferred, `docs/decisions.md`
+2026-11-02) cannot be applied in one place. **Owner ruling for the fix:** the reporting date answers only
+"already in college, or starting soon?"; the reviewer sets the amount from the time left (one year RM2,000, six
+months RM1,000); a start year never sets the amount by itself. **Fix:** the money sprint after offer exact-read
+S4 (roadmap). *(B · M)*

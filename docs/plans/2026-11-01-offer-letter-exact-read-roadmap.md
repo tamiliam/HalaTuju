@@ -386,7 +386,7 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   later-pages calls the full set will need. **Before that re-run** the issuer rule should keep the office WITH
   its institution ("never an office ALONE"), and the PISMP rule should say "without a PROGRAM wrapper"
   (dev evidence only; the held-out pilot letters are not used to tune).
-- **Owner rulings 2026-11-02.** (1) A document scored `not_offer_letter` never sets `course_start_year`, so it
+- **Owner rulings 2026-11-02.** (1) *Superseded the same day: taken out of S4 and deferred to the money sprint below; S4 ships money exactly as main.* A document scored `not_offer_letter` never sets `course_start_year`, so it
   never feeds `award.proposed_award_amount`, `award.course_start_unknown` or `epf_evidence` (`docs/decisions.md`;
   stored reads too; the live reach is measured by the dry run, `not_offer_dated`). (2) The full re-run is
   approved, about RM6–7, hard cap RM9 for the tuning pilots and the run together.
@@ -429,6 +429,17 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
 - **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
   the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 
+### Money sprint (after S4; owner 2026-11-02) — the not_offer_letter ruling and the start-year amount
+- **Why:** taken OUT of S4 (owner "1", 2026-11-02): S4 ships the reader only, money exactly as main.
+- **Scope:** the deferred ruling (a `not_offer_letter` document never dates the course) together with TD-465:
+  `course_start_unknown` has no caller, so a `None` start year pays STPM RM3,000 instead of RM1,000; QC and
+  payments read `reporting_date` directly. Owner ruling: the reporting date answers only "already in college,
+  or starting soon?"; the reviewer sets the amount from the time left (one year RM2,000, six months RM1,000); a
+  start year never sets the amount by itself. App 329's 2024 from its own reporting date is correct.
+- **Tools ready:** the money-reach check (old vs new course-start year, `course_start_unknown`, award amount per
+  live application, read-only); the S4 branch's reverted change (`course_start.py`, commit `90fd9234`) as a
+  starting point.
+
 ### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.
 - **Scope:** `offer_parse.py` — FIRST the 48 known-format letters (STPM 9, matriculation 17, polytechnic 22; 27 PDF,
@@ -464,6 +475,9 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   (`is_offer_letter` in the answers) stays a DOCUMENT label (offer / portal page / not an offer); the bursary
   decision above is a separate layer.
 - **Goal:** real letters that the scorer rejects (e.g. some of the 14 polytechnic not_offer_letter) score genuine.
+- **Named case (2026-11-02, from the S4 money reach):** app 329, doc 3494 — a two-page photo (a TVETMARA
+  confirmation and a MARA / IKM offer) scored `not_offer_letter` against the POLYTECHNIC fingerprint, though it IS
+  an offer. It must score as an offer (public skills institutes are public offers, ruling 5).
 - **Scope:** `genuineness/results_doc.py`, `MODEL_VERSION` bump + History line, tests from real wording.
 - **Acceptance:** every letter labelled real and from a supported issuer scores genuine on dev and held-out;
   every rejected-rightly letter stays rejected. Dry run on live stored data first.

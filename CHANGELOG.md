@@ -269,6 +269,9 @@ US$0.001 synthetic-image probe.
   a profile IC in the corpus. Owner ruling recorded: a not_offer_letter document never sets the course-start year.
 - **Reader 2.3.0** (IC prompt only, guard unchanged): held-out 63/90, dev 89/126; the production dry run with
   the guard re-applied against the live profile IC: IC 3 unreadable → match, none lost, no mismatch. RM6.40.
+- **Money ruling taken OUT of S4 (owner, 2026-11-02):** `course_start_year`, `offer_reporting_date`, the
+  reporting-date sync and the backfill are main's again (`course_start.py` deleted); deferred to a money sprint
+  with TD-465. S4 ships the reader only; the IC guard fixes and reader 2.4.0 stay.
 - **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
   fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
   rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.

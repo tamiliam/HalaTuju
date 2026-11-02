@@ -1,9 +1,8 @@
 """The offer-field doors the S4 adversarial review added (2026-11-02, M2 + L4).
 
 * MONEY — `pathway_engine.course_start_year` / `started_before_cohort` (read by
-  `award.proposed_award_amount`, `award.course_start_unknown`, `epf_evidence`): a letter scored
-  `not_offer_letter` no longer dates the course. ⚠ A BEHAVIOUR CHANGE ON MAIN, for stored reads too —
-  it needs the owner's yes before it ships.
+  `award.proposed_award_amount`, `award.course_start_unknown`, `epf_evidence`): EXACTLY main's behaviour.
+  The not_offer_letter ruling was taken out of S4 and deferred to a money sprint (owner, 2026-11-02).
 * `blockers.document_unreadable_blockers`, the reporting bonus (`offer_reporting_bonus`, read by
   `verdict_ladder` and `promotion._offer_quality`), the IC the student is shown (`serializers` →
   `checklistsPathway.tsx`), the cockpit intake-year chip.
@@ -17,7 +16,6 @@ from types import SimpleNamespace
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.scholarship.award import course_start_unknown
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.offer_reader import clean_offer_fields
 from apps.scholarship.pathway_engine import (
@@ -37,50 +35,30 @@ def _offer(app, status='genuine', superseded=False, **fields):
         vision_run_at=timezone.now(), superseded_at=timezone.now() if superseded else None)
 
 
-class CourseStartYearTest(TestCase):
-    """MONEY: the bursary size and the EPF evidence read the course-start year."""
+class CourseStartYearIsMainsTest(TestCase):
+    """MONEY: S4 ships the reader only and money behaves EXACTLY as on main (owner, 2026-11-02). The
+    not_offer_letter money ruling is DEFERRED to its own money sprint (`docs/decisions.md`), so these pin
+    main's behaviour: any scored letter's intake dates the course, and its reporting date is synced."""
 
     def _app(self):
         return make_application('submitted', chosen_pathway='stpm')
 
-    def test_a_genuine_suspect_or_unscored_letter_dates_the_course(self):
-        for status in ('genuine', 'suspect', ''):
+    def test_any_scored_letter_dates_the_course_as_on_main(self):
+        for status in ('genuine', 'suspect', '', 'not_offer_letter'):
             app = self._app()
             _offer(app, status=status, intake='SESI 1-2025/2026')
             self.assertEqual(course_start_year(app), 2025, status)
 
-    def test_a_not_offer_document_never_dates_the_course(self):
-        app = self._app()
-        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026')
-        self.assertIsNone(course_start_year(app))
-        self.assertTrue(course_start_unknown(app))          # the award waits, never sized off a non-offer
-
-    def test_an_officer_typed_date_still_answers_when_the_letter_does_not(self):
-        app = self._app()
-        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026', reporting_date='17 Aug 2025')
-        app.reporting_date = datetime.date(2024, 3, 4)          # differs from the letter's: typed by a person
-        self.assertEqual(course_start_year(app), 2024)
-
-    def test_a_date_synced_from_the_non_offer_itself_does_not_date_the_course(self):   # S4 re-review H1
-        app = self._app()
-        _offer(app, status='not_offer_letter', intake='SESI 1-2025/2026', reporting_date='17 Aug 2025')
-        app.reporting_date = datetime.date(2025, 8, 17)         # the letter's own date, copied before scoring
-        self.assertIsNone(course_start_year(app))
-        self.assertTrue(course_start_unknown(app))
-
-    def test_the_sync_and_the_backfill_never_copy_a_non_offers_date(self):           # S4 re-review H1
+    def test_the_reporting_date_sync_and_backfill_read_are_mains(self):
         from apps.scholarship.pathway_engine import offer_reporting_date
         from apps.scholarship.services.offer_sync import sync_reporting_date_from_offer
         app = self._app()
-        fake = _offer(app, status='not_offer_letter', reporting_date='17 Aug 2025')
-        self.assertFalse(sync_reporting_date_from_offer(app, offer=fake))
+        doc = _offer(app, status='not_offer_letter', reporting_date='17 Aug 2025')
+        self.assertTrue(sync_reporting_date_from_offer(app, offer=doc))
         app.refresh_from_db()
-        self.assertIsNone(app.reporting_date)
-        self.assertIsNone(offer_reporting_date(app))            # what backfill_reporting_dates reads
-        real = self._app()
-        good = _offer(real, status='genuine', reporting_date='17 Aug 2025')
-        self.assertTrue(sync_reporting_date_from_offer(real, offer=good))
-        self.assertEqual(offer_reporting_date(real), datetime.date(2025, 8, 17))
+        self.assertEqual(app.reporting_date, datetime.date(2025, 8, 17))
+        self.assertEqual(offer_reporting_date(app), datetime.date(2025, 8, 17))
+        self.assertEqual(course_start_year(app), 2025)
 
 
 class OtherDoorsTest(TestCase):

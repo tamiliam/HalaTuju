@@ -1,19 +1,23 @@
 # Architectural Decisions — HalaTuju
 
-## A document scored not_offer_letter never sets the course-start year (owner, 2026-11-02)
+## The not_offer_letter money ruling is DEFERRED to its own money sprint (owner, 2026-11-02)
 
-**Context.** `pathway_engine.course_start_year` took the intake / reporting-date year from the latest offer
-letter whatever its genuineness, and that year feeds money: `award.proposed_award_amount` (via
-`started_before_cohort`), `award.course_start_unknown` and `income_engine.epf_evidence`. The S4 reader newly read
-an intake year on 2 corpus documents scored `not_offer_letter` (offer exact-read S4 adversarial review, M2).
+**Context.** The offer exact-read S4 review proposed that a document scored `not_offer_letter` never sets
+`pathway_engine.course_start_year` (which feeds `award.proposed_award_amount` via `started_before_cohort`,
+`award.course_start_unknown` and `income_engine.epf_evidence`). The owner first agreed ("1 yes"), but the
+re-review showed the change could not be closed inside S4: `course_start_unknown` has no production caller, so a
+`None` start year makes `proposed_award_amount` pay an STPM student RM3,000 instead of RM1,000; and QC
+(`verdict.py`) and the payments screen (`payments.py`) read `reporting_date` directly (TD-465).
 
-**Decision (owner, "1 yes").** A document scored `not_offer_letter` never sets `course_start_year`, so it never
-feeds `proposed_award_amount`, `course_start_unknown` or `epf_evidence`. Genuine, suspect and unscored letters
-still date the course; an officer's `reporting_date` still answers when no letter does. Applies to STORED reads
-too, the day it ships (`c4165cd2`, `tests/test_offer_reader_doors_more.py`). How many live applications it moves
-cannot be told from the code: `eval/offer_s4_dry_run.py` counts it (`not_offer_dated:stored` / `:s4`).
+**Decision (owner, "1", 2026-11-02).** The money ruling comes OUT of S4 and goes to its own money sprint. S4 ships
+the reader only, and money behaves EXACTLY as on main: `course_start_year`, `offer_reporting_date`,
+`sync_reporting_date_from_offer` and `backfill_reporting_dates` are main's (the S4 branch's change was reverted;
+`tests/test_offer_reader_doors_more.py` pins main's behaviour). **Owner ruling for that sprint (Cockpit session,
+2026-11-02):** the reporting date answers only "already in college, or starting soon?"; the REVIEWER sets the
+amount from the time left (one year RM2,000, six months RM1,000); a start year must never set the amount by
+itself. App 329's start year 2024, from its own reporting date, is correct.
 
-**Revisit if:** a non-offer document type is ever accepted as proof of the course start.
+**Revisit at:** the money sprint (roadmap, after S4).
 
 ## Surveys: status from the dates, questions lock at the first answer, one response per scholar, emails once per kind behind one switch — 2026-11-02 (owner rulings, student maintenance S9)
 
