@@ -1152,6 +1152,32 @@ phone-only dividers are `max-md:divide-y` (never `md:divide-y-0`); `BrandLogo` i
 Budgets lowered: median 147, `/profile` 194, `/scholarship/application` 208. **Since M4c:** every student page uses rule 15 and the tab bar; only rows go inside a `PHONE_ROWS`
 list (a button inside it loses its own border); the rule-15 guard detects cards by ground + radius, with or
 without a border. NEXT: M5 sponsor portal (its own phone nav), then M6 admin + reviewer cockpit (may split), M7, M8.
+
+### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 10 BUILT, NOT LIVE (branch maint-s7) — development modules
+
+**Next free migration numbers: scholarship 0202, courses 0092.** **scholarship 0201_development_modules — MIGRATE
+FIRST by hand** (five new tables `development_modules`, `module_lessons`, `module_progress`, `module_lesson_reads`,
+`module_emails`, each RLS + one service_role policy; the `student_email_templates.kind` choice `module_published`
+needs no SQL; DDL, pre-check, ledger row and rollback in its docstring), then the Security Advisor, then API, then
+web, then **create the hourly Cloud Scheduler job `halatuju-module-emails`** (job `module-emails`;
+`CronRunView.JOBS` -> `send_module_emails`; `cron_health.EXPECTED_CADENCE` HOURLY already expects it, so the health
+light goes red after two missed hours without it). No new bucket: files live in `b40-documents` (lesson
+`<org>/development/<module>/<uuid>`, her task `<org>/<app>/growth-<module>/<uuid>`; `cleanup_orphan_blobs` knows
+both). Rules: `apps/scholarship/development.py` (`may_make`, `module_status`, `modules_for_file`,
+`mark_lesson_read`, `submit_task`, create / update / archive / delete), `development_progress.py` (rows, Progress,
+CSV, `review`, the scholar file's tab, `mentor_rows`), `development_files.py` (keys, `verify` = the bytes' type and
+size, signed links), `development_emails.py` (`send_due_module_emails`, `remind_not_done`); staff fence
+`views_admin/development.py` (`admin/scholarship/development/`, `<id>/` PATCH/DELETE, `<id>/progress/`,
+`<id>/progress/<app>/file|review/`, `<id>/csv/`, `<id>/archive|remind/`, `<id>/lessons/<lid>/file/` (+ `sign/`),
+`admin/scholarship/scholars/<id>/development/`); her `scholarship/bursary/growth/` (+ `<id>/`,
+`<id>/lessons/<lid>/read|file/`, `<id>/task/` (+ `sign/`, `file/`)); summary keys `growth_tab`, `growth_to_do`; the
+mentor's `admin/mentor/students/<id>/` gains `modules` (no links), and the mentor-only
+`admin/mentor/students/<id>/modules/<module>/file/` signs an upload on the tap (`mentor_methods`; review fix). Routes in `urls_development.py`. `storage.download_object`
+gained `max_bytes`. Web: `/admin/programme/development` (+ `[id]`, lazy, Mobile `can`), the scholar file's Growth
+tab (lazy `ScholarGrowth`), the mentor page's Growth section, the bursary Growth tab (lazy, `bursaryTabs.growth`).
+**NEXT (maintenance stream): the lead's review, then deploy Sprint 10; then the parked Team tables T1–T4
+(`docs/plans/2026-11-01-team-tables-roadmap.md`) only on the owner's word.**
+
 ### Offer letters read exactly (separate stream) — S1–S4 LIVE 2026-11-02 (main cfd02d91; api-01237-gdp), NEXT = S5
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. Reader `offer_reader.py` (`OFFER_READER_VERSION`

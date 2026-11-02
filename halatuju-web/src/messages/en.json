@@ -6404,6 +6404,7 @@
         "letters": "Letters",
         "mentoring": "Mentoring",
         "surveys": "Surveys",
+        "growth": "Growth",
         "activity": "Activity"
       },
       "card": {
@@ -6790,6 +6791,26 @@
         "waiting": "Still to answer: {list}",
         "none": "No survey answered yet.",
         "sent": "answered {date}"
+      },
+      "growth": {
+        "title": "Growth",
+        "loadError": "The modules could not be loaded.",
+        "none": "No development modules yet.",
+        "readOf": "{read} of {count} lessons read",
+        "sentOn": "task sent {date}",
+        "notSent": "task not sent",
+        "noTask": "no task",
+        "reviewed": "reviewed {date}",
+        "late": "Late",
+        "done": "Done",
+        "inProgress": "In progress",
+        "notStarted": "Not started",
+        "reflection": "Reflection",
+        "file": "File: {name}",
+        "openFile": "Open the file",
+        "comment": "Comment: {comment}",
+        "progress": "Progress",
+        "mentorNote": "Read-only. The organisation’s staff review the work."
       }
     },
     "contracts": {
@@ -7817,7 +7838,8 @@
           "letter_issued": "A letter has been issued",
           "mentor_assigned": "You have a mentor",
           "announcement": "An announcement",
-          "survey_open": "A survey for you"
+          "survey_open": "A survey for you",
+          "module_published": "A new module"
         },
         "when": {
           "results_due": "Sent before a result is due (Configuration: reminder lead and how often), while nothing is waiting for review.",
@@ -7852,7 +7874,8 @@
           "letter_issued": "When an officer issues her a formal letter. It asks her to read it and confirm by the reply date.",
           "mentor_assigned": "Sent when staff assign or change the student's mentor, with the mentor's name, area and contact. Safe to switch off — staff can still tell the student. Never sent to the mentor.",
           "announcement": "Sent within the hour of an announcement going out, when staff choose to email it, once to each scholar it is for (Programme → Announcements). The announcement's own title and message go inside. Safe to switch off — the news is on My Bursary either way.",
-          "survey_open": "Sent within the hour of a survey opening, when staff choose to email it, once to each scholar it is for (Programme → Surveys) — and, when staff ask for it, a reminder 3 days before it closes to those who have not answered. The same wording serves both; the first line says which. Safe to switch off — the survey is on My Bursary either way."
+          "survey_open": "Sent within the hour of a survey opening, when staff choose to email it, once to each scholar it is for (Programme → Surveys) — and, when staff ask for it, a reminder 3 days before it closes to those who have not answered. The same wording serves both; the first line says which. Safe to switch off — the survey is on My Bursary either way.",
+          "module_published": "Sent within the hour of a development module going live, when staff choose to email it, once to each scholar it is for (Programme → Development) — and, when staff ask for it, a reminder 3 days before its due date to those not done. The same wording serves both; the first line says which. Safe to switch off — the module is on My Bursary either way."
         },
         "language": {
           "en": "English",
@@ -8216,7 +8239,8 @@
         "refresh-reminder": "Course catalogue reminder",
         "decision-emails": "Decision emails",
         "announcement-emails": "Announcement emails",
-        "survey-emails": "Survey emails"
+        "survey-emails": "Survey emails",
+        "module-emails": "Module emails"
       }
     },
     "platformBilling": {
@@ -8863,6 +8887,208 @@
         "loadError": "The results could not be loaded.",
         "footnote": "Each scholar’s answers are also on their file (Surveys tab). Staff only; never sponsors or partners."
       }
+    },
+    "development": {
+      "nav": "Development",
+      "title": "Development",
+      "intro": "Short modules that help your scholars grow. They do them on My Bursary → Growth.",
+      "new": "New module",
+      "tabsAria": "Modules by status",
+      "tab": {
+        "published": "Published",
+        "scheduled": "Scheduled",
+        "draft": "Drafts",
+        "archived": "Archived"
+      },
+      "col": {
+        "module": "Module",
+        "for": "For",
+        "due": "Due",
+        "done": "Done",
+        "actions": "Actions"
+      },
+      "forAll": "All scholars ({count})",
+      "forGift": "{name} ({count})",
+      "by": "by {name}",
+      "byRole": "by {name} ({role})",
+      "lessons": "{count} lessons",
+      "oneLesson": "1 lesson",
+      "task": {
+        "none": "no task",
+        "reflection": "a written reflection",
+        "upload": "upload a file"
+      },
+      "noDue": "No due date",
+      "doneOf": "{n} of {count}",
+      "toReview": "{count} to review",
+      "started": "started",
+      "action": {
+        "progress": "Progress",
+        "edit": "Edit",
+        "archive": "Archive",
+        "restore": "Put back",
+        "delete": "Delete"
+      },
+      "confirm": {
+        "archive": "Archive “{title}”? Scholars who have not started will no longer see it; those who started keep a read-only view.",
+        "delete": "Delete “{title}”? This cannot be undone."
+      },
+      "done": {
+        "published": "Published. Scholars can do it now on My Bursary → Growth.",
+        "scheduled": "Scheduled. It goes live at the time you chose.",
+        "draft": "Saved as a draft. Scholars cannot see it.",
+        "saved": "Saved.",
+        "archived": "Archived.",
+        "deleted": "Deleted.",
+        "restored": "Put back. Scholars can see it again."
+      },
+      "empty": {
+        "published": "No published modules.",
+        "scheduled": "Nothing scheduled.",
+        "draft": "No drafts.",
+        "archived": "Nothing archived."
+      },
+      "loadError": "The modules could not be loaded.",
+      "chooseGift": "Choose a gift first (Programmes), so we know whose scholars these are for.",
+      "footnote": "Optional for scholars. A missed due date shows as “Late” to staff and the mentor; it never stops money. Once a scholar has started, the task type is locked; you can still fix lesson text and add or remove lessons.",
+      "form": {
+        "newTitle": "New module",
+        "editTitle": "Edit module",
+        "title": "Title",
+        "summary": "Short summary (shown on the list)",
+        "for": "For",
+        "publish": "Publish",
+        "now": "Now",
+        "asIs": "As it is",
+        "later": "At a date and time",
+        "date": "Date",
+        "time": "Time (24-hour, e.g. 21:30)",
+        "due": "Due date (optional)",
+        "lessons": "Lessons",
+        "lessonTitle": "Lesson title",
+        "lessonBody": "Text (plain text; leave a blank line between paragraphs; links work)",
+        "video": "Video link (YouTube or Vimeo, optional)",
+        "file": "File (PDF, JPEG or PNG, up to 10 MB)",
+        "fileSaveFirst": "Save the module first, then attach a file to this lesson.",
+        "fileOr": "A lesson has a video link or a file, not both.",
+        "fileRemove": "Remove the file",
+        "fileOpen": "Open",
+        "uploading": "Uploading…",
+        "addLesson": "+ Add a lesson",
+        "lessonHint": "Each lesson: a title, text, and optionally one video link (YouTube or Vimeo) or one file (PDF or image, up to 10 MB).",
+        "edit": "Edit",
+        "moveUp": "Move up",
+        "remove": "Remove",
+        "doneLesson": "Done with this lesson",
+        "untitled": "(no title yet)",
+        "kind": {
+          "text": "Text",
+          "video": "Video",
+          "file": "File"
+        },
+        "words": "{count} words",
+        "task": "Task at the end",
+        "taskKind": {
+          "none": "No task",
+          "reflection": "Written reflection",
+          "upload": "Upload a file"
+        },
+        "prompt": "What should they write about?",
+        "promptUpload": "What should they upload?",
+        "emailPublish": "Email the scholars when it is published",
+        "emailNote": "Sent within the hour, once to each scholar it is for, while “A new module” is switched on in Student communications.",
+        "emailOff": "The “A new module” email is switched off in Student communications, so nobody will be emailed.",
+        "remind": "Remind those not done, 3 days before the due date",
+        "remindNeedsDue": "Set a due date to remind.",
+        "lockNote": "Once a scholar has started, the task type, who it is for and when it goes live are locked. You can still fix lesson text and add or remove lessons.",
+        "lockedNote": "Scholars have started: the task type, who it is for and when it goes live are locked. Lessons, texts, the due date and the emails can still change."
+      },
+      "btn": {
+        "publish": "Publish",
+        "schedule": "Schedule",
+        "draft": "Save as draft",
+        "save": "Save changes"
+      },
+      "error": {
+        "title_required": "Give it a title.",
+        "title_too_long": "The title is too long (150 characters at most).",
+        "title_newline": "The title must be one line.",
+        "summary_too_long": "The summary is too long (500 characters at most).",
+        "bad_audience": "Choose who it is for again.",
+        "bad_publish_at": "Check the date and time.",
+        "bad_due_on": "Check the due date.",
+        "due_before_publish": "The due date is before it goes live.",
+        "remind_needs_due": "A reminder needs a due date.",
+        "bad_task_kind": "Choose the task again.",
+        "prompt_required": "Say what they should write about.",
+        "prompt_too_long": "The task text is too long (1,000 characters at most).",
+        "no_lessons": "Add at least one lesson.",
+        "too_many_lessons": "Twenty lessons at most.",
+        "bad_lesson": "A lesson could not be matched. Reload the page and try again.",
+        "bad_lessons": "A lesson could not be read.",
+        "lesson_title_required": "Each lesson needs a title.",
+        "lesson_title_too_long": "A lesson title is too long (150 characters at most).",
+        "lesson_title_newline": "A lesson title must be one line.",
+        "lesson_body_too_long": "A lesson’s text is too long (10,000 characters at most).",
+        "bad_video": "A video link must be a YouTube or Vimeo address starting with https://.",
+        "video_too_long": "A video link is too long.",
+        "video_or_file": "A lesson has a video link or a file, not both.",
+        "task_locked": "Scholars have started, so the task type cannot change.",
+        "started_locked": "Scholars have started, so this cannot change.",
+        "archive_instead": "Scholars have started this module: archive it instead.",
+        "unsupported_format": "That file is not a PDF, JPEG or PNG.",
+        "file_too_large": "That file is over 10 MB.",
+        "upload_incomplete": "The file did not finish uploading. Please try again.",
+        "storage_unavailable": "File storage is not available just now. Please try again.",
+        "badTime": "Check the date and time (24-hour, e.g. 09:00).",
+        "atLesson": "(lesson {n})",
+        "generic": "That could not be saved. Please try again."
+      },
+      "progress": {
+        "back": "Development",
+        "title": "{title} · progress",
+        "doneOf": "{n} of {count} done ({pct}%)",
+        "toReview": "{count} to review",
+        "due": "due {date}",
+        "csv": "Download CSV",
+        "csvFailed": "The CSV could not be downloaded. Please try again.",
+        "remind": "Remind those not done",
+        "remindOff": "Reminders are off: the “A new module” email is switched off in Student communications.",
+        "confirmRemind": "Email a reminder to the scholars not done? Each is reminded once only.",
+        "reminded": "Reminders sent: {count}.",
+        "remindFailed": "The reminders could not be sent. Please try again.",
+        "tabsAria": "Scholars by progress",
+        "tab": {
+          "to_review": "To review",
+          "done": "Done",
+          "in_progress": "In progress",
+          "not_started": "Not started"
+        },
+        "col": {
+          "scholar": "Scholar",
+          "lessons": "Lessons",
+          "task": "Task",
+          "mentor": "Mentor",
+          "actions": "Actions"
+        },
+        "lessonsOf": "{read} of {count}",
+        "sentOn": "Sent {date}",
+        "late": "Late",
+        "read": "Read",
+        "close": "Close",
+        "reflection": "{name} · reflection",
+        "upload": "{name} · file",
+        "openFile": "Open the file ({name})",
+        "comment": "Comment for the scholar (optional)",
+        "markReviewed": "Mark reviewed",
+        "reviewedOn": "Reviewed {date} by {who}",
+        "updateReview": "Update the review",
+        "saved": "Marked reviewed. The scholar sees your comment.",
+        "reviewFailed": "That could not be saved. Please try again.",
+        "empty": "Nobody here.",
+        "loadError": "The progress could not be loaded.",
+        "footnote": "The same work shows on each scholar’s file (Growth tab) and, for their own students, on the mentor’s My students page. Staff and the mentor only; never sponsors or partners. “Late” appears after the due date for those not done."
+      }
     }
   },
   "documentsTab": {
@@ -9064,6 +9290,71 @@
       "loadFailed": "Your surveys could not be loaded. Please try again.",
       "empty": "No surveys for you right now.",
       "footnote": "The red number counts the open surveys you have not answered yet."
+    },
+    "growth": {
+      "tab": "Growth",
+      "toDo": "{count} not done",
+      "due": "Due {date}",
+      "noDue": "No due date",
+      "lessons": "{count} lessons",
+      "oneLesson": "1 lesson",
+      "task": {
+        "reflection": "a reflection",
+        "upload": "a file to upload"
+      },
+      "withTask": "{lessons} + {task}",
+      "readOf": "{read} of {count} lessons read",
+      "done": "Done",
+      "reviewed": "reviewed by {org}",
+      "sentOn": "sent {date}",
+      "start": "Start",
+      "continue": "Continue",
+      "open": "Open",
+      "back": "Growth",
+      "lessonOf": "Lesson {n} of {count}",
+      "watch": "Watch the video (opens in a new tab)",
+      "openFile": "Open the file: {name}",
+      "markRead": "I have read this — next lesson",
+      "markLast": "I have read this",
+      "read": "Read",
+      "prev": "Previous lesson",
+      "next": "Next lesson",
+      "toTask": "Go to the task",
+      "taskTitle": {
+        "reflection": "Your reflection",
+        "upload": "Your file"
+      },
+      "send": {
+        "reflection": "Send my reflection",
+        "upload": "Send my file"
+      },
+      "change": {
+        "reflection": "Save my changes",
+        "upload": "Replace my file"
+      },
+      "chooseFile": "A PDF, JPEG or PNG, up to 10 MB",
+      "yourFile": "Your file: {name}",
+      "sent": "Sent {date}. Thank you.",
+      "who": "{org} staff and your mentor can read it. Sponsors never see it. You can change it until staff mark it reviewed.",
+      "reviewedOn": "Reviewed on {date}.",
+      "comment": "Comment from {org}: {comment}",
+      "lessonsFirst": "Read every lesson first; then the task opens.",
+      "finished": "You have finished this module. Well done.",
+      "readOnly": "This module is closed. You can still read it and what you sent.",
+      "error": {
+        "text_required": "Please write something first.",
+        "text_too_long": "That is too long (5,000 characters at most).",
+        "lessons_first": "Read every lesson first.",
+        "reviewed": "Staff have reviewed it, so it can no longer be changed.",
+        "module_closed": "This module is closed.",
+        "unsupported_format": "That file is not a PDF, JPEG or PNG.",
+        "file_too_large": "That file is over 10 MB.",
+        "upload_incomplete": "The file did not finish uploading. Please try again.",
+        "generic": "That did not work. Please try again."
+      },
+      "loadFailed": "Your modules could not be loaded. Please try again.",
+      "empty": "No modules for you yet.",
+      "footnote": "Modules are optional and never affect your bursary. The red number counts the ones not done yet."
     }
   }
 }

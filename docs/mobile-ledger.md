@@ -7,7 +7,7 @@
 Baseline last updated **2026-11-02** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
-**99 routes:** 66 Must · 27 Can · 6 Desktop-only.
+**101 routes:** 66 Must · 29 Can · 6 Desktop-only.
 **36 measured** (public page or sandbox surface), **28 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
@@ -50,6 +50,8 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 6 | ❌ |  |
 | `/admin/programme/announcements` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/overview` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/programme/surveys` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/surveys/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |

@@ -8,6 +8,7 @@ import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import type { MeetingMode } from './mentoring'
 import type { ScholarStanding } from './scholars'
+import type { WorkRow } from './development'
 
 export interface HelpAsked { university: boolean; scholarship: boolean; flagged: boolean }
 
@@ -59,6 +60,8 @@ export interface MyStudent {
   standing: ScholarStanding | 'no_result_yet'
   organisation: string
   meetings: MyMeeting[]
+  /** S10: their development modules and work, read-only (a short link on an uploaded task). */
+  modules?: WorkRow[]
 }
 
 export interface MyMeetingBody {
@@ -79,6 +82,12 @@ export async function getMyStudents(options?: ApiOptions) {
 /** 404 when this is not (or no longer) one of the caller's current students. */
 export async function getMyStudent(id: number, options?: ApiOptions) {
   return adminFetch<MyStudent>(`${BASE}${id}/`, options)
+}
+
+/** S10: a short signed link to the student's uploaded development-module task, minted on the tap. 404 when it
+ *  is not (or no longer) the caller's current student, the student cannot see the module, or there is no upload. */
+export async function myStudentTaskFile(id: number, moduleId: number, options?: ApiOptions) {
+  return adminFetch<{ url: string; expires_in: number }>(`${BASE}${id}/modules/${moduleId}/file/`, options)
 }
 
 /** Refusals as `code`: bad_date, future_date, before_assignment, bad_mode, bad_minutes, notes_required,

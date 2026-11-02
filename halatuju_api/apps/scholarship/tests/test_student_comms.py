@@ -250,7 +250,7 @@ class TestTheSettingsTab(TestCase):
     def test_fenced_to_the_callers_own_organisation(self):
         body = authed_client(self.admin).get(API).json()
         self.assertEqual(body['organisation']['code'], self.mine.code)
-        self.assertEqual(len(body['templates']), 21)   # 7 kinds x 3 (S6b letter, S7b mentor, S8 announcement, S9 survey)
+        self.assertEqual(len(body['templates']), 24)   # 8 kinds x 3 (S6b letter, S7b mentor, S8, S9 survey, S10 module)
         self.assertNotIn('THEIRS', [t['subject'] for t in body['templates']])
         self.assertEqual(authed_client(self.admin).get(API, {'org': self.theirs.code}).status_code, 404)
         r = authed_client(self.admin).put(API, {'kind': 'results_due', 'language': 'en', 'subject': 'Mine',

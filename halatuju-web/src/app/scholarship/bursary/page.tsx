@@ -35,6 +35,7 @@ import BursaryLetters from '@/components/bursary/BursaryLetters'
 import LazyBursaryMentoring from '@/components/bursary/LazyBursaryMentoring'
 import LazyBursaryNews from '@/components/bursary/LazyBursaryNews'
 import LazyBursarySurveys from '@/components/bursary/LazyBursarySurveys'
+import LazyBursaryGrowth from '@/components/bursary/LazyBursaryGrowth'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import { formatDate } from '@/lib/formatDate'
 import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
@@ -55,7 +56,7 @@ const REVIEW_TONE: Record<string, string> = {
 }
 const GRADUATED_TONE = 'bg-positive-fill text-positive-fill-ink'
 
-type Tab = 'overview' | 'results' | 'funds' | 'contract' | 'letters' | 'news' | 'surveys' | 'mentoring'
+type Tab = 'overview' | 'results' | 'funds' | 'contract' | 'letters' | 'news' | 'surveys' | 'growth' | 'mentoring'
 const TABS: readonly Tab[] = ['overview', 'results', 'funds', 'contract']
 /** How many of her categories the Overview's funds card names before "See all spending". */
 const OVERVIEW_CATEGORIES = 4
@@ -147,6 +148,8 @@ export default function BursaryPage() {
         if (summary.news_tab && new URLSearchParams(window.location.search).get('tab') === 'news') setTab('news')
         // S9: the survey emails link to `?tab=surveys`.
         if (summary.surveys_tab && new URLSearchParams(window.location.search).get('tab') === 'surveys') setTab('surveys')
+        // S10: the module emails link to `?tab=growth`.
+        if (summary.growth_tab && new URLSearchParams(window.location.search).get('tab') === 'growth') setTab('growth')
         await loadAll(summary.application_id, token)
         if (active) setLoading(false)
       })
@@ -297,12 +300,14 @@ export default function BursaryPage() {
           {[...TABS, ...(app?.has_letters ? (['letters'] as const) : []),
             ...(app?.news_tab ? (['news'] as const) : []),
             ...(app?.surveys_tab ? (['surveys'] as const) : []),
+            ...(app?.growth_tab ? (['growth'] as const) : []),   // S10: a live module for her, or one she started
             ...(app?.mentoring_tab ? (['mentoring'] as const) : [])].map((k) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
               className={`h-11 rounded-full border px-4 md:h-10 text-sm font-medium ${tab === k
                 ? 'border-brand-shape bg-brand-fill text-brand-fill-ink'
                 : 'border-ground-300 bg-ground-0 text-ground-700'}`}>
-              {t(k === 'letters' || k === 'mentoring' || k === 'news' || k === 'surveys' ? `bursaryTabs.${k}.tab` : `scholarship.bursary.tab.${k}`)}
+              {t(k === 'letters' || k === 'mentoring' || k === 'news' || k === 'surveys' || k === 'growth'
+                ? `bursaryTabs.${k}.tab` : `scholarship.bursary.tab.${k}`)}
               {k === 'news' && !!app?.news_unread && (
                 <span className="ml-1.5 inline-block min-w-[1.25rem] rounded-full bg-critical-fill px-1.5 text-xs text-critical-fill-ink"
                   data-testid="news-unread" aria-label={t('bursaryTabs.news.unread', { count: String(app.news_unread) })}>
@@ -313,6 +318,12 @@ export default function BursaryPage() {
                 <span className="ml-1.5 inline-block min-w-[1.25rem] rounded-full bg-critical-fill px-1.5 text-xs text-critical-fill-ink"
                   data-testid="surveys-to-answer" aria-label={t('bursaryTabs.surveys.toAnswer', { count: String(app.surveys_to_answer) })}>
                   {app.surveys_to_answer}
+                </span>
+              )}
+              {k === 'growth' && !!app?.growth_to_do && (
+                <span className="ml-1.5 inline-block min-w-[1.25rem] rounded-full bg-critical-fill px-1.5 text-xs text-critical-fill-ink"
+                  data-testid="growth-to-do" aria-label={t('bursaryTabs.growth.toDo', { count: String(app.growth_to_do) })}>
+                  {app.growth_to_do}
                 </span>
               )}
             </button>
@@ -331,6 +342,8 @@ export default function BursaryPage() {
           onRead={(n) => setApp((a) => (a ? { ...a, news_unread: n } : a))} />}
         {tab === 'surveys' && <LazyBursarySurveys token={token}
           onCount={(n) => setApp((a) => (a ? { ...a, surveys_to_answer: n } : a))} />}
+        {tab === 'growth' && <LazyBursaryGrowth token={token}
+          onCount={(n) => setApp((a) => (a ? { ...a, growth_to_do: n } : a))} />}
         {tab === 'letters' && (
           <BursaryLetters token={token} onAcknowledged={() => setApp((a) => (a ? {
             ...a, letters_to_acknowledge: Math.max((a.letters_to_acknowledge ?? 1) - 1, 0) } : a))} />

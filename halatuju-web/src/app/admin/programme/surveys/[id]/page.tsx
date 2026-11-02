@@ -11,7 +11,7 @@ import { useProgrammeScope } from '@/lib/programmeScopeCore'
  *
  * ⚠ ITS OWN CHUNK (`lazySource`), like the Surveys list: the route carries only this loader.
  */
-const SurveyResults = lazySource(() => import('@/components/surveys/SurveyResults').then((m) => m.default))
+const SurveyResults = lazySource(() => import('@/components/surveys/screens').then((m) => m.SurveyResults))
 
 export default function SurveyResultsPage() {
   const params = useParams()

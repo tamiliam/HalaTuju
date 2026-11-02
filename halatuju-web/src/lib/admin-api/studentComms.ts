@@ -7,6 +7,7 @@ export type StudentEmailKind = 'results_due' | 'results_overdue' | 'result_queri
   | 'mentor_assigned'   // S7b
   | 'announcement'      // S8: the wrapper around an announcement's own title and message
   | 'survey_open'       // S9: a survey is open / a reminder (one wording, `{survey_note}` says which)
+  | 'module_published'  // S10: a development module is ready / a reminder (one wording, `{module_note}` says which)
 export type StudentEmailLanguage = 'en' | 'ms' | 'ta'
 
 export interface StudentEmailTemplate {

@@ -12,7 +12,9 @@ hourly `announcement-emails` job): the organisation words the WRAPPER; the annou
 message are inserted as staff wrote them (`announcement_title`, `announcement_body`). S9 added ``survey_open``
 (switchable, sent by the hourly `survey-emails` job): ONE wording for both survey emails — the opening one and
 the reminder — the difference carried by `{survey_note}`, a line the code fills in her language
-(`survey_emails.NOTES`).
+(`survey_emails.NOTES`). S10 added ``module_published`` (switchable, sent by the hourly `module-emails` job): ONE
+wording for the "a new module is ready" email and the reminder before its due date, `{module_note}` saying which
+(`development_emails.NOTES`) and `{due_note}` the due date, or nothing.
 
 WHERE THE WORDS LIVE. The platform's default wording is HERE, in code (``DEFAULTS``). An organisation
 that edits a letter (Organisation → Settings → Student communications) gets its own
@@ -38,7 +40,7 @@ from . import email_templates
 from .models import StudentEmailTemplate
 
 KINDS = ('results_due', 'results_overdue', 'result_queried', 'letter_issued', 'mentor_assigned', 'announcement',
-         'survey_open')
+         'survey_open', 'module_published')
 #: The kinds `MAINTENANCE_REMINDERS_ENABLED` holds back. The letter notice is NOT one of them: a
 #: letter is a formal act by an officer, and she learns of it by this email (S6b, locked).
 PLATFORM_SWITCHED = frozenset({'results_due', 'results_overdue', 'result_queried'})
@@ -59,6 +61,9 @@ PLACEHOLDERS = {
     # S9: the survey as staff named it, its closing day, and the line that says "new" or "a reminder";
     # `{link}` opens My Bursary on its Surveys tab.
     'survey_open': _COMMON + ('survey_title', 'closes_on', 'survey_note'),
+    # S10: the module as staff named it, the line that says "new" or "a reminder", and "please finish it by
+    # …" (empty without a due date); `{link}` opens My Bursary on its Growth tab.
+    'module_published': _COMMON + ('module_title', 'module_note', 'due_note'),
 }
 
 DEFAULTS = {
@@ -187,7 +192,23 @@ DEFAULTS = {
                '"கணக்கெடுப்புகள்" பகுதியில் {closes_on} வரை இதற்குப் பதிலளிக்கலாம்:\n{link}\n\nஉங்கள் பதில்கள் '
                '{programme} குழுவுக்குச் செல்லும். கேள்விகள் இருந்தால் {support}-க்கு எழுதுங்கள்.\n\n{signoff}'),
     },
+    # S10: a development module for her — "it is ready" and, 3 days before its due date, the reminder (the same
+    # wording; `{module_note}` says which). Switchable: the module is on My Bursary -> Growth either way.
+    'module_published': {
+        'en': ('{programme}: {module_title}',
+               'Dear {name},\n\n{module_note}\n\n{module_title}\n{due_note}\n\nYou can do it on your My Bursary '
+               'page, under Growth:\n{link}\n\nIf you have a question, write to {support}.\n\n{signoff}'),
+        'ms': ('{programme}: {module_title}',
+               'Salam {name},\n\n{module_note}\n\n{module_title}\n{due_note}\n\nAnda boleh melakukannya di '
+               'halaman Biasiswa Saya, di bawah Perkembangan:\n{link}\n\nJika ada pertanyaan, tulis kepada '
+               '{support}.\n\n{signoff}'),
+        'ta': ('{programme}: {module_title}',
+               'அன்புள்ள {name},\n\n{module_note}\n\n{module_title}\n{due_note}\n\nஎனது உதவித்தொகை பக்கத்தின் '
+               '"வளர்ச்சி" பகுதியில் இதைச் செய்யலாம்:\n{link}\n\nகேள்விகள் இருந்தால் {support}-க்கு '
+               'எழுதுங்கள்.\n\n{signoff}'),
+    },
 }
+
 
 #: Month names for a date in a student's email, in her language ("31 January 2027").
 MONTHS = {

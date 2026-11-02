@@ -7427,7 +7427,21 @@ awarded application and its consent read). The other swept screens have surfaces
 adding them, older than M4c: the SPM block's grade pickers (`SpmResultsBlock.tsx`, `w-20`) clip "Grade" to "Grad‹" once
 rule 2 raises their text to 16 px. *(W · S)*
 
-### [TD-467] The quizzes' questions and answers are English in Tamil and Malay - low
+### [TD-467] The private bucket has no allowed_mime_types / file_size_limit; the older upload flows sign with upsert - medium
+
+**Raised 2026-11-02 at the student maintenance S10 review.** `b40-documents` enforces neither a MIME allowlist nor a
+size limit at the bucket, so every signed upload URL (documents, results slips, request screenshots, development
+modules) accepts any bytes of any size until the record step looks; only the development-module record step reads
+the object back and types it from its bytes (`development_files.verify`). Set bucket-level `allowed_mime_types` (PDF,
+JPEG, PNG, the image types the document flow takes, HEIC) and a `file_size_limit` matching the largest per-org cap,
+after checking every flow's legitimate types. S10 also signs its own uploads with `x-upsert: false`
+(`storage.create_signed_upload_url(upsert=False)`) so a checked, recorded object cannot be overwritten through a still
+valid URL; the document, results-slip and request-attachment flows still sign without the header and their browsers
+PUT with `x-upsert: true` — move them to `upsert=False` once each flow's replace path is confirmed to use a fresh key.
+The upload throttle (`UploadRateThrottle`) covers the document door and S10's task upload, not the staff lesson-file
+sign / record. *(W · M)*
+
+### [TD-468] The quizzes' questions and answers are English in Tamil and Malay - low
 
 **Raised 2026-11-02 at the Mobile M4c close** (seen on the quiz screenshot): the frame is translated ("Question 1 of 2",
 Next / Previous, "pick up to 2") but the question and the answer cards read in English for a Tamil or Malay student.

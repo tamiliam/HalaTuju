@@ -259,7 +259,7 @@ offset). `guard%` 13 -> 12 moved with the denominator (new non-guard test files 
 
 **0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since cef8e42 holds Mobile M4c and its quiz
 follow-up (web only), Sprint 9 and the offer exact-read S4. Moved, none by M4c: `hot#1` is now `vision.py` 32.6 and
-`fix%` 51 -> 50 (the offer-reader work); `td_open` 176 -> 180 (TD-465 offer S4; TD-466, TD-467 M4c leftovers; others).
+`fix%` 51 -> 50 (the offer-reader work); `td_open` 176 -> 180 (TD-465 offer S4; TD-466, TD-468 M4c leftovers; others).
 **Accepted.**
 
 ### 2026-11-02 (cef8e42, Mobile-native M4b close) — 0 FAIL

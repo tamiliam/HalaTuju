@@ -37,5 +37,5 @@
 ## Carried forward
 - M5 sponsor portal; M6 admin shell + reviewer cockpit (may split); M7 admin "can" screens + desktop-only gate; M8
   close-out with the owner's real-iPhone walkthrough.
-- TD-466 (sandbox gutter; two unmeasured screens; SPM grade pickers clip "Grade"); TD-467 (quiz questions and answers
+- TD-466 (sandbox gutter; two unmeasured screens; SPM grade pickers clip "Grade"); TD-468 (quiz questions and answers
   are English in Tamil and Malay).

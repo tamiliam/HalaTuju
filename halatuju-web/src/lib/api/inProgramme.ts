@@ -130,6 +130,10 @@ export interface BursarySummary {
    *  has not answered yet. */
   surveys_tab?: boolean
   surveys_to_answer?: number
+  /** S10: the Growth tab shows (a live development module for her, or one she started), and how many live ones
+   *  she has not finished. */
+  growth_tab?: boolean
+  growth_to_do?: number
 }
 
 export async function getBursarySummary(options?: ApiOptions): Promise<BursarySummary> {

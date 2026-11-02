@@ -41,9 +41,11 @@ const SourceScholar = lazySource(() => import('@/components/source/SourceScholar
 // S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
 const ScholarMentoring = lazySource(() => import('@/components/admin/ScholarMentoring').then((m) => m.default))
 // S9: the Surveys tab, likewise.
-const ScholarSurveys = lazySource(() => import('@/components/admin/ScholarSurveys').then((m) => m.default))
+const ScholarSurveys = lazySource(() => import('@/components/surveys/screens').then((m) => m.ScholarSurveys))
+// S10: the Growth tab — in the Development screens' ONE chunk (`development/screens.ts`); the makers' three roles.
+const ScholarGrowth = lazySource(() => import('@/components/development/screens').then((m) => m.ScholarGrowth))
 
-type Tab = 'overview' | 'results' | 'money' | 'contract' | 'letters' | 'mentoring' | 'surveys' | 'activity'
+type Tab = 'overview' | 'results' | 'money' | 'contract' | 'letters' | 'mentoring' | 'surveys' | 'growth' | 'activity'
 const TABS: readonly PanelTab<Tab>[] = [
   { key: 'overview', labelKey: 'admin.scholars.tab.overview' },
   { key: 'results', labelKey: 'admin.scholars.tab.results' },
@@ -52,6 +54,7 @@ const TABS: readonly PanelTab<Tab>[] = [
   { key: 'letters', labelKey: 'admin.scholars.tab.letters' },
   { key: 'mentoring', labelKey: 'admin.scholars.tab.mentoring' },
   { key: 'surveys', labelKey: 'admin.scholars.tab.surveys' },
+  { key: 'growth', labelKey: 'admin.scholars.tab.growth' },
   { key: 'activity', labelKey: 'admin.scholars.tab.activity' },
 ]
 
@@ -120,7 +123,8 @@ function StaffScholarFile() {
   if (!file) return <RecordState loading={loading} />
   const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
   const seesSurveys = SURVEY_ROLES.includes(effectiveRole(role))
-  const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors) && (x.key !== 'surveys' || seesSurveys))
+  const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)
+    && ((x.key !== 'surveys' && x.key !== 'growth') || seesSurveys))
   const help = file.asked_for_help
   const helpWhat = help ? [help.university && t('admin.scholars.mentoring.help.university'),
     help.scholarship && t('admin.scholars.mentoring.help.scholarship')].filter(Boolean)
@@ -332,6 +336,7 @@ function StaffScholarFile() {
       )}
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
+      {tab === 'growth' && seesSurveys && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token} /></div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>
   )

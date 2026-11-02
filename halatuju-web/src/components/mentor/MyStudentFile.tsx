@@ -7,6 +7,9 @@ import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { getMyStudent, type MyStudent } from '@/lib/admin-api'
 import LogMeetingSheet from './LogMeetingSheet'
+import GrowthWork from '@/components/development/GrowthWork'
+import { openSigned } from '@/components/development/shared'
+import { myStudentTaskFile } from '@/lib/admin-api/mentorDesk'
 import { PRIMARY, ResultChip, SECONDARY, helpWords, telHref } from './mentorBits'
 
 const K = 'admin.myStudents'
@@ -124,6 +127,18 @@ export default function MyStudentFile({ id }: { id: number }) {
         ))}
         <p className="border-t border-ground-100 px-4 py-3 text-xs text-ground-600 md:px-5">{t(`${K}.meetingsNote`)}</p>
       </section>
+
+      {/* S10: their development modules — read-only (the server's allowlist, `development_progress.mentor_rows`). */}
+      {(data.modules?.length ?? 0) > 0 && (
+        <section aria-label={t('admin.scholars.growth.title')} data-testid="my-student-growth"
+          className="flex flex-col rounded-xl border border-ground-200 bg-ground-0 px-4 py-3 md:px-5">
+          <h2 className="text-base font-semibold text-ground-900">{t('admin.scholars.growth.title')}</h2>
+          <GrowthWork rows={data.modules ?? []} t={t}
+            openFile={(r) => openSigned(() => myStudentTaskFile(data.id, r.id, { token: token ?? undefined }),
+              () => setBanner(t(`${K}.loadFailed`)))} />
+          <p className="text-xs text-ground-600">{t('admin.scholars.growth.mentorNote')}</p>
+        </section>
+      )}
 
       {logging && (
         <LogMeetingSheet open studentId={data.id} studentName={data.name} organisation={data.organisation}

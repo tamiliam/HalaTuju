@@ -197,7 +197,7 @@ class CadenceRegistry(SimpleTestCase):
         self.assertEqual(set(EXPECTED_CADENCE), {
             'application-nudges', 'decision-emails', 'interview-reminders', 'notify-contact-submissions',
             'announcement-emails', 'auto-sponsor', 'partner-milestones', 'query-emails', 'read-outage-start',
-            'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime', 'survey-emails',
+            'release-award-offer-emails', 'reprocess-ic-vision', 'sponsor-realtime', 'survey-emails', 'module-emails',
             'application-reminders', 'backfill-assigned-profiles', 'expire-temp-passwords',
             'lapse-expired-offers', 'purge-referrals', 'query-reminders',
             'results-due-reminders', 'results-overdue-flag', 'review-nudges',
@@ -217,6 +217,7 @@ class CadenceRegistry(SimpleTestCase):
         self.assertEqual(EXPECTED_CADENCE['read-outage-start'], HOURLY)
         self.assertEqual(EXPECTED_CADENCE['announcement-emails'], HOURLY)   # maintenance S8
         self.assertEqual(EXPECTED_CADENCE['survey-emails'], HOURLY)         # maintenance S9
+        self.assertEqual(EXPECTED_CADENCE['module-emails'], HOURLY)         # maintenance S10
         self.assertEqual(EXPECTED_CADENCE['sync-vircle-sheet'], DAILY)
         self.assertEqual(EXPECTED_CADENCE['backup-documents'], WEEKLY)
 
