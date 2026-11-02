@@ -8,6 +8,7 @@ import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
 import type { MeetingMode } from './mentoring'
 import type { ScholarStanding } from './scholars'
+import type { WorkRow } from './development'
 
 export interface HelpAsked { university: boolean; scholarship: boolean; flagged: boolean }
 
@@ -59,6 +60,8 @@ export interface MyStudent {
   standing: ScholarStanding | 'no_result_yet'
   organisation: string
   meetings: MyMeeting[]
+  /** S10: their development modules and work, read-only (a short link on an uploaded task). */
+  modules?: WorkRow[]
 }
 
 export interface MyMeetingBody {

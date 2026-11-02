@@ -4,6 +4,7 @@
  * One scholar's maintenance file (student maintenance Sprint 2). Pinned:
  *  * the header and the Results / Money / Contract cards read the server's payload;
  *  * S9: the Surveys card and the Surveys tab (its own chunk) for super / org_admin / admin only;
+ *  * S10: the Growth tab (its own chunk) for the same three only;
  *  * S7b: the mentor card and the Mentoring tab (its own chunk) for super / org_admin / admin only;
  *  * "No contract on file" when there is none (owner ruling 2026-10-29);
  *  * the status is READ-ONLY here (no sub-state control, no Close) — "View application" goes to the
@@ -13,6 +14,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import ScholarFilePage from './page'
 import * as api from '@/lib/admin-api'
+import * as dev from '@/lib/admin-api/development'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
@@ -28,6 +30,8 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/components/ToastContext', () => ({ useToast: () => ({ showToast: jest.fn() }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
+jest.mock('@/lib/admin-api/development')
+const mockDev = dev as jest.Mocked<typeof dev>
 
 const FILE: api.ScholarFile = {
   id: 104, name: 'NUR AISYAH', gift: { code: 'flag', name: 'Flagship' },
@@ -192,4 +196,27 @@ it('S9: a reviewer or QC sees no Surveys tab and no Surveys card', async () => {
     unmount()
   }
   expect(mockApi.getScholarSurveys).not.toHaveBeenCalled()
+})
+
+it('S10: the Growth tab reads the modules of this scholar, for super / org_admin / admin only', async () => {
+  mockDev.getScholarGrowth.mockResolvedValue({ modules: [{ id: 3, title: 'Managing your money', status: 'published',
+    due_on: '2026-11-30', task_kind: 'reflection', lessons: 3, read: 1, done: false, late: true, task_sent_at: null,
+    task_text: '', task_file: null, reviewed_at: null, review_comment: '' }] })
+  render(<ScholarFilePage />)
+  await screen.findByRole('heading', { name: 'NUR AISYAH' })
+  fireEvent.click(screen.getByRole('tab', { name: 'admin.scholars.tab.growth' }))
+  expect((await screen.findByTestId('growth-row-3')).textContent).toContain('Managing your money')
+  expect(screen.getByTestId('growth-late-3')).toBeTruthy()
+  expect(mockDev.getScholarGrowth).toHaveBeenCalledWith(104, { token: 'tok' })
+})
+
+it('S10: a reviewer or QC sees no Growth tab', async () => {
+  for (const r of ['reviewer', 'qc']) {
+    mockRole = { role: r, owning_org_id: 11 }
+    const { unmount } = render(<ScholarFilePage />)
+    await screen.findByRole('heading', { name: 'NUR AISYAH' })
+    expect(screen.queryByRole('tab', { name: 'admin.scholars.tab.growth' })).toBeNull()
+    unmount()
+  }
+  expect(mockDev.getScholarGrowth).not.toHaveBeenCalled()
 })

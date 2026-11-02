@@ -274,3 +274,17 @@ it('S9: the Surveys tab shows only when she has one, with the open ones still to
   fireEvent.click(tab)
   expect(tab.getAttribute('aria-selected')).toBe('true')
 })
+
+it('S10: the Growth tab shows only when she has a module, with the live ones not done', async () => {
+  serve({ growth_tab: false })
+  const { unmount } = render(<BursaryPage />)
+  await screen.findByTestId('bursary-hello')
+  expect(screen.queryByRole('tab', { name: /bursaryTabs\.growth\.tab/ })).toBeNull()
+  unmount()
+  serve({ growth_tab: true, growth_to_do: 2 })
+  render(<BursaryPage />)
+  const tab = await screen.findByRole('tab', { name: /bursaryTabs\.growth\.tab/ })
+  expect(screen.getByTestId('growth-to-do').textContent).toBe('2')
+  fireEvent.click(tab)
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+})

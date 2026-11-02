@@ -323,6 +323,19 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminSurveyResultsView': 'survey-org-fenced',
         'AdminSurveyCsvView': 'survey-org-fenced',
         'AdminScholarSurveysView': 'scholars-org-fenced',   # `_file_for` + `surveys.may_make`
+        # S10: Development — `_DevelopmentBase._organisation` (the gift inside the caller's own org, else theirs)
+        # and `_module` (a module of another organisation is 404 on every door: the CSV, a lesson's file, a
+        # scholar's upload and the review included; a super: any).
+        '_DevelopmentBase': 'module-org-fenced',
+        'AdminModulesView': 'module-org-fenced',
+        'AdminModuleView': 'module-org-fenced',
+        'AdminModuleActionView': 'module-org-fenced',
+        'AdminModuleProgressView': 'module-org-fenced',
+        'AdminModuleCsvView': 'module-org-fenced',
+        'AdminModuleScholarView': 'module-org-fenced',
+        'AdminModuleLessonFileView': 'module-org-fenced',
+        'AdminModuleLessonFileSignView': 'module-org-fenced',
+        'AdminScholarGrowthView': 'scholars-org-fenced',   # `_file_for` + `development.may_make`
         '_MentoringBase': 'scholars-org-fenced',
         'AdminScholarMentoringView': 'scholars-org-fenced',
         'AdminScholarMentoringActionView': 'scholars-org-fenced',

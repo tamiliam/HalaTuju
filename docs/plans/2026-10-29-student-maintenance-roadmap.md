@@ -152,7 +152,8 @@ en/ms/ta; CHANGELOG + decisions.md; owner "yes" before every push; ≤ 2 deploys
    **LIVE 2026-11-02** (main adfeddc7; api-01232-zdb, web-01059-4vp; 0199 applied by hand first; Scheduler job halatuju-announcement-emails hourly, first run 200).
 9. **Surveys** (builder, schedule, student form, outcomes tab; scholarship 0200; cron `survey-emails`, hourly).
    **LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK).**
-10. *Later* — **Development modules** (content library + progress).
+10. **Development modules** (content library + progress; scholarship 0201; cron `module-emails`, hourly).
+   **BUILT, NOT LIVE 2026-11-02 (branch maint-s7; 0201 to apply by hand first; Scheduler job halatuju-module-emails to create).**
 11. ~~*Later* — **Mentor login**~~ — brought forward into Sprint 7a (owner, 2026-10-31).
 
 Order: 1 → (2 ∥ 3) → 4 → 6; 5, 7, 8 need only 2+3. First real value to the owner: Sprint 2.

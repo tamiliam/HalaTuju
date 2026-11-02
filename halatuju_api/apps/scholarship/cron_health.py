@@ -39,6 +39,7 @@ EXPECTED_CADENCE = {
     # hourly
     'announcement-emails': HOURLY,           # ⚠ NEW in maintenance S8: create the Scheduler job
     'survey-emails': HOURLY,                 # ⚠ NEW in maintenance S9: create the Scheduler job
+    'module-emails': HOURLY,                 # ⚠ NEW in maintenance S10: create the Scheduler job
     'auto-sponsor': HOURLY,
     'partner-milestones': HOURLY,
     'query-emails': HOURLY,

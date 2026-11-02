@@ -122,3 +122,6 @@ from .announcements import Announcement, AnnouncementEmail, AnnouncementRead
 # their questions, each scholar's response and answers, and each scholar's copy of the survey emails.
 # Point at `courses.PartnerOrganisation`, Programme and ScholarshipApplication by string.
 from .surveys import Survey, SurveyAnswer, SurveyEmail, SurveyQuestion, SurveyResponse
+# Student maintenance S10 (2026-11-02) — models 83 to 87, NEW: an organisation's development modules, their
+# lessons, each scholar's progress and lesson reads, and each scholar's copy of the module emails.
+from .development import DevelopmentModule, LessonRead, ModuleEmail, ModuleLesson, ModuleProgress

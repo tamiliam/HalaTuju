@@ -17,7 +17,8 @@ The HTTP shapes are `views_admin/mentor_students.py`; the meeting validation and
   since"; what they asked for help with (`mentoring_read.help_asked`); the LATEST accepted result only —
   CGPA and term — and the standing (`standing.standing_of`), or none. NEVER money, documents, slips,
   family or income, letters, the contract, other mentors, history, staff notes, the activity log, a
-  photo, the sub-state or a hold.
+  photo, the sub-state or a hold. S10: the student's development modules (`development_progress.mentor_rows`):
+  lessons read, the task and what they sent (a short link to an upload), the review, "Late" — read-only.
 - MEETINGS: those of the CURRENT assignment, newest first. A meeting THIS mentor logged
   (`logged_by_mentor`) shows in full (notes, next step, minutes, concern); one STAFF logged shows date
   and how only — never its notes, next step, minutes or who.
@@ -144,7 +145,15 @@ def student_payload(login, assignment):
         'standing': stand,
         'organisation': _org_name(assignment.mentor),
         'meetings': [meeting_dict(s, assignment.mentor_id) for s in sessions],
+        # S10: the student's development modules and their work (`development_progress.mentor_rows`, an
+        # allowlist): read-only, the CURRENT mentor only — an ended assignment never reaches this.
+        'modules': _modules(app),
     }
+
+
+def _modules(app):
+    from .development_progress import mentor_rows
+    return mentor_rows(app)
 
 
 def log_own_session(login, application_id, *, met_on, mode, minutes=None, notes='', next_step='',

@@ -326,6 +326,20 @@ export const FAQ: Record<Audience, QA[]> = {
         closed, never deleted. Answers carry the scholar&rsquo;s name and are for staff only &mdash; sponsors and
         partners never see them.</>,
     },
+    {
+      q: <>How do I give our scholars a development module?</>,
+      a: <>Open the gift, then <strong>Development</strong> (organisation admins and admins). Give it a title, a
+        short summary, who it is for (all your scholars, or one gift), when it is published, an optional due date,
+        and up to 20 lessons &mdash; each a title and plain text, with one YouTube or Vimeo link or one file (PDF,
+        JPEG or PNG, up to 10 MB; save the module first, then attach). Choose the task at the end: none, a written
+        reflection or a file to upload. Scholars do it on My Bursary &rarr; <strong>Growth</strong>, one lesson at a
+        time, and can change their task until you mark it reviewed. <strong>Progress</strong> shows who is done, in
+        progress or not started, who is &ldquo;Late&rdquo; after the due date, each reflection or upload to review
+        (your comment goes to the scholar), a Remind button and a CSV. The scholar&rsquo;s file has a Growth tab, and
+        their current mentor sees it on My students. Once a scholar starts, the task type is locked; a started
+        module is archived, never deleted. It is optional and never touches money; sponsors and partners never see
+        it.</>,
+    },
   ],
   admin: [
     {

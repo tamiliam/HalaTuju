@@ -186,7 +186,8 @@ class TestWhatTheMentorIsServed(_Base):
         self.assertEqual(r.status_code, 200, r.content)
         body = r.json()
         self.assertEqual(set(body), {'id', 'name', 'course', 'institution', 'email', 'phone', 'since',
-                                     'asked_for_help', 'latest_result', 'standing', 'organisation', 'meetings'})
+                                     'asked_for_help', 'latest_result', 'standing', 'organisation', 'meetings',
+                                     'modules'})   # S10: their development modules (read-only)
         self.assertEqual((body['email'], body['phone'], body['since']),
                          ('aisyah@example.test', '0172223344', timezone.localdate().isoformat()))
         # The LATEST accepted result only, with its term; a pending one never shows.

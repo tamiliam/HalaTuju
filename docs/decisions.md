@@ -1,5 +1,51 @@
 # Architectural Decisions — HalaTuju
 
+## Development modules: status from the time, the task type locks at the first start, progress per lesson id, files typed by their bytes, emails once per kind behind one switch — 2026-11-02 (owner rulings, student maintenance S10)
+
+**Decision:** (1) **Who makes modules:** super, org_admin and admin, org-fenced (another organisation 404 on every
+door — the CSV, a lesson file, a scholar's upload, the review and the scholar file's tab); every other role 403. ONE
+helper, `development.may_make` (Sprint 9's shape; a future permission key narrows it there). (2) **A module**:
+title, summary, audience = all funded scholars of the organisation or ONE gift (Sprint 8's
+`announcements.audience_apps`, decided when READ), publish now or at a time (`scheduled` is READ from `publish_at`;
+a past time publishes NOW), an optional due date, status draft / published / archived. (3) **Archived** (decided):
+hidden from scholars who have not started; a scholar who started keeps a read-only sight of the lessons and what she
+sent. A closed file likewise keeps only what it started. "Put back" republishes an archived module at its old time.
+(4) **Lessons** (1-20): title, plain text (URLs become links on display), ONE YouTube / Vimeo `https` link (host
+allowlist; no credentials, port, look-alike host or backslash) OR ONE file — never both (409 `video_or_file`). A
+file is attached to a SAVED lesson (its key carries the module id). (5) **The task** (one per module): none /
+reflection (prompt <= 1,000; answer <= 5,000) / upload (PDF / JPEG / PNG <= 10 MB). It opens after every current
+lesson is read (409 `lessons_first`); she may change it until staff mark it reviewed (409 `reviewed`). (6) **The
+locks** (decided): the task TYPE, the audience, the publishing time and "back to draft" lock at the first start (409
+`task_locked` / `started_locked`); lesson text, titles, the prompt, the due date and the emails still change, and
+**lessons may be added or removed after a start** (the recommendation, built): progress is per lesson id
+(`LessonRead`, CASCADE with the lesson), so done = every CURRENT lesson read + the task sent — a new lesson makes a
+finished scholar "in progress" again. **Delete** only while nobody has started (a draft, or a published one
+untouched); otherwise archive (409 `archive_instead`). (7) **Files**: the vault's own pattern — signed upload URL,
+private `b40-documents`, org-prefixed key (`<org>/development/<module>/<uuid>`; HER task
+`<org>/<app>/growth-<module>/<uuid>`); the record step accepts only that exact shape, then reads the object back
+(bounded at 10 MB + 1 byte) and decides the type from the BYTES — never the name or the browser — deleting and
+refusing a failure. Only 300-second signed links, minted on a tap; a replaced or removed file goes after the commit,
+else the orphan sweep finds it. (8) **Progress**: To review (task sent, not reviewed — a view inside Done) / Done /
+In progress / Not started; "Late" after the due date when not done (staff and the mentor only; never money); "Mark
+reviewed" with an optional comment she sees (who / when recorded; a second review replaces it). (9) **Who sees
+work**: the three staff roles of the organisation, and the scholar's CURRENT mentor (read-only, on My students,
+`development_progress.mentor_rows`, an allowlist with a short link to an upload). Never sponsors, partners,
+reviewers, QC, finance, sources or another mentor. (10) **The emails**: ONE switchable kind `module_published` (News
+heading, ONE wording; `{module_note}` says "ready" or "reminder", `{due_note}` the date): "published" once live, the
+reminder 3 days before the due date to those not done — claim-before-send rows (module x application x kind), so
+the hourly job, a re-run and the Progress page's button never double. The button with the switch off is 409
+`switched_off` and writes NOTHING (the S9 review lesson); only the job records `switched_off`. No due date, no
+reminder (job and button). (11) **Activity:** audit log lines only (`AUDIT module_*`).
+
+**Why lessons stay editable after a start:** a typo or a dead link found after the first scholar starts must be
+fixable, and a module is a living resource; per-lesson-id progress keeps "done" honest about what is there now. The
+TASK TYPE is the one thing a started scholar's work depends on, so it alone (with the audience and the time) locks.
+**Why the bytes are read back:** the signed upload lets the browser put anything at the key; only the server reading
+the object can say what it is and how big it is.
+
+**Revisit if:** the owner wants embedded video, per-lesson quizzes, a module frozen to the scholars of the day it
+went live, or several tasks per module.
+
 ## What a chip colour means: green fine, yellow look, red wrong (owner, 2026-11-02)
 
 The reviewer reads the chips. **Green** = fine, nothing to do. **Yellow** = the reviewer should look (an edge case,

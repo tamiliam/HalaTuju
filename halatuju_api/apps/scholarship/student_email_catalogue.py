@@ -147,6 +147,10 @@ CATALOGUE = (
     # and ONE wording for both survey emails — "it is open" and, 3 days before it closes, the reminder to
     # those who have not answered — sent by the hourly `survey-emails` job only when staff asked for each.
     _E('survey_open', 'news', switchable=True, tracked='log', editable=True),
+    # SWITCHABLE (owner ruling, 2026-11-02): the module is on My Bursary -> Growth either way. ONE switch and
+    # ONE wording for both module emails — "a new module is ready" and, 3 days before its due date, the
+    # reminder to those not done — sent by the hourly `module-emails` job only when staff asked for each.
+    _E('module_published', 'news', switchable=True, tracked='log', editable=True),
     # ── Closure ─────────────────────────────────────────────────────────────────────────────
     _E('closed_by_officer', 'closure', ('send_application_closed_email',), status='closed',
        lock='closure_notice', wording=('student_reminders', 'CLOSED_SUBJECTS', 'CLOSED_BY_OFFICER_BODIES')),

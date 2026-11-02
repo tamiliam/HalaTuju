@@ -126,6 +126,29 @@ describe('One student', () => {
     expect(theirs.textContent).not.toContain('minutesShort')
   })
 
+  it('S10: their development modules show read-only, with the reflection, Late and the file link', async () => {
+    mockApi.getMyStudent.mockResolvedValue({ ...PAGE, modules: [{ id: 3, title: 'Managing your money',
+      status: 'published', due_on: '2026-11-30', task_kind: 'reflection', lessons: 3, read: 3, done: true,
+      late: false, task_sent_at: '2026-11-12T00:00:00Z', task_text: 'Cook three days a week.',
+      task_file: { name: 'cv.pdf', type: 'application/pdf', url: 'https://storage.test/signed' },
+      reviewed_at: null, review_comment: '' }] })
+    const open = jest.spyOn(window, 'open').mockReturnValue(null)
+    render(<MyStudentFile id={104} />)
+    const growth = await screen.findByTestId('my-student-growth')
+    expect(growth.textContent).toContain('Cook three days a week.')
+    expect(growth.textContent).toContain('admin.scholars.growth.done')
+    fireEvent.click(screen.getByTestId('growth-file-3'))
+    expect(open).toHaveBeenCalledWith('https://storage.test/signed', '_blank', 'noopener')
+    open.mockRestore()
+  })
+
+  it('S10: no modules, no Growth section', async () => {
+    mockApi.getMyStudent.mockResolvedValue(PAGE)
+    render(<MyStudentFile id={104} />)
+    await screen.findByTestId('my-student-file')
+    expect(screen.queryByTestId('my-student-growth')).toBeNull()
+  })
+
   it('a student who is no longer theirs reads as such, never as an error', async () => {
     mockApi.getMyStudent.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }))
     render(<MyStudentFile id={104} />)

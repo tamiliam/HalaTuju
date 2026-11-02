@@ -2093,6 +2093,7 @@ class CronRunView(APIView):
         'results-due-reminders': 'send_results_due_reminders',  # daily (maintenance S4b): "your result is due"
         'announcement-emails': 'send_announcement_emails',  # hourly (maintenance S8): an announcement's email, once each
         'survey-emails': 'send_survey_emails',  # hourly (maintenance S9): a survey's opening email + reminder, once each
+        'module-emails': 'send_module_emails',  # hourly (maintenance S10): a module's published email + reminder, once each
         'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
         'expire-temp-passwords': 'expire_temp_passwords',  # daily: rotate partner temp passwords unchanged past the 7-day TTL
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
@@ -2102,9 +2103,8 @@ class CronRunView(APIView):
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
         'backfill-confirmed-profiles': 'backfill_confirmed_profiles',  # one-off TD-210: confirmed pathway onto the profile (DRY RUN unless BACKFILL_CONFIRMED_PROFILES_APPLY=1)
-        # One-off/idempotent. ELEVEN kinds now, not five: 5 partner + `student_assigned` (#3) +
-        # 5 reviewer (#10). ⚠ RUN IT AFTER A DEPLOY THAT ADDS A KIND, never before — it seeds what
-        # the RUNNING code knows about, so an earlier run silently skips the new rows.
+        # One-off/idempotent. ELEVEN kinds: 5 partner + `student_assigned` (#3) + 5 reviewer (#10). ⚠ RUN IT
+        # AFTER A DEPLOY THAT ADDS A KIND, never before — it seeds what the RUNNING code knows (else skips the new).
         'seed-partner-emails': 'seed_partner_email_templates',
         # DAILY, and it is a NEW-FILE trigger, not a calendar one: a BrightPath officer extracts
         # the week from Vircle's Data Studio and uploads it BY HAND, "not exactly at the same time

@@ -81,11 +81,12 @@ describe('visibleNav per role', () => {
     // ⚠ S8 (2026-11-01): `announcements` is NEW in the Programme group, after Scholars, for super,
     // org_admin and admin (all three POST — `announcements.may_post`). Nobody else gained reach.
     // ⚠ S9 (2026-11-02): `surveys` is NEW after Announcements, for the same three (`surveys.may_make`).
+    // ⚠ S10 (2026-11-02): `development` is NEW after Surveys, for the same three (`development.may_make`).
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'programmeConfig', 'payments',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
       'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
@@ -107,13 +108,13 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'programmeConfig', 'payments',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
       'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
       'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
-      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'payments', 'spending',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // ⚠ `finance` still has Payments and still has NO Spending — the move changed where the
@@ -596,10 +597,11 @@ describe('visibleNav groups', () => {
   // funded students are the same people, later in their story.
   // ⚠ EIGHT SINCE 2026-11-01: Announcements follows Scholars (maintenance S8) — news to those scholars.
   // ⚠ NINE SINCE 2026-11-02: Surveys follows Announcements (maintenance S9) — questions to them.
-  it('the programme scope is nine rows, the overview first', () => {
+  // ⚠ TEN SINCE 2026-11-02: Development follows Surveys (maintenance S10) — modules for them to grow.
+  it('the programme scope is ten rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
     expect(prog.items.map((i) => i.id)).toEqual(
-      ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'programmeConfig', 'payments',
+      ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
         'spending', 'contracts'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
@@ -622,9 +624,9 @@ describe('visibleNav groups', () => {
       // `contracts` STAYS (TD-229): its list READS every gift's templates, each labelled, and
       // the page's own New version waits for a gift — the Applications rule, not Payments'.
       // `announcements` STAYS (S8): an announcement belongs to the organisation; the page names a gift
-      // only in its For picker. `surveys` likewise (S9).
+      // only in its For picker. `surveys` likewise (S9), and `development` (S10).
       expect(prog.items.map((i) => i.id))
-        .toEqual(['programmeOverview', 'applications', 'announcements', 'surveys', 'contracts'])
+        .toEqual(['programmeOverview', 'applications', 'announcements', 'surveys', 'development', 'contracts'])
     })
 
     /*
@@ -681,7 +683,7 @@ describe('visibleNav groups', () => {
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id)).toEqual(
-        ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'programmeConfig', 'payments',
+        ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
           'spending', 'contracts'])
     })
 

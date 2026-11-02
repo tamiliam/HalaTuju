@@ -198,11 +198,13 @@ def object_exists(path):
         return None
 
 
-def download_object(path):
+def download_object(path, max_bytes=None):
     """Fetch the raw bytes of one private object via the service key. None on failure.
 
     Used by the off-platform backup command (backup_documents). Best-effort; the
-    path is never logged (it can embed application ids).
+    path is never logged (it can embed application ids). ``max_bytes`` (development modules S10)
+    stops reading after that many bytes, so a check of an upload's size and type never holds an
+    oversize object in memory: the caller reads ``max_bytes + 1`` to tell "too big" from "exactly".
     """
     base, key = _base_url(), _service_key()
     if not base or not key:
@@ -215,7 +217,7 @@ def download_object(path):
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return resp.read()
+            return resp.read(max_bytes) if max_bytes else resp.read()
     except (urllib.error.URLError, ValueError, TimeoutError):
         logger.warning('Supabase Storage download failed', exc_info=True)
         return None

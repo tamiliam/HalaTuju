@@ -6404,6 +6404,7 @@
         "letters": "Surat",
         "mentoring": "Bimbingan",
         "surveys": "Tinjauan",
+        "growth": "Perkembangan",
         "activity": "Aktiviti"
       },
       "card": {
@@ -6790,6 +6791,26 @@
         "waiting": "Belum dijawab: {list}",
         "none": "Belum ada tinjauan yang dijawab.",
         "sent": "dijawab {date}"
+      },
+      "growth": {
+        "title": "Perkembangan",
+        "loadError": "Modul tidak dapat dimuatkan.",
+        "none": "Belum ada modul pembangunan.",
+        "readOf": "{read} daripada {count} pelajaran dibaca",
+        "sentOn": "tugasan dihantar {date}",
+        "notSent": "tugasan belum dihantar",
+        "noTask": "tiada tugasan",
+        "reviewed": "disemak {date}",
+        "late": "Lewat",
+        "done": "Selesai",
+        "inProgress": "Sedang dibuat",
+        "notStarted": "Belum bermula",
+        "reflection": "Refleksi",
+        "file": "Fail: {name}",
+        "openFile": "Buka fail",
+        "comment": "Komen: {comment}",
+        "progress": "Kemajuan",
+        "mentorNote": "Baca sahaja. Kakitangan organisasi menyemak kerja ini."
       }
     },
     "contracts": {
@@ -7817,7 +7838,8 @@
           "letter_issued": "Surat telah dikeluarkan",
           "mentor_assigned": "Anda mempunyai mentor",
           "announcement": "Satu pengumuman",
-          "survey_open": "Tinjauan untuk anda"
+          "survey_open": "Tinjauan untuk anda",
+          "module_published": "Modul baharu"
         },
         "when": {
           "results_due": "Dihantar sebelum keputusan perlu dihantar (Konfigurasi: tempoh awal peringatan dan kekerapan), selagi tiada yang menunggu semakan.",
@@ -7852,7 +7874,8 @@
           "letter_issued": "Apabila pegawai mengeluarkan surat rasmi kepadanya. Ia memintanya membaca surat itu dan mengesahkannya sebelum tarikh balas.",
           "mentor_assigned": "Dihantar apabila staf menetapkan atau menukar mentor pelajar, berserta nama, bidang dan hubungan mentor. Selamat untuk dimatikan — staf masih boleh memberitahu pelajar. Tidak pernah dihantar kepada mentor.",
           "announcement": "Dihantar dalam masa sejam selepas pengumuman keluar, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Pengumuman). Tajuk dan mesej pengumuman itu sendiri dimasukkan. Selamat untuk dimatikan — berita tetap ada di Biasiswa Saya.",
-          "survey_open": "Dihantar dalam masa sejam selepas tinjauan dibuka, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Tinjauan) — dan, apabila diminta oleh kakitangan, peringatan 3 hari sebelum ditutup kepada mereka yang belum menjawab. Kata-kata yang sama digunakan untuk kedua-duanya; baris pertama menyatakan yang mana. Selamat untuk dimatikan — tinjauan tetap ada di Biasiswa Saya."
+          "survey_open": "Dihantar dalam masa sejam selepas tinjauan dibuka, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Tinjauan) — dan, apabila diminta oleh kakitangan, peringatan 3 hari sebelum ditutup kepada mereka yang belum menjawab. Kata-kata yang sama digunakan untuk kedua-duanya; baris pertama menyatakan yang mana. Selamat untuk dimatikan — tinjauan tetap ada di Biasiswa Saya.",
+          "module_published": "Dihantar dalam masa sejam selepas modul pembangunan diterbitkan, apabila kakitangan memilih untuk menghantarnya melalui e-mel, sekali kepada setiap penerima biasiswa yang berkenaan (Program → Pembangunan) — dan, apabila kakitangan memintanya, peringatan 3 hari sebelum tarikh akhir kepada yang belum selesai. Kata-kata yang sama digunakan untuk kedua-duanya; baris pertama menyatakan yang mana. Selamat untuk dimatikan — modul tetap ada di Biasiswa Saya."
         },
         "language": {
           "en": "Inggeris",
@@ -8216,7 +8239,8 @@
         "refresh-reminder": "Peringatan katalog kursus",
         "decision-emails": "E-mel keputusan",
         "announcement-emails": "E-mel pengumuman",
-        "survey-emails": "E-mel tinjauan"
+        "survey-emails": "E-mel tinjauan",
+        "module-emails": "E-mel modul"
       }
     },
     "platformBilling": {
@@ -8863,6 +8887,208 @@
         "loadError": "Keputusan tidak dapat dimuatkan.",
         "footnote": "Jawapan setiap penerima biasiswa juga ada dalam fail mereka (tab Tinjauan). Untuk kakitangan sahaja; tidak sekali-kali untuk penaja atau rakan kongsi."
       }
+    },
+    "development": {
+      "nav": "Pembangunan",
+      "title": "Pembangunan",
+      "intro": "Modul ringkas yang membantu penerima biasiswa anda berkembang. Mereka melakukannya di Biasiswa Saya → Perkembangan.",
+      "new": "Modul baharu",
+      "tabsAria": "Modul mengikut status",
+      "tab": {
+        "published": "Diterbitkan",
+        "scheduled": "Dijadualkan",
+        "draft": "Draf",
+        "archived": "Diarkibkan"
+      },
+      "col": {
+        "module": "Modul",
+        "for": "Untuk",
+        "due": "Tarikh akhir",
+        "done": "Selesai",
+        "actions": "Tindakan"
+      },
+      "forAll": "Semua penerima biasiswa ({count})",
+      "forGift": "{name} ({count})",
+      "by": "oleh {name}",
+      "byRole": "oleh {name} ({role})",
+      "lessons": "{count} pelajaran",
+      "oneLesson": "1 pelajaran",
+      "task": {
+        "none": "tiada tugasan",
+        "reflection": "satu refleksi bertulis",
+        "upload": "muat naik satu fail"
+      },
+      "noDue": "Tiada tarikh akhir",
+      "doneOf": "{n} daripada {count}",
+      "toReview": "{count} untuk disemak",
+      "started": "sudah dimulakan",
+      "action": {
+        "progress": "Kemajuan",
+        "edit": "Sunting",
+        "archive": "Arkibkan",
+        "restore": "Kembalikan",
+        "delete": "Padam"
+      },
+      "confirm": {
+        "archive": "Arkibkan “{title}”? Penerima biasiswa yang belum bermula tidak lagi akan melihatnya; yang sudah bermula masih boleh membacanya.",
+        "delete": "Padam “{title}”? Ini tidak boleh dibatalkan."
+      },
+      "done": {
+        "published": "Diterbitkan. Penerima biasiswa boleh melakukannya sekarang di Biasiswa Saya → Perkembangan.",
+        "scheduled": "Dijadualkan. Ia akan diterbitkan pada masa yang anda pilih.",
+        "draft": "Disimpan sebagai draf. Penerima biasiswa tidak dapat melihatnya.",
+        "saved": "Disimpan.",
+        "archived": "Diarkibkan.",
+        "deleted": "Dipadam.",
+        "restored": "Dikembalikan. Penerima biasiswa boleh melihatnya semula."
+      },
+      "empty": {
+        "published": "Tiada modul yang diterbitkan.",
+        "scheduled": "Tiada yang dijadualkan.",
+        "draft": "Tiada draf.",
+        "archived": "Tiada yang diarkibkan."
+      },
+      "loadError": "Modul tidak dapat dimuatkan.",
+      "chooseGift": "Pilih program dahulu (Program), supaya kami tahu penerima biasiswa siapa yang dimaksudkan.",
+      "footnote": "Pilihan untuk penerima biasiswa. Tarikh akhir yang terlepas ditunjukkan sebagai “Lewat” kepada kakitangan dan mentor; ia tidak sekali-kali menghentikan wang. Sebaik sahaja seorang penerima biasiswa bermula, jenis tugasan dikunci; anda masih boleh membetulkan teks pelajaran dan menambah atau membuang pelajaran.",
+      "form": {
+        "newTitle": "Modul baharu",
+        "editTitle": "Sunting modul",
+        "title": "Tajuk",
+        "summary": "Ringkasan pendek (dipaparkan dalam senarai)",
+        "for": "Untuk",
+        "publish": "Terbitkan",
+        "now": "Sekarang",
+        "asIs": "Seperti sedia ada",
+        "later": "Pada tarikh dan masa tertentu",
+        "date": "Tarikh",
+        "time": "Masa (24 jam, cth. 21:30)",
+        "due": "Tarikh akhir (pilihan)",
+        "lessons": "Pelajaran",
+        "lessonTitle": "Tajuk pelajaran",
+        "lessonBody": "Teks (teks biasa; tinggalkan satu baris kosong antara perenggan; pautan berfungsi)",
+        "video": "Pautan video (YouTube atau Vimeo, pilihan)",
+        "file": "Fail (PDF, JPEG atau PNG, sehingga 10 MB)",
+        "fileSaveFirst": "Simpan modul dahulu, kemudian lampirkan fail pada pelajaran ini.",
+        "fileOr": "Satu pelajaran mempunyai pautan video atau fail, bukan kedua-duanya.",
+        "fileRemove": "Buang fail",
+        "fileOpen": "Buka",
+        "uploading": "Sedang memuat naik…",
+        "addLesson": "+ Tambah pelajaran",
+        "lessonHint": "Setiap pelajaran: tajuk, teks, dan secara pilihan satu pautan video (YouTube atau Vimeo) atau satu fail (PDF atau imej, sehingga 10 MB).",
+        "edit": "Sunting",
+        "moveUp": "Naikkan",
+        "remove": "Buang",
+        "doneLesson": "Selesai dengan pelajaran ini",
+        "untitled": "(belum ada tajuk)",
+        "kind": {
+          "text": "Teks",
+          "video": "Video",
+          "file": "Fail"
+        },
+        "words": "{count} perkataan",
+        "task": "Tugasan di akhir",
+        "taskKind": {
+          "none": "Tiada tugasan",
+          "reflection": "Refleksi bertulis",
+          "upload": "Muat naik fail"
+        },
+        "prompt": "Apakah yang perlu mereka tulis?",
+        "promptUpload": "Apakah yang perlu mereka muat naik?",
+        "emailPublish": "E-mel penerima biasiswa apabila ia diterbitkan",
+        "emailNote": "Dihantar dalam masa sejam, sekali kepada setiap penerima biasiswa yang berkenaan, selagi “Modul baharu” dihidupkan dalam Komunikasi pelajar.",
+        "emailOff": "E-mel “Modul baharu” dimatikan dalam Komunikasi pelajar, jadi tiada sesiapa akan menerima e-mel.",
+        "remind": "Ingatkan yang belum selesai, 3 hari sebelum tarikh akhir",
+        "remindNeedsDue": "Tetapkan tarikh akhir untuk mengingatkan.",
+        "lockNote": "Sebaik sahaja seorang penerima biasiswa bermula, jenis tugasan, untuk siapa dan bila ia diterbitkan akan dikunci. Anda masih boleh membetulkan teks pelajaran dan menambah atau membuang pelajaran.",
+        "lockedNote": "Penerima biasiswa sudah bermula: jenis tugasan, untuk siapa dan bila ia diterbitkan telah dikunci. Pelajaran, teks, tarikh akhir dan e-mel masih boleh diubah."
+      },
+      "btn": {
+        "publish": "Terbitkan",
+        "schedule": "Jadualkan",
+        "draft": "Simpan sebagai draf",
+        "save": "Simpan perubahan"
+      },
+      "error": {
+        "title_required": "Berikan tajuk.",
+        "title_too_long": "Tajuk terlalu panjang (paling banyak 150 aksara).",
+        "title_newline": "Tajuk mesti satu baris.",
+        "summary_too_long": "Ringkasan terlalu panjang (paling banyak 500 aksara).",
+        "bad_audience": "Pilih semula untuk siapa.",
+        "bad_publish_at": "Semak tarikh dan masa.",
+        "bad_due_on": "Semak tarikh akhir.",
+        "due_before_publish": "Tarikh akhir sebelum ia diterbitkan.",
+        "remind_needs_due": "Peringatan memerlukan tarikh akhir.",
+        "bad_task_kind": "Pilih semula tugasan.",
+        "prompt_required": "Nyatakan apa yang perlu mereka tulis.",
+        "prompt_too_long": "Teks tugasan terlalu panjang (paling banyak 1,000 aksara).",
+        "no_lessons": "Tambah sekurang-kurangnya satu pelajaran.",
+        "too_many_lessons": "Paling banyak dua puluh pelajaran.",
+        "bad_lesson": "Satu pelajaran tidak dapat dipadankan. Muat semula halaman dan cuba lagi.",
+        "bad_lessons": "Satu pelajaran tidak dapat dibaca.",
+        "lesson_title_required": "Setiap pelajaran memerlukan tajuk.",
+        "lesson_title_too_long": "Tajuk pelajaran terlalu panjang (paling banyak 150 aksara).",
+        "lesson_title_newline": "Tajuk pelajaran mesti satu baris.",
+        "lesson_body_too_long": "Teks pelajaran terlalu panjang (paling banyak 10,000 aksara).",
+        "bad_video": "Pautan video mesti alamat YouTube atau Vimeo yang bermula dengan https://.",
+        "video_too_long": "Pautan video terlalu panjang.",
+        "video_or_file": "Satu pelajaran mempunyai pautan video atau fail, bukan kedua-duanya.",
+        "task_locked": "Penerima biasiswa sudah bermula, jadi jenis tugasan tidak boleh diubah.",
+        "started_locked": "Penerima biasiswa sudah bermula, jadi ini tidak boleh diubah.",
+        "archive_instead": "Penerima biasiswa sudah memulakan modul ini: arkibkannya.",
+        "unsupported_format": "Fail itu bukan PDF, JPEG atau PNG.",
+        "file_too_large": "Fail itu melebihi 10 MB.",
+        "upload_incomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
+        "storage_unavailable": "Storan fail tidak tersedia sekarang. Sila cuba lagi.",
+        "badTime": "Semak tarikh dan masa (24 jam, cth. 09:00).",
+        "atLesson": "(pelajaran {n})",
+        "generic": "Tidak dapat disimpan. Sila cuba lagi."
+      },
+      "progress": {
+        "back": "Pembangunan",
+        "title": "{title} · kemajuan",
+        "doneOf": "{n} daripada {count} selesai ({pct}%)",
+        "toReview": "{count} untuk disemak",
+        "due": "tarikh akhir {date}",
+        "csv": "Muat turun CSV",
+        "csvFailed": "CSV tidak dapat dimuat turun. Sila cuba lagi.",
+        "remind": "Ingatkan yang belum selesai",
+        "remindOff": "Peringatan dimatikan: e-mel “Modul baharu” dimatikan dalam Komunikasi pelajar.",
+        "confirmRemind": "E-mel peringatan kepada penerima biasiswa yang belum selesai? Setiap orang diingatkan sekali sahaja.",
+        "reminded": "Peringatan dihantar: {count}.",
+        "remindFailed": "Peringatan tidak dapat dihantar. Sila cuba lagi.",
+        "tabsAria": "Penerima biasiswa mengikut kemajuan",
+        "tab": {
+          "to_review": "Untuk disemak",
+          "done": "Selesai",
+          "in_progress": "Sedang dibuat",
+          "not_started": "Belum bermula"
+        },
+        "col": {
+          "scholar": "Penerima biasiswa",
+          "lessons": "Pelajaran",
+          "task": "Tugasan",
+          "mentor": "Mentor",
+          "actions": "Tindakan"
+        },
+        "lessonsOf": "{read} daripada {count}",
+        "sentOn": "Dihantar {date}",
+        "late": "Lewat",
+        "read": "Baca",
+        "close": "Tutup",
+        "reflection": "{name} · refleksi",
+        "upload": "{name} · fail",
+        "openFile": "Buka fail ({name})",
+        "comment": "Komen untuk penerima biasiswa (pilihan)",
+        "markReviewed": "Tandakan sudah disemak",
+        "reviewedOn": "Disemak {date} oleh {who}",
+        "updateReview": "Kemas kini semakan",
+        "saved": "Ditandakan sudah disemak. Penerima biasiswa melihat komen anda.",
+        "reviewFailed": "Tidak dapat disimpan. Sila cuba lagi.",
+        "empty": "Tiada sesiapa di sini.",
+        "loadError": "Kemajuan tidak dapat dimuatkan.",
+        "footnote": "Kerja yang sama dipaparkan dalam fail setiap penerima biasiswa (tab Perkembangan) dan, untuk pelajar mereka sendiri, di halaman Pelajar saya mentor. Kakitangan dan mentor sahaja; tidak sekali-kali penaja atau rakan kongsi. “Lewat” muncul selepas tarikh akhir bagi yang belum selesai."
+      }
     }
   },
   "documentsTab": {
@@ -9064,6 +9290,71 @@
       "loadFailed": "Tinjauan anda tidak dapat dimuatkan. Sila cuba lagi.",
       "empty": "Tiada tinjauan untuk anda buat masa ini.",
       "footnote": "Nombor merah mengira tinjauan yang dibuka yang belum anda jawab."
+    },
+    "growth": {
+      "tab": "Perkembangan",
+      "toDo": "{count} belum selesai",
+      "due": "Tarikh akhir {date}",
+      "noDue": "Tiada tarikh akhir",
+      "lessons": "{count} pelajaran",
+      "oneLesson": "1 pelajaran",
+      "task": {
+        "reflection": "satu refleksi",
+        "upload": "satu fail untuk dimuat naik"
+      },
+      "withTask": "{lessons} + {task}",
+      "readOf": "{read} daripada {count} pelajaran dibaca",
+      "done": "Selesai",
+      "reviewed": "disemak oleh {org}",
+      "sentOn": "dihantar {date}",
+      "start": "Mula",
+      "continue": "Teruskan",
+      "open": "Buka",
+      "back": "Perkembangan",
+      "lessonOf": "Pelajaran {n} daripada {count}",
+      "watch": "Tonton video (dibuka dalam tab baharu)",
+      "openFile": "Buka fail: {name}",
+      "markRead": "Saya sudah membaca ini — pelajaran seterusnya",
+      "markLast": "Saya sudah membaca ini",
+      "read": "Dibaca",
+      "prev": "Pelajaran sebelumnya",
+      "next": "Pelajaran seterusnya",
+      "toTask": "Pergi ke tugasan",
+      "taskTitle": {
+        "reflection": "Refleksi anda",
+        "upload": "Fail anda"
+      },
+      "send": {
+        "reflection": "Hantar refleksi saya",
+        "upload": "Hantar fail saya"
+      },
+      "change": {
+        "reflection": "Simpan perubahan saya",
+        "upload": "Gantikan fail saya"
+      },
+      "chooseFile": "PDF, JPEG atau PNG, sehingga 10 MB",
+      "yourFile": "Fail anda: {name}",
+      "sent": "Dihantar {date}. Terima kasih.",
+      "who": "Kakitangan {org} dan mentor anda boleh membacanya. Penaja tidak sekali-kali melihatnya. Anda boleh mengubahnya sehingga kakitangan menandakannya sebagai sudah disemak.",
+      "reviewedOn": "Disemak pada {date}.",
+      "comment": "Komen daripada {org}: {comment}",
+      "lessonsFirst": "Baca setiap pelajaran dahulu; kemudian tugasan dibuka.",
+      "finished": "Anda telah menamatkan modul ini. Syabas.",
+      "readOnly": "Modul ini telah ditutup. Anda masih boleh membacanya dan apa yang anda hantar.",
+      "error": {
+        "text_required": "Sila tulis sesuatu dahulu.",
+        "text_too_long": "Itu terlalu panjang (paling banyak 5,000 aksara).",
+        "lessons_first": "Baca setiap pelajaran dahulu.",
+        "reviewed": "Kakitangan telah menyemaknya, jadi ia tidak lagi boleh diubah.",
+        "module_closed": "Modul ini telah ditutup.",
+        "unsupported_format": "Fail itu bukan PDF, JPEG atau PNG.",
+        "file_too_large": "Fail itu melebihi 10 MB.",
+        "upload_incomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
+        "generic": "Tidak berjaya. Sila cuba lagi."
+      },
+      "loadFailed": "Modul anda tidak dapat dimuatkan. Sila cuba lagi.",
+      "empty": "Tiada modul untuk anda buat masa ini.",
+      "footnote": "Modul adalah pilihan dan tidak sekali-kali menjejaskan biasiswa anda. Nombor merah mengira yang belum selesai."
     }
   }
 }
