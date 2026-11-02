@@ -7,10 +7,11 @@ reference line. The door list is in the roadmap's S4 section. Two kinds of test 
 
 * **Name / IC must not get worse** — one test per door that reads `name` / `ic` (all of them read the
   statuses `student_offer_check` builds, plus the extraction verdict `doc_student_verdict`).
-* **What a door LOSES** until the matcher's session makes it read `campus` / `programme_code`
-  (they own the matcher; S4 does not push before that change is live). These tests PIN today's
-  matcher on the new shape so the gap is visible, and show the join that closes it; when the
-  matcher reads the new fields, the "loses" assertions are expected to flip — update them then.
+* **What the new shape does to the matcher's doors.** The campus is rejoined for every reader by the
+  matcher session's `offer_course_match.letter_institution` (live on main d08283f1), read inside
+  `student_offer_check`; these tests show the pins survive through it. The printed-code tier is still
+  LOST (the code is in `programme_code`, which no matcher reads yet) — that test pins the gap and the
+  join that would close it; update it when the matcher reads `programme_code`.
 
 Synthetic twins only (`test_no_gitignored_corpus.py`): invented people, and invented campuses
 ("Institut Qorvane ...") beside the shared realignment catalogue.
@@ -23,7 +24,8 @@ from apps.scholarship import offer_pathway as op
 from apps.scholarship import vision
 from apps.scholarship.doc_red_keys import person_red
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.offer_course_match import letter_place, match_offer_course, pinned_match
+from apps.scholarship.offer_course_match import (
+    letter_institution, letter_place, match_offer_course, pinned_match)
 from apps.scholarship.offer_reader import clean_offer_fields
 from apps.scholarship.pathway_engine import offer_reporting_date_unknown, student_offer_check
 from apps.scholarship.services.offer_sync import institution_fill
@@ -75,7 +77,8 @@ class NameAndIcDoNotGetWorseTest(TestCase):
         chk = self._chk()
         self.assertEqual((chk['name'], chk['ic']), ('match', 'match'))
         self.assertFalse(person_red('offer_letter', chk))
-        self.assertEqual((chk['campus'], chk['institution']), ('KAMPUS PERLAK', 'UNIVERSITI QORVANE'))
+        # The matcher session's live join (`letter_institution`, main d08283f1): one line again.
+        self.assertEqual(chk['institution'], 'UNIVERSITI QORVANE KAMPUS PERLAK')
 
     def test_an_ic_read_off_the_reference_line_matches(self):
         ref_line_read = clean_offer_fields({'candidate_nric': self.app.profile.nric.replace('-', '')})
@@ -129,11 +132,11 @@ class MatcherOnTheNewShapeTest(TestCase):
         self.assertTrue(op.offer_contradicts_course_institution('UP4310001', 'KOLEJ SRI RAJANG', BPP))
         self.assertFalse(op.offer_contradicts_course_institution('UP4310001', UPM, BPP))
 
-    def test_loses_the_campus_of_a_multi_campus_course_until_the_matcher_reads_campus(self):
+    def test_a_multi_campus_pin_survives_through_the_live_join(self):
         prog = 'DIPLOMA ZANTHARION GUNAAN'
         self.assertEqual(pinned_match(prog, 'INSTITUT QORVANE KAMPUS UTARA')[1]['institution'], NORTH)  # old line
-        self.assertIsNone(pinned_match(prog, 'INSTITUT QORVANE')[1])                                   # S4 name
-        joined = ' '.join(('INSTITUT QORVANE', 'KAMPUS UTARA'))                                        # the fix
+        self.assertIsNone(pinned_match(prog, 'INSTITUT QORVANE')[1])          # the S4 name alone pins nothing
+        joined = letter_institution('INSTITUT QORVANE', 'KAMPUS UTARA')        # what every reader is fed
         self.assertEqual(pinned_match(prog, joined)[1]['institution'], NORTH)
 
     def test_loses_the_printed_code_tier_until_the_matcher_reads_programme_code(self):
@@ -164,17 +167,14 @@ class SponsorFacingInstitutionTest(TestCase):
         return make_application('submitted', chosen_pathway='university',
                                 chosen_programme={'course_id': MULTI, 'course_name': 'Diploma Zantharion Gunaan'})
 
-    def test_loses_the_campus_fill_until_a_writer_reads_campus(self):
+    def test_the_campus_fill_survives_the_split(self):
         app = self._app()
         old = _offer(app, programme='DIPLOMA ZANTHARION GUNAAN', institution='INSTITUT QORVANE KAMPUS UTARA')
         self.assertEqual(institution_fill(app, offer=old), NORTH)
         app2 = self._app()
         new = _offer(app2, programme='DIPLOMA ZANTHARION GUNAAN', institution='INSTITUT QORVANE',
                      campus='KAMPUS UTARA')
-        self.assertEqual(institution_fill(app2, offer=new), '')                 # the blank a sponsor never sees
-        chk = student_offer_check(new)
-        joined = {**chk, 'institution': f"{chk['institution']} {chk['campus']}"}
-        self.assertEqual(institution_fill(app2, offer_check=joined), NORTH)     # the fix
+        self.assertEqual(institution_fill(app2, offer=new), NORTH)      # via student_offer_check's join
 
 
 class CheckTwoReportingDateTest(TestCase):

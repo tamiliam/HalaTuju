@@ -324,27 +324,31 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   multi-page letter is still seen at low detail per page (the text layer carried them here). Options for the
   lead: tile each page into crops, or page 1 alone at high + pages 2–3 in a second call. The 5 held-out pilot
   letters must not be used to tune the prompt.
-- **Every reader of the offer fields (sprint-start 3b), and what the new shape does to it.** Tests:
-  `tests/test_offer_reader_doors.py` (one per door; the "loses" tests pin today's matcher and show the join).
+- **Every reader of the offer fields (sprint-start 3b), and what the new shape does to it** — updated to the
+  matcher session's live join (`offer_course_match.letter_institution` = institution + " " + campus, main
+  `d08283f1`, read inside `student_offer_check` and by `align_institution_to_catalogue`; a read with no `campus`
+  reads as before). Tests: `tests/test_offer_reader_doors.py` (one per door).
 
-  | Door | Reads | Effect of S4's shape |
+  | Door | Reads | Effect of S4's shape (with the live join) |
   |---|---|---|
-  | `pathway_engine.student_offer_check` (feeds every door below) | all fields | unchanged; now also returns `campus`, `programme_code` |
-  | Name / IC statuses → `verdict_engine`, `verdict_ladder`, `doc_red_keys.person_red` (gate), `resolution` (Action Centre), `help_engine` (Cikgu Gopal), `offer_sync`, `offer_link`, the confirm, `backfill_*`, `audit_pathway_ticks` | `candidate_name`, `candidate_nric` | same field names and rules; a reference-line IC now reads `match` where it read `unreadable`; a non-IC number is blanked → `unreadable`, not `mismatch` (safer); another person's IC still `mismatch` |
+  | `pathway_engine.student_offer_check` (feeds every door below) | all fields | `institution` = the joined line again; S4 adds nothing here (it is at its 633-line limit) |
+  | Name / IC statuses → `verdict_engine`, `verdict_ladder`, `doc_red_keys.person_red` (gate), `resolution` (Action Centre), `help_engine` (Cikgu Gopal), `offer_sync`, `offer_link`, the confirm, `backfill_*`, `audit_pathway_ticks` | `candidate_name`, `candidate_nric` | same fields and rules; a reference-line IC reads `match` where it read `unreadable`; a non-IC number is blanked → `unreadable`, never `mismatch`; another person's IC is still `mismatch` |
   | `vision.doc_student_verdict` (extraction-time name verdict) | `candidate_name` | unchanged |
-  | Matcher `offer_course_match.match_offer_course` / `pinned_match` (realign, link, confirm) | programme, institution, issuer | one-row universities (UiTM / UM / UMS degrees) still resolve from the name; a hostel line no longer needs the issuer. **LOSES (a)** the campus of a multi-campus course (IPG, KKTM, multi-campus diplomas): `campus_unpinned` / no match where the old line pinned it; **(b)** the printed-code tier — the code is now in `programme_code` (e.g. a letter with no institution line resolved only by its code). Joining `institution + campus` and `programme + code` restores both (tests). |
-  | `letter_place` / `CampusReader` → `institution_agreement`, `offer_contradicts_course_institution`, ticks | institution, issuer | better for hostel lines (the university name agrees); multi-campus loss as above |
-  | `offer_sync.institution_fill` / `sync_institution_from_catalogue` (sponsor-facing must-fill) | institution, issuer | **LOSES** the multi-campus fill (returns '' → the line vanishes from the sponsor card) until it reads `campus` |
-  | `services/confirmation` (offer confirm label, `_confirmed_place`) | programme, institution, issuer | the stored label is the name without the campus when the catalogue cannot pin it — same loss |
-  | `offer_reporting_bonus`, `private_arm_letter` (genuineness gates on the fields) | issuer + institution | unchanged while the private-arm tell is in the issuer; a tell printed only in the campus line would be missed → add `campus` to the haystack (matcher session) |
-  | `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`, `promotion` | programme / institution | polytechnic / KK / matric / Form-Six names keep their town, so no loss; programme without a code is the same name |
-  | Check 2 `offer_reporting_date_unknown`; `sync_reporting_date_from_offer` | reporting_date | a commencement-only letter now reads no reporting date → Check 2 asks the student (correct, owner a405); a blank never clears a stored date |
-  | Cockpit display (`checklistsPathway.tsx`: `chk.institution`, `chk.issuer`) | institution, issuer | shows the name without the campus until the web renders `chk.campus` (web change, three languages) |
-  | Student-facing text (`help_engine`, the Documents card) | name / IC statuses only | unchanged |
-- **Before the push (unchanged rule, now concrete):** the matcher session makes `match_offer_course` /
-  `letter_place` / `institution_fill` / the confirm read `campus` (multi-campus) and `programme_code` (code tier),
-  adds `campus` to the private-arm haystack, and the web shows `campus`; then the dry-run of realign / link /
-  ticks on the new reads goes to that session (rule 5).
+  | Matcher `match_offer_course` / `pinned_match` (realign, link, confirm), `letter_place` / `CampusReader` (ticks, `institution_agreement`, `offer_contradicts_course_institution`) | programme, joined line, issuer | multi-campus pins survive through the join (test); one-row universities resolve from the name; a hostel line now goes to `reporting_venue`, so the university name agrees without the issuer standing in. **STILL LOSES the printed-code tier:** a code is moved to `programme_code`, which no matcher reads — on the pilot, 5 of 10 S4 reads carry a `programme_code`. **Owed by the matcher session:** read `programme_code` (e.g. join it back as the code tier's input) before the push. |
+  | `offer_sync.institution_fill` / `sync_institution_from_catalogue` (sponsor-facing must-fill) | joined line, issuer | the multi-campus fill survives through the join (test) |
+  | `services/confirmation` (confirm label, `_confirmed_place`) | programme, joined line, issuer | the label carries the campus again (joined) |
+  | `offer_reporting_bonus` (reads `issuer`, `institution`, `campus` — live), `private_arm_letter` (via the joined line) | | a private-arm tell in the campus line is seen |
+  | `offer_pathway_switch`, `poly_institution_from_live_offer`, `backfill_pre_u_track`, `promotion` | programme / institution | no loss (polytechnic / KK / matric / Form-Six names keep their town; a code-free programme is the same name) |
+  | Check 2 `offer_reporting_date_unknown`; `sync_reporting_date_from_offer` | reporting_date | a commencement-only letter now reads no reporting date → Check 2 asks the student (owner a405); a blank never clears a stored date |
+  | Cockpit display (`checklistsPathway.tsx`: `chk.institution`, `chk.issuer`) | joined line | shows institution + campus, as before |
+  | Student-facing text (`help_engine`, the Documents card) | name / IC statuses | unchanged |
+  | `reporting_venue` | — | read by nothing yet (kept for the record and for TD-447) |
+- **Matcher inputs, stored vs S4, on the 10 pilot letters (eval caches only, keys and fields only):** name and
+  IC inputs unchanged on all 10; programme, joined line or issuer changed on 9; a `programme_code` present on 5.
+  The realign / link / ticks dry-run itself needs the live catalogue and applications (below).
+- **Before the push:** the matcher session reads `programme_code`; then the realign / link / ticks dry-run on
+  the new reads (rule 5) goes to that session; adversarial review (identity: the IC guard and the reference-line
+  IC); the dev and held-out runs.
 
 ### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.

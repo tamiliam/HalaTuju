@@ -235,7 +235,7 @@ Owner rule, approved 2026-11-01 (decisions.md, same date). Display only; not dep
 - Nothing that decides, queries or pays reads `exam_year_status` (the Check-2 "exam year unknown" ask reads
   `exam_year` only).
 - Tests: `test_exam_years.py`; web `stpmYearChip.test.tsx`.
-## Offer letters read exactly — Sprint 2 (tooling half) — 2026-11-01 — BUILT, not deployed
+
 ## Offer letters read exactly — Sprint 4 (reader round 1) — 2026-11-01 — BUILT, not deployed
 
 Production code (the AI offer read); no migration; not pushed. Ships only after the matcher session reads
@@ -252,8 +252,10 @@ US$0.001 synthetic-image probe.
   with its label; dates without weekday or time; a reporting date is never a commencement date; the IC also from
   the reference line, never invented; read exactly as printed. Clean-up: a code left in `programme` moves to
   `programme_code`; an IC read that cannot be an IC (not 11–13 digits) is blanked.
-- `vision._call_gemini_json` takes `images=[…]` and `media_resolution=` (other callers unchanged);
-  `student_offer_check` also returns `campus` and `programme_code`.
+- `vision._call_gemini_json` takes `images=[…]` and `media_resolution=` (other callers unchanged). Rebased on
+  the matcher's live campus join (`letter_institution`, main d08283f1); `pathway_engine.py` unchanged by S4.
+  Still owed by the matcher session: read `programme_code` (the printed-code tier).
+- `halatuju/ai_registry.py`: the offer reader is a registered AI job (`offer_read`).
 - **Finding:** the 258-token image was the default media resolution (a synthetic A4 page: 258 default / medium,
   3,354 high). High resolution applies only to a ONE-image call: a 2-page letter came back as 2 × 258.
 - **Pilot (S3's 10 letters, 5 dev + 5 held-out):** fully exact 9/10 new vs 1/10 current (S3); institution 9 vs 4,
