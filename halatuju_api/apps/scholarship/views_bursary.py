@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.throttling import UploadRateThrottle
 
 from . import card_display
 from .in_programme import can_record_results
@@ -389,8 +390,10 @@ class BursaryGrowthTaskView(APIView):
     """POST scholarship/bursary/growth/<pk>/task/ — send or change her task: `{text}` (a reflection, <= 5,000)
     or `{storage_path, original_filename}` (a PDF / JPEG / PNG up to 10 MB she PUT to the signed URL; checked
     by its bytes). 409 `lessons_first` / `reviewed` / `module_closed` / `no_task`. POST .../task/sign/ `{size}`
-    → `{upload_url, storage_path}` under HER own path. GET .../task/file/ → a 300-second link to HER file."""
+    → `{upload_url, storage_path}` under HER own path, only when she may send it now (the same checks). GET
+    .../task/file/ → a 300-second link to HER file. POSTs are rate-limited like the document uploads."""
     permission_classes = [SupabaseIsAuthenticated]
+    throttle_classes = [UploadRateThrottle]
 
     def get(self, request, pk, step=None):
         app = _own_file(request)
@@ -414,13 +417,7 @@ class BursaryGrowthTaskView(APIView):
         data = request.data if isinstance(request.data, dict) else {}
         try:
             if step == 'sign':
-                m = development.visible_module(app, pk)
-                if m is None:
-                    raise development.DevelopmentError('not_found')
-                if not development.can_act(m, app):
-                    raise development.DevelopmentError('module_closed')
-                if m.task_kind != 'upload':
-                    raise development.DevelopmentError('no_task')
+                m = development.task_upload_allowed(app, pk)   # S10 review 3: the send's own checks
                 return Response(development_files.task_upload_url(app, m, data.get('size')))
             if step is not None:
                 raise development.DevelopmentError('not_found')

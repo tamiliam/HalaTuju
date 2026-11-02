@@ -145,8 +145,9 @@ export interface WorkRow {
   late: boolean
   task_sent_at: string | null
   task_text: string
-  /** `url` only on the mentor's page (a short signed link). */
-  task_file: { name: string; type: string; url?: string | null } | null
+  /** An upload opens through its own door, signed on the tap (staff: `taskFileLink`; the mentor:
+   *  `myStudentTaskFile`) — never a link carried in the payload (S10 review). */
+  task_file: { name: string; type: string } | null
   reviewed_at: string | null
   review_comment: string
 }
@@ -208,7 +209,7 @@ export async function uploadLessonFile(id: number, lessonId: number, file: File,
     `${url}sign/`, 'POST', { size: file.size }, options)
   const resp = await fetch(signed.upload_url, {
     method: 'PUT', body: file,
-    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },   // no upsert: signed without it (S10 review)
   })
   if (!resp.ok) throw Object.assign(new Error(`Upload failed: ${resp.status}`), { code: 'upload_failed' })
   return adminMutate<ModuleRow>(url, 'POST', { storage_path: signed.storage_path, original_filename: file.name }, options)

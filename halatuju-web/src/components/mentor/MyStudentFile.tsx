@@ -8,6 +8,8 @@ import { formatDate } from '@/lib/formatDate'
 import { getMyStudent, type MyStudent } from '@/lib/admin-api'
 import LogMeetingSheet from './LogMeetingSheet'
 import GrowthWork from '@/components/development/GrowthWork'
+import { openSigned } from '@/components/development/shared'
+import { myStudentTaskFile } from '@/lib/admin-api/mentorDesk'
 import { PRIMARY, ResultChip, SECONDARY, helpWords, telHref } from './mentorBits'
 
 const K = 'admin.myStudents'
@@ -132,7 +134,8 @@ export default function MyStudentFile({ id }: { id: number }) {
           className="flex flex-col rounded-xl border border-ground-200 bg-ground-0 px-4 py-3 md:px-5">
           <h2 className="text-base font-semibold text-ground-900">{t('admin.scholars.growth.title')}</h2>
           <GrowthWork rows={data.modules ?? []} t={t}
-            openFile={(r) => { if (r.task_file?.url) window.open(r.task_file.url, '_blank', 'noopener') }} />
+            openFile={(r) => openSigned(() => myStudentTaskFile(data.id, r.id, { token: token ?? undefined }),
+              () => setBanner(t(`${K}.loadFailed`)))} />
           <p className="text-xs text-ground-600">{t('admin.scholars.growth.mentorNote')}</p>
         </section>
       )}

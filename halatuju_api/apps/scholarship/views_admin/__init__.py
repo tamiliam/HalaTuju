@@ -158,7 +158,8 @@ from .development import (   # S10: Programme -> Development, a module's Progres
     AdminModuleProgressView, AdminModuleScholarView, AdminModulesView, AdminModuleView, AdminScholarGrowthView,
 )
 from .mentor_students import (   # S7c: a mentor's own students
-    AdminMentorStudentSessionsView, AdminMentorStudentView, AdminMentorStudentsView,
+    AdminMentorStudentModuleFileView, AdminMentorStudentSessionsView, AdminMentorStudentView,
+    AdminMentorStudentsView,
 )
 from .reviewers import (
     _REVIEWER_OPEN_STATUSES, _REVIEWER_PROGRESSED_STATUSES, _REVIEW_FLUENCY, _ReviewersBase,

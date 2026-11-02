@@ -72,7 +72,7 @@ def _service_key():
     return getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
 
 
-def _post(path, payload):
+def _post(path, payload, headers=None):
     base, key = _base_url(), _service_key()
     if not base or not key:
         logger.warning('Supabase Storage not configured (SUPABASE_URL / service key missing)')
@@ -85,6 +85,7 @@ def _post(path, payload):
             'Authorization': f'Bearer {key}',
             'apikey': key,
             'Content-Type': 'application/json',
+            **(headers or {}),
         },
     )
     try:
@@ -95,9 +96,13 @@ def _post(path, payload):
         return None
 
 
-def create_signed_upload_url(path):
-    """Signed URL the browser can PUT a file to (private bucket). None on failure."""
-    result = _post(f'/object/upload/sign/{BUCKET}/{path}', {})
+def create_signed_upload_url(path, upsert=None):
+    """Signed URL the browser can PUT a file to (private bucket). None on failure. ``upsert=False``
+    (development modules S10 review) signs it with `x-upsert: false`, so the URL can never overwrite an
+    object already at the key — a file checked and recorded cannot be swapped later without a new check.
+    The older document flows pass nothing and are unchanged (TD-467: bucket-level limits for all flows)."""
+    headers = {'x-upsert': 'true' if upsert else 'false'} if upsert is not None else None
+    result = _post(f'/object/upload/sign/{BUCKET}/{path}', {}, headers=headers)
     rel = (result or {}).get('url')
     return f'{_base_url()}/storage/v1{rel}' if rel else None
 

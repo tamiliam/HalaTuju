@@ -56,7 +56,13 @@ rollback in its docstring), then create the hourly Cloud Scheduler job `halatuju
   lazy chunk per feature (`components/development/screens.ts`, and the same for S9's three Surveys screens,
   `components/surveys/screens.ts`): /scholarship/apply 186.739 kB (base 186.707, +0.032 — the Growth tab's own lazy
   chunk), median 145.248 (base 145.385), budget ok.
-- Tests: `test_development.py` (41), `BursaryGrowth.test.tsx`, `DevelopmentAdmin.test.tsx`,
+- **Review fixes:** the mentor's file link is signed on the tap by a mentor-only door
+  (`admin/mentor/students/<id>/modules/<module>/file/`: CURRENT assignment, own student, a module the student can
+  see — never a link in the page payload, which went stale); the Growth uploads are signed with `x-upsert: false`
+  (a recorded object cannot be overwritten through a still-valid URL; TD-467 for the bucket limits and the older
+  flows); signing her upload has the send's own checks (every lesson read, not reviewed, live) and the upload
+  throttle; the Remind button never writes `switched_off` rows, even if the switch flips mid-run (it stops).
+- Tests: `test_development.py` (46), `BursaryGrowth.test.tsx`, `DevelopmentAdmin.test.tsx`,
   `ModuleProgressView.test.tsx`, the scholar file page's and the bursary page's Growth tab tests.
 
 ## Mobile M4c follow-up — the quizzes on a phone (2026-11-02, not yet pushed)

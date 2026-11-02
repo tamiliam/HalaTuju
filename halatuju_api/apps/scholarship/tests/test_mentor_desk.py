@@ -446,6 +446,8 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
         # S7c — the mentor's own students.
         'AdminMentorStudentsView': ('get',), 'AdminMentorStudentView': ('get',),
         'AdminMentorStudentSessionsView': ('post',),
+        # S10 review 1 — the student's uploaded module task, signed on the tap.
+        'AdminMentorStudentModuleFileView': ('get',),
     }
 
     def test_the_closed_list(self):

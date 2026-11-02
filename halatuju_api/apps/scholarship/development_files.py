@@ -85,7 +85,7 @@ def _upload_url(prefix, size):
     if isinstance(size, int) and not isinstance(size, bool) and size > MAX_BYTES:
         raise FileError('file_too_large')
     path = f'{prefix}/{uuid.uuid4().hex}'
-    url = storage.create_signed_upload_url(path)
+    url = storage.create_signed_upload_url(path, upsert=False)   # never over a recorded object (S10 review)
     if not url:
         raise FileError('storage_unavailable')
     return {'upload_url': url, 'storage_path': path, 'max_bytes': MAX_BYTES}

@@ -86,7 +86,7 @@ def remind_not_done(m, *, by_email=''):
     from .student_email_catalogue import may_send
     if not may_send(m.organisation, EMAIL_KEY):
         raise DevelopmentError('switched_off')   # writes NOTHING (see the module docstring)
-    sent = _send_module_kind(m, 'reminder', mark=None)
+    sent = _send_module_kind(m, 'reminder', mark=None, from_button=True)
     logger.warning('AUDIT module_reminded id=%s org=%s sent=%s by=%s', m.id, m.organisation_id, sent, by_email)
     return sent
 
@@ -109,7 +109,10 @@ def _done_now(m, app):
     return is_done(m, lesson_ids, p)
 
 
-def _send_module_kind(m, kind, *, mark):
+def _send_module_kind(m, kind, *, mark, from_button=False):
+    """``from_button`` (S10 review 4): the Progress page's button NEVER writes `switched_off` rows — with the
+    switch reading off, before the run or at any scholar during it, it stops and writes nothing more (only
+    the hourly job records `switched_off`, so the job's reminder still comes once the switch is on)."""
     from . import student_comms
     from .student_email_catalogue import may_send
     apps = list(audience_apps(m.organisation_id, m.programme_id).select_related('profile', 'programme')
@@ -117,6 +120,8 @@ def _send_module_kind(m, kind, *, mark):
     if kind == 'reminder':
         apps = [a for a in apps if not _done_now(m, a)]
     if not may_send(m.organisation, EMAIL_KEY):
+        if from_button:
+            raise DevelopmentError('switched_off')
         ModuleEmail.objects.bulk_create(
             [ModuleEmail(module=m, application=a, kind=kind, outcome='switched_off') for a in apps],
             ignore_conflicts=True)
@@ -131,6 +136,8 @@ def _send_module_kind(m, kind, *, mark):
             return sent   # archived or taken back mid-run: nobody else is emailed, and the mark stays empty
         if kind == 'reminder' and _done_now(m, app):
             continue      # finished while the run was going: no reminder, and no claim
+        if from_button and not may_send(m.organisation, EMAIL_KEY):
+            break         # switched off mid-run: the button claims nobody else (and records nothing)
         row = _claim_email(m, app, kind)
         if row is None:
             continue

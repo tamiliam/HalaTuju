@@ -349,6 +349,7 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminMentorStudentsView': 'mentor-own-students-org-fenced',
         'AdminMentorStudentView': 'mentor-own-students-org-fenced',
         'AdminMentorStudentSessionsView': 'mentor-own-students-org-fenced',
+        'AdminMentorStudentModuleFileView': 'mentor-own-students-org-fenced',   # S10 review 1
         # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
         # one queryset every figure is derived from, `owning_organisation` for a tenant and
         # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only

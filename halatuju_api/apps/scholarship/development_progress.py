@@ -23,7 +23,6 @@ from django.utils import timezone
 from .announcements import audience_apps
 from .development import MYT, DevelopmentError, module_status, is_done, modules_for_file, today
 from .models import DevelopmentModule, MentorAssignment, ModuleEmail, ModuleProgress
-from .storage import create_signed_download_urls
 from .survey_results import _cell
 
 COMMENT_MAX = 1000
@@ -165,17 +164,16 @@ def task_file_path(m, application_id):
             .values_list('task_file_path', flat=True).first() or '')
 
 
-def _work_rows(app, *, sign):
-    """Each module this scholar can see or started, with their work. ``sign`` adds a short file link."""
-    from . import development_files as files
+def _work_rows(app, *, staff):
+    """Each module this scholar can see (``staff``: or started), with their work. No file link: a file opens
+    through its own door, signed on the tap (S10 review 1 — a link in a payload goes stale)."""
     now, day = timezone.now(), today()
     mods = list(modules_for_file(app, now).prefetch_related('lessons'))
     started = {p.module_id: p for p in ModuleProgress.objects.filter(application=app)
                .prefetch_related('reads')}
-    for m in DevelopmentModule.objects.filter(pk__in=[k for k in started if k not in {x.id for x in mods}]):
-        mods.append(m)   # started, but the audience moved: staff still see the work
-    links = (create_signed_download_urls([p.task_file_path for p in started.values() if p.task_file_path],
-                                         expires_in=files.SIGNED_FOR) if sign else {})
+    if staff:
+        for m in DevelopmentModule.objects.filter(pk__in=[k for k in started if k not in {x.id for x in mods}]):
+            mods.append(m)   # started, but the audience moved: staff still see the work
     out = []
     for m in mods:
         ids = [x.id for x in m.lessons.all()]
@@ -189,8 +187,6 @@ def _work_rows(app, *, sign):
                'task_file': ({'name': p.task_file_name, 'type': p.task_file_type} if p and p.task_file_path
                              else None),
                'reviewed_at': p.reviewed_at if p else None, 'review_comment': p.review_comment if p else ''}
-        if sign and row['task_file'] is not None:
-            row['task_file']['url'] = links.get(p.task_file_path)
         out.append(row)
     out.sort(key=lambda r: (r['done'], r['due_on'] is None, r['due_on'] or day, -r['id']))
     return out
@@ -199,11 +195,20 @@ def _work_rows(app, *, sign):
 def scholar_file_payload(app):
     """The scholar file's Growth tab (staff): each module this scholar can see or started, with their work.
     A file opens through the Progress page's file door (`<module>/progress/<app>/file/`), on a tap."""
-    return {'modules': _work_rows(app, sign=False)}
+    return {'modules': _work_rows(app, staff=True)}
 
 
 def mentor_rows(app):
     """The CURRENT mentor's view of their own student's modules (`mentor_desk.student_payload`): the same
-    allowlist as the staff tab, with a short link to an uploaded task. Never the author, the audience, other
-    scholars, the email state or who reviewed."""
-    return _work_rows(app, sign=True)
+    allowlist as the staff tab, for the modules the STUDENT can see. Never the author, the audience, other
+    scholars, the email state, who reviewed or a file link (an upload opens through `mentor_task_file_path`'s
+    door, `admin/mentor/students/<id>/modules/<module>/file/`, signed on the tap)."""
+    return _work_rows(app, staff=False)
+
+
+def mentor_task_file_path(app, module_id):
+    """The key of the student's uploaded task for ONE module the student can see, or '' (→ 404). The caller
+    (`views_admin/mentor_students.py`) has already fenced the student to the mentor's CURRENT assignment."""
+    if modules_for_file(app).filter(pk=module_id).exists():
+        return task_file_path(DevelopmentModule(pk=module_id), app.pk)
+    return ''

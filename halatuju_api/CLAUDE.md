@@ -1170,7 +1170,8 @@ size, signed links), `development_emails.py` (`send_due_module_emails`, `remind_
 `<id>/progress/<app>/file|review/`, `<id>/csv/`, `<id>/archive|remind/`, `<id>/lessons/<lid>/file/` (+ `sign/`),
 `admin/scholarship/scholars/<id>/development/`); her `scholarship/bursary/growth/` (+ `<id>/`,
 `<id>/lessons/<lid>/read|file/`, `<id>/task/` (+ `sign/`, `file/`)); summary keys `growth_tab`, `growth_to_do`; the
-mentor's `admin/mentor/students/<id>/` gains `modules`. Routes in `urls_development.py`. `storage.download_object`
+mentor's `admin/mentor/students/<id>/` gains `modules` (no links), and the mentor-only
+`admin/mentor/students/<id>/modules/<module>/file/` signs an upload on the tap (`mentor_methods`; review fix). Routes in `urls_development.py`. `storage.download_object`
 gained `max_bytes`. Web: `/admin/programme/development` (+ `[id]`, lazy, Mobile `can`), the scholar file's Growth
 tab (lazy `ScholarGrowth`), the mentor page's Growth section, the bursary Growth tab (lazy, `bursaryTabs.growth`).
 **NEXT (maintenance stream): the lead's review, then deploy Sprint 10; then the parked Team tables T1–T4

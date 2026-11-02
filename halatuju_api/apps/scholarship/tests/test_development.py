@@ -652,6 +652,83 @@ class TestTheEmail(_Base):
         self.assertIsNone(m.published_emailed_at)
 
 
+class TestReviewFixes(_Base):
+    """The S10 safety review's four fixes, each pinned."""
+
+    def setUp(self):
+        super().setUp()
+        self.m = _module(self.org, task_kind='upload', task_prompt='Upload your CV')
+        self.mentor = make_admin('mentor', owning_org=self.org)
+        self.assignment = MentorAssignment.objects.create(application=self.app, mentor=self.mentor.mentor)
+
+    def file_url(self, mid=None):
+        return f'/api/v1/admin/mentor/students/{self.app.id}/modules/{mid or self.m.id}/file/'
+
+    def test_1_the_mentor_link_is_signed_on_the_tap_for_the_current_mentor_only(self):
+        ModuleProgress.objects.create(module=self.m, application=self.app, task_file_path='1/2/growth-3/' + 'e' * 32,
+                                      task_file_name='cv.pdf', task_sent_at=timezone.now())
+        page = authed_client(self.mentor).get(f'/api/v1/admin/mentor/students/{self.app.id}/').json()
+        self.assertNotIn('url', page['modules'][0]['task_file'])   # never a (stale) link in the payload
+        with patch(STORAGE + 'create_signed_download_url', return_value='https://storage.test/m') as sign:
+            r = authed_client(self.mentor).get(self.file_url())
+            self.assertEqual((r.status_code, r.json()['url']), (200, 'https://storage.test/m'))
+            sign.assert_called_once_with('1/2/growth-3/' + 'e' * 32, expires_in=300)
+            hidden = _module(self.org, 'Their gift', programme=self.gift_b)
+            ModuleProgress.objects.create(module=hidden, application=self.app, task_file_path='1/2/x/' + 'f' * 32)
+            self.assertEqual(authed_client(self.mentor).get(self.file_url(hidden.id)).status_code, 404)
+            other = make_admin('mentor', owning_org=self.org)
+            self.assertEqual(authed_client(other).get(self.file_url()).status_code, 404)
+            staff = make_admin('org_admin', owning_org=self.org)   # staff with no mentoring: refused like 7c's doors
+            self.assertEqual(authed_client(staff).get(self.file_url()).status_code, 403)
+            MentorAssignment.objects.filter(pk=self.assignment.pk).update(ended_at=timezone.now())
+            self.assertEqual(authed_client(self.mentor).get(self.file_url()).status_code, 404)
+
+    @patch(STORAGE + 'create_signed_upload_url', return_value='https://storage.test/upload')
+    def test_2_the_growth_uploads_are_signed_without_upsert(self, sign):
+        self.read_all(self.m)
+        self.me().post(f'{MINE}{self.m.id}/task/sign/', {}, format='json')
+        lesson = self.m.lessons.first()
+        ModuleLesson.objects.filter(pk=lesson.pk).update(video_url='')
+        authed_client(self.org_admin).post(f'{STAFF}{self.m.id}/lessons/{lesson.id}/file/sign/', {}, format='json')
+        self.assertEqual([c.kwargs for c in sign.call_args_list], [{'upsert': False}, {'upsert': False}])
+
+    def test_2_upsert_false_is_the_header_and_the_older_flows_send_none(self):
+        with patch(STORAGE + '_post', return_value={'url': '/x'}) as post:
+            from apps.scholarship import storage
+            storage.create_signed_upload_url('a/b', upsert=False)
+            storage.create_signed_upload_url('a/c')   # the older flows: unchanged
+        self.assertEqual(post.call_args_list[0].kwargs['headers'], {'x-upsert': 'false'})
+        self.assertIsNone(post.call_args_list[1].kwargs['headers'])
+
+    @patch(STORAGE + 'create_signed_upload_url', return_value='https://storage.test/upload')
+    def test_3_signing_her_upload_has_the_sends_own_checks(self, sign):
+        sign_url = f'{MINE}{self.m.id}/task/sign/'
+        r = self.me().post(sign_url, {}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'lessons_first'))
+        self.read_all(self.m)
+        self.assertEqual(self.me().post(sign_url, {}, format='json').status_code, 200)
+        ModuleProgress.objects.filter(application=self.app).update(task_sent_at=timezone.now(),
+                                                                   reviewed_at=timezone.now())
+        self.assertEqual(self.me().post(sign_url, {}, format='json').json()['code'], 'reviewed')
+        DevelopmentModule.objects.filter(pk=self.m.pk).update(status='archived')
+        self.assertEqual(self.me().post(sign_url, {}, format='json').json()['code'], 'module_closed')
+        self.assertEqual(sign.call_count, 1)
+
+    def test_4_the_button_never_writes_switched_off_even_when_it_flips_mid_run(self):
+        m = _module(self.org, 'Due', remind_before_due=True, due_on=timezone.localdate() + DAY)
+        _scholar(make_cohort(programme=self.gift_a))
+        # remind_not_done, the run's own check, scholar 1's check and its send: on; scholar 2's check: off.
+        answers = iter([True, True, True, True] + [False] * 10)
+        with patch('apps.scholarship.student_email_catalogue.may_send', side_effect=lambda *a: next(answers)):
+            r = authed_client(self.org_admin).post(f'{STAFF}{m.id}/remind/')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(ModuleEmail.objects.filter(outcome='switched_off').exists())
+        self.assertEqual(ModuleEmail.objects.filter(module=m).count(), 1)   # one sent, then it stopped
+        student_email_catalogue.set_switch(self.org, 'module_published', False)
+        self.assertEqual(authed_client(self.org_admin).post(f'{STAFF}{m.id}/remind/').json()['code'], 'switched_off')
+        self.assertEqual(ModuleEmail.objects.filter(module=m).count(), 1)
+
+
 class TestTheOrphanSweepKnowsTheFiles(_Base):
     def test_lesson_and_task_files_are_known(self):
         from apps.scholarship.management.commands.cleanup_orphan_blobs import known_paths

@@ -14,13 +14,16 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import MyStudents from './MyStudents'
 import MyStudentFile from './MyStudentFile'
 import * as api from '@/lib/admin-api'
+import * as desk from '@/lib/admin-api/mentorDesk'
 
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, p?: Record<string, string>) => (p ? `${k}|${JSON.stringify(p)}` : k), locale: 'en' }),
 }))
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'tok', role: { role: 'mentor' } }) }))
 jest.mock('@/lib/admin-api')
+jest.mock('@/lib/admin-api/mentorDesk')
 const mockApi = api as jest.Mocked<typeof api>
+const mockDesk = desk as jest.Mocked<typeof desk>
 const K = 'admin.myStudents'
 
 const CARD: api.MyStudentCard = {
@@ -130,15 +133,18 @@ describe('One student', () => {
     mockApi.getMyStudent.mockResolvedValue({ ...PAGE, modules: [{ id: 3, title: 'Managing your money',
       status: 'published', due_on: '2026-11-30', task_kind: 'reflection', lessons: 3, read: 3, done: true,
       late: false, task_sent_at: '2026-11-12T00:00:00Z', task_text: 'Cook three days a week.',
-      task_file: { name: 'cv.pdf', type: 'application/pdf', url: 'https://storage.test/signed' },
+      task_file: { name: 'cv.pdf', type: 'application/pdf' },
       reviewed_at: null, review_comment: '' }] })
-    const open = jest.spyOn(window, 'open').mockReturnValue(null)
+    mockDesk.myStudentTaskFile.mockResolvedValue({ url: 'https://storage.test/signed', expires_in: 300 })
+    const tab = { location: { href: '' }, close: jest.fn() }
+    const open = jest.spyOn(window, 'open').mockReturnValue(tab as unknown as Window)
     render(<MyStudentFile id={104} />)
     const growth = await screen.findByTestId('my-student-growth')
     expect(growth.textContent).toContain('Cook three days a week.')
     expect(growth.textContent).toContain('admin.scholars.growth.done')
-    fireEvent.click(screen.getByTestId('growth-file-3'))
-    expect(open).toHaveBeenCalledWith('https://storage.test/signed', '_blank', 'noopener')
+    fireEvent.click(screen.getByTestId('growth-file-3'))   // signed on the tap, never from the payload
+    await waitFor(() => expect(tab.location.href).toBe('https://storage.test/signed'))
+    expect(mockDesk.myStudentTaskFile).toHaveBeenCalledWith(104, 3, { token: 'tok' })
     open.mockRestore()
   })
 

@@ -84,6 +84,12 @@ export async function getMyStudent(id: number, options?: ApiOptions) {
   return adminFetch<MyStudent>(`${BASE}${id}/`, options)
 }
 
+/** S10: a short signed link to the student's uploaded development-module task, minted on the tap. 404 when it
+ *  is not (or no longer) the caller's current student, the student cannot see the module, or there is no upload. */
+export async function myStudentTaskFile(id: number, moduleId: number, options?: ApiOptions) {
+  return adminFetch<{ url: string; expires_in: number }>(`${BASE}${id}/modules/${moduleId}/file/`, options)
+}
+
 /** Refusals as `code`: bad_date, future_date, before_assignment, bad_mode, bad_minutes, notes_required,
  *  too_long, file_closed; 404 when the student is no longer theirs. */
 export async function logMyMeeting(id: number, body: MyMeetingBody, options?: ApiOptions) {

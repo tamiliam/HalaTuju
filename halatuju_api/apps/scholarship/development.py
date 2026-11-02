@@ -261,6 +261,21 @@ def _may_send_task(m, p):
         raise DevelopmentError('lessons_first')
 
 
+def task_upload_allowed(app, module_id):
+    """The module IFF she may upload her task now — the SAME checks as sending it (S10 review 3): a module she
+    may see (404), live and her file in maintenance (`module_closed`), an upload task (`no_task`), every
+    current lesson read (`lessons_first`), not yet reviewed (`reviewed`). Nothing is signed otherwise."""
+    m = visible_module(app, module_id)
+    if m is None:
+        raise DevelopmentError('not_found')
+    if not can_act(m, app):
+        raise DevelopmentError('module_closed')
+    if m.task_kind != 'upload':
+        raise DevelopmentError('no_task')
+    _may_send_task(m, ModuleProgress.objects.filter(module=m, application=app).first())
+    return m
+
+
 def submit_task(app, module_id, data):
     """Send (or change) her task: a reflection `{text}` or a file `{storage_path, original_filename}` she PUT
     to the signed upload URL (`development_files.task_upload_url`). The file is checked by its BYTES (type and
