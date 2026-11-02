@@ -25,7 +25,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-02 Mobile-native Sprint M4b (student bottom tab bar; rule-15 sweep of dashboard, search, course pages, profile, saved, settings) — d37fc2f5 12c8f8dc 691e8804 6de6113d
 - 2026-11-02 Offer letters read exactly, Sprints S1-S4 (eval tooling, answers, today's reader measured, reader 2.4.0 + IC guard; live main cfd02d91) — 86694663 f3f1ebec ebf81b42 0ff5688d 15ad3710 fded4337 0246662b 4493b400 6c209f91 20e69d5a 7c7f3875 6e41400b edcbbc0c 5d96f857 a3be8d8b f78046ca 8b1ac648 2019fbea 6d024d26
 - 2026-11-02 Mobile-native Sprint M4c (rule-15 sweep of My Bursary, Home, scholarship landing, report, info/legal pages, pathways, onboarding, quizzes) — 633ff8b5 2a6db949 b93f425f
-- 2026-11-03 Mobile-native Sprint M5 (sponsor portal on phones: sponsor tab bar, display + Log out in My Account, fund bar + one confirm Sheet, rule 15 + 12 px across the portal, sign-in and landing) — 8144dc17 87f791fe 96c95693 ede659d4 5b565a66
+- 2026-11-03 Mobile-native Sprint M5 (sponsor portal on phones: sponsor tab bar, display + Log out in My Account, fund bar + one confirm Sheet, rule 15 + 12 px across the portal, sign-in and landing) — 8144dc17 87f791fe 96c95693 ede659d4 5b565a66 3fbf7d30
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 
