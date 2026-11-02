@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
 import { getProfile, type SyncProfileData } from '@/lib/api'
 import FlowHeader from '@/components/FlowHeader'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_KOKO_SCORE, KEY_STPM_KOKO_CONFIRMED, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_SPM_PREREQ, KEY_SPM_ELEKTIF, KEY_SPM_STREAM } from '@/lib/storage'
 import { resultsSyncFields, syncProfileSafely } from '@/lib/resultsSync'
@@ -236,8 +237,8 @@ export default function ProfileInputPage() {
       <FlowHeader step={3} />
 
       {/* Content */}
-      <div className="container mx-auto px-6 py-8 max-w-2xl">
-        <div className="text-center mb-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-2xl md:py-8`}>
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.profileTitle')}
           </h1>
@@ -246,8 +247,8 @@ export default function ProfileInputPage() {
           </p>
         </div>
 
-        {/* Compact single card */}
-        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-6 mb-8">
+        {/* Compact single card — plain on a phone, the card from md (rule 15, Mobile M4c) */}
+        <div className="mb-6 md:mb-8 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-6">
           {/* Row 1: State + Nationality */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
             {/* Negeri */}
@@ -258,7 +259,7 @@ export default function ProfileInputPage() {
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                className="min-h-11 w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               >
                 <option value="">{t('onboarding.selectState')}</option>
                 {MALAYSIAN_STATES.map((s) => (
@@ -275,7 +276,7 @@ export default function ProfileInputPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setNationality('malaysian')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`min-h-11 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'malaysian'
                       ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
@@ -289,7 +290,7 @@ export default function ProfileInputPage() {
                 </button>
                 <button
                   onClick={() => setNationality('non_malaysian')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`min-h-11 flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'non_malaysian'
                       ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
@@ -397,7 +398,7 @@ export default function ProfileInputPage() {
             </label>
             <p className="text-xs text-ground-400 mb-3">{t('onboarding.healthNote')}</p>
             <div className="flex flex-wrap gap-3">
-              <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+              <label className={`flex min-h-11 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 colorblind
                   ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 hover:border-ground-300'
@@ -415,7 +416,7 @@ export default function ProfileInputPage() {
                 </svg>
                 <span className="text-sm text-ground-700">{t('onboarding.colorBlindness')}</span>
               </label>
-              <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+              <label className={`flex min-h-11 items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 disability
                   ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 hover:border-ground-300'

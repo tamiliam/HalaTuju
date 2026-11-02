@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { getBursaryContract, type BursaryContract as ContractPayload } from '@/lib/api'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 /**
  * Her contract on My Bursary (student maintenance S5b): the Overview's "Your contract" card
@@ -46,7 +47,7 @@ export default function BursaryContract({ contract, token, compact = false }: {
   }
 
   return (
-    <section className="rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid={compact ? 'bursary-contract-card' : 'bursary-contract-tab'}>
+    <section className={PHONE_SECTION_FLAT} data-testid={compact ? 'bursary-contract-card' : 'bursary-contract-tab'}>
       <h2 className="text-lg font-bold text-ground-900">{t('bursaryTabs.contract.title')}</h2>
       {!contract.exists ? (
         <p className="mt-2 text-sm text-ground-600" data-testid="contract-none">{t('bursaryTabs.contract.none')}</p>

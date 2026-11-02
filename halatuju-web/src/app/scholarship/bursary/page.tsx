@@ -37,6 +37,7 @@ import LazyBursaryNews from '@/components/bursary/LazyBursaryNews'
 import LazyBursarySurveys from '@/components/bursary/LazyBursarySurveys'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import { formatDate } from '@/lib/formatDate'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 /**
  * A STATE map, so these are TONES — not the `category-N` family (Layer 1 F3, 2026-08-31).
@@ -232,7 +233,7 @@ export default function BursaryPage() {
         <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 text-center" data-testid="bursary-load-failed">
           <p className="text-ground-700">{t('scholarship.bursary.loadFailed')}</p>
           <button type="button" onClick={() => { setLoading(true); setAttempt((n) => n + 1) }}
-            className="mt-4 rounded-xl bg-brand-fill px-5 py-2.5 text-sm font-medium text-brand-fill-ink">
+            className="mt-4 min-h-11 rounded-xl bg-brand-fill px-5 py-2.5 text-sm font-medium text-brand-fill-ink">
             {t('scholarship.bursary.retry')}
           </button>
         </main>
@@ -262,15 +263,16 @@ export default function BursaryPage() {
   return (
     <div className="min-h-screen flex flex-col bg-ground-50">
       <AppHeader />
-      <main className="flex-1 max-w-md mx-auto w-full px-4 py-6 space-y-4">
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-2 pb-6 space-y-3 md:py-6 md:space-y-4">
         <div className="flex items-center gap-2">
-          <Link href="/scholarship/application" aria-label={t('scholarship.inProgramme.back')} className="text-primary-600">‹</Link>
+          <Link href="/scholarship/application" aria-label={t('scholarship.inProgramme.back')}
+            className="-my-2 -ml-3 inline-flex min-h-11 min-w-11 items-center justify-center text-primary-600">‹</Link>
           <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.bursary.title')}</h1>
         </div>
 
         {/* Who and where — her name, her gift, her course, and one plain sentence of state. */}
         {app && (
-          <section className="rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="bursary-hello">
+          <section className={PHONE_SECTION_FLAT} data-testid="bursary-hello">
             <p className="text-lg font-semibold text-ground-900">
               {t('scholarship.bursary.hello', { name: firstName(app.name) })}
             </p>
@@ -297,7 +299,7 @@ export default function BursaryPage() {
             ...(app?.surveys_tab ? (['surveys'] as const) : []),
             ...(app?.mentoring_tab ? (['mentoring'] as const) : [])].map((k) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-              className={`h-10 rounded-full border px-4 text-sm font-medium ${tab === k
+              className={`h-11 rounded-full border px-4 md:h-10 text-sm font-medium ${tab === k
                 ? 'border-brand-shape bg-brand-fill text-brand-fill-ink'
                 : 'border-ground-300 bg-ground-0 text-ground-700'}`}>
               {t(k === 'letters' || k === 'mentoring' || k === 'news' || k === 'surveys' ? `bursaryTabs.${k}.tab` : `scholarship.bursary.tab.${k}`)}
@@ -360,7 +362,7 @@ export default function BursaryPage() {
         })()}
 
         {tab === 'overview' && app && (<>
-          <section className="rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="bursary-funds">
+          <section className={PHONE_SECTION_FLAT} data-testid="bursary-funds">
             <h2 className="text-lg font-bold text-ground-900">{t('scholarship.bursary.funds.title')}</h2>
             {app.funds.award_amount ? (
               <>
@@ -387,11 +389,11 @@ export default function BursaryPage() {
                 ))}
               </ul>
             )}
-            <button type="button" onClick={() => setTab('funds')} className="mt-2 text-sm font-medium text-primary-600">
+            <button type="button" onClick={() => setTab('funds')} className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-primary-600 md:mt-2 md:min-h-0">
               {t('bursaryTabs.funds.seeAll')}
             </button>
           </section>
-          <section className="rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="bursary-latest">
+          <section className={PHONE_SECTION_FLAT} data-testid="bursary-latest">
             <h2 className="text-lg font-bold text-ground-900">{t('scholarship.bursary.latest.title')}</h2>
             <p className="mt-2 text-sm text-ground-700">
               {app.latest_result
@@ -407,7 +409,7 @@ export default function BursaryPage() {
                   { date: formatDate(app.next_result_due) })}
               </p>
             )}
-            <button type="button" onClick={() => setTab('results')} className="mt-2 text-sm font-medium text-primary-600">
+            <button type="button" onClick={() => setTab('results')} className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-primary-600 md:mt-2 md:min-h-0">
               {t('scholarship.bursary.latest.open')}
             </button>
           </section>
@@ -422,7 +424,7 @@ export default function BursaryPage() {
           : <p className="text-sm text-critical-600">{t('bursaryTabs.contract.loadFailed')}</p>)}
 
         {/* ── Semester results (the Results tab) ───────────────────────────── */}
-        {tab === 'results' && <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">
+        {tab === 'results' && <section className={PHONE_SECTION_FLAT}>
           <h2 className="text-lg font-bold text-ground-900">{t('scholarship.inProgramme.results.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.inProgramme.results.subtitle')}</p>
 
@@ -456,11 +458,11 @@ export default function BursaryPage() {
 
           {!app?.can_record_results ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
-              className="mt-3 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
+              className="mt-3 min-h-11 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}
             </button>
           ) : (
-            <div className="mt-3 space-y-3 rounded-xl bg-ground-50 p-3">
+            <div className="mt-3 space-y-3 md:rounded-xl md:bg-ground-50 md:p-3">
               <div>
                 <label className="text-xs font-medium text-ground-600">{t('scholarship.inProgramme.results.semester')}</label>
                 <input value={semester} onChange={(e) => setSemester(e.target.value)}
@@ -489,11 +491,11 @@ export default function BursaryPage() {
               {resultError && <p className="text-sm text-critical-600">{resultError}</p>}
               <div className="flex gap-2">
                 <button onClick={saveResult} disabled={savingResult || !slip}
-                  className="flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
+                  className="min-h-11 flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
                   {savingResult ? t('scholarship.inProgramme.results.saving') : t('scholarship.inProgramme.results.save')}
                 </button>
                 <button onClick={() => { setShowForm(false); setResultError(null) }}
-                  className="rounded-xl px-4 py-2.5 text-sm font-medium text-ground-500">
+                  className="min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium text-ground-500">
                   {t('common.cancel')}
                 </button>
               </div>
@@ -502,11 +504,11 @@ export default function BursaryPage() {
         </section>}
 
         {/* ── Sharing your story (18+ promotional consent) ─────────────── */}
-        {tab === 'overview' && <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">
+        {tab === 'overview' && <section className={PHONE_SECTION_FLAT}>
           <h2 className="text-lg font-bold text-ground-900">{t('scholarship.inProgramme.promo.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.inProgramme.promo.subtitle')}</p>
           {isMinor ? (
-            <div className="mt-3 flex items-center gap-2 rounded-xl bg-ground-50 p-3 text-sm text-ground-400">
+            <div className="mt-3 flex items-center gap-2 text-sm text-ground-400 md:rounded-xl md:bg-ground-50 md:p-3">
               <span>🔒</span>{t('scholarship.inProgramme.promo.minor')}
             </div>
           ) : (
@@ -524,7 +526,7 @@ export default function BursaryPage() {
         </section>}
 
         {/* ── Thank your sponsor (graduation relay) ────────────────────── */}
-        {tab === 'overview' && <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">
+        {tab === 'overview' && <section className={PHONE_SECTION_FLAT}>
           <h2 className="text-lg font-bold text-ground-900">{t('scholarship.inProgramme.grad.title')}</h2>
           <p className="mt-1 text-sm text-ground-600">{t('scholarship.inProgramme.grad.subtitle')}</p>
 
@@ -551,7 +553,7 @@ export default function BursaryPage() {
             placeholder={t('scholarship.inProgramme.grad.placeholder')}
             className="mt-3 w-full rounded-xl border border-ground-300 px-3 py-2 text-sm" />
           <button onClick={sendThankYou} disabled={sending || !compose.trim()}
-            className="mt-2 w-full rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
+            className="mt-2 min-h-11 w-full rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
             {sending ? t('scholarship.inProgramme.grad.sending') : t('scholarship.inProgramme.grad.send')}
           </button>
         </section>}

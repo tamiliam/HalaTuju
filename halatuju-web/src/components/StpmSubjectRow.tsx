@@ -26,9 +26,10 @@ export default function StpmSubjectRow({ subject, grade, tag, onRemove, dashed =
   dashed?: boolean
 }) {
   const { t } = useT()
+  // Rule 15 (Mobile M4c): a row divided by a hairline on a phone (its list is `PHONE_ROWS`); the card from md.
   return (
-    <div className={`flex flex-wrap items-center gap-2 rounded-xl bg-ground-0 p-3 transition-shadow hover:shadow-md ${
-      dashed ? 'border border-dashed border-ground-300' : 'border border-ground-200 shadow-sm'}`}>
+    <div className={`flex flex-wrap items-center gap-2 py-2 md:rounded-xl md:bg-ground-0 md:p-3 md:transition-shadow md:hover:shadow-md ${
+      dashed ? 'md:border md:border-dashed md:border-ground-300' : 'md:border md:border-ground-200 md:shadow-sm'}`}>
       <div className={`order-1 min-w-0 flex-1 sm:basis-0 ${onRemove ? 'basis-[calc(100%-3.25rem)]' : 'basis-full'}`}>
         {subject}
       </div>

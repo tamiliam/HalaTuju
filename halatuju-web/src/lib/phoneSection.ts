@@ -15,6 +15,9 @@
  *     unprefixed `divide-ground-100` recoloured them at every width (M4b review; `mobileStandard.test.ts` pins it).
  *   * `PHONE_SECTION_NO_GAP` — the same, with no margin of its own from `md`: for a section inside a parent that
  *     already spaces its children (`md:space-y-*`, a `gap`), so the desktop keeps exactly its old spacing (M4b).
+ *   * `PHONE_SECTION_FLAT` — the same plain section on a phone, for what was a borderless white card
+ *     (`rounded-2xl bg-ground-0 p-5 shadow-sm` — My Bursary and its tabs): from `md` exactly that card again,
+ *     with no border and no margin of its own (its parent spaces it) (Mobile M4c).
  *   * `PHONE_INNER_BOX` — a box that sat INSIDE a card (a group, a sub-panel): no box on a phone, a box
  *     from `md`. Genuine controls (inputs, buttons, chips) and coloured status callouts keep theirs.
  *
@@ -25,5 +28,6 @@ export const PHONE_GUTTER = 'px-4 md:px-6'
 export const PHONE_BLEED = '-mx-4 px-4 md:-mx-6 md:px-6'
 export const PHONE_SECTION = 'border-b border-ground-100 py-4 md:mb-4 md:rounded-2xl md:border md:bg-ground-0 md:p-5 md:shadow-sm'
 export const PHONE_SECTION_NO_GAP = 'border-b border-ground-100 py-4 md:rounded-2xl md:border md:bg-ground-0 md:p-5 md:shadow-sm'
+export const PHONE_SECTION_FLAT = 'border-b border-ground-100 py-4 md:rounded-2xl md:border-0 md:bg-ground-0 md:p-5 md:shadow-sm'
 export const PHONE_ROWS = 'max-md:divide-y max-md:divide-ground-100 md:space-y-3'
 export const PHONE_INNER_BOX = 'md:rounded-lg md:border md:border-ground-100 md:bg-ground-50/60 md:p-2.5'

@@ -2,6 +2,7 @@
 
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { useT } from '@/lib/i18n'
 
 export default function AboutPage() {
@@ -11,8 +12,9 @@ export default function AboutPage() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-6 py-8 max-w-2xl">
-        <div className="bg-ground-0 rounded-xl border border-ground-200 p-6 space-y-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-2xl md:py-8`}>
+        {/* Rule 15 (Mobile M4c): the page itself on a phone, the white card from md. */}
+        <div className="space-y-6 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-6">
           <h1 className="text-2xl font-bold text-ground-900">{t('common.about')}</h1>
 
           <section className="space-y-3">

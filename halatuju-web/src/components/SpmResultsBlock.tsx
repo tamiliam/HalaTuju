@@ -161,14 +161,15 @@ export default function SpmResultsBlock({ block, step }: { block: SpmResultsBloc
   } = block
 
   return (
-    <div className="mb-8">
+    <div className="mb-6 md:mb-8">
       <div className="flex items-center gap-2 mb-1">
         <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">{step}</span>
         <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.spmPrerequisites')}</h2>
       </div>
       <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.spmPrereqHint')}</p>
 
-      <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
+      {/* Rule 15 (Mobile M4c): plain on a phone, the white card from md. */}
+      <div className="md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
         {/* A) SPM Stream pills */}
         <div className="mb-4">
           <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmStream')}</div>

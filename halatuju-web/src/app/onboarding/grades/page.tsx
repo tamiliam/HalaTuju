@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import FlowHeader from '@/components/FlowHeader'
+import { PHONE_GUTTER, PHONE_ROWS } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { calculateMerit } from '@/lib/api'
 import {
   getSubjectName,
@@ -272,8 +273,8 @@ export default function GradesInputPage() {
       <FlowHeader step={2} />
 
       {/* Content */}
-      <div className="container mx-auto px-6 py-8 max-w-3xl">
-        <div className="text-center mb-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-3xl md:py-8`}>
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.gradesTitle')}
           </h1>
@@ -283,7 +284,7 @@ export default function GradesInputPage() {
         </div>
 
         {/* Section 1: Select your Stream */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">1</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.selectStream')}</h2>
@@ -309,13 +310,13 @@ export default function GradesInputPage() {
         </div>
 
         {/* Section 2: Core Subjects — button grid */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">2</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coreSubjects')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
-          <div className="space-y-3">
+          <div className={PHONE_ROWS}>
             {SPM_CORE_SUBJECTS.map((subject) => (
               <CoreSubjectGrade
                 key={subject.id}
@@ -329,7 +330,7 @@ export default function GradesInputPage() {
         </div>
 
         {/* Section 3: Stream Subjects — compact dropdown rows */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">3</span>
             <h2 className="text-lg font-semibold text-ground-900">
@@ -337,7 +338,7 @@ export default function GradesInputPage() {
             </h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pick4Stream')}</p>
-          <div className="space-y-3">
+          <div className={PHONE_ROWS}>
             {/* No stream chosen yet → say so, rather than offer four dropdowns with nothing in
                 them. The pool is empty until Section 1 is answered (see `handleStreamChange`). */}
             {!stream && (
@@ -361,13 +362,13 @@ export default function GradesInputPage() {
         </div>
 
         {/* Section 4: Elective Subjects — compact dropdown + add button */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">4</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.electiveSubjects')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
-          <div className="space-y-3">
+          <div className={PHONE_ROWS}>
             {elektifSlots.map((subjectId, index) => (
               <CompactSubjectRow
                 key={index}
@@ -383,7 +384,7 @@ export default function GradesInputPage() {
             {elektifSlots.length < MAX_SPM_ELECTIVES && (
               <button
                 onClick={addElektifSlot}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+                className="max-md:mt-2 w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
               >
                 + {t('onboarding.addElective')}
               </button>
@@ -392,14 +393,14 @@ export default function GradesInputPage() {
         </div>
 
         {/* Section 5: Co-curricular + Total Merit */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">5</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coqScore')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coqHint')}</p>
 
-          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
+          <div className="md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
             <div className="flex items-center gap-6">
               {/* CoQ input — left */}
               <div className="flex-1">
@@ -458,6 +459,11 @@ export default function GradesInputPage() {
   )
 }
 
+/** Rule 15 (Mobile M4c): each subject is a row divided by a hairline on a phone (the list is `PHONE_ROWS`);
+ *  from `md` the white card it was. Its grade buttons and pickers are controls and keep their boxes. */
+const SUBJECT_ROW = 'py-3 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-4 md:shadow-sm md:transition-shadow md:hover:shadow-md'
+const COMPACT_ROW = 'py-2 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-3 md:shadow-sm md:transition-shadow md:hover:shadow-md'
+
 /* Core Subject — button grid with checkmark and clear */
 function CoreSubjectGrade({
   label,
@@ -472,7 +478,7 @@ function CoreSubjectGrade({
 }) {
   const { t } = useT()
   return (
-    <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-4">
+    <div className={SUBJECT_ROW}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {value ? (
@@ -536,7 +542,7 @@ function CompactSubjectRow({
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
   return (
-    <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-3">
+    <div className={`flex items-center gap-2 ${COMPACT_ROW}`}>
       {/* Subject dropdown */}
       <select
         value={selectedId}

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { KEY_QUIZ_SIGNALS, KEY_SIGNAL_STRENGTH, KEY_REPORT_GENERATED } from '@/lib/storage'
 
 const ICON_EMOJI: Record<string, string> = {
@@ -253,7 +254,7 @@ export default function QuizPage() {
     <main className="min-h-screen bg-ground-50">
       {/* Gradient header — matches Stitch design */}
       <header className="bg-gradient-to-r from-brand-fill to-brand-fill-hover text-brand-fill-ink">
-        <div className="container mx-auto px-6 py-2 flex items-center justify-between">
+        <div className={`container mx-auto ${PHONE_GUTTER} py-2 flex items-center justify-between`}>
           <Link href="/dashboard" className="-ml-2 inline-flex min-h-11 items-center px-2 text-brand-fill-ink/90 hover:text-brand-fill-ink text-sm font-medium">
             ← {t('common.appName')}
           </Link>
@@ -263,7 +264,7 @@ export default function QuizPage() {
         </div>
 
         {/* Progress bar inside header */}
-        <div className="px-6 pb-4">
+        <div className={`${PHONE_GUTTER} pb-4`}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-brand-fill-ink/90">
               {t('quiz.questionOf', { current: String(currentStep + 1), total: String(visibleQuestions.length) })}
@@ -281,7 +282,7 @@ export default function QuizPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6 max-w-md">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-4 max-w-md md:py-6`}>
         {/* Step dots */}
         <div className="flex justify-center gap-2 mb-6">
           {visibleQuestions.map((q, i) => {
@@ -328,7 +329,7 @@ export default function QuizPage() {
             {!isMultiSelect && <div className="mb-4" />}
 
             {/* 2×2 icon card grid — large cards with shadow, matching Stitch */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-2 gap-3 mb-5 md:gap-4">
               {regularOptions.map((option) => {
                 const actualIdx = question.options.indexOf(option)
                 const selected = isOptionSelected(actualIdx)
@@ -363,7 +364,7 @@ export default function QuizPage() {
                 <button
                   onClick={() => handleCardClick(notSureIndex)}
                   className={`
-                    flex items-center gap-2 px-6 py-2.5 rounded-full border-2
+                    flex min-h-11 items-center gap-2 px-6 py-2.5 rounded-full border-2
                     transition-all duration-200
                     ${isOptionSelected(notSureIndex)
                       ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
@@ -383,7 +384,7 @@ export default function QuizPage() {
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
+            className="-ml-2 inline-flex min-h-11 items-center px-2 text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
             {t('quiz.previous')}
           </button>

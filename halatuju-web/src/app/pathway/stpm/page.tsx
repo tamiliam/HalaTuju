@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER, PHONE_ROWS } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { useT } from '@/lib/i18n'
 import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
@@ -245,7 +246,7 @@ function StpmContent() {
 
       {/* Header Section */}
       <section className="bg-ground-0 border-b">
-        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className={`container mx-auto ${PHONE_GUTTER} py-6 sm:py-8`}>
           {/* Back link */}
           <Link
             href="/dashboard"
@@ -288,12 +289,12 @@ function StpmContent() {
       </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid md:grid-cols-3 gap-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
+        <div className="grid md:grid-cols-3 md:gap-6">
           {/* Left Column */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-2 md:space-y-6">
             {/* About This Stream */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+            <section className={PATH_SECTION}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 About This Stream
               </h2>
@@ -303,7 +304,7 @@ function StpmContent() {
             </section>
 
             {/* Where to Study */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+            <section className={PATH_SECTION}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.whereToStudy')}
                 <span className="text-ground-500 font-normal ml-2">
@@ -316,7 +317,7 @@ function StpmContent() {
                 <select
                   value={stateFilter}
                   onChange={(e) => setStateFilter(e.target.value)}
-                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                  className="min-h-11 rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="">{t('pathwayDetail.allStates')}</option>
                   {allStates.map((state) => (
@@ -332,7 +333,7 @@ function StpmContent() {
                     setPpdFilter(e.target.value)
                     setDisplayCount(PAGE_SIZE)
                   }}
-                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                  className="min-h-11 rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="">All Districts</option>
                   {availablePpds.map((ppd) => (
@@ -344,7 +345,8 @@ function StpmContent() {
               </div>
 
               {/* School List */}
-              <div className="max-h-[600px] overflow-y-auto space-y-3">
+              {/* Rule 15 (Mobile M4c): rows on a phone, no scroll box inside the page (Load more pages it). */}
+              <div className={`md:max-h-[600px] md:overflow-y-auto ${PHONE_ROWS}`}>
                 {displayedSchools.length > 0 ? (
                   displayedSchools.map((school) => (
                     <SchoolCard key={school.code} school={school} activeStream={meta.schoolStream} />
@@ -371,9 +373,9 @@ function StpmContent() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="md:space-y-6">
             {/* Quick Facts */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PATH_SECTION}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
@@ -407,7 +409,7 @@ function StpmContent() {
             <SubjectLegend stream={meta.schoolStream} />
 
             {/* Caveat */}
-            <div className="bg-caution-50 border border-caution-200 rounded-xl p-4">
+            <div className="mt-4 bg-caution-50 border border-caution-200 rounded-xl p-4 md:mt-0">
               <p className="text-xs text-caution-700">
                 {t('pathwayDetail.stpmCaveat')}
               </p>
@@ -420,6 +422,9 @@ function StpmContent() {
     </main>
   )
 }
+
+/** Rule 15 (Mobile M4c): a plain section divided by a hairline on a phone; from `md` the white card it was. */
+const PATH_SECTION = 'border-b border-ground-100 py-4 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-6'
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -442,7 +447,7 @@ function SubjectLegend({ stream }: { stream: string }) {
   const subjects = legendSubjects(stream)
 
   return (
-    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+    <section className={PATH_SECTION}>
       <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
       <div className="space-y-2">
         {subjects.map(code => (
@@ -462,7 +467,7 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
   const subjects = school.subjects ? filterSubjects(school.subjects, activeStream) : []
 
   return (
-    <div className="rounded-lg border border-ground-200 bg-ground-50 p-3 sm:p-4">
+    <div className="py-3 md:rounded-lg md:border md:border-ground-200 md:bg-ground-50 md:p-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-ground-900 text-sm sm:text-base mb-1 truncate">
@@ -484,7 +489,7 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
         {school.phone && (
           <a
             href={`tel:${school.phone}`}
-            className="text-xs sm:text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap flex items-center gap-1"
+            className="min-h-11 text-xs sm:text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap flex items-center gap-1 md:min-h-0"
           >
             <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />

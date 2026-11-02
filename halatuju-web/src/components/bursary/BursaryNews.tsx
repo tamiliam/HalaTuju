@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { getBursaryNews, markNewsRead, type BursaryNews as Payload } from '@/lib/api/bursaryNews'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 const P = 'bursaryTabs.news'
 const URL_RE = /((?:https?:\/\/|www\.)[^\s<>"]+)/g
@@ -63,7 +64,7 @@ export default function BursaryNews({ token, onRead }: { token: string | null; o
   if (!data) return null
   const items = data.announcements
   if (items.length === 0) {
-    return <p className="rounded-2xl bg-ground-0 p-5 text-sm text-ground-600 shadow-sm" data-testid="news-empty">{t(`${P}.empty`)}</p>
+    return <p className={`${PHONE_SECTION_FLAT} text-sm text-ground-600`} data-testid="news-empty">{t(`${P}.empty`)}</p>
   }
   const fresh = items.filter((a) => a.new).length
 
@@ -76,7 +77,7 @@ export default function BursaryNews({ token, onRead }: { token: string | null; o
       )}
       {items.map((a) => (
         <article key={a.id} data-testid={`news-${a.id}`}
-          className={`rounded-2xl bg-ground-0 p-5 shadow-sm ${a.new ? 'border-l-4 border-brand-shape' : ''}`}>
+          className={`${PHONE_SECTION_FLAT} ${a.new ? 'border-l-4 border-l-brand-shape pl-3 md:border-l-4' : ''}`}>
           <p className="text-xs text-ground-600">
             {[a.pinned ? t(`${P}.pinned`) : '', a.new ? t(`${P}.new`) : '', formatDate(a.published_at),
               a.edited_at ? t(`${P}.edited`, { date: formatDate(a.edited_at) }) : ''].filter(Boolean).join(' · ')}

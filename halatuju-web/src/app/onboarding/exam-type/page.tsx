@@ -4,7 +4,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import FlowHeader from '@/components/FlowHeader'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { KEY_EXAM_TYPE } from '@/lib/storage'
+
+/** A results-route choice: a genuine control (a button), so it keeps its box on a phone — with less padding
+ *  there (rule 15 rhythm, Mobile M4c); from `md` exactly as before. */
+const CHOICE = 'group relative overflow-hidden p-5 md:p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-brand-shape hover:shadow-lg transition-all duration-200 text-left'
 
 export default function ExamTypePage() {
   const router = useRouter()
@@ -29,8 +34,8 @@ export default function ExamTypePage() {
       <FlowHeader step={1} />
 
       {/* Content */}
-      <div className="container mx-auto px-6 py-16 max-w-4xl">
-        <div className="text-center mb-12">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-4xl md:py-16`}>
+        <div className="text-center mb-6 md:mb-12">
           <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.examTypeTitle')}
           </h1>
@@ -39,16 +44,16 @@ export default function ExamTypePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 md:gap-6 md:mb-12">
           {/* SPM Card */}
           <button
             onClick={handleSelectSPM}
-            className="group relative overflow-hidden p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-brand-shape hover:shadow-lg transition-all duration-200 text-left"
+            className={CHOICE}
           >
             {/* Decorative gradient corner */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
             <div className="relative">
-              <div className="w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
+              <div className="w-14 h-14 mb-3 md:mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
                 <svg className="w-7 h-7 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                 </svg>
@@ -67,11 +72,11 @@ export default function ExamTypePage() {
           {/* STPM Card */}
           <button
             onClick={handleSelectSTPM}
-            className="group relative overflow-hidden p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-brand-shape hover:shadow-lg transition-all duration-200 text-left"
+            className={CHOICE}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
             <div className="relative">
-              <div className="w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
+              <div className="w-14 h-14 mb-3 md:mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
                 <svg className="w-7 h-7 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
@@ -90,11 +95,11 @@ export default function ExamTypePage() {
           {/* Matriculation, Asasi or Diploma — the third results route (S2b), same card style */}
           <button
             onClick={handleSelectHigher}
-            className="group relative overflow-hidden p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-brand-shape hover:shadow-lg transition-all duration-200 text-left"
+            className={CHOICE}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
             <div className="relative">
-              <div className="w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
+              <div className="w-14 h-14 mb-3 md:mb-5 rounded-xl bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-md shadow-primary-500/20">
                 <svg className="w-7 h-7 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
                 </svg>
@@ -114,7 +119,7 @@ export default function ExamTypePage() {
         <div className="flex justify-start">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-ground-500 hover:text-ground-900 text-sm font-medium transition-colors"
+            className="inline-flex min-h-11 items-center gap-1.5 text-ground-500 hover:text-ground-900 text-sm font-medium transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />

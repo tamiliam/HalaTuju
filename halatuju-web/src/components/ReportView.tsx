@@ -38,9 +38,10 @@ export default function ReportView({ report }: { report: ReportDetail }) {
       </div>
 
       {/* Report Content */}
-      <div className="container mx-auto max-w-3xl px-4 py-6 sm:px-6 md:py-8">
+      <div className="container mx-auto max-w-3xl px-4 py-4 sm:px-6 md:py-8">
         {/* Report Header */}
-        <div className="bg-ground-0 rounded-xl border border-ground-200 p-4 mb-6 sm:p-6 print:border-0 print:p-0 print:mb-4">
+        {/* Rule 15 (Mobile M4c): a plain heading section on a phone, the white card from md. */}
+        <div className="mb-4 border-b border-ground-100 pb-2 md:mb-6 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-6 print:border-0 print:p-0 print:mb-4">
           <div className="flex items-center gap-3 mb-4 print:mb-2">
             <BrandLogo
               width={75}
@@ -59,7 +60,7 @@ export default function ReportView({ report }: { report: ReportDetail }) {
         </div>
 
         {/* Markdown Report Body */}
-        <div className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-8 print:border-0 print:p-0">
+        <div className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-8 print:border-0 print:p-0">
           <article className="prose prose-gray max-w-none break-words
             prose-headings:text-ground-900 prose-headings:font-semibold
             prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4

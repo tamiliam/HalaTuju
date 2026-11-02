@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import {
   acknowledgeLetter, bursaryLetterPdf, getBursaryLetters, markLetterRead,
   type BursaryLetter, type BursaryLetters as Payload,
@@ -79,14 +80,14 @@ export default function BursaryLetters({ token, onAcknowledged }: {
   )
 
   return (
-    <div className="space-y-4" data-testid="her-letters">
-      <section aria-label={t(`${P}.title`)} className="overflow-hidden rounded-2xl bg-ground-0 shadow-sm">
-        {data.letters.length === 0 && <p className="p-4 text-sm text-ground-500">{t(`${P}.empty`)}</p>}
+    <div className="md:space-y-4" data-testid="her-letters">
+      <section aria-label={t(`${P}.title`)} className="border-b border-ground-100 md:overflow-hidden md:rounded-2xl md:border-0 md:bg-ground-0 md:shadow-sm">
+        {data.letters.length === 0 && <p className="py-4 text-sm text-ground-500 md:p-4">{t(`${P}.empty`)}</p>}
         <ul className="divide-y divide-ground-100">
           {data.letters.map((l) => (
             <li key={l.id}>
               <button type="button" onClick={() => read(l)} data-testid={`her-letter-${l.id}`}
-                className={`flex w-full flex-col gap-1.5 p-4 text-left ${l.state === 'withdrawn' ? 'text-ground-500' : 'text-ground-900'}`}>
+                className={`flex w-full flex-col gap-1.5 py-4 text-left md:p-4 ${l.state === 'withdrawn' ? 'text-ground-500' : 'text-ground-900'}`}>
                 <span className="flex items-center gap-2">
                   {!l.read && l.state !== 'withdrawn' && (
                     <span role="img" aria-label={t(`${P}.unread`)} className="h-2 w-2 rounded-full bg-brand-shape" />
@@ -102,7 +103,7 @@ export default function BursaryLetters({ token, onAcknowledged }: {
       </section>
 
       {open && (
-        <section aria-label={t(`${P}.readLabel`)} className="space-y-3 rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="her-letter-read">
+        <section aria-label={t(`${P}.readLabel`)} className={`space-y-3 ${PHONE_SECTION_FLAT}`} data-testid="her-letter-read">
           <p className="text-sm text-ground-600">{data.organisation} · {formatDate(open.issued_at)}</p>
           <h2 className="text-lg font-semibold text-ground-900">{open.subject}</h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-ground-700">{open.body}</p>

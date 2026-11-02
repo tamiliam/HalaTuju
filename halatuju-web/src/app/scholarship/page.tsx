@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { useT } from '@/lib/i18n'
 import { useBranding } from '@/lib/branding-context'
 import { getScholarshipIntake } from '@/lib/api'
@@ -27,6 +28,9 @@ const CheckIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 )
+
+/** Rule 15 (Mobile M4c): a value or step tile is a row divided by a hairline on a phone, the white card from md. */
+const TILE = 'py-4 md:rounded-2xl md:bg-ground-0 md:p-5 md:shadow-sm'
 
 export default function ScholarshipLandingPage() {
   const { t } = useT()
@@ -63,7 +67,7 @@ export default function ScholarshipLandingPage() {
       <AppHeader />
       <main className="bg-ground-50">
         {/* Hero — single column on mobile, text + image side by side on desktop */}
-        <section className="container mx-auto px-6 pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl`}>
           <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
             <div className="relative w-full h-60 lg:h-[26rem] rounded-2xl overflow-hidden mb-6 lg:mb-0 lg:order-2">
               <Image
@@ -76,7 +80,7 @@ export default function ScholarshipLandingPage() {
               <p className="text-ground-600 mt-3 lg:mt-4 lg:text-lg">{t('scholarship.landing.hero.sub')}</p>
               <div className="mt-5 lg:mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
                 {applyCta('btn-primary text-center w-full sm:w-auto')}
-                <a href="#requirements" className="text-primary-600 text-sm text-center sm:text-left font-medium">{t('scholarship.landing.hero.seeQualify')} ↓</a>
+                <a href="#requirements" className="inline-flex min-h-11 items-center justify-center text-primary-600 text-sm font-medium sm:justify-start">{t('scholarship.landing.hero.seeQualify')} ↓</a>
               </div>
               {closedNote}
             </div>
@@ -84,14 +88,14 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* Overview + value cards */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <div className="lg:max-w-3xl">
             <p className="text-ground-700 lg:text-lg">{t('scholarship.landing.overview.p1')}</p>
             <p className="text-ground-700 mt-3 lg:text-lg">{t('scholarship.landing.overview.p2')}</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-5 mt-6 lg:mt-8">
+          <div className="grid max-md:divide-y max-md:divide-ground-100 md:grid-cols-3 md:gap-5 mt-4 md:mt-6 lg:mt-8">
             {VALUE_CARDS.map((c) => (
-              <div key={c} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+              <div key={c} className={TILE}>
                 <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-2">
                   <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d={CARD_ICONS[c]} />
@@ -105,14 +109,14 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* Can you apply? — one common heading over two columns: requirements (left) + Please note (right) */}
-        <section id="requirements" className="scroll-mt-24 container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section id="requirements" className={`scroll-mt-24 container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('scholarship.landing.req.title')}</h2>
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
             {/* Requirements (left) */}
             <div className="mb-6 lg:mb-0">
-              <div className="bg-ground-0 rounded-2xl shadow-sm divide-y divide-ground-100">
+              <div className="divide-y divide-ground-100 md:rounded-2xl md:bg-ground-0 md:shadow-sm">
                 {REQ_ITEMS.map((it) => (
-                  <div key={it} className="flex items-start gap-3 p-4">
+                  <div key={it} className="flex items-start gap-3 py-3 md:p-4">
                     <CheckIcon />
                     <span className="text-sm text-ground-700">{t(`scholarship.landing.req.${it}`)}</span>
                   </div>
@@ -142,16 +146,16 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* How it works — vertical list on mobile, 4-up step cards on desktop */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl`}>
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <h2 className="text-2xl font-bold text-ground-900">{t('scholarship.landing.how.title')}</h2>
             <span className="inline-block text-xs bg-primary-50 text-primary-700 rounded-full px-3 py-1">
               {t('scholarship.landing.how.rolling')}
             </span>
           </div>
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="grid max-md:divide-y max-md:divide-ground-100 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
             {STEPS.map((n) => (
-              <li key={n} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+              <li key={n} className={TILE}>
                 <span className="w-8 h-8 rounded-full bg-brand-fill text-brand-fill-ink text-sm font-semibold flex items-center justify-center mb-3">
                   {n}
                 </span>
@@ -163,24 +167,24 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* FAQ — single column on mobile, two columns on desktop */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('scholarship.landing.faq.title')}</h2>
-          <div className="grid gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
+          <div className="grid max-md:divide-y max-md:divide-ground-100 md:gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
             {FAQS.map((i) => {
               const open = openFaq === i
               return (
-                <div key={i} className="bg-ground-0 rounded-xl shadow-sm self-start">
+                <div key={i} className="self-start md:rounded-xl md:bg-ground-0 md:shadow-sm">
                   <button
                     type="button" aria-expanded={open}
                     onClick={() => setOpenFaq(open ? null : i)}
-                    className="w-full flex items-center justify-between gap-3 p-4 text-left"
+                    className="min-h-11 w-full flex items-center justify-between gap-3 py-3 text-left md:p-4"
                   >
                     <span className="font-medium text-ground-900 text-sm">{t(`scholarship.landing.faq.q${i}`)}</span>
                     <svg className={`w-5 h-5 text-ground-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  {open && <p className="px-4 pb-4 text-sm text-ground-600 leading-relaxed">{t(`scholarship.landing.faq.a${i}`)}</p>}
+                  {open && <p className="pb-3 md:px-4 md:pb-4 text-sm text-ground-600 leading-relaxed">{t(`scholarship.landing.faq.a${i}`)}</p>}
                 </div>
               )
             })}
@@ -188,7 +192,7 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* Want to support a student? — donor block */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 lg:p-8">
             <h2 className="text-2xl font-bold text-ground-900">{t('scholarship.landing.donor.title')}</h2>
             <p className="text-ground-700 mt-3 lg:text-lg">{t('scholarship.landing.donor.body')}</p>
@@ -206,7 +210,7 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* About this programme */}
-        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-8 md:pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl`}>
           <h2 className="text-2xl font-bold text-ground-900 mb-3">{t('scholarship.landing.about.title')}</h2>
           <p className="text-ground-700 lg:text-lg">{t('scholarship.landing.about.body')}</p>
           <p className="text-sm text-ground-500 mt-3">
@@ -216,12 +220,12 @@ export default function ScholarshipLandingPage() {
         </section>
 
         {/* Closing CTA — stacked on mobile, image + text side by side on desktop */}
-        <section className="container mx-auto px-6 pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl">
-          <div className="bg-ground-0 rounded-2xl shadow-sm overflow-hidden lg:grid lg:grid-cols-2 lg:items-stretch">
-            <div className="relative w-full h-48 lg:h-auto lg:min-h-[18rem]">
+        <section className={`container mx-auto ${PHONE_GUTTER} pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl`}>
+          <div className="md:overflow-hidden md:rounded-2xl md:bg-ground-0 md:shadow-sm lg:grid lg:grid-cols-2 lg:items-stretch">
+            <div className="relative w-full h-48 overflow-hidden rounded-2xl md:rounded-none lg:h-auto lg:min-h-[18rem]">
               <Image src="/scholarship/community.jpg" alt="" fill className="object-cover" sizes="(max-width:1024px) 100vw, 600px" />
             </div>
-            <div className="p-6 lg:p-10 text-center lg:text-left lg:flex lg:flex-col lg:justify-center">
+            <div className="pt-4 md:p-6 lg:p-10 text-center lg:text-left lg:flex lg:flex-col lg:justify-center">
               <h2 className="text-2xl lg:text-3xl font-bold text-ground-900">{t('scholarship.landing.cta.heading')}</h2>
               <p className="text-ground-600 mt-2 text-sm lg:text-base">{t('scholarship.landing.cta.body')}</p>
               <div className="mt-4 self-center lg:self-start">

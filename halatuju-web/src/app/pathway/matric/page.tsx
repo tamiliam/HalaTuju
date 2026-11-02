@@ -8,6 +8,7 @@ import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER, PHONE_ROWS } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 import { TRACK_CHIP, type TrackId } from '@/lib/matricTracks'
 import { institutionTypeChip } from '@/lib/courseBadges'
@@ -156,7 +157,7 @@ function MatricPageContent() {
       <AppHeader />
 
       {/* Back link */}
-      <div className="container mx-auto px-4 sm:px-6 pt-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} pt-6`}>
         <Link
           href="/dashboard"
           className="inline-flex items-center text-sm text-ground-500 hover:text-primary-600"
@@ -170,7 +171,7 @@ function MatricPageContent() {
 
       {/* Header section */}
       <section className="bg-ground-0 border-b mt-4">
-        <div className="container mx-auto px-4 sm:px-6 py-8">
+        <div className={`container mx-auto ${PHONE_GUTTER} py-6 md:py-8`}>
           <div className="flex-1">
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -209,14 +210,14 @@ function MatricPageContent() {
       </section>
 
       {/* Main Content — Two-column layout */}
-      <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="grid md:grid-cols-3 gap-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-8`}>
+        <div className="grid md:grid-cols-3 md:gap-6">
 
           {/* Left column */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-2 md:space-y-6">
 
             {/* About This Track */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PATH_SECTION}>
               <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 About This Track
               </h2>
@@ -226,7 +227,7 @@ function MatricPageContent() {
             </section>
 
             {/* Where to Study */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PATH_SECTION}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h2 className="text-xl font-semibold text-ground-900">
                   {t('pathwayDetail.colleges')}
@@ -239,7 +240,7 @@ function MatricPageContent() {
                 <select
                   value={stateFilter}
                   onChange={e => setStateFilter(e.target.value)}
-                  className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
+                  className="min-h-11 border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="all">{t('pathwayDetail.allStates')}</option>
                   {availableStates.map(state => (
@@ -249,7 +250,7 @@ function MatricPageContent() {
               </div>
 
               {trackColleges.length > 0 ? (
-                <div className="space-y-3">
+                <div className={PHONE_ROWS}>
                   {trackColleges.map(college => (
                     <CollegeCard
                       key={college.id}
@@ -267,10 +268,10 @@ function MatricPageContent() {
           </div>
 
           {/* Right column */}
-          <div className="space-y-6">
+          <div className="md:space-y-6">
 
             {/* Quick Facts */}
-            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+            <section className={PATH_SECTION}>
               <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 Quick Facts
               </h2>
@@ -300,7 +301,7 @@ function MatricPageContent() {
             </section>
 
             {/* Caveat card */}
-            <div className="bg-caution-50 border border-caution-200 rounded-xl p-4">
+            <div className="mt-4 bg-caution-50 border border-caution-200 rounded-xl p-4 md:mt-0">
               <div className="flex gap-3">
                 <svg className="w-5 h-5 text-caution-700 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -334,6 +335,9 @@ export default function MatricPathwayPage() {
   )
 }
 
+/** Rule 15 (Mobile M4c): a plain section divided by a hairline on a phone; from `md` the white card it was. */
+const PATH_SECTION = 'border-b border-ground-100 py-4 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-6'
+
 // --- Sub-components ---
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -355,7 +359,7 @@ function CollegeCard({
   const { t } = useT()
 
   return (
-    <div className="bg-ground-50 rounded-lg p-4">
+    <div className="py-3 md:rounded-lg md:bg-ground-50 md:p-4">
       {/* College name */}
       <h3 className="font-semibold text-ground-900 mb-2">{college.name}</h3>
 
@@ -390,7 +394,7 @@ function CollegeCard({
         href={`https://${college.website}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 hover:underline"
+        className="flex min-h-11 items-center gap-2 text-sm text-primary-600 hover:text-primary-700 hover:underline md:min-h-0"
       >
         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

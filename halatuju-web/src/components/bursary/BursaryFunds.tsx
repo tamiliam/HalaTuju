@@ -5,10 +5,14 @@ import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { formatMoney2dp as rm } from '@/lib/scholarship'
 import type { BursaryFunds as FundsPayload } from '@/lib/api'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 /** The student's own words for the spending card — the `bursary` slice (loaded by the route's page,
  *  `app/scholarship/bursary/page.tsx`, rule D), never `sponsorPortal`. */
 export const STUDENT_SPEND_COPY = 'bursaryTabs.spend'
+/** Rule 15 (Mobile M4c): the spending card is a plain section on a phone and, from `md`, exactly the bordered
+ *  card the sponsor portal draws (its default box). */
+const SPEND_SECTION = 'border-b border-ground-100 py-4 md:mt-6 md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-5'
 
 /**
  * Her Funds tab on My Bursary (student maintenance S5b). Design of record: the MyBursary board's
@@ -22,8 +26,8 @@ export const STUDENT_SPEND_COPY = 'bursaryTabs.spend'
 export default function BursaryFunds({ funds }: { funds: FundsPayload }) {
   const { t } = useT()
   return (
-    <div className="flex flex-col gap-4" data-testid="bursary-funds-tab">
-      <section className="rounded-2xl bg-ground-0 p-5 shadow-sm">
+    <div className="flex flex-col md:gap-4" data-testid="bursary-funds-tab">
+      <section className={PHONE_SECTION_FLAT}>
         <h2 className="text-lg font-bold text-ground-900">{t('scholarship.bursary.funds.title')}</h2>
         <p className="mt-2 text-sm text-ground-600">
           <strong className="text-xl text-ground-900" data-testid="funds-received">RM{rm(funds.received)}</strong>{' '}
@@ -52,9 +56,9 @@ export default function BursaryFunds({ funds }: { funds: FundsPayload }) {
         )}
       </section>
       {funds.spending ? (
-        <SpendingCard spending={funds.spending} copy={STUDENT_SPEND_COPY} />
+        <SpendingCard spending={funds.spending} copy={STUDENT_SPEND_COPY} className={SPEND_SECTION} />
       ) : (
-        <p className="rounded-2xl bg-ground-0 p-5 text-sm text-ground-600 shadow-sm" data-testid="funds-no-spending">
+        <p className={`${PHONE_SECTION_FLAT} text-sm text-ground-600`} data-testid="funds-no-spending">
           {t('bursaryTabs.funds.noSpending')}
         </p>
       )}

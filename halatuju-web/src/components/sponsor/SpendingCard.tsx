@@ -67,10 +67,13 @@ function rm(v: string) {
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${cents}`
 }
 
-export default function SpendingCard({ spending, copy }: {
+export default function SpendingCard({ spending, copy, className = 'mt-6 rounded-xl border border-ground-200 bg-ground-0 p-5' }: {
   spending: SpendingFigures
   /** The message prefix for every word on the card (`title`, `asAt`, `promised`… `cat.<code>`). */
   copy: string
+  /** The card's own box. The sponsor portal keeps the default; the student's My Bursary passes a phone
+   *  section that is this same card from `md` (rule 15, Mobile M4c). */
+  className?: string
 }) {
   const { t } = useT()
 
@@ -108,8 +111,7 @@ export default function SpendingCard({ spending, copy }: {
       : t(`${copy}.cat.${code}`)
 
   return (
-    <section className="mt-6 rounded-xl border border-ground-200 bg-ground-0 p-5"
-      data-testid="spending-card">
+    <section className={className} data-testid="spending-card">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold text-ground-900">
           {t(`${copy}.title`)}

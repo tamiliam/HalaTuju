@@ -287,17 +287,33 @@ const RULE15_SWEPT = [
   'src/components/CourseDetailShared.tsx', 'src/components/CareerPathways.tsx', 'src/components/SpecialConditions.tsx',
   'src/components/RequirementsCard.tsx', 'src/components/course/PreUInstitutions.tsx', 'src/app/profile/page.tsx',
   'src/components/profile/CourseInterestsSection.tsx', 'src/app/saved/page.tsx', 'src/app/settings/page.tsx',
+  // Mobile M4c: My Bursary and its tabs, Home, the scholarship landing, the report, the info and legal pages,
+  // the pathway pages, onboarding (and the scholarship's own) and both quizzes.
+  'src/app/scholarship/bursary/page.tsx', 'src/components/bursary/BursaryFunds.tsx',
+  'src/components/bursary/BursaryContract.tsx', 'src/components/bursary/BursaryLetters.tsx',
+  'src/components/bursary/BursaryMentoring.tsx', 'src/components/bursary/BursaryNews.tsx',
+  'src/components/bursary/BursarySurveys.tsx', 'src/app/page.tsx', 'src/app/scholarship/page.tsx',
+  'src/app/about/page.tsx', 'src/app/contact/page.tsx', 'src/app/cookies/page.tsx',
+  'src/app/privacy/page.tsx', 'src/app/terms/page.tsx', 'src/app/get-started/page.tsx',
+  'src/app/pathway/matric/page.tsx', 'src/app/pathway/stpm/page.tsx', 'src/app/onboarding/exam-type/page.tsx',
+  'src/app/onboarding/grades/page.tsx', 'src/app/onboarding/higher-grades/page.tsx',
+  'src/app/onboarding/stpm-grades/page.tsx', 'src/app/onboarding/profile/page.tsx',
+  'src/app/scholarship/onboarding/page.tsx', 'src/app/quiz/page.tsx', 'src/app/stpm/quiz/page.tsx',
 ]
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
-const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx']
+const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
+  'src/components/SpmResultsBlock.tsx', 'src/components/StpmSubjectRow.tsx', 'src/components/ReportView.tsx']
 describe('rule 15 — one box level; sections on phones', () => {
   test('the swept screens draw no hand-written white card (they use PHONE_SECTION)', () => {
     // A white card: ONE class string holding rounded-xl / -2xl, a border and the card ground, in any
     // order, none of them `md:`-only (M4b: the M4 regex read them in two fixed orders and missed the
     // commonest one, `bg-ground-0 rounded-xl border`).
+    // A genuine CONTROL keeps its box (the rule's own exception): a string sized as a 44-48 px button
+    // (`h-11`, `h-12`, `min-h-11`) is a button, not a card (M4c: My Bursary's View PDF and Call buttons).
     const card = (s: string) => {
       const t = s.split(/\s+/)
       return t.some((x) => /^rounded-(xl|2xl)$/.test(x)) && t.includes('border') && t.includes('bg-ground-0')
+        && !t.some((x) => /^(min-)?h-1[12]$/.test(x))
     }
     const code = (rel: string) => readWeb(rel, 'a rule-15 screen').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n')
     const strings = (src: string) => Array.from(src.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)).map((m) => m[1] ?? m[2] ?? m[3] ?? '')
@@ -326,12 +342,17 @@ describe('rule 15 — one box level; sections on phones', () => {
     const src = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
     const section = (src.match(/PHONE_SECTION = '([^']+)'/) ?? [])[1] ?? ''
     const noGap = (src.match(/PHONE_SECTION_NO_GAP = '([^']+)'/) ?? [])[1] ?? ''
-    for (const t of [...section.split(' '), ...noGap.split(' ')]) {
+    const flat = (src.match(/PHONE_SECTION_FLAT = '([^']+)'/) ?? [])[1] ?? ''
+    for (const t of [...section.split(' '), ...noGap.split(' '), ...flat.split(' ')]) {
       if (/^(rounded|shadow|bg-|p-)/.test(t)) throw new Error(`PHONE_SECTION boxes a phone too: ${t}`)
     }
     // The no-gap section is the same section with no margin of its own (M4b: the desktop keeps its spacing).
     expect(noGap).toBe(section.replace(' md:mb-4', ''))
     expect(section).toMatch(/md:rounded-2xl/)
+    // M4c: the borderless card (My Bursary) is the same phone section, no border and no margin from md.
+    expect(flat).toMatch(/^border-b border-ground-100 py-4 /)
+    expect(flat.split(' ')).toEqual(expect.arrayContaining(['md:border-0', 'md:rounded-2xl', 'md:bg-ground-0', 'md:shadow-sm']))
+    expect(flat).not.toMatch(/md:mb-/)
     expect(src).toMatch(/PHONE_GUTTER = 'px-4 md:px-6'/)
   })
 })

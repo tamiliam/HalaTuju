@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import FlowHeader from '@/components/FlowHeader'
+import { PHONE_GUTTER, PHONE_ROWS } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import StpmSubjectRow, { StpmCountTag } from '@/components/StpmSubjectRow'
 import { MUET_BANDS } from '@/lib/subjects'
 import { STPM_SUBJECTS, stpmSubjectLabel, STPM_GRADES } from '@/lib/stpmResultsSubjects'
@@ -182,8 +183,8 @@ export default function StpmGradesPage() {
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
       <FlowHeader step={2} />
 
-      <div className="container mx-auto px-6 py-8 max-w-3xl">
-        <div className="text-center mb-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-3xl md:py-8`}>
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.stpmGradesTitle')}
           </h1>
@@ -193,7 +194,7 @@ export default function StpmGradesPage() {
         </div>
 
         {/* Section 0: Stream Selection */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">1</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmStream')}</h2>
@@ -217,14 +218,14 @@ export default function StpmGradesPage() {
 
         {/* Section 1: STPM Subjects & Grades */}
         {stream && (
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">2</span>
               <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmSubjects')}</h2>
             </div>
             <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.stpmSubjectsHint')}</p>
 
-            <div className="space-y-3">
+            <div className={PHONE_ROWS}>
               {/* PA — compulsory. Rows restack on a phone (StpmSubjectRow, Mobile M2). */}
               <StpmSubjectRow
                 subject={
@@ -275,7 +276,7 @@ export default function StpmGradesPage() {
               ) : (
                 <button
                   onClick={() => setShowElective(true)}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+                  className="max-md:mt-2 w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
                 >
                   + {t('onboarding.addElective')}
                 </button>
@@ -285,14 +286,15 @@ export default function StpmGradesPage() {
         )}
 
         {/* Section 2: MUET + Co-curriculum + CGPA */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">3</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.muetBand')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.muetHint')}</p>
 
-          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
+          {/* Rule 15 (Mobile M4c): plain on a phone, the white card from md. */}
+          <div className="md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
             {/* MUET band pills */}
             <div className="mb-5">
               <label className="text-sm font-medium text-ground-700 mb-2 block">MUET</label>
@@ -326,7 +328,7 @@ export default function StpmGradesPage() {
                 value={kokoScore}
                 onChange={(e) => setKokoScore(e.target.value)}
                 placeholder="0.00 – 10.00"
-                className="w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
+                className="min-h-11 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               />
               <p className="text-xs text-ground-400 mt-1">{t('onboarding.kokoHint')}</p>
             </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { useT } from '@/lib/i18n'
 import { getTurnstileToken } from '@/lib/turnstile'
 
@@ -68,8 +69,9 @@ export default function ContactPage() {
     <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
-      <div className="container mx-auto px-6 py-8 max-w-lg">
-        <div className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-lg md:py-8`}>
+        {/* Rule 15 (Mobile M4c): the page itself on a phone, the white card from md. */}
+        <div className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-6">
           <h1 className="text-2xl font-bold text-ground-900 mb-1">{t('contactForm.title')}</h1>
           <p className="text-sm text-ground-500 mb-6">{t('contactForm.subtitle')}</p>
 
@@ -91,7 +93,7 @@ export default function ContactPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('contactForm.namePlaceholder')}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
+                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -103,7 +105,7 @@ export default function ContactPage() {
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   placeholder={t('contactForm.contactPlaceholder')}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
+                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -113,7 +115,7 @@ export default function ContactPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none bg-ground-0"
+                  className="min-h-11 w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none bg-ground-0"
                 >
                   <option value="general">{t('contactForm.categoryGeneral')}</option>
                   <option value="bug">{t('contactForm.categoryBug')}</option>
@@ -129,7 +131,7 @@ export default function ContactPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t('contactForm.messagePlaceholder')}
                   rows={5}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none resize-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none resize-none"
                   required
                 />
               </div>
@@ -141,7 +143,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="w-full btn-primary py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="min-h-11 w-full btn-primary py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? t('contactForm.sending') : t('contactForm.submit')}
               </button>

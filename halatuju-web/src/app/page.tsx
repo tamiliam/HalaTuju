@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 export default function LandingPage() {
   const { t } = useT()
@@ -16,7 +17,7 @@ export default function LandingPage() {
       <AppHeader />
 
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20 text-center">
+      <section className={`container mx-auto ${PHONE_GUTTER} py-10 text-center md:py-20`}>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-ground-900 mb-6">
           {t('landing.heroTitle')}
         </h1>
@@ -34,11 +35,11 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-center text-ground-900 mb-12">
+      <section className={`container mx-auto ${PHONE_GUTTER} pb-6 md:py-20`}>
+        <h2 className="text-3xl font-bold text-center text-ground-900 mb-4 md:mb-12">
           {t('landing.howItWorks')}
         </h2>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 md:gap-8">
           <FeatureCard
             step="1"
             title={t('landing.step1Title')}
@@ -61,11 +62,11 @@ export default function LandingPage() {
       {/* A2: the brand band carries `text-white` on its CHILD grid, so it is a TEXT pair and takes
           `-600` like every other filled control. The codemod could not see it — it matches within
           one class string, and CSS composes this one across two elements. */}
-      <section className="bg-brand-fill py-16">
-        <div className="container mx-auto px-6">
+      <section className="bg-brand-fill py-10 md:py-16">
+        <div className={`container mx-auto ${PHONE_GUTTER}`}>
           {/* The ink pairs with `bg-brand-fill` on the SECTION above, not with anything here — the
               same parent/child split A2 found on this band, now on the role tokens. */}
-          <div className="grid md:grid-cols-4 gap-8 text-center text-brand-fill-ink">
+          <div className="grid grid-cols-2 gap-6 text-center text-brand-fill-ink md:grid-cols-4 md:gap-8">
             <StatCard number="1,300+" label={t('landing.courses')} />
             <StatCard number="800+" label={t('landing.institutions')} />
             <StatCard number="3" label={t('landing.languages')} />
@@ -75,7 +76,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-6 py-20 text-center">
+      <section className={`container mx-auto ${PHONE_GUTTER} py-10 text-center md:py-20`}>
         <h2 className="text-3xl font-bold text-ground-900 mb-6">
           {t('landing.readyTitle')}
         </h2>
@@ -94,6 +95,10 @@ export default function LandingPage() {
   )
 }
 
+/** Rule 15 (Mobile M4c): on a phone each step is a plain section divided by a hairline; from `md` the
+ *  `.card` it always was (globals.css: white, rounded-xl, ground-100 border, shadow, 24 px padding). */
+const FEATURE = 'border-b border-ground-100 py-5 text-center max-md:last:border-b-0 md:rounded-xl md:border md:bg-ground-0 md:p-6 md:shadow-sm'
+
 function FeatureCard({
   step,
   title,
@@ -104,7 +109,7 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <div className="card text-center">
+    <div className={FEATURE}>
       <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
         {step}
       </div>

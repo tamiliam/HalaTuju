@@ -6,12 +6,14 @@ import { formatDate } from '@/lib/formatDate'
 import {
   getMySurveys, sendMyAnswers, type MySurvey, type SurveyAnswer, type SurveyQuestion,
 } from '@/lib/api/bursarySurveys'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 
 const P = 'bursaryTabs.surveys'
-/** ⚠ ONE BOX LEVEL ON A PHONE (mobile standard, rule 15 — Mobile M4): below `sm` a survey is a full-width
- *  section (no border, no radius, the page's 16 px gutter kept inside); from `sm` it is a card. Nothing
- *  inside it is a bordered box — the controls are buttons, the notes are coloured text. */
-const SECTION = '-mx-4 bg-ground-0 px-4 py-5 sm:mx-0 sm:rounded-2xl sm:p-5 sm:shadow-sm'
+/** ⚠ ONE BOX LEVEL ON A PHONE (mobile standard, rule 15): below `md` a survey is a plain full-width section
+ *  divided from the next by a hairline, like every other My Bursary section (`PHONE_SECTION_FLAT`, Mobile M4c);
+ *  from `md` it is a card. Nothing inside it is a bordered box — the controls are buttons, the notes are
+ *  coloured text. */
+const SECTION = PHONE_SECTION_FLAT
 const CHOICE = 'flex min-h-11 items-center gap-3 text-[15px] text-ground-800'
 const FIELD = 'w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-base text-ground-900'
 const KNOWN = ['required', 'bad_answer', 'answer_too_long', 'survey_closed']

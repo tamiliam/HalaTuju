@@ -143,7 +143,9 @@ describe('the report and the footer (Mobile M3)', () => {
     const view = readWeb('src/components/ReportView.tsx', 'the report view')
     expect(view).toMatch(/className="btn-primary min-h-11/)
     expect(view).toMatch(/px-4 pt-4 sm:px-6/)
-    expect(view).toMatch(/p-4 sm:p-8/)
+    // M3 made the body a 16 px card on a phone; rule 15 (Mobile M4c) takes the box away there: the text sits
+    // on the page's own 16 px gutter, and from md it is the white card it always was.
+    expect(view).toMatch(/className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:p-8 print:/)
   })
 
   it('every footer link is a 44 px row', () => {

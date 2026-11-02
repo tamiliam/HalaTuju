@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import FlowHeader from '@/components/FlowHeader'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import SpmResultsBlock, { useSpmResultsBlock } from '@/components/SpmResultsBlock'
 import { useT } from '@/lib/i18n'
 import { MUET_BANDS } from '@/lib/subjects'
@@ -124,20 +125,20 @@ export default function HigherGradesPage() {
     router.push('/onboarding/profile')
   }
 
-  const inputCls = 'w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
+  const inputCls = 'min-h-11 w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
       <FlowHeader step={2} />
 
-      <div className="container mx-auto px-6 py-8 max-w-3xl">
-        <div className="text-center mb-8">
+      <div className={`container mx-auto ${PHONE_GUTTER} py-6 max-w-3xl md:py-8`}>
+        <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl font-bold text-ground-900 mb-3">{t('onboarding.higherGradesTitle')}</h1>
           <p className="text-ground-600">{t('onboarding.higherGradesSubtitle')}</p>
         </div>
 
         {/* 1. Which qualification — and, for a Diploma, where it is from (D5) */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <Step n={1} title={t('onboarding.higherWhich')} />
           <div className="flex gap-3">
             {THIRD_ROUTE.map((k) => (
@@ -166,9 +167,10 @@ export default function HigherGradesPage() {
         </div>
 
         {/* 2. CGPA, co-curriculum (not for a Diploma), MUET, and the server's figures */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <Step n={2} title={t('onboarding.higherResults')} />
-          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
+          {/* Rule 15 (Mobile M4c): plain on a phone, the white card from md. */}
+          <div className="md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
             <div className="mb-5">
               <label htmlFor="higher-cgpa" className="text-sm font-medium text-ground-700 mb-2 block">{t('onboarding.higherCgpa')}</label>
               <input id="higher-cgpa" type="number" min="0" max="4" step="0.01" inputMode="decimal"
@@ -194,7 +196,7 @@ export default function HigherGradesPage() {
                     key={band}
                     type="button"
                     onClick={() => setMuetBand(band)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                    className={`h-11 w-11 md:h-10 md:w-10 rounded-lg text-sm font-medium transition-all ${
                       muetBand === band
                         ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                         : 'bg-ground-50 text-ground-700 border border-ground-200 hover:bg-ground-100'

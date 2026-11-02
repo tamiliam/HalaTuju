@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
+import { PHONE_SECTION_FLAT } from '@/lib/phoneSection'   // rule 15 (Mobile M4c)
 import { getBursaryMentoring, type BursaryMentoring as Payload } from '@/lib/api/bursaryMentoring'
 
 const P = 'bursaryTabs.mentoring'
@@ -41,7 +42,7 @@ export default function BursaryMentoring({ token }: { token: string | null }) {
 
   if (!m) {
     return (
-      <section className="rounded-2xl border border-dashed border-ground-300 bg-ground-0 p-5" data-testid="student-no-mentor">
+      <section className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-dashed md:border-ground-300 md:bg-ground-0 md:p-5" data-testid="student-no-mentor">
         <h2 className="text-base font-semibold text-ground-900">{t(`${P}.none.title`)}</h2>
         <p className="mt-1 text-sm text-ground-700">{t(`${P}.none.body`)}</p>
       </section>
@@ -51,7 +52,7 @@ export default function BursaryMentoring({ token }: { token: string | null }) {
   const langs = [...m.languages.map((c) => t(`${P}.lang.${c}`)), ...(m.other_language ? [m.other_language] : [])]
   return (
     <>
-      <section className="space-y-3 rounded-2xl bg-ground-0 p-5 shadow-sm" data-testid="student-mentor">
+      <section className={`space-y-3 ${PHONE_SECTION_FLAT}`} data-testid="student-mentor">
         <p className="text-xs font-semibold uppercase tracking-wide text-ground-600">{t(`${P}.title`)}</p>
         <div className="flex items-center gap-3">
           <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-info-50 font-semibold text-info-800">
@@ -78,14 +79,14 @@ export default function BursaryMentoring({ token }: { token: string | null }) {
         <p className="text-sm text-ground-600">{t(`${P}.since`, { date: formatDate(m.since) })}</p>
       </section>
 
-      <section className="rounded-2xl bg-ground-0 shadow-sm" data-testid="student-meetings">
-        <h2 className="px-5 pb-2 pt-4 text-base font-semibold text-ground-900">{t(`${P}.meetings`)}</h2>
+      <section className="border-b border-ground-100 md:rounded-2xl md:border-0 md:bg-ground-0 md:shadow-sm" data-testid="student-meetings">
+        <h2 className="pb-2 pt-4 text-base md:px-5 font-semibold text-ground-900">{t(`${P}.meetings`)}</h2>
         {data.meetings.length === 0
-          ? <p className="border-t border-ground-100 px-5 py-3 text-sm text-ground-600">{t(`${P}.noMeetings`)}</p>
+          ? <p className="border-t border-ground-100 py-3 text-sm text-ground-600 md:px-5">{t(`${P}.noMeetings`)}</p>
           : (
             <ul>
               {data.meetings.map((x, i) => (
-                <li key={i} className="flex justify-between gap-3 border-t border-ground-100 px-5 py-3 text-sm">
+                <li key={i} className="flex justify-between gap-3 border-t border-ground-100 py-3 text-sm md:px-5">
                   <span className="text-ground-900">{formatDate(x.met_on)}</span>
                   <span className="text-ground-600">{t(`${P}.mode.${x.mode}`)}</span>
                 </li>
