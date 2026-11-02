@@ -15,6 +15,7 @@ from apps.scholarship.eval import offer_failure_map as fm
 from apps.scholarship.eval import offer_read_check as orc
 from apps.scholarship.eval import offer_replay as rp
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+from apps.scholarship.tests.test_offer_reader import text_pdf
 
 #: Invented values. None may appear in any printed output.
 SECRET_NAME = 'ZORBEX A/L QUENTARO'
@@ -88,11 +89,12 @@ class TestProductionText(SimpleTestCase):
 
 class TestReplayLetter(SimpleTestCase):
     def test_a_lock_is_merged_over_the_stored_read(self):
-        rec = rp.replay_letter(MATRIC_TWIN, 'text_layer', _stored())
+        rec = rp.replay_letter(MATRIC_TWIN, 'text_layer', _stored(), page1_layer=MATRIC_TWIN)
         self.assertEqual(rec['capture'], 'deterministic')
         self.assertEqual(rec['replay']['outcome'], 'locked')
         self.assertEqual(rec['fields']['institution'], SECRET_COLLEGE)          # the parser wins
-        self.assertEqual(rec['fields']['candidate_address'], 'kept from the stored read')
+        self.assertEqual(rec['fields']['candidate_address'], '')          # S5 review L2: an AI-only key, blank
+        self.assertEqual(rec['fields']['offer_date'], '3 MAC 2031')        # read by the parser
         self.assertEqual(rec['replay']['parser_fields']['institution'], SECRET_COLLEGE)
         self.assertNotIn('_family', rec['fields'])
         self.assertEqual(rec['replay']['offer_parser_version'], offer_parse.PARSER_VERSION)
@@ -180,8 +182,9 @@ class _Corpus:
         self._json(key + '.json', {'vision_fields': {'fields': read, 'capture': 'ai',
                                                      'authenticity': {'doc_seen': seen,
                                                                       'status': 'genuine'}}})
-        with open(os.path.join(self.dir, 'fixtures', 'offer_letter', f'{key}.{ext}'), 'w') as f:
-            f.write('x')
+        # A text-layer PDF is a real PDF carrying the text (S5: the replay reads its page-1 layer).
+        with open(os.path.join(self.dir, 'fixtures', 'offer_letter', f'{key}.{ext}'), 'wb') as f:
+            f.write(text_pdf([text]) if ext == 'pdf' and route == 'text_layer' and text else b'x')
         if route:
             self._json(key + '.ocr.meta.json', {'path': route})
             with open(os.path.join(self.snap, key + '.ocr.txt'), 'w', encoding='utf-8') as f:

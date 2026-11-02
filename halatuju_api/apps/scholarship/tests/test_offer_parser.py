@@ -97,7 +97,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertIn('ASASI TEKNOLOGI KEJURUTERAAN', r['programme'])
         self.assertEqual(r['institution'], 'POLITEKNIK SULTAN IDRIS SHAH')
         self.assertNotIn('Tarikh', r['institution'])
-        self.assertIn('15 JUN 2026', r['reporting_date'])
+        self.assertEqual(r['reporting_date'], '15 Jun 2026')        # S5: the house shape, no time
 
     def test_stpm(self):
         r = parse_govt_offer(STPM)
@@ -118,7 +118,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['candidate_nric'], '080111-14-0499')
         self.assertEqual(r['institution'], 'KOLEJ TINGKATAN ENAM GOMBAK')    # value after the label
         self.assertEqual(r['stream'], 'SAINS')                               # Bidang
-        self.assertIn('08 Jun 2026', r['reporting_date'])                    # Tarikh Lapor Diri, not skipped
+        self.assertEqual(r['reporting_date'], '8 Jun 2026')                  # Tarikh Lapor Diri, not skipped
         self.assertNotIn('Bidang', r['institution'])                        # not swallowed by the institution
 
     def test_matriculation(self):
@@ -129,7 +129,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertIn('Matrikulasi', r['programme'])
         self.assertEqual(r['intake'], 'SESI 2026/2027')              # S5: with its label
         self.assertEqual(r['institution'], 'KOLEJ MATRIKULASI PAHANG')
-        self.assertIn('JUN 2026', r['reporting_date'])
+        self.assertEqual(r['reporting_date'], '8 Jun 2026')
         # ⚠ THE JURUSAN IS THE STREAM. Its absence here is what starved the pathway check's track
         # axis for every matriculation letter this parser read (0/4 on production 2026-09-10,
         # against 26/26 for the same letters read by Gemini, whose schema says so explicitly).
@@ -149,7 +149,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['programme_code'], 'DPM')
         self.assertEqual(r['intake'], 'SESI 2026/2027')              # no session numeral printed
         self.assertIn('POLITEKNIK', r['institution'])
-        self.assertEqual(r['reporting_date'], '20 JUN 2026')          # the date only, no time
+        self.assertEqual(r['reporting_date'], '20 Jun 2026')          # the date only, the house shape
         self.assertEqual(r['offer_date'], '25/05/2026')
 
     def test_university_offer_defers(self):

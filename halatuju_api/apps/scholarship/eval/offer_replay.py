@@ -11,7 +11,7 @@ THE TEXT production would feed the readers (`vision.ocr_document_full`): a digit
 `path: earlier_vision`) is already page 1 only. `capture_ocr.py --corpus` makes these caches.
 
 THE READERS, exactly as `vision._run_field_extraction_impl` runs them on that text:
-  * `offer_exact.exact_offer_read(text, page1_text, profile_nric)` (S5: the ONE entry point) — a
+  * `offer_exact.exact_read(text, from_text_layer, page1_layer, profile_nric)` (S5: the ONE entry point) — a
     LOCK (STPM / matriculation / polytechnic, the offer title and every required field read, no
     guard tripped, the IC kept by `offer_ic.guard_nric` against the profile IC in `context.json`) or
     None (production then asks Gemini). A digital PDF's page-1 layer (from the corpus PDF) is the
@@ -63,7 +63,7 @@ _API_ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))      # halatuj
 if _API_ROOT not in sys.path:                  # run as a script with -I: reach the app package
     sys.path.insert(0, _API_ROOT)
 from apps.scholarship import offer_parse
-from apps.scholarship.offer_exact import exact_offer_read, merge_over, page1_text_layer
+from apps.scholarship.offer_exact import exact_read, merge_over, page1_text_layer
 from apps.scholarship.eval import offer_read_check as orc
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.bands import stored_status
@@ -128,22 +128,25 @@ def page1_of(eval_dir, key, route):
         return page1_text_layer(fh.read(), 'application/pdf')
 
 
-def parser_diagnosis(text, page1_text=None, profile_nric=''):
+def parser_diagnosis(text, route='vision', page1_layer='', profile_nric=''):
     """Why the Exact read locks or not — {detected, titled, empty_required, guard, locked, fields}.
-    The parser's own walk (`offer_parse.diagnose`), then the IC guard (`offer_exact`): a lock the
-    guard refuses (its IC blanked) is guard `ic_guard`. Never a copy of the rules."""
-    d = offer_parse.diagnose(text, page1_text)
-    ex = exact_offer_read(text, page1_text=page1_text or '', profile_nric=profile_nric)
-    guard = d['guard'] or ('ic_guard' if d['locked'] and ex is None else None)
+    The parser's own walk (`offer_parse.diagnose`), then `offer_exact.exact_read` as production derives
+    its inputs (a text-layer ``route`` reads the identity from ``page1_layer``): guard `no_page1_layer`
+    when that page has none, `ic_guard` when the IC guard refuses the parser's IC. Never a copy of the rules."""
+    from_layer = route == 'text_layer'
+    d = offer_parse.diagnose(text, page1_layer if from_layer else None)
+    ex = exact_read(text, from_text_layer=from_layer, page1_layer=page1_layer, profile_nric=profile_nric)
+    guard = ('no_page1_layer' if from_layer and not (page1_layer or '').strip() and d['locked'] else
+             d['guard'] or ('ic_guard' if d['locked'] and ex is None else None))
     return {'detected': d['family'], 'titled': d['titled'], 'empty_required': d['empty_required'],
             'guard': guard, 'locked': ex is not None, 'fields': ex['fields'] if ex else None}
 
 
-def replay_letter(text, route, stored_fields, profile_nric='', page1_text=None):
+def replay_letter(text, route, stored_fields, profile_nric='', page1_layer=''):
     """The replay record for one letter (see the module docstring)."""
     stored_fields = stored_fields if isinstance(stored_fields, dict) else {}
     usable = len((text or '').strip()) >= MIN_TEXT
-    diag = (parser_diagnosis(text, page1_text, profile_nric) if usable else
+    diag = (parser_diagnosis(text, route, page1_layer, profile_nric) if usable else
             {'detected': '', 'titled': False, 'empty_required': [], 'guard': None, 'locked': False,
              'fields': None})
     if diag['locked']:
@@ -213,7 +216,7 @@ def replay_corpus(eval_dir, write=False):
         text, route = production_text(snap, key)
         record = replay_letter(text, route, vf.get('fields'),
                                profile_nric=(context.get(key) or {}).get('profile_nric') or '',
-                               page1_text=page1_of(eval_dir, key, route))
+                               page1_layer=page1_of(eval_dir, key, route))
         answer, problems = orc._read_answer(eval_dir, key)   # the family, as the scorer takes it
         family = orc.offer_family(vf, answer if isinstance(answer, dict) and not problems else None)
         kind = input_kind3(eval_dir, key, route)

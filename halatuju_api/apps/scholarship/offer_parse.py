@@ -29,8 +29,11 @@ _DMY_RE = re.compile(r'(\d{1,2}\s+' + _MALAY_MONTH + r'\s+20\d{2})', re.IGNORECA
 _NUM_DATE_RE = re.compile(r'(?<!\d)(\d{1,2}[/-]\d{1,2}[/-]20\d{2})(?!\d)')
 #: A day range ("8 HINGGA 9 JUN 2026", "13 MEI HINGGA 6 JUN 2026") — the reporting date is its FIRST
 #: day (the answers' convention and `pathway_engine.parse_reporting_date`'s); 1.3.0 took the last.
-_RANGE_RE = re.compile(r'(\d{1,2})(?:\s+(' + _MALAY_MONTH + r'))?\s*(?:SE)?HINGGA\s*\d{1,2}\s+('
-                       + _MALAY_MONTH + r')\s+(20\d{2})', re.IGNORECASE)
+#: ⚠ Every whitespace run in these patterns is BOUNDED ({0,3}) wherever two runs could meet: two
+#: unbounded overlapping runs are polynomial backtracking on a long space run (review M1, 2026-11-03:
+#: "SESI" + 2,000 spaces took 41 s). `tests/test_offer_parse_s5.py` times every family on such a run.
+_RANGE_RE = re.compile(r'(\d{1,2})(?:\s{1,3}(' + _MALAY_MONTH + r'))?\s{0,3}(?:SE)?HINGGA\s{0,3}\d{1,2}\s{1,3}('
+                       + _MALAY_MONTH + r')\s{1,3}(20\d{2})', re.IGNORECASE)
 _NAME_MARKER = re.compile(r'\b(A\s*/\s*[LP]|BIN|BINTI)\b', re.IGNORECASE)
 #: A person's name as these letters print it: letters, spaces and . ' @ / - only (no digit, no colon).
 _NAME_SHAPE = re.compile(r"^[A-Za-z][A-Za-z .'’@/-]*[A-Za-z.]$")
@@ -81,8 +84,8 @@ def first_date(s: str) -> str:
 #: Diri" / "Tarikh Kemasukan…" / "Tarikh Cetakan" — i.e. "Tarikh" followed straight by a date (with
 #: or without a colon), glued after the reference number too. 1.3.0 matched "Tarikh dan Masa Daftar"
 #: and so read the polytechnic REGISTRATION date as the offer date (16 of 20 locks).
-_OFFER_DATE_RE = re.compile(r'(?<![A-Za-z])Tarikh\s*:?\s*(?=\d)(.{6,30})', re.IGNORECASE)
-_OFFER_DATE_ALONE = re.compile(r'^\s*Tarikh\s*:?\s*$', re.IGNORECASE)
+_OFFER_DATE_RE = re.compile(r'(?<![A-Za-z])Tarikh[ \t]{0,3}:?[ \t]{0,3}(?=\d)(.{6,30})', re.IGNORECASE)
+_OFFER_DATE_ALONE = re.compile(r'^\s*Tarikh[ \t]{0,3}:?\s*$', re.IGNORECASE)
 
 
 def _offer_date(lines):
@@ -109,11 +112,17 @@ def _detect(up: str):
 
 #: The OFFER's own title, per family — a lock requirement since 2.0.0, so a portal page, a slip or a
 #: printout that names the family but is not the offer never locks (it goes to the AI reader).
+#: Review M2: the title must START a line and be printed in CAPITALS (a portal page says "Tahniah! Anda
+#: layak menerima Tawaran Kemasukan Program Matrikulasi" mid-sentence), and a page carrying a portal's
+#: own words (`_PORTAL_TELL`) never locks. Checked on the glue-split lines (a glued layer's title follows
+#: "Saudara," on one line).
 _TITLE = {
-    'stpm': re.compile(r'TAWARAN\s+KEMASUKAN\s+KE\s+TINGKATAN\s+ENAM'),
-    'matriculation': re.compile(r'TAWARAN\s+KEMASUKAN\s+PROGRAM|KEPUTUSAN\s+PERTUKARAN\s+PROGRAM'),
-    'polytechnic': re.compile(r'SURAT\s+TAWARAN\s+PENGAJIAN'),
+    'stpm': re.compile(r'^[ \t]{0,8}TAWARAN\s{1,3}KEMASUKAN\s{1,3}KE\s{1,3}TINGKATAN\s{1,3}ENAM', re.M),
+    'matriculation': re.compile(r'^[ \t]{0,8}(?:TAWARAN\s{1,3}KEMASUKAN\s{1,3}PROGRAM|'
+                                r'KEPUTUSAN\s{1,3}PERTUKARAN\s{1,3}PROGRAM)', re.M),
+    'polytechnic': re.compile(r'^[ \t]{0,8}SURAT\s{1,3}TAWARAN\s{1,3}PENGAJIAN', re.M),
 }
+_PORTAL_TELL = re.compile(r'\bSEMAKAN\b|\bLAYAK\s{1,3}MENERIMA\b|\bSILA\s{1,3}CETAK\b|\bTAHNIAH\s{0,3}!', re.I)
 
 
 def _name_ok(name: str) -> bool:
@@ -138,7 +147,7 @@ def _label(pattern):
     value on the label's own line counts only after a colon or a clause number (so a body sentence
     that happens to start with the label word is never read as a value)."""
     return re.compile(r'^\s*(?P<num>\d+(?:\.\d+)*\.?\s*)?(?:' + pattern
-                      + r')(?![A-Za-z])(?P<colon>\s*:)?\s*(?P<tail>.*)$', re.IGNORECASE)
+                      + r')(?![A-Za-z])(?P<colon>[ \t]{0,5}:)?(?P<tail>.*)$', re.IGNORECASE)
 
 
 _CLAUSE_ONLY = re.compile(r'^\s*\(?\d+(?:\.\d+)*\)?\.?\s*$')
@@ -223,7 +232,8 @@ def _read_block(lines, spec, fillers=(), wraps=(), max_skip=8):
 
 
 def _date_shape(v):
-    return bool(re.match(r'\s*\d{1,2}\s*(?:[/-]|\s+' + _MALAY_MONTH + r'|\s*(?:SE)?HINGGA)', v or '', re.I)
+    return bool(re.match(r'\s{0,3}\d{1,2}(?:\s{0,3}[/-]|\s{1,3}' + _MALAY_MONTH + r'|\s{0,3}(?:SE)?HINGGA)',
+                         v or '', re.I)
                 and first_date(v))
 
 
@@ -250,7 +260,7 @@ def _split_glued(text: str, labels) -> str:
     """A glued text layer (the whole letter on one line, labels run into values) → one label per line:
     a line break goes in front of every known label that sits mid-line (class B, #117)."""
     for pat in labels:
-        text = re.sub(r'(?<=\S)[ \t]*(?=' + pat + r')', '\n', text)
+        text = re.sub(r'(?<=\S)[ \t]{0,8}(?=' + pat + r')', '\n', text)
     return text
 
 
@@ -278,7 +288,7 @@ def _identity_stpm(lines):
             name = m.group(1).strip(' :') or next((x.strip() for x in lines[i + 1:] if x.strip()), '')
             break
     for ln in lines:
-        m = re.match(r'\s*No\.?\s*Kad\s*Pengenalan\s*:?\s*' + _IC, ln, re.IGNORECASE)
+        m = re.match(r'\s*No\.?\s{0,3}Kad\s{0,3}Pengenalan[ \t]{0,3}:?[ \t]{0,3}' + _IC + r'(?!\d)', ln, re.IGNORECASE)
         if m:
             return name, _norm_nric(m.group(1)), 'label'
     return name, _first_ic_anywhere(lines), 'other'
@@ -320,19 +330,33 @@ _MATRIC_GLUE = [r'K\s*/\s*P\s*:', r'NO\.?\s*MATRIK\b', r'Jurusan\s*:', r'Aliran\
                 r'Yuran\s+Pendaftaran\s*:', r'Tarikh\s*:', r'Rujukan\s+Kami', r'TAWARAN\s+KEMASUKAN', r'Saudara']
 
 
+#: A word that sits above "K/P:" on a letter but is never a name: a state, a stamp, an office (review M3).
+_NOT_NAME_LINE = re.compile(r'^(?:SEGERA|SULIT|RAHSIA|TERHAD|KPM|PERSENDIRIAN|PERINGATAN|MAKLUMAN)$')
+#: A name line that ends on its parentage marker continues on the next line ("…HAKIM BIN" / "ABDULLAH").
+_ENDS_MARKER = re.compile(r'\b(?:BIN|BINTI|BT|BTE|A\s*/\s*[LP]|ANAK|AK)$', re.IGNORECASE)
+
+
 def _identity_matric(lines):
     """The IC from the "K/P:" line; the name is the line DIRECTLY above it, in the strict name shape
-    (no parentage marker needed: a one-word, Chinese or East-Malaysian name has none — class C)."""
+    (no parentage marker needed: a one-word, Chinese or East-Malaysian name has none — class C).
+    Review M3: a state / stamp word there is no name; a name wrapped after its parentage marker is
+    joined ("…HAKIM BIN" + "ABDULLAH"); a name line that itself ENDS on the marker (its tail lost) is
+    no name. A wrong name is a false wrong-person red, so every doubt reads no name (→ no lock)."""
     for i, ln in enumerate(lines):
-        m = re.match(r'\s*K\s*/\s*P\s*:?\s*' + _IC, ln, re.IGNORECASE)
+        m = re.match(r'\s*K\s{0,3}/\s{0,3}P[ \t]{0,3}:?[ \t]{0,3}' + _IC + r'(?!\d)', ln, re.IGNORECASE)
         if m:
-            above = next((x.strip() for x in reversed(lines[:i]) if x.strip()), '')
-            return (above if _name_ok(above) else ''), _norm_nric(m.group(1)), 'label'
+            above = [x.strip() for x in lines[:i] if x.strip()][-2:]
+            name = above[-1] if above else ''
+            if len(above) == 2 and _ENDS_MARKER.search(above[0]) and _name_ok(above[0]):
+                name = f'{above[0]} {name}'
+            ok = (_name_ok(name) and not _ENDS_MARKER.search(name)
+                  and not all(_NOT_WRAP.match(w) or _NOT_NAME_LINE.match(w) for w in name.upper().split()))
+            return (name if ok else ''), _norm_nric(m.group(1)), 'label'
     return '', _first_ic_anywhere(lines), 'other'
 
 
 def _parse_matric(lines, up):
-    sm = re.search(r'SESI\s*(20\d{2})\s*/\s*(20\d{2})', up)
+    sm = re.search(r'SESI\s{0,3}(20\d{2})\s{0,3}/\s{0,3}(20\d{2})', up)
     block = _read_block(lines, _MATRIC_BLOCK)
     jurusan = block.get('stream', '')
     # ⚠ THE BRACKET IS OURS, NOT THE LETTER'S. No KPM matriculation letter prints "Program
@@ -375,7 +399,7 @@ _POLY_CODE = re.compile(r'^\s*([A-Z][A-Z0-9]{1,5})(?:\s*[-–]\s*(?=[A-Z(])|\s+(
 #: "SESI I : 2026/2027", "SESII: …", "SESI 1:2026/2027" (a photo's OCR reads the Roman I as 1 — the
 #: letters print Roman, class D) → "SESI I : 2026/2027". No numeral → "SESI 2026/2027".
 #: An OCR'd "l" for the Roman I ("SESIl") reads as I too.
-_POLY_SESSION = re.compile(r'SESI\s*([IL1]{1,3}|2|3)?\s*:?\s*(20\d{2})\s*/\s*(20\d{2})')
+_POLY_SESSION = re.compile(r'SESI\s{0,3}([IL1]{1,3}|2|3)?\s{0,3}:?\s{0,3}(20\d{2})\s{0,3}/\s{0,3}(20\d{2})')
 
 
 def _identity_poly(lines):
@@ -383,7 +407,7 @@ def _identity_poly(lines):
     for ln in lines:
         if _TITLE['polytechnic'].search(ln.upper()):
             break
-        m = re.match(r'\s*(.+?)\s*\(\s*' + _IC + r'\s*\)\s*$', ln)
+        m = re.match(r'\s*(\S.*?)[ \t]{0,3}\([ \t]{0,3}' + _IC + r'[ \t]{0,3}\)\s*$', ln)
         if m and _name_ok(m.group(1)):
             return m.group(1).strip(), _norm_nric(m.group(2)), 'label'
     return '', _first_ic_anywhere(lines), 'other'
@@ -439,6 +463,32 @@ _MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
 _SPACES = re.compile(r'[^\S\n]')
 
 
+def _identity_of(identity, glue, text):
+    name, nric, source = identity([ln.rstrip() for ln in _split_glued(text, glue).splitlines()])
+    return (name if name and _name_ok(re.sub(r'\s+', ' ', name)) else ''), nric, source
+
+
+def _disagree(a, b) -> bool:
+    """Two identity reads of one letter that name another person: a different IC, or a different name."""
+    (n1, i1), (n2, i2) = a, b
+    return bool((i1 and i2 and _decimal_digits(i1) != _decimal_digits(i2))
+                or (n1 and n2 and _name_letters(n1) != _name_letters(n2)))
+
+
+def _name_letters(name: str) -> str:
+    return re.sub(r'[^A-Z]', '', (name or '').upper())
+
+
+def house_date(raw: str) -> str:
+    """The reporting date in the house shape the AI path stores ("8 Jun 2031", English month abbreviations;
+    `vision._normalise_reporting_date`) — review M4: `pathway_engine.parse_reporting_date` needs a month
+    NAME, so a numeric "08/06/2031" stored as printed read as no date at all."""
+    if not raw:
+        return ''
+    from .vision import _normalise_reporting_date
+    return _normalise_reporting_date(raw)
+
+
 def parse_govt_offer(text: str, page1_text: str = None):
     """STPM/Matrikulasi/Polytechnic offer OCR text → the offer field dict, or None to defer to
     Gemini. Conservative: None unless the issuer and the offer title are recognised AND every
@@ -449,25 +499,33 @@ def parse_govt_offer(text: str, page1_text: str = None):
 
 def diagnose(text: str, page1_text: str = None) -> dict:
     """The parser's whole walk, for `parse_govt_offer` and the eval (`offer_replay`): ``{family,
-    titled, fields (the read before the exit checks, or None), empty_required, guard, locked}`` —
-    ``locked`` is the lock (the field dict) or None."""
+    titled, portal, fields (the read before the exit checks, or None), empty_required, guard, locked}``
+    — ``locked`` is the lock (the field dict) or None.
+
+    ``page1_text`` is a digital PDF's page-1 text layer, given ONLY when ``text`` is that PDF's own text
+    layer (`offer_exact` decides — review H1). The identity is read from it, AND from ``text``: when the
+    two disagree (another IC, another name) the letter does not lock (guard ``identity_disagree``)."""
     text = _SPACES.sub(' ', text or '')         # a text layer's no-break spaces read as spaces
     page1_text = _SPACES.sub(' ', page1_text or '')
     up = text.upper()
     fam = _detect(up)
-    out = {'family': fam, 'titled': bool(fam) and bool(_TITLE[fam].search(up)), 'fields': None,
+    out = {'family': fam, 'titled': False, 'portal': bool(_PORTAL_TELL.search(text)), 'fields': None,
            'empty_required': [], 'guard': None, 'locked': None}
-    if not out['titled']:
+    if not fam:
         return out
     reader, identity, glue = _FAMILY[fam]
-    lines = [ln.rstrip() for ln in _split_glued(text, glue).splitlines()]
-    id_text = page1_text if page1_text.strip() else text
-    name, nric, source = identity([ln.rstrip() for ln in _split_glued(id_text, glue).splitlines()])
-    if name and not _name_ok(re.sub(r'\s+', ' ', name)):
-        name = ''
+    split = _split_glued(text, glue)
+    out['titled'] = bool(_TITLE[fam].search(split))
+    if not out['titled'] or out['portal']:
+        return out
+    lines = [ln.rstrip() for ln in split.splitlines()]
+    name, nric, source = _identity_of(identity, glue, page1_text if page1_text.strip() else text)
     fields = out['fields'] = {
         'candidate_name': name, 'candidate_nric': nric, 'candidate_nric_source': source if nric else 'none',
         'programme_code': '', 'campus': '', 'stream': '', **reader(lines, up), 'offer_date': _offer_date(lines)}
+    fields['reporting_date'] = house_date(fields.get('reporting_date', ''))
+    if page1_text.strip() and _disagree((name, nric), _identity_of(identity, glue, text)[:2]):
+        out['guard'] = 'identity_disagree'
     required = _REQUIRED + (('stream',) if fam in _REQUIRED_STREAM else ())
     out['empty_required'] = [k for k in required if not (fields.get(k) or '').strip()]
     # A bare numbered-clause header leaked as a field value means the label-anchored layout read
@@ -476,7 +534,9 @@ def diagnose(text: str, page1_text: str = None) -> dict:
     # correctly). A bare N.N. token is NEVER a valid stream / institution / programme.
     from .card_display import looks_like_clause_number, looks_like_date
     slots = ('stream', 'institution', 'programme')
-    if any(looks_like_clause_number(fields.get(k, '')) for k in slots):
+    if out['guard']:
+        pass
+    elif any(looks_like_clause_number(fields.get(k, '')) for k in slots):
         out['guard'] = 'clause_number'
     # ⚠⚠ THE #125 / #142 FAULT HAPPENED TWICE BECAUSE THE FIRST FIX WAS SCOPED TO ONE PARSER. A DATE
     # or a RINGGIT AMOUNT is never a stream, an institution or a programme; seeing one means the

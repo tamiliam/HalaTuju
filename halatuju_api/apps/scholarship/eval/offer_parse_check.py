@@ -4,7 +4,7 @@ A HAND-RUN measurement, never a test: it reads the gitignored offer corpus (`REA
 prints keys, field names and counts — NEVER a value. Committed tests: `tests/test_offer_parse_check.py`
 (synthetic twins). No paid call, nothing written.
 
-Each letter is fed what production feeds the Exact read (`offer_exact.exact_offer_read`): the text
+Each letter is fed what production feeds the Exact read (`offer_exact.exact_read`): the text
 (`offer_replay.production_text` — a digital PDF's text layer, else Vision page 1), the page-1 text (a
 digital PDF's page-1 layer, read here from the corpus's own PDF, free) and the profile IC
 (`context.json`, for the IC guard). Per letter, one outcome:
@@ -46,7 +46,7 @@ if _API_ROOT not in sys.path:                  # run as a script with -I: reach 
 from apps.scholarship import offer_parse
 from apps.scholarship.eval import offer_read_check as orc
 from apps.scholarship.eval import offer_replay as rp
-from apps.scholarship.offer_exact import exact_offer_read, merge_over
+from apps.scholarship.offer_exact import exact_read, merge_over
 
 OUTCOMES = ('EXACT', 'INCOMPLETE', 'WRONG', 'CONTROL-LOCKED', 'FALLBACK', 'UNANSWERED')
 BAD = ('WRONG', 'CONTROL-LOCKED')
@@ -83,8 +83,8 @@ def check_corpus(eval_dir, base=DEFAULT_BASE, split_file=orc.SPLIT_PATH):
         answer = answer if isinstance(answer, dict) and not problems else None
         family = orc.offer_family(vf, answer)
         text, route = rp.production_text(snap, key)
-        ex = exact_offer_read(text, page1_text=rp.page1_of(eval_dir, key, route),
-                              profile_nric=(context.get(key) or {}).get('profile_nric') or '')
+        ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=rp.page1_of(eval_dir, key, route),
+                        profile_nric=(context.get(key) or {}).get('profile_nric') or '')
         fields = ex['fields'] if ex else None
         outcome, bad, od = classify(answer, family, fields)
         base_read = orc.read_json_file(os.path.join(snap, key + base)) if base else None

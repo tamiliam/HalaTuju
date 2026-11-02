@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument
-from apps.scholarship.offer_exact import exact_offer_read, merge_over, page1_text_layer
+from apps.scholarship.offer_exact import exact_offer_read, exact_read, merge_over, page1_text_layer
 from apps.scholarship.tests.factories import make_application
 from apps.scholarship.tests.test_offer_reader import png, text_pdf
 
@@ -89,7 +89,7 @@ class TestTheMerge(SimpleTestCase):
         self.assertEqual((f['campus'], f['programme_code'], f['candidate_nric_source']), ('', '', 'label'))
         self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('1 Jan 2031', 'Tarikh Pendaftaran'))
         self.assertEqual(f['offer_date'], '3 MAC 2031')                # read → it wins
-        self.assertEqual(f['reporting_venue'], 'DEWAN')                # not the parser's: kept
+        self.assertEqual(f['reporting_venue'], '')                     # an AI-only key: blank (review L2)
         self.assertEqual(f['_offer_parser_version'], '2.0.0')
         self.assertNotIn('_family', f)
 
@@ -97,14 +97,49 @@ class TestTheMerge(SimpleTestCase):
         f = merge_over(self.STALE, {'reporting_date': '17 OGOS 2031', 'reporting_date_label': 'Tarikh Kemasukan ke kolej'})
         self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('17 OGOS 2031', 'Tarikh Kemasukan ke kolej'))
 
+    def test_m4_a_parser_date_that_does_not_parse_never_overwrites_one_that_does(self):
+        f = merge_over(self.STALE, {'reporting_date': '31/02/2031', 'reporting_date_label': 'x'})
+        self.assertEqual((f['reporting_date'], f['reporting_date_label']), ('1 Jan 2031', 'Tarikh Pendaftaran'))
+        f = merge_over({}, {'reporting_date': '31/02/2031', 'reporting_date_label': 'x'})
+        self.assertEqual(f['reporting_date'], '31/02/2031')              # nothing better to keep
+
+    def test_l2_every_ai_only_field_is_blank_under_an_exact_read(self):
+        stale = {**self.STALE, 'candidate_address': 'OLD ADDRESS', 'aliran': 'SJKT',
+                 'bidang_pengkhususan': 'X', 'elektif': 'Y'}
+        f = exact_offer_read(matric(), prior={'fields': stale})['fields']
+        for k in ('candidate_address', 'reporting_venue', 'aliran', 'bidang_pengkhususan', 'elektif'):
+            self.assertEqual(f[k], '', k)
+
     def test_no_prior_read(self):
         self.assertEqual(merge_over(None, {})['campus'], '')
 
 
 class TestPageOne(SimpleTestCase):
-    def test_identity_is_read_from_page_one_text(self):
-        page1 = matric().replace(NAME, 'PAGEONE A/L ONLY')
-        self.assertEqual(exact_offer_read(matric(), page1_text=page1)['fields']['candidate_name'], 'PAGEONE A/L ONLY')
+    OTHER = 'QORIN A/L VESTRAN\nK/P: 130405100211\n'      # another person's identity lines
+
+    def test_h1_a_vision_read_never_takes_its_identity_from_a_pdf_layer(self):
+        # Review H1 probe: the body is Vision's text of letter B; a (hidden, short) page-1 layer names A.
+        ex = exact_read(matric(), from_text_layer=False, page1_layer=self.OTHER, profile_nric='130405100211')
+        self.assertEqual((ex['fields']['candidate_name'], ex['fields']['candidate_nric']), (NAME, NRIC))
+        self.assertEqual(ex['offer_reader_inputs']['nric_check'], 'kept_well_formed')   # never 'match' to A
+
+    def test_h1_a_page_one_identity_that_disagrees_with_the_layer_never_locks(self):
+        self.assertIsNone(exact_read(matric(), from_text_layer=True, page1_layer=matric(nric='130405-10-0211')))
+        self.assertIsNone(exact_read(matric(), from_text_layer=True,
+                                     page1_layer=matric().replace(NAME, 'PAGEONE A/L ONLY')))
+        self.assertIsNotNone(exact_read(matric(), from_text_layer=True, page1_layer=matric()))
+
+    def test_h2_a_text_layer_whose_page_one_has_none_goes_to_the_ai_reader(self):
+        self.assertIsNone(exact_read(matric(), from_text_layer=True, page1_layer=''))
+
+    def test_production_decides_the_source_from_the_file(self):
+        pdf = text_pdf([matric()])
+        self.assertIsNotNone(exact_offer_read(matric(), image=pdf, content_type='application/pdf'))
+        # Vision text of a PDF whose own layer is something else (a scan app's OCR'd copy): the identity
+        # is read from the Vision text, and the layer is never used.
+        other = text_pdf([matric().replace(NAME, 'PAGEONE A/L ONLY')])
+        ex = exact_offer_read(matric(), image=other, content_type='application/pdf')
+        self.assertEqual(ex['fields']['candidate_name'], NAME)
 
     def test_a_digital_pdf_gives_its_page_one_layer_and_a_photo_none(self):
         pdf = text_pdf(['PAGE ONE OF THE OFFER LETTER WITH ENOUGH REAL WORDS TO COUNT AS A TEXT LAYER HERE',

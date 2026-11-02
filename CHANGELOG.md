@@ -145,6 +145,22 @@ owner check page for the 71 stored Exact reads; the owner marked every field rig
   Exact reads 21/21 re-lock exact (70 of the 71 stored Exact reads re-lock; the one that does not was a wrong
   1.3.0 lock on a noisy OCR layer); dev real known-format 16 of 17. Pipeline fully exact: dev 89 → 92 of 126,
   held-out 63 → 66 of 90, no core field down.
+- **Adversarial review of `9298e2c9` — fixes (each with a synthetic regression test):** **H1** the identity is
+  read from the same source as the body — a digital PDF's page-1 layer only when production's text IS that
+  PDF's layer (`offer_exact.exact_offer_read` compares them), never beside a Vision read; a page-1 identity that
+  disagrees with the whole layer's never locks (guard `identity_disagree`). **H2** a text-layer PDF whose page 1
+  has no usable layer goes to the AI reader (no fall-back to later pages). **M1** every whitespace run that could
+  meet another is bounded (the poly session pattern was cubic: "SESI" + 2,000 spaces took 41 s); a timing test
+  runs every family on 3,000-space runs. **M2** the offer title must start a line, in capitals, and a page with a
+  portal's words (SEMAKAN, layak menerima, Sila Cetak, "Tahniah!") never locks. **M3** the matric name above "K/P:"
+  is never a state or a stamp word; a name wrapped after its BIN / BINTI / A/L / A/P is joined, one cut at its
+  marker is refused. **M4** the reporting date is stored in the AI path's house shape (`_normalise_reporting_date`:
+  "14 Jun 2031"), so a numeric "14/06/2031" now reads in `parse_reporting_date`; the merge never lets a parser date
+  that does not parse replace a prior one that does. Scorer convention unchanged: answers keep dates as printed and
+  `tidy_date` compares both shapes as one date. **L1** a labelled IC must not be followed by a 13th digit. **L2** the
+  AI-only keys (`candidate_address`, `reporting_venue`, `aliran`, `bidang_pengkhususan`, `elektif`) are written blank
+  under an Exact read. `exact_read` is the eval's entry (what production derives, passed in). Dev unchanged (86
+  EXACT, 0 WRONG, 0 control locks, pipeline 92/126).
 - Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
   `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
   `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.

@@ -154,7 +154,7 @@ class TestClassB_GluedMatric(SimpleTestCase):
         self.assertEqual((r['candidate_nric'], r['candidate_nric_source']), ('130212-08-0355', 'label'))
         self.assertEqual(r['stream'], 'KEJURUTERAAN')                    # not the Aliran
         self.assertEqual(r['institution'], 'KOLEJ MATRIKULASI KEJURUTERAAN ZELVA')
-        self.assertEqual(r['reporting_date'], '8 JUN 2031')
+        self.assertEqual(r['reporting_date'], '8 Jun 2031')            # the house shape (review M4)
         self.assertEqual(r['intake'], 'SESI 2031/2032')
         self.assertEqual(r['offer_date'], '27 APRIL 2031')
 
@@ -192,12 +192,12 @@ class TestClassE_BlockVariants(SimpleTestCase):
     def test_poly_tarikh_daftar_and_an_interleaved_block(self):
         r = parse_govt_offer(POLY_NOISY)
         self.assertEqual(r['institution'], 'POLITEKNIK ZELVORA (POLITEKNIK PREMIER)')
-        self.assertEqual(r['reporting_date'], '14 JUN 2031')
+        self.assertEqual(r['reporting_date'], '14 Jun 2031')
 
     def test_poly_sesi_label_and_a_split_registration_label(self):
         r = parse_govt_offer(POLY_SESI_LABEL)
         self.assertEqual(r['institution'], 'POLITEKNIK ZELVORA')
-        self.assertEqual(r['reporting_date'], '14 JULAI 2031')
+        self.assertEqual(r['reporting_date'], '14 Jul 2031')
         self.assertEqual(r['programme'], 'DIPLOMA PENGURUSAN LOGISTIK DAN RANTAIAN BEKALAN')   # wrapped
         self.assertEqual(r['programme_code'], 'DE123')
 
@@ -208,7 +208,7 @@ class TestValueBugs(SimpleTestCase):
         self.assertEqual(parse_govt_offer(POLY_SESI_LABEL)['offer_date'], '01/06/2031')
 
     def test_a_reporting_range_takes_its_first_day(self):
-        self.assertEqual(parse_govt_offer(MATRIC_SPLIT)['reporting_date'], '8 JUN 2031')
+        self.assertEqual(parse_govt_offer(MATRIC_SPLIT)['reporting_date'], '8 Jun 2031')
         self.assertEqual(first_date('13 MEI HINGGA 06 JUN 2031'), '13 MEI 2031')
 
 
@@ -251,8 +251,14 @@ class TestConventionsAndShape(SimpleTestCase):
         self.assertEqual((r['candidate_nric'], r['candidate_nric_source']), ('130405-10-0211', 'other'))
 
     def test_identity_comes_from_page_one_when_given(self):
+        self.assertEqual(parse_govt_offer(STPM_SIX, page1_text=STPM_SIX)['candidate_name'], 'QORIN A/L VESTRAN')
+
+    def test_h1_a_page_one_identity_that_disagrees_with_the_whole_text_never_locks(self):
         page1 = STPM_SIX.replace('QORIN A/L VESTRAN', 'PAGEONE A/L ONLY')
-        self.assertEqual(parse_govt_offer(STPM_SIX, page1_text=page1)['candidate_name'], 'PAGEONE A/L ONLY')
+        d = diagnose(STPM_SIX, page1_text=page1)
+        self.assertEqual((d['guard'], d['locked']), ('identity_disagree', None))
+        d = diagnose(STPM_SIX, page1_text=STPM_SIX.replace('130405100211', '130405100299'))
+        self.assertEqual(d['guard'], 'identity_disagree')
 
 
 class TestNeverLocks(SimpleTestCase):
@@ -266,3 +272,53 @@ class TestNeverLocks(SimpleTestCase):
 
     def test_a_missing_institution_defers(self):
         self.assertIsNone(parse_govt_offer(POLY_NOISY.replace(': POLITEKNIK ZELVORA (POLITEKNIK PREMIER)\n', '')))
+
+
+class TestReviewFixes(SimpleTestCase):
+    """The adversarial review of 9298e2c9 (2026-11-03): M1-M4, L1."""
+
+    def test_m1_a_long_space_run_never_hangs_any_family(self):
+        import time
+        run = ' ' * 3000
+        for text in (STPM_SIX, MATRIC_GLUED, MATRIC_SPLIT, POLY_NOISY, POLY_SESI_LABEL):
+            for bait in ('SESI', 'Tarikh', 'K/P', 'No. Kad Pengenalan', '2.1. Bidang', '8 HINGGA', '12'):
+                start = time.perf_counter()
+                diagnose(text + '\n' + bait + run + 'x\n' + bait + run)
+                self.assertLess(time.perf_counter() - start, 1.0, bait)
+
+    def test_m2_a_portal_page_quoting_the_title_never_locks(self):
+        portal = MATRIC_SPLIT.replace(
+            'KEPUTUSAN PERTUKARAN PROGRAM/ JURUSAN PENEMPATAN PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI',
+            'Tahniah! Anda layak menerima Tawaran Kemasukan Program Matrikulasi Kementerian Pendidikan SESI')
+        self.assertIsNone(parse_govt_offer(portal))
+        # the title in capitals at a line start, but on a page with a portal's own words
+        self.assertIsNone(parse_govt_offer('SEMAKAN KEPUTUSAN\n' + MATRIC_SPLIT))
+        self.assertIsNone(parse_govt_offer(MATRIC_SPLIT + 'Surat Tawaran (Sila Cetak)\n'))
+        # mid-line, lower case: not the title
+        self.assertIsNone(parse_govt_offer(MATRIC_SPLIT.replace('KEPUTUSAN PERTUKARAN PROGRAM/',
+                                                                'Status: keputusan pertukaran program/')))
+        # a real polytechnic letter says "Tahniah dan sukacita" — that is no portal tell
+        self.assertIsNotNone(parse_govt_offer(POLY_NOISY + 'Tahniah dan sukacita dimaklumkan bahawa anda\n'))
+
+    def test_m3_a_state_or_stamp_above_the_ic_is_no_name(self):
+        for word in ('PERAK', 'SEGERA', 'SULIT', 'KPM'):
+            self.assertIsNone(parse_govt_offer(MATRIC_SPLIT.replace('VELKORAN\n', word + '\n')), word)
+
+    def test_m3_a_name_wrapped_after_its_marker_is_joined_and_a_cut_one_is_refused(self):
+        wrapped = MATRIC_SPLIT.replace('VELKORAN\n', 'AHMAD HAKIM BIN\nZENTARO\n')
+        self.assertEqual(parse_govt_offer(wrapped)['candidate_name'], 'AHMAD HAKIM BIN ZENTARO')
+        self.assertIsNone(parse_govt_offer(MATRIC_SPLIT.replace('VELKORAN\n', 'AHMAD HAKIM BIN\n')))
+
+    def test_m4_a_numeric_reporting_date_is_stored_in_the_house_shape(self):
+        from apps.scholarship.pathway_engine import parse_reporting_date
+        r = parse_govt_offer(POLY_NOISY.replace('14 JUN 2031 8.00 PAGI', '14/06/2031 8.00 PAGI'))
+        self.assertEqual(r['reporting_date'], '14 Jun 2031')
+        self.assertIsNotNone(parse_reporting_date(r['reporting_date']))
+        self.assertEqual(r['offer_date'], '22/05/2031')                  # not core, kept as printed
+
+    def test_l1_a_thirteen_digit_labelled_number_is_no_ic(self):
+        d = diagnose(MATRIC_SPLIT.replace('K/P: 130923060355', 'K/P: 1309230603551'))
+        self.assertEqual(d['fields']['candidate_nric'], '')               # never cut to 12 digits
+        stpm = diagnose(STPM_SIX.replace('130405100211', '1304051002111'))
+        self.assertNotEqual(stpm['fields']['candidate_nric'], '130405-10-0211')
+
