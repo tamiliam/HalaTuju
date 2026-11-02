@@ -267,6 +267,8 @@ US$0.001 synthetic-image probe.
 - **Reader 2.2.0** (dev-tuned wording) **full run, RM6.09:** held-out 63/90 fully exact (stored 19), dev 91/126
   (stored 31). Name never worse; NRIC blank on 16 letters that stored had right (never wrong) — 10 for want of
   a profile IC in the corpus. Owner ruling recorded: a not_offer_letter document never sets the course-start year.
+- **Reader 2.3.0** (IC prompt only, guard unchanged): held-out 63/90, dev 89/126; the production dry run with
+  the guard re-applied against the live profile IC: IC 3 unreadable → match, none lost, no mismatch. RM6.40.
 - **`eval/offer_s4_dry_run.py`** (not run here): realign / link / institution fill / ticks on stored vs S4
   fields for every cached letter, against the database in ONE transaction-level READ ONLY transaction, always
   rolled back; non-read SQL, Storage, Gemini and the meter refused; ids and outcomes only.

@@ -408,6 +408,24 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   them (the fetch gap, §2), so the guard could not corroborate; live, every application has its profile IC, so
   those that are the student's own would read `match`. 6 are a blank read (no IC returned; one has a profile
   and read `match` before). So the true loss live is likely ~6, and the source labelling needs a look first.
+- **Reader 2.3.0 — the IC prompt only (owner GO 2026-11-02; guard and sources unchanged).** Look for the IC
+  on page 1 including an unlabelled copy in the address block (source "other", still corroborate-only); when it
+  is printed in the reference line and elsewhere, report the copy outside it. Dev-only 12-letter pilot
+  US$0.0736: the model's own IC read equals the printed IC on 12/12. Full run (`.fresh_s4d.json`) US$1.3805;
+  round total US$1.454 (cap US$1.80). Fully exact **held-out 63/90** (2.2.0: 63), **dev 89/126** (2.2.0: 91).
+  Right, 2.2.0 → 2.3.0 — held-out: name 87 → 87, NRIC 85 → 84 (eval-time: no profile in the corpus), institution
+  81 → 85, programme 86 → 84, intake 81 → 81, reporting date 87 → 88, offer date 87 → 87, issuer 50 → 49, campus
+  80 → 78; dev: name 122 → 122, NRIC 113 → 115, institution 116 → 115, programme 121 → 118, intake 117 → 118,
+  reporting date 122 → 123, offer date 123 → 125, issuer 46 → 46, campus 111 → 109. 40 per-letter field drops
+  against 2.2.0 (issuer 17, campus 9, programme 5, institution 5, intake 3, name 1 — a121, NRIC 1 — a329 at eval
+  time, reporting date 1, offer date 1); the list is in the S4 report. Run-to-run variance is of this order.
+- **Production dry run on 2.3.0, the guard RE-APPLIED with the production profile IC** (`ic_guard reguarded`
+  on 215, 1 letter unreadable): IC ticks **3 unreadable → match, 0 match → unreadable, 0 → mismatch**. All 16
+  earlier IC losses read `kept_corroborated` / `kept_profile` live. Name ticks: 2 changes, both improvements
+  (mismatch → match, mismatch → partial). Other ticks: reporting bonus False → True 21, pathway unknown → match
+  3, chosen institution unknown → match 3 and unknown → clash 1 (a305), intake-year status 5. A live re-read
+  would realign 3 (a239, a337, a362 — Bumiputera-only offers resolving) and link 2 (a278, a279); 22 letters
+  still date the course from a not_offer_letter document before the owner's ruling ships (24 on stored reads).
 - **Before the push:** the dry run's list goes to the matcher session (rule 5); adversarial review (identity:
   the IC guard, the reference-line IC, and the name / NRIC letters above); the owner's go.
 
