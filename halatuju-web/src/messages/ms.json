@@ -5316,6 +5316,7 @@
           "query_raised": "Mengemukakan pertanyaan kepada {subject}",
           "query_resolved": "Menutup pertanyaan untuk {subject}",
           "interview_submitted": "Menghantar dapatan temu duga untuk {subject}",
+          "interview_drafted": "Menulis dapatan temu duga untuk {subject}",
           "verdict_recorded": "Merekodkan keputusan untuk {subject}",
           "verify_accept": "Mengesahkan {subject} dan menghantar syor kepada QC",
           "decline_sent_to_qc": "Menghantar penolakan untuk {subject} kepada QC",

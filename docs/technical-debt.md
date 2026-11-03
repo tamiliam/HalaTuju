@@ -7566,7 +7566,13 @@ decline -> QC confirm (owner 2026-07-19). **Fix (needs the owner):** refuse `int
 door (a QC decides there), or route it through `_require_qc`; check the cockpit hides Decline at AWAITING QC. A
 regression test asks the door as assignee, as an unrelated QC and as a super. *(A · S)*
 
-### [TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low
+### ~~[TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low~~ CLOSED 2026-11-03
+
+**CLOSED 2026-11-03 by the T5b review round 1** (same sprint): `AdminInterviewView.post` writes an
+`interview_drafted` activity row when a draft's credit moves to the saver (migration `0202`, choices only), and
+`qc_separation.REVIEW_VERBS` names it; `test_qc_self_sufficient.ThroughTheDoors.
+test_a_draft_author_whose_credit_a_colleague_took_is_still_refused` (proved red without the verb in the guard).
+The backfill cannot rebuild it (the earlier authors were already overwritten). Recorded for the trail.
 
 **Raised 2026-11-03 by Team tables T5b.** `qc_separation.refusal` refuses a QC who is `InterviewSession.interviewer`
 on any session of the case (a draft counts). But the draft save moves that credit to whoever wrote content LAST
@@ -7586,7 +7592,33 @@ en / ms / ta). Nothing is decided wrongly — the server refuses — but the per
 Also stale: `PermissionEditor.tsx` says the server keeps `DEPENDS_ON` (it is `IMPLIES` since T5b; the editor's
 behaviour — ticking `see_all` with `qc` — already matches). **Fix:** serve `qc_refusal` (the code or null, from
 `qc_separation.refusal`) on the application detail for a QC holder; the panel hides with a one-line note in en / ms /
-ta; fix the comment. *(W · S)*
+ta; fix the comment. *(W · S)* **Review round 1 adds:** `view.tsx`'s QC error handler translates ONLY
+`self_verdict_qc_forbidden`; the three new codes (and the old `self_qc_forbidden`) reach the person as the server's
+English sentence in every language — each needs en / ms / ta words beside it.
+
+### [TD-484] A person deleted and re-invited with the same email escapes the QC separation guard - medium
+
+**Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `qc_separation.refusal` reads the person's
+history by ROW: `AssignmentEvent.to_admin` / `from_admin`, `InterviewSession.interviewer`, `InterviewSlot.reviewer`
+and their `StaffActivity` rows — plus two EMAIL stamps (`verdict_decided_by`, `verified_by`). Deleting a staff row is
+allowed when `staff_footprint.footprint` finds no recorded work, and it counts the CURRENT assignment, the slots and
+sessions still naming them, and the email stamps — NOT a past assignment (`AssignmentEvent`) or an activity row. The
+delete then CASCADEs the person's `StaffActivity` rows (D6) and SET_NULLs their `AssignmentEvent`s. So someone once
+assigned to a case (or whose interview draft a colleague rewrote), then reassigned, deleted and re-invited under the
+same email, comes back as a new row the guard knows nothing about, and can QC that case. **Fix:** `footprint` also
+counts the guard's own sources (any `AssignmentEvent` either side, a review-verb activity row), so such a person is
+revoked, never deleted. A test: assign, reassign, delete, re-invite, QC -> 403. *(A · S)*
+
+### [TD-485] A failed activity write leaves the QC guard without its evidence - low
+
+**Raised 2026-11-03 by the Team tables T5b review (round 1; NOT fixed).** `staff_activity.record` is best-effort by
+contract (D9: it never raises; a failure is a WARNING log). Since T5b two of the guard's sources live ONLY there — a
+verdict someone else later re-recorded, and an interview draft whose credit moved on (`interview_drafted`). A failed
+write drops that evidence silently. And for cases worked before the live activity rows began (common profile S3,
+2026-10-31), the backfill rebuilt only the email stamps it could trust: an older case relies on `verdict_decided_by`
+/ `verified_by`, the assignment history and the session's interviewer alone. **Fix (if it bites):** write the
+guard's evidence in the action's own transaction where it must hold (a small authors list on the session; a
+verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)*
 
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 

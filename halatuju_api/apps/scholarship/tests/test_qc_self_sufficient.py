@@ -261,6 +261,42 @@ class ThroughTheDoors(TestCase):
         r = authed_client(self.other_qc).post(_qc_url(app), {'decision': 'accept'}, format='json')
         self.assertEqual(r.status_code, 200, r.content[:300])
 
+    def test_a_draft_author_whose_credit_a_colleague_took_is_still_refused(self):
+        # T5b review round 1: the draft's credit moves to its LAST author (owner 2026-08-13), so QC A
+        # drafts, reviewer B rewrites a finding and submits — the session names B only. A's own
+        # `interview_drafted` row is what still refuses A.
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        url = f'{APPS}{app.pk}/interview/'
+        r = authed_client(self.qc).post(url, {'findings': answered_findings(app), 'overall_note': 'A met her.'},
+                                        format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        rewritten = {k: {**v, 'rationale': 'B checked this again.'} for k, v in answered_findings(app).items()}
+        r = authed_client(self.reviewer).post(url, {'findings': rewritten, 'overall_note': 'B rewrote it.'},
+                                              format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        r = authed_client(self.reviewer).post(f'{url}submit/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        session = InterviewSession.objects.get(application=app)
+        self.assertEqual((session.status, session.interviewer_id), ('submitted', self.reviewer.pk))
+        drafted = StaffActivity.objects.filter(verb='interview_drafted', subject_type='application',
+                                               subject_id=app.pk)
+        self.assertEqual(sorted(drafted.values_list('actor_id', flat=True)),
+                         sorted([self.qc.pk, self.reviewer.pk]))
+        self._to_qc(app)
+        r = authed_client(self.qc).post(_qc_url(app), {'decision': 'accept'}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (403, 'self_review_qc_forbidden'))
+        r = authed_client(self.other_qc).post(_qc_url(app), {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+
+    def test_re_saving_ones_own_draft_writes_one_row_not_one_per_save(self):
+        app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
+        url = f'{APPS}{app.pk}/interview/'
+        for note in ('first', 'second', 'third'):
+            r = authed_client(self.reviewer).post(url, {'findings': answered_findings(app), 'overall_note': note},
+                                                  format='json')
+            self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual(StaffActivity.objects.filter(verb='interview_drafted', actor=self.reviewer).count(), 1)
+
     def test_a_verdict_recorded_on_an_unassigned_case_blocks_the_qc(self):
         app = make_application('interviewing', cohort=self.cohort, reviewer=self.reviewer)
         verdict = {'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'pathway': 'pass',

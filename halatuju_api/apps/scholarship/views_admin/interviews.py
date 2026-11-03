@@ -10,6 +10,7 @@ they are one domain, and each span is byte-identical to the lines it came from.
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from .. import staff_activity
 from ..anomaly_engine import detect_anomalies
 from ..interview_completeness import missing_agenda_items
 from ..models import InterviewSession
@@ -178,6 +179,11 @@ class AdminInterviewView(_AdminBase):
             session = InterviewSession(application=app, started_at=timezone.now())
         # Decided BEFORE the new values are written over the old ones.
         authored = _is_authoring(session.findings, findings, session.overall_note, note)
+        # Team tables T5b review: the credit below moves to the LAST author and the earlier one is named
+        # nowhere — so when it moves TO this admin, their activity list remembers it (`interview_drafted`),
+        # and the QC separation guard reads that row (`qc_separation.REVIEW_VERBS`). Once per move, not
+        # per save: re-saving one's own draft writes nothing.
+        credit_moves = authored and session.interviewer_id != admin.id
         session.findings = findings
         session.rubric = request.data.get('rubric', {}) or {}
         session.overall_note = note
@@ -189,6 +195,9 @@ class AdminInterviewView(_AdminBase):
             # the record must still read A).
             session.interviewer = admin
         session.save()
+        if credit_moves:
+            staff_activity.record(admin, staff_activity.INTERVIEW_DRAFTED, app,
+                                  meta={'session': session.pk})
         # A draft save does NOT advance the funnel. 'interviewing' means the interview
         # process is genuinely underway for an accountable reviewer — reached by proposing
         # times (scheduling.propose_slots) or submitting the session (offline fallback),

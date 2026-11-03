@@ -25,8 +25,13 @@ interviewed / were assigned"); decisions.md "Team tables T5b". No migration, no 
   (every admin door: `qc` alone = the QC preset's BEFORE row; `qc` alone on admin / reviewer = its `see_all` twin),
   v2 golden shapes `qc_alone` / `reviewer_review_qc`, the editor's `['qc']` save.
 - New debt: TD-481 (the reviewer's Decline door can decline a case at AWAITING QC, past the QC gate — predates T5b),
-  TD-482 (an interview draft's earlier author is not remembered), TD-483 (the cockpit QC panel shows for a QC the
-  server will refuse).
+  TD-483 (the cockpit QC panel shows for a QC the server will refuse, and shows the new refusals in English),
+  TD-484 (delete and re-invite escapes the guard), TD-485 (a failed activity write leaves no guard evidence).
+- **Review round 1:** a new activity verb `interview_drafted` ("Wrote interview findings"; migration
+  `0202_staff_activity_interview_drafted`, choices only, no SQL), written when an interview draft's credit moves to
+  the person saving it, and read by the QC guard — so QC A who drafted, then reviewer B who rewrote and submitted,
+  still leaves A refused (closes TD-482, raised the same sprint). Shown on My activity in en / ms / ta. The T5b
+  decision now lists what "reviewed" does not count (document checks, gap suggestions, fact edits, a query).
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 

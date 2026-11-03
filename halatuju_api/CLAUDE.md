@@ -225,7 +225,8 @@ It is never an Admin hat (`staff_tables.admin_keys` drops that `see_all`). v2: `
 assignee, anyone EVER assigned (`AssignmentEvent`), any interviewer (a draft counts) or slot proposer, the verdict
 recorder, the verify-accepter, and anyone whose activity list records review work on the case; super exempt. **A new
 kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481 (Decline door at
-AWAITING QC), TD-482, TD-483.
+AWAITING QC), TD-483, TD-484, TD-485. Review round 1: verb `interview_drafted` (migration 0202, choices only) is
+written by `AdminInterviewView.post` when a draft's credit moves to the saver, and is a guard verb.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 

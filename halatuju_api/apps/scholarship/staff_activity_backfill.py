@@ -166,7 +166,11 @@ def _queries():
 def _interviews():
     """Review M2: COUNTED, never rebuilt. The live row names whoever pressed Submit; nothing stores
     that person (the session's `interviewer` is who did the interview, and `repair_interview_credit`
-    re-points it), so a rebuilt row would credit the wrong person as often as not."""
+    re-points it), so a rebuilt row would credit the wrong person as often as not.
+
+    `interview_drafted` (Team tables T5b review) is NOT rebuilt or counted at all: the earlier authors it
+    exists to remember were overwritten on the session before it was written, so no record knows them; and
+    the LAST author is already the session's `interviewer`, which the QC guard reads directly."""
     from .models import InterviewSession
     for _ in InterviewSession.objects.filter(status='submitted').values_list(
             'id', flat=True).iterator(chunk_size=BATCH):

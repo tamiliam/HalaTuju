@@ -14,8 +14,9 @@ the caller when they:
   * are the interviewer on ANY session, a DRAFT included, or proposed its interview times
     (`InterviewSession.interviewer`, `InterviewSlot.reviewer`)     -> `self_interview_qc_forbidden`
   * did other review work on it: the verify-accept (`verified_by`), or an activity row for a verdict, a
-    verify-accept, a decline sent to QC or an interview submitted (`StaffActivity`; a verdict re-recorded by
-    somebody else overwrites `verdict_decided_by`, the row does not)  -> `self_review_qc_forbidden`
+    verify-accept, a decline sent to QC, an interview submitted or interview findings written
+    (`StaffActivity`; a verdict re-recorded by somebody else overwrites `verdict_decided_by`, and a
+    later author overwrites a draft's `interviewer`; the rows do not)  -> `self_review_qc_forbidden`
 The first two keep their order and codes, so a case that meets several answers as it did before.
 
 ⚠ A DRAFT INTERVIEW COUNTS (lead ruling 2026-11-03): sitting in the interview is the work, whether or not it was
@@ -40,7 +41,10 @@ MESSAGES = {
 }
 
 #: The activity verbs that are REVIEW work on a case (the actor is whoever pressed the button).
-REVIEW_VERBS = ('verdict_recorded', 'verify_accept', 'decline_sent_to_qc', 'interview_submitted')
+#: `interview_drafted` (T5b review): an interview draft's credit moves to its LAST author
+#: (`AdminInterviewView.post`), so the session no longer names an earlier one; their row does.
+REVIEW_VERBS = ('verdict_recorded', 'verify_accept', 'decline_sent_to_qc', 'interview_submitted',
+                'interview_drafted')
 
 
 def _same_email(stamp, admin):

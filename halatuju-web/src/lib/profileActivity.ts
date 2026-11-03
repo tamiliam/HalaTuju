@@ -27,7 +27,8 @@ export const ACTIVITY_KEY = 'admin.myProfile.activity'
 /** Every verb a row can carry — `StaffActivityVerb`'s values, in its order. */
 export const ACTIVITY_VERBS = [
   'invitation_sent', 'invitation_accepted', 'first_sign_in', 'profile_updated', 'permissions_changed',
-  'assigned', 'unassigned', 'query_raised', 'query_resolved', 'interview_submitted', 'verdict_recorded',
+  'assigned', 'unassigned', 'query_raised', 'query_resolved', 'interview_submitted', 'interview_drafted',
+  'verdict_recorded',
   'verify_accept', 'decline_sent_to_qc', 'declined', 'qc_decision', 'decision_reopened', 'case_closed',
   'contract_witnessed',
   'payment_run_created', 'payment_run_signed', 'tranche_released', 'tranche_withheld', 'tranche_returned',

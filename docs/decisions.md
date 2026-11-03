@@ -29,11 +29,26 @@ not count.
   `self_verdict_qc_forbidden`; verify-accept stamp (`verified_by`) `self_review_qc_forbidden`; ever assigned
   (`AssignmentEvent` to OR from them) `self_assigned_qc_forbidden`; interviewer on ANY session, draft or submitted, or
   proposer of interview slots `self_interview_qc_forbidden`; an activity row of theirs on the case for
-  `verdict_recorded` / `verify_accept` / `decline_sent_to_qc` / `interview_submitted` (a verdict someone else later
-  re-recorded overwrites `verdict_decided_by`; the row stays) `self_review_qc_forbidden`. All 403. **Draft interviews
-  count** (sitting in it is the work). A **query** to the student does NOT count (a QC may ask while checking). A
-  **super** is exempt (owner override); the **organisation admin** is not. QC holders KEEP org-wide review writes;
-  the guard then catches them at QC.
+  `verdict_recorded` / `verify_accept` / `decline_sent_to_qc` / `interview_submitted` / `interview_drafted` (a
+  verdict someone else later re-recorded overwrites `verdict_decided_by`; the row stays) `self_review_qc_forbidden`.
+  All 403. **Draft interviews count** (sitting in it is the work). A **super** is exempt (owner override); the
+  **organisation admin** is not. QC holders KEEP org-wide review writes; the guard then catches them at QC.
+- **Review round 1 — `interview_drafted`** ("Wrote interview findings", migration `0202`, choices only, no SQL): a
+  draft's `interviewer` moves to its LAST author (owner 2026-08-13), so QC A could draft, reviewer B rewrite and
+  submit, and A be named nowhere. `AdminInterviewView.post` now writes the row when the credit moves TO someone (an
+  authoring save while `interviewer` is somebody else or nobody) — once per move, not per save. The backfill does not
+  rebuild it: the earlier authors were already overwritten, and the last one is the session's `interviewer`.
+- **What "reviewed" does NOT count** (owner's words: reviewed / interviewed / were assigned), each on purpose:
+  - *Document checks and resolutions* (`query_resolved`, accepting or waiving a document item): checking evidence is
+    what a QC does while checking; counting it would bar the QC from the case they are in the middle of checking.
+  - *Gap suggestions* (`suggest-gaps`): an AI prompt that suggests questions — no finding, no decision, nothing kept
+    under the person's name.
+  - *Fact edits such as the reporting date* (`reporting-date`): QC reopens a case precisely so the reviewer can set
+    it, and a QC fixing a typed fact records no judgement of the student.
+  - *A query to the student* (`query_raised`): asking for a missing document is part of checking, not of reviewing.
+
+**Not counted for want of evidence (recorded as debt):** a person deleted and re-invited with the same email
+(TD-484), and a guard row lost because `staff_activity.record` swallowed a failed write (TD-485).
 
 **QC-outcome doors (the inventory):** the QC decision `qc-decision` accept / reopen / reject — guarded.
 `reopen-decision` and `cancel-reopen` — super-only (exempt by rule). `award_revert.revert_to_pool` — a system revert

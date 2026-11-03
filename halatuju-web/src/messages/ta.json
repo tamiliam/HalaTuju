@@ -5316,6 +5316,7 @@
           "query_raised": "வினா எழுப்பினீர்கள்: {subject}",
           "query_resolved": "வினாவை முடித்துவைத்தீர்கள்: {subject}",
           "interview_submitted": "நேர்காணல் கண்டறிதல்களைச் சமர்ப்பித்தீர்கள்: {subject}",
+          "interview_drafted": "நேர்காணல் கண்டறிதல்களை எழுதினீர்கள்: {subject}",
           "verdict_recorded": "தீர்ப்பைப் பதிவு செய்தீர்கள்: {subject}",
           "verify_accept": "சரிபார்த்துப் பரிந்துரையை QC-க்கு அனுப்பினீர்கள்: {subject}",
           "decline_sent_to_qc": "நிராகரிப்பை QC-க்கு அனுப்பினீர்கள்: {subject}",

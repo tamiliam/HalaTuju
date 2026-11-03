@@ -42,6 +42,9 @@ class StaffActivityVerb(models.TextChoices):
     QUERY_RAISED = 'query_raised', 'Asked a student for something'
     QUERY_RESOLVED = 'query_resolved', "Closed a student's query"
     INTERVIEW_SUBMITTED = 'interview_submitted', 'Submitted interview findings'
+    # Team tables T5b review: the credit for an interview DRAFT moves to its last author, so an earlier
+    # author would be named nowhere; this row (written when the credit moves TO someone) remembers them.
+    INTERVIEW_DRAFTED = 'interview_drafted', 'Wrote interview findings'
     VERDICT_RECORDED = 'verdict_recorded', 'Recorded a verdict'
     VERIFY_ACCEPT = 'verify_accept', 'Verified and sent a recommendation to QC'
     DECLINE_SENT_TO_QC = 'decline_sent_to_qc', 'Sent a decline to QC'

@@ -5316,6 +5316,7 @@
           "query_raised": "Raised a query with {subject}",
           "query_resolved": "Closed a query for {subject}",
           "interview_submitted": "Submitted the interview findings for {subject}",
+          "interview_drafted": "Wrote interview findings for {subject}",
           "verdict_recorded": "Recorded a verdict for {subject}",
           "verify_accept": "Verified {subject} and sent the recommendation to QC",
           "decline_sent_to_qc": "Sent a decline for {subject} to QC",
