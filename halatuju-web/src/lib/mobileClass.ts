@@ -144,24 +144,25 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/sponsor/pool/[id]': { cls: 'must', sprint: 'M5', redirect: '/sponsor/students/[id]' },
 
   // ── Reviewers and org admins: the everyday screens ────────────────────────────────────────────
-  '/admin/set-password': { cls: 'must', sprint: 'M6' },
+  '/admin/set-password': { cls: 'must', sprint: 'M6', surfaces: ['m8-set-password'] },
   '/admin/auth/callback': { cls: 'must', sprint: 'M6', handoff: true },
-  '/admin/profile': { cls: 'must', sprint: 'M6' },
+  '/admin/profile': { cls: 'must', sprint: 'M6', surfaces: ['m8-profile-reviewer', 'm8-profile-org-admin'] },
   '/admin/guide': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-guide'] },
   '/admin/faq': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-faq'] },
-  '/admin/programme/overview': { cls: 'must', sprint: 'M6' },
+  '/admin/programme/overview': { cls: 'must', sprint: 'M6', surfaces: ['m8-overview-reviewer', 'm8-overview-org-admin'] },
   '/admin/scholarship': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-list', 'admin-shell-menu', 'admin-list-filters'] },
   '/admin/scholarship/[id]': {
     cls: 'must', sprint: 'M6',
     surfaces: ['officer-cockpit', 'cockpit-case', 'cockpit-viewer-image', 'cockpit-viewer-pdf', 'cockpit-payments'],
   },
-  '/admin/organisation': { cls: 'must', sprint: 'M6' },
+  '/admin/organisation': { cls: 'must', sprint: 'M6', surfaces: ['m8-organisation'] },
   '/admin/administration': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
   '/admin/organisation/programmes': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
-  '/admin/[...notFound]': { cls: 'must', sprint: 'M6' },
+  // The catch-all only throws `notFound()`; what it draws is `app/admin/not-found.tsx`, mounted by the surface.
+  '/admin/[...notFound]': { cls: 'must', sprint: 'M6', surfaces: ['m8-admin-not-found'] },
   // Student maintenance S7c: a MENTOR's own pages — used on a phone (the approved MentorPhone board).
-  '/admin/my-students': { cls: 'must', sprint: 'M6' },
-  '/admin/my-students/[id]': { cls: 'must', sprint: 'M6' },
+  '/admin/my-students': { cls: 'must', sprint: 'M6', surfaces: ['m8-my-students'] },
+  '/admin/my-students/[id]': { cls: 'must', sprint: 'M6', surfaces: ['m8-my-student'] },
 
   // ── The rest of the admin console: lists and detail pages ─────────────────────────────────────
   '/admin': { cls: 'can', sprint: 'M7' },

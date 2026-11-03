@@ -8,7 +8,7 @@ Baseline last updated **2026-11-03** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**61 measured** (public page or sandbox surface), **61 fully green.**
+**68 measured** (public page or sandbox surface), **68 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -21,7 +21,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/about` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/admin` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/[...notFound]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/[...notFound]` | Must | M6 | 6 (sandbox `m8-admin-not-found`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/administration` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
 | `/admin/auth/callback` | Must | M6 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
 | `/admin/billing` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
@@ -33,9 +33,9 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/guide` | Must | M6 | 6 (sandbox `admin-shell-guide`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/invite` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/staff` |
 | `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/admin/my-students` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/my-students/[id]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/organisation` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/my-students` | Must | M6 | 6 (sandbox `m8-my-students`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/my-students/[id]` | Must | M6 | 6 (sandbox `m8-my-student`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation` | Must | M6 | 6 (sandbox `m8-organisation`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/mentors` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
 | `/admin/organisation/programmes` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
 | `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
@@ -48,12 +48,12 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/partners` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/payments` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/payments/[id]` | Can | M7 | 6 (sandbox `m7-payment-run`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/profile` | Must | M6 | 12 (sandbox `m8-profile-reviewer`, sandbox `m8-profile-org-admin`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/announcements` | Can | M7 | 6 (sandbox `m7-announcements`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/programme/overview` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/programme/overview` | Must | M6 | 12 (sandbox `m8-overview-reviewer`, sandbox `m8-overview-org-admin`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/surveys` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/surveys/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/years` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/programme` |
@@ -63,7 +63,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/scholars/[id]` | Can | M7 | 6 (sandbox `m7-scholar-file`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/set-password` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/set-password` | Must | M6 | 6 (sandbox `m8-set-password`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/sources` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/spending` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/sponsors` | Can | M7 | 6 (sandbox `m7-sponsor-terms`) | 0 | 0 | 0 | ✅ |  |

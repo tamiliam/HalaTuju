@@ -32,6 +32,7 @@ import { SPONSOR_STORAGE_KEY } from '@/lib/sponsor-supabase'
 import { KEY_STPM_GRADES } from '@/lib/storage'
 import { sandboxApplication } from './fixtures/scholarship'
 import { Portal, SPONSOR_ROUTES, TERMS, TapOnce } from './sponsorM5Surfaces'
+import { CONSOLE_MUST_SURFACES } from './consoleM8Surfaces'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
 interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
@@ -288,4 +289,6 @@ export const LAST_MUST_SURFACES: Surface[] = [
     note: 'Mobile M8: a link with no token — the failure and the same way to the profile.',
     render: () => <SearchParamsContext.Provider value={NO_TOKEN}><VerifyEmailPage /></SearchParamsContext.Provider>,
   },
+  // Phase B2: the last console Must screens (their own file, read by `mobile-check/targets.ts` as well).
+  ...CONSOLE_MUST_SURFACES,
 ]

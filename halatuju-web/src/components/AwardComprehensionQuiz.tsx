@@ -7,6 +7,7 @@ import {
   getComprehensionQuiz, recordComprehensionPass,
   type ComprehensionCheckpoint,
 } from '@/lib/api'
+import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'   // rule 15 (Mobile M8): a section on a phone, the card from md
 
 /**
  * The "Understand" step of /scholarship/award — a gamified comprehension quiz.
@@ -50,11 +51,11 @@ export default function AwardComprehensionQuiz({
   useEffect(() => { fetchQuiz() }, [fetchQuiz])
 
   if (load === 'loading') {
-    return <div className="rounded-2xl border bg-ground-0 p-6 text-center text-sm text-ground-500 shadow-sm">{ui.loading}</div>
+    return <div className={`${PHONE_SECTION_NO_GAP} text-center text-sm text-ground-500 md:p-6`}>{ui.loading}</div>
   }
   if (load === 'error') {
     return (
-      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+      <div className={`${PHONE_SECTION_NO_GAP} md:p-6`}>
         <p className="text-sm text-ground-700">{ui.loadError}</p>
         <button type="button" onClick={fetchQuiz}
           className="mt-4 rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold max-md:min-h-11 text-brand-fill-ink hover:bg-brand-fill-hover">
@@ -68,7 +69,7 @@ export default function AwardComprehensionQuiz({
 
   if (phase === 'intro') {
     return (
-      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+      <div className={`${PHONE_SECTION_NO_GAP} md:p-6`}>
         {retakeNote && (
           <div className="mb-4 rounded-xl bg-caution-50 p-3 text-sm text-caution-900">{ui.versionChanged}</div>
         )}
@@ -142,7 +143,7 @@ export default function AwardComprehensionQuiz({
         <span>{ui.ofCount(i + 1, count)}</span>
       </div>
 
-      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+      <div className={`${PHONE_SECTION_NO_GAP} md:p-6`}>
         <div className="text-xs font-semibold uppercase tracking-wider text-info-600">{cp.tag}</div>
         <div className="mt-2 rounded-xl bg-info-50 p-4 text-sm text-ground-800">
           <span className="font-semibold">{ui.whatThisMeans}</span>{cp.plain}

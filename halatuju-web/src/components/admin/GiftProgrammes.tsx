@@ -285,13 +285,13 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
 
   return (
     <section className="mt-8" data-testid="gift-programmes">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-md:flex-col max-md:gap-3">
         <div>
           <h2 className="text-lg font-semibold text-ground-900">{t('admin.programmes.title')}</h2>
           <p className="mt-0.5 text-sm text-ground-600">{t('admin.programmes.subtitle')}</p>
         </div>
         <button type="button" onClick={() => { setCode(''); setNameEn(''); setError(''); setOpen(true) }}
-          className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
+          className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11 max-md:w-full">
           + {t('admin.programmes.new')}
         </button>
       </div>

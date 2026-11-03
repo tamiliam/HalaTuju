@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { PHONE_GUTTER } from '@/lib/phoneSection'   // rule 15 (Mobile M8)
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -39,8 +40,10 @@ function VerifyEmailContent() {
   }, [token, t])
 
   return (
-    <main className="min-h-screen bg-ground-50 flex items-center justify-center p-4">
-      <div className="bg-ground-0 rounded-xl shadow-sm border border-ground-100 p-8 max-w-md w-full text-center">
+    <main className={`min-h-screen bg-ground-50 flex items-center justify-center py-4 ${PHONE_GUTTER}`}>
+      {/* Rule 15 (Mobile M8): one card around the whole text, so on a phone no box at all — the text sits on the
+          16 px gutter; from md the card it always was. */}
+      <div className="max-w-md w-full text-center md:bg-ground-0 md:rounded-xl md:shadow-sm md:border md:border-ground-100 md:p-8">
         {status === 'loading' && (
           <p className="text-ground-600">{t('verifyEmail.loading')}</p>
         )}

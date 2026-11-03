@@ -168,7 +168,7 @@ function StaffOverview() {
         {layout && !editing && (
           <button type="button" data-testid="customise-button"
             onClick={() => setCustomising(true)}
-            className="rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-50">
+            className="rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-50 max-md:min-h-11">
             {t(`${K}.customise.button`)}
           </button>
         )}

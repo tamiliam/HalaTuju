@@ -60,7 +60,7 @@ export default function YouCard({ state }: CardProps) {
     } finally { setBusy(false) }
   }
 
-  const link = 'text-sm font-medium text-info-700 hover:underline disabled:opacity-50'
+  const link = 'text-sm font-medium text-info-700 hover:underline disabled:opacity-50 max-md:inline-flex max-md:min-h-11 max-md:items-center'   // 44 px on a phone (M8)
   return (
     <CardFrame title={t(`${P}.you`)} testId="you">
       <div className="flex flex-wrap items-center gap-4">

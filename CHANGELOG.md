@@ -55,6 +55,20 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
   `handoff` and the ledger says "n/a (sign-in hand-off — covered by the owner's iPhone walkthrough)".
 - **Guard:** `mobileStandard.test.ts` — every Must route is measured, a redirect, or one of the four hand-offs (the
   console screens still waiting for B2 are a closed list that may only shrink), and a hand-off draws no form.
+- **Phase B2 — the last console Must screens are measured.** New surfaces (`src/sandbox/consoleM8Surfaces.tsx`, spread
+  into the B1 list; the REAL pages inside the REAL console shell, invented people, long Tamil names): the console 404
+  (`/admin/[...notFound]` only throws, so the surface mounts `admin/not-found.tsx`), a mentor's My students and one
+  student, the Organisation overview, the Profile as a reviewer and as an organisation admin, the Programme Overview as
+  a reviewer and as an organisation admin, and set-your-password (a synthetic invite session in the admin client's
+  storage, sandbox only, nothing sent). The guard's "still unmeasured" list is now EMPTY and must stay so.
+- **Fixed for phones (`max-md:` only, desktop unchanged):** the Overview's intake chooser (a Tamil option made it 44 px
+  wider than a 360 screen; now full width, 44 px) and Customise (34 px); the Organisation page's "+ New gift programme"
+  (40 px, and 16 px off the edge in Malay and Tamil — the heading row restacks, the button full width); the Profile's
+  text fields and selects (40 px, one constant in `adminProfile/shared.tsx`), Add / Change / Remove photo and Change
+  password (20 px text buttons).
+- **Rule 15:** the award comprehension quiz (`AwardComprehensionQuiz.tsx`) and `/verify-email` drew a white card on a
+  phone; the quiz takes `PHONE_SECTION_NO_GAP`, verify e-mail sits on the gutter with its card `md:`-only. Both are on
+  the rule-15 guard list.
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 

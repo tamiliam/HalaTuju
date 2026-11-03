@@ -303,6 +303,8 @@ const RULE15_SWEPT = [
   'src/components/sponsor/SponsorShell.tsx', 'src/app/sponsor/(portal)/page.tsx',
   'src/app/sponsor/(portal)/students/[id]/page.tsx', 'src/app/sponsor/(portal)/account/page.tsx',
   'src/app/sponsor/(portal)/trust/page.tsx', 'src/components/SponsorLanding.tsx',
+  // Mobile M8: the two student screens B1 found still boxed — the award's comprehension quiz and the e-mail check.
+  'src/components/AwardComprehensionQuiz.tsx', 'src/app/verify-email/page.tsx',
 ]
 /** Swept too, but with no section or gutter of their own (so no import): rows and pills inside one. */
 const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/FamilyRosterFields.tsx',
@@ -1201,12 +1203,11 @@ describe('every route has a phone class', () => {
 
   /**
    * Mobile M8: a Must route is REACHED by the check — a public `visit`, a sandbox surface that mounts it, or a
-   * redirect measured where it lands — or it is one of the owner's four sign-in hand-offs. What is left is a CLOSED
-   * list that may only shrink: the console's everyday screens still waiting for their surfaces (M8 phase B2). A new
-   * Must page with none of these fails here, so it can never sit in the ledger as "not yet measurable" unseen.
+   * redirect measured where it lands — or it is one of the owner's four sign-in hand-offs. Nothing else: the list
+   * that held the console's last seven (M8 phase B2 gave each a surface) is empty and must stay so. A new Must page
+   * with none of these fails here, so it can never sit in the ledger as "not yet measurable" unseen.
    */
-  const STILL_UNMEASURED = ['/admin/[...notFound]', '/admin/my-students', '/admin/my-students/[id]',
-    '/admin/organisation', '/admin/profile', '/admin/programme/overview', '/admin/set-password']
+  const STILL_UNMEASURED: string[] = []
   /** Owner, Mobile M8: these four only hand the sign-in on, so the owner's iPhone walkthrough covers them. */
   const HANDOFFS = ['/admin/auth/callback', '/auth/callback', '/sponsor/auth/callback', '/sponsor/auth/confirm']
 

@@ -44,7 +44,8 @@ export default function IntakePicker({ intakes, value, onChange }: {
         data-testid="intake-picker"
         value={value === undefined ? '' : String(value)}
         onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-        className="rounded-lg border border-ground-200 bg-ground-0 px-3 py-1.5 text-sm text-ground-900">
+        // Mobile M8: a full-width 44 px chooser on a phone (a Tamil option made it wider than the screen).
+        className="rounded-lg border border-ground-200 bg-ground-0 px-3 py-1.5 text-sm text-ground-900 max-md:min-h-11 max-md:w-full max-md:min-w-0">
         <option value="">{t(`${K}.intakes.all`)}</option>
         {intakes.map((intake) => (
           // The year is in the option because two rounds may share a name across years, and the

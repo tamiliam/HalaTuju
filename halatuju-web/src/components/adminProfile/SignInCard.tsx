@@ -101,7 +101,7 @@ export default function SignInCard({ state }: CardProps) {
       </dl>
       {hasPassword && !open && (
         <button type="button" onClick={() => { setOpen(true); setMsg(null) }}
-          className="text-sm font-medium text-info-700 hover:underline">
+          className="text-sm font-medium text-info-700 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
           {t(`${P}.changePassword`)}
         </button>
       )}
