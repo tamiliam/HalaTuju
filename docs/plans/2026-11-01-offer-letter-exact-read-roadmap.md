@@ -671,6 +671,251 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   every rejected-rightly letter stays rejected. Dry run on live stored data first.
 - **Owner:** decision D6; adversarial review (it gates submission); deploy go. Skipped if S2 finds no wrong call.
 
+#### Plan (2026-11-03)
+Phase 1 (measure + plan) on `offer-read-s1` = origin/main `3bbeda41`; free (cached corpus text, no Gemini, no
+Vision, no database). Keys and counts only. Builder: s6-builder. **Nothing built yet — owner approves first.**
+
+**Premise re-derived.** The roadmap's scope line is too narrow. Offer genuineness is held in FOUR places, not
+one: `genuineness/results_doc.py` (the five family lists, the private-arm veto, `signature_genuineness`, and
+`MODEL_VERSION`), `genuineness/offer_issuers.py` (the TVET net and the private-college reason), `bands.py` (the
+three-way mapping) and `pathway_engine.offer_official_status` / `offer_band` (how the gates read it). The chips
+are decided in a fifth and sixth: `verdict_ladder.py` (the band arithmetic counts red chips) and the web
+`officerCockpit.documentFacts` (the colours). Three of the files are at their line limit (below).
+
+**Baselines (measured 2026-11-03, this worktree).**
+- `python -m pytest apps/scholarship -q -p no:cacheprovider -n auto` (from `halatuju_api`, development
+  settings): **9997 passed, 3 skipped, 5152 subtests passed** (21 min 48 s).
+- `npx jest --maxWorkers=2 src/lib/__tests__/officerCockpit.test.ts src/lib/__tests__/fieldVerification.test.ts
+  src/lib/__tests__/codeStandards.test.ts src/components/ScholarshipDocuments
+  "src/app/admin/scholarship/\[id\]/view.docFacts.test.tsx"` (from `halatuju-web`, node_modules linked from
+  the main checkout for the run, link removed after): **13 suites, 376 tests passed.**
+- Today's genuineness on the corpus (`genuineness.assess('offer_letter')` on `offer_replay.production_text`,
+  MODEL 1.22.0, 287 letters): answer `yes` 254 → genuine 237, not_offer_letter 15, unchecked 2; portal page 13
+  → suspect 11, not_offer_letter 2; not an offer 14 → not_offer_letter 13, suspect 1; conditional 4 → 2 / 2;
+  unsure 2 → suspect 1, no text 1. Stored vs today: 2 differ (a stored suspect → not_offer_letter; a stored
+  suspect → unchecked). Today's call is what S6 changes; the STORED status changes only when a letter is
+  re-scored (S7).
+
+**1. Today's behaviour against rulings 1-8 (corpus; keys in the scratch table, not committed).**
+| Ruling | Letters | Right today | Wrong today | Family / issuer of the wrong ones |
+|---|---|---|---|---|
+| 2 IPTS / private wing = not_offer_letter | 10 (+1 SATU) | 10 + 1 | 0 | — (9 private colleges / universities, 1 UTM SPACE; UM SATU) |
+| 3 portal page / admission printout = suspect | 14 | 11 | **3** | UPU result-check page, matric portal screen (dev); a UNIMAS e-Daftar slip on page 1 of a real offer (held-out) — all not_offer_letter |
+| 4 confirmation of studies (public, no private wing) = acceptable | 5 | 0 | **5** | polytechnic 2, UMS 2, a Form-6 college 1 (+ its STPM slip) — all not_offer_letter |
+| 5 IKBN / IKM real offers = public offers | 3 | 0 | **3** | MARA / IKM 1 (app 329, not_offer_letter); Belia & Sukan / IKBN 2 (unchecked — "no signal", Official chip absent) |
+| 6 TVET slip that is not an offer = suspect | 1 | 0 | **1** | JPK UP_TVET offer slip (not_offer_letter) |
+| 7 private conditional = not_offer_letter | 2 | 1 | **1** | a private college conditional offer (suspect) |
+| 1 not_offer_letter is a FAIL — a real public offer must not get it | 254 `yes` | — | **1 more** | a real polytechnic offer vetoed by the private-arm test because "SDN BHD" appears in its body (p 0.72) |
+| 8 suspect is NOT a blocker | every suspect | 0 | **all** | see below |
+**14 letters change call** (dev 7: portal 2, confirmation 2, IKBN 1, private conditional 1, polytechnic 1;
+held-out 7: e-Daftar 1, confirmation 3, IKM 1, IKBN 1, TVET slip 1). Left as they are, and why: an interview
+slip (suspect) and two UPU application slips (not_offer_letter) — no ruling covers them; a public PISMP
+conditional offer (suspect, rule 7 is private only); a master's offer (not_offer_letter at p 0.30 — the owner
+ruled postgraduate an eligibility matter, outside this arc). Finding for later (TD to raise): production scores
+a scanned multi-page PDF on page 1 only (`_pdf_first_page_png`), so a real offer behind an e-Daftar slip reads
+genuine only on all pages (0.70) — S6 makes such a page suspect, not a fail; scoring page 2 needs a Vision call
+per page and is out of scope.
+
+**What `suspect` does today (rule 8 is broken).** `offer_official_status` folds suspect into `not_genuine`.
+Its docstring says a private / IPTS offer is "stored as suspect" — untrue since 1.4.0 / 1.6.0 (they are
+not_offer_letter), to be corrected. The ladder gives a suspect −1 (step) and a second −1 (the Pathway chip goes
+red because the letter "establishes no pathway") = Unsure, so `services/blockers._offer_blocks` BLOCKS
+submission (`offer_not_official`) unless the reporting-date bonus lifts it. The student sees the generic note
+"This doesn't look like a genuine official document… Nothing is blocked" for both suspect and not_offer_letter
+— wrong words for rule 8, and untrue for the fail.
+
+**Every reader of the offer genuineness status.**
+- Gates: `services/blockers._offer_blocks` → `consent_blockers` (`offer_not_official`, not-yet-submitted
+  only; STPM exempt); `resolution.doc_match_verdict` (a not-genuine upload never closes an official-offer
+  request); `offer_issuers.officer_must_close` / `hold_for_officer` (NOT CHECKED + an officer's request).
+- Verdict: `verdict_ladder._genuineness_step`, `_pathway_effective_step`, `_pathway_red_chips`,
+  `_add_genuineness_caveat` (step 2 → `offer_not_official`, an `award.CONFIDENT_DISQUALIFIERS` member →
+  `views_admin/verdict.py`, `serializers_admin` no-amount reason; step 1 → `document_not_genuine`);
+  `verdict_engine._verdict_pathway` (`offer_hearing_ok` → `pathway_type_switch` / `pathway_confirm` /
+  `pathway_undeclared` — Check 2's student queries; `offer_issuer_not_checked`).
+- Picks: `services/offer_sync` autofill (`offer_band == 'genuine'`), `services/offer_link` link /
+  `fill_empty_pick` (not_offer_letter refused; an empty pick needs genuine), `promotion._offer_quality` (which
+  offer is live), `offer_reporting_bonus` (reads `doc_seen` + `present`).
+- Student: `serializers.get_authenticity` → `checklists.GenuinenessNote` (the note), `cards.docIsGenuine`
+  (offer is not in `docDone`), `consent_blockers` copy (`offer_not_official`, en / ms / ta).
+- Cockpit: `officerCockpit.documentFacts` (Official + Pathway chips), `fieldVerification` (`usableOffer` /
+  `backingOffer`: a not_* offer gives no tick).
+- Not readers (checked): `help_engine` (Gopal reads name / IC / pathway only), `anomaly_engine` (no offer
+  type), `check2_queries` (reads the verdict's items, not the status).
+- Ops / eval: `reextract_offers`, `release-decisions` (prints the status), `rescore_unscored_documents`,
+  `offer_replay`, `offer_review_page`, `offer_s4_dry_run`, `heldout_eval`.
+
+**2. The chip audit (reviewer chips: `officerCockpit.documentFacts`, rendered generically by
+`DocumentsDrawer.factLine`; the band twin: `verdict_ladder._OFFER_CHIP_RED` / `_pathway_red_chips`).**
+| Chip | Today | Owner's table | Wrong | Corpus letters (apps) |
+|---|---|---|---|---|
+| Name | match green · partial / pending amber · **unreadable red** · mismatch red | green / yellow partial-unreadable / red mismatch | unreadable | 4 (4) |
+| IC | match green · **unreadable red** · mismatch red | same | unreadable — 35 of the 38 are letters that print NO IC (decisions 2026-11-01 rule 4: a blank is correct) | 38 (33) |
+| Pathway | **red when the offer is not genuine** (suspect without the date bonus, or not_offer_letter) · match green · **mismatch red** · unknown grey | green match, or declared nothing + a GENUINE offer set it · yellow differs / nothing to compare · never red | three arms | not genuine: 48 (40); mismatch / unknown / auto-set: need live data (lead query below) |
+| Official | **genuine: no chip** · suspect amber · not_offer_letter red · unchecked: no chip | green / yellow / red | genuine | 237 (223) gain a green chip |
+| Reporting date | **no chip** | green read · yellow not printed | missing chip | 234 read (220) · 53 blank (44; 48 truly not printed) |
+| (Intake year, Switched — not in the table) | green current / amber off; amber | — | unchanged | — |
+App 329 (doc 3494) today: **Pathway red** (the offer is not_offer_letter, so it "establishes no pathway") and
+**Official red** (not_offer_letter). After the build the Pathway chip is yellow at once (never red); both turn
+green only once the letter is re-scored (S7, or a Cockpit Re-run on 329): Official green from the TVET ruling,
+Pathway green from "declared nothing, a genuine offer set it" (`chosen_programme.source == 'offer_letter_auto'`
+— lead to confirm on the live row). Live estimate: the corpus is the live offer set of 2026-11-01 (287 letters,
+251 applications), so the counts above are the order of magnitude; exact live numbers come from the dry run.
+
+**3. Doors (sprint-start 3b) — what puts an offer into a genuineness status, or a gate state, or takes it out.**
+- Status writers: `vision._run_field_extraction_impl` offer branch (upload, cockpit Re-run, sweep,
+  `reextract_documents`, `reextract_offers`, the `release-decisions` job); `bands.keep_stored_authenticity`
+  (TD-407: a re-read with no fresh score keeps the old one — so a flag-off re-read keeps the OLD wrong call);
+  `rescore_unscored_documents --apply` (unscored only); `offer_replay` (eval). **Deploying S6 changes no stored
+  status**: the 14 corpus calls (and their live twins) move only when re-scored → S7's list.
+- Gate doors that change AT DEPLOY on stored data: `_offer_blocks` (new rule: block iff not_offer_letter —
+  rule 1 — and never on suspect — rule 8; STPM exemption and the not-yet-submitted grandfather kept); the
+  ladder (Pathway chip no longer counted; Name / IC `unreadable` no longer red) → every pathway band, the
+  Check 1 tile, `offer_not_official` disqualifier unchanged (still step 2 only); the chips; the student note.
+  `resolution.doc_match_verdict` KEEPS refusing a suspect upload as the answer to an official-offer request
+  (rule 8: "Check 2 or a reviewer can ask for the offer letter") — stated, pinned by the drift test.
+- Pick doors: a genuine CONFIRMATION letter (rule 4) must never write a pick — `offer_sync` autofill,
+  `offer_link` link / `fill_empty_pick` refuse a `doc_seen` of `confirmation_*` (a confirmation names the
+  programme she is on, which can differ from her offer — seen on a dev letter). `promotion` may rank a genuine
+  confirmation above a suspect offer (acceptable alternative — ruling 4).
+- Hearing: `offer_hearing_ok` unchanged (genuine or suspect); a re-scored portal page moves from no hearing
+  (not_offer_letter) to a hearing (suspect) — listed for S7.
+- Money: none. `course_start_year` / `intake_year` do not read genuineness (TD-465 owns that; the deferred
+  "a not_offer_letter document never dates the course" ruling stays deferred).
+- The Pathway "set by the offer" green: a new `pathway_set_by_offer` flag on `student_offer_check` read ONLY
+  by the chip — `pathway` itself stays `unknown`, so the Chosen-programme tick (`fieldVerification`), the
+  verdict and Check 2 do not change (request #9's circular-tick guard holds).
+
+**4. Files and budgets.** Three files S6 must change are at their limit, so three moves-only commits come first:
+| File | Size / limit | Plan |
+|---|---|---|
+| `pathway_engine.py` | 633 / 613 + 20 (ledger) | **moves-only split first** (subsection below) → ~470; its `oversize_files` line LEAVES the budget (the tightness test asks) |
+| `genuineness/results_doc.py` | 600 / 600 (any new line fails) | **moves-only split first**: the five offer family lists, `_UA_NAMES`, `_PRIVATE_ARM_PHRASES`, `_private_arm_offer` → new `genuineness/offer_signatures.py`, re-exported (`offer_issuers`, `pathway_engine`, `catalogue_levels`, `doc_signatures` import them from `results_doc`); ~480 after |
+| `halatuju-web/src/lib/officerCockpit.ts` | 1657 / 1637 + 20 (ledger; hotspot #1, 28.2) | **moves-only first**: the `offer_letter` branch of `documentFacts` → new `src/lib/offerFacts.ts` (the `higherResultsFacts.ts` precedent), then every colour change lands there; the entry is lowered if the tightness test asks |
+Then: `genuineness/offer_rulings.py` (new, ≤ 250) — the rulings, applied by ONE call inside the offer branch
+of `signature_genuineness`: portal / admission printout → suspect (never below); public confirmation →
+genuine (`doc_seen` `confirmation_polytechnic` / `confirmation_form6` / `confirmation_ua`), a UA with a private
+wing → suspect; the closed TVET list on the letterhead with offer wording → genuine `tvet_*` (Q2), a TVET slip
+→ suspect; a private conditional → not_offer_letter; the private-arm veto's "SDN BHD" arm ignored when a
+family's own public-issuer line is on the page (`_private_arm_offer` itself unchanged — `catalogue_levels` and
+`offer_reporting_bonus` gate 3b read it). **`MODEL_VERSION` 1.22.0 → 1.23.0** + History line (memory rule:
+bump on ANY doc-recognition change). `verdict_ladder.py` (282: `_OFFER_CHIP_RED = {'mismatch'}`, the Pathway arm
+removed) + **`VERDICT_ENGINE_VERSION`** bump (`verdict_engine.py` 984-entry file: one line). `services/blockers.py`
+(557; ≤ 600). `services/offer_sync.py` / `offer_link.py` (one guard each). `serializers.py` (ledger 1195) NOT
+touched — the flag rides `pathway_check`. Web: `offerFacts.ts` (Pathway never red; Official green; Reporting
+date chip; Name / IC unreadable yellow), `checklists.tsx` (515: offer note keys), `checklistsPathway.tsx` (150:
+the student's mismatch badge amber, not red — same meaning), `messages/{en,ms,ta}.json` (two cockpit fact
+keys, two student note keys — Tamil per the style guide; review goes to Sol). **No DocumentsDrawer.tsx change**
+(it renders whatever `documentFacts` returns; Mobile M6b can push first). **No Stitch screen**: a colour
+mapping plus two chips in an existing chip row of the approved cockpit, existing tones (lesson: a design
+standard that already covers the screen satisfies "prototype first"); a sandbox screenshot goes to the owner
+with the build.
+Eval: `eval/offer_genuineness_check.py` (new, hand-run: per letter EXPECTED bursary status vs today's call, by
+split / family; exit 1 on any miss; keys only) + `eval/offer_genuineness_expect.json` (new, committed, PII-free:
+key → expected status, from the answers and rulings 1-8); `offer_s4_dry_run.py` S6 mode (below); README.
+
+**Pre-flight checks done.** Budget files grepped for every path: only `pathway_engine.py` (oversize 613) and
+`officerCockpit.ts` (oversize 1637 + its in-file suppressions — the move must take none of them) carry keys;
+`results_doc.py` and the rest carry none. Other tree: `halatuju-web/src/lib/scholarship.ts` names
+`pathway_engine` in a comment only. Source-text guards: `test_superseded_documents.READ_MODULES` names
+`pathway_engine.py` → **extended** to `pathway_match.py` (lesson: extend a guard on a move, never re-point);
+`test_closed_case_writes` reads `officerCockpit.ts` for `CASE_CLOSED_STATES` (not moved).
+
+##### The `pathway_engine.py` split (moves only — for Cockpit to check before any build; TD-473 lands on it)
+- **New module `apps/scholarship/pathway_match.py`** — "the lenient offer-vs-declared matcher". Moved VERBATIM,
+  in order: the comment block "Lenient offer-vs-declared pathway matcher", `_GENERIC_TOKENS`,
+  `distinctive_tokens`, `_field_status`, `offer_pathway_match`, `_declared_pathway`,
+  `catalogue_declared_institution` (today lines 23-190, ~168 lines). It carries its own
+  `from __future__ import annotations`, `import re`, `from .school_names import school_name_core` (lesson: a
+  module-wide directive is not in a body). Its two lazy imports stay inside their functions
+  (`from .offer_pathway import parse_stpm_stream` / `sole_catalogue_institution`). It imports nothing from
+  `pathway_engine`, `offer_pathway` or `offer_course_match` at module level — a leaf.
+- **`pathway_engine.py` re-exports all six names** (`from .pathway_match import (_GENERIC_TOKENS,
+  _declared_pathway, _field_status, catalogue_declared_institution, distinctive_tokens,
+  offer_pathway_match)  # noqa: F401`), so `offer_course_match` / `offer_pathway` / `offer_link`'s
+  `from .pathway_engine import distinctive_tokens`, `audit_pathway_ticks`' imports and the eight test modules
+  keep working unchanged.
+- **The live circular pair stays as is:** `student_offer_check` keeps its function-local `from
+  .offer_course_match import letter_institution, programme_line` (and the two `offer_pathway` locals);
+  `offer_course_match` / `offer_pathway` keep their top-level import of `distinctive_tokens` from
+  `pathway_engine` (they may later import it from `pathway_match` directly — not in the moves commit).
+- **Patch safety:** nothing patches a moved name (`mock.patch` targets on `pathway_engine` are
+  `student_offer_check`, `offer_official_status`, `started_before_cohort` — all stay); `offer_pathway_switch`
+  (stays) calls `_field_status` through the re-export.
+- **What lands there later:** S6 adds nothing to the moved bodies; **TD-473 (Cockpit)** puts its level check in
+  `pathway_match.offer_pathway_match` / `_field_status`, beside the matcher it changes.
+- Result: `pathway_engine.py` ~470 lines (leaves `oversize_files`; budget line removed, baseline untouched, no
+  `_moved` record — no ledger key is renamed); `pathway_match.py` ~175.
+
+**Lessons and decisions that bind S6, and how the plan meets each.**
+- Decision 2026-11-01 (a genuineness status is a bursary decision) + 2026-11-02 (chip colours) → they ARE the
+  spec; `offer_genuineness_expect.json` encodes them per letter.
+- Decision 2026-10-26 C1 (the TVET net is narrow on purpose: a typed fake, a skills certificate, a MARA loan
+  letter, a "JTM" page, a MARA-sponsored private college read NOT CHECKED in its first cut) → Q2; whatever the
+  answer, the C1 review's controls are kept as synthetic-twin tests (letterhead only, offer words, sponsor line,
+  private MARA, bare acronyms).
+- Decisions 2026-07-07 / 07-08 (the ladder stacks a not-official Pathway chip on the step; #31 suspect = Unsure)
+  → SUPERSEDED by rulings 8 and 2026-11-02 ("Pathway never red", "suspect is not a blocker"): a suspect now reads
+  Probable; a not_offer_letter still blocks, by rule 1 directly. New decisions entry says so.
+- Decision S4 `offer_ic` (a guarded blank IC reads `unreadable` → red, `test_offer_reader_doors` line 100) →
+  superseded by the chip table (unreadable = yellow); that test is re-pinned with the ruling cited.
+- Request #9 / `_declared_pathway` #117 (c) circularity break → kept; the auto-set green is a chip-only flag.
+- Lesson "a new shape needs every reader checked" + 3b → the reader list above; the adversarial brief carries
+  it and asks for the missing door.
+- Lesson "a moves-only split moves bodies; directives are not in a body" + "extend the guard on a move" → the
+  split subsection.
+- Lesson "a string added to a shared message file moves every route" → the two student note keys go in the
+  slice the Documents page already loads; `npm run build` + the bundle budget before the push
+  (`/scholarship/application` has ~0.23 kB of room, TD-433).
+- Lesson "validate on held-out once" (S5 retro) → tune on dev (7 letters), ONE held-out run (7 letters), runs
+  counted in the report.
+- Lesson "a new refusal rule is re-measured on dev before it is reported" (S5 retro) → every new rule is run on
+  all 287 before it is counted; a rule may not move any of the 237 genuine `yes` letters.
+- Memory: bump `MODEL_VERSION`; adversarial review before the push (it gates submission); no re-extract from a
+  local checkout (S6 writes nothing live).
+
+**Steps.** (1) `pathway_engine` split, own commit, suite green. (2) `results_doc` split, own commit. (3)
+`officerCockpit` offer-branch move, own commit, jest green. (4) `offer_genuineness_check.py` + expect file
+(fails today on the 14). (5) `offer_rulings.py` + `MODEL_VERSION` 1.23.0; dev loop to 0 misses with the 237
+genuine unmoved; one held-out run. (6) Gates + ladder + pick guards + `VERDICT_ENGINE_VERSION`; docstring of
+`offer_official_status` corrected. (7) Chips + student note + copy. (8) `offer_s4_dry_run.py --s6` (the lead
+runs it read-only on production): per live application, before / after on STORED data — pathway band, blocked
+by `offer_not_official`, each chip's colour; and the corpus twin of the S7 effect. (9) Adversarial review
+(gates, picks, chips) with the door list; CHANGELOG, decisions entry, README, TD for the page-1-only scoring.
+
+**Live numbers the lead needs (read-only, before the push).** From the dry run: (a) not-yet-submitted
+applications blocked today by `offer_not_official`, split suspect / not_offer_letter (suspect ones unblock);
+(b) pathway band moves (expected: up only — a red chip is removed, nothing added); (c) Pathway chips today red
+/ grey that become yellow / green, incl. the auto-set count; (d) live offers by stored status + `doc_seen`
+(how many look like the 14 classes) → S7's re-score list; (e) app 329's `chosen_programme.source`.
+
+**Acceptance.** (1) `offer_genuineness_check.py`: 0 misses on dev and held-out — the 14 move as ruled, the 237
+genuine `yes` letters and every rightly-rejected letter unchanged. (2) Suite green, jest green, budgets
+unchanged or tighter (three files smaller). (3) Dry run: no band falls, no new block; every unblock is a
+suspect. (4) App 329 on its corpus twin: Official green, Pathway green.
+
+**Estimated files touched: ~34** (API 18 incl. 3 new modules and ~6 test files; web 9 incl. 1 new module + test;
+docs 7). **Recommended execution:** sequential, one builder (an Opus subagent builds; the lead verifies each
+diff and re-runs the gates), because the three splits must land before the files they free are edited and
+every later step reads the same gate semantics; no parallel agents (one shared `pathway_engine` /
+`verdict_ladder` seam). Cockpit checks the split subsection first; Mobile M6b may push `DocumentsDrawer.tsx`
+before or after — no overlap.
+
+**Open questions for the owner (recommendation first).**
+- **Q1. TD-473 (Cockpit's): a matriculation / STPM / Form-6 letter on a degree application** — recommended:
+  `mismatch`, which under the new table is a YELLOW Pathway chip plus the Check 2 "is this your final pathway?"
+  query to the student — never red, no band loss. (Alternative: `unknown` — yellow, but no query.) Cockpit's
+  lean fits "Pathway is never red" once mismatch is yellow.
+- **Q2. Public TVET offers (IKBN / IKM / ILP / KKTM, the closed list):** recommended: score them **genuine**
+  (Official green, as you asked for app 329) when the institute is named on the LETTERHEAD and the page carries
+  offer wording and no private / sponsor marker — 3 corpus letters. The cost: a well-typed fake naming an
+  institute would show green until a reviewer looks (the 2026-10-26 review's worry; we hold too few letters per
+  institute to fingerprint them). Alternative: keep "not checked" (no Official chip, the reviewer checks by
+  eye) and only stop the false fail — then app 329's Official chip stays empty, not green.
+Defaults taken unless you say otherwise: only UMS, polytechnics and Form-6 colleges count as "no private wing"
+for a confirmation letter (any other university's confirmation → suspect); an interview slip stays suspect and
+a UPU application slip stays not_offer_letter.
+
 ### S7 — Live re-read of the letters whose read changes (ops, ~3 h; paid)
 - **Goal:** live records carry the improved reads.
 - **Scope:** list the live offers whose read would change (from S4–S6 on the corpus) and what offer_sync / link /
