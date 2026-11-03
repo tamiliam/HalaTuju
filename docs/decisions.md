@@ -18439,3 +18439,15 @@ rejected: the bundle gate refuses it.
 **Trade-offs:** the student page carries one more mode; a lazy screen shows a short loading state on first open.
 **Revisit if:** the source console grows past a handful of screens (then its own route group, measured), or the
 bundle budget gains room.
+
+## 2026-11-04 — Mobile M8: the manifest stays `display: 'browser'`; sign-in hand-offs are not sandboxed (owner)
+**Decision:** two close-out choices (owner, "go" on the lead's recommendations, 2026-11-03).
+- **The web manifest keeps `display: 'browser'`.** On an iPhone a sign-in email link opens in Safari, not in an
+  installed home-screen app, so with `'standalone'` a person who signs in from the app lands outside it.
+- **The four sign-in hand-off routes get no sandbox surface** (`/auth/callback`, `/admin/auth/callback`,
+  `/sponsor/auth/callback`, `/sponsor/auth/confirm`). They only read the URL and redirect; `mobileClass.ts` marks them
+  `handoff`, the ledger says so, and the owner's iPhone walkthrough (`docs/mobile-iphone-checklist.md`) covers them.
+  `mobileStandard.test.ts` fails if a hand-off gains a form.
+**Alternatives considered:** (A) `'standalone'` now — rejected: no proof the sign-in links return into the app.
+(B) surfaces for every route, Can screens too — rejected: twice the work; the Must screens are all measured.
+**Revisit if:** sign-in moves to a code typed in the app (no email link), or iOS opens links in installed web apps.
