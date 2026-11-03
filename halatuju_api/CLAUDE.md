@@ -1169,7 +1169,7 @@ list = rows that open the case, filters in a Sheet (one `filterControls` for bot
 JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
 NEXT: M6b, M7, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 BUILT, NOT LIVE (branch maint-s7; no migration)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 LIVE 2026-11-03 (main 99d8ac1c; api-01243-dzq, web-01070-c44 — web went out in the Requests R1 build 2da37ff4; no migration)
 
 Roadmap T3; decisions.md 2026-11-03 "Team tables T3". **Team -> Mentors** is the old Mentors page's table
 (`components/mentors/MentorsAdmin.tsx`, default `TeamMentors` + `MentorDetail`, ONE lazy chunk loaded by the Team page

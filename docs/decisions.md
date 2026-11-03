@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T5.0: every power from permissions — the owner's model and 8 rulings (2026-11-03)
+
+**Context:** After T2 the owner said "any team member can move between roles, and they'd have the powers given them
+in permissions — there is no fixed role anymore", then set the model: Reviewer sees only assigned students; QC
+implicitly sees all and decides any except their own; everyone lands on Organisation → Programmes; the org admin can
+limit a person to some gifts; admin pages in groups with view / edit-create / approve tiers; the creator never
+approves. The lead's read-only investigation (page inventory, 13 two-person rules, 20 conflict rules, key
+catalogue) fed a decision page (https://claude.ai/artifact/1HbE54pJTFu4JznDmNTdXf).
+
+**Decision:** the owner approved all 8 recommendations ("approve all"), with one correction: gift configuration is
+per gift and stays under Programme (renamed Programme Settings, last row of the group). The rulings, the no-loss
+mapping of live shapes and the T5a–T5g sprint split are in `docs/plans/2026-11-01-team-tables-roadmap.md` (T5).
+
+**Consequences:** `role` becomes a display name; `see_all` stops being QC's dependency; wallet credits gain
+`created_by` and a maker/check/approve chain (closes TD-475); "Covers" becomes a real gift fence only in T5f (today
+it greys the assign picker and the server ignores it). Every T5 step that moves access gets an adversarial review.
+
 ## Team tables T3: Mentors are a Team table; the mentor detail page counts work, never notes; a staff mentor may leave their last staff table as a mentor login; permissions live only on the person page — 2026-11-03 (owner ruling 6 + scope addition; builder decisions for the lead to confirm)
 
 **Context:** T3 moves the Mentors page under Team (ruling 6) and adds a mentor detail page; T2 refused "only Mentors

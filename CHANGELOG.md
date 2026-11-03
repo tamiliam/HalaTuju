@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T3 — Mentors under Team, mentor detail (not yet live)
+## Team tables T3 — Mentors under Team, mentor detail (LIVE 2026-11-03; main 99d8ac1c; api build 76d2125e, live now api-01243-dzq; web carried by 2da37ff4, web-01070-c44)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (ruling 6, T3); decisions.md 2026-11-03 "Team tables T3". No
 migration, no new stored field.
