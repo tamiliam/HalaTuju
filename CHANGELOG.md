@@ -39,7 +39,7 @@ All notable changes to this project will be documented in this file.
     read-only on a phone" (every call of each door inside its box, whatever the argument) and
     `phoneDoors.test.tsx`; the status guard now catches `doSetSubstate(` with any argument and a third file
     drawing a status label. The restacked tables carry ARIA roles (`stampTableRoles`; written into the two raw
-    tables). `usePhoneWidth` falls back to `addListener` (Safari before 14). Every new check bites.
+    tables). `usePhoneWidth` falls back to `addListener` (Safari before 14). Every new check bites. `sponsors/[id]/page.tsx` stays at 600 lines (the wrapper compacted, not split: T5d owns the file).
 
 - **The maintenance status is read-only on a phone** (owner 2026-11-03, TD-480 item 4: yes). On the scholar file
   (`ScholarControls.tsx`) and the cockpit's no-file control (`PostAwardPanels.tsx`) the On track / Probation / On hold /
