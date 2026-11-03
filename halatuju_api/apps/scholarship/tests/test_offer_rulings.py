@@ -19,7 +19,7 @@ from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_ge
 IKM = ("INSTITUT KEMAHIRAN MARA KOTA CONTOH\nMAJLIS AMANAH RAKYAT\nJalan Contoh, 88000 Kota Contoh\n"
        "Rujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\nSURAT TAWARAN\n"
        + 'Dengan sukacitanya dimaklumkan bahawa permohonan anda telah diproses dengan teliti.\n' * 8
-       + "Nama : Ali bin Abu\nTahniah, anda ditawarkan tempat di Institut Kemahiran MARA Kota Contoh untuk "
+       + "Nama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\nTahniah, anda ditawarkan tempat di Institut Kemahiran MARA Kota Contoh untuk "
          "mengikuti Diploma Kemahiran Contoh.\nSila hadir pada 3 Ogos 2026.\nSekian, terima kasih.\nYang benar,\nPENGARAH\n")
 IKBN_SLIP = """INSTITUT KEMAHIRAN BELIA NEGARA CONTOH
 SLIP TAWARAN UP_TVET FLEXI
@@ -42,11 +42,17 @@ def _confirm(head):
     return f"""{head}
 Jalan Contoh, 90000 Bandar Contoh
 PENGESAHAN PELAJAR
+Rujukan : CONTOH/600-1/2
+Tarikh : 1 Jun 2026
 Dengan ini disahkan bahawa penama di bawah adalah pelajar yang sedang mengikuti pengajian.
 Nama : Ali bin Abu
+No. Kad Pengenalan : 080808-10-5566
 Program : Diploma Contoh
 Institusi : Contoh
 Bidang : Sains
+Sekian, terima kasih.
+Yang benar,
+PENGARAH
 """
 
 

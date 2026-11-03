@@ -20,8 +20,12 @@ def _r(p, family='ua_offer'):
     return {'probability': p, 'type': family, 'present': [], 'missing': [], 'scores': {}}
 
 
-def _offer(head, body='Nama : Ali bin Abu\nKursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\n'):
-    return f'{head}\n{HEAD}SURAT TAWARAN KEMASUKAN\n{body}{TAIL}'
+_FILL = ('Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.\nSila bawa dokumen asal semasa hadir.\n'
+         'Tawaran ini tertakluk kepada syarat.\nSila sahkan penerimaan dalam tempoh tujuh hari.\n')
+
+
+def _offer(head, body='Nama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\nKursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\n'):
+    return f'{head}\n{HEAD}SURAT TAWARAN KEMASUKAN\n{body}{_FILL}{TAIL}'
 
 
 REAL_IKBN = _offer('KEMENTERIAN BELIA DAN SUKAN\nINSTITUT KEMAHIRAN BELIA NEGARA (IKBN) PEKAN')
@@ -51,7 +55,7 @@ class H1PaddingAndShape(SimpleTestCase):
         self.assertNotEqual(_g(text)['status'], 'genuine')
 
     def test_each_part_of_the_structure_is_needed(self):
-        for part in ('Rujukan : ABC/600-1/2\n', TAIL, 'Nama : Ali bin Abu\n'):
+        for part in ('Rujukan : ABC/600-1/2\n', TAIL, 'Nama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\n'):
             with self.subTest(missing=part.split()[0]):
                 self.assertNotEqual(_g(REAL_IKBN.replace(part, ''))['status'], 'genuine')
 
@@ -61,7 +65,7 @@ class H2TheFirstInstitutionIsTheIssuer(SimpleTestCase):
         for head, mention in (('KOLEJ TEKNIK ABC\nDiiktiraf JABATAN PEMBANGUNAN KEMAHIRAN', 'setara ILP'),
                               ('AKADEMI ABC\nMAJLIS AMANAH RAKYAT', 'dengan kerjasama IKM')):
             with self.subTest(head=head.splitlines()[0]):
-                text = _offer(head, f'Nama : Ali\nKursus : Sijil Contoh ({mention})\nTarikh lapor diri 3 Ogos 2026\n')
+                text = _offer(head, f'Nama : Ali\nNo. Kad Pengenalan : 080808-10-5566\nKursus : Sijil Contoh ({mention})\nTarikh lapor diri 3 Ogos 2026\n')
                 self.assertNotEqual(_g(text)['status'], 'genuine')
 
 
@@ -151,8 +155,8 @@ class H7MediumABankBerhadIsNotPrivate(SimpleTestCase):
 class Learnable(SimpleTestCase):
     def test_every_lift_names_its_ruling(self):
         self.assertEqual(ruling_of(_g(REAL_IKBN)), 'tvet_offer')
-        conf = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nPENGESAHAN PELAJAR\nNama : Ali\n'
-                'Program : Diploma\nInstitusi : Contoh\n')
+        conf = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nRujukan : PO/1\nTarikh : 1 Jun 2026\n'
+                'PENGESAHAN PELAJAR\nNama : Ali\nNo. Kad Pengenalan : 080808-10-5566\nProgram : Diploma\nInstitusi : Contoh\nYang benar,\nPENGARAH\n')
         self.assertEqual(ruling_of(_g(conf)), 'confirmation')
         self.assertEqual(ruling_of(_g('Semakan Keputusan\nKeputusan Permohonan\nAnda ditawarkan\n')), 'printout')
         self.assertEqual(ruling_of(ruled_offer('KOLEJ ABC SDN BHD\nTawaran Kemasukan\n', _r(0.4), 'suspect', 'r',
@@ -171,7 +175,7 @@ class DryRunBuckets(SimpleTestCase):
     def test_an_app_with_no_rescore_is_its_own_bucket_never_assumed_a_fail(self):
         from apps.scholarship.eval import offer_s6_dry_run as s6
         verdict, _stop, review, _t = s6.judge([self._row()], {})
-        self.assertEqual((verdict, review['no_rescore']), ('GO', [7]))
+        self.assertEqual((verdict, review['newly_blocked_no_rescore']), ('GO', [7]))
 
 
 class LowAStaleConfirmIsLogged(TestCase):

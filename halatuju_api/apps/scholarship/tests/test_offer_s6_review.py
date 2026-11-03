@@ -20,7 +20,7 @@ _FILLER = 'Dengan sukacitanya dimaklumkan bahawa permohonan anda telah diproses 
 #: A real-shaped IKM letter that scores below the suspect floor (a photo): the letterhead names MARA's TVET
 #: arm, the body names the candidate and the institute again.
 LOW_SCORE_IKM = ('TVETMARA\nMAJLIS AMANAH RAKYAT\nRujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\nSURAT TAWARAN\n' + _FILLER
-                 + 'NAMA : ALI BIN ABU\nPusat : INSTITUT KEMAHIRAN MARA CONTOH\nProgram : Diploma Kemahiran Contoh\n'
+                 + 'NAMA : ALI BIN ABU\nNo. Kad Pengenalan : 080808-10-5566\nPusat : INSTITUT KEMAHIRAN MARA CONTOH\nProgram : Diploma Kemahiran Contoh\n'
                  'Tarikh lapor diri : 3 Ogos 2026\nSekian, terima kasih.\nYang benar,\nPENGARAH\n')
 
 
@@ -31,7 +31,7 @@ class H1TheTypedFake(SimpleTestCase):
 
     def test_below_the_floor_the_body_must_name_the_candidate_and_the_institute(self):
         self.assertEqual(_status(LOW_SCORE_IKM), 'genuine')
-        self.assertNotEqual(_status(LOW_SCORE_IKM.replace('NAMA : ALI BIN ABU\n', '')), 'genuine')
+        self.assertNotEqual(_status(LOW_SCORE_IKM.replace('No. Kad Pengenalan : 080808-10-5566', '').replace('NAMA : ALI BIN ABU\n', '')), 'genuine')
 
 
 class H1TheOfficersRequest(TestCase):

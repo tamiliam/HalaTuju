@@ -184,14 +184,19 @@ class TheReviewProbes(TestCase):
 
     def test_each_probe_scores_exactly_as_before(self):
         for name, text in REVIEW_PROBES.items():
+            if name == 'a typed fake under an ILKBS heading':
+                continue                            # S6 round 3: the safety rule — see the test below
             with self.subTest(name):
                 g = self.assertAsBefore(text)       # S6 review H7: no positive private sign, so as before
                 self.assertNotIn(g['status'], (NOT_CHECKED, 'genuine'))
 
     def test_a_fake_below_the_suspect_floor_is_never_not_checked(self):
         """Rule 1: the net is the suspect band only — the typed fake and the bare page stay fakes."""
-        for name in ('a typed fake under an ILKBS heading', 'a page reading only JTM'):
-            self.assertEqual(self.assertAsBefore(REVIEW_PROBES[name])['status'], 'not_offer_letter')
+        self.assertEqual(self.assertAsBefore(REVIEW_PROBES['a page reading only JTM'])['status'], 'not_offer_letter')
+        # S6 round 3 (the safety rule): a closed-list body on the page, no private evidence, below the floor
+        # → suspect (a person decides), never a fail — the typed fake is no longer a fake.
+        self.assertEqual(signature_genuineness(REVIEW_PROBES['a typed fake under an ILKBS heading'],
+                                               doc_type='offer_letter')['status'], 'suspect')
 
     def test_a_sponsor_is_not_the_issuer(self):
         # S6 review H7: a fail needs POSITIVE private evidence; this letterhead has none (only the absence of a
@@ -222,7 +227,9 @@ class TheReviewProbes(TestCase):
             with self.subTest(head):
                 g = signature_genuineness(f'{head}\nTAWARAN KEMASUKAN\n{_REG}', doc_type='offer_letter')
                 self.assertEqual((g['status'], g['type']), (NOT_CHECKED, 'tvet_mara'))   # S6 r2: no structure
-                g = signature_genuineness(f'{head}\n{STRUCT}TAWARAN KEMASUKAN\nNama : Ali\n{_REG}{CLOSE}',
+                g = signature_genuineness(f'{head}\n{STRUCT}TAWARAN KEMASUKAN\nNama : Ali\nNo. Kad Pengenalan : 080808-10-5566\n{_REG}'
+                                          'Sila hadir dengan dokumen asal.\nTawaran ini tertakluk kepada syarat.\n'
+                                          f'Sila sahkan penerimaan.\nTerima kasih.\n{CLOSE}',
                                           doc_type='offer_letter')
                 self.assertEqual((g['status'], g['type']), ('genuine', 'tvet_mara'))      # with it: Q2
 

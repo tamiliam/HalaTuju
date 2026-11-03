@@ -30,6 +30,8 @@ GO / STOP (the operator reads the `verdict` line at the end):
   STOP  any Name / IC chip turns red that was not red;
   STOP  any Pathway chip is red under the new rules;
   STOP  the tool hit a refused write / Storage / Gemini (it raises);
+  REVIEW `newly_blocked_no_rescore` / `blocked_before_and_after_no_rescore`: blocked apps whose letter is not in
+        the corpus (no re-score) — a person looks; `moves_by_ruling`: every re-score move by the ruling behind it;
   REVIEW `blocked_on_a_stale_call`: an open application blocked BEFORE and AFTER S6 whose re-score would
         lift the fail (app 329's shape, a confirmation, a printout) — S7 should re-score these first;
   REVIEW (not a stop) every NEWLY blocked `not_offer_letter` application (rule 1 makes it a fail where the
@@ -172,7 +174,8 @@ def judge(rows, rescored=None):
     letter would carry if re-scored now, from pass 2; absent for an app outside the corpus)."""
     rescored = rescored or {}
     t, stop, review = Counter(), [], {'newly_blocked_not_offer': [], 'unblocked': [],
-                                      'blocked_on_a_stale_call': [], 'no_rescore': []}
+                                      'blocked_on_a_stale_call': [], 'newly_blocked_no_rescore': [],
+                                      'blocked_before_and_after_no_rescore': []}
     for r in rows:
         t['applications'] += 1
         o, n = _BANDS.index(r['band_old']) if r['band_old'] in _BANDS else -1, \
@@ -186,7 +189,7 @@ def judge(rows, rescored=None):
                 review['newly_blocked_not_offer'].append(r['app'])
                 now = rescored.get(r['doc'])
                 if now is None:
-                    review['no_rescore'].append(r['app'])          # not in the corpus: a person looks
+                    review['newly_blocked_no_rescore'].append(r['app'])   # not in the corpus: a person looks
                 elif now != 'not_offer_letter':
                     stop.append(f"app {r['app']} newly blocked on a stale call (re-scores {now})")
             else:
@@ -194,7 +197,7 @@ def judge(rows, rescored=None):
         if r['blocked_old'] and r['blocked_new']:
             now = rescored.get(r['doc'])
             if now is None:
-                review['no_rescore'].append(r['app'])
+                review['blocked_before_and_after_no_rescore'].append(r['app'])
             elif now != 'not_offer_letter':
                 review['blocked_on_a_stale_call'].append(r['app'])
         if r['blocked_old'] and not r['blocked_new']:
@@ -268,6 +271,12 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
     verdict, stop, review, t = judge(deploy, now)
     review['lifted_by_a_ruling'] = [f"doc={r['doc']} {r['seen']} ({r['ruling']})" for r in rescored
                                     if r.get('ruling') and r.get('status', '').endswith('->genuine')]
+    moves = {}                          # EVERY re-score move, by the ruling that made it (or '-': the band)
+    for r in rescored:
+        old, _, new = (r.get('status') or '').partition('->')
+        if new and old != new:
+            moves.setdefault(r.get('ruling') or '-', []).append(f"doc={r['doc']} {old}->{new}")
+    review['moves_by_ruling'] = moves
     moved = [r for r in rescored if r.get('status', '').split('->')[0] != r.get('status', '').split('->')[-1]]
     for r in deploy:
         changed = {c: f"{r['chips_old'].get(c, '-')}->{r['chips_new'].get(c, '-')}" for c in r['chips_new']
@@ -282,8 +291,12 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
             f"link {r['link']}")
     out(f'rescore pass (S7 preview): letters={len(rescored)} status_moved={len(moved)}')
     out(f"review: newly_blocked_not_offer={review['newly_blocked_not_offer']} unblocked={review['unblocked']} "
-        f"blocked_on_a_stale_call={review['blocked_on_a_stale_call']} no_rescore={sorted(set(review['no_rescore']))}")
+        f"blocked_on_a_stale_call={review['blocked_on_a_stale_call']}")
+    out(f"review: newly_blocked_no_rescore={review['newly_blocked_no_rescore']} "
+        f"blocked_before_and_after_no_rescore={review['blocked_before_and_after_no_rescore']}")
     out(f"review: lifted_by_a_ruling={review['lifted_by_a_ruling']}")
+    for ruling, docs in sorted(review['moves_by_ruling'].items()):
+        out(f"review: moved_by[{ruling}]={docs}")
     for s in stop:
         out(f'  STOP: {s}')
     out(f'verdict: {verdict}')

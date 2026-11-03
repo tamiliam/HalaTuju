@@ -84,7 +84,8 @@ _SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|PENAJAAN|DIBIAYAI|PEMBIAYAAN|BIA
                       r'COLLABORATION|PINJAMAN|FUNDED|SCHOLARSHIP|SPONSORED\s+BY|SPONSOR)\b',
                       re.IGNORECASE)   # S6 review H3: + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA
 #: A payment / bank / vendor line (S6 review): never part of the letterhead.
-_PAYMENT_LINE = re.compile(r'\b(BAYARAN|AKAUN|BANK|PEMBEKAL|PENCETAK|DICETAK)\b', re.IGNORECASE)
+_PAYMENT_LINE = re.compile(r'\b(BAYARAN|AKAUN|BANK|MAYBANK|CIMB|RHB|AMBANK|AFFIN|BSN|AGROBANK|ISLAMIC|'
+                           r'TAKAFUL|INSURANS|INSURANCE|KOPERASI|PEMBEKAL|PENCETAK|DICETAK)\b', re.IGNORECASE)
 #: A private company / an accredited private centre on the letterhead is never a public issuer.
 _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: Words a public body prints on its letterhead (a ministry, a department, a school); a letterhead
@@ -93,7 +94,8 @@ _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: letterhead and says only "UiTM").
 _PUBLIC_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ',
                  ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ',
-                 ' LEMBAGA ', ' PERBADANAN ', ' KOLEJ KEJURURAWATAN ')   # S6 review H7 (both rounds)
+                 ' LEMBAGA ', ' PERBADANAN ', ' KOLEJ KEJURURAWATAN ', ' AKADEMI BINAAN MALAYSIA ', ' ABM ',
+                 ' AKADEMI PERCUTIAN MALAYSIA ')   # S6 review H7 (three rounds): public bodies' own names
 _UA_SHORT = ('UM', 'USM', 'UKM', 'UPM', 'UTM', 'UITM', 'UIAM', 'IIUM', 'UUM', 'UNIMAS', 'UMS', 'UPSI',
              'USIM', 'UTEM', 'UMP', 'UNIMAP', 'UTHM', 'UMT', 'UMK', 'UPNM', 'UNISZA')
 _INSTITUTION_WORDS = (' KOLEJ ', ' COLLEGE ', ' UNIVERSITI ', ' UNIVERSITY ', ' INSTITUT ',
@@ -120,6 +122,14 @@ def _letterhead(ocr_text: str) -> str:
     return f" {' '.join(parts)[:_LETTERHEAD_CHARS]} "
 
 
+def private_mara_on_letterhead(ocr_text: str) -> bool:
+    """S6 round 3: a MARA-owned PRIVATE institution (UniKL, KPTM, GMI …) named on the LETTERHEAD — the lines
+    above the letter proper (`offer_rulings._letterhead_lines`) — never a body mention ("a pathway to
+    UniKL" on a real IKM letter)."""
+    from .offer_rulings import _folded_lines, _letterhead_lines
+    return any(p in ln for ln in _letterhead_lines(_folded_lines(ocr_text)) for p in _PRIVATE_MARA)
+
+
 def _has_offer_words(folded: str) -> bool:
     for w in _NOT_OFFER:
         folded = folded.replace(w, ' ')
@@ -144,7 +154,7 @@ def tvet_issuer(ocr_text: str, scores) -> str:
     rules 2–6; rule 1, the suspect band, is the caller's)."""
     page, head = _fold(ocr_text), _letterhead(ocr_text)
     if (_fingerprinted_issuer_on_page(scores) or not _has_offer_words(page)
-            or any(p in page for p in _PRIVATE_MARA) or any(p in head for p in _PRIVATE_HEAD)):
+            or private_mara_on_letterhead(ocr_text) or any(p in head for p in _PRIVATE_HEAD)):
         return ''
     offer_in_head = _has_offer_words(head)
     for key, (_display, names, acronyms) in TVET_ISSUERS.items():
@@ -188,7 +198,7 @@ def private_college_reason(ocr_text: str, r: dict) -> str:
     page, head = _fold(ocr_text), _letterhead(ocr_text)
     text = (f"private college / university (IPTS) - not a supported public issuer (nearest pattern "
             f"{r['type'].replace('_', ' ')}, p={r['probability']:.2f})")[:300]
-    if any(p in page for p in _PRIVATE_MARA):
+    if private_mara_on_letterhead(ocr_text):
         return text
     from .results_doc import _UA_NAMES
     if (_fingerprinted_issuer_on_page(r.get('scores')) or any(w in head for w in _PUBLIC_WORDS)

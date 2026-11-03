@@ -372,7 +372,10 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # no question (owner, TD-145, 2026-10-04). Matched as the two-word phrases ONLY: the lone word
 # 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
 _PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD', 'SENDIRIAN BERHAD',
-                        'SALURAN TERBUKA', 'SALURAN SATU')
+                        'SALURAN TERBUKA', 'SALURAN SATU',
+                        # S6 (owner 2026-11-03, the subsidy test): UMS's self-funded professional /
+                        # continuing-education centre (PPPL) is a private wing, like SPACE.
+                        'PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN', 'PUSAT PENDIDIKAN LANJUTAN', 'PPPL')
 
 
 def _private_arm_offer(ocr_text: str) -> bool:
