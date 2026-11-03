@@ -137,7 +137,7 @@ const me = (role: Record<string, unknown>, extra: Record<string, unknown> = {}) 
   phone: '123456789', share_phone_with_team: true, share_phone_with_students: false, photo_url: null, ...extra,
 })
 const REVIEWER_PROFILE = {
-  highest_qualification: 'bachelor', university: 'Universiti Malaya', graduation_year: 2004,
+  highest_qualification: "Bachelor's Degree", university: 'Universiti Malaya', graduation_year: 2004,
   field_of_study: 'Perakaunan dan Kewangan', phone: '123456789', address: '', street_address: '12, Jalan Contoh 3, Taman Contoh',
   postcode: '43000', city: 'Kajang', state: 'Selangor', english_fluency: 'fluent', bm_fluency: 'fluent',
   tamil_fluency: 'fluent', other_language: '', other_language_fluency: '', share_phone_with_students: false,
