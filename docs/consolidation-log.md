@@ -28,6 +28,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-02 Mobile-native Sprint M4c (rule-15 sweep of My Bursary, Home, scholarship landing, report, info/legal pages, pathways, onboarding, quizzes) — 633ff8b5 2a6db949 b93f425f
 - 2026-11-03 Mobile-native Sprint M5 (sponsor portal on phones: sponsor tab bar, display + Log out in My Account, fund bar + one confirm Sheet, rule 15 + 12 px across the portal, sign-in and landing) — 8144dc17 87f791fe 96c95693 ede659d4 5b565a66 3fbf7d30 93afa27c
 - 2026-11-03 Team tables T2 (the Team page: Admins / Reviewers tables, Add / Remove, labels retired, org admin may join Reviewers; lead rulings Q1-Q4; no migration; built, not live) — 31295fa3 8dc51562
+- 2026-11-03 Team tables T3 (Mentors under Team, mentor detail page, staff mentor may leave the last staff table as a mentor login, permissions only on the person page; no migration; built, not live) — 57eabd5a
 
 - 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; not pushed) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
 
