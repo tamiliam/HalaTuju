@@ -128,14 +128,98 @@ class TheExtraction(SimpleTestCase):
         self.assertEqual(approval_missing(doc), ('approver',))
         self.assertIs(approval_counts(doc), False)
 
-    def test_a_stamp_impression_approves(self):
-        from apps.scholarship.income_declaration import approval_counts
-        out, _gem = self._read(self._doc(), {'issuer_header': 'KEDAI CONTOH', 'approver_name': '',
-                                             'approver_title': '', 'has_stamp_or_signature': 'stamp'})
-        doc = self._doc()
-        doc.vision_fields = {'fields': out['fields']}
-        self.assertIs(approval_counts(doc), True)
-        self.assertEqual(out['fields']['amount'], 'RM800')                 # the money fields stay the text read's
+    def test_a_stamp_impression_approves_a_payslip_only(self):
+        """3A: a chop alone approves an informal PAYSLIP. Owner ruling 2026-11-03 (#53): any other informal
+        document needs a hand signature — the same stamp alone on a support letter is no approver."""
+        from apps.scholarship.income_declaration import approval_counts, approval_missing
+        answer = {'issuer_header': 'KEDAI CONTOH', 'approver_name': '', 'approver_title': '',
+                  'has_stamp_or_signature': 'stamp', 'has_signature': 'no'}
+        for slot, missing in (('salary_slip', ()), ('income_support_doc', ('approver',))):
+            with self.subTest(slot):
+                out, _gem = self._read(self._doc(slot), answer, text=UNTITLED)
+                doc = self._doc(slot)
+                doc.vision_fields = {'fields': out['fields'],
+                                     'authenticity': {'status': 'suspect', 'doc_seen': 'informal'}}
+                self.assertEqual(approval_missing(doc), missing)
+                self.assertIs(approval_counts(doc), not missing)
+                self.assertEqual(out['fields']['amount'], 'RM800')         # the money fields stay the text read's
+
+    def test_ruling_2026_11_03_a_support_document_needs_a_signature(self):
+        """"We cannot accept a document without a signature. Pay slips are different." — and "they need
+        ketua kampung etc who needs to sign": a hand signature by a KNOWN signer (a name or title). Stamp only:
+        refused; stamp + signature + title: counts; stamp + signature nobody is named for: refused; a named
+        signer with no stamp: counts. When `has_signature` was asked it alone decides: a contradictory mark
+        ("signature" / "both" with "no") never makes it signed."""
+        from apps.scholarship.income_declaration import approval_counts, approval_missing, approval_unchecked
+        hdr = {'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_name': '', 'approver_title': ''}
+        titled = {**hdr, 'approver_title': 'KETUA KAMPUNG'}
+        for answer, missing in (({**hdr, 'has_stamp_or_signature': 'stamp', 'has_signature': 'no'}, ('approver',)),
+                                ({**titled, 'has_stamp_or_signature': 'stamp', 'has_signature': 'no'}, ('approver',)),
+                                ({**titled, 'has_stamp_or_signature': 'stamp', 'has_signature': 'yes'}, ()),
+                                ({**hdr, 'has_stamp_or_signature': 'stamp', 'has_signature': 'yes'}, ('approver',)),
+                                ({**hdr, 'approver_name': 'ENCIK CONTOH', 'has_stamp_or_signature': 'signature',
+                                  'has_signature': 'yes'}, ()),
+                                ({**hdr, 'has_stamp_or_signature': 'signature', 'has_signature': 'yes'},
+                                 ('approver',)),
+                                ({**titled, 'has_stamp_or_signature': 'signature', 'has_signature': 'no'},
+                                 ('approver',)),                                       # contradictory: "no" wins
+                                ({**titled, 'has_stamp_or_signature': 'both', 'has_signature': 'no'},
+                                 ('approver',))):
+            with self.subTest(answer):
+                out, _gem = self._read(self._doc(), answer)
+                self.assertEqual(out['fields']['has_signature'], answer['has_signature'])
+                doc = self._doc()
+                doc.vision_fields = {'fields': out['fields']}
+                self.assertIs(approval_unchecked(doc), False)
+                self.assertEqual(approval_missing(doc), missing)
+                self.assertIs(approval_counts(doc), not missing)
+
+    def test_ruling_2026_11_03_the_prompt_asks_for_a_hand_signature_on_its_own(self):
+        from apps.scholarship.income_declaration import _APPROVAL_SCHEMA, APPROVAL_FIELDS, APPROVAL_PROMPT
+        self.assertEqual(APPROVAL_FIELDS['has_signature'], {'type': 'string', 'enum': ['yes', 'no']})
+        self.assertIn('has_signature', _APPROVAL_SCHEMA['required'])
+        self.assertEqual(APPROVAL_FIELDS['has_stamp_or_signature']['enum'], ['stamp', 'signature', 'no'])  # kept
+        for words in ('"has_signature" = "yes" ONLY if a HANDWRITTEN signature',
+                      'whether or not there is also a stamp',
+                      'A stamped name block, a rubber stamp, a printed or typed name, a name written out by hand '
+                      'in block capitals and an empty signature line are NOT a signature'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+
+    def test_request_53_the_prompt_takes_a_stamped_name_block_but_never_the_forms_own_print(self):
+        """#53: a Ketua Kampung's borderless blue NAME stamp was read "signature" (no header), so the form
+        was refused. The prompt now names a stamped name block as a stamp, bordered or not — and keeps
+        printed / typed text in the form's own print, and handwriting alone, out of it (a false stamp
+        would let an unapproved form count)."""
+        from apps.scholarship.income_declaration import APPROVAL_PROMPT
+        for words in ('rubber-stamped NAME BLOCK IS a stamp', 'WITH OR WITHOUT a border, round seal or crest',
+                      'stamp ink (often blue or purple', 'a stamp may be black or grey',
+                      'Printed, typed or computer-filled text anywhere on the document',
+                      'only ink visibly impressed by a rubber stamp is',
+                      'Handwriting, even in block capitals or blue ink, is NOT a stamp',
+                      'only a pen-drawn signature or initials is a signature: a name written out by hand in '
+                      'block capitals is not',
+                      'Printed labels such as "Cop dan tandatangan"', 'EMPTY signature or stamp boxes',
+                      'never from a printed label'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+
+    def test_request_53_a_signed_name_stamp_with_its_title_and_no_letterhead_counts(self):
+        """The answer the fixed prompt should give for #53's form — the Ketua Kampung's signature beside his
+        name stamp, the title off it, no letterhead — counts. The same form read as a bare signature (the
+        defect) still lacks a header; and (owner ruling 2026-11-03) the name stamp with NO signature is no
+        approver on a support document."""
+        from apps.scholarship.income_declaration import approval_counts, approval_missing
+        for mark, signed, missing in (('stamp', 'yes', ()), ('signature', 'yes', ('header',)),
+                                      ('stamp', 'no', ('approver',))):
+            with self.subTest(mark=mark, signed=signed):
+                out, _gem = self._read(self._doc(), {'issuer_header': '', 'approver_name': 'CONTOH BIN CONTOH',
+                                                     'approver_title': 'KETUA KAMPUNG',
+                                                     'has_stamp_or_signature': mark, 'has_signature': signed})
+                doc = self._doc()
+                doc.vision_fields = {'fields': out['fields']}
+                self.assertIs(approval_counts(doc), not missing)
+                self.assertEqual(approval_missing(doc), missing)
 
     def test_our_failure_leaves_it_unchecked_never_no(self):
         from apps.scholarship.income_declaration import APPROVAL_FIELDS, approval_unchecked
@@ -286,18 +370,88 @@ class TheApproverRule(SimpleTestCase):
                   'approval_no_approver'),                          # a signature nobody owns is no approver
                  ({**CHECKED, 'issuer_header': 'SK CONTOH', 'has_stamp_or_signature': 'yes'}, ('approver',),
                   'approval_no_approver'),                          # an older "yes" reads as a signature
-                 ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'has_stamp_or_signature': 'stamp'}, (), ''),  # 3A
-                 ({**CHECKED, 'has_stamp_or_signature': 'stamp'}, ('header',), 'approval_no_header'),
                  ({**CHECKED, 'issuer_header': 'SK CONTOH', 'approver_title': 'Guru Besar',
                    'has_stamp_or_signature': 'signature'}, (), ''),    # a titled signer
                  (APPROVED, (), '')]
+        # Owner ruling 2026-11-03 (#53): a support document's stamp needs a hand signature with it.
+        # The signer must be KNOWN (a name or title), and only a slip read as a PAYSLIP keeps 3A — a declaration
+        # form in the payslip slot is judged like a support document.
+        signed = {**CHECKED, 'has_signature': 'yes'}
+        support = [({**CHECKED, 'has_signature': 'no', 'issuer_header': 'KEDAI CONTOH',
+                     'has_stamp_or_signature': 'stamp'}, ('approver',), 'approval_no_approver'),   # stamp only
+                   ({**signed, 'issuer_header': 'KEDAI CONTOH', 'has_stamp_or_signature': 'stamp'}, ('approver',),
+                    'approval_no_approver'),                                          # signed, nobody named
+                   ({**signed, 'issuer_header': 'KEDAI CONTOH', 'approver_name': 'AH CONTOH',
+                     'has_stamp_or_signature': 'stamp'}, (), ''),
+                   ({**CHECKED, 'has_signature': 'no', 'has_stamp_or_signature': 'stamp'}, ('header', 'approver'),
+                    'approval_no_header_approver'),
+                   ({**signed, 'has_stamp_or_signature': 'stamp'}, ('header', 'approver'), 'approval_no_header_approver'),
+                   ({**signed, 'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}, (), ''),
+                   ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'has_stamp_or_signature': 'both'}, ('approver',),
+                    'approval_no_approver'),                                          # legacy "both", nobody named
+                   ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'approver_title': 'Pengurus',
+                     'has_stamp_or_signature': 'both'}, (), '')]
+        payslip = [({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'has_stamp_or_signature': 'stamp'}, (), ''),  # 3A
+                   ({**CHECKED, 'has_signature': 'no', 'issuer_header': 'KEDAI CONTOH',
+                     'has_stamp_or_signature': 'stamp'}, (), ''),                                  # 3A, read today
+                   ({**CHECKED, 'has_stamp_or_signature': 'stamp'}, ('header',), 'approval_no_header'),
+                   ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'approver_name': 'AH CONTOH',
+                     'has_signature': 'yes'}, ('approver',), 'approval_no_approver')]   # mark "no": has_signature unread
         for slot, seen in (('salary_slip', 'declaration'), ('salary_slip', 'informal'), ('income_support_doc', None)):
-            for fields, missing, reason in cases:
+            extra = payslip if (slot, seen) == ('salary_slip', 'informal') else support
+            for fields, missing, reason in cases + extra:
                 with self.subTest(slot=slot, seen=seen, fields=fields):
                     doc = self._doc(slot, seen, **fields)
                     self.assertEqual(approval_missing(doc), missing)
                     self.assertEqual(missing_reason(doc), reason)
                     self.assertIs(approval_counts(doc), not missing)
+
+    def test_ruling_2026_11_03_a_stamped_support_read_from_before_has_signature_is_unchecked(self):
+        """A stamped support document read before `has_signature` existed: whether it is ALSO signed was never
+        asked — "still checking" (never passed, never refused) until it is re-read; so is a declaration form in
+        the payslip slot (judged by what it IS). A payslip's stamp, and a legacy signature / "no" mark, are
+        judged as before."""
+        from apps.scholarship.income_declaration import (approval_counts, approval_missing, approval_unchecked,
+                                                         missing_reason)
+        legacy = {**CHECKED, 'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_title': 'KETUA KAMPUNG',
+                  'has_stamp_or_signature': 'stamp'}
+        for slot, seen, fields, unchecked, counts in (
+                ('income_support_doc', None, legacy, True, False),
+                ('income_support_doc', 'declaration', {**legacy, 'has_stamp_or_signature': 'cop'}, True, False),
+                ('income_support_doc', None, {**legacy, 'has_stamp_or_signature': ' Stamp '}, True, False),
+                ('salary_slip', 'informal', legacy, False, True),
+                ('salary_slip', 'declaration', legacy, True, False),
+                ('income_support_doc', None, {**legacy, 'has_stamp_or_signature': 'signature'}, False, True),
+                ('income_support_doc', None, {**legacy, 'has_stamp_or_signature': 'no'}, False, False)):
+            with self.subTest(slot=slot, seen=seen, mark=fields['has_stamp_or_signature']):
+                doc = self._doc(slot, seen, **fields)
+                self.assertIs(approval_unchecked(doc), unchecked)
+                self.assertIs(approval_counts(doc), counts)
+                if unchecked:
+                    self.assertEqual(approval_missing(doc), ())               # never "get it signed"
+                    self.assertEqual(missing_reason(doc), 'approval_unchecked')
+
+    def test_ruling_2026_11_03_a_legacy_stamp_whose_one_re_read_never_landed_gives_up_after_the_window(self):
+        """The sweep tries a legacy stamped read ONCE (`APPROVAL_TRIED`); if that re-read kept the old read, it
+        is "still checking" for the retry window, then falls to the unreadable path (the officer checks it by
+        eye, the family asked again) — never held for ever."""
+        import time
+        from apps.scholarship.income_declaration import (APPROVAL_TRIED, approval_counts, approval_expired,
+                                                         approval_missing, approval_unchecked, missing_reason)
+        legacy = {**CHECKED, 'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_title': 'KETUA KAMPUNG',
+                  'has_stamp_or_signature': 'stamp'}
+        doc = self._doc('income_support_doc', None, **legacy)
+        doc.vision_fields[APPROVAL_TRIED] = int(time.time()) - 3600
+        self.assertEqual((approval_unchecked(doc), approval_expired(doc), missing_reason(doc)),
+                         (True, False, 'approval_unchecked'))
+        doc.vision_fields[APPROVAL_TRIED] = int(time.time()) - 73 * 3600
+        self.assertEqual((approval_unchecked(doc), approval_expired(doc), missing_reason(doc)),
+                         (False, True, 'approval_unreadable'))
+        self.assertEqual(approval_missing(doc), ('header', 'approver'))
+        self.assertIs(approval_counts(doc), False)
+        payslip = self._doc('salary_slip', 'informal', **legacy)               # 3A: judged, never expired
+        payslip.vision_fields[APPROVAL_TRIED] = int(time.time()) - 73 * 3600
+        self.assertEqual((approval_expired(payslip), approval_counts(payslip)), (False, True))
 
     def test_a_document_read_before_the_rule_is_unchecked_not_missing(self):
         from apps.scholarship.income_declaration import (approval_counts, approval_missing, approval_unchecked,
@@ -413,15 +567,19 @@ class ThePerEarnerAnswerAndTheGate(_Case):
     def test_hotfix_live_shapes_a_village_stamp_with_its_approver_needs_no_letterhead(self):
         """Hotfix 2026-10-28, from the live re-read's field shapes: a stamp + a named/titled approver counts
         with NO header (a village form has none); #374 / #133 (mark 'no', no approver) and a header-only letter
-        still fail."""
+        still fail. Owner ruling 2026-11-03 (#53): the stamp must come WITH a hand signature on a support
+        document — the same stamped form, unsigned, does not count."""
         from apps.scholarship.income_engine import has_income_support_doc
-        blank = {'issuer_header': '', 'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no'}
-        cases = (({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}, True),
-                 ({'approver_title': 'Pengerusi JKKK', 'has_stamp_or_signature': 'stamp'}, True),
+        blank = {'issuer_header': '', 'approver_name': '', 'approver_title': '', 'has_stamp_or_signature': 'no',
+                 'has_signature': 'no'}
+        signed = {'has_signature': 'yes'}
+        cases = (({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp', **signed}, True),
+                 ({'approver_title': 'Pengerusi JKKK', 'has_stamp_or_signature': 'stamp', **signed}, True),
                  ({'approver_name': 'ENCIK CONTOH', 'approver_title': 'Pesuruhjaya Sumpah',
-                   'has_stamp_or_signature': 'stamp'}, True),
-                 ({'approver_name': 'ENCIK CONTOH', 'has_stamp_or_signature': 'stamp'}, True),
-                 ({'has_stamp_or_signature': 'stamp'}, False),                     # a stamp nobody is named for
+                   'has_stamp_or_signature': 'stamp', **signed}, True),
+                 ({'approver_name': 'ENCIK CONTOH', 'has_stamp_or_signature': 'stamp', **signed}, True),
+                 ({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}, False),  # 11-03: unsigned
+                 ({'has_stamp_or_signature': 'stamp', **signed}, False),           # a stamp nobody is named for
                  ({'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'signature'}, False),  # no header
                  ({}, False),                                                      # #374 / #133: mark 'no'
                  ({'issuer_header': 'JKKK KAMPUNG CONTOH'}, False))               # header only
@@ -575,6 +733,51 @@ class TheCoachAndCheckTwo(_Case):
         gone.vision_fields = {**gone.vision_fields, 'approval_read_error': 'x', 'approval_read_until': now - 1}
         gone.save(update_fields=['vision_fields'])
         self.assertEqual({d.id for d in approval_unchecked_documents(50)}, {live.id})
+
+    def test_ruling_2026_11_03_the_sweep_re_reads_a_stamped_support_read_from_before_has_signature(self):
+        """A stamped support document read before `has_signature` is unchecked again, so the sweep picks it
+        (once, like every unchecked read); a stamped PAYSLIP, a support read that already asked, and a legacy
+        signature mark are not picked."""
+        from apps.scholarship.income_declaration import approval_unchecked
+        from apps.scholarship.services.read_retry import approval_unchecked_documents
+        app = self._app()
+        stamp = {**CHECKED, 'approver_title': 'KETUA KAMPUNG', 'has_stamp_or_signature': 'stamp'}
+        legacy = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800', **stamp})
+        cased = _doc(app, 'income_support_doc', seen=None,                    # matched as Python reads it
+                     fields={'amount': 'RM800', **stamp, 'has_stamp_or_signature': ' Stamp '})
+        form = _doc(app, 'salary_slip', seen='declaration', fields={'gross_income': '900', **stamp})  # judged as IS
+        _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800', **stamp, 'has_signature': 'no'})
+        _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800', **APPROVED})        # a "yes" mark
+        _doc(app, 'salary_slip', seen='informal', fields={'gross_income': '900', **stamp})        # a payslip: 3A
+        bank = _doc(app, 'income_support_doc', seen=None,                     # 4A: not informal — never swept
+                    fields={'kind': 'bank_statement', 'issuer': '', 'amount': 'RM800', **stamp,
+                            'issuer_header': 'MAYBANK ISLAMIC BERHAD'})
+        self.assertIs(approval_unchecked(legacy), True)
+        self.assertIs(approval_unchecked(bank), False)
+        self.assertEqual({d.id for d in approval_unchecked_documents(50)}, {legacy.id, cased.id, form.id})
+
+    def test_ruling_2026_11_03_a_case_at_or_past_award_keeps_its_legacy_judgement(self):
+        """NIT of the review: an awarded / funded case's legacy stamped support read is judged as it was when
+        awarded (3A: the stamp counts) — never flipped to "still checking", refused or re-read."""
+        from apps.scholarship.income_declaration import approval_counts, approval_unchecked
+        from apps.scholarship.services.read_retry import approval_unchecked_documents
+        stamp = {**CHECKED, 'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_title': 'KETUA KAMPUNG',
+                 'has_stamp_or_signature': 'stamp'}
+        for status, active, kept in (('awarded', False, True), ('active', True, True), ('maintenance', True, True),
+                                     ('closed', True, True), ('recommended', False, False)):
+            with self.subTest(status):
+                app = self._app()
+                app.status = status
+                app.active_at = timezone.now() if active else None
+                app.save(update_fields=['status', 'active_at'])
+                legacy = _doc(app, 'income_support_doc', seen=None, fields={'amount': 'RM800', **stamp})
+                legacy = ApplicantDocument.objects.get(pk=legacy.pk)
+                self.assertIs(approval_unchecked(legacy), not kept)
+                self.assertIs(approval_counts(legacy), kept)
+                self.assertEqual(legacy.id in {d.id for d in approval_unchecked_documents(50)}, not kept)
+                new = _doc(app, 'income_support_doc', seen=None,                # a read today: the new rule
+                           fields={'amount': 'RM800', **stamp, 'has_signature': 'no'})
+                self.assertIs(approval_counts(ApplicantDocument.objects.get(pk=new.pk)), False)
 
     def test_check_two_waits_while_her_document_is_unchecked(self):
         """Not asked again for what she sent: the re-read decides (`check2_deferred`)."""
