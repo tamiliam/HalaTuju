@@ -156,8 +156,8 @@ class TestPathwaySwitch(_OfferBase):
 
     def test_private_arm_switch_is_fail(self):
         # The #13 shape: switched INTO a private continuing-education arm → the veto makes it
-        # not_offer_letter (−2) + the pathway red chip (−1) → Fail. The RED comes from the
-        # genuineness veto (not the switch); the switch is informational only.
+        # not_offer_letter (−2) → Unsure (S6: no Pathway chip stacks on it, 2026-11-02 table) and the
+        # submission blocks (rule 1). The verdict comes from the veto, not the switch.
         self._switch_pair(live_auth={'status': 'not_offer_letter', 'doc_seen': 'ua_offer'})
         self.app.pathway_confirmed_at = timezone.now()
         self.app.save(update_fields=['pathway_confirmed_at'])
@@ -165,5 +165,7 @@ class TestPathwaySwitch(_OfferBase):
             application=self.app, doc_type='offer_letter', superseded_at__isnull=True).first()
         self.assertEqual(offer_official_status(offer), 'not_genuine')
         pathway = {f['fact']: f for f in build_verdict(self.app)}['pathway']
-        self.assertEqual(pathway['status'], 'gap')           # Fail — from the veto, not the switch
+        self.assertEqual(pathway['status'], 'recommend')     # Unsure — from the veto, not the switch
+        from apps.scholarship.pathway_engine import offer_fails
+        self.assertTrue(offer_fails(offer))
         self.assertIsNotNone(offer_pathway_switch(self.app))

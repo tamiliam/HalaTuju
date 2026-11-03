@@ -42,9 +42,14 @@ year the money path reads (`student_offer_check(...)['intake_year']`) change, st
 unchanged only, never the value. `new_red:name` / `new_red:ic` count a Name / IC tick that becomes
 `mismatch` (a wrong-person red) where it was not.
 
+S6 (`--s6`, offer exact-read S6, 2026-11-03): the genuineness rulings and the chip table — see
+`offer_s6_dry_run.py` (a deploy pass over every live application on STORED data, old rules vs new, and a
+re-score pass over the corpus letters: the S7 preview), with its GO / STOP rules.
+
 Usage (from halatuju_api/; the operator runs it, never an agent):
   python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--suffix .s5_exact.json]
       [--keys K1,K2] [--json]
+  python -I apps/scholarship/eval/offer_s4_dry_run.py --s6 --eval-dir <corpus> [--keys K1,K2] [--json]
 Env: DATABASE_URL (the session pooler URL). Nothing else is read.
 """
 import argparse
@@ -321,7 +326,12 @@ def main(argv=None, *, session=None, out=print):
     ap.add_argument('--suffix', default=S4_SUFFIX, help='the S4 cache suffix (default: the final reader)')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--allow-sqlite', action='store_true', help='tests only')
+    ap.add_argument('--s6', action='store_true', help='the S6 genuineness / chip dry run (offer_s6_dry_run)')
     args = ap.parse_args(argv)
+    if args.s6:
+        from apps.scholarship.eval import offer_s6_dry_run
+        return offer_s6_dry_run.main(args, session=session or (lambda: read_only_rollback(
+            allow_sqlite=args.allow_sqlite)), out=out)
     keys = [k.strip() for k in args.keys.split(',') if k.strip()] or s4_keys(args.eval_dir, args.suffix)
     if not keys:
         out(f'No {args.suffix} caches in {args.eval_dir}.')

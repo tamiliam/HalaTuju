@@ -226,8 +226,9 @@ def autofill_pathway_from_offer(application):
     # reason the date is: the value means "did I write anything".
     inst_written = sync_institution_from_catalogue(application, offer=offer, offer_check=chk)
     wrote_early = date_written or inst_written
-    # Wrong-person letter (name OR IC clash) → never adopt.
-    if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
+    # Wrong-person letter (name OR IC clash) → never adopt. S6: nor a confirmation of studies (ruling 4).
+    from ..pathway_engine import is_confirmation_letter
+    if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch' or is_confirmation_letter(offer):
         return wrote_early
     prog = (chk['programme'] or '').strip()
     inst = (chk['institution'] or '').strip()
@@ -436,15 +437,15 @@ def plan_bumi_realign(application, offer, chk):
     from .. import offer_pathway as op
     from ..family import CONFIRMED_CP_SOURCES
     from ..offer_course_match import pinned_match
-    from ..pathway_engine import offer_band
+    from ..pathway_engine import is_confirmation_letter, offer_band
     from .querying import querying_locked
     verdict = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
     if querying_locked(application) or application.verdict_decided_at or verdict.get('overall'):
         return 'decided', None, ''
     if chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch':
         return 'not_own_letter', None, ''
-    if offer_band(offer) != 'genuine':
-        return 'not_genuine', None, ''
+    if offer_band(offer) != 'genuine' or is_confirmation_letter(offer):
+        return 'not_genuine', None, ''        # S6: a confirmation of studies never writes a pick
     prog, inst = (chk.get('programme') or '').strip(), (chk.get('institution') or '').strip()
     if op.is_pre_u(op.detect_pathway_type(prog, inst)):
         return 'pre_u_offer', None, ''

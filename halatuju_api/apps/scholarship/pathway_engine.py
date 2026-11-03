@@ -181,11 +181,13 @@ def offer_official_status(doc) -> str:
     signature-genuineness (``vision_fields['authenticity']``):
       * 'genuine'     — a genuine official offer from a supported PUBLIC issuer (ua_offer / stpm /
                         matriculation / polytechnic / pismp). The only kind we can support.
-      * 'not_genuine' — anything else the scorer judged: a CONDITIONAL offer / a non-official
-                        notification (pemakluman / UPU-semakan) → suspect; a PRIVATE/IPTS offer →
-                        unrecognised (stored as suspect); a private continuing-education ARM (SPACE
-                        etc.) → not_offer_letter via the 1.6.0 scorer veto. Owner policy: cannot
-                        support these.
+      * 'not_genuine' — suspect OR not_offer_letter. What each MEANS (owner rulings 2026-11-01, S6):
+                        `suspect` = not sure, a person decides (a portal page / admission printout, a
+                        public conditional offer, a TVET slip, another university's confirmation) —
+                        NOT a blocker; `not_offer_letter` = a fail (a private / IPTS offer, a private
+                        wing such as SPACE / SATU, not an offer at all) — the submission gate blocks
+                        on it (`offer_fails`). Readers here: the Action Centre (a not-genuine upload
+                        never closes an official-offer request) and the live-offer rank.
       * 'unknown'     — genuineness not computed yet (flag off / AI outage / not re-run since the
                         signature model shipped), OR NOT CHECKED (1.8.0: a known public TVET issuer,
                         owner rulings A + B). Never gate on our own gap — defer to the reviewer.
@@ -195,6 +197,23 @@ def offer_official_status(doc) -> str:
     if not canonical_status(status, 'offer_letter'):
         return 'unknown'      # unscored, malformed or NOT CHECKED — no signal (`canonical_status`)
     return 'genuine' if status == 'genuine' else 'not_genuine'
+
+
+def offer_fails(doc) -> bool:
+    """Owner ruling 1 (2026-11-01, S6): a `not_offer_letter` offer is a FAIL for the bursary — the
+    ONE thing the submission gate blocks on (`services.blockers._offer_blocks`). A suspect never
+    blocks (ruling 8); unscored / NOT CHECKED is no signal."""
+    return offer_band(doc) == 'not_offer_letter'
+
+
+def is_confirmation_letter(doc) -> bool:
+    """S6 (owner ruling 4): the offer slot holds a CONFIRMATION-OF-STUDIES letter (`doc_seen`
+    `confirmation_*`, `genuineness.offer_rulings`). It may stand in for an offer, but it names the
+    programme she is ON, which can differ from her offer — so it never writes a course pick
+    (`offer_sync` autofill / realign, `offer_link` link / fill)."""
+    from .genuineness.bands import stored_authenticity
+    from .genuineness.offer_rulings import CONFIRMATION_SEEN
+    return stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '') in CONFIRMATION_SEEN
 
 
 def offer_band(doc) -> str:
@@ -295,6 +314,14 @@ def student_offer_check(doc) -> dict:
                                   declared_track=decl_track, offer_stream=stream,
                                   institution_agreement=inst_agreement,
                                   programme_agreement=prog_agreement)
+    # S6 (owner's chip table, 2026-11-02): she declared NOTHING and a GENUINE offer set the pick itself
+    # (`offer_letter_auto`) — the Pathway CHIP reads green. A chip-only flag: `pathway` stays as it is,
+    # so no tick, verdict or Check 2 query is earned from the letter agreeing with itself (request #9).
+    set_by_offer = bool(pathway == 'unknown' and _cp_source == 'offer_letter_auto' and not decl_prog
+                        and not decl_inst and not decl_track and offer_band(doc) == 'genuine'
+                        and 'clash' not in (_field_status(_cp.get('course_name') or '', programme),
+                                            inst_agreement if inst_agreement in ('match', 'clash')
+                                            else _field_status(_stored_inst, institution)))
 
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
@@ -325,6 +352,7 @@ def student_offer_check(doc) -> dict:
         'address': (f.get('candidate_address') or '').strip(),
         # Offer-vs-declared reconciliation (Check-1 pathway).
         'pathway': pathway,                       # 'match' | 'mismatch' | 'unknown'
+        'pathway_set_by_offer': set_by_offer,     # S6: the chip's green for an empty declaration
         # Does the offer's institution match the pre-U institution SHOWN on the cockpit? Compared
         # against `pre_u_institution` (the displayed field) specifically — NOT `decl_inst`, which
         # prefers a CONFIRMED chosen_programme institution and so can diverge from what's displayed

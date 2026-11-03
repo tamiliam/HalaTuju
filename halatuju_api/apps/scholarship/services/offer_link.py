@@ -68,6 +68,7 @@ def plan_offer_link(application, offer, chk):
     ``not_own_letter``     the letter's name or IC is a mismatch;
     ``not_offer_letter``   the letter is scored a FAKE. Linking replaces no choice, so a genuine score
                            is NOT required — suspect and unscored letters link; a fake never does;
+    ``confirmation_letter``  a confirmation of studies (S6, ruling 4) — it may stand in for an offer, never a pick;
     ``pre_u_offer`` / ``pre_u``  a Form 6 / matriculation letter or stored pathway (no course_id shape);
     ``unresolved``         the letter names no ONE catalogue course at one campus, at its own level;
     ``labels_disagree``    the stored labels name another course (labels that name NO course are an
@@ -83,7 +84,7 @@ def plan_offer_link(application, offer, chk):
     two never leave a record different by the order they ran in (round-3 review)."""
     from apps.courses.course_pathway import course_pathway_type
     from .. import offer_pathway as op
-    from ..pathway_engine import offer_band
+    from ..pathway_engine import is_confirmation_letter, offer_band
     from .querying import querying_locked
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     empty = is_empty_pick(cp)
@@ -98,6 +99,8 @@ def plan_offer_link(application, offer, chk):
         return 'not_own_letter', None, ''
     if offer_band(offer) == 'not_offer_letter':
         return 'not_offer_letter', None, ''
+    if is_confirmation_letter(offer):          # S6 (ruling 4): it may stand in for an offer, never a pick
+        return 'confirmation_letter', None, ''
     if empty and offer_band(offer) != 'genuine':
         # Round-6 review: a fill LOCKS the pick (offer_letter_auto + course_id), so it needs the realign's
         # bar — a suspect letter's course would stand while a later genuine one went to a human question.
