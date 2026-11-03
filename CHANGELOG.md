@@ -41,6 +41,17 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   `fact.reportingDate` reuses the house words for the reporting date.
 - **Dry run:** `offer_s4_dry_run.py --s6` (`eval/offer_s6_dry_run.py`): the deploy pass (old rules vs new on
   STORED data, every live application) and the re-score pass (the S7 preview), with GO / STOP rules.
+- **Adversarial review fixes (7 High, 2 Medium, 4 Low; `tests/test_offer_s6_review.py`):** Q2 genuine needs an
+  institute named (never an agency alone), no private sign, and below the floor a body naming the candidate and the
+  institute; sponsor words + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA; KUPTM / UPTM private; confirmations need
+  their issuer's public mark, a student / programme line and a score floor, and no private sign; printouts are
+  recognised by portal-only furniture and never over a private sign; the Sdn Bhd exemption needs the ministry line
+  first; rules 2 / 7 fail only on positive private evidence or a private conditional; Kolej Komuniti / Matrikulasi /
+  Vokasional / ASWARA / ILKKM are public words; the TVET slip test reads the letterhead only. Doors: the officer's
+  own offer request is not auto-closed by a `tvet_*` / `confirmation_*` upload; a confirmation gets no pathway hearing
+  and `confirm_pathway` refuses it. The dry run STOPs on a new block a re-score would lift and lists
+  `blocked_on_a_stale_call`. The `offer_not_official` copy now says what fails (en / ms / ta). Re-exports are
+  explicit (`import x as x`), so a linter fix cannot drop them.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

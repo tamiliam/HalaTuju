@@ -634,6 +634,34 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   counts only Name / IC mismatch (`VERDICT_ENGINE_VERSION` 2026-11-03.1); chips to the owner's table; student
   notes en / ms / ta; confirmation letters never write a pick; `offer_s4_dry_run.py --s6` for the lead (GO /
   STOP). TD-481 (page-1-only scoring). See CHANGELOG. Stored statuses move only at S7's re-score.
+- **Adversarial review (2026-11-03): 7 High, 2 Medium, 4 Low — all fixed in new commits, each with a synthetic
+  regression (`tests/test_offer_s6_review.py`).** Dev stays 197 / 197 with exactly the 14 ruled moves.
+  - Q2's genuine is narrower: an INSTITUTE (IKBN / IKTBN / IKM / KKTM / Kolej MARA / Kolej Profesional MARA / ILP /
+    ADTEC / ILJTM) must be named — an agency (MARA, TVETMARA, JTM, JPK, the ministry, ILKBS) alone keeps the 1.8.0
+    path; no private sign; below the suspect floor the BODY must name the candidate and the institute again (the
+    typed fake stays a fail; app 329's letter, p 0.11, still qualifies). Sponsor words + PENAJAAN / DIBIAYAI /
+    PEMBIAYAAN / BIASISWA; KUPTM / UPTM are MARA-owned private. The TVET slip test reads the letterhead only.
+  - Confirmations: the issuer's own public mark (polytechnic: the ministry line; Form 6: the ministry / SMK /
+    Kolej Tingkatan Enam; UMS: its letterhead), a student / programme line, a score floor (0.10; real ones 0.13-0.30),
+    and no SWASTA / PERSENDIRIAN / Sdn Bhd / IPTS / MQA sign.
+  - Printouts: portal-only furniture (never TAHNIAH / BERJAYA, never URL chrome) and never over a private sign.
+  - The Sdn Bhd exemption needs the ministry line BEFORE the first "Sdn Bhd" (the review proposed "not on the
+    letterhead"; the corpus polytechnic letter carries a company sign at char 263 of its letterhead, after the
+    ministry line at 0, so the order test keeps it while the review's "ABC COLLEGE SDN BHD … with JPPKK" is vetoed).
+  - Rule 2 / 7 fails a suspect-band offer only on POSITIVE private evidence (Sdn Bhd / Bhd / Swasta /
+    Persendirian / IPTS / MQA / KPT-JPT, or a named MARA-owned private college: KPTM / KUPTM / UPTM / UniKL) or a CONDITIONAL offer from a letterhead naming no public body; Kolej
+    Komuniti / Matrikulasi / Vokasional / ASWARA / ILKKM count as public words.
+  - **Doors added:** (a) the officer's own offer request is NOT auto-closed by an offer the rulings (not a
+    fingerprinted family) made genuine — a `tvet_*` or `confirmation_*` upload (`offer_issuers.officer_must_close`),
+    as NOT CHECKED was; system / Check 2 requests close as before; (b) a confirmation letter gets no pathway hearing
+    (`offer_hearing_ok`) and `services.confirmation.confirm_pathway` refuses one — it never writes the pick.
+  - **M8, answered.** The production dry run is right: S6 newly blocks only an OPEN application whose stored call is
+    not_offer_letter AND whose old band was Probable+ (only the date bonus did that); every other stored
+    not_offer_letter on an open application was already blocked, and a submitted one (app 329) is never re-blocked
+    (the gate reads `profile_completed_at`). The dry run now STOPs on a new block whose re-score would lift the fail
+    and lists `blocked_on_a_stale_call` (blocked before and after, the re-score would lift it). **Proposal (not built):**
+    ship S7's genuineness-only re-score of that list in the same release as S6 (text-layer PDFs free, photos one
+    Vision page each), so no student waits on a stale call.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
