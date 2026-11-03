@@ -1142,7 +1142,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
-### Mobile-native arc (separate stream) — M0–M7a DONE (M7a live 2026-11-03, main 881e5465, web-01074-xhv), NEXT = M7b the DesktopOnly panel
+### Mobile-native arc (separate stream) — M0–M7a DONE (M7a live 2026-11-03, main 881e5465, web-01074-xhv), M7b BUILT on `mobile-m7b` (not pushed), NEXT = M8
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1198,8 +1198,11 @@ Sandbox `src/sandbox/adminM7Surfaces.tsx` (`m7-*`; detail pages get their id thr
 After the M7a review the decided doors are read-only on a phone in M7a (payment run sign-off / Cancel / include, New
 payment run, billable hours, Close file, Delete student, a sponsor's gift membership): a `data-*` hooked
 `max-md:hidden` box + an `admin.useComputer.*` note, guarded door by door in `mobileStandard.test.ts`. Restacked
-tables carry ARIA roles (`TableFrame` `stampTableRoles`). M7b = the `DesktopOnly` panel only.
-NEXT: M7b, M8.
+tables carry ARIA roles (`TableFrame` `stampTableRoles`). **M7b (branch `mobile-m7b`, not pushed):** `AppShell` draws
+`components/DesktopOnly.tsx` for the `desktop` routes (`lib/desktopOnly.ts`, held equal to `mobileClass.ts`; a new
+desktop-only route needs both lists and a reason in en/ms/ta) and hides the page below md BY CSS; the Team /
+Invitations / Mentors tables are rows on a phone (staff-access actions NOT hidden — Maintenance's call).
+NEXT: M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 LIVE (main 7871bb39; api-01244-2rq, web-01073-jxr; no migration)
 

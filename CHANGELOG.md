@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (BUILT, branch mobile-m7b)
+
+- **The DesktopOnly panel** (owner "go m7b", design approved at M7 phase 1; decisions.md, the Mobile M7b entry). On
+  billing-rates, billing, course-data, contracts, contracts/[id] and sponsors/terms/[id], below md by width the shared
+  panel REPLACES the page: "Use a computer for this page", one 44 px way back (Back when the tab has history, else
+  the start page `/admin`) and the route's own reason (`mobileClass.ts` `why`, verbatim in English; Malay and
+  Tamil beside it). `AppShell` draws it ONCE from `lib/desktopOnly.ts`, by CSS (`md:hidden` panel, `max-md:hidden`
+  page): no flash, the page rendered once. From md nothing changes. Layout, not access: no gate file touched or
+  reading the list.
+- **Team / Invitations / Mentors tables as rows** (Maintenance said yes): Team -> Mentors and a mentor's scholars
+  (`MentorsAdmin`), the source rosters (`SourceInvite`) and the mentor roster (`MentorInvite`) take `TableFrame
+  phoneRows` + `data-label` (the ARIA roles come with it); their table-guard exemptions are gone. Markup only: no
+  "who may see" line, permission row or handler changed. **Staff-access actions restacked, NOT hidden (for the
+  review; Maintenance's call):** `SourceInvite` Resend / Cancel an invitation and Remove a signed-in source user;
+  `MentorInvite` Resend / Revoke; `MentorsAdmin` the row's mentor action (Stop / Deactivate ask first, as before).
+- **Tests and guards:** `desktopOnly.test.ts` (the list equals the desktop class; every route of the app — the
+  panel on a desktop-only route and never on another; the English reason is the `why`), `AppShell.desktopOnly.test.tsx`
+  (six routes replaced, five not; one way back, each branch), a `mobileStandard.test.ts` block (one mount, the CSS
+  split, 44 px, no gate file reads it). Ten bite-checks, each fails. Sandbox `m7b-desktop-only`,
+  `m7b-desktop-only-editor`.
+
 ## Mobile M7a — admin "Can" screens on phones, decided doors read-only — LIVE 2026-11-03 (main 881e5465, web-01074-xhv)
 
 - **M7a — lists, tabs and detail pages on phones** (owner approved the mock-ups and every recommendation; decisions.md,
