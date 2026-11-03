@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
   (six routes replaced, five not; one way back, each branch), a `mobileStandard.test.ts` block (one mount, the CSS
   split, 44 px, no gate file reads it). Ten bite-checks, each fails. Sandbox `m7b-desktop-only`,
   `m7b-desktop-only-editor`.
+- docs: slimmed halatuju_api/CLAUDE.md from ~176k to ~22k characters; full text moved to docs/deployment.md, docs/testing.md, docs/code-standards.md, docs/domain-rules.md, docs/architecture.md and docs/sprint-history.md (credit discipline).
 
 ## Team tables T5a — permission catalogue v2 + aliases (LIVE 2026-11-03; main 55de0610; api-01245-mrb)
 
