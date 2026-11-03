@@ -52,6 +52,16 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   and `confirm_pathway` refuses it. The dry run STOPs on a new block a re-score would lift and lists
   `blocked_on_a_stale_call`. The `offer_not_official` copy now says what fails (en / ms / ta). Re-exports are
   explicit (`import x as x`), so a linter fix cannot drop them.
+- **Second review — structural, and learnable** (owner 2026-11-03: keep green, no hedging cap;
+  `tests/test_offer_s6_review2.py`): NFKC text; the first institution a page names is its issuer (tie-ups under a
+  private letterhead never lift); a TVET genuine needs a real letter's structure in order (reference, date,
+  candidate, title, closing; no padding); confirmations need their public institution named first and its own
+  public mark; private printouts never lift; a "Sdn Bhd" is excused only on a payment / bank / vendor line or the
+  addressee's address; "Sendirian Berhad" is a private-arm phrase; bank "Berhad" lines are not private evidence;
+  GMI is private (the programme-subsidy test, decisions.md). Every lift's reason names its ruling
+  (`[S6 ruling: <tag>]`, `offer_rulings.ruling_of`), counted by `offer_genuineness_check.py`. The dry run gains
+  `no_rescore` and `lifted_by_a_ruling` and keys re-scores by document. The `offer_not_official` text says what
+  private means (en / ms / ta).
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

@@ -21,6 +21,24 @@
    (genuine). Any other university's confirmation reads `suspect` (a person checks it is the government
    programme). A confirmation letter never writes a course pick.
 
+4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
+   Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is
+   wrong, it serves as a lesson. If we allow the model to hedge now, the issue will never be resolved; the
+   exception would become the rule."* So a TVET offer or a confirmation of studies that meets its rule reads
+   genuine, and the rules are made STRUCTURAL (what a real letter is made of — the first institution named, a
+   reference / date / candidate / title / closing in a letter's order, no padding; where a company name sits),
+   not word lists. Every lift is LEARNABLE: its stored `reason` starts with `[S6 ruling: <tag>]`
+   (`offer_rulings.ruling_of`: `tvet_offer`, `tvet_slip`, `confirmation`, `confirmation_ua`, `private_offer`,
+   `printout`) and a lifted genuine keeps its own `doc_seen` (`tvet_*`, `confirmation_*`). Surfaced: the stored reason
+   and `doc_seen` travel to the cockpit on the document's `authenticity` (serializer); `eval/offer_genuineness_check.py` counts letters per ruling and
+   names the ruling of every miss; the S6 dry run lists every re-score a ruling lifted. A reviewer's override or a
+   later corpus answer against a tagged letter is the lesson — S8 mines them.
+5. **What "private" means (owner, 2026-11-03): GMI and UniKL are PRIVATE.** The test is not who OWNS the
+   institution but whether the PROGRAMME is treated like an IPTA programme and is heavily (government)
+   subsidised. That is why UM's Saluran Terbuka ("SATU", self-funded) channel is private although UM is an IPTA.
+   GMI (German-Malaysian Institute) joins the MARA-owned private list beside UniKL / KPTM / KUPTM / UPTM; UM SATU
+   keeps failing (`results_doc._private_arm_offer`). The student's `offer_not_official` text says the same.
+
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
 itself (rule 1). Name / IC `unreadable` is yellow, not red (supersedes S4's "a blank IC is red" pin). `MODEL_VERSION`

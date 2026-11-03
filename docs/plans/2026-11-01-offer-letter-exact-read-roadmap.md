@@ -662,6 +662,33 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
     and lists `blocked_on_a_stale_call` (blocked before and after, the re-score would lift it). **Proposal (not built):**
     ship S7's genuineness-only re-score of that list in the same release as S6 (text-layer PDFs free, photos one
     Vision page each), so no student waits on a stale call.
+- **Second review (2026-11-03): M9 and H7 closed; H1-H4, H6 and an H5 follow-on fixed STRUCTURALLY** (owner: keep
+  green, no hedging cap — decisions.md S6 item 4; `tests/test_offer_s6_review2.py`, the reviewer's own probes).
+  - Text is NFKC-normalised (full-width letters are letters). The FIRST institution a page names is its issuer
+    (`offer_rulings._first_institution`): a college / academy / tuition centre named before the TVET institute (or
+    before a confirmation's public institution) is another institution — this closes the "accredited by JPK",
+    "in collaboration with", "usahasama", "Pinjaman / Funded / Scholarship" tie-ups under a private letterhead.
+  - A TVET genuine needs a real letter's STRUCTURE in a letter's order (`_letter_structure`): a reference line,
+    a dated line, a candidate label, an offer title and a closing / signatory block after it, and no padding
+    (unique lines ≥ 60 %, no token above 25 %). Order rather than "near the top": the held-out IKM photo holds two
+    letters side by side (its offer title is line 60 of 107, below the other letter's closing) — **this was read
+    off a held-out letter while shaping the rule, so held-out is not untouched for this rule; said so here and in
+    the report.**
+  - Confirmations: the public institution named first, its public mark (KPT / JPPKK for a polytechnic;
+    `KEMENTERIAN PENDIDIKAN MALAYSIA`, not the bare `KEMENTERIAN PENDIDIKAN`, for Form 6), no private sign.
+  - Printouts never lift a page with a private letterhead (`private_college_reason`).
+  - The Sdn Bhd exemption: EVERY "Sdn Bhd" / "Sendirian Berhad" line must be incidental — a payment / bank /
+    vendor line, or the ADDRESSEE's address below the letter's reference / date (the corpus polytechnic letter's
+    company is the student's estate address) — with no institution word on it or the line before; "Sendirian
+    Berhad" joins the private-arm phrases. Positive private evidence is read per line and never on a payment /
+    address line; payment lines are not part of the letterhead; LEMBAGA / PERBADANAN / Kolej Kejururawatan are
+    public words; sponsor words + KERJASAMA / USAHASAMA / COLLABORATION / PINJAMAN / FUNDED / SCHOLARSHIP; GMI is
+    MARA-owned private (owner: the programme-subsidy test).
+  - LEARNABLE: every lift's reason carries `[S6 ruling: <tag>]`; the check counts them (dev: tvet_offer 1,
+    confirmation 2, printout 2, private_offer 1).
+  - Dry run: an app with no corpus re-score is its own `no_rescore` bucket; the re-score map is keyed by
+    DOCUMENT; every re-score lifted by a ruling is listed (`lifted_by_a_ruling`). A stale `pathway_confirm` on a
+    confirmation letter is logged.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
