@@ -100,7 +100,8 @@ landing, 12 px minimum, filters in a Sheet, terms wizard full width with sticky 
 **M6 — Admin shell + reviewer cockpit** — split in two (owner, 2026-11-03; decisions.md, the Mobile M6 entry; static
 HTML mock-ups in place of Stitch, approved). Phase 1 closed TD-470 first (no `process` polyfill on any route).
 
-**M6a — Console shell, case list, everyday pages** — BUILT on branch `mobile-m6` (not pushed). One pinned 44 px phone
+**M6a — Console shell, case list, everyday pages** — DONE, live 2026-11-03 (main de48d898, web-01068-hjf;
+retrospective `docs/retrospectives/retrospective-2026-11-03-mobile-m6a.md`). One pinned 44 px phone
 row (Menu · where you are · Search · Notifications · Account); the phone menu with who you are, the switchers, 44 px
 destinations, Guide, FAQ, Profile, the theme and Log out (the account menu's own `signOut`); the case list as rows that
 open the case, filters in the Sheet, Sort on phones, 12 px minimum, no hover-only hints; rule 15 on the sign-in screens,

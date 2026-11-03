@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-03 | 3bbeda4 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 92 | 0 | 3 | 12 | 187 | 0 | 0 | ok | ok |
 | 2026-11-03 | d16399a | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 11 | 183 | 0 | 0 | ok | ok |
 | 2026-11-02 | 688a1a4 | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 180 | 0 | 0 | ok | ok |
 | 2026-11-02 | cef8e42 | 90 | 51 | officerCockpit.ts 28.2 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 176 | 0 | 0 | ok | ok |
@@ -123,28 +124,28 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-03, d16399a, window 2026-08-05 onward)
+## Latest run (2026-11-03, 3bbeda4, window 2026-08-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
-| `halatuju_api/apps/scholarship/vision.py` | 14 | 2330 | 32.6 |
+| `halatuju_api/apps/scholarship/vision.py` | 14 | 2316 | 32.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 17 | 1356 | 23.1 |
 | `halatuju_api/apps/scholarship/views.py` | 9 | 2441 | 22 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
-| `halatuju_api/apps/courses/views_admin.py` | 10 | 808 | 8.1 |
+| `halatuju_api/apps/courses/views_admin.py` | 10 | 811 | 8.1 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 283 fix / 282 feat commits since 2026-08-05
+- 288 fix / 289 feat commits since 2026-08-05
 
 ### Files over 1000 lines
 - `2441  halatuju_api/apps/scholarship/views.py`
-- `2330  halatuju_api/apps/scholarship/vision.py`
+- `2316  halatuju_api/apps/scholarship/vision.py`
 - `2190  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
@@ -161,7 +162,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### Python functions of 150+ lines
 - `333  halatuju_api/apps/courses/ranking_engine.py:379 calculate_fit_score`
 - `320  halatuju_api/apps/scholarship/views.py:1011 post`
-- `315  halatuju_api/apps/scholarship/vision.py:2009 _run_field_extraction_impl`
+- `303  halatuju_api/apps/scholarship/vision.py:2007 _run_field_extraction_impl`
 - `294  halatuju_api/apps/courses/engine.py:354 check_eligibility`
 - `293  halatuju_api/apps/courses/management/commands/backfill_spm_field_key.py:22 classify_course`
 - `253  halatuju_api/apps/courses/views.py:126 get`
@@ -185,7 +186,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 19 edges (26 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 53 edges (262 import statements)
+- scholarship -> courses: 54 edges (271 import statements)
 
 ### Suppressions
 - # noqa: 38
@@ -204,10 +205,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 42 of 368 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 44 of 371 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 467 entries have a defining line; 183 carry no resolution marker on it
+- 471 entries have a defining line; 187 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -230,12 +231,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 6590: - **TD-386 (raised 2026-10-18 by the sources-and-referrals Sprint B adversarial review) - low, multi-tenant: three seams still cross organisations onc
 - line 7135: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
 - line 7390: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
+- line 7460: ### ~~[TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium~~ CLOSED 2026-11-03
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 688a1a4
+- budgets no looser than at d16399a
 
 ### tsc
 - 0 errors in 0 files
@@ -243,11 +245,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7541
+- Total keys per locale: 7544
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-03 (3bbeda4, Mobile-native M6a close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since d16399a holds Mobile M6a (web only, with
+TD-470), Team tables T1 and offer-read S5. Moved: `td_open` 183 -> 187 (TD-470 closed; TD-471, TD-472 M6a leftovers;
+the others' raises); `xapp` 82 -> 83 and `hot#1` `vision.py` 32.6 -> 32.4 are the API streams' (M6a has no API
+change); `guard%` 11 -> 12 (better: `publicEnv.test.ts` and the M6a guards). **Accepted.**
 
 ### 2026-11-03 (d16399a, Mobile-native M5 close) — 0 FAIL
 

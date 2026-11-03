@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0–M5 DONE (M5 live 2026-11-03, main d16399a9, web-01066-pls), NEXT = M6 admin + reviewer cockpit
+### Mobile-native arc (separate stream) — M0–M6a DONE (M6a live 2026-11-03, main de48d898, web-01068-hjf), NEXT = M6b the cockpit case page
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1161,7 +1161,7 @@ portalled sponsor Sheets carry `.font-sponsor`; `sponsorSignOut` clears `halatuj
 TD-470 closed (M6 phase 1): `/scholarship/apply` has ~1.8 kB under its line; budgets now median 145, `/profile` 193,
 `/scholarship/application` 206. Every `NEXT_PUBLIC_` name a build may leave unset is defined as `''` in `next.config.js`
 (else webpack ships its `process` polyfill to every route) — guarded by `publicEnv.test.ts`.
-**M6 split (owner 2026-11-03):** M6a (console shell, case list, everyday pages) BUILT on `mobile-m6`, not pushed:
+**M6 split (owner 2026-11-03):** M6a (console shell, case list, everyday pages) LIVE 2026-11-03:
 the console has ONE pinned phone row (`Topbar.tsx`, 44 px controls) and a phone menu (`AppShell.tsx`) with the
 switchers, Guide / FAQ / Profile, the theme and Log out — the account menu's own `signOut`, guarded word for word;
 list = rows that open the case, filters in a Sheet (one `filterControls` for both widths), Sort on phones; sandbox

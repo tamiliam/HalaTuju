@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Mobile M6a — the console shell, the case list and the everyday pages on phones (branch mobile-m6, not pushed)
+## Mobile M6a — the console shell, the case list and the everyday pages on phones — LIVE 2026-11-03 (main de48d898, web-01068-hjf)
 
 Owner approved the HTML mock-ups and all four recommendations (decisions.md, the Mobile M6 entry): M6 splits into
 M6a and M6b. **No decision door changed** — the cockpit (`view.tsx` and its panels) is M6b's.
