@@ -807,6 +807,12 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   is another organisation only when a name follows it (raw case, descriptor words skipped), and the umbrella
   names count as their agency. MEASURED: all three lift (`tvet_offer`, reason `agency_letterhead`); 13 tagged
   changes; dev 196 / 197, held-out 90 / 90.
+- **Round 10 (2026-11-04): no High in BLOCK or LIFT A; a High in the agency lift's condition 4 (a name BEFORE the
+  noun: "Mercu Skills Academy") waits for the owner.** Done now: M1 money offers (both lifts, the title + five body
+  lines; a loan beside an RM amount never lifts a fail); M4 for the institute lift (`_named_first`); L1 OCR 0 / 1.
+  M4 for the confirmation lift is HELD — measured, it drops three owner-ruled confirmations: a188 / a284 carry the
+  university's own "BAHAGIAN …" division line above the UMS name, a123 two short lines above its Form-6 name.
+  Needs a ruling: may an institution's own division line, or a crest motto line, precede its name?
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

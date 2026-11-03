@@ -140,6 +140,14 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   follows it on its line (raw case; descriptor words skipped; generic "pihak institut", "institusi/kolej" are not);
   ILKBS / ILJTM / IPMa umbrella names count as their own agency. Corpus: a228 d3465 / d3466 and a329 lift again —
   13 tagged changes from the baseline; dev 196 / 197 (a391), held-out 90 / 90.
+- **Round 10 (items that hold whatever the owner picks for the agency lift; class `Round10`):** money offers —
+  one list for both TVET lifts (PEMBIAYA* / PINJAMAN / BIASISWA / TAJAAN / PENAJAAN / DERMASISWA / ELAUN /
+  BANTUAN / LOAN / SPONSORSHIP / SCHOLARSHIP / FINANCING / FUNDING / ALLOWANCE / GRANT / BURSARY) read on the title
+  and the first five body lines, and no lift from a fail with a loan / financing word within two lines of an RM
+  amount; the institute must be FIRST on the letterhead (after crest / government / address lines only) for the
+  institute lift; the body's institution-noun test reads OCR 0 / 1 as O / I. The same first-on-the-letterhead
+  rule for confirmations is HELD: it drops a188 / a284 (a "BAHAGIAN …" division line above the UMS name) and a123
+  (two short lines above the Form-6 name). Corpus: 13 tagged changes, dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

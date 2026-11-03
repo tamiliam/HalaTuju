@@ -560,3 +560,61 @@ class Round10AgencyLetterhead(SimpleTestCase):
         out = self._out(_agency('KEMENTERIAN BELIA DAN SUKAN', venue='IKBN Pekan', extra=umbrella))
         self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
         self.assertNotIn(ruling_of(self._out(_agency('MAJLIS AMANAH RAKYAT', extra=umbrella))), LIFTS)
+
+
+# ── Review round 10 (2026-11-04): money offers, the name first on the letterhead, OCR 0 / 1 ───────────
+_IKBN_HEAD = 'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN'
+
+
+def _inst10(head, **kw):
+    kw.setdefault('venue', 'IKBN Pekan')
+    return _agency(head, **kw)
+
+
+class Round10(SimpleTestCase):
+    def _lifted(self, text):
+        return ruling_of(signature_genuineness(text, doc_type='offer_letter')) in LIFTS
+
+    def test_money_offers_never_lift_either_lift(self):
+        """M1: one shared list, the title AND the first five body lines, both lifts (A: the institute; B: the
+        agency letterhead)."""
+        titles = ('OFFER OF EDUCATION LOAN', 'OFFER OF SPONSORSHIP', 'OFFER OF STUDY FINANCING',
+                  'SURAT TAWARAN DERMASISWA', 'SURAT TAWARAN PENAJAAN', 'SURAT TAWARAN PEMBIAYAN PENDIDIKAN',
+                  'SURAT TAWARAN ELAUN LATIHAN', 'SURAT TAWARAN BANTUAN', 'OFFER OF SCHOLARSHIP',
+                  'OFFER OF ALLOWANCE', 'OFFER OF GRANT', 'OFFER OF BURSARY', 'OFFER OF FUNDING')
+        for title in titles:
+            for name, text in (('A', _inst10(_IKBN_HEAD, title=title)),
+                               ('B', _agency('MAJLIS AMANAH RAKYAT', title=title))):
+                with self.subTest(lift=name, title=title):
+                    self.assertFalse(self._lifted(text))
+        for extra in ('Pembiayaan pendidikan anda diluluskan sebanyak RM10,000.\n',
+                      'Jumlah pinjaman pelajaran : RM8,000\n'):
+            for name, text in (('A', _inst10(_IKBN_HEAD, title='SURAT TAWARAN', extra=extra)),
+                               ('B', _agency('MAJLIS AMANAH RAKYAT', title='SURAT TAWARAN', extra=extra))):
+                with self.subTest(lift=name, extra=extra):
+                    self.assertFalse(self._lifted(text))
+
+    def test_a_loan_beside_an_rm_amount_is_never_lifted_from_a_fail(self):
+        far = _inst10(_IKBN_HEAD, title='SURAT TAWARAN').replace(
+            'Sekian, terima kasih.\n', 'Sekian, terima kasih.\nPinjaman pendidikan\nboleh dipohon\nsehingga RM5,000.\n')
+        r = score_signatures(far, doc_type='offer_letter')
+        out = ruled_offer(far, r, 'not_offer_letter', 'r', MODEL_VERSION)
+        self.assertNotIn(ruling_of(out), LIFTS)
+
+    def test_the_institute_first_on_the_letterhead(self):
+        """M4 (LIFT A): the closed-list name on the first letterhead line, or after crest / government / address
+        lines only."""
+        for head in ('MERCU JAYA\n' + _IKBN_HEAD, 'MERCU JAYA\nWisma IKBN, Jalan Contoh'):
+            with self.subTest(head=head):
+                self.assertFalse(self._lifted(_inst10(head)))
+        for head in (_IKBN_HEAD, 'KERAJAAN MALAYSIA\nKEMENTERIAN BELIA DAN SUKAN\n' + _IKBN_HEAD):
+            with self.subTest(head=head):
+                self.assertTrue(self._lifted(_inst10(head)))
+
+    def test_ocr_zero_and_one_in_an_institution_noun(self):
+        """L1: 0 -> O and 1 -> I when the agency lift tests an institution noun in the body."""
+        for extra in ('Latihan amali di K0LEJ MERCU.\n', 'Latihan amali di Kolej 1Mercu.\n',
+                      'Latihan amali di AKADEM1 MERCU.\n'):
+            with self.subTest(extra=extra):
+                self.assertFalse(self._lifted(_agency('MAJLIS AMANAH RAKYAT', extra=extra)))
+        self.assertTrue(self._lifted(_agency('MAJLIS AMANAH RAKYAT')))

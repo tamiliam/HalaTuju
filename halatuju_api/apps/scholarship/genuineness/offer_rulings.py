@@ -104,7 +104,27 @@ assert set(_INSTITUTE_KEY) <= set(TVET_ISSUERS) and {n for ns in _INSTITUTE_KEY.
 
 
 #: Round 9 (H1): an offer of money, not of a place.
-_NOT_ADMISSION = (' PEMBIAYAAN ', ' PINJAMAN ', ' BIASISWA ', ' TAJAAN ')
+_NOT_ADMISSION = (' PEMBIAYAAN ', ' PINJAMAN ', ' BIASISWA ', ' TAJAAN ', ' ELAUN ', ' BANTUAN ', ' DERMASISWA ',
+                  ' PENAJAAN ', ' LOAN ', ' LOANS ', ' SPONSORSHIP ', ' SCHOLARSHIP ', ' FINANCING ', ' FUNDING ',
+                  ' ALLOWANCE ', ' GRANT ', ' BURSARY ')          # round 10 (M1): one list, both lifts
+_PEMBIAYA = re.compile(r' PEMBIAYA[A-Z]*(?= )')             # any spelling of the stem ("PEMBIAYAN")
+#: Round 10 (M1): a loan / financing word within two lines of an RM amount.
+_LOAN_WORDS = re.compile(r' (?:PINJAMAN|PEMBIAYA[A-Z]*|LOANS?|FINANCING)(?= )')
+_RM_AMOUNT = re.compile(r' RM ?\d')
+
+
+def _money_offer(lines) -> bool:
+    """Round 10 (M1): money words in the title or the first five body lines — an offer of money, not a place."""
+    at = next((i for i, ln in enumerate(lines) if any(t in ln for t in _TITLE)), None)
+    if at is None:
+        return False
+    return any(any(w in ln for w in _NOT_ADMISSION) or _PEMBIAYA.search(ln) for ln in lines[at:at + 6])
+
+
+def _loan_amount(lines) -> bool:
+    """Round 10 (M1): a loan / financing word within two lines of an RM amount."""
+    return any(_LOAN_WORDS.search(ln) and any(_RM_AMOUNT.search(x) for x in lines[max(0, i - 2):i + 3])
+               for i, ln in enumerate(lines))
 
 
 def _institute_on_letterhead(lines) -> str:
@@ -137,9 +157,10 @@ def _tvet_lift(r, lines, model_version):
         return None
     if _institute_on_letterhead(lines) != key:
         return None                     # round 9 (H1): the INSTITUTE on the letterhead, not an agency alone
-    title = next((ln for ln in lines if any(t in ln for t in _TITLE)), '')
-    if any(w in title for w in _NOT_ADMISSION):
-        return None                     # round 9 (H1): a financing / loan / scholarship offer is no admission
+    if _money_offer(lines):
+        return None                     # rounds 9-10: a financing / loan / scholarship offer is no admission
+    if not _named_first(lines, _INSTITUTE_KEY[key], _AGENCIES[key]):
+        return None                     # round 10 (M4): the institute FIRST on the letterhead
     if _SLIP in _page(_letterhead_block(lines)):
         return None                     # a slip, not a letter (`_tvet_slip`)
     if not _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES, reporting=True):
@@ -181,14 +202,14 @@ _FUNCTION_WORDS = frozenset({
 #: the noun names — the matching institute (allowed) or another name.
 _DESCRIPTORS = frozenset({'PENGAJIAN', 'LATIHAN', 'KEMAHIRAN', 'PENDIDIKAN', 'TINGGI', 'TEKNIKAL', 'VOKASIONAL',
                           'STUDY', 'STUDIES', 'TRAINING', 'SKILLS'})
-_WORD = re.compile(r'[^\W\d_]+|\d+')
+_WORD = re.compile(r'[^\W_]+')                # letters with any digits ('K0LEJ')
 
 
 def _names_another_organisation(raw, allowed) -> bool:
     """Condition 4: the RAW line names an organisation other than `allowed` (folded phrases, removed first): an
     institution noun followed by a name — a capitalised / all-caps token that is no function word and no other
     institution noun."""
-    toks = _WORD.findall(raw or '')
+    toks = [t.replace('0', 'O').replace('1', 'I') for t in _WORD.findall(raw or '')]    # round 10 (L1): OCR 0 / 1
     up = [t.upper() for t in toks]
     covered = [False] * len(toks)
     for phrase in sorted(allowed, key=len, reverse=True):
@@ -217,7 +238,6 @@ def _raw_lines(ocr_text):
 #: Another public body on the line (a ministry / department / council / board not on `_AGENCIES`).
 _OTHER_BODY = re.compile(r' (?:KEMENTERIAN|MINISTRY|JABATAN|DEPARTMENT|MAJLIS|LEMBAGA|PERBADANAN|BAHAGIAN) [A-Z]')
 #: Item 9 (3): money words in the title or the first body lines — no admission.
-_MONEY = _NOT_ADMISSION + (' ELAUN ', ' BANTUAN ')
 
 
 def _agency_on_head(lines) -> str:
@@ -248,8 +268,8 @@ def _agency_lift(ocr_text, r, lines, model_version):
     if named != {key}:
         return None                     # (2) no institute, or another agency's (a parent mismatch)
     at = next((i for i, ln in enumerate(lines) if any(t in ln for t in _TITLE)), None)
-    if at is None or any(w in ln for ln in lines[at:at + 4] for w in _MONEY):
-        return None                     # (3) no admission title, or money in the title / first body lines
+    if at is None or _money_offer(lines):
+        return None                     # (3) no admission title, or money in the title / first five body lines
     if not (_has_offer_words(_page(lines)) and _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES,
                                                                   reporting=True)):
         return None                     # (4) the full offer shape
@@ -282,7 +302,7 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
             continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
         if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
                 and any(m in page for m in marks) and _clean_letterhead(scan, names)):
-            return seen
+            return seen                 # (round 10 M4 for confirmations held: it drops a188 / a284 / a123)
     return ''
 
 
@@ -296,6 +316,31 @@ def _title_segment(lines) -> str:
             cut = [seg.find(lb) for lb in _PERSON_LABELS if lb in seg] + [m.start() for m in _IC.finditer(seg)]
             return ' ' + ' '.join((seg[:min(cut)] if cut else seg).split()[:12]) + ' '
     return ''
+
+
+#: Round 10 (M4): the lines a closed-list name may follow on its letterhead — the crest / government lines.
+_GOVERNMENT_LINE = re.compile(r'^ (?:KERAJAAN MALAYSIA|KEMENTERIAN|JABATAN|MINISTRY|DEPARTMENT|GOVERNMENT|JATA NEGARA)(?= )')
+#: ... and the address / contact lines.
+_ADDRESS_LINE = re.compile(r' (?:JALAN|JLN|LORONG|PERSIARAN|LEBUH|LOT|NO|PETI SURAT|P O BOX|TAMAN|KAMPUNG|BANDAR|'
+                           r'TEL|TELEFON|FAKS|FAX|WWW|EMEL|E MEL|EMAIL|MALAYSIA|JOHOR|KEDAH|KELANTAN|MELAKA|'
+                           r'NEGERI SEMBILAN|PAHANG|PERAK|PERLIS|PULAU PINANG|PENANG|SABAH|SARAWAK|SELANGOR|'
+                           r'TERENGGANU|KUALA LUMPUR|LABUAN|PUTRAJAYA|WILAYAH PERSEKUTUAN)(?= )|(?<!\d)\d{5}(?!\d)')
+
+
+def _named_first(lines, names, agency_names=()) -> bool:
+    """Round 10 (M4): a closed-list name is on the FIRST letterhead line, or comes only after crest / government
+    lines (KERAJAAN MALAYSIA, a ministry / department, the matching agency) and address lines. Any other line before
+    it ("MERCU JAYA" above the institute) = no lift."""
+    for ln in _letterhead_lines(lines):
+        if any(n in ln for n in names):
+            return True
+        rest = ln
+        for a in agency_names:
+            rest = rest.replace(a, ' ')
+        if not rest.strip() or _GOVERNMENT_LINE.search(ln) or _ADDRESS_LINE.search(ln) or _is_contact(ln):
+            continue
+        return False
+    return False
 
 
 def _without_poly_department(lines):
@@ -330,10 +375,12 @@ def _company_lift(ocr_text, r, lines, model_version):
                          'family scores genuine', model_version)
 
 
-def _lift(ocr_text, r, lines, page, vetoed, model_version):
+def _lift(ocr_text, r, lines, page, vetoed, model_version, baseline_status=''):
     """LIFT → genuine, only on the full proof (module note 2); None when any part is unclear."""
     if _private_marker(lines):
         return None
+    if baseline_status == 'not_offer_letter' and _loan_amount(lines):
+        return None                     # round 10 (M1): a loan / financing beside an RM amount
     if vetoed:
         if not (_veto_only_by_a_company(page) and _company_lines_incidental(lines)):
             return None                 # a SPACE / SATU / letterhead company veto stands
@@ -425,7 +472,7 @@ def apply_rulings(ocr_text: str, r: dict, baseline: dict, model_version: str) ->
             return blocked
     if baseline.get('status') != 'genuine':
         page, vetoed = _page(lines), _vetoed(ocr_text)
-        lifted = _lift(ocr_text, r, lines, page, vetoed, model_version)
+        lifted = _lift(ocr_text, r, lines, page, vetoed, model_version, baseline.get('status'))
         if lifted:
             return lifted
         softened = _soften(ocr_text, r, baseline, lines, page, vetoed, model_version)
