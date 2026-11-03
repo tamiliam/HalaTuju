@@ -4,10 +4,10 @@ letterhead not counted as private evidence, a body "pengesahan pelajar"). Every 
 (`test_no_gitignored_corpus.py`)."""
 from django.test import SimpleTestCase
 
-from apps.scholarship.genuineness.offer_issuers import _letterhead
 from apps.scholarship.genuineness.offer_rulings import (_clean_letterhead, _company_lines_incidental,
                                                          _first_institution, _folded_lines, _incidental,
-                                                         _TVET_NAMES, confirmation_kind, ruled_offer)
+                                                         _TVET_NAMES, confirmation_kind, private_proof,
+                                                         ruled_offer)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
 from apps.scholarship.tests.test_offer_s6_review3 import _letter
 from apps.scholarship.tests.test_offer_s6_review5 import _conf
@@ -112,6 +112,5 @@ class Lows(SimpleTestCase):
         self.assertTrue(_incidental(_folded_lines('ABC Islamic Berhad'), 0))
         self.assertFalse(_incidental(_folded_lines('ABC Islamic College Berhad'), 0))
 
-    def test_an_islamic_college_berhad_stays_on_the_letterhead(self):
-        self.assertIn(' COLLEGE ', _letterhead('ABC Islamic College Berhad\nSURAT TAWARAN\n'))
-        self.assertNotIn(' ISLAMIC ', _letterhead('Bayaran kepada ABC Islamic Berhad\nSURAT TAWARAN\n'))
+    def test_an_islamic_college_berhad_on_the_letterhead_is_block_proof(self):
+        self.assertEqual(private_proof(_folded_lines('ABC Islamic College Berhad\nSURAT TAWARAN\n')), 'company')

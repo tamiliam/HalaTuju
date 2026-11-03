@@ -193,10 +193,9 @@ class TheReviewProbes(TestCase):
     def test_a_fake_below_the_suspect_floor_is_never_not_checked(self):
         """Rule 1: the net is the suspect band only — the typed fake and the bare page stay fakes."""
         self.assertEqual(self.assertAsBefore(REVIEW_PROBES['a page reading only JTM'])['status'], 'not_offer_letter')
-        # S6 round 3 (the safety rule): a closed-list body on the page, no private evidence, below the floor
-        # → suspect (a person decides), never a fail — the typed fake is no longer a fake.
-        self.assertEqual(signature_genuineness(REVIEW_PROBES['a typed fake under an ILKBS heading'],
-                                               doc_type='offer_letter')['status'], 'suspect')
+        # S6 round 7 (the narrowing): the round-3 safety rule is gone — no clear proof, so the call as before.
+        self.assertEqual(self.assertAsBefore(REVIEW_PROBES['a typed fake under an ILKBS heading'])['status'],
+                         'not_offer_letter')
 
     def test_a_sponsor_is_not_the_issuer(self):
         # S6 review H7: a fail needs POSITIVE private evidence; this letterhead has none (only the absence of a

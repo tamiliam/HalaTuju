@@ -13,6 +13,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.offer_rulings import confirmation_kind, ruled_offer
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 
 # Below the suspect floor (no family signature) the review's H1 rule asks the BODY to name the candidate and
 # the institute again (`offer_rulings._tvet`), so the twin carries a letterhead, filler, then its body.
@@ -124,7 +125,7 @@ class TestConfirmationLetters(SimpleTestCase):
         self.assertEqual(confirmation_kind(POLY_CONFIRM), 'confirmation_polytechnic')
         self.assertEqual(confirmation_kind(UMS_CONFIRM), 'confirmation_ums')
         self.assertEqual(confirmation_kind(FORM6_CONFIRM), 'confirmation_form6')
-        self.assertEqual(confirmation_kind(UM_CONFIRM), 'confirmation_ua')
+        self.assertEqual(confirmation_kind(UM_CONFIRM), '')     # round 7: no "another university" hedge
         self.assertEqual(confirmation_kind(PRIVATE_CONFIRM), '')
         self.assertEqual(confirmation_kind(IKM), '')               # no confirmation title
 
@@ -137,7 +138,8 @@ class TestConfirmationLetters(SimpleTestCase):
 
     def test_no_private_wing_reads_genuine_another_university_suspect_a_private_college_unchanged(self):
         for text, want in ((POLY_CONFIRM, 'genuine'), (UMS_CONFIRM, 'genuine'), (FORM6_CONFIRM, 'genuine'),
-                           (UM_CONFIRM, 'suspect'), (PRIVATE_CONFIRM, 'not_offer_letter')):
+                           (UM_CONFIRM, baseline_status(UM_CONFIRM)),      # round 7: the baseline
+                           (PRIVATE_CONFIRM, 'not_offer_letter')):
             with self.subTest(want=want, head=text.splitlines()[0]):
                 self.assertEqual(signature_genuineness(text, doc_type='offer_letter')['status'], want)
 
@@ -155,8 +157,12 @@ class TestPrintoutsAndPrivate(SimpleTestCase):
     def test_a_private_college_offer_in_the_suspect_band_is_not_an_offer(self):
         text = 'KOLEJ CONTOH\nKampus Utama\nTAWARAN KEMASUKAN BERSYARAT\nAnda ditawarkan Diploma Contoh.'
         out = ruled_offer(text, _r(0.45, 'ua_offer'), 'suspect', 'r', MODEL_VERSION)
-        self.assertEqual(out['status'], 'not_offer_letter')
+        # S6 round 7 (the narrowing, owner option 1): a conditional offer is no letterhead proof: the baseline (suspect, IPTS reason)
+        self.assertEqual(out['status'], 'suspect')
         self.assertIn('IPTS', out['reason'])
+        blocked = ruled_offer(text.replace('KOLEJ CONTOH', 'KOLEJ CONTOH SDN BHD'), _r(0.45, 'ua_offer'), 'suspect',
+                              'r', MODEL_VERSION)
+        self.assertEqual(blocked['status'], 'not_offer_letter')
 
     def test_a_public_suspect_band_offer_stays_suspect(self):
         text = 'UNIVERSITI MALAYA\nPemakluman\nTawaran kemasukan bersyarat.'

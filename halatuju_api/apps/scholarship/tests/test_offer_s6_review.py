@@ -126,10 +126,11 @@ class H7PublicCollegesAreNotFailedOnAbsence(SimpleTestCase):
                 self.assertEqual(ruled_offer(text, _r(0.40), 'suspect', 'r', MODEL_VERSION)['status'], 'suspect')
 
     def test_positive_private_evidence_or_a_private_conditional_still_fails(self):
-        for text in ('KOLEJ CONTOH SDN BHD\nTawaran Kemasukan\n', 'KOLEJ CONTOH\nTawaran Kemasukan Bersyarat\n'):
-            with self.subTest(text=text.splitlines()[0]):
-                self.assertEqual(ruled_offer(text, _r(0.40), 'suspect', 'r', MODEL_VERSION)['status'],
-                                 'not_offer_letter')
+        self.assertEqual(ruled_offer('KOLEJ CONTOH SDN BHD\nTawaran Kemasukan\n', _r(0.40), 'suspect', 'r',
+                                     MODEL_VERSION)['status'], 'not_offer_letter')
+        # S6 round 7 (the narrowing, owner option 1): a private conditional is no letterhead proof: the baseline stays.
+        self.assertEqual(ruled_offer('KOLEJ CONTOH\nTawaran Kemasukan Bersyarat\n', _r(0.40), 'suspect', 'r',
+                                     MODEL_VERSION)['status'], 'suspect')
 
 
 class LowTheSlipWordInTheBody(SimpleTestCase):

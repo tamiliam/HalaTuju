@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.genuineness.offer_rulings import (_first_institution, _folded_lines, _unglued,
                                                          confirmation_kind, ruled_offer, ruling_of)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 from apps.scholarship.tests.test_offer_s6_review3 import REAL, _letter
 
 
@@ -38,25 +39,26 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
     }
 
     def test_no_ruled_kind_ever_fails_without_private_evidence(self):
+        # S6 round 7 (the narrowing, owner option 1): the safety exit is GONE. A page that misses a rule keeps its BASELINE —
+        # never a fail it did not have before, never a lift.
         for label, text in self.BROKEN.items():
-            # Round 6 (item 4): a confirmation engages the rule only from CONFIRM_MIN (0.10) up; a TVET body at 0.0.
-            for p in ((0.0, 0.1, 0.4) if label.startswith('tvet') else (0.1, 0.4)):
+            for p in (0.0, 0.1, 0.4):
+                status = 'not_offer_letter' if p < 0.35 else 'suspect'
                 with self.subTest(label, p=p):
-                    out = ruled_offer(text, _r(p), 'not_offer_letter' if p < 0.35 else 'suspect', 'r', MODEL_VERSION)
-                    self.assertNotEqual(out['status'], 'not_offer_letter')
+                    out = ruled_offer(text, _r(p), status, 'r', MODEL_VERSION)
+                    self.assertEqual(out['status'], baseline_status(text, p, status))
+                    self.assertEqual(ruling_of(out), '')
 
     def test_positive_private_evidence_still_fails(self):
         for text in ('ABC TRAINING SDN BHD\nIKBN PEKAN\nSURAT TAWARAN\n',
-                     'POLITEKNIK SWASTA ABC\nPENGESAHAN PELAJAR\nNama : Ali\n',
-                     'KOLEJ ABC\nRakan Strategik IKBN\nSURAT TAWARAN\n',
-                     _letter('IKBN PEKAN\nPusat Latihan Kemahiran')):     # round 6 (item 1)
+                     'KOLEJ ABC\nRakan Strategik IKBN\nSURAT TAWARAN\n'):
             with self.subTest(text=text.splitlines()[0]):
-                self.assertEqual(ruled_offer(text, _r(0.05), 'not_offer_letter', 'r', MODEL_VERSION)['status'],
-                                 'not_offer_letter')
+                out = ruled_offer(text, _r(0.4), 'suspect', 'r', MODEL_VERSION)    # round 7: the BLOCK
+                self.assertEqual((out['status'], ruling_of(out)), ('not_offer_letter', 'private_offer'))
 
     def test_the_lift_is_learnable(self):
-        out = ruled_offer(self.BROKEN['polytechnic confirmation, thin'], _r(0.1), 'not_offer_letter', 'r', MODEL_VERSION)
-        self.assertEqual(ruling_of(out), 'confirmation_unverified')
+        _t, out = _conf('UNIVERSITI MALAYSIA SABAH\nACADEMIC SERVICES DIVISION', p=0.3)
+        self.assertEqual(ruling_of(out), 'confirmation')       # round 7: the *_unverified tags are gone
 
 
 class H1OwnUnitsAreNotOtherOrganisations(SimpleTestCase):

@@ -1,77 +1,66 @@
-"""The owner's offer-letter genuineness rulings, applied AFTER the signature band (offer exact-read S6,
+"""The owner's offer-letter genuineness rulings, applied ON TOP OF the pre-S6 call (offer exact-read S6,
 MODEL_VERSION 1.23.0).
 
 A genuineness status is a BURSARY decision, not a document type (owner, 2026-11-01, `docs/decisions.md`):
 `not_offer_letter` is a FAIL, `suspect` means "not sure, a person decides", `genuine` is a public offer we
-can support. The signature families (`offer_signatures`) only know the five fingerprinted public issuers,
-so on their own they failed letters the owner rules acceptable and let one private letter through as
-merely "not sure". `ruled_offer` is the ONE place those rulings are applied; `results_doc.
-signature_genuineness` hands every offer that did not band genuine here.
+can support.
 
-THE OWNER'S STANCE (2026-11-03): no hedging cap — a ruling-lifted letter reads GREEN when it meets the rule:
-"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is wrong, it
-serves as a lesson." So the rules are STRUCTURAL (what a real letter is made of), not word lists, and every
-lift is LEARNABLE: its `reason` starts with `[S6 ruling: <tag>]` (`ruling_of`) and a lifted genuine stores a
-`doc_seen` of its own (`tvet_*`, `confirmation_*`), so a reviewer's override or a later corpus answer shows
-which rule was wrong (`eval/offer_genuineness_check.py` counts them per tag; S8 mines it).
+THE DESIGN (owner, 2026-11-03, option 1 — after seven review rounds swung the middle logic both ways): S6 may
+change a genuineness call ONLY ON CLEAR PROOF. Every other page keeps the BASELINE — the call the pre-S6
+engine gives (`results_doc.baseline_genuineness`, the 1.22.0 path, unchanged). Unclear = today's call: no
+guessing, and no new cap to suspect either (owner rule: predict, don't hedge).
 
-In order (the first that applies wins):
-  1. A PUBLIC TVET OFFER (ruling 5; Q2) → `genuine` (`tvet_offer`): a closed-list body named on the
-     letterhead (`offer_issuers.tvet_issuer`, the 2026-10-26 C1 rules 2-6); the FIRST institution the page
-     names is a public TVET INSTITUTE (`_INSTITUTES`) — never another college / academy named before it (a
-     private one "accredited by JPK" or "in collaboration with MARA"); no private sign; and the STRUCTURE of
-     a real letter (`_letter_structure`: a reference line, a dated line, an offer title near the top, a
-     candidate label, a signatory / closing block, no padding). A TVET page that calls itself a SLIP on its
-     letterhead → `suspect` (`tvet_slip`, ruling 6).
-  2. A CONFIRMATION OF STUDIES (ruling 4 + the default) → `genuine` (`confirmation`): its own title, a
-     student / programme line, a score floor, no private sign, and the FIRST institution named is a
-     no-private-wing public one (a polytechnic with its ministry line, UMS, a Form-6 college / SMK with its
-     public mark). Another public university's → `suspect` (`confirmation_ua`).
-  3. A suspect-band PRIVATE offer (rulings 2 + 7) → `not_offer_letter` (`private_offer`), only on POSITIVE
-     private evidence (`_private_signs`, a named private MARA-owned college) or a private conditional.
-  4. An ADMISSION PRINTOUT / PORTAL PAGE (ruling 3) that banded `not_offer_letter` → `suspect` (`printout`),
-     on portal-only furniture or an e-Daftar slip — never over a private sign or a private letterhead.
-ROUND 3 (2026-11-03): a TVET letterhead / a confirmation's letterhead may name ONLY the allowed bodies
-(`_clean_letterhead`: no other organisation noun, no partner wording); the structure test asks for a
-candidate label with a value and an IC number, a course line and (offers) a reporting line, and an offer of
-12+ lines; below the suspect floor the body names the institute again. THE SAFETY RULE: a closed-list public
-body on the page with NO positive private evidence that misses a rule reads `suspect` (`tvet_unverified` /
-`confirmation_unverified`, a person decides) — never a fail. Another institution named first, with a private
-letterhead, reads `not_offer_letter` by the private-college reason.
-Anything else keeps the band it scored (`offer_issuers.unfingerprinted_offer`, unchanged).
+  1. BLOCK (→ `not_offer_letter`, tag `private_offer`) only on POSITIVE PRIVATE PROOF on the letterhead block
+     (`offer_reading.private_proof`: "Sdn Bhd" / "Berhad", a named private body — GMI, UniKL, KPTM / KUPTM /
+     UPTM, UM SATU, UMS PPPL — or explicit tie-up wording). The letterhead block ends at the title, the
+     salutation or the addressee, so a Yayasan / Persatuan addressee, a supplier, a bank or a SIRIM footer is
+     never letterhead. No other route newly blocks.
+  2. LIFT (→ `genuine`) only when ALL hold: a closed-list public institution's exact name on the letterhead
+     block (a public TVET INSTITUTE — `_INSTITUTES`; a polytechnic / UMS / a Form-6 college for a confirmation
+     of studies); a letterhead naming no other organisation; the full shape of the letter (`_letter_structure`);
+     and NO private marker anywhere on the page (`_private_marker`). Tags `tvet_offer` / `confirmation`, with
+     the issuer as `doc_seen` (`tvet_*`, `confirmation_*`). A fingerprinted ministry family's own letter the
+     pre-S6 veto blocked ONLY for an incidental company line (a supplier, a bank, the addressee) and that
+     scores genuine is lifted too (tag `incidental_company`).
+  3. Two owner rulings that SOFTEN a fail on its own proof, never block and never lift to genuine: an admission
+     printout / portal page / e-Daftar slip → `suspect` (`printout`, ruling 3); a closed-list TVET page calling
+     itself a SLIP on its letterhead → `suspect` (`tvet_slip`, ruling 6).
+JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03): on the LIFT's institute list, same rules.
 
-Calibrated on the 287-letter offer corpus (S6): 14 letters move as ruled; none of the 237 genuine public
-offers and none of the rightly rejected letters moves (`eval/offer_genuineness_check.py`). Pure.
+Every call that differs from the baseline carries `[S6 ruling: <tag>]` (`ruling_of`), so a reviewer's
+override or a later corpus answer shows which rule was wrong (`eval/offer_genuineness_check.py`). Pure.
 """
 import re
 import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_issuers import (TVET_ISSUERS, _has_offer_words, _letterhead, private_college_reason, tvet_issuer,
-                            unfingerprinted_offer)
+from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
 
-# The page-reading helpers and word lists moved to `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
+# The page-reading helpers and word lists live in `offer_reading` (S6 round 5 split; not verbatim - CHANGELOG).
 from .offer_reading import *    # every name re-exported (`offer_reading.__all__`): tests and callers import them here
 
 
-# ── The rulings ───────────────────────────────────────────────────────────────────────────
+# ── The incidental-company excuse (a lift over the pre-S6 veto) ───────────────────────────
 def ministry_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
-    """True when the private-arm veto (`results_doc._private_arm_offer`) fired ONLY on "Sdn Bhd" /
-    "Sendirian Berhad", a ministry family's own issuer line is on the page, and EVERY such line is
-    incidental (`_incidental`: a bank / vendor line, or the addressee's address in the candidate block) with
-    no organisation noun on it or the line before. Anywhere else (the letterhead, a logo strip, a footer, a
-    tuition centre, a fee "kepada X Sdn Bhd") keeps the veto. `_private_arm_offer` itself is unchanged."""
+    """True when the pre-S6 private-arm veto (`results_doc._private_arm_offer`) fired ONLY on "Sdn Bhd",
+    a ministry family's own issuer line is on the page, and EVERY such line is incidental (`_incidental`: a
+    bank / vendor / sponsor line, or the addressee's address) with no organisation noun on it or the line
+    before, and not the letterhead's own name."""
     from .offer_issuers import FAMILY_ISSUER_SIG
-    from .results_doc import _PRIVATE_ARM_PHRASES
-    lines = _folded_lines(ocr_text)
-    page = _page(lines)
-    hits = [p for p in _PRIVATE_ARM_PHRASES if p in page]
-    if not hits or set(hits) - {'SDN BHD', 'SENDIRIAN BERHAD'} or ' SPACE ' in page:
+    if not _veto_only_by_a_company(ocr_text):
         return False
     scores = r.get('scores') or {}
     if not any(FAMILY_ISSUER_SIG[f] in ((scores.get(f) or {}).get('present') or []) for f in _MINISTRY_FAMILIES):
         return False
-    return _company_lines_incidental(lines)
+    return _company_lines_incidental(_folded_lines(ocr_text))
+
+
+def _veto_only_by_a_company(ocr_text: str) -> bool:
+    """The pre-S6 veto fired, and only its "Sdn Bhd" arm did."""
+    from .results_doc import _PRIVATE_ARM_PHRASES
+    page = _page(_folded_lines(ocr_text))
+    hits = [p for p in _PRIVATE_ARM_PHRASES if p in page]
+    return bool(hits) and not (set(hits) - {'SDN BHD'}) and ' SPACE ' not in page
 
 
 def _company_lines_incidental(lines) -> bool:
@@ -97,135 +86,89 @@ _LABEL_WORDS = {'PENAJA', 'TAJAAN', 'DITAJA', 'SPONSOR', 'PEMBEKAL', 'SUPPLIER',
                 'AKAUN', 'LADANG', 'ESTATE', 'KEPADA', 'OLEH'}
 
 
-def tvet_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
-    """Round 4: the same excuse for a closed-list TVET body's letter (it prints no ministry issuer line): a
-    real IKBN letter naming its uniform supplier, insurer, sponsor or the student's estate address keeps its
-    rules; a "Sdn Bhd" on the letterhead still vetoes."""
-    from .results_doc import _PRIVATE_ARM_PHRASES
-    lines = _folded_lines(ocr_text)
-    page = _page(lines)
-    hits = [p for p in _PRIVATE_ARM_PHRASES if p in page]
-    if not hits or set(hits) - {'SDN BHD', 'SENDIRIAN BERHAD'} or ' SPACE ' in page:
-        return False
-    return bool(tvet_issuer(_without_incidental_companies(ocr_text), r.get('scores'))) and \
-        _company_lines_incidental(lines)
+# ── LIFT ──────────────────────────────────────────────────────────────────────────────────
+#: Each public TVET institute's closed-list key (`offer_issuers.TVET_ISSUERS`), English names included.
+_INSTITUTE_KEY = {
+    'tvet_belia_sukan': (' INSTITUT KEMAHIRAN BELIA NEGARA ', ' INSTITUT KEMAHIRAN TINGGI BELIA NEGARA ', ' IKBN ',
+                         ' IKTBN ', ' NATIONAL YOUTH SKILLS INSTITUTE ', ' NATIONAL YOUTH HIGH SKILLS INSTITUTE '),
+    'tvet_mara': (' INSTITUT KEMAHIRAN MARA ', ' IKM ', ' KOLEJ KEMAHIRAN TINGGI MARA ', ' KKTM ', ' KOLEJ MARA ',
+                  ' KOLEJ PROFESIONAL MARA ', ' MARA SKILLS INSTITUTE ', ' MARA HIGHER SKILLS COLLEGE ',
+                  ' MARA PROFESSIONAL COLLEGE '),
+    'tvet_jtm': (' INSTITUT LATIHAN PERINDUSTRIAN ', ' ILP ', ' ADTEC ', ' PUSAT LATIHAN TEKNOLOGI TINGGI ',
+                 ' ILJTM ', ' ADVANCED TECHNOLOGY TRAINING CENTRE ', ' INDUSTRIAL TRAINING INSTITUTE ',
+                 ' JMTI ', ' JAPAN MALAYSIA TECHNICAL INSTITUTE ', ' CIAST ',      # owner 2026-11-03
+                 ' PUSAT LATIHAN PENGAJAR DAN KEMAHIRAN LANJUTAN '),
+}
+assert set(_INSTITUTE_KEY) <= set(TVET_ISSUERS) and {n for ns in _INSTITUTE_KEY.values() for n in ns} == set(
+    _INSTITUTES)
 
 
-def _without_incidental_companies(ocr_text: str) -> str:
-    """The text without its incidental "Sdn Bhd" lines (a supplier, an insurer, a sponsor, the student's
-    estate address — `_incidental`), so the 600-character letterhead tests of `offer_issuers` do not read a
-    short letter's body company as its letterhead."""
-    from .results_doc import _norm_fold_upper_alnum
-    raws = [raw for raw in unicodedata.normalize('NFKC', ocr_text or '').splitlines() if _norm_fold_upper_alnum(raw)]
-    lines = [f' {_norm_fold_upper_alnum(raw)} ' for raw in raws]
-    keep = [raw for i, (raw, ln) in enumerate(zip(raws, lines))
-            if not ((' SDN BHD ' in ln or ' SENDIRIAN BERHAD ' in ln) and _incidental(lines, i))]
-    return '\n'.join(keep)
-
-
-def _unproven(r, seen, tag, what, model_version):
-    """THE SAFETY RULE (round-3 review): a closed-list public body is on the page and there is NO positive
-    private evidence, but the page misses a rule — a person decides, never a fail. In the suspect band the
-    1.8.0 path answers (None → NOT CHECKED, no signal); below it, `suspect`."""
-    if SUSPECT_MAX <= r['probability'] < GENUINE_MIN:
-        return None
-    return _ruled_status('suspect', r, seen, tag, f'{what}: a public body on the page but not a complete letter '
-                         'by the rules - suspect, a person decides', model_version)
-
-
-def _tvet(ocr_text, r, model_version):
-    key = tvet_issuer(_without_incidental_companies(ocr_text), r.get('scores'))
-    if not key:
-        return None
-    name, lines = TVET_ISSUERS[key][0], _folded_lines(ocr_text)
-    if _private_signs(lines) or _private_mara_letterhead(ocr_text):
-        return None                     # positive private evidence: the band (and its private reason) stands
-    if _SLIP in _letterhead(ocr_text):
-        return _ruled_status('suspect', r, key, 'tvet_slip', f'{name}: a TVET offer SLIP, not an offer letter - '
-                             'suspect (owner ruling 6); a person checks it', model_version)
-    if _first_institution(lines, _TVET_NAMES) == 'other':
-        # Another organisation is named first — the issuer — and the TVET name is a partner / mention
-        # (round-3 review): a private institution's letter, a fail by its own reason.
-        why = private_college_reason(ocr_text, r) or (
-            f'another institution issues this letter; {name} is named only beside it - not a public offer')
-        return _ruled_status('not_offer_letter', r, r['type'], 'private_offer', f'{why} (owner rulings 2 + 7)',
-                             model_version)
-    if not _clean_letterhead(lines, _TVET_NAMES):
-        return None                     # round 6: another organisation on the letterhead IS private evidence
-    if _first_institution(lines, _INSTITUTES) != 'allowed':
-        return _unproven(r, key, 'tvet_unverified', name, model_version)
-    if not _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES, reporting=True):
-        return _unproven(r, key, 'tvet_unverified', name, model_version)
-    if r['probability'] < SUSPECT_MAX:
-        body = lines[len(_letterhead_lines(lines)):]
-        if not any(i in ln for ln in body for i in _INSTITUTES):
-            return _unproven(r, key, 'tvet_unverified', name, model_version)
-    return _ruled_status('genuine', r, key, 'tvet_offer', f'{name}: a public TVET institute\'s offer letter - '
-                         'a public offer (owner rulings 5 and Q2)', model_version)
-
-
-def confirmation_kind(ocr_text: str, probability: float = 1.0) -> str:
-    """The `confirmation_*` code of a confirmation-of-studies letter by its issuer, or '' (no title, below the
-    score floor, positive private evidence, or no public issuer named first on a clean letterhead)."""
-    lines = _folded_lines(ocr_text)
-    page = _page(lines)
-    if not _confirm_titled(lines, probability):
-        return ''
-    if _private_mara_letterhead(ocr_text) or _private_signs(lines):
-        return ''
-    scan = _without_poly_department(lines)                  # the department's name names no polytechnic
-    for seen, names, marks in _NO_PRIVATE_WING:
-        if (_first_institution(scan, names) == 'allowed' and any(m in page for m in marks)
-                and _clean_letterhead(scan, names)):
-            return seen
-    from .results_doc import _UA_NAMES
-    ua = tuple(f' {n} ' for n in _UA_NAMES)
-    if _first_institution(scan, ua) == 'allowed' and _clean_letterhead(scan, ua):
-        return 'confirmation_ua'
+def _institute_on_letterhead(lines) -> str:
+    """The closed-list key of the public TVET INSTITUTE named on the letterhead block, or ''."""
+    head = _page(_letterhead_block(lines))
+    for key, names in _INSTITUTE_KEY.items():
+        if any(n in head for n in names):
+            return key
     return ''
 
 
-def _confirmation(ocr_text, r, model_version):
-    seen = confirmation_kind(ocr_text, r['probability'])
-    if not seen:
+def _first_named_institute(lines) -> str:
+    """The closed-list key of the institute the page names FIRST, when an institute is named first ('' when
+    another organisation comes before it — a private academy, an unlisted institute)."""
+    if _first_institution(lines, _INSTITUTES) != 'allowed':
+        return ''
+    for ln in lines:
+        hits = [(ln.find(n), key) for key, names in _INSTITUTE_KEY.items() for n in names if n in ln]
+        if hits:
+            return min(hits)[1]
+    return ''
+
+
+def _tvet_lift(ocr_text, r, lines, model_version):
+    head = _page(_letterhead_lines(lines))
+    if not any(n in head for n in _TVET_NAMES):
+        return None                     # no closed-list body named on the letterhead
+    key = _first_named_institute(lines)
+    if not key or not _has_offer_words(_page(lines)) or not _clean_letterhead(lines, _TVET_NAMES):
         return None
-    if seen == 'confirmation_ua':
-        return _ruled_status('suspect', r, seen, 'confirmation_ua', 'a public university confirmation-of-studies '
-                             'letter - suspect: confirm the government programme (owner ruling 4)', model_version)
-    raw = _folded_lines(ocr_text)
-    lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
-    if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
-            and _own_identity_lines(lines, _CONFIRM_TITLES)):
-        return _unproven(r, seen, 'confirmation_unverified', 'a confirmation of studies', model_version)
-    return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
-                         'institution with no private wing - an acceptable alternative (owner ruling 4)',
-                         model_version)
+    if _SLIP in _page(_letterhead_block(lines)):
+        return None                     # a slip, not a letter (`_tvet_slip`)
+    if not _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES, reporting=True):
+        return None
+    if r['probability'] < SUSPECT_MAX:  # below the suspect floor the body names the institute again
+        body = lines[len(_letterhead_lines(lines)):]
+        if not any(i in ln for ln in body for i in _INSTITUTE_KEY[key]):
+            return None
+    return _ruled_status('genuine', r, key, 'tvet_offer', f'{TVET_ISSUERS[key][0]}: a public TVET institute\'s '
+                         'offer letter - a public offer (owner rulings 5 and Q2)', model_version)
 
 
-def _printout(ocr_text, r) -> bool:
+def confirmation_kind(ocr_text: str, probability: float = 1.0) -> str:
+    """The `confirmation_*` code of a confirmation-of-studies letter from a no-private-wing public institution
+    named on its letterhead block, or '' (no title at the top, below the score floor, a private marker, or a
+    letterhead naming another organisation)."""
     lines = _folded_lines(ocr_text)
-    page = _page(lines)
-    if (_APPLICATION_SLIP in page or _private_signs(lines) or _private_mara_letterhead(ocr_text)
-            or private_college_reason(ocr_text, r)):
-        return False                    # never lift a page that is, or shows, a private institution
-    if any(m in page for m in _EDAFTAR):
-        return True
-    return _has_offer_words(page) and sum(1 for m in _PORTAL_FURNITURE if m in page) >= 2
+    if not _confirm_titled(lines, probability) or _private_marker(lines):
+        return ''
+    scan = _without_poly_department(lines)                 # the department's name names no polytechnic
+    head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _page(lines)
+    for seen, names, marks in _NO_PRIVATE_WING:
+        if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
+                and any(m in page for m in marks) and _clean_letterhead(scan, names)):
+            return seen
+    return ''
 
 
-#: Round 5: the public bodies a ruled page may be FROM — what the safety rule asks to be named first.
-_PUBLIC_FIRST = None
-
-
-def _public_first_names():
-    """Only the closed-list bodies' NAMES (round 6): the TVET bodies, the polytechnics, UMS and the Form-6
-    names. A generic ministry / department / government word is no institution — its line is skipped and
-    the institution after it is the one named first ("KEMENTERIAN PENDIDIKAN TINGGI / KOLEJ ABC")."""
-    global _PUBLIC_FIRST
-    if _PUBLIC_FIRST is None:
-        names = list(_TVET_NAMES) + [n for _k, ns, _m in _NO_PRIVATE_WING for n in ns]
-        _PUBLIC_FIRST = tuple(dict.fromkeys(names))
-    return _PUBLIC_FIRST
+def _title_segment(lines) -> str:
+    """The confirmation title's own words up to the candidate's label ("SURAT PENGESAHAN PELAJAR UNIVERSITI
+    MALAYSIA SABAH NAMA ..." names its issuer in the title)."""
+    for ln in lines:
+        at = [ln.find(t) for t in _CONFIRM_TITLES if t in ln]
+        if at:
+            seg = ln[min(at):]
+            cut = [seg.find(lb) for lb in _PERSON_LABELS if lb in seg] + [m.start() for m in _IC.finditer(seg)]
+            return ' ' + ' '.join((seg[:min(cut)] if cut else seg).split()[:12]) + ' '
+    return ''
 
 
 def _without_poly_department(lines):
@@ -237,63 +180,129 @@ def _without_poly_department(lines):
     return out
 
 
-def _positive_private(ocr_text, lines, r) -> bool:
-    """Positive private evidence (rounds 5 + 6): a private sign off the excused lines, a private MARA-owned name
-    on the letterhead, partner wording on it, a fee paid to a company, a letterhead naming an organisation
-    other than the closed-list bodies, or the private-college reason."""
-    fee_to_company = any(' KEPADA ' in ln and (' SDN BHD ' in ln or ' BHD ' in ln) for ln in lines)
-    partner = any(any(p in ln for p in _PARTNER) for ln in _letterhead_lines(lines))
-    return (_private_signs(lines) or _private_mara_letterhead(ocr_text) or partner or fee_to_company
-            or not _clean_letterhead(_without_poly_department(lines), _public_first_names())
-            or bool(private_college_reason(ocr_text, r)))
+def _confirmation_lift(ocr_text, r, model_version):
+    seen = confirmation_kind(ocr_text, r['probability'])
+    if not seen:
+        return None
+    raw = _folded_lines(ocr_text)
+    lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
+    if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
+            and _own_identity_lines(lines, _CONFIRM_TITLES)):
+        return None
+    return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
+                         'institution with no private wing - an acceptable alternative (owner ruling 4)',
+                         model_version)
 
 
-def _safety_exit(ocr_text, r, out, model_version):
-    """THE SAFETY RULE AT ONE EXIT (round 5): a page a ruling engaged on — a closed-list TVET body or a
-    confirmation-of-studies title at the top — whose FIRST institution is a closed-list body (TVET list,
-    polytechnic, UMS, a Form-6 name; round 6: never a bare ministry word) and which shows NO positive private
-    evidence (`_positive_private`, round 6: an unclean letterhead counts) may read
-    genuine or suspect, NEVER not_offer_letter. A letter that misses a rule then reads suspect."""
-    if out.get('status') != 'not_offer_letter':
-        return out
+def _company_lift(ocr_text, r, model_version):
+    """A ministry family's own letter, scoring genuine, that the pre-S6 veto blocked only for an incidental
+    company line."""
+    if r['probability'] < GENUINE_MIN or not ministry_letter_naming_a_company(ocr_text, r):
+        return None
+    return _ruled_status('genuine', r, r['type'], 'incidental_company', f"{r['type'].replace('_', ' ')} letter: "
+                         'its only "Sdn Bhd" is an incidental line (a supplier, a bank, the addressee) - the '
+                         'family scores genuine', model_version)
+
+
+def _lift(ocr_text, r, baseline, model_version):
+    """LIFT → genuine, only on the full proof (module note 2); None when any part is unclear."""
     lines = _folded_lines(ocr_text)
-    tvet = tvet_issuer(_without_incidental_companies(ocr_text), r.get('scores'))
-    confirm = _confirm_titled(lines, r['probability'])      # round 6: the floor, and the title at the top
-    if not (tvet or confirm):
-        return out
-    scan = _without_poly_department(lines)
-    if _first_institution(scan, _public_first_names()) != 'allowed' or _positive_private(ocr_text, lines, r):
-        return out
-    tag = 'tvet_unverified' if tvet else 'confirmation_unverified'
-    return _ruled_status('suspect', r, tvet or out.get('type') or r['type'], tag,
-                         'a public body named first and no private evidence, but not a complete letter by the '
-                         'rules - suspect, a person decides (the safety rule)', model_version)
+    if _private_marker(lines):
+        return None
+    if _vetoed(ocr_text):
+        if not (_veto_only_by_a_company(ocr_text) and _company_lines_incidental(lines)):
+            return None                 # a SPACE / SATU / letterhead company veto stands
+        lifted = _company_lift(ocr_text, r, model_version)
+        if lifted:
+            return lifted
+    return _tvet_lift(ocr_text, r, lines, model_version) or _confirmation_lift(ocr_text, r, model_version)
 
 
+# ── BLOCK ─────────────────────────────────────────────────────────────────────────────────
+def _block(ocr_text, r, model_version):
+    proof = private_proof(_folded_lines(ocr_text))
+    if not proof:
+        return None
+    return _ruled_status('not_offer_letter', r, r['type'], 'private_offer', f'private college / university (IPTS): '
+                         f'{proof} on the letterhead - not a supported public offer (owner rulings 2 + 7)',
+                         model_version)
+
+
+# ── SOFTENING a fail on its own proof (owner rulings 3 + 6) ───────────────────────────────
+def _tvet_slip(ocr_text, r, model_version):
+    lines = _folded_lines(ocr_text)
+    key = _institute_on_letterhead(lines) or _agency_on_letterhead(lines)
+    if not key or _SLIP not in _page(_letterhead_block(lines)) or not _has_offer_words(_page(lines)):
+        return None
+    return _ruled_status('suspect', r, key, 'tvet_slip', f'{TVET_ISSUERS[key][0]}: a TVET offer SLIP, not an offer '
+                         'letter - suspect (owner ruling 6); a person checks it', model_version)
+
+
+def _agency_on_letterhead(lines) -> str:
+    head = _page(_letterhead_lines(lines))
+    for key, (_d, names, acronyms) in TVET_ISSUERS.items():
+        if any(f' {n} ' in head for n in names) or any(f' {a} ' in head for a in acronyms if len(a) > 3):
+            return key
+    return ''
+
+
+def _printout(ocr_text, r) -> bool:
+    lines = _folded_lines(ocr_text)
+    page = _page(lines)
+    if (_APPLICATION_SLIP in page or _private_marker(lines)
+            or private_college_reason(ocr_text, r, public_words=_PUBLIC_LINE_WORDS)):
+        return False                    # never soften a page that is, or shows, a private institution
+    if any(m in page for m in _EDAFTAR):
+        return True
+    return _has_offer_words(page) and sum(1 for m in _PORTAL_FURNITURE if m in page) >= 2
+
+
+def _soften(ocr_text, r, baseline, model_version):
+    if baseline.get('status') != 'not_offer_letter' or private_proof(_folded_lines(ocr_text)):
+        return None
+    if _vetoed(ocr_text) and not _veto_only_by_a_company(ocr_text):
+        return None
+    slip = _tvet_slip(ocr_text, r, model_version) if not _private_marker(_folded_lines(ocr_text)) else None
+    if slip:
+        return slip
+    if _printout(ocr_text, r):
+        return {**baseline, 'reason': (_TAG.format('printout') + 'an admission printout / portal page, '
+                                                f"not the offer letter - suspect (owner ruling 3); "
+                                                f"{baseline['reason']}")[:300], 'status': 'suspect'}
+    return None
+
+
+def _vetoed(ocr_text) -> bool:
+    """The pre-S6 private-arm veto set the baseline."""
+    from .results_doc import _private_arm_offer
+    return _private_arm_offer(ocr_text)
+
+
+# ── The one entry ─────────────────────────────────────────────────────────────────────────
 def ruled_offer(ocr_text: str, r: dict, status: str, reason: str, model_version: str) -> dict:
-    """The genuineness of an offer that did NOT band genuine, after the owner's rulings (module note). Every
-    result passes `_safety_exit` (round 5)."""
+    """`apply_rulings` on the pre-S6 call of an offer that banded `status` (no private-arm veto): the 1.8.0
+    net's result below the genuine band (`offer_issuers.unfingerprinted_offer`), else the band itself."""
+    if status == 'genuine':
+        baseline = {'status': status, 'probability': r['probability'], 'type': r['type'], 'present': r['present'],
+                    'missing': r['missing'], 'reason': reason[:300], 'model_version': model_version}
+    else:
+        baseline = unfingerprinted_offer(ocr_text, r, status, reason, model_version)
+    return apply_rulings(ocr_text, r, baseline, model_version)
+
+
+def apply_rulings(ocr_text: str, r: dict, baseline: dict, model_version: str) -> dict:
+    """The genuineness of an offer: the BASELINE (`results_doc.baseline_genuineness`), changed only by the
+    BLOCK, a LIFT or a softening ruling (module note). A changed call always carries its ruling tag."""
     ocr_text = unicodedata.normalize('NFKC', ocr_text or '')
-    return _safety_exit(ocr_text, r, _ruled_offer(ocr_text, r, status, reason, model_version), model_version)
-
-
-def _ruled_offer(ocr_text: str, r: dict, status: str, reason: str, model_version: str) -> dict:
-    ruled = _tvet(ocr_text, r, model_version) or _confirmation(ocr_text, r, model_version)
-    if ruled:
-        return ruled
-    printout = _printout(ocr_text, r)
-    if status == 'suspect' and SUSPECT_MAX <= r['probability'] < GENUINE_MIN and not printout:
-        lines = _folded_lines(ocr_text)
-        page = _page(lines)
-        positive = (_private_signs(lines) or _private_mara_letterhead(ocr_text)
-                    or any(c in page for c in _CONDITIONAL))
-        why = private_college_reason(ocr_text, r) if positive else ''
-        if why:
-            return _ruled_status('not_offer_letter', r, r['type'], 'private_offer', f'{why} (owner rulings 2 + 7)',
-                                 model_version)
-    out = unfingerprinted_offer(ocr_text, r, status, reason, model_version)
-    if out['status'] == 'not_offer_letter' and printout:
-        return {**out, 'status': 'suspect',
-                'reason': (_TAG.format('printout') + 'an admission printout / portal page, not the offer letter '
-                           f"- suspect (owner ruling 3); {out['reason']}")[:300]}
-    return out
+    if baseline.get('status') != 'not_offer_letter':
+        blocked = _block(ocr_text, r, model_version)
+        if blocked:
+            return blocked
+    if baseline.get('status') != 'genuine':
+        lifted = _lift(ocr_text, r, baseline, model_version)
+        if lifted:
+            return lifted
+        softened = _soften(ocr_text, r, baseline, model_version)
+        if softened:
+            return softened
+    return baseline

@@ -128,7 +128,8 @@ class H6WhereTheCompanySits(SimpleTestCase):
 
     def test_a_company_anywhere_else_keeps_the_veto(self):
         for addr, foot in (('', 'Hakcipta ABC College Sdn Bhd\n'), ('ABC COLLEGE SDN BHD\n', ''),
-                           ('', 'PUSAT TUISYEN ABC SDN BHD\n'), ('', 'ABC Education Sendirian Berhad\n')):
+                           ('', 'PUSAT TUISYEN ABC SDN BHD\n')):   # round 7: "Sendirian Berhad" in a footer is
+                                                                      # the baseline's (no veto, not letterhead)
             with self.subTest(addr=addr, foot=foot):
                 self.assertEqual(_g(_POLY.format(addr=addr, pay='', foot=foot))['status'], 'not_offer_letter')
 

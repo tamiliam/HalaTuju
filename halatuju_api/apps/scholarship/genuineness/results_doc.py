@@ -105,6 +105,7 @@ from .offer_signatures import _UA_NAMES as _UA_NAMES
 #   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
 #   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list. 1.17.1: letter-spaced headings around real prose keep the layer (doc 3919).
 #   1.18.0 (2026-10-29) — Bumi Sprint C: the 13 Islamic SPM subjects read by their slip names (`academic_engine._SUBJECT_BM`, e.g. "Manahij Al-'Ulum Al-Islamiah", was "Manahij"); an apostrophe is dropped, not spaced; the cert reader reads a subject's words together ("USUL AL-DIN", "AL - QURAN"); "&" = "dan"; old short names stay aliases. No family/weight change. Backfill: NONE BY DESIGN — 18 of 2,313 stored reads carry Islamic names (some the old short ones); the aliases and the code/band-tolerant slip key keep them matching without a re-read.
+#   1.23.0 (2026-11-03) — offer exact-read S6: the owner's bursary rulings on top of the UNCHANGED pre-S6 call (`baseline_genuineness`), only on clear proof (`offer_rulings`, round 7 the narrowing): BLOCK a private letterhead (Sdn Bhd / Berhad, GMI / UniKL / KPTM / UM SATU / UMS PPPL, tie-up words) not_offer_letter; LIFT a closed-list public TVET offer (JMTI / CIAST included) or a polytechnic / UMS / Form-6 confirmation of studies with the full letter shape and no private marker genuine, and a ministry family's letter vetoed only for an incidental 'Sdn Bhd'; a portal page / e-Daftar printout and a TVET slip suspect, not a fail. Everything else keeps its pre-S6 call. No family/weight change. Backfill: S7 (live re-score).
 #   1.23.0 (2026-11-03) — offer exact-read S6: the owner's bursary rulings applied after the band (`offer_rulings`): a public TVET offer on the letterhead genuine at any band (Q2), a TVET slip suspect; a confirmation of studies from a polytechnic / UMS / Form-6 college genuine, another university's suspect; a private suspect-band offer not_offer_letter; a portal page / e-Daftar printout never below suspect; the private-arm veto's 'Sdn Bhd' arm skips a ministry family's own letter. No family/weight change. Backfill: S7 (live re-score).
 MODEL_VERSION = '1.24.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse`; the S2 1.10.0 precedent). 1.20.0 (2026-10-29) M3: a polytechnic transcript read Exact (`poly_diploma_parse`). No family/weight/band change. 1.21.0 (2026-10-29) M4: the Matriculation + polytechnic transcript families (`matric_poly_doc`), higher-results slot. 1.22.0 (2026-10-29) M4b: the owner's rulings — only a FINAL transcript scores; a semester slip / the portal page / a transcript with no completion status reads not-final (no signal, the final transcript owed); a Matriculation offer letter not_matric_result. Backfill: M5 (live). 1.23.0 (2026-11-03) request #53: the approval read (`income_declaration.APPROVAL_PROMPT`) takes a rubber-stamped NAME BLOCK, bordered or not, as a stamp; text in the form's own print still is not; and asks `has_signature` (owner ruling 2026-11-03: a non-payslip informal document needs a hand signature). Backfill: live re-read of the affected list; stamped support reads lacking `has_signature` are re-read once by the hourly sweep. 1.24.0 (2026-11-03) #53 follow-up: the approval read asks the stamp as its own yes/no question (`has_stamp`, like `has_signature`) — the one-word mark had said "signature" for a signed AND stamped village form (docs 3023 / 3235 / 4185 / 4204); `has_stamp_or_signature` kept as a secondary summary. Rules unchanged. Backfill: owner-driven re-read of the affected list (no new sweep clause).
 
@@ -371,11 +372,10 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # UPU (UM's "SALURAN TERBUKA UNIVERSITI MALAYA (SATU)", #31) — is the same IPTS option: red at once,
 # no question (owner, TD-145, 2026-10-04). Matched as the two-word phrases ONLY: the lone word
 # 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
-_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD', 'SENDIRIAN BERHAD',
-                        'SALURAN TERBUKA', 'SALURAN SATU',
-                        # S6 (owner 2026-11-03, the subsidy test): UMS's self-funded professional /
-                        # continuing-education centre (PPPL) is a private wing, like SPACE.
-                        'PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN', 'PUSAT PENDIDIKAN LANJUTAN', 'PPPL')
+_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD',
+                        'SALURAN TERBUKA', 'SALURAN SATU')
+# (S6, 1.23.0: unchanged — the pre-S6 veto IS the baseline; UMS PPPL / "Sendirian Berhad" on the letterhead
+# are the S6 BLOCK overlay's, `offer_rulings`.)
 
 
 def _private_arm_offer(ocr_text: str) -> bool:
@@ -396,15 +396,24 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     'birth_certificate' for the BC). Pure + deterministic given the inputs; never raises."""
     r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type,
                          has_seal=has_seal)
+    out = baseline_genuineness(ocr_text, r, doc_type)
+    if doc_type == 'offer_letter':
+        # 1.23.0 (S6): the owner's rulings change the BASELINE call only on clear proof (`offer_rulings`).
+        from .offer_rulings import apply_rulings
+        return apply_rulings(ocr_text, r, out, MODEL_VERSION)
+    return out
+
+
+def baseline_genuineness(ocr_text: str, r: dict, doc_type: str = None) -> dict:
+    """The genuineness call exactly as before offer exact-read S6 (1.22.0's path) from the scores `r`: the
+    private-arm veto, the band, and (offers) the 1.8.0 unfingerprinted-issuer net. S6 keeps it as the default."""
     n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
 
     # PRIVATE / continuing-education ARM veto (MODEL_VERSION 1.6.0): a private / IPTS option is
     # disqualifying — force not_offer_letter (fake) so the ladder applies the −2 step, exactly as a
     # private college that misses the UA list. Overrides the UA-name anchor a SPACE letter would
     # otherwise ride on. Offers only.
-    from .offer_rulings import ministry_letter_naming_a_company, tvet_letter_naming_a_company     # 1.23.0 (S6)
-    if (doc_type == 'offer_letter' and _private_arm_offer(ocr_text) and not ministry_letter_naming_a_company(ocr_text, r)
-            and not tvet_letter_naming_a_company(ocr_text, r)):
+    if doc_type == 'offer_letter' and _private_arm_offer(ocr_text):
         return {'status': 'not_offer_letter', 'probability': r['probability'], 'type': r['type'],
                 'present': r['present'], 'missing': r['missing'],
                 'reason': ('private / continuing-education arm (SPACE / Pendidikan Berterusan / '
@@ -439,9 +448,9 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
     status, reason = screen_at_most_suspect(r['type'], status, reason)     # 1.17.0 — `epf_app_doc`
-    if doc_type == 'offer_letter' and status != 'genuine':     # 1.8.0 `offer_issuers`; 1.23.0 the rulings
-        from .offer_rulings import ruled_offer
-        return ruled_offer(ocr_text, r, status, reason, MODEL_VERSION)
+    if doc_type == 'offer_letter' and status != 'genuine':     # 1.8.0 — see `offer_issuers`
+        from .offer_issuers import unfingerprinted_offer
+        return unfingerprinted_offer(ocr_text, r, status, reason, MODEL_VERSION)
     return {'status': status, 'probability': r['probability'], 'type': r['type'],
             'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
             'model_version': MODEL_VERSION}

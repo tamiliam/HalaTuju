@@ -96,6 +96,21 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   within the page's first half / 400 characters); POLYTECHNIC (English) is a polytechnic name; a one-word company
   name on the letterhead keeps the veto; ISLAMIC is finance only beside BANK, or beside BERHAD with no
   organisation noun (both the line excuse and `offer_issuers._letterhead`). Dev 197/197 unchanged.
+- **Round 7 — THE NARROWING (owner option 1, `docs/decisions.md` S6 items 7 + 8; `tests/test_offer_s6_narrowing.py`):**
+  S6 now changes a call ONLY on clear proof. Every offer keeps its BASELINE, the pre-S6 call
+  (`results_doc.baseline_genuineness`: the 1.22.0 veto + band + 1.8.0 net, unchanged, and `offer_issuers` back to
+  its pre-S6 code but for `officer_must_close`); `offer_rulings.apply_rulings` changes it only by a BLOCK (a
+  private letterhead: Sdn Bhd / Berhad, GMI / UniKL / KPTM / KUPTM / UPTM / UM SATU / UMS PPPL, tie-up words — read
+  on a letterhead block that ends at the title, salutation, "Kepada" or the addressee), a LIFT (a closed-list name
+  on the letterhead, named first, a clean letterhead, the full letter shape, no private marker anywhere; JMTI and
+  CIAST join the institutes, owner ruling) or rulings 3 / 6 (printout, TVET slip → suspect). Deleted: the safety
+  exit, `tvet_unverified` / `confirmation_unverified`, `_positive_private`, `_public_first_names`, the
+  conditional-offer block, `confirmation_ua`, `tvet_letter_naming_a_company`, `_private_mara_letterhead` and the
+  S6 additions to `offer_issuers` / `_PRIVATE_ARM_PHRASES`. The round 1-6 tests that pinned a guess are re-pinned
+  to the baseline. `eval/offer_genuineness_check.py` reads each letter's baseline and lists every changed call
+  with its tag (an untagged change is a MISS): 13 corpus letters change, all tagged; the other 274 equal the
+  pre-S6 engine's output. Dev 196 / 197 — a391 (a private college's CONDITIONAL offer, no letterhead proof) keeps
+  its baseline `suspect` instead of the old `not_offer_letter`; held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

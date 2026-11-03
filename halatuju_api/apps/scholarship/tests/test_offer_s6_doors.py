@@ -62,7 +62,8 @@ class ThePickDoors(TestCase):
     def test_a_confirmation_letter_is_recognised(self):
         app = self._app()
         self.assertTrue(is_confirmation_letter(_offer(app, 'genuine', doc_seen='confirmation_polytechnic')))
-        self.assertTrue(is_confirmation_letter(_offer(app, 'suspect', doc_seen='confirmation_ua')))
+        self.assertTrue(is_confirmation_letter(_offer(app, 'genuine', doc_seen='confirmation_ums')))
+        self.assertFalse(is_confirmation_letter(_offer(app, 'suspect', doc_seen='confirmation_ua')))   # round 7: gone
         self.assertFalse(is_confirmation_letter(_offer(app, 'genuine', doc_seen='polytechnic')))
 
     def test_realign_and_link_refuse_a_genuine_confirmation(self):

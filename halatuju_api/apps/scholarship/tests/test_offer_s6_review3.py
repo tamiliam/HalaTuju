@@ -9,6 +9,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.genuineness.offer_rulings import (_folded_lines, _letter_structure, _private_signs,
                                                          confirmation_kind, ruled_offer, ruling_of, _TITLE)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 
 
 def _g(text):
@@ -55,7 +56,8 @@ class H1ThinPages(SimpleTestCase):
         body_less = REAL.replace('Tempat : IKBN Pekan\n', '').replace('PENGARAH\nIKBN Pekan\n', 'PENGARAH\n')
         low = _r(0.1)                       # a photo below the suspect floor
         self.assertEqual(ruled_offer(REAL, low, 'not_offer_letter', 'r', MODEL_VERSION)['status'], 'genuine')
-        self.assertEqual(ruled_offer(body_less, low, 'not_offer_letter', 'r', MODEL_VERSION)['status'], 'suspect')
+        self.assertEqual(ruled_offer(body_less, low, 'not_offer_letter', 'r', MODEL_VERSION)['status'],
+                         'not_offer_letter')     # round 7: not lifted → the baseline
 
 
 class H2TheLetterheadNamesOnlyTheAllowed(SimpleTestCase):
@@ -79,7 +81,8 @@ class H3ConfirmationStructure(SimpleTestCase):
                         ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nPENGESAHAN PELAJAR\nNama : Ali', 0.11)):
             with self.subTest(head=text.splitlines()[0]):
                 out = ruled_offer(text, _r(p), 'not_offer_letter', 'r', MODEL_VERSION)
-                self.assertEqual(out['status'], 'suspect')          # a public body, unproven → a person decides
+                # S6 round 7 (the narrowing, owner option 1): unproven → the baseline, never a guess
+                self.assertEqual(out['status'], 'not_offer_letter')
         for text in ('ABC LEARNING CENTRE\nPENGESAHAN PELAJAR\nNama : Ali\nUniversiti Malaysia Sabah\n',
                      'ABC EDU HUB\nSMK Contoh Tingkatan Enam\nPENGESAHAN PELAJAR\nNama : Ali\n'
                      'Kementerian Pendidikan Malaysia\n'):
@@ -112,10 +115,13 @@ class SafetyRule(SimpleTestCase):
 
 class MediumOtherFirstIsPrivate(SimpleTestCase):
     def test_a_college_with_a_partner_line_reads_private_not_unchecked(self):
-        for word in ('Partner', 'Rakan', 'Bersama', 'Affiliated', 'Francais'):
+        for word in ('Partner', 'Rakan', 'Affiliated', 'Francais'):
             with self.subTest(word=word):
                 text = _letter(f'KOLEJ ABC\n{word} IKBN')
                 self.assertEqual(_g(text)['status'], 'not_offer_letter')
+        # S6 round 7 (the narrowing, owner option 1): "Bersama" alone is no explicit tie-up word: never lifted, the baseline.
+        text = _letter('KOLEJ ABC\nBersama IKBN')
+        self.assertEqual(_g(text)['status'], baseline_status(text))
 
 
 _POLY = ('KEMENTERIAN PENDIDIKAN TINGGI\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nRujukan : JPPKK/1\n'
@@ -161,7 +167,10 @@ class LowUniklMention(SimpleTestCase):
                        extra='Laluan ke Universiti Kuala Lumpur selepas tamat pengajian.\n',
                        body='Kursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\n'
                             'Tempat : Institut Kemahiran MARA Kota Contoh\n')
-        self.assertEqual(_g(text)['status'], 'genuine')
+        # S6 round 7 (the narrowing, owner option 1): a named private body ANYWHERE on the page stops a lift (owner: no private
+        # marker on page 1), and a body mention is no letterhead proof: the baseline, never blocked.
+        self.assertEqual(_g(text)['status'], baseline_status(text))
+        self.assertNotEqual(ruling_of(_g(text)), 'private_offer')
 
     def test_a_unikl_letterhead_still_fails(self):
         self.assertNotEqual(_g(_letter('UNIVERSITI KUALA LUMPUR\nMAJLIS AMANAH RAKYAT'))['status'], 'genuine')

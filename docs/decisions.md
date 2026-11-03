@@ -40,7 +40,30 @@
    keeps failing (`results_doc._private_arm_offer`). The student's `offer_not_official` text says the same.
 6. **UMS's PPPL is PRIVATE (owner, 2026-11-03, the same subsidy test).** UMS's self-funded "Pusat Pendidikan
    Profesional dan Lanjutan" (PPPL; also written "Pusat Pendidikan Lanjutan") is a private wing, like UTM SPACE:
-   a PPPL confirmation or offer reads `not_offer_letter` (`results_doc._PRIVATE_ARM_PHRASES`).
+   a PPPL confirmation or offer reads `not_offer_letter` (since item 7: when PPPL is named on the letterhead
+   block — the S6 BLOCK overlay, `offer_reading._PRIVATE_BODIES`).
+7. **S6 changes a call ONLY on clear proof (owner, 2026-11-03, "option 1", after review round 7).** Every offer
+   keeps its BASELINE — the call the pre-S6 engine gives (`results_doc.baseline_genuineness`, the 1.22.0 path,
+   unchanged) — unless one of these fires (`offer_rulings.ruled_offer`):
+   - **BLOCK** → `not_offer_letter` (`private_offer`) only on positive private proof on the LETTERHEAD BLOCK (it ends
+     at the title, the salutation, "Kepada" or the addressee below the date): "Sdn Bhd" / "Berhad", a named private
+     body (GMI, UniKL, KPTM / KUPTM / UPTM, UM SATU, UMS PPPL) or explicit tie-up words. No other route newly blocks.
+   - **LIFT** → `genuine` only when ALL hold: a closed-list public name on the letterhead (exact, after folding),
+     the first institution named is a closed-list one, a letterhead naming no other organisation, the full letter
+     shape, and no private marker anywhere on the page (`tvet_offer` / `confirmation`; and `incidental_company` — a
+     ministry family's own letter scoring genuine that the pre-S6 veto blocked only for a supplier / bank /
+     addressee "Sdn Bhd").
+   - Rulings 3 and 6 still soften a fail on their own proof (`printout`, `tvet_slip` → `suspect`).
+   The middle logic that guessed in unclear cases is deleted: the round-5 safety exit, the `tvet_unverified` /
+   `confirmation_unverified` fallbacks, "an unclean letterhead is private evidence", the conditional-offer block, and
+   the other university's confirmation → `suspect` of item 3 (it keeps its baseline now). No new cap to suspect.
+   Accepted cost: a private letter with no letterhead proof keeps its baseline (one corpus letter, a conditional
+   offer from a private college, reads `suspect` as it did before S6).
+8. **JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03).** "JMTI" / "Japan-Malaysia Technical
+   Institute" and "CIAST" / "Pusat Latihan Pengajar dan Kemahiran Lanjutan" join the LIFT's closed list of public
+   TVET institutes (`offer_reading._INSTITUTES`, key `tvet_jtm`), under the same rules (the letterhead, the full
+   offer shape, no private marker). The pre-S6 1.8.0 net (`offer_issuers.TVET_ISSUERS`) is the baseline's and
+   stays as it was. Probes: `tests/test_offer_s6_narrowing.py`.
 
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by

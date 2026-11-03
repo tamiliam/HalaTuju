@@ -770,6 +770,19 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - Lows: POLYTECHNIC in `_NO_PRIVATE_WING`; the English polytechnic department blanked like JPPKK; a one-word
     company name on the letterhead keeps the veto; ISLAMIC is finance only beside BANK, or beside BERHAD with no
     organisation noun (`_incidental` and `offer_issuers._payment_line`).
+- **Round 7 (2026-11-03): one High + Mediums again — the swing is stopped by NARROWING, not another patch round
+  (owner option 1; `docs/decisions.md` S6 items 7 + 8).**
+  - BASELINE = the pre-S6 call (`results_doc.baseline_genuineness`; `offer_issuers` restored to its pre-S6 code but
+    for `officer_must_close`). It is the default for every page.
+  - BLOCK (`private_offer`) only on letterhead proof (`offer_reading.private_proof` over `_letterhead_block`).
+    LIFT (`tvet_offer`, `confirmation`, `incidental_company`) only with a closed-list name on the letterhead, named
+    first, a clean letterhead, the full shape and no private marker anywhere (`_private_marker`). Rulings 3 / 6
+    soften a fail (`printout`, `tvet_slip`). JMTI / CIAST join the institutes (owner).
+  - Deleted: the safety exit and its `*_unverified` tags, unclean-letterhead-as-private, the conditional block,
+    `confirmation_ua`, the S6 edits to `offer_issuers` and the private-arm phrases.
+  - Measured: 13 corpus letters differ from the baseline, each tagged (dev 6, held-out 7); 274 equal the pre-S6
+    engine (checked against a detached pre-S6 checkout). Dev 196 / 197: a391 (conditional private offer, no
+    letterhead proof) keeps its baseline `suspect` — a coordinator / owner call whether its expected label moves.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

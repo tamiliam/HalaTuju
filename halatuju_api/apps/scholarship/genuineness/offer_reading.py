@@ -1,23 +1,23 @@
-"""The offer-genuineness RULINGS' reading of a page — its folded lines, letterhead, first institution, private
-signs, letter structure — and the word lists they use. Moved out of `offer_rulings.py` in S6 round 5 (2026-11-03;
-that file passed the 600-line standard). That move was NOT verbatim, though its commit said so: 8 moved names
-changed and 7 were added inside it (see CHANGELOG, S6 round 6). `offer_rulings` imports every name back
-(`__all__`), so its rulings and every existing import keep working.
+"""The offer-genuineness RULINGS' reading of a page — its folded lines, letterhead block, private proof, letter
+structure — and the word lists they use. Moved out of `offer_rulings.py` in S6 round 5 (2026-11-03; that file
+passed the 600-line standard). That move was NOT verbatim, though its commit said so: 8 moved names changed and
+7 were added inside it (see CHANGELOG, S6 round 6). S6 round 7 (the narrowing) cut what only the guessing
+middle logic used. `offer_rulings` imports every name back (`__all__`).
 """
 import re
 import unicodedata
 from collections import Counter
 
-from .offer_issuers import _PUBLIC_WORDS, TVET_ISSUERS, private_mara_on_letterhead
+from .offer_issuers import TVET_ISSUERS
 
 __all__ = [
     'CONFIRMATION_SEEN',
     'CONFIRM_MIN',
+    '_COMPANY_HEAD',
     '_ADDRESS',
     '_APPLICATION_SLIP',
     '_CERTIFICATION',
     '_CLOSING',
-    '_CONDITIONAL',
     '_CONFIRM_MIN_LINES',
     '_CONFIRM_TITLES',
     '_CONTACT',
@@ -44,6 +44,8 @@ __all__ = [
     '_PERSON_LABELS',
     '_POLY_DEPARTMENTS',
     '_PORTAL_FURNITURE',
+    '_PRIVATE_BODIES',
+    '_PUBLIC_LINE_WORDS',
     '_POSTCODE',
     '_PRIVATE_SIGNS',
     '_REFERENCE',
@@ -54,6 +56,7 @@ __all__ = [
     '_STREET',
     '_TAG',
     '_TAG_RE',
+    '_TIE_UP',
     '_TITLE',
     '_TOKEN_SHARE_MAX',
     '_TVET_NAMES',
@@ -74,17 +77,19 @@ __all__ = [
     '_is_contact',
     '_is_person_line',
     '_letter_structure',
+    '_letterhead_block',
     '_letterhead_lines',
     '_letterhead_region',
     '_outside_orgs',
     '_own_identity_lines',
     '_page',
-    '_private_mara_letterhead',
+    '_private_marker',
     '_private_signs',
+    'private_proof',
     '_ruled_status',
+    '_untitled',
     '_unglued',
     '_unstreeted',
-    '_untitled',
     'ruling_of',
 ]
 
@@ -102,7 +107,11 @@ _INSTITUTES = (' INSTITUT KEMAHIRAN BELIA NEGARA ', ' INSTITUT KEMAHIRAN TINGGI 
                # round 5 (H2): the same institutes on an English-first letterhead
                ' ADVANCED TECHNOLOGY TRAINING CENTRE ', ' INDUSTRIAL TRAINING INSTITUTE ',
                ' NATIONAL YOUTH SKILLS INSTITUTE ', ' NATIONAL YOUTH HIGH SKILLS INSTITUTE ', ' MARA SKILLS INSTITUTE ',
-               ' MARA HIGHER SKILLS COLLEGE ', ' MARA PROFESSIONAL COLLEGE ')
+               ' MARA HIGHER SKILLS COLLEGE ', ' MARA PROFESSIONAL COLLEGE ',
+               # owner 2026-11-03: JMTI and CIAST are government (JTM) institutes — S6 LIFT only (the pre-S6
+               # 1.8.0 net, `offer_issuers.TVET_ISSUERS`, is the baseline's and unchanged)
+               ' JMTI ', ' JAPAN MALAYSIA TECHNICAL INSTITUTE ', ' CIAST ',
+               ' PUSAT LATIHAN PENGAJAR DAN KEMAHIRAN LANJUTAN ')
 #: "TVET" spelt out (an offer title "… Technical and Vocational Education and Training") names the sector,
 #: never another institution — its EDUCATION / TRAINING are not organisation nouns.
 _TVET_SPELT = (' TECHNICAL AND VOCATIONAL EDUCATION AND TRAINING ', ' TECHNICAL VOCATIONAL EDUCATION AND TRAINING ',
@@ -137,6 +146,24 @@ _UNIT_TAIL = re.compile(r' (?:KAMPUS|CAMPUS|SERVICES|TECH|CAWANGAN|BRANCH)(?= )'
 _HEAD_RE = re.compile(r' (?:KOLEJ|COLLEGES?|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|AKADEMI|ACADEMY|'
                       r'POLITEKNIK|POLYTECHNICS?|MAKTAB|TUISYEN|TUITION|SEKOLAH|SCHOOLS?|SDN|BHD|BERHAD|PLT|LTD|'
                       r'LIMITED|INC|PUSAT (?:LATIHAN|KEMAHIRAN|PEMBELAJARAN|PENDIDIKAN|BAHASA))(?= )')
+#: Public bodies' own words on a letterhead line (S6 lift gating only; `offer_issuers._PUBLIC_WORDS` is the
+#: baseline's, unchanged).
+_PUBLIC_LINE_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ',
+                      ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ',
+                      ' LEMBAGA ', ' PERBADANAN ', ' KOLEJ KEJURURAWATAN ', ' AKADEMI BINAAN MALAYSIA ', ' ABM ',
+                      ' AKADEMI PERCUTIAN MALAYSIA ', ' MINISTRY ', ' DEPARTMENT ', ' GOVERNMENT ')
+#: THE NAMED PRIVATE BODIES (owner rulings C + 2026-11-03): MARA-owned private institutions, UM's open
+#: channel (SATU), UMS's self-funded centre (PPPL).
+_PRIVATE_BODIES = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ', ' KOLEJ UNIVERSITI POLY TECH MARA ',
+                   ' KOLEJ UNIVERSITI POLYTECH MARA ', ' KUPTM ', ' UNIVERSITI POLY TECH MALAYSIA ',
+                   ' UNIVERSITI POLYTECH MALAYSIA ', ' UPTM ', ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ',
+                   ' GERMAN MALAYSIAN INSTITUTE ', ' GMI ', ' SALURAN SATU ', ' SALURAN TERBUKA ',
+                   ' PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN ', ' PUSAT PENDIDIKAN LANJUTAN ', ' PPPL ')
+#: EXPLICIT partner / tie-up words — the BLOCK overlay's (a private institution trading on a public name).
+_TIE_UP = (' PARTNER ', ' RAKAN ', ' RAKAN STRATEGIK ', ' RAKAN KERJASAMA ', ' STRATEGIC PARTNER ', ' AFFILIATED ',
+           ' FRANCAIS ', ' FRANCHISE ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' IN ASSOCIATION WITH ')
+#: A company on a letterhead line (the BLOCK overlay's proof).
+_COMPANY_HEAD = (' SDN BHD ', ' SENDIRIAN BERHAD ', ' BHD ', ' BERHAD ')
 #: Partner wording on a letterhead: a private institution trading on a public one's name.
 _PARTNER = (' PARTNER ', ' RAKAN ', ' BERSAMA ', ' AFFILIATED ', ' FRANCAIS ', ' FRANCHISE ', ' STRATEGIK ',
             ' STRATEGIC ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' ACCREDITED ', ' DIIKTIRAF ',
@@ -162,7 +189,6 @@ _ADDRESS = re.compile(r' (?:PETI SURAT|P O BOX|JALAN|LOT|KAMPUNG|TAMAN|LADANG|ES
 _POSTCODE = re.compile(r'(?<!\d)\d{5}(?!\d)')
 #: A personal name's patronymic marker ("ALI A/L MUTHU", "SITI BINTI AHMAD", "ANAK").
 _NAME_MARK = re.compile(r' (?:BIN|BINTI|BTE|A L|A P|ANAK|AK) ')
-_CONDITIONAL = (' BERSYARAT ', ' CONDITIONAL ')
 #: A real letter's parts (`_letter_structure`).
 _REFERENCE = (' RUJUKAN ', ' RUJ ', ' NO RUJ ', ' REF ', ' RUJUKAN KAMI ', ' OUR REF ')
 #: A date (folded: '12 06 2026'); its left edge is "not a digit", not a word boundary — a glued text layer
@@ -191,7 +217,7 @@ _NO_PRIVATE_WING = (
      (' KEMENTERIAN PENDIDIKAN MALAYSIA ', ' MINISTRY OF EDUCATION MALAYSIA ', ' KOLEJ TINGKATAN ENAM ', ' SMK ',
       ' SEKOLAH MENENGAH KEBANGSAAN ')),
 )
-CONFIRMATION_SEEN = frozenset(k for k, _n, _m in _NO_PRIVATE_WING) | {'confirmation_ua'}
+CONFIRMATION_SEEN = frozenset(k for k, _n, _m in _NO_PRIVATE_WING)   # round 7: no confirmation_ua (baseline)
 #: The polytechnics' department, Malay and English: it names no polytechnic or college (blanked before a scan).
 _POLY_DEPARTMENTS = (_JPPKK, ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')
 #: The least a real confirmation scores on the families (every corpus one: 0.13-0.30).
@@ -252,13 +278,37 @@ def _in_addressee_block(lines, i) -> bool:
 
 
 def _private_signs(lines) -> bool:
-    """POSITIVE private evidence on a line that is not incidental (a bank "Berhad" is not the issuer)."""
-    return any(any(s in ln for s in _PRIVATE_SIGNS) and not _incidental(lines, i) for i, ln in enumerate(lines))
+    """A private sign on a line that is not incidental (a bank "Berhad", a supplier, a sponsor, the addressee,
+    an ISO / SIRIM certification line are not the issuer)."""
+    return any(any(s in ln for s in _PRIVATE_SIGNS) and not _incidental(lines, i) and not _is_certification(ln)
+               for i, ln in enumerate(lines))
 
 
-def _private_mara_letterhead(ocr_text) -> bool:
-    """A MARA-owned PRIVATE institution on the LETTERHEAD (`offer_issuers.private_mara_on_letterhead`)."""
-    return private_mara_on_letterhead(ocr_text)
+def _is_certification(ln) -> bool:
+    return bool(_CERTIFICATION.search(ln)) and len(ln.split()) <= 12
+
+
+def private_proof(lines) -> str:
+    """THE BLOCK OVERLAY'S PROOF (S6 round 7), read on the LETTERHEAD BLOCK only (`_letterhead_block`): a
+    company ("Sdn Bhd" / "Berhad"), a named private body, or explicit tie-up wording. A bank / payment line
+    and an ISO / SIRIM certification line are not proof. '' when there is none."""
+    for ln in _letterhead_block(lines):
+        if _is_certification(ln) or any(w in ln for w in _FINANCE):
+            continue
+        if any(c in ln for c in _COMPANY_HEAD):
+            return 'company'
+        if any(b in ln for b in _PRIVATE_BODIES):
+            return 'named private body'
+        if any(t in ln for t in _TIE_UP):
+            return 'tie-up wording'
+    return ''
+
+
+def _private_marker(lines) -> bool:
+    """Any private marker on the page — what stops a LIFT: the block's proof, a named private body anywhere,
+    or a private sign off the incidental lines."""
+    page = _page(lines)
+    return bool(private_proof(lines)) or any(b in page for b in _PRIVATE_BODIES) or _private_signs(lines)
 
 
 #: A street name ("Jalan Kolej", "Lorong Universiti") names a road, not an institution.
@@ -275,47 +325,47 @@ def _unstreeted(ln) -> str:
     return _WEB_TAIL.sub(' ', _STREET.sub(' ', ln))
 
 
-def _untitled(ln) -> str:
-    """On a TITLE line only, "TVET" spelt out ("… Technical and Vocational Education and Training") names the
-    sector, not an institution (app 329). Never stripped on the letterhead (round 4: "ABC TECHNICAL AND
-    VOCATIONAL EDUCATION AND TRAINING" is an organisation's name there)."""
-    if any(t in ln for t in _TITLE + _CONFIRM_TITLES):
-        for phrase in _TVET_SPELT:
-            ln = ln.replace(phrase, ' ')
-    return ln
-
-
 def _is_contact(ln) -> bool:
     """A short contact line (a glued text layer's whole page is one long line, and is never one)."""
     return len(ln.split()) <= 12 and bool(_CONTACT.search(ln))
 
 
-def _first_institution(lines, allowed) -> str:
-    """'allowed' when the FIRST organisation the page names is one of `allowed`, 'other' when another comes
-    first, '' when none is named. A line led by a public or unit word (a ministry, a department, a faculty)
-    is the public body or a unit, not another organisation (`_excused`)."""
-    for ln in lines:
-        if _is_contact(ln):
-            continue                    # a web / e-mail / phone line names no institution
-        ln = _untitled(_unstreeted(ln))
-        spans = _allowed_spans(ln, allowed)
-        first_allowed = min((s for s, _e in spans), default=None)
-        others = _outside_orgs(ln, spans)
-        first_other = None if _excused(ln, others) else min(others, default=None)
-        if first_allowed is None and first_other is None:
+def _letterhead_block(lines):
+    """THE LETTERHEAD BLOCK (S6 round 7) — the BLOCK overlay's: the lines above the letter proper. It ends at the first title,
+    salutation, "Kepada" or candidate line (the text before it on that line is kept — a glued text layer
+    is one line), and at the ADDRESSEE block below the reference / date (a line with a postcode within its
+    next four lines: a student's or a Yayasan's / Persatuan's address is never letterhead). A reference or
+    date line on the way is SKIPPED, the text before "Ruj" / the date kept (round 4 / round 5)."""
+    stops = _TITLE + _CONFIRM_TITLES + _SALUTE + (' KEPADA ',)
+    head, dated = [], False
+    for i, ln in enumerate(lines):
+        cuts = [ln.find(s) for s in stops + _PERSON_LABELS if s in ln] + [m.start() for m in _IC.finditer(ln)]
+        if cuts:
+            before = _before_ref(ln[:min(cuts)] + ' ')
+            for phrase in _TVET_SPELT:          # app 329: spelt-out TVET before a title names the sector
+                before = before.replace(phrase, ' ')
+            if before.strip():
+                head.append(before)
+            break
+        if dated and any(_POSTCODE.search(x) for x in lines[i:i + 4]):
+            break                       # the addressee block below the date
+        ref = [ln.find(r) for r in _REFERENCE if r in ln]
+        date = _DATE_RE.search(ln)
+        if ref or date:
+            dated = True
+            before = _before_ref(ln)
+            if before.strip():          # round 5 (Medium 5): keep what shares the line BEFORE "Ruj" / the date
+                head.append(before)
             continue
-        if first_other is None:
-            return 'allowed'
-        if first_allowed is None:
-            return 'other'
-        return 'allowed' if first_allowed <= first_other else 'other'
-    return ''
+        head.append(ln)
+    return head
 
 
 def _letterhead_lines(lines):
-    """The letterhead: the lines before the letter proper — its title, a salutation or the candidate's
-    line. A reference or date line on the way is SKIPPED, not a stop (round 4: "Tarikh : 1 Jun 2026" above
-    "INSTITUT KEMAHIRAN MARA / GERMAN MALAYSIAN INSTITUTE" hid the letterhead)."""
+    """The LIFT's letterhead (round 6, unchanged): the lines before the letter proper — its title, a salutation
+    or the candidate's line. A reference or date line on the way is SKIPPED, not a stop (round 4: "Tarikh : 1 Jun
+    2026" above "INSTITUT KEMAHIRAN MARA / GERMAN MALAYSIAN INSTITUTE" hid the letterhead). Longer than the
+    BLOCK's (`_letterhead_block`): a lift needs EVERY line of it clean, so more lines only lift less."""
     stops = _TITLE + _CONFIRM_TITLES + _SALUTE
     head, dated = [], False
     for i, ln in enumerate(lines):
@@ -334,6 +384,42 @@ def _letterhead_lines(lines):
             continue
         head.append(ln)
     return head
+
+
+def _untitled(ln) -> str:
+    """On a TITLE line only, "TVET" spelt out names the sector, not an institution (app 329)."""
+    if any(t in ln for t in _TITLE + _CONFIRM_TITLES):
+        for phrase in _TVET_SPELT:
+            ln = ln.replace(phrase, ' ')
+    return ln
+
+
+def _first_institution(lines, allowed) -> str:
+    """A LIFT gate (never a block): 'allowed' when the FIRST organisation the page names is one of `allowed`,
+    'other' when another comes first, '' when none is named. A line led by a public or unit word is the public
+    body or a unit (`_excused`)."""
+    for ln in lines:
+        if _is_contact(ln):
+            continue                    # a web / e-mail / phone line names no institution
+        ln = _untitled(_unstreeted(ln))
+        spans = _allowed_spans(ln, allowed)
+        first_allowed = min((s for s, _e in spans), default=None)
+        others = _outside_orgs(ln, spans)
+        first_other = None if _excused(ln, others) else min(others, default=None)
+        if first_allowed is None and first_other is None:
+            continue
+        if first_other is None:
+            return 'allowed'
+        if first_allowed is None:
+            return 'other'
+        return 'allowed' if first_allowed <= first_other else 'other'
+    return ''
+
+
+def _before_ref(ln) -> str:
+    """The part of a line before its reference / date, if any."""
+    cut = [ln.find(r) for r in _REFERENCE if r in ln] + [m.start() for m in _DATE_RE.finditer(ln)]
+    return (ln[:min(cut)] + ' ') if cut else ln
 
 
 def _letterhead_region(lines):
@@ -392,7 +478,7 @@ def _excused(ln, others) -> bool:
     it ("KOLEJ ABC (KEMENTERIAN …)", "KOLEJ ABC UNIT KEMASUKAN" are KOLEJ ABC's) and no institution / company
     name (`_HEAD_RE`) comes after it outside the public words themselves ("FAKULTI PERNIAGAAN, KOLEJ
     UNIVERSITI ABC")."""
-    covers = [(ln.find(w), ln.find(w) + len(w) - 1) for w in _PUBLIC_WORDS if w in ln] + [
+    covers = [(ln.find(w), ln.find(w) + len(w) - 1) for w in _PUBLIC_LINE_WORDS if w in ln] + [
         m.span() for m in _UNIT_LINE.finditer(ln)]
     if not covers:
         return False

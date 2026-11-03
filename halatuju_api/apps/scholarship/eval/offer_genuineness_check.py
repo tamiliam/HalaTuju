@@ -12,6 +12,10 @@ letter with no text): the owner's bursary rulings of 2026-11-01 (1-8), 2026-11-0
 confirmation default), applied to the answers (`is_offer_letter`, family, labeller note) and checked by
 the owner on the S1 / S2 pages. One outcome per letter: OK, or MISS (expected X, today Y).
 
+S6 round 7 (the narrowing): each letter's BASELINE — the pre-S6 call (`results_doc.baseline_genuineness`) —
+is read too. A call that differs from it must carry an S6 ruling tag (an UNTAGGED change is a MISS), and the
+changed calls are listed by key and tag.
+
 Usage:  python -I apps/scholarship/eval/offer_genuineness_check.py [--split dev|heldout|all]
             [--eval-dir DIR] [--json]
 Exits 1 on any MISS in the split.
@@ -43,6 +47,7 @@ def check(eval_dir, expect, split_file=None):
     """One row per expected letter: {key, split, family, expected, today, seen, ok}."""
     from apps.scholarship.eval.offer_replay import authenticity_of, production_text
     from apps.scholarship.genuineness.offer_rulings import ruling_of     # S6: which ruling set it (learnable)
+    from apps.scholarship.genuineness.results_doc import baseline_genuineness, score_signatures
     orc = _orc()
     split_file = split_file or orc.SPLIT_PATH
     with open(split_file, encoding='utf-8') as fh:
@@ -54,9 +59,15 @@ def check(eval_dir, expect, split_file=None):
         auth = authenticity_of(text) or {}
         ans = orc.read_json_file(os.path.join(snap, key + orc.ANSWER_SUFFIX)) or {}
         today = auth.get('status')
+        base = None
+        if (text or '').strip():
+            b = baseline_genuineness(text, score_signatures(text, doc_type='offer_letter'), 'offer_letter')
+            base = 'suspect' if b['status'] == 'unrecognised' else b['status']
+        ruling = ruling_of(auth) or '-'
+        untagged = today != base and ruling == '-'
         rows.append({'key': key, 'split': 'heldout' if key in held else 'dev',
-                     'family': ans.get('family') or '', 'expected': want, 'today': today,
-                     'seen': auth.get('doc_seen') or '', 'ruling': ruling_of(auth) or '-', 'ok': today == want})
+                     'family': ans.get('family') or '', 'expected': want, 'today': today, 'baseline': base,
+                     'seen': auth.get('doc_seen') or '', 'ruling': ruling, 'ok': today == want and not untagged})
     return rows
 
 
@@ -68,6 +79,8 @@ def summarise_genuineness(rows, split):
             'expected': dict(Counter(str(r['expected']) for r in rows)),
             'today': dict(Counter(str(r['today']) for r in rows)),
             'rulings': dict(Counter(f"{r['ruling']}:{r['today']}" for r in rows if r['ruling'] != '-')),
+            'changed': [{k: r[k] for k in ('key', 'split', 'baseline', 'today', 'ruling')}
+                        for r in rows if r['today'] != r['baseline']],
             'misses': [{k: r[k] for k in ('key', 'split', 'family', 'expected', 'today', 'seen', 'ruling')}
                        for r in rows if not r['ok']]}
 
@@ -88,6 +101,9 @@ def main(argv=None):
         print('  expected: ' + '  '.join(f'{k} {v}' for k, v in sorted(s['expected'].items())))
         print('  today:    ' + '  '.join(f'{k} {v}' for k, v in sorted(s['today'].items())))
         print('  set by an S6 ruling: ' + ('  '.join(f'{k} {v}' for k, v in sorted(s['rulings'].items())) or 'none'))
+        print(f"  differ from the pre-S6 baseline: {len(s['changed'])}")
+        for c in s['changed']:
+            print(f"    {c['key']} ({c['split']}): {c['baseline']} -> {c['today']} [{c['ruling']}]")
         for m in s['misses']:
             print(f"  MISS {m['key']} ({m['split']}, {m['family'] or '-'}): expected {m['expected']}, "
                   f"today {m['today']} ({m['seen'] or '-'}, ruling {m['ruling']})")
