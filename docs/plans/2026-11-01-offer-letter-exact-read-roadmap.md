@@ -714,6 +714,22 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
     the new organisation nouns read EDUCATION / TRAINING as another institution named before IKM. Fixed by class
     (the spelt-out sector phrase names no institution; a training centre still does), dev unchanged, then a SECOND
     held-out run: 90 / 90. That letter has now steered two rules; held-out is not untouched for them.
+- **Fourth review (2026-11-03): N1-N8 fixed** (`tests/test_offer_s6_review4.py`, the reviewer's probes).
+  - Confirmations need 12+ lines — measured: the corpus's real ones hold 42 / 58 / 64 lines, and the two UMS glued
+    text layers 15 / 16 segments once split on the labels they run together (`_unglued`) — and the candidate's
+    labelled name and IC on lines of their own, never inside the title line.
+  - Letterhead tie-up words: + KERJASAMA / USAHASAMA / COLLABORATION / ACCREDITED / DIIKTIRAF / ASSOCIATION /
+    MEMBER. Organisation nouns match by STEM (CENTR…, ENTERPRIS…, EDU…, SERVIC…, CORP…, CONSULT…, plurals) + MAKTAB,
+    INSTITUTION, PUSAT PENDIDIKAN / BAHASA, LTD / LIMITED / INC, PERSATUAN / PERTUBUHAN, ACADEMIC, VENTURES, TECH,
+    KAMPUS, YAYASAN (TECH / KAMPUS / YAYASAN measured on dev: no letter moves). INSTITUSI is NOT one — real letters
+    print it as a form label ("Institusi : Politeknik …"; it moved a dev IKBN letter when tried).
+  - The letterhead skips a reference / date line instead of stopping at it; a "Sdn Bhd" on it still vetoes; a TVET
+    letter now gets the incidental-company excuse (supplier, insurer, sponsor, the student's estate address in the
+    candidate block) the ministry families had (`tvet_letter_naming_a_company`).
+  - "TVET" spelt out is neutral only on a TITLE line, never on the letterhead.
+  - A glued reference is "RUJ" not preceded by a letter (the UMS layers glue it to a phone number; "dirujuk" is
+    not one); TAMAN / BANDAR / SEKSYEN / PRESINT street names and ISO / SIRIM lines name no organisation; a web
+    tail is read even when OCR spaces it ("EDU M Y").
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

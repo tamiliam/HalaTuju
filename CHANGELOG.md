@@ -69,6 +69,11 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   band), never a fail; another organisation named first is a fail by its reason; bank / insurer / co-operative
   lines excuse a "Berhad", a fee to a company does not; ABM public; UniKL fails only on the letterhead; UMS PPPL
   private (owner); linear-time token share (40 000 lines < 1 s); dry-run no-rescore buckets and moves by ruling.
+- **Fourth review** (`tests/test_offer_s6_review4.py`): confirmations need 12+ lines (glued layers split on their
+  labels first) and the name / IC on lines of their own; more tie-up words; organisation nouns by stem; the
+  letterhead skips a reference / date line; TVET letters get the incidental-company excuse (a letterhead "Sdn Bhd"
+  still vetoes); spelt-out TVET is neutral only on the title line; glued "RUJ" not inside a word; street / ISO lines
+  name no organisation.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 
