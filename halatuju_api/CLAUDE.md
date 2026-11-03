@@ -211,7 +211,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
-### Mobile-native arc (separate stream): M0-M7b DONE (M7b pushed 2026-11-03), NEXT = M8
+### Mobile-native arc (separate stream): M0-M7b DONE (M7b live 2026-11-03, main fa8dd439, halatuju-web-01075-4d2), NEXT = M8
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green and `npm run mobile-ledger`; a new `page.tsx` must be classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; every pinned bottom bar on a student or sponsor page carries `data-page-bar`. The per-milestone rules (M1-M7a) are in `docs/sprint-history.md`. **M7b:** `AppShell` draws `components/DesktopOnly.tsx` for the `desktop` routes (`lib/desktopOnly.ts`, held equal to `mobileClass.ts`; a new desktop-only route needs both lists and a reason in en/ms/ta) and hides the page below md BY CSS; the Team / Invitations / Mentors tables are rows on a phone (staff-access actions NOT hidden, Maintenance call).
 

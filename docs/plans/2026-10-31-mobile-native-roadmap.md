@@ -129,7 +129,7 @@ M7a review, the decided doors are read-only on a phone in M7a too (decisions.md,
 sign-offs, Cancel and include, New payment run, billable hours, Close file, Delete student and a sponsor's gift
 membership.
 
-**M7b — The desktop-only gate** (medium; adversarial review) — BUILT on `mobile-m7b`, not pushed (decisions.md, the
+**M7b — The desktop-only gate** (medium; adversarial review) — DONE, live 2026-11-03 (main fa8dd439, halatuju-web-01075-4d2) (decisions.md, the
 Mobile M7b entry). The shared `DesktopOnly` panel REPLACES
 billing-rates, billing, course-data, contracts, contracts/[id] and sponsors/terms/[id] below md, with one way back
 (mounted once in `AppShell` from `lib/desktopOnly.ts`, held equal to `mobileClass`); the Team / Invitations /

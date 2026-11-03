@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (BUILT, branch mobile-m7b)
+## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 
 - **The DesktopOnly panel** (owner "go m7b", design approved at M7 phase 1; decisions.md, the Mobile M7b entry). On
   billing-rates, billing, course-data, contracts, contracts/[id] and sponsors/terms/[id], below md by width the shared
