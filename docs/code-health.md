@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-03 | bff5279 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 193 | 0 | 0 | ok | ok |
 | 2026-11-03 | 2da37ff | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 192 | 0 | 0 | ok | ok |
 | 2026-11-03 | 3bbeda4 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 92 | 0 | 3 | 12 | 187 | 0 | 0 | ok | ok |
 | 2026-11-03 | d16399a | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 11 | 183 | 0 | 0 | ok | ok |
@@ -125,15 +126,15 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-03, 2da37ff, window 2026-08-05 onward)
+## Latest run (2026-11-03, bff5279, window 2026-08-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
 |---|---|---|---|
 | `halatuju_api/apps/scholarship/vision.py` | 14 | 2316 | 32.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 17 | 1356 | 23.1 |
 | `halatuju_api/apps/scholarship/views.py` | 9 | 2441 | 22 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 18 | 1114 | 20.1 |
 | `halatuju_api/apps/scholarship/verdict_engine.py` | 19 | 1004 | 19.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
@@ -142,7 +143,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 290 fix / 293 feat commits since 2026-08-05
+- 292 fix / 295 feat commits since 2026-08-05
 
 ### Files over 1000 lines
 - `2441  halatuju_api/apps/scholarship/views.py`
@@ -150,10 +151,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - `2190  halatuju_api/apps/courses/views.py`
 - `1657  halatuju-web/src/lib/officerCockpit.ts`
 - `1371  halatuju_api/apps/courses/stpm_quiz_data.py`
-- `1356  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1274  halatuju-web/src/app/profile/page.tsx`
 - `1215  halatuju_api/apps/scholarship/serializers.py`
 - `1151  halatuju_api/apps/scholarship/contracts.py`
+- `1114  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `1054  halatuju_api/apps/courses/models.py`
 - `1043  halatuju_api/apps/scholarship/profile_engine.py`
 - `1026  halatuju_api/apps/scholarship/serializers_admin.py`
@@ -206,10 +207,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 44 of 373 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 44 of 376 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 476 entries have a defining line; 192 carry no resolution marker on it
+- 477 entries have a defining line; 193 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -233,12 +234,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 7135: ### ~~[TD-440] Staff Resend can reset the password of a login the person brought with them - high~~ CLOSED 2026-10-31
 - line 7390: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
 - line 7460: ### ~~[TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium~~ CLOSED 2026-11-03
+- line 7584: ### ~~[TD-479] `scholarship/apply/page.gift.test.tsx` failed one deploy build under load - low~~ CLOSED 2026-11-03
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 3bbeda4
+- budgets no looser than at 2da37ff
 
 ### tsc
 - 0 errors in 0 files
@@ -246,11 +248,18 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7623
+- Total keys per locale: 7629
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-03 (bff5279, Mobile-native M6b close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on main as deployed). The window since 2da37ff holds Mobile M6b (web only)
+and Programme Settings. Only `td_open` moved: 192 -> 193 (TD-480, the M6b leftovers). `big` held at 14: M6b split the
+decision card out of `view.tsx` (on the ledger) before adding to it, so the file left smaller (1338 -> 1114).
+**Accepted.**
 
 ### 2026-11-03 (2da37ff, Requests list R1 close) — 0 FAIL
 

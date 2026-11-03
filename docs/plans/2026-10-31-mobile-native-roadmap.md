@@ -107,8 +107,9 @@ destinations, Guide, FAQ, Profile, the theme and Log out (the account menu's own
 open the case, filters in the Sheet, Sort on phones, 12 px minimum, no hover-only hints; rule 15 on the sign-in screens,
 Guide (one chapter chooser), FAQ, Organisation, the Profile cards and the 404. No decision door touched.
 
-**M6b — The case page, documents and viewer** (high; adversarial review) — BUILT on branch `mobile-m6b` (not pushed;
-decision card moved to its own file first, moves only). Leftovers: TD-480. — sticky decision bar that shows the chosen
+**M6b — The case page, documents and viewer** (high; adversarial review) — DONE, live 2026-11-03 (main bff52794, web-01072-xpr;
+retrospective `docs/retrospectives/retrospective-2026-11-03-mobile-m6b.md`; decision card moved to its own file
+first, moves only). Leftovers: TD-480. — sticky decision bar that shows the chosen
 outcome and JUMPS to the decision section (Save stays there); 44 px Prev/Next; rule 15 on the cockpit; documents as
 rows (no inner scroll box; the year chips unchanged); the viewer: images inline, PDFs in the phone's own viewer in a
 new tab; tranche scheduling and payment actions read-only on a phone with a "use a computer" note. Layout only: no

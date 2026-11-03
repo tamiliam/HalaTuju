@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Mobile M6b — the reviewer's case page on phones (branch mobile-m6b, not pushed)
+## Mobile M6b — the reviewer's case page on phones — LIVE 2026-11-03 (main bff52794, web-01072-xpr)
 
 Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,
 request, `window.confirm`, order of steps or server check changed — every cockpit file was diffed with its class

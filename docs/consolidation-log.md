@@ -32,8 +32,8 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-03 Team tables T3 (Mentors under Team, mentor detail page, staff mentor may leave the last staff table as a mentor login, permissions only on the person page; no migration; built, not live) — c3d88aec a3e7f4c5
 - 2026-11-03 Requests list R1 (paged light list, four tabs that partition it, one Needs-action rule for badge and tab, kind filter, search, Previous / Next; owner option A; no migration; live api-01242-ntg, web-01070-c44) — 8e69ecdd 2da37ff4
 
-- 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; not pushed) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
-- 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; not pushed) — 3da191d7 932814ca d29b9447
+- 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; live de48d898) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
+- 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; live bff52794) — 3da191d7 932814ca d29b9447 979baefb
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 
