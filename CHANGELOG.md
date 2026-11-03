@@ -33,6 +33,16 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
   still leaves A refused (closes TD-482, raised the same sprint). Shown on My activity in en / ms / ta. The T5b
   decision now lists what "reviewed" does not count (document checks, gap suggestions, fact edits, a query).
 
+## Mobile M8 — the last small tap targets (phase A, branch mobile-m8, not yet live)
+
+- **44 px on a phone, nothing changed from md** (every fix is a `max-md:` class). `/settings`: the language and
+  theme selects (36 px tall) are `max-md:min-h-11`, still class for class alike. `/admin/programme`: "+ New intake
+  year" (40 px) and the two Intake year Edit text buttons (16 px) — Edit padded to 44 x 44 with the
+  `GuardianCallRecord` idiom; the "which gift?" chooser buttons (34 px, `ChooseProgramme`, and the same buttons in
+  `ProgrammeConfigTab`). `/scholarship/apply`: the gift chooser's Continue (40 px).
+- **Guard:** a `mobileStandard.test.ts` block, "rule 3 — the controls Mobile M8 lifted stay 44 px on a phone".
+  mobile-check for the affected surfaces: 0 small targets; `baseline.json` lowered and the ledger regenerated.
+
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 
 - **The DesktopOnly panel** (owner "go m7b", design approved at M7 phase 1; decisions.md, the Mobile M7b entry). On

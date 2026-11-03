@@ -333,7 +333,7 @@ export default function IntakeYearTab() {
         <p className="text-sm text-ground-600">{t('admin.years.subtitle')}</p>
         {programme && (
           <button type="button" onClick={() => { setError(''); setOpen(true) }}
-            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
+            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
             + {t('admin.years.new')}
           </button>
         )}
@@ -390,7 +390,7 @@ export default function IntakeYearTab() {
                   </span>
                   <button type="button" disabled={busy}
                     data-testid={`edit-card-${y.code}`} onClick={() => startEdit(y)}
-                    className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
+                    className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {t('admin.years.edit')}
                   </button>
                 </div>
@@ -436,7 +436,7 @@ export default function IntakeYearTab() {
                     <td className="px-4 py-3">
                       <button type="button" disabled={busy}
                         data-testid={`edit-${y.code}`} onClick={() => startEdit(y)}
-                        className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
+                        className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                         {t('admin.years.edit')}
                       </button>
                     </td>

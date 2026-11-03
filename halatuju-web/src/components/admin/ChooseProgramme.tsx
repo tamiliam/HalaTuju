@@ -28,7 +28,7 @@ function Box({ options, onSelect }: {
       <div className="mt-3 flex flex-wrap gap-2">
         {options.map((p) => (
           <button key={p.code} type="button" onClick={() => onSelect(p.code)}
-            className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50">
+            className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50 max-md:min-h-11">
             {p.label}
           </button>
         ))}

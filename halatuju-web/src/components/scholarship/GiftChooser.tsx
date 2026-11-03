@@ -48,7 +48,7 @@ export default function GiftChooser({ choices, onPick }: {
       </div>
       <button type="button" disabled={!chosen} data-testid="apply-choose-continue"
         onClick={() => onPick(chosen)}
-        className="mt-5 w-full rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+        className="mt-5 w-full rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11">
         {t('scholarship.apply.chooseCta')}
       </button>
     </div>

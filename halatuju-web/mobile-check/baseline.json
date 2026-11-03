@@ -339,32 +339,32 @@
     "/scholarship/apply @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/scholarship/apply @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 1
+      "smallTargets": 0
     },
     "/search @360 en": {
       "overflow": 0,
@@ -2349,92 +2349,92 @@
     "sandbox:programme-config @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-lean @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:programme-config-two-gifts @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:quiz @360 en": {
       "overflow": 0,
@@ -2589,32 +2589,32 @@
     "sandbox:settings @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:settings @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:settings @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:settings @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:settings @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:settings @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:sheet-locked-confirm @360 en": {
       "overflow": 0,

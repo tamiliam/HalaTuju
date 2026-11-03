@@ -61,7 +61,7 @@ export default function LanguageSelector() {
         value={pending ?? locale}
         onChange={(e) => choose(e.target.value as Locale)}
         aria-busy={busy}
-        className="text-sm border border-ground-200 rounded-lg px-2 py-1.5 bg-ground-0 text-ground-600 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none cursor-pointer"
+        className="text-sm border border-ground-200 rounded-lg px-2 py-1.5 bg-ground-0 text-ground-600 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none cursor-pointer max-md:min-h-11"
         aria-label="Language"
       >
         {Object.entries(LOCALE_LABELS).map(([key, label]) => (

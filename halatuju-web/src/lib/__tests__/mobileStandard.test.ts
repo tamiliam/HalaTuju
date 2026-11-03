@@ -764,6 +764,38 @@ describe('the console lists and tabs on a phone (Mobile M7a)', () => {
   })
 })
 
+// ── The last small targets (Mobile M8) ───────────────────────────────────────────────────────────────
+/**
+ * mobile-check found these controls under 44 px on a phone (/admin/programme, /settings, /scholarship/apply).
+ * Each is lifted with `max-md:` only, so from md the control is the size it always was.
+ */
+describe('rule 3 — the controls Mobile M8 lifted stay 44 px on a phone', () => {
+  const LIFT = 'max-md:min-h-11'
+  test('the language and theme selects (Settings): 44 px tall below md, still class for class alike', () => {
+    const cls = (rel: string) => (readWeb(rel, 'a settings select')
+      .match(/<select[\s\S]*?className="([^"]+)"/) ?? [])[1] ?? ''
+    const lang = cls('src/components/LanguageSelector.tsx')
+    const theme = cls('src/components/ThemeSelector.tsx')
+    expect(lang.split(' ')).toContain(LIFT)
+    expect(theme).toBe(lang)
+  })
+  test('the gift chooser buttons (Configuration, two gifts) and the apply Continue', () => {
+    expect(readWeb('src/components/admin/ChooseProgramme.tsx', 'the gift chooser'))
+      .toMatch(/onClick=\{\(\) => onSelect\(p\.code\)\}\s*className="[^"]*\bmax-md:min-h-11\b/)
+    expect(readWeb('src/components/admin/ProgrammeConfigTab.tsx', 'the configuration tab'))
+      .toMatch(/onClick=\{\(\) => select\(code\)\}\s*className="[^"]*\bmax-md:min-h-11\b/)
+    expect(readWeb('src/components/scholarship/GiftChooser.tsx', 'the apply gift chooser'))
+      .toMatch(/data-testid="apply-choose-continue"[\s\S]*?className="[^"]*\bmax-md:min-h-11\b/)
+  })
+  test('Intake year: "+ New intake year" and every Edit are 44 x 44 below md', () => {
+    const src = readWeb('src/components/admin/IntakeYearTab.tsx', 'the intake year tab')
+    expect(src).toMatch(/setOpen\(true\) \}\}\s*className="[^"]*\bmax-md:min-h-11\b/)
+    const edits = src.match(/onClick=\{\(\) => startEdit\(y\)\}\s*className="[^"]+"/g) ?? []
+    expect(edits.length).toBe(2)
+    for (const e of edits) expect(e).toContain('max-md:min-h-11 max-md:min-w-11 max-md:inline-flex')
+  })
+})
+
 // ── The cockpit on a phone (Mobile M6b) ────────────────────────────────────────────────────────────
 /**
  * Owner, 2026-11-03: the decision bar JUMPS and never saves; a PDF opens in the phone's own viewer; scheduling a

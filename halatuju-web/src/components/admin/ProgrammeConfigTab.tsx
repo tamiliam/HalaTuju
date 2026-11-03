@@ -255,7 +255,7 @@ export default function ProgrammeConfigTab() {
           <div className="mt-2 flex flex-wrap gap-2">
             {programmeChoices.map((code) => (
               <button key={code} type="button" onClick={() => select(code)}
-                className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50">
+                className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50 max-md:min-h-11">
                 {code}
               </button>
             ))}

@@ -8,7 +8,7 @@ Baseline last updated **2026-11-03** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**53 measured** (public page or sandbox surface), **50 fully green.**
+**53 measured** (public page or sandbox surface), **53 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -49,7 +49,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/payments` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/payments/[id]` | Can | M7 | 6 (sandbox `m7-payment-run`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 3 | ❌ |  |
+| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/announcements` | Can | M7 | 6 (sandbox `m7-announcements`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
@@ -94,13 +94,13 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 1 | ❌ |  |
+| `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/award` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/scholarship/bursary` | Must | M4 | 42 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`, sandbox `bursary-funds`, sandbox `bursary-contract`, sandbox `bursary-letters`, sandbox `bursary-mentoring`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/in-programme` | Must | M4 | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
 | `/scholarship/onboarding` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
 | `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |
-| `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 2 | ❌ |  |
+| `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor` | Must | M5 | 24 (public page, sandbox `sponsor-landing`, sandbox `sponsor-giving`, sandbox `sponsor-terms-quiz`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/[...notFound]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
 | `/sponsor/account` | Must | M5 | 6 (sandbox `sponsor-account`) | 0 | 0 | 0 | ✅ |  |
