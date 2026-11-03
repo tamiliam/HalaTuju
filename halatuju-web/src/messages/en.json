@@ -1785,7 +1785,7 @@
         "income_proof_missing": "Upload your STR (Sumbangan Tunai Rahmah) document in the Documents step.",
         "income_incomplete": "Complete the Household income section in the Documents step.",
         "offer_letter_missing": "Upload your offer letter in the Documents step.",
-        "offer_not_official": "Upload your offer letter from a public institution in the Documents step — a public university, polytechnic, community college, matriculation or Form 6 college, or a public skills institute (such as IKBN, IKM or ILP). An offer from a private college or university (IPTS), or a document that is not an offer letter, can't be accepted.",
+        "offer_not_official": "Upload your offer letter from a public institution in the Documents step — a public university, polytechnic, community college, matriculation or Form 6 college, or a public skills institute (such as IKBN, IKM or ILP). An offer from a private college or university (IPTS), or a document that is not an offer letter, can't be accepted. (Private means a self-funded programme, not a subsidised public one — for example a university's private wing or open channel, or a private college that a public body owns.)",
         "str_missing": "Upload your STR document in the Documents step.",
         "str_stale": "Your STR is from an earlier year. Please upload this year's STR.",
         "str_stale_year": "Your STR is from {year}. Please upload this year's STR.",
@@ -2186,7 +2186,7 @@
         },
         "offer_not_official": {
           "title": "Upload your offer letter from a public institution",
-          "desc": "The document uploaded can't be accepted as an offer from a public institution — it looks like a private college or university (IPTS) offer, or it is not an offer letter. Please upload your offer letter (or a confirmation-of-studies letter) from a public university, polytechnic, college or skills institute."
+          "desc": "The document uploaded can't be accepted as an offer from a public institution — it looks like a private college or university (IPTS) offer, or it is not an offer letter. Please upload your offer letter (or a confirmation-of-studies letter) from a public university, polytechnic, college or skills institute. (Private means a self-funded programme, not a subsidised public one — for example a university's private wing or open channel, or a private college that a public body owns.)"
         },
         "course_unspecified": {
           "title": "What do you plan to study?",
@@ -4811,7 +4811,7 @@
           "ic_missing": "Their IC",
           "results_slip_missing": "Their results slip",
           "offer_letter_missing": "Their offer letter",
-          "offer_not_official": "An offer letter from a public institution — a public university, polytechnic, community college, matriculation or Form 6 college, or a public skills institute. A private college or university (IPTS) offer, or a document that is not an offer letter, cannot be accepted.",
+          "offer_not_official": "An offer letter from a public institution — a public university, polytechnic, community college, matriculation or Form 6 college, or a public skills institute. A private college or university (IPTS) offer, or a document that is not an offer letter, cannot be accepted. (Private means a self-funded programme, not a subsidised public one — for example a university's private wing or open channel, or a private college that a public body owns.)",
           "str_missing": "Their STR document",
           "str_not_household": "Their own family's STR — the one on file is in someone else's name (or a working family member's income instead)",
           "str_stale": "This year's STR — the one on file is from an earlier year (or a working family member's income instead)",
