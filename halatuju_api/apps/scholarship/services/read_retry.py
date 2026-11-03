@@ -25,6 +25,7 @@ The rules, each pinned in `tests/test_ai_outage.py`:
 
 #374 / owner ruling 2A (2026-10-28): the same pass also re-reads, ONCE each, live income documents whose
 read predates the approver fields (`approval_unchecked_documents`), so none stays "still checking".
+Owner ruling 2026-11-03 (#53): that includes a STAMPED support document read before `has_signature`.
 """
 import logging
 from datetime import timedelta
@@ -35,6 +36,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
+from ..income_declaration import APPROVAL_TRIED
 from ..models import ApplicantDocument
 from ..read_errors import (IC_SECOND_OPINION_ERROR, RATE_LIMITED, SERVICE_ERROR_PREFIXES,
                            is_ai_service_error)
@@ -94,7 +96,7 @@ def service_error_documents(limit):
 
 #: #374 / ruling 2A: stamped on a row before its approval re-read, so the sweep tries each ONCE (a paid read);
 #: a read that lands rebuilds `vision_fields` and drops it. After one try only an officer's Re-run reads it.
-APPROVAL_TRIED = 'approval_reread_at'
+#: (`APPROVAL_TRIED` is defined in `income_declaration` since 2026-11-03 — its legacy-stamp window reads it.)
 #: The payslip families whose read must carry the approval fields: informal / declaration (ruling 2A), and
 #: `govt` — #374's declaration forms were scored govt before salary_doc 1.2.0 and must be re-scored.
 _APPROVAL_SLIP_FAMILIES = ('informal', 'declaration', 'govt')
@@ -113,13 +115,29 @@ def approval_unchecked_documents(limit):
     if limit <= 0:
         return []
     try:
+        from django.db.models.fields.json import KT
+        from django.db.models.functions import Lower, Trim
         from .decline import CASE_CLOSED_STATES
+        from ..closure import POST_AWARD_STATUSES
+        from ..income_declaration import SIGNATURE_MARKS, STAMP_MARKS, approval_unchecked
+        # Owner ruling 2026-11-03 (#53): a signature-needing document (a support document, or a declaration
+        # form in the payslip slot) read before `has_signature` whose mark is a STAMP is unchecked again
+        # (`income_declaration._signature_unknown`) — picked once, like the rest. Matched on the mark / family
+        # lower-cased and trimmed, as Python reads them; never on a case at or past award (it keeps the
+        # judgement it was awarded on); and re-checked in Python below (`approval_unchecked`).
+        stamped_unsigned = ((Q(doc_type='income_support_doc')
+                             | Q(doc_type='salary_slip', approval_seen='declaration'))
+                            & Q(approval_mark__in=[m for m in STAMP_MARKS if m not in SIGNATURE_MARKS])
+                            & ~Q(vision_fields__fields__has_key='has_signature')
+                            & ~Q(application__status__in=POST_AWARD_STATUSES))
+        never_asked = ((Q(doc_type='income_support_doc')
+                        | Q(doc_type='salary_slip', vision_fields__authenticity__doc_seen__in=_APPROVAL_SLIP_FAMILIES))
+                       & ~Q(vision_fields__fields__has_key='has_stamp_or_signature'))
         rows = (ApplicantDocument.objects
-                .filter(Q(doc_type='income_support_doc')
-                        | Q(doc_type='salary_slip',
-                            vision_fields__authenticity__doc_seen__in=_APPROVAL_SLIP_FAMILIES),
+                .annotate(approval_mark=Lower(Trim(KT('vision_fields__fields__has_stamp_or_signature'))),
+                          approval_seen=Lower(Trim(KT('vision_fields__authenticity__doc_seen'))))
+                .filter(never_asked | stamped_unsigned,
                         superseded_at__isnull=True, vision_fields__has_key='fields')
-                .exclude(vision_fields__fields__has_key='has_stamp_or_signature')
                 # Round 3 (TD-390's window): an approval IMAGE read that failed on our side is retried every
                 # run while its window is open, whatever the once-only stamp says; never after it closes.
                 .exclude(Q(vision_fields__has_key=APPROVAL_TRIED)
@@ -128,7 +146,8 @@ def approval_unchecked_documents(limit):
                          vision_fields__approval_read_until__lte=int(timezone.now().timestamp()))
                 .exclude(application__status__in=CASE_CLOSED_STATES)
                 .order_by('uploaded_at')[:limit])
-        return [d for d in rows if (d.vision_fields or {}).get('fields')]
+        return [d for d in rows if isinstance((d.vision_fields or {}).get('fields'), dict) and d.vision_fields['fields']
+                and ('has_stamp_or_signature' not in d.vision_fields['fields'] or approval_unchecked(d))]
     except Exception:                   # the rest of the sweep must still run
         logger.exception('approval re-read selection failed; the sweep continues')
         return []

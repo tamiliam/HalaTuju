@@ -22,6 +22,46 @@ All notable changes to this project will be documented in this file.
   (six routes replaced, five not; one way back, each branch), a `mobileStandard.test.ts` block (one mount, the CSS
   split, 44 px, no gate file reads it). Ten bite-checks, each fails. Sandbox `m7b-desktop-only`,
   `m7b-desktop-only-editor`.
+
+## Request #53: a village head's name stamp counts as a stamp (2026-11-03)
+
+- **The bug:** a village income form (application 279, documents 4185 and 4204) carried the Ketua Kampung's signature
+  beside a blue rubber-stamped name block (name, "KETUA KAMPUNG", village; no border, no round seal). The image read
+  stored "signature" and no header, so the form was refused "no issuing body", although the owner's rule (stamp + a
+  named / titled approver, no header needed) accepts it.
+- **The fix:** `income_declaration.APPROVAL_PROMPT` now says a rubber-stamped NAME BLOCK in stamp ink is a stamp, with
+  or without a border, seal or crest. Text in the form's own print (printed or typed) is still not a stamp, however
+  official it reads; handwriting alone is a signature. The approver rule's code is unchanged.
+- **Versions:** genuineness `MODEL_VERSION` 1.23.0; `VERDICT_ENGINE_VERSION` 2026-11-03.1 (a form that now counts can
+  move an income band).
+- **Tests:** `test_income_declarations.py`: the prompt's wording, both halves; and the #53 answer (name stamp, title,
+  no letterhead) counts while the same form read as a bare signature does not.
+- **Existing rows:** stored reads keep the old answer until re-read. 4185 / 4204 are re-read by hand after the deploy;
+  other candidates come from a read-only list (stored "signature" / "no", an approver named, no header).
+- **Owner ruling 2026-11-03 (same request):** *"We cannot accept a document without a signature. Pay slips are
+  different."* and *"they need ketua kampung etc who needs to sign"*. A slip READ AS a payslip (the informal
+  payslip family) keeps ruling 3A (a chop alone approves). Every other informal document, a declaration form in the
+  payslip slot included, needs a HAND signature by a KNOWN signer (a name or title): `approver = signed and named`;
+  stamp only, or a signature nobody is named for, is no approver; the header rule is unchanged. The image read asks a
+  fifth field, `has_signature` ("yes" / "no", stamp or no stamp; a stamped name block, a printed name or a name
+  hand-written in block capitals is not a signature); when asked it alone decides (a contradictory mark never
+  helps); `has_stamp_or_signature` is kept and only a read from before falls back on it. `income_declaration.
+  approval_missing` / `needs_signature`.
+- **Legacy reads:** a signature-needing read from before `has_signature` whose mark is a stamp is UNCHECKED
+  (`_signature_unknown`: never passed, never refused, the family told "still checking"), and the hourly sweep
+  (`read_retry.approval_unchecked_documents`, mark / family matched lower-cased and trimmed, re-checked in Python)
+  picks it for ONE re-read — one paid Gemini image call each, plus the Re-run's OCR and text read. If that re-read
+  keeps the old read, it gives up after `APPROVAL_RETRY_WINDOW` (72 h from `approval_reread_at`) to the unreadable
+  path (officer by eye). A case at or past award (`closure.POST_AWARD_STATUSES`, or closed after funding) keeps the
+  judgement it was awarded on and is never swept. Legacy "signature" / "no" / "yes" marks and payslips are judged
+  as stored.
+- **Found, not fixed (pre-existing):** a known-bank statement (ruling 4A) never gets `has_stamp_or_signature`, so
+  the sweep's never-asked clause re-reads it EVERY hourly run (a paid OCR loop; probe: picked 3 runs of 3).
+- **Tests:** `test_income_declarations.py`: stamp-only support doc refused; stamp + signature + named counts, unnamed
+  refused; contradictory "signature"/"no" and "both"/"no" refused; stamp-only payslip counts; a payslip's
+  `has_signature` is never read; a declaration in the payslip slot needs the signature; legacy stamped reads are
+  unchecked, swept once (case-insensitive) and give up after the window; awarded / funded cases keep the old
+  judgement; prompt / schema pins for `has_signature`; the #53 test now needs the signature.
 - docs: slimmed halatuju_api/CLAUDE.md from ~176k to ~22k characters; full text moved to docs/deployment.md, docs/testing.md, docs/code-standards.md, docs/domain-rules.md, docs/architecture.md and docs/sprint-history.md (credit discipline).
 
 ## Team tables T5a — permission catalogue v2 + aliases (LIVE 2026-11-03; main 55de0610; api-01245-mrb)
