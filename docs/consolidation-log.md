@@ -34,7 +34,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 
 - 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; live de48d898) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
 - 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; live bff52794) — 3da191d7 932814ca d29b9447 979baefb
-- 2026-11-03 Mobile-native Sprint M7a (phase 1: maintenance status read-only on a phone, TD-480 item 4; owner split M7a / M7b; tabs: four chips, more one chooser; console tables as rows by CSS; rule 15 on the scholar file, student detail, payment run, request detail; table guard on every component folder; layout only; not pushed) — 66f8e80d efa1ecaa ed7afe2c b6624afc
+- 2026-11-03 Mobile-native Sprint M7a (phase 1: maintenance status read-only on a phone, TD-480 item 4; owner split M7a / M7b; tabs: four chips, more one chooser; console tables as rows by CSS; rule 15 on the scholar file, student detail, payment run, request detail; table guard on every component folder; layout only, then the review: every decided door read-only on a phone, table ARIA roles; not pushed) — 66f8e80d efa1ecaa ed7afe2c b6624afc d9360541
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 

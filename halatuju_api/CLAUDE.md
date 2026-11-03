@@ -1195,6 +1195,10 @@ a console table becomes rows on a phone by CSS — `<TableFrame phoneRows>` + `d
 `data-phone-rows` wrapper on a raw table), never a second rendering; the console white card is `PHONE_CARD_XL` and the tab chips `PHONE_TAB*`, both in `lib/phoneConsole.ts` (NEVER `phoneSection.ts`: it ships to every student route);
 `pageWidth.test.ts` reads every component folder (Invitations rosters and Team -> Mentors exempt until T4).
 Sandbox `src/sandbox/adminM7Surfaces.tsx` (`m7-*`; detail pages get their id through `PathParamsContext`).
+After the M7a review the decided doors are read-only on a phone in M7a (payment run sign-off / Cancel / include, New
+payment run, billable hours, Close file, Delete student, a sponsor's gift membership): a `data-*` hooked
+`max-md:hidden` box + an `admin.useComputer.*` note, guarded door by door in `mobileStandard.test.ts`. Restacked
+tables carry ARIA roles (`TableFrame` `stampTableRoles`). M7b = the `DesktopOnly` panel only.
 NEXT: M7b, M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 LIVE (main 7871bb39; api-01244-2rq, web-01073-jxr; no migration)

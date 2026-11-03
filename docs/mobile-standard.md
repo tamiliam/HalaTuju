@@ -147,7 +147,9 @@ Three kinds of check, from cheapest to most human:
   Below md the SAME table restacks by CSS (`globals.css`, "A CONSOLE TABLE AS ROWS ON A PHONE"): the header row only
   for a screen reader, each row a block divided by a hairline, each cell a line named by its label, controls 44 px,
   no card and no scroll floor. One DOM, so every button is the desktop's own with its handler — no second copy of a
-  door, and no test meets "found multiple elements". A raw table outside the frame takes a `data-phone-rows` wrapper
+  door, and no test meets "found multiple elements". The header row is clipped, not removed, and the elements carry
+  explicit ARIA roles (`stampTableRoles`; WebKit can read a `display: block` table as no table at all). A raw table
+  outside the frame takes a `data-phone-rows` wrapper and writes the roles itself
   (`sponsors/SponsorTermsCard.tsx`). Guarded: `pageWidth.test.ts` now reads EVERY component folder, and
   `mobileStandard.test.ts` ("the console lists and tabs on a phone") pins the CSS and that each such table names its
   cells. Sandbox: `m7-announcements`, `m7-sponsor-terms`.
@@ -302,7 +304,10 @@ Three kinds of check, from cheapest to most human:
   page below `md`; a big page is split FIRST, moves only, before any layout change (`view/DecisionCard.tsx`). **A
   control the owner keeps off phones is hidden below `md` with a note saying where to do it** (`PostAwardPanels.tsx`:
   `max-md:hidden` on the tranche actions and the Schedule form, a `md:hidden` "use a computer" note) — never a
-  disabled look-alike. **One breakpoint decides "phone" (M6b review):** below `md` by width, for the PDF rule and the
+  disabled look-alike. **M7a (owner + review): every decided door follows it** — the payment run's sign-off, Cancel
+  and include, New payment run, billable hours, Close file, Delete student and a sponsor's gift membership — each a
+  `data-*` hooked `max-md:hidden` box with an `admin.useComputer.*` note; `mobileStandard.test.ts` ("every decided
+  door is read-only on a phone") fails on any call of a door outside its box. **One breakpoint decides "phone" (M6b review):** below `md` by width, for the PDF rule and the
   payment controls alike — a phone held sideways is wider than `md` and gets both, which is accepted: the server
   authorises by role, never by device, so this is a layout choice, not a safety gap. Swept in M6b: the case page and
   its panels.

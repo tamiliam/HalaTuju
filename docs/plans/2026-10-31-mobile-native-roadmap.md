@@ -123,13 +123,15 @@ read-only on a phone (TD-480 item 4, owner: yes).
 chips, more as one chooser); six scroll-only tables and the Sponsors Terms table as rows on a phone (the same table
 restacked by CSS, `TableFrame phoneRows`); the two underlined tab bars as chips; rule 15 on the scholar file and its
 tabs (`ScholarMoney` stacks), student detail, the payment run, request detail and (light) the Requests list; the
-table guard widened to every component folder; sandbox surfaces `adminM7Surfaces.tsx`. Layout only.
+table guard widened to every component folder; sandbox surfaces `adminM7Surfaces.tsx`. Layout only. After the
+M7a review, the decided doors are read-only on a phone in M7a too (decisions.md, "M7a review"): the payment run's
+sign-offs, Cancel and include, New payment run, billable hours, Close file, Delete student and a sponsor's gift
+membership.
 
-**M7b — The desktop-only gate and the doors** (medium; adversarial review) — the shared `DesktopOnly` panel REPLACES
+**M7b — The desktop-only gate** (medium; adversarial review) — the shared `DesktopOnly` panel REPLACES
 billing-rates, billing, course-data, contracts, contracts/[id] and sponsors/terms/[id] below md, with one way back
-(mounted once from `mobileClass`); the partner template editor (inline, no route) read-only on a phone; money doors
-(the payment run's sign-offs, Cancel run, include / exclude and amounts, New payment run, billable hours), Close file,
-Delete student and a sponsor's gift membership read-only on a phone with a "use a computer" note. Later, with
+(mounted once from `mobileClass`); the partner template editor (inline, no route) read-only on a phone; the Team /
+Invitations / Mentors tables as rows if time allows (T4 is live). The doors moved into M7a (review). Later, with
 Maintenance (Team tables T4/T5): Team, Invitations, Mentors, PermissionEditor and the person page, GiftProgrammes,
 the Sponsors credits, Overview.
 

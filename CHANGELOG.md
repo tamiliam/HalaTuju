@@ -27,6 +27,19 @@ All notable changes to this project will be documented in this file.
     withdraw, triage, schedule, done, decline, post comment); `requests/page.tsx` (the new-request form);
     `source/SourceScholars.tsx` (the witness link, restacked). Not touched: Team, Invitations, Mentors,
     PermissionEditor, GiftProgrammes, the Sponsors credits, Overview (Team tables T4/T5 own them).
+  - **M7a review fixes (lead): the decided doors are READ-ONLY on a phone now**, not only bigger — each in a
+    `max-md:hidden` wrapper with a `md:hidden` note (`admin.useComputer.*`, en / ms / ta); desktop, handlers,
+    requests and confirms unchanged. **Doors (for the re-review):** `payments/[id]/page.tsx` — Maker / Finance /
+    Approver sign-off (`data-payment-sign`, the typed-name hint with them), Cancel run (`data-payment-cancel`), the
+    phone card's include Toggle (`data-payment-include`); `payments/page.tsx` — New payment run (`data-new-run`);
+    `RequestHoursForm.tsx` — Record / Edit hours (`data-hours-open`; what is recorded stays visible);
+    `ScholarControls.tsx` — Close file, its reason and checklist (`data-close-actions`); `students/[id]/page.tsx` —
+    the typed confirmation and Delete (`data-delete-actions`); `sponsors/[id]/page.tsx` — ONLY the gift membership
+    Accept / Take back (`data-membership-actions`; Maintenance's option a). Guarded by "every decided door is
+    read-only on a phone" (every call of each door inside its box, whatever the argument) and
+    `phoneDoors.test.tsx`; the status guard now catches `doSetSubstate(` with any argument and a third file
+    drawing a status label. The restacked tables carry ARIA roles (`stampTableRoles`; written into the two raw
+    tables). `usePhoneWidth` falls back to `addListener` (Safari before 14). Every new check bites.
 
 - **The maintenance status is read-only on a phone** (owner 2026-11-03, TD-480 item 4: yes). On the scholar file
   (`ScholarControls.tsx`) and the cockpit's no-file control (`PostAwardPanels.tsx`) the On track / Probation / On hold /

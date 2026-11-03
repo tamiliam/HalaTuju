@@ -37,8 +37,20 @@ The desktop-only pages (billing, contracts, course data, sponsor terms) were hal
   place of `SourceInvite`.
 
 **Consequences:** `pageWidth.test.ts` reads every component folder (it read only `components/admin`); a list
-passes with its own `md:hidden` cards, `TableFrame phoneRows` or a `data-phone-rows` wrapper. The doors are
-restyled for 44 px in M7a and hidden in M7b; the M7a door list is in the M7a CHANGELOG entry for the review.
+passes with its own `md:hidden` cards, `TableFrame phoneRows` or a `data-phone-rows` wrapper.
+
+**M7a review (lead, 2026-11-03) — the doors move into M7a.** The review found the restyle made the money doors
+BIGGER on a phone before M7b would hide them, so decision 4 is built now, in M7a, by the pattern of the maintenance
+status (`66f8e80d`): each door in a `max-md:hidden` wrapper, a `md:hidden` "use a computer" note
+(`admin.useComputer.*`, en / ms / ta), below md by width, the desktop and every handler, request and confirm
+unchanged. The doors: the payment run's Maker / Finance / Approver sign-off, Cancel run and the phone card's include
+Toggle (amounts were already desktop-only); New payment run; logging billable hours on a request; Close file (its
+reason, checklist and confirm); Delete student; a sponsor's gift membership approve / reject (Maintenance chose to
+take the wrapper from us — the two buttons only, in `sponsors/[id]/page.tsx`; credits, Record / Void and
+`signSponsorCredit` untouched; T5d rebases onto it). Staff access and the sponsor credits stay with Team tables T5.
+M7b now carries only the `DesktopOnly` panel (and the Team / Invitations / Mentors tables if time allows). The
+restacked tables also carry explicit ARIA roles (table, rowgroup, row, columnheader / rowheader, cell): `display:
+block` can cost a table its semantics in WebKit / VoiceOver.
 
 ## Mobile M6b follow-up: the maintenance status is read-only on a phone, like the payments — 2026-11-03 (owner, TD-480 item 4: "yes")
 
