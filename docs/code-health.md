@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-04 | f44f0a8 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 198 | 0 | 0 | ok | ok |
 | 2026-11-03 | fa8dd43 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 193 | 0 | 0 | ok | ok |
 | 2026-11-03 | 881e546 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 193 | 0 | 0 | ok | ok |
 | 2026-11-03 | bff5279 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 193 | 0 | 0 | ok | ok |
@@ -128,7 +129,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-03, fa8dd43, window 2026-08-05 onward)
+## Latest run (2026-11-04, f44f0a8, window 2026-08-06 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -136,16 +137,16 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/vision.py` | 14 | 2316 | 32.4 |
 | `halatuju-web/src/lib/officerCockpit.ts` | 17 | 1657 | 28.2 |
 | `halatuju_api/apps/scholarship/views.py` | 9 | 2441 | 22 |
+| `halatuju_api/apps/scholarship/verdict_engine.py` | 21 | 1004 | 21.1 |
 | `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 18 | 1114 | 20.1 |
-| `halatuju_api/apps/scholarship/verdict_engine.py` | 20 | 1004 | 20.1 |
 | `halatuju_api/apps/scholarship/serializers_admin.py` | 12 | 1026 | 12.3 |
 | `halatuju_api/apps/scholarship/serializers.py` | 9 | 1215 | 10.9 |
 | `halatuju_api/apps/courses/views_admin.py` | 10 | 811 | 8.1 |
+| `halatuju_api/apps/scholarship/genuineness/results_doc.py` | 13 | 600 | 7.8 |
 | `halatuju_api/apps/scholarship/services/blockers.py` | 14 | 557 | 7.8 |
-| `halatuju_api/apps/scholarship/genuineness/results_doc.py` | 12 | 600 | 7.2 |
 
 ### Fix ratio
-- 296 fix / 301 feat commits since 2026-08-05
+- 298 fix / 302 feat commits since 2026-08-06
 
 ### Files over 1000 lines
 - `2441  halatuju_api/apps/scholarship/views.py`
@@ -212,7 +213,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - 44 of 382 web test files read source text (signals: readFileSync, apiSource); drift 29 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 477 entries have a defining line; 193 carry no resolution marker on it
+- 482 entries have a defining line; 198 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -237,13 +238,14 @@ drift tests are counted as the habit they cure). See TD-284.
 - line 7390: ### [TD-464] Mobile M4b leftovers: the shared Language / Theme selects are 36 px; mobile-check names a fixed bar's child as "widest" - low
 - line 7460: ### ~~[TD-470] `/scholarship/apply` is 0.19 kB under its first-load line after M5 - medium~~ CLOSED 2026-11-03
 - line 7540: ### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone:
-- line 7584: ### ~~[TD-479] `scholarship/apply/page.gift.test.tsx` failed one deploy build under load - low~~ CLOSED 2026-11-03
+- line 7569: ### ~~[TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low~~ CLOSED 2026-11-04
+- line 7650: ### ~~[TD-479] `scholarship/apply/page.gift.test.tsx` failed one deploy build under load - low~~ CLOSED 2026-11-03
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 881e546
+- budgets no looser than at fa8dd43
 
 ### tsc
 - 0 errors in 0 files
@@ -251,7 +253,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7692
+- Total keys per locale: 7693
 
 ## Reviews
 

@@ -2,10 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T5b — QC self-sufficient + widened self-QC guard (NOT LIVE YET; branch maint-s7)
+## Team tables T5b — QC self-sufficient + widened self-QC guard (LIVE 2026-11-04; main f44f0a8b; api-01248-ggf, web-01076-gr4; incl. review round 1)
 
 Roadmap T5 (owner "approve all": "QC implicitly sees ALL students and may decide on any except those they reviewed /
-interviewed / were assigned"); decisions.md "Team tables T5b". No migration, no new endpoint, no web change.
+interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added migration 0202 (choices only). No new endpoint, no web change. Live access unchanged.
 
 - **QC is self-sufficient** (`apps/courses/staff_permissions.py`): `qc` now IMPLIES `see_all` (`IMPLIES`, replacing
   `DEPENDS_ON`). A stored list naming `qc` without `see_all` reads as `see_all + qc` (it used to lose `qc`), so every

@@ -127,10 +127,7 @@ sprint start)
 - **T5a: LIVE 2026-11-03 (main 55de0610; api-01245-mrb).** `apps/courses/staff_permissions_v2.py` (catalogue v2,
   aliases, `effective_v2` read-only), golden `test_permission_catalogue_v2.py`; no gate converted. Lead rulings: the
   scholar Mentoring tab gets its own Engagement key `mentoring.view/.edit`; `programmes.edit` is in the Programme group.
-- **T5b: BUILT 2026-11-03, NOT LIVE YET (branch maint-s7).** `qc` implies `see_all` (`staff_permissions.IMPLIES`);
-  the QC decision refuses anyone who was ever assigned, interviewed (draft too), verify-accepted or recorded the
-  verdict (`apps/scholarship/qc_separation.py`); decisions.md "Team tables T5b". Raised TD-481 (the Decline door at
-  AWAITING QC — owner question), TD-482, TD-483.
+- **T5b: LIVE 2026-11-04 (main f44f0a8b; api-01248-ggf, web-01076-gr4).** `qc` implies `see_all`; the QC decision refuses anyone who was ever assigned, interviewed, verify-accepted or recorded the verdict (`apps/scholarship/qc_separation.py`). Open: TD-481 (own sprint next, adversarial), TD-483, TD-484, TD-485.
 - Sprints, each with the owner's "yes": **T5a** catalogue v2 + aliases, no gate converted · **T5b** QC
   self-sufficient + widened self-QC guard (adversarial) · **T5c** pages open by keys, Programmes landing, role display
   only (adversarial) · **T5d** money: credits maker/check/approve, payments fallback rule, data migration

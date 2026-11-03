@@ -1809,3 +1809,4 @@ is prefetched — weight moved off a route's first load can still travel in the 
   flipped a polytechnic's tick. **Rule:** a membership test reads the candidate's own name, its unique acronym and
   an explicit alias list, plus a STABLE exclusion (the line names another institution outright); anything that
   depends on the count of unrelated rows is a test that changes when the catalogue does. (Offer date rule, 2026-11-01)
+- **A review round that adds a migration re-runs the migrate-first step BEFORE the push, including the `django_migrations` ledger row.** The lead's checklist was read once, for the first build; round 1 then added migration 0202 and the push went out first. Harmless there (choices only, no DDL), but the same slip with DDL is the 2026-09-11 failure. (Team tables T5b, 2026-11-04)

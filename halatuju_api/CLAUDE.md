@@ -221,7 +221,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green and `npm run mobile-ledger`; a new `page.tsx` must be classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; every pinned bottom bar on a student or sponsor page carries `data-page-bar`. The per-milestone rules (M1-M7a) are in `docs/sprint-history.md`. **M7b:** `AppShell` draws `components/DesktopOnly.tsx` for the `desktop` routes (`lib/desktopOnly.ts`, held equal to `mobileClass.ts`; a new desktop-only route needs both lists and a reason in en/ms/ta) and hides the page below md BY CSS; the Team / Invitations / Mentors tables are rows on a phone (staff-access actions NOT hidden, Maintenance call).
 
-### ⚠ STATE — TEAM TABLES T5b (NOT LIVE YET; branch maint-s7; no migration, no endpoint, no web change)
+### STATE AT 2026-11-04 — TEAM TABLES T5b LIVE (main f44f0a8b, api-01248-ggf, web-01076-gr4; migration 0202 choices only, no endpoint, no web change)
 
 Roadmap T5; decisions.md "Team tables T5b". **`qc` IMPLIES `see_all`** (`staff_permissions.IMPLIES`, read by `clean`;
 `DEPENDS_ON` is gone): a stored `['qc']` resolves to `see_all + qc`, so every `see_all` reader opens for it by
@@ -230,9 +230,10 @@ It is never an Admin hat (`staff_tables.admin_keys` drops that `see_all`). v2: `
 **The QC separation guard is `apps/scholarship/qc_separation.refusal`** (asked by `_require_qc`): refuses the current
 assignee, anyone EVER assigned (`AssignmentEvent`), any interviewer (a draft counts) or slot proposer, the verdict
 recorder, the verify-accepter, and anyone whose activity list records review work on the case; super exempt. **A new
-kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481 (Decline door at
-AWAITING QC), TD-483, TD-484, TD-485. Review round 1: verb `interview_drafted` (migration 0202, choices only) is
-written by `AdminInterviewView.post` when a draft's credit moves to the saver, and is a guard verb.
+kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481, TD-483, TD-484, TD-485. Review round 1: verb `interview_drafted` (migration 0202, choices only) is
+written by `AdminInterviewView.post` when a draft's credit moves to the saver, and is a guard verb. Live access unchanged.
+
+**NEXT = TD-481** (the reviewer's Decline at AWAITING QC goes through the QC gate; own small sprint, adversarial review), **then T5c**.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 
@@ -242,7 +243,7 @@ Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permi
 nothing outside the tests imports it (`NotYetAGate` walks the tree), every page still opens through `resolve` /
 `has_perm`, `staff_tables.may_*` and the role checks, and `asked_set` refuses a v2 key. **A NEW PAGE must still be gated
 the old way AND get a v2 key** in `CATALOGUE_V2` plus a door in `test_permission_catalogue_v2._doors` (the coverage
-test asks the real gate per live shape). Next: T5b (QC self-sufficient).
+test asks the real gate per live shape).
 
 ## Known Issues & Future Work
 

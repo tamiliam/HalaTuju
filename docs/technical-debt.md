@@ -7564,11 +7564,11 @@ org-wide — can decline it directly: a QC outcome reached without `_require_qc`
 separation guard (`qc_separation.refusal`). The intended road for a reviewer's decline is record-verdict -> submit-
 decline -> QC confirm (owner 2026-07-19). **Fix (needs the owner):** refuse `interview` from `interviewed` on this
 door (a QC decides there), or route it through `_require_qc`; check the cockpit hides Decline at AWAITING QC. A
-regression test asks the door as assignee, as an unrelated QC and as a super. *(A · S)*
+regression test asks the door as assignee, as an unrelated QC and as a super. **Owner ruling 2026-11-04: fixed in its OWN small sprint next, with an adversarial review.** *(A · S)*
 
-### ~~[TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low~~ CLOSED 2026-11-03
+### ~~[TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low~~ CLOSED 2026-11-04
 
-**CLOSED 2026-11-03 by the T5b review round 1** (same sprint): `AdminInterviewView.post` writes an
+**CLOSED 2026-11-04 by the T5b review round 1, commit 730a7216** (same sprint): `AdminInterviewView.post` writes an
 `interview_drafted` activity row when a draft's credit moves to the saver (migration `0202`, choices only), and
 `qc_separation.REVIEW_VERBS` names it; `test_qc_self_sufficient.ThroughTheDoors.
 test_a_draft_author_whose_credit_a_colleague_took_is_still_refused` (proved red without the verb in the guard).
