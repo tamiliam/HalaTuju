@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T2 — the Team page (not yet live)
+## Team tables T2 — the Team page (LIVE 2026-11-03; main 54f997a8; api-01241-9hv, web-01069-4vh)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T2); lead rulings Q1-Q4 2026-11-03 (decisions.md the same
 day). No migration, no new stored field: the existing `PartnerAdmin.permissions` column carries every change.

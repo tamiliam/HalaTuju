@@ -1169,7 +1169,7 @@ list = rows that open the case, filters in a Sheet (one `filterControls` for bot
 JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
 NEXT: M6b, M7, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 BUILT, NOT LIVE (branch maint-s7; no migration)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 LIVE 2026-11-03 (main 54f997a8; api-01241-9hv, web-01069-4vh; no migration)
 
 Roadmap T2; decisions.md 2026-11-03 "Team tables T2" (lead rulings Q1-Q4). **Team -> Admins / Reviewers -> Add and
 Remove from** live in `apps/scholarship/staff_tables_admin.py` (`may_act`, `plan_table_change`, `change`,
