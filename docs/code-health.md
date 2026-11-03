@@ -26,6 +26,7 @@ drift tests are counted as the habit they cure). See TD-284.
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | mirror | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-03 | 2da37ff | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 91 | 0 | 3 | 12 | 192 | 0 | 0 | ok | ok |
 | 2026-11-03 | 3bbeda4 | 90 | 50 | vision.py 32.4 | 14 | 15 | 4 | 83 | 92 | 0 | 3 | 12 | 187 | 0 | 0 | ok | ok |
 | 2026-11-03 | d16399a | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 11 | 183 | 0 | 0 | ok | ok |
 | 2026-11-02 | 688a1a4 | 90 | 50 | vision.py 32.6 | 14 | 15 | 4 | 82 | 92 | 0 | 3 | 12 | 180 | 0 | 0 | ok | ok |
@@ -124,7 +125,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | - | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | - | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-11-03, 3bbeda4, window 2026-08-05 onward)
+## Latest run (2026-11-03, 2da37ff, window 2026-08-05 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -141,7 +142,7 @@ drift tests are counted as the habit they cure). See TD-284.
 | `halatuju_api/apps/scholarship/sponsorship.py` | 7 | 1010 | 7.1 |
 
 ### Fix ratio
-- 288 fix / 289 feat commits since 2026-08-05
+- 290 fix / 293 feat commits since 2026-08-05
 
 ### Files over 1000 lines
 - `2441  halatuju_api/apps/scholarship/views.py`
@@ -174,7 +175,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - `165  halatuju_api/apps/courses/views.py:1017 get`
 - `162  halatuju_api/apps/scholarship/help_engine.py:342 verdict_for_document`
 - `153  halatuju_api/apps/scholarship/bursary.py:129 render_agreement_html`
-- `151  halatuju_api/apps/courses/views_staff.py:195 post`
+- `153  halatuju_api/apps/courses/views_staff.py:200 post`
 
 ### Function names with 3+ homes in one app
 - _gemini_generate x3 (scholarship): apply_copy_draft.py, contracts.py, sponsor_terms.py
@@ -186,13 +187,13 @@ drift tests are counted as the habit they cure). See TD-284.
 - courses -> scholarship: 19 edges (26 import statements)
 - reports -> courses: 8 edges (9 import statements)
 - reports -> scholarship: 2 edges (3 import statements)
-- scholarship -> courses: 54 edges (271 import statements)
+- scholarship -> courses: 54 edges (295 import statements)
 
 ### Suppressions
 - # noqa: 38
 - # type: ignore: 11
 - : any: 2
-- eslint-disable: 41
+- eslint-disable: 40
 - reasoned `# noqa: CODE — reason` (informational, not budgeted): 42
 
 ### Skipped tests
@@ -205,10 +206,10 @@ drift tests are counted as the habit they cure). See TD-284.
 - halatuju-web/src/lib/incomeWizard.ts:125  Compulsory (mirrors income_engine.salary_member_blocks): IC → relationship doc. Income its
 
 ### Source-text guard tests (web)
-- 44 of 371 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
+- 44 of 373 web test files read source text (signals: readFileSync, apiSource); drift 28 (*Drift.test.ts, counted apart)
 
 ### Debt register
-- 471 entries have a defining line; 187 carry no resolution marker on it
+- 476 entries have a defining line; 192 carry no resolution marker on it
 - no TD number defined twice (declared collisions: 151, 152)
 
 ### Debt register near-misses — read these by eye
@@ -237,7 +238,7 @@ drift tests are counted as the habit they cure). See TD-284.
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at d16399a
+- budgets no looser than at 3bbeda4
 
 ### tsc
 - 0 errors in 0 files
@@ -245,11 +246,20 @@ drift tests are counted as the habit they cure). See TD-284.
 ### i18n
 - ==================================================
 - ALL PASSED (0 warnings)
-- Total keys per locale: 7544
+- Total keys per locale: 7623
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-11-03 (2da37ff, Requests list R1 close) — 0 FAIL
+
+**0 FAIL, 5 standing WARNs** (`--full`, on the R1 worktree at main's 2da37ff as deployed). The window since 3bbeda4
+holds Team tables T2 and T3 and Requests list R1. Moved: `td_open` 187 -> 192 (TD-475, TD-476 Team tables; TD-477 R1's
+Applications follow-up; TD-478, TD-479 two unrelated test flakes raised at this close; TD-479 closed after the reading, fixed by `159e824f`); `supp` 92 -> 91 (better: R1
+deleted the list page's `load` and its `eslint-disable`); `xapp` unchanged at 83 edges (statement count 271 -> 295 is
+the Team tables' imports; R1's new `org_requests_queue.py` imports only its own app). `long`'s 15th entry
+`views_staff.py` 151 -> 153 is not R1's. **Accepted.**
 
 ### 2026-11-03 (3bbeda4, Mobile-native M6a close) — 0 FAIL
 

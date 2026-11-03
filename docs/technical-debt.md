@@ -7567,3 +7567,28 @@ has two lines of ledger room. Also open from R1 (D7): Previous / Next walk only 
 crossing to the next page would need a fetch from the detail page. **Fix:** after M6b lands, the scholarship list
 writes through `writeListNav` and the cockpit header reads `useListNav` (deleting the hand-rolled code); the
 cross-page step, if wanted, is its own small change. *(W · S)*
+
+### [TD-478] A document-snapshot subtest failed once in a full `-n auto` run, then passed twice - low
+
+**Raised 2026-11-03 at the Requests list R1 close.** The lead's full api run on the rebased R1 tree
+(`python -m pytest -q -n auto -p no:cacheprovider`) failed one subtest:
+`apps/scholarship/tests/test_document_snapshot.py::TheSnapshotChangesNoResponseByte::test_tagged_and_untagged_income_documents`
+(awaiting_qc / recommend / salary / tagged-and-untagged). It passed on two re-runs (serial, and `-n 4`), and the next
+full run was 12,015 passed / 3 skipped / 0 failed. R1 touches nothing on the document path, so it predates the sprint.
+The matrix compares response BYTES with the snapshot on and off; a case built from two documents may be ordering on a
+tie (the matrix already has an identical-`uploaded_at` case) or reading a clock. **Next step:** on a second sighting,
+capture the assertion diff and rerun that subtest alone with the same xdist worker; check whether the two documents'
+order in the response depends on insertion order or a timestamp. **Trigger:** a second sighting, or the deploy gate
+refusing a push on it. *(T · S)*
+
+### ~~[TD-479] `scholarship/apply/page.gift.test.tsx` failed one deploy build under load - low~~ CLOSED 2026-11-03
+
+**CLOSED 2026-11-03 by `159e824f`** (Programme Settings, on main): the test now waits for the profile prefill, which
+could land after "Change" showed — the race the gate exposed. Recorded for the trail.
+
+**Raised 2026-11-03 at the Requests list R1 close.** Team tables T3's web build `c013be40` failed one jest test in
+`src/app/scholarship/apply/page.gift.test.tsx`; the same tree passed locally and in the next build (`a972cc1e`, which
+shipped R1's and T3's web). Neither sprint touched the apply page. The pattern matches the Mobile M4 lesson (a test that
+waits for one thing and asserts on another, exposed by the slower gate machine). **Fix:** read which assertion failed
+from the build log, find the async read it depends on, wait for THAT, and prove it by delaying the mock (as was done for
+`ScholarshipDocuments.test.tsx`). *(T · S)*
