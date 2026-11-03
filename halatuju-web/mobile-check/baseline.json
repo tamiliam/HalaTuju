@@ -1956,6 +1956,66 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:m7b-desktop-only @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7b-desktop-only-editor @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:officer-cockpit @360 en": {
       "overflow": 0,
       "smallInputs": 0,

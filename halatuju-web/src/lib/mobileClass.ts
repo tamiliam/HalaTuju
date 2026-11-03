@@ -200,11 +200,11 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
     why: 'an internal coverage panel for the course catalogue, used by the platform team only',
   },
   '/admin/contracts': {
-    cls: 'desktop', sprint: 'M7',
+    cls: 'desktop', sprint: 'M7', surfaces: ['m7b-desktop-only'],
     why: 'contract template versions — authored and compared at a desk, never on a phone',
   },
   '/admin/contracts/[id]': {
-    cls: 'desktop', sprint: 'M7',
+    cls: 'desktop', sprint: 'M7', surfaces: ['m7b-desktop-only-editor'],
     why: 'the clause editor: long legal text in three languages, edited side by side',
   },
   '/admin/sponsors/terms/[id]': {
