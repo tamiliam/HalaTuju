@@ -76,7 +76,7 @@ export function PostAwardPanels({
           an eWallet id, not yet activated) is paid by the runs but has no file to hold her from — so
           her status control stays HERE (`maintenance_controls`), and only for her. */}
       {noFileControl && (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2"
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2"
           data-testid="no-file-substate">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
@@ -84,20 +84,20 @@ export function PostAwardPanels({
               {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
             </span>
           </div>
-          <p className="text-[11px] text-ground-500">{t('admin.scholars.control.noFileHint')}</p>
+          <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholars.control.noFileHint')}</p>
           <div className="flex flex-wrap gap-1.5">
             {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
               .filter((s) => s !== app.maintenance_substate)
               .filter((s) => holdRight.current || (s !== 'on_hold' && app.maintenance_substate !== 'on_hold'))
               .map((s) => (
                 <button key={s} type="button" onClick={() => doSetSubstate(s)} disabled={busy === 'disbursement'}
-                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
+                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t(`admin.maintenance.action.${s}`)}
                 </button>
               ))}
           </div>
           {!holdRight.current && (
-            <p className="text-[11px] text-ground-500">{t('admin.scholars.control.holdNeedsPayments')}</p>
+            <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholars.control.holdNeedsPayments')}</p>
           )}
           {disbMsg && <p className="text-xs text-caution-700">{disbMsg}</p>}
         </div>
@@ -105,7 +105,7 @@ export function PostAwardPanels({
 
       {app.has_file && (
         <Link href={`/admin/scholars/${app.id}`} data-testid="open-scholar-file"
-          className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50">
+          className="inline-flex items-center gap-1 self-start rounded-lg border border-ground-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50 max-md:min-h-11 max-md:min-w-11 max-md:justify-center">
           {t('admin.scholars.file.openFile')} →
         </Link>
       )}
@@ -125,7 +125,7 @@ export function PostAwardPanels({
         const foundationDone = !!bursary?.foundation_signed_at
         const witnessDone = !!bursary?.witness_signed_at
         const stateRow = (label: string, done: boolean) => (
-          <div className="flex items-center justify-between rounded-lg border border-ground-200 px-3 py-2">
+          <div className="flex items-center justify-between py-2 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-200 md:px-3">
             <span className="text-sm text-ground-700">{label}</span>
             <span className={done ? 'text-positive-700' : 'text-ground-300'} aria-hidden>
               {done ? '✓' : '–'}
@@ -133,7 +133,7 @@ export function PostAwardPanels({
           </div>
         )
         return (
-          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold tracking-tight text-ground-900">
                 {t('admin.scholarship.bursary.title')}
@@ -160,7 +160,7 @@ export function PostAwardPanels({
                   type="button"
                   onClick={doCountersignBursary}
                   disabled={busy === 'bursary' || !hasAgreement || foundationDone}
-                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center"
                 >
                   {t('admin.scholarship.bursary.countersign')}
                 </button>
@@ -174,7 +174,7 @@ export function PostAwardPanels({
                   type="button"
                   onClick={doWitnessBursary}
                   disabled={busy === 'bursary' || !hasAgreement || witnessDone}
-                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center"
                 >
                   {t('admin.scholarship.bursary.witnessAction')}
                 </button>
@@ -184,7 +184,7 @@ export function PostAwardPanels({
                   href={bursary.pdf_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100"
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center"
                 >
                   {t('admin.scholarship.bursary.download')}
                 </a>
@@ -203,7 +203,7 @@ export function PostAwardPanels({
         const rows = app.disbursements ?? []
         const released = totalReleased(rows)
         return (
-          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold tracking-tight text-ground-900">
                 {t('admin.disbursement.title')}
@@ -218,7 +218,7 @@ export function PostAwardPanels({
 
             {/* S5: maintenance sub-state — only once funded into the recurring loop. */}
             {app.status === 'maintenance' && (
-              <div className="rounded-lg border border-ground-100 bg-ground-50/60 p-3 space-y-2">
+              <div className="space-y-2 md:rounded-lg md:border md:border-ground-100 md:bg-ground-50/60 md:p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -229,9 +229,9 @@ export function PostAwardPanels({
                     {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
                   </span>
                 </div>
-                <p className="text-[11px] text-ground-500">{t('admin.scholars.control.movedToFile')}</p>
+                <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholars.control.movedToFile')}</p>
                 {app.maintenance_substate === 'on_hold' && (
-                  <p className="text-[11px] text-critical-600">{t('admin.maintenance.onHoldHint')}</p>
+                  <p className="text-xs md:text-[11px] text-critical-600">{t('admin.maintenance.onHoldHint')}</p>
                 )}
               </div>
             )}
@@ -248,7 +248,7 @@ export function PostAwardPanels({
                     : tone === 'grey' ? 'bg-ground-100 text-ground-600'
                     : 'bg-info-100 text-info-700'
                   return (
-                    <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
+                    <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-ground-700">
                           {d.label || `${t('admin.disbursement.tranche')} ${d.sequence}`}
@@ -258,13 +258,15 @@ export function PostAwardPanels({
                           {t(`admin.disbursement.status.${d.status}`)}
                         </span>
                       </div>
+                      {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M6b): typed money and payment actions are
+                          done at a desk. Hidden below md only — from md these are the controls they were. */}
                       {canWrite && (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 max-md:hidden" data-payment-actions>
                           {actionsFor(d.status).map((action) => (
                             <button key={action} type="button"
                               onClick={() => doDisbursementAction(d.id, action)}
                               disabled={busy === 'disbursement'}
-                              className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
+                              className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                               {t(`admin.disbursement.action.${action}`)}
                             </button>
                           ))}
@@ -277,16 +279,21 @@ export function PostAwardPanels({
             )}
 
             {canWrite && (
-              <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+              <p className="rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-payments-use-computer>
+                {t('admin.disbursement.useComputer')}
+              </p>
+            )}
+            {canWrite && (
+              <div className="flex flex-wrap items-end gap-2 border-t pt-3 max-md:hidden" data-schedule-tranche>
                 <div>
-                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.amountLabel')}</label>
+                  <label className="block text-xs md:text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.amountLabel')}</label>
                   <input type="number" min={1} step={50} value={disbAmount}
                     onChange={(e) => setDisbAmount(e.target.value)}
                     placeholder="500"
                     className="w-28 rounded-lg border px-3 py-1.5 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.labelLabel')}</label>
+                  <label className="block text-xs md:text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.labelLabel')}</label>
                   <input type="text" value={disbLabel} maxLength={100}
                     onChange={(e) => setDisbLabel(e.target.value)}
                     placeholder={t('admin.disbursement.labelPlaceholder')}
@@ -294,7 +301,7 @@ export function PostAwardPanels({
                 </div>
                 <button type="button" onClick={doScheduleTranche}
                   disabled={busy === 'disbursement'}
-                  className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink disabled:opacity-50">
+                  className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t('admin.disbursement.schedule')}
                 </button>
               </div>
@@ -312,7 +319,7 @@ export function PostAwardPanels({
       {/* Since maintenance S3 a POST-award close is on the scholar file; only a pre-award one here. */}
       {((closeOffer(app.status, orgSuper).show && closeOffer(app.status, orgSuper).preAward)
         || app.status === 'closed') && (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.closure.title')}
           </h2>
@@ -345,10 +352,10 @@ export function PostAwardPanels({
               )}
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.closure.reasonLabel')}</label>
+                  <label className="block text-xs md:text-[11px] font-medium text-ground-600 mb-1">{t('admin.closure.reasonLabel')}</label>
                   <select value={closeReason}
                     onChange={(e) => setCloseReason(e.target.value as ClosureReason | '')}
-                    className="rounded-lg border px-3 py-1.5 text-sm">
+                    className="rounded-lg border px-3 py-1.5 text-sm max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     <option value="">{t('admin.closure.reasonUnset')}</option>
                     {closeOffer(app.status, orgSuper).reasons.map((r) => (
                       <option key={r} value={r}>{t(`admin.closure.reason.${r}`)}</option>
@@ -358,7 +365,7 @@ export function PostAwardPanels({
                 {!confirmClose && (
                   <button type="button" onClick={() => setConfirmClose(true)}
                     disabled={busy === 'close' || !closeReason}
-                    className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50">
+                    className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {t('admin.closure.close')}
                   </button>
                 )}
@@ -368,13 +375,13 @@ export function PostAwardPanels({
                   data-testid="close-confirm">
                   <p className="text-sm font-medium text-critical-800">{t('admin.scholarship.orgReject.confirmTitle')}</p>
                   <button type="button" onClick={() => setConfirmClose(false)} disabled={busy === 'close'}
-                    className="rounded-lg border px-3 py-1.5 text-sm text-ground-600 hover:bg-ground-50">
+                    className="rounded-lg border px-3 py-1.5 text-sm text-ground-600 hover:bg-ground-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {t('admin.scholarship.orgReject.back')}
                   </button>
                   {/* Open until the request settles, so the loading label shows (review round 2). */}
                   <button type="button" onClick={async () => { await doClose(); setConfirmClose(false) }}
                     disabled={busy === 'close' || !closeReason}
-                    className="rounded-lg bg-critical-fill px-3 py-1.5 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50">
+                    className="rounded-lg bg-critical-fill px-3 py-1.5 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
                   </button>
                 </div>
