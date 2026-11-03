@@ -8,7 +8,7 @@ Baseline last updated **2026-11-03** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**51 measured** (public page or sandbox surface), **48 fully green.**
+**53 measured** (public page or sandbox surface), **50 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -26,8 +26,8 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/auth/callback` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/billing` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
 | `/admin/billing-rates` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | platform super-admin sets per-service rates in a wide table — rare, and done at a desk |
-| `/admin/contracts` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | contract template versions — authored and compared at a desk, never on a phone |
-| `/admin/contracts/[id]` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | the clause editor: long legal text in three languages, edited side by side |
+| `/admin/contracts` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only`) | 0 | 0 | 0 | ✅ | contract template versions — authored and compared at a desk, never on a phone |
+| `/admin/contracts/[id]` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only-editor`) | 0 | 0 | 0 | ✅ | the clause editor: long legal text in three languages, edited side by side |
 | `/admin/course-data` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | an internal coverage panel for the course catalogue, used by the platform team only |
 | `/admin/faq` | Must | M6 | 6 (sandbox `admin-shell-faq`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/guide` | Must | M6 | 6 (sandbox `admin-shell-guide`) | 0 | 0 | 0 | ✅ |  |
