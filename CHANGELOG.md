@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+- docs: slimmed halatuju_api/CLAUDE.md from ~176k to ~22k characters; full text moved to docs/deployment.md, docs/testing.md, docs/code-standards.md, docs/domain-rules.md, docs/architecture.md and docs/sprint-history.md (credit discipline).
+
 ## Team tables T5a — permission catalogue v2 + aliases (LIVE 2026-11-03; main 55de0610; api-01245-mrb)
 
 Roadmap T5 (owner "approve all", rulings 1-8; lead rulings 2026-11-03 on `mentoring.*` and `programmes.edit`);

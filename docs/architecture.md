@@ -172,3 +172,109 @@ Seventeen files are still over 1,000 lines (TD-361: split `scholarship/views.py`
 `officerCockpit.ts` first); one English message file rides on almost every route (TD-360); production
 lacks Django's bookkeeping tables and is managed by hand (TD-058); two applications to two
 organisations at once wait for M2 (TD-353). The full list is the register's Open Items Index.
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-03
+
+Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps the short rules; this is the full text.
+
+### The old opening paragraph of halatuju_api/CLAUDE.md
+
+This is the operating manual: how the system is built, run, tested and deployed **today**, the rules
+the gates enforce, and the current Next Sprint. It holds current state only. The sprint, batch and
+incident notes that used to fill it are in **[`docs/sprint-history.md`](../docs/sprint-history.md)**,
+word for word; the system map is **[`docs/architecture.md`](../docs/architecture.md)**; the deeper
+domain rules (profile claim, apply gate, course data, document snapshot, income) are in
+**[`docs/domain-rules.md`](../docs/domain-rules.md)**. Open debt: `docs/technical-debt.md` (Open Items
+Index). Every ruling: `docs/decisions.md`. Release notes: `docs/releases/`.
+
+## Architecture
+
+The whole-system map (services, apps, data, scheduled jobs, outside services) is
+[`docs/architecture.md`](../docs/architecture.md). The course engine's own shape:
+
+```
+┌─────────────────────────────────┐
+│  Next.js Frontend (Cloud Run)   │
+│  halatuju-web                   │
+└──────────────┬──────────────────┘
+               │ POST /api/v1/eligibility/check/
+               │ POST /api/v1/profile/sync/
+               │ GET/POST/PUT/DELETE /api/v1/outcomes/
+               │ POST /api/v1/admin/invite/
+               │ GET /api/v1/admin/orgs/
+               ▼
+┌─────────────────────────────────┐
+│  Django API (Cloud Run)         │
+│  halatuju-api                   │
+│                                 │
+│  ┌─ Serializer ──────────────┐  │
+│  │ Grade key mapping         │  │
+│  │ BM→bm, BI→eng, MAT→math  │  │
+│  │ Gender/nationality norm.  │  │
+│  │ Bool passthrough           │  │
+│  └───────────┬───────────────┘  │
+│              ▼                  │
+│  ┌─ Hybrid Engine ───────────┐  │
+│  │ DB → Pandas at startup    │  │
+│  │ engine.py (GOLDEN MASTER) │  │
+│  │ 5319 baseline matches     │  │
+│  └───────────────────────────┘  │
+└──────────────┬──────────────────┘
+               │ Django ORM (startup only)
+               ▼
+┌─────────────────────────────────┐
+│  Supabase PostgreSQL            │
+│  pbrrlyoyyiftckqvzvvo           │
+│  (Singapore)                    │
+└─────────────────────────────────┘
+```
+
+### Hybrid Engine Approach
+
+- At startup, `CoursesConfig.ready()` loads all `CourseRequirement` rows from DB into a Pandas DataFrame
+- The engine runs eligibility checks against this in-memory DataFrame
+- **Why**: Avoids cold start CSV loading (5-10s). DB is source of truth, DataFrame is runtime cache.
+- **Trade-off**: ~1GB RAM per container. Acceptable for correctness.
+
+### Subject Keys (Unified)
+
+Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math`, `phy`, etc.). The single source of truth is `halatuju-web/src/lib/subjects.ts` which exports `SPM_SUBJECTS`, `SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, and `SPM_ALL_ELECTIVE_SUBJECTS`. No serializer mapping is needed — keys pass through as-is.
+
+## Key Files
+
+| File | Role | Sacred? |
+|------|------|---------|
+| `apps/courses/eligibility_service.py` | Extracted business logic (merit, PISMP dedup, sort, stats) | No |
+| `apps/courses/engine.py` | Eligibility logic | YES — Golden Master |
+| `apps/courses/pathways.py` | Matric/STPM eligibility + fit scoring (virtual courses) | No |
+| `apps/courses/serializers.py` | Request normalization (grade keys, gender, booleans) | No |
+| `apps/courses/views.py` | API endpoints | No |
+| `apps/courses/apps.py` | Startup data loading (DB → DataFrame) | Careful |
+| `apps/courses/models.py` | Django ORM models | No |
+| `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
+| `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
+| `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
+| `apps/courses/stpm_engine.py` | STPM eligibility logic | YES — STPM Golden Master |
+| `apps/courses/stpm_ranking.py` | STPM fit score calculation + ranking | No |
+| `apps/courses/stpm_quiz_data.py` | STPM quiz questions (~35 Qs × 3 languages, branching) | No |
+| `apps/courses/stpm_quiz_engine.py` | RIASEC seed, branch routing, signal accumulation | No |
+| `apps/courses/utils.py` | Shared utilities (proper_case_name, build_mohe_url) | No |
+| `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
+| `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
+| `apps/courses/management/commands/sync_spm_mohe.py` | SPM `Course` sync (MOHE-coded UA/Asasi subset; restriction + mass-deactivation guard) | No |
+| `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
+| `apps/courses/management/commands/scrape_uptvet.py` | UP_TVET catalogue scraper (mohon.tvet.gov.my → CSV; no DB writes) | No |
+| `apps/courses/management/commands/audit_uptvet.py` | UP_TVET coverage inventory (Awam/Swasta split, new-vs-held; no DB writes) | No |
+| `apps/courses/management/commands/audit_data.py` | Data completeness report (records dashboard `audit` status) | No |
+| `apps/courses/management/commands/course_data_check.py` | READ-ONLY dashboard health check: audit + concurrent link reachability (no writes) | No |
+| `apps/courses/course_data_status.py` | Course Data dashboard support: `record_status` + live `coverage_snapshot` | No |
+| `apps/courses/management/commands/refresh_institution_urls.py` | Re-source institution URLs from authoritative index (matrikulasi/poly/kk); dry-run, --apply writes canonicalisations; run from a MY-capable network | No |
+| `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
+| `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
+| `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |
+| `apps/courses/management/commands/enrich_stpm_riasec.py` | RIASEC type, difficulty, efficacy domain classifier for StpmCourse + FieldTaxonomy | No |
+| `apps/courses/management/commands/derive_institution_modifiers.py` | Derive urban + cultural_safety_net modifiers from state/address | No |
+| `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
+| `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
+| `apps/reports/prompts.py` | SPM/STPM × BM/EN counselor report prompt templates | No |
+| `apps/reports/views.py` | Report API endpoints (generate, detail, list) | No |

@@ -459,3 +459,112 @@ document-type arm OR-ed with `any_member_income_evidenced`; it is MORE permissiv
 replacing it un-submits students and nulls their `requirements_snapshot` (TD-262 F9). Any change to
 an income home answers to `tests/test_income_evidence_homes.py`, `tests/test_income_shown.py` and
 `halatuju-web/src/lib/__tests__/incomeEvidenceHomes.test.ts`.
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-03
+
+Moved word for word from halatuju_api/CLAUDE.md on 2026-11-03. CLAUDE.md keeps the short rules; this is the full text.
+
+### Profile claim and the apply gate — the two identity rules (full text: `docs/domain-rules.md`)
+
+- **⚠ NEVER RETURN THE HOLDER'S NAME.** `POST /api/v1/profile/claim-nric/` answers `{status: 'exists',
+  channels: [...]}` — bare channel TYPES, never a name, a masked address or digits. A claim is a LINK
+  (`ProfileLoginAlias`), never a move; `SupabaseAuthMiddleware` sets `request.auth_sub` (who holds the
+  token — **staff and sponsor identity resolve on this**) and `request.user_id` (whose student data).
+  Every step is audited in `ProfileClaimEvent`; the IC goes in that table and **never in an application
+  log**. Revoke: `profile_claim.revoke_alias(alias_uid, by=…)`. Widen only in `claim_channels()`.
+- **One application in play, ONE rule, on the server** (`apps/scholarship/services/apply_gate.py`,
+  judged on the student-facing status). The web keeps no copy: `useApplyGate.ts` asks
+  `GET /api/v1/scholarship/apply-gate/` and obeys. Deliberately stricter than the owner's
+  per-organisation ruling on TD-337 until M2 (TD-353 — relax it WITH M2, never before). Embargoed
+  declines are read through `student_status` (TD-349). Open edges: TD-348 (no database lock),
+  TD-338, TD-339, TD-343, TD-351, TD-354.
+
+## Live rules carried from the sprint history
+
+Each was learned the hard way; the story is in `docs/sprint-history.md` and `docs/lessons.md`.
+
+- **ALL WORK IS PLANNED IN HOURS, AND EVERY COMPLETION REPORT COMPARES PLAN AGAINST ACTUAL**
+  (owner, 2026-10-29). Two halves, and the second is the one that gets skipped:
+  - **The plan.** Every analysis carries `estimated_hours`. No exceptions, and *"it is only a small
+    bug"* is not one — free work is still work, and an hour nobody wrote down cannot be learned
+    from. An analysis without an estimate is not an analysis; it is a note.
+  - **The report.** The COMPLETION REPORT posted when the work is finished states the hours it
+    ACTUALLY took, beside the hours that were planned, and says in one line why they differ. Over
+    by a factor of two is not a failure — not knowing is.
+  ⚠ **This exists because the data proved the gap.** Every October 2026 bug report carries an
+  estimate *and* a completion report, and not one of those reports records an actual. The invoice
+  read "ten bugs fixed, no hours" until `request_hours._hours_bearing_analysis` learned to look
+  past the report to the estimate underneath. Two requests (36, 43) still have no figure anywhere.
+  ⚠ **The point is continuous improvement, not billing.** A bug is free either way. What the
+  comparison buys is an honest hourly rate: RM20/hour is only right if we know how long things
+  take, and today we know how long we *thought* they would.
+- ⛔ **FINISHING A REQUEST INCLUDES ITS FIGURES. THE OWNER IS NOT YOUR REMINDER** (owner,
+  2026-10-30): *"agent that complete a request MUST: 1) write post-completion report with planned,
+  actual and charged details, and 2) fill in the relevant fields for billing. They shouldn't need
+  reminder from me. This should be automatic."* Before you mark a request done, both steps, in this
+  order, every time — including for a bug:
+  1. **Post the completion report** — an analysis stating PLANNED, ACTUAL and CHARGED in the prose
+     the organisation reads, and one line on why actual differs from planned.
+  2. **Record the figures on that analysis** — `POST …/requests/<rid>/analysis/<aid>/hours/` with
+     `actual_hours`, `charged_hours`, and `charge_note` whenever the two differ
+     (`request_hours.record_hours` is the service behind it).
+  ⚠ **`org_requests.done` NOW REFUSES WITHOUT ONE** (`closing_report_required`). The rule used to
+  be a habit, and a forgotten figure surfaced a month later at invoice time — five of the first
+  sixteen billed requests were billed on their PLAN. The refusal is the rule, not a nag: being
+  asked to record the hours is the failure.
+  ⚠ **A BUG IS NOT EXEMPT.** Its charge is `0.0`, which is a real answer and is exactly what
+  `bug_reports_fixed` counts as free work given away. A blank is not an answer.
+  ⚠ **RECORD LAST, CLOSE NEXT.** The gate (`request_hours.closes_cleanly`) tests the NEWEST
+  approved analysis, not merely some analysis with a charge on it. Approving a figure-less note
+  between recording the hours and closing blocks the close — correctly: the last thing we sent the
+  organisation is the thing the bill has to match. Request #50 closed on a stale 1.0 while its
+  freshly approved second report told BrightPath 1.5, an hour after the first version shipped.
+  There is no "post the note afterwards" escape either: `can_comment` refuses a terminal request.
+- **Never raise a budget, a floor or a ledger** — split the file first, in its own commit, moves only.
+  ⚠ The tight ones: `pathway_engine.py` (0 lines of room) and `models/applications.py` (1); `serializers.py`
+  and `serializers_admin.py` are close. Grep both `code-standards.json` files before planning.
+- **The standing rule (owner, 2026-09-19):** a feature sprint does not grow a file waiting to be split —
+  it runs that file's split first. The split table is "Which Phase-4 sprint owns which file" in
+  `docs/plans/2026-09-18-code-health-roadmap.md`; the ratchet binds regardless.
+- ⛔ **Never set `UPDATE_EMAIL_GOLDEN`.** `tests/test_email_branding.py` pins every email's bytes in three
+  languages; a failure means you changed what a student receives — that needs the owner.
+- **Patching a re-export package:** `patch('pkg.name')` can SUCCEED and patch nothing. Grep for both
+  `patch('…')` and `patch.object(…)`; use `tests/package_patch.py`'s `patch_engine`. Grep a module for
+  `__file__` as well as `__name__` before splitting it.
+- `apps/scholarship/constants.py` is a LEAF — adding one import to it undoes its purpose.
+- **i18n delivery:** `src/lib/messages.ts` (English core) and `src/lib/messagesAdmin.ts` (English
+  admin) are the only static catalogue imports; ⛔ never add a line to `oneLocalePerVisitor.test.ts`'s
+  exemption list — lazy-load, split, or serve the value from the api. **Since TD-360 (2026-10-21) each
+  file ships in two slices cut at build time** (`?slice=core` / `?slice=admin`, `scripts/messages-slice-loader.js`;
+  the three files stay whole and are still the source of truth). An `admin.*` string moves only the
+  admin layout (printed, not budgeted); a string in ANY other namespace still moves every route.
+  ⛔ Never use an `admin.*` key outside the console — `sliceReach.test.ts` fails, because that route
+  would show the raw dotted key in production.
+- **Serve, never assemble or derive in the browser:** `apply_url`, a gift's `state`, a request's status;
+  a draft (theme or copy) must never reach a visitor; "draft from English" drafts and never saves.
+  **And one server definition per answer a screen shows** (Consolidation Review 2026-10-28: four of the
+  window's nine small fixes were a screen answering a server question for itself, and disagreeing):
+  whether an action is open is served from the endpoint's own predicate (`officer_requests`, request
+  #40 — the cockpit offered a form the server refused); what a tick claims is computed on the server
+  (`guardian_ic_name_match`, #45 — the tick meant only "some parent IC was read"); a count shown on two
+  screens has one definition (`closure.ever_awarded_q`, guarded by `test_awarded_one_definition.py` —
+  66 on the card, 65 on the list); a filter lists only what its scope holds (`source-names?programme=`,
+  #41). Before building a control, a tick or a count, name the server function it reads; if there is
+  none, write it there first.
+- **Status is derived, never stored** (invitations); `last_send_ok` is tri-state (null = not recorded).
+- **Never re-run `build_verdict` over old snapshots** — a snapshot is the historical record.
+- **Version bumps are not optional:** `VERDICT_ENGINE_VERSION` when a band can move;
+  the genuineness `MODEL_VERSION` (`results_doc.py`) on any doc-recognition signature change.
+- **Money:** read Vircle's `Principal Wallet ID`, never `Supp Wallet ID`; the inbound webhook never
+  overwrites a stored `vircle_id`; "sent to a person" comes from `duitnow_type`, never the merchant
+  name; a student's name in a spending report is never stored; a new FILE triggers the spending job,
+  never the calendar.
+- **The padlock keys on `nric_locked`, never `identity_verified`**; soft-NRIC: unique only when verified.
+- **An organisation's Overview layout narrows and orders a role's sections; it never widens them.**
+- **A Django `AlterField` that only changes a default does not rewrite existing rows** — sync config rows by hand.
+- **Node 24 is named in four places** (Dockerfile, the `cloudbuild.yaml` test step, `.nvmrc`, `engines`)
+  held by `nodeVersion.test.ts`; change all four together.
+- **A STPM/Form-6 offer reading `ua_offer` + `suspect` is often CORRECT** (an online announcement, not the letter).
+- **The debt register:** close a TD only with evidence; put the resolution marker ON the defining line in
+  the same change; never write a new entry inside the Open Items Index.
+- **Never conclude an absence from a grep** — authored content (clauses, templates, copy) lives in the database.
