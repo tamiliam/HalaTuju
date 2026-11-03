@@ -188,7 +188,6 @@
       "src/app/admin/payments/[id]/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/requests/[id]/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/requests/page.tsx::@next/next/no-img-element::1",
-      "src/app/admin/requests/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/scholarship/[id]/view.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/scholarship/page.tsx::react-hooks/exhaustive-deps::1",
       "src/app/admin/sources/page.tsx::react-hooks/exhaustive-deps::1",

@@ -22,6 +22,12 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
 jest.mock('@/lib/admin-api')
+// T3: the Mentors tab's screen is its own chunk (`components/mentors/MentorsAdmin`, tested there).
+jest.mock('@/components/mentors/MentorsAdmin', () => ({
+  __esModule: true,
+  default: ({ AlsoIn }: { AlsoIn: unknown }) =>
+    <div data-testid="team-mentors-screen">{typeof AlsoIn === 'function' ? 'chips' : ''}</div>,
+}))
 
 const mockApi = api as jest.Mocked<typeof api>
 
@@ -88,9 +94,10 @@ describe('what the table shows', () => {
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
-    // Team tables T2: the Role column became "Also in" and this table's own permissions.
+    // Team tables T2: the Role column became "Also in". T3 (owner): no permission column on the Team
+    // tables — permissions are set only on the person's page.
     expect(ui().getByText('admin.team.colAlsoIn')).toBeTruthy()
-    expect(ui().getByText('admin.team.colKeys.reviewers')).toBeTruthy()
+    expect(ui().queryByText('admin.team.colKeys.reviewers')).toBeNull()
     expect(ui().queryByText('admin.reviewers.colRole')).toBeNull()
   })
 
@@ -126,7 +133,7 @@ describe('the two figures that lie if you let them', () => {
   const turnaroundOf = (id: number) => {
     const row = screen.getAllByRole('row').slice(1).find((r) =>
       r.querySelector('a')!.getAttribute('href')!.endsWith(`/${id}`))!
-    return row.querySelectorAll('td')[7].textContent   // T2: Also in + permissions before it
+    return row.querySelectorAll('td')[6].textContent   // T2: Also in before it (T3: no permissions column)
   }
 
   it('says "no reviews yet" rather than showing a turnaround of nothing', async () => {
@@ -536,10 +543,10 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
   it('seats a person by their TABLES: Rohini (role reviewer, admin keys) is in Admins too', async () => {
     await openAdmins()
     const row = rowOf('Rohini Thiru')
-    expect(within(row).getByText('admin.perm.see_all.name')).toBeTruthy()
-    expect(within(row).getByText('admin.perm.spending.name')).toBeTruthy()
     expect(within(row).getByText('admin.team.chip.reviewers')).toBeTruthy()       // Also in
-    expect(within(row).queryByText('admin.perm.review.name')).toBeNull()          // not this table's key
+    // T3 (owner): no permission chips on the Team tables — the person's page holds them.
+    expect(within(row).queryByText('admin.perm.see_all.name')).toBeNull()
+    expect(within(row).queryByText('admin.perm.spending.name')).toBeNull()
     expect(within(row).getByTestId('remove-from-admins')).toBeTruthy()
   })
 
@@ -556,14 +563,17 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     const row = rowOf('Kamala Devi')
     expect(within(row).getByText('admin.team.note.last_table')).toBeTruthy()
     expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
-    expect(within(row).getByText('admin.perm.payments_approve.name')).toBeTruthy()
+    expect(within(row).queryByText('admin.perm.payments_approve.name')).toBeNull()  // T3: no chips here
     expect(within(row).queryByText('admin.role.finance')).toBeNull()               // label retired
   })
 
-  it('the Edit link opens the person page for THIS table only', async () => {
+  it('T3: no "Edit permissions" link and no permission column; the NAME opens the person page', async () => {
     await openAdmins()
-    expect(within(rowOf('Rohini Thiru')).getByText('admin.team.edit.admins').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers/admins/31?table=admins')
+    const row = rowOf('Rohini Thiru')
+    expect(within(row).queryByText('admin.team.edit.admins')).toBeNull()
+    expect(screen.queryByText('admin.team.colKeys.admins')).toBeNull()
+    expect(within(row).getByText('Rohini Thiru').closest('a')!.getAttribute('href'))
+      .toBe('/admin/organisation/reviewers/admins/31')
   })
 
   it('Remove asks first, says what it does from the dry run, and only then removes', async () => {
@@ -630,9 +640,15 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
     expect(screen.queryByTestId('remove-from-reviewers')).toBeNull()
   })
 
-  it('the Mentors tab points at today\'s Mentors page (the table moves here in T3)', async () => {
+  it('T3: the Mentors tab mounts the Mentors table (its own chunk), handed the Also in chips', async () => {
     await loaded()
     fireEvent.click(screen.getByText('admin.team.tabMentors'))
-    expect(screen.getByTestId('team-mentors-tab')).toBeTruthy()
+    expect(await screen.findByTestId('team-mentors-screen')).toBeTruthy()
+  })
+
+  it('T3: the Mentors tab is offered only to who read the old Mentors page (not finance)', async () => {
+    viewerRole = { role: 'finance' }
+    await loaded()
+    expect(screen.queryByText('admin.team.tabMentors')).toBeNull()
   })
 })

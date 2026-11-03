@@ -56,10 +56,11 @@ export type {
 
 // Organisation → Mentors (student maintenance S7a).
 export {
-  addStaffMentor, getMentors, getStaffMentorCandidates, inviteMentor, mentorAction,   // + S7d
+  addStaffMentor, getMentorDetail, getMentors, getStaffMentorCandidates, inviteMentor, mentorAction,   // + S7d, T3
 } from './admin-api/mentors'
 export type {
-  MentorAction, MentorFluency, MentorRow, MentorStatus, MentorsPayload, StaffCandidate,
+  MentorAction, MentorDetail, MentorFluency, MentorRow, MentorScholarRow, MentorStatus, MentorsPayload,
+  StaffCandidate,
 } from './admin-api/mentors'
 
 // A scholar's Mentoring tab (student maintenance S7b).
@@ -198,6 +199,7 @@ export {
 } from './admin-api/requests'
 export type {
   OrgRequestComment, OrgRequestAttachment, OrgRequestAnalysis, OrgRequestDetail,
+  OrgRequestGroup, OrgRequestTag, OrgRequestListRow, OrgRequestListPage,
 } from './admin-api/requests'
 
 // The tenant usage screen, the platform cost ledger and the rate card.

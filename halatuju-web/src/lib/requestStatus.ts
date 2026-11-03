@@ -271,7 +271,8 @@ export function hasUnansweredQuestions(
   return (comments || []).some((c) => c.awaiting_reply === true)
 }
 
-// ── The engineer's analysis: one badge, one list tag, one approve wording (owner, 2026-10-05) ──
+// ── The engineer's analysis: one badge, one approve wording (owner, 2026-10-05) ──
+// (The list tag is SERVED since Requests list R1: `org_requests_queue.row_tags` on the api.)
 
 /** The fields of an analysis these helpers read — a subset of OrgRequestAnalysis. */
 export interface AnalysisLike {
@@ -300,22 +301,6 @@ const ANALYSIS_BADGE: Record<AnalysisBadge, { key: string; tone: string }> = {
 
 export function analysisBadgeKey(b: AnalysisBadge): string { return ANALYSIS_BADGE[b].key }
 export function analysisBadgeTone(b: AnalysisBadge): string { return ANALYSIS_BADGE[b].tone }
-
-/** The list tag beside a SUBMITTED request that already has an analysis — "Submitted" alone
- *  hides that the owner's next step (approve, or triage) is ready. Withdrawn drafts do not count.
- *  Past submitted, the status itself says where the request is, so no tag. */
-export type ListAnalysisTag = 'analysed' | 'analysisDraft'
-
-export function listAnalysisTag(status: string, analyses?: AnalysisLike[]): ListAnalysisTag | null {
-  if (status !== 'submitted' || !analyses) return null
-  const live = analyses.filter((a) => !a.superseded_at)
-  if (live.some((a) => a.approved_at)) return 'analysed'
-  return live.length ? 'analysisDraft' : null
-}
-
-export function listAnalysisTagKey(tag: ListAnalysisTag): string {
-  return tag === 'analysed' ? 'admin.requests.list.analysed' : 'admin.requests.list.analysisDraft'
-}
 
 /** Which approve wording a draft gets. The ENGINEER'S reading decides (owner ruling 2026-10-05:
  *  the analysis is what is being approved), falling back to the triage, then the requester's type.

@@ -1174,6 +1174,22 @@ condition, pinned over every stage by `view.decisionBar.test.tsx`); a phone PDF 
 year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sandbox `src/sandbox/cockpitM6bSurfaces.tsx`.
 NEXT: M7, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 LIVE 2026-11-03 (main 99d8ac1c; api-01243-dzq, web-01070-c44 — web went out in the Requests R1 build 2da37ff4; no migration)
+
+Roadmap T3; decisions.md 2026-11-03 "Team tables T3". **Team -> Mentors** is the old Mentors page's table
+(`components/mentors/MentorsAdmin.tsx`, default `TeamMentors` + `MentorDetail`, ONE lazy chunk loaded by the Team page
+and by `/admin/organisation/reviewers/mentors/[id]`); `/admin/organisation/mentors` redirects (matched to the Team nav
+row; the Mentors row went). Readers = `mentor_invite.may_read` (web `pageGuard.mayReadMentors`). Backend:
+`apps/scholarship/mentor_detail.py` (`team_columns` one query; `scholars_of` fixed queries; per-scholar average gap;
+open concern = unhandled on a file in maintenance); `views_admin/mentors.py` `mentor_rows(team=True)` and
+`AdminMentorView.get` (`GET admin/mentors/<id>/`, matrix cell `T3_ADDED`). `staff_tables_admin`: leaving the last staff
+table while mentoring -> role `mentor` (`may_become_mentor`: admin / reviewer / qc, mentors now, signed in, no open
+case; plan `becomes_mentor`), else `mentors_only`. Owner scope addition: `GET admin/admins/<id>/permissions/` serves
+`tables`; `PermissionEditor` has one section per table (no `table` prop any more; `?table=` only picks the back tab);
+the Team tables lost the permission column (`KeyChips` unused there). Review fixes: scholar side only for
+`_b40_scope == 'all'` (`_MentorsBase.sees_scholars`; `sees_scholars` served); `staff_mentor.stop` locks the login
+row. Deploy: API first, then web.
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 LIVE 2026-11-03 (main 54f997a8; api-01241-9hv, web-01069-4vh; no migration)
 
 Roadmap T2; decisions.md 2026-11-03 "Team tables T2" (lead rulings Q1-Q4). **Team -> Admins / Reviewers -> Add and

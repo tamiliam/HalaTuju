@@ -71,11 +71,12 @@ export const roleOrgAdmin: ManualChapter = {
         contract signed on the platform: the date it took effect, who signed it, and the signed PDF. Anything else
         reads &ldquo;No contract on file&rdquo;.</p>
         <p className="mt-2">The file&rsquo;s <strong>Mentoring</strong> tab is where you give a student a
-        mentor from <strong>Organisation &rarr; Mentors</strong> &mdash; one at a time. <strong>Change
+        mentor from <strong>Team &rarr; Mentors</strong> &mdash; one at a time. <strong>Change
         mentor</strong> ends the current one (with a reason only staff see; it stays in the history) and starts the
         new one; <strong>End mentoring</strong> ends it. You invite a mentor from <strong>Invitations &rarr;
-        Mentor</strong>, like a source; Organisation &rarr; Mentors lists the mentors who have signed in, and its
-        <strong> Emails</strong> tab is the wording of their invitation &mdash; the only email a mentor receives.
+        Mentor</strong>, like a source; Team &rarr; Mentors lists the mentors who have signed in, and the wording
+        of their invitation &mdash; the only email a mentor receives &mdash; is under <strong>Invitations &rarr;
+        Emails</strong>.
         A mentor who is invited but has not signed in yet can be assigned; a deactivated one cannot, and nobody can be mentor to their own application. Leave
         <strong> Email the student</strong> on and the student is sent &ldquo;You have a mentor&rdquo; with the
         mentor&rsquo;s name and contact (the phone only if the mentor shares it) &mdash; the system never emails
@@ -93,11 +94,11 @@ export const roleOrgAdmin: ManualChapter = {
         scholar shows <strong>Mentor concerned</strong> on the tab and on the Scholars list, which has a filter of
         that name. <strong>Mark as handled</strong> clears it, and a new concern raises it again. Nobody is
         emailed when a mentor logs a meeting.</p>
-        <p className="mt-2"><strong>Staff who also mentor:</strong> on Organisation &rarr; Mentors, <strong>Add a
-        staff member as mentor</strong> lists your organisation admins, admins, reviewers and QC who are not
+        <p className="mt-2"><strong>Staff who also mentor:</strong> on Team &rarr; Mentors, <strong>Add
+        Mentor</strong> lists your organisation admins, admins, reviewers and QC who are not
         mentors yet (never finance). They keep their role and every page, and gain My students and a Mentoring
-        card on their profile; no email is sent, so tell them yourself. Their row says &ldquo;Staff &middot;
-        &lt;role&gt;&rdquo;. <strong>Stop mentoring</strong> ends their mentoring and leaves their staff sign-in
+        card on their profile; no email is sent, so tell them yourself. Their row&rsquo;s &ldquo;Also in&rdquo;
+        names their other tables. <strong>Stop mentoring</strong> ends their mentoring and leaves their staff sign-in
         alone; <strong>Mentor again</strong> (under Inactive) brings it back, with no students. Revoking them,
         cancelling their invitation or switching them to Finance also ends it, and restoring them does not bring
         it back. Once they have mentored anybody they can be revoked, never deleted.</p></>
@@ -115,8 +116,8 @@ export const roleOrgAdmin: ManualChapter = {
         <em> Approve payment runs</em>, and a QC person is a Reviewer with <em>Quality check</em>.
           <span className="mt-2 block"><strong>Team</strong> has a table for each hat &mdash;
           <strong> Admins</strong>, <strong>Reviewers</strong> and <strong>Mentors</strong> &mdash; and one person can
-          sit in more than one. Each table shows only its own permissions, and &ldquo;Also in&rdquo; names the
-          person&rsquo;s other tables.</span>
+          sit in more than one. &ldquo;Also in&rdquo; names the person&rsquo;s other tables; their permissions are
+          on their own page (click the name).</span>
           <span className="mt-2 block"><strong>Add Admin</strong> and <strong>Add Reviewer</strong> (top right of
           the table) add somebody who is <em>already</em> in your team: added to Admins they get <em>See all
           students</em>, added to Reviewers they get <em>Review assigned students</em>. Nothing they had is taken
@@ -127,7 +128,16 @@ export const roleOrgAdmin: ManualChapter = {
           somebody&rsquo;s only table (revoke them instead), while they still have cases assigned (hand the cases
           on first), or to take you out of Admins. Somebody removed from Reviewers who is still in Admins stays an
           Admin and will open the admin work pages (Announcements, Surveys, Sources and the like); the question
-          says so.</span>
+          says so. Somebody who also mentors can leave their last staff table and stay on as a mentor only
+          (they keep their sign-in and their scholars, and see My students and their Profile only) &mdash; if
+          they have signed in and hold no cases; otherwise revoke them or stop their mentoring instead.</span>
+          <span className="mt-2 block"><strong>Team &rarr; Mentors</strong> lists the mentors who have signed in
+          and the staff who also mentor, with their scholars now, meetings in the last 90 days, the last meeting
+          and any open concerns. <strong>Add Mentor</strong> makes somebody already in your team a mentor too (no
+          email). New mentors are invited on <strong>Invitations &rarr; Mentor</strong>. Click a mentor&rsquo;s name
+          for their page: their scholars now and before, meetings, the average gap between meetings (per scholar),
+          concerns raised and still open, and each scholar&rsquo;s standing &mdash; never the meeting notes, which
+          stay on each scholar&rsquo;s file.</span>
           <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t
@@ -146,16 +156,18 @@ export const roleOrgAdmin: ManualChapter = {
       title: 'Changing what someone can do',
       body: (
         <>What somebody can do is their <strong>permissions</strong>, and you can change them. On
-        <strong> Team</strong>, use <strong>Edit admin permissions</strong> on the Admins tab or <strong>Edit
-        reviewer permissions</strong> on the Reviewers tab: the card <strong>What &hellip; can do</strong> shows only
-        that table&rsquo;s permissions &mdash; Admins: See all students, Spending, Prepare, Check and Approve payment
-        runs; Reviewers: Review assigned students and Quality check. Switch one on or off and the line underneath says what saving would do
+        <strong> Team</strong>, click the person&rsquo;s name and open the <strong>Permissions</strong> tab on their
+        page (the Team tables themselves show no permissions). The card <strong>What &hellip; can do</strong> has one
+        section for each table they sit in &mdash; <strong>Admin permissions</strong> (See all students, Spending,
+        Prepare, Check and Approve payment runs) if they are in Admins, <strong>Reviewer permissions</strong> (Review
+        assigned students and Quality check) if they are in Reviewers. Switch one on or off and the line underneath says what saving would do
         &mdash; for example that giving someone <em>Approve payment runs</em> makes them the approver, so you
         stop approving runs. Nothing changes until you press <strong>Save changes</strong>; <strong>Reset</strong>
         puts the role&rsquo;s usual set back. A person whose set differs from their role shows a
         <strong> Custom</strong> chip on Team, with what was added or taken away.
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li><strong>Quality check</strong> needs <em>See all students</em>: a checker reads every decision.</li>
+            <li><strong>Quality check</strong> needs the Admin permission <em>See all students</em>: a checker
+            reads every decision. For somebody who is only a Reviewer, it is switched on with Quality check.</li>
             <li>Somebody who still has cases assigned keeps <em>Review assigned students</em> (and an admin
             holding cases keeps <em>See all students</em>) until the cases are handed to someone else.</li>
             <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
@@ -284,7 +296,7 @@ export const roleOrgAdmin: ManualChapter = {
         you are charged for, and at what rate, stays with us.
         <br /><br />
         Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
-        <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
+        <strong> Programme Settings</strong> (everything you set about one gift — its rules, what it asks applicants
         for, which organisations its &ldquo;Who referred you?&rdquo; list offers — and whether that list also
         offers <strong>Facebook / WhatsApp</strong> and <strong>Halatuju.xyz</strong>; <strong>Other</strong> is
         always there; <strong>Academic results</strong> is always required, like household income: the SPM

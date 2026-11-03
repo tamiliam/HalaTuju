@@ -173,11 +173,12 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/requests/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/organisations': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/staff': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/mentors': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/mentors': { cls: 'can', sprint: 'M7', redirect: '/admin/organisation/reviewers' },   // T3: Team -> Mentors
   '/admin/organisation/settings': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7' },   // T3: the mentor detail page
   '/admin/programme': {
     cls: 'can', sprint: 'M7',
     surfaces: ['programme-config', 'programme-config-lean', 'programme-config-two-gifts'],

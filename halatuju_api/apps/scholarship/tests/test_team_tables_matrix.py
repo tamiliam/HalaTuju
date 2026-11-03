@@ -131,6 +131,19 @@ def t2_added_cells(shape):
     return {T2_ADDED[0]: 404 if knocks else 403, T2_ADDED[1]: 400 if knocks else 403}
 
 
+#: Team tables T3 (2026-11-03): the mentor detail page's GET on a route that only had PATCH
+#: (`AdminMentorView.get`). A NEW cell, declared per shape from the Mentors LIST's own cell: whoever the list
+#: admits (200) reaches the detail — 404 here, because the probe's mentor has no login (the table never lists
+#: one) — and whoever the list refuses gets the same refusal. Nobody gains or loses the list.
+T3_ADDED = 'GET api/v1/admin/mentors/<int:pk>/'
+T3_LIST = 'GET api/v1/admin/mentors/'
+
+
+def t3_added_cells(before):
+    listed = before[T3_LIST]
+    return {T3_ADDED: 404 if listed == 200 else listed}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -277,7 +290,7 @@ def _shape_test(shape):
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
         before = _before()[shape]
-        expected = {**before, **t2_added_cells(shape)}
+        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now

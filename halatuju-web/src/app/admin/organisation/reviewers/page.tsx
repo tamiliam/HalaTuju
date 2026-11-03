@@ -9,7 +9,8 @@ import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { listReviewers, type AdminItem, type AdminReviewer } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
-import { mayOpen } from '@/lib/pageGuard'
+import { mayOpen, mayReadMentors } from '@/lib/pageGuard'
+import { lazySource } from '@/components/source/LazySource'
 import { orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
 import {
   DEFAULT_SORT, REVIEWER_SORT_LABEL, firstDirFor, sortReviewers,
@@ -26,7 +27,7 @@ import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
-import { AlsoIn, KeyChips, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
+import { AlsoIn, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
 import type { TeamTableName } from '@/lib/admin-api'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
 import StaffAvatar from '@/components/admin/StaffAvatar'
@@ -66,6 +67,10 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
 
 
+// Team tables T3: Team -> Mentors — the old Mentors page's chunk (one chunk for the table and the mentor
+// detail page; no new entry in the webpack runtime every route downloads).
+const TeamMentors = lazySource(() => import('@/components/mentors/MentorsAdmin').then((m) => m.default))
+
 export default function AdminReviewersList() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
@@ -89,6 +94,8 @@ export default function AdminReviewersList() {
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
   const mayEditEmails = ['super', 'org_admin', 'admin'].includes(effectiveRole(role))
+  // T3: the Mentors tab — exactly who read the old Mentors page (the server's `mentor_invite.may_read`).
+  const mayMentors = mayReadMentors(role)
   // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened: only a
   // super or an organisation admin may switch somebody off. `admin` and `finance` still READ the
   // tab — the endpoint is the authority, and `soleOrgAdmin` keeps the last org_admin's Revoke off
@@ -106,11 +113,8 @@ export default function AdminReviewersList() {
   const personHref = (a: AdminItem) =>
     a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
       ? `/admin/organisation/reviewers/admins/${a.id}` : null
-  // Team tables T2: each table's "Edit … permissions" opens the same page, showing only that table's keys.
-  const editHref = (table: TeamTableName) => (a: { id: number; role: string; is_active: boolean;
-                                                     manageable?: boolean }) =>
-    canManage && a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
-      ? `/admin/organisation/reviewers/admins/${a.id}?table=${table}` : null
+  // T3 (owner): no permission column on the Team tables — permissions are set only on the person's own
+  // page, Permissions tab (one section per table they sit in). The NAME opens it, as before.
   // T2: the Add sheet (which table) and the Remove confirm (who, from which table).
   const [adding, setAdding] = useState<TeamTableName | null>(null)
   const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName } | null>(null)
@@ -202,19 +206,10 @@ export default function AdminReviewersList() {
     a.is_active && a.tables ? a.tables.includes('admins')
       : byCategory([a]).admins.length > 0)
     .sort((x, y) => admins.indexOf(x) - admins.indexOf(y))
-  // The reviewer-side cell: the lead's line, this table's own chips and the edit link.
-  const reviewerKeysCell = (r: AdminReviewer) => (
-    <span className="block">
-      <KeyChips keys={r.reviewer_keys} />
-      {r.lead && <span className="mt-0.5 block text-[11px] text-ground-500">{t('admin.team.noSelfQc')}</span>}
-      {editHref('reviewers')(r) && (
-        <Link href={editHref('reviewers')(r) as string}
-          className="mt-0.5 block text-xs text-primary-600 hover:text-primary-800">
-          {t('admin.team.edit.reviewers')}
-        </Link>
-      )}
-    </span>
-  )
+  // The organisation admin's line on the Reviewers table (owner ruling 5: never QC what they reviewed).
+  const leadNote = (r: AdminReviewer) => r.lead
+    ? <span className="mt-0.5 block text-[11px] text-ground-500" data-testid="lead-no-self-qc">{t('admin.team.noSelfQc')}</span>
+    : null
   const paged = usePagedRows(sorted)
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
@@ -236,8 +231,8 @@ export default function AdminReviewersList() {
         tabs={[
           { key: 'admins', labelKey: 'admin.people.tabAdmins' },
           { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
-          // T2: the Mentors tab points to today's Mentors page; the table itself moves here in T3.
-          { key: 'mentors', labelKey: 'admin.team.tabMentors' },
+          // T3: the Mentors TABLE (owner ruling 6) — for who read the old Mentors page (`mayReadMentors`).
+          ...(mayMentors ? [{ key: 'mentors', labelKey: 'admin.team.tabMentors' }] : []),
           ...(mayEditEmails ? [{ key: 'emails', labelKey: 'admin.reviewers.tabEmails' }] : []),
           // Reviewers sign nothing today. Shown disabled so the surfaces look alike and the panel
           // reads as coming rather than as missing (owner, 2026-08-04).
@@ -263,17 +258,9 @@ export default function AdminReviewersList() {
       <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}
         onClose={() => setRemoving(null)} onDone={teamDone} />
 
-      {panel === 'mentors' && (
-        <div className="rounded-xl border bg-ground-0 p-4 text-sm text-ground-700" data-testid="team-mentors-tab">
-          <p>{t('admin.team.mentorsSoon')}</p>
-          {mayOpen('/admin/organisation/mentors', role) && (
-            <Link href="/admin/organisation/mentors"
-              className="mt-2 inline-block font-medium text-primary-600 hover:text-primary-800">
-              {t('admin.team.openMentors')}
-            </Link>
-          )}
-        </div>
-      )}
+      {/* T3: the Mentors table, its own chunk (the old Mentors page's, `lazySource`), handed this page's
+          "Also in" chips so the chunk imports nothing the route already carries. */}
+      {panel === 'mentors' && mayMentors && <TeamMentors AlsoIn={AlsoIn} />}
 
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
@@ -289,8 +276,7 @@ export default function AdminReviewersList() {
           onDelete={canManage ? setDeleting : undefined}
           nameHref={canManage ? personHref : undefined}
           soleOrgAdmin={soleOrgAdmin}
-          team={{ editHref: editHref('admins'),
-                  onRemove: (a) => setRemoving({ id: a.id, name: a.name, table: 'admins' }) }} />
+          team={{ onRemove: (a) => setRemoving({ id: a.id, name: a.name, table: 'admins' }) }} />
         {deleting && (
           <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
             title={t('admin.programmes.deleteTitle', { name: deleting.name })}
@@ -372,7 +358,7 @@ export default function AdminReviewersList() {
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {reviewerKeysCell(r)}
+                  {leadNote(r)}
                   <AlsoIn row={r} here="reviewers" />
                   {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
                     onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />}
@@ -401,12 +387,9 @@ export default function AdminReviewersList() {
             <thead className="bg-ground-50/80 border-b">
               <tr>
                 <SortHeader col="name" label={t(REVIEWER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
-                {/* T2: "Also in" and this table's own permissions replace the Role column. */}
+                {/* T2: "Also in" replaces the Role column. T3: no permission column (the person's page). */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.team.colAlsoIn')}
-                </th>
-                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
-                  {t('admin.team.colKeys.reviewers')}
                 </th>
                 {/* Languages is the one unsortable column — a set has no order to put it in. */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
@@ -448,6 +431,7 @@ export default function AdminReviewersList() {
                               {t('admin.role.org_admin')}
                             </span>
                           )}
+                          {leadNote(r)}
                           {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
@@ -464,7 +448,6 @@ export default function AdminReviewersList() {
                       )}
                     </td>
                     <td className="px-4 py-3"><AlsoIn row={r} here="reviewers" /></td>
-                    <td className="px-4 py-3">{reviewerKeysCell(r)}</td>
                     <td className="px-4 py-3 text-ground-700">
                       {orderedLanguages(r).length === 0 && !r.other_language
                         ? <span className="text-ground-400">—</span>

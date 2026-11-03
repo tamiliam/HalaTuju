@@ -17,6 +17,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-11-01 f451a105 fix: My activity is a fixed-height column that scrolls (owner, option A) (halatuju-web/src/app/admin/profile/page.tsx, components/adminProfile/ActivityCard.tsx, shared.tsx + tests)
 - 2026-11-01 9ef402a4 fix: My activity asks for 6 rows first, 20 per Show older (owner) (ActivityCard.tsx, admin-api/profiles.ts + tests)
 - 2026-11-01 8e6773d5 fix: My activity shows 10 rows first and no per-row rebuilt tag (owner) (ActivityCard.tsx, en/ms/ta, manual Guide + FAQ + tests)
+- 2026-11-03 159e824f 07f6da5d fix: Programme Settings - the gift's Configuration row renamed and moved last in the Programme group (owner) (navigation.ts + test, en/ms/ta, manual Guide + FAQ; also the apply gift test waits for the prefill, a deploy-build flake)
 
 ## Sprints since the last review
 
@@ -28,6 +29,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-02 Mobile-native Sprint M4c (rule-15 sweep of My Bursary, Home, scholarship landing, report, info/legal pages, pathways, onboarding, quizzes) — 633ff8b5 2a6db949 b93f425f
 - 2026-11-03 Mobile-native Sprint M5 (sponsor portal on phones: sponsor tab bar, display + Log out in My Account, fund bar + one confirm Sheet, rule 15 + 12 px across the portal, sign-in and landing) — 8144dc17 87f791fe 96c95693 ede659d4 5b565a66 3fbf7d30 93afa27c
 - 2026-11-03 Team tables T2 (the Team page: Admins / Reviewers tables, Add / Remove, labels retired, org admin may join Reviewers; lead rulings Q1-Q4; no migration; built, not live) — 31295fa3 8dc51562
+- 2026-11-03 Team tables T3 (Mentors under Team, mentor detail page, staff mentor may leave the last staff table as a mentor login, permissions only on the person page; no migration; built, not live) — c3d88aec a3e7f4c5
 
 - 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; not pushed) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
 - 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; not pushed) — 3da191d7 932814ca d29b9447

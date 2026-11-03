@@ -6026,10 +6026,24 @@
         "answerNeeded": "Jawapan diperlukan",
         "analysed": "Telah dianalisis",
         "analysisDraft": "Analisis perlu diluluskan",
-        "submittedBy": "oleh {name}"
+        "submittedBy": "oleh {name}",
+        "tabsLabel": "Senarai permintaan",
+        "tabAction": "Perlu tindakan",
+        "tabProgress": "Dalam proses",
+        "tabClosed": "Ditutup",
+        "kindLabel": "Jenis",
+        "kindAll": "Semua jenis",
+        "kindBug": "Laporan pepijat",
+        "kindFeature": "Ciri",
+        "searchLabel": "Cari permintaan",
+        "searchPlaceholder": "Cari mengikut tajuk atau #nombor",
+        "showing": "Memaparkan {from}–{to} daripada {total}"
       },
       "detail": {
         "back": "Kembali ke permintaan",
+        "backTo": "Kembali ke {tab}",
+        "position": "{n} daripada {m}",
+        "listNav": "Gerak dalam senarai",
         "description": "Penerangan",
         "aiReading": "Bagaimana kami memahaminya",
         "aiReadingNote": "Bacaan pertama secara automatik, untuk menerangkan cara permintaan ini difahami. Seseorang akan menyemaknya sebelum sebarang sebut harga.",
@@ -6737,7 +6751,7 @@
           "mentor": "Mentor",
           "invitedOption": "{name} — dijemput, belum log masuk",
           "scholarsNow": "{count} penerima biasiswa",
-          "noneAvailable": "Tiada mentor lain untuk dipilih. Jemput mentor di Organisasi → Mentor.",
+          "noneAvailable": "Tiada mentor lain untuk dipilih. Jemput mentor di Jemputan → Mentor, atau tambah di Pasukan → Mentor.",
           "reason": "Sebab (staf sahaja)",
           "reasonPlaceholder": "Contoh: bertukar kursus",
           "email": "E-mel pelajar \"Anda mempunyai mentor\" berserta nama dan hubungan mentor",
@@ -7130,7 +7144,7 @@
     },
     "programme": {
       "config": {
-        "nav": "Konfigurasi",
+        "nav": "Tetapan Program",
         "subtitle": "Tetapkan setiap item kepada Diperlukan, Pilihan atau Tidak ditanya. Perubahan berkuat kuasa serta-merta bagi permohonan baharu. Permohonan yang telah dihantar mengekalkan borang seperti pada masa penghantaran.",
         "liveWarning": "{n} pelajar sedang mengisi permohonan sekarang. Apa sahaja yang anda jadikan wajib akan diminta daripada mereka juga — mereka akan melihatnya apabila membuka permohonan mereka semula.",
         "liveWarningNone": "Tiada permohonan sedang dalam proses, jadi perubahan hanya menjejaskan pemohon baharu.",
@@ -7207,7 +7221,7 @@
         "justification": "Sebab memerlukan bantuan",
         "anything_else": "Apa-apa lagi"
       },
-      "title": "Konfigurasi",
+      "title": "Tetapan program",
       "subtitle": "Konfigurasikan perkara yang diperlukan oleh program ini daripada pemohon.",
       "tab": {
         "config": "Apa yang kami minta",
@@ -8111,11 +8125,9 @@
     "permEditor": {
       "title": "Apa yang boleh dilakukan oleh {name}",
       "subtitle": "Bermula daripada set {preset}. Hidupkan kebenaran tambahan apabila diperlukan.",
-      "students": "Pelajar",
-      "money": "Wang",
       "custom": "Tersuai",
       "changed": "diubah",
-      "qcHint": "Perlukan “Lihat semua pelajar” dahulu.",
+      "qcHint": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”.",
       "save": "Simpan perubahan",
       "reset": "Set semula kepada {preset}",
       "footnote": "Anda tidak boleh mengubah kebenaran anda sendiri atau kebenaran pentadbir organisasi.",
@@ -8137,7 +8149,8 @@
         "files_widened_all": "{name} akan dapat membaca fail setiap pelajar dalam organisasi ini.",
         "files_widened_assigned": "{name} akan membuka fail pelajar yang ditugaskan kepadanya.",
         "prepare_and_approve": "{name} boleh menyediakan dan meluluskan larian, tetapi tidak sekali-kali kedua-duanya bagi larian yang sama."
-      }
+      },
+      "qcBrings": "Kawalan mutu memerlukan kebenaran Pentadbir “Lihat semua pelajar”, jadi ia dihidupkan bersamanya."
     },
     "person": {
       "back": "Pasukan",
@@ -8490,7 +8503,6 @@
       "nav": "Mentor",
       "title": "Mentor",
       "intro": "Orang yang membimbing penerima biasiswa anda — mentor jemputan yang telah log masuk, dan kakitangan yang juga membimbing. Jemput mentor dari Jemputan; setiap mentor mengisi profil mereka sendiri.",
-      "inviteOpen": "Jemput mentor",
       "invite": {
         "name": "Nama",
         "note": "Mentor akan menerima e-mel jemputan. Selepas log masuk, mereka mengisi bidang, bahasa, Tentang saya dan nombor telefon. Anda tidak boleh mengubah butiran itu; mentor sendiri yang mengemas kininya.",
@@ -8526,7 +8538,10 @@
         "languages": "Bahasa",
         "status": "Status",
         "actions": "Tindakan",
-        "scholarsNow": "Penerima biasiswa kini"
+        "scholarsNow": "Penerima biasiswa kini",
+        "meetings90": "Pertemuan (90 hari)",
+        "lastMeeting": "Pertemuan terakhir",
+        "concernsOpen": "Kebimbangan terbuka"
       },
       "notFilled": "Belum diisi",
       "activeSeen": "Aktif · log masuk terakhir {date}",
@@ -8554,7 +8569,7 @@
         "resume": "{name} membimbing semula. Tetapkan mereka kepada penerima biasiswa dalam setiap fail.",
         "added": "{name} kini juga seorang mentor. Tiada e-mel dihantar — beritahu mereka sendiri."
       },
-      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor — mentor yang telah dijemput boleh ditetapkan sebelum mereka log masuk. Halaman ini menyenaraikan mentor yang telah log masuk; mentor yang menunggu untuk menerima ada di Jemputan → Mentor, dan mentor yang dimatikan sebelum log masuk kembali dengan menjemput alamat yang sama di sana sekali lagi. Mentor tidak pernah dipadam: nyahaktifkan sahaja, dan bimbingan mereka turut tamat. Pertemuan lalu kekal dalam fail setiap penerima biasiswa.",
+      "note": "Tetapkan mentor dalam fail penerima biasiswa, tab Mentor. Mentor baharu dijemput di Jemputan → Mentor; Tambah Mentor menambah seseorang yang sudah dalam pasukan anda. Jadual ini menyenaraikan mentor yang telah log masuk dan kakitangan yang juga menjadi mentor. Mentor tidak pernah dipadam: nyahaktifkan sahaja, yang juga menamatkan bimbingan mereka. Pertemuan lalu kekal dalam fail setiap penerima biasiswa. Klik nama untuk halaman mentor.",
       "empty": "Tiada mentor dalam senarai ini.",
       "loadError": "Kami tidak dapat memuatkan senarai mentor.",
       "profile": {
@@ -8570,16 +8585,10 @@
         "aboutSeen": "Pelajar anda melihat Tentang saya anda. Ditulis untuk rakan sekerja? Pastikan ia sesuai dibaca oleh pelajar.",
         "accessMentor": "{role} · Mentor"
       },
-      "tabsAria": "Bahagian mentor",
-      "tab": {
-        "mentors": "Mentor"
-      },
-      "emailsNote": "Mentor tidak menerima e-mel lain daripada HalaTuju.",
-      "waiting": "{count} menunggu untuk menerima —",
+      "waiting": "{count} menunggu untuk menerima:",
       "seeInvitations": "lihat Jemputan",
-      "emptyNone": "Belum ada mentor. Jemput seorang dengan \"Jemput mentor\".",
+      "emptyNone": "Belum ada mentor. Jemput seorang di Jemputan → Mentor, atau tambah seseorang yang sudah dalam pasukan anda dengan \"Tambah Mentor\".",
       "emptyNoneRead": "Belum ada mentor.",
-      "addStaff": "Tambah kakitangan sebagai mentor",
       "staffSheet": {
         "title": "Tambah kakitangan sebagai mentor",
         "intro": "Mereka mengekalkan peranan dan semua yang boleh mereka lakukan sekarang. Mereka mendapat \"Pelajar saya\" dan kad Bimbingan pada profil mereka. Tiada e-mel dihantar — beritahu mereka sendiri.",
@@ -8592,7 +8601,46 @@
         "loadError": "Senarai kakitangan tidak dapat dimuatkan."
       },
       "staffTag": "Kakitangan · {role}",
-      "staffNote": "\"Hentikan bimbingan\" menamatkan bimbingan seorang kakitangan (penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail); log masuk kakitangan mereka tidak disentuh. Jika akaun kakitangan ditarik balik, bimbingan mereka turut tamat. Mentor kakitangan dipaparkan di bawah Tidak aktif selepas Hentikan bimbingan, dengan \"Jadi mentor semula\"."
+      "staffNote": "\"Hentikan bimbingan\" menamatkan bimbingan seorang kakitangan (penerima biasiswa mereka tidak lagi mempunyai mentor, dan ia ditunjukkan dalam setiap fail); log masuk kakitangan mereka tidak disentuh. Jika akaun kakitangan ditarik balik, bimbingan mereka turut tamat. Mentor kakitangan dipaparkan di bawah Tidak aktif selepas Hentikan bimbingan, dengan \"Jadi mentor semula\".",
+      "addMentor": "Tambah Mentor",
+      "removeTitle": {
+        "stop": "Hentikan bimbingan oleh {name}?",
+        "deactivate": "Nyahaktifkan {name}?"
+      },
+      "detail": {
+        "back": "Pasukan · Mentor",
+        "since": "mentor sejak {date}",
+        "lastSeen": "log masuk terakhir {date}",
+        "lastSeenUnknown": "log masuk tidak direkodkan",
+        "days": "{n} hari",
+        "oneDay": "1 hari",
+        "tile": {
+          "scholarsNow": "Penerima biasiswa kini",
+          "meetings90": "Pertemuan (90 hari)",
+          "averageGap": "Purata jarak antara pertemuan",
+          "concerns": "Kebimbangan dibangkitkan / terbuka"
+        },
+        "col": {
+          "scholar": "Penerima biasiswa",
+          "since": "Sejak",
+          "ended": "Tamat",
+          "meetings": "Pertemuan",
+          "lastMeeting": "Pertemuan terakhir",
+          "standing": "Prestasi",
+          "concern": "Kebimbangan"
+        },
+        "concern": {
+          "open": "Terbuka",
+          "handled": "Telah diurus",
+          "closed": "Fail ditutup"
+        },
+        "currentTitle": "Penerima biasiswa kini",
+        "pastTitle": "Penerima biasiswa lalu (bimbingan tamat)",
+        "noneNow": "Tiada penerima biasiswa buat masa ini.",
+        "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
+        "notFound": "Mentor ini tidak ditemui.",
+        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
+      }
     },
     "myStudents": {
       "title": "Pelajar saya",
@@ -9111,8 +9159,6 @@
     "team": {
       "desc": "Semua orang yang sudah berada dalam organisasi ini. Seorang boleh berada dalam lebih daripada satu jadual.",
       "tabMentors": "Mentor",
-      "mentorsSoon": "Buat masa ini mentor disenaraikan di halaman Mentor. Mereka akan berpindah ke tab ini tidak lama lagi.",
-      "openMentors": "Buka Mentor",
       "add": {
         "admins": "Tambah Pentadbir",
         "reviewers": "Tambah Penilai"
@@ -9147,14 +9193,6 @@
       "leadChip": "Pentadbir organisasi (ketua)",
       "leadNote": "Tetap: setiap kebenaran pentadbir serta kuasa ketua",
       "noSelfQc": "Tidak pernah menyemak mutu kes yang dinilainya sendiri",
-      "edit": {
-        "admins": "Ubah kebenaran pentadbir",
-        "reviewers": "Ubah kebenaran penilai"
-      },
-      "editorOnly": {
-        "admins": "Hanya kebenaran pentadbir ditunjukkan di sini. Kebenaran penilai ada di tab Penilai.",
-        "reviewers": "Hanya kebenaran penilai ditunjukkan di sini. Kebenaran pentadbir ada di tab Pentadbir."
-      },
       "removeFrom": {
         "admins": "Keluarkan daripada Pentadbir",
         "reviewers": "Keluarkan daripada Penilai"
@@ -9175,10 +9213,11 @@
       "financeCheckOff": "Mereka orang terakhir yang ditetapkan sebagai Kewangan: kredit dompet tidak lagi melalui semakan kewangan.",
       "note": {
         "last_table": "Satu-satunya jadual: tarik balik akses",
-        "mentors_only": "Hanya Mentor yang tinggal: tarik balik akses atau hentikan bimbingan",
+        "mentors_only": "Hanya Mentor yang tinggal: tarik balik akses atau hentikan bimbingan (mereka mesti telah log masuk untuk kekal sebagai mentor)",
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
-      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai."
+      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
+      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka."
     }
   },
   "documentsTab": {

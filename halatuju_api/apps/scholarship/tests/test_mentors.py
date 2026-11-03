@@ -242,7 +242,9 @@ class TestTheMentorsPage(_Base):
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'phone', 'status', 'area', 'languages', 'other_language',
             'invited_at', 'signed_in', 'last_seen_at', 'deactivated_at', 'manageable',
-            'scholars_now', 'staff_role'})   # S7b; S7d
+            'scholars_now', 'staff_role',   # S7b; S7d
+            # Team tables T3: the Team -> Mentors table's own columns (`mentor_rows(team=True)`).
+            'tables', 'lead', 'meetings_90', 'last_meeting', 'concerns_open'})
         self.assertIsNone(row['staff_role'])   # a mentor login, not a staff member
         self.assertEqual((row['name'], row['email'], row['phone'], row['area']),
                          ('Priya Devi', 'priya@example.org', '12-345 6789', 'Accounting, finance'))

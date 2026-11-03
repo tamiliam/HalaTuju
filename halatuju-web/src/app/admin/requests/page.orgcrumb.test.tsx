@@ -12,6 +12,7 @@ import * as api from '@/lib/admin-api'
 import { OrgScopeProvider } from '@/lib/orgScope'
 
 jest.mock('@/lib/admin-api')
+jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'test-token', role: { role: 'super', is_super_admin: true } }),
@@ -21,7 +22,12 @@ const mockApi = api as jest.Mocked<typeof api>
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockApi.getOrgRequests.mockResolvedValue({ requests: [] })
+  window.history.replaceState({}, '', '/admin/requests')
+  // Requests list R1: the list is a page in the shared envelope.
+  mockApi.getOrgRequests.mockResolvedValue({
+    count: 0, total_pages: 1, page: 1, page_size: 25, requests: [], ids: [],
+    summary: { action: 0, progress: 0, closed: 0, all: 0 },
+  })
 })
 
 const lastFilters = () => mockApi.getOrgRequests.mock.calls.at(-1)?.[0]
@@ -34,13 +40,14 @@ describe('the organisation crumb on Requests (TD-228)', () => {
       </OrgScopeProvider>,
     )
     await waitFor(() => expect(mockApi.getOrgRequests).toHaveBeenCalled())
-    expect(lastFilters()).toEqual({ status: undefined, org: 'inspire' })
+    // The landing tab (Needs action, D9) and no filter — plus the crumb.
+    expect(lastFilters()).toEqual({ group: 'action', kind: '', q: '', page: 1, org: 'inspire' })
   })
 
   it('sends none when nothing is chosen — the list the fence allows, as before', async () => {
     render(<AdminRequestsPage />)
     await waitFor(() => expect(mockApi.getOrgRequests).toHaveBeenCalled())
-    expect(lastFilters()).toEqual({ status: undefined, org: undefined })
+    expect(lastFilters()?.org).toBeUndefined()
   })
 
   it('asks again when the crumb changes', async () => {
@@ -50,8 +57,8 @@ describe('the organisation crumb on Requests (TD-228)', () => {
       </OrgScopeProvider>
     )
     const { rerender } = render(tree('brightpath'))
-    await waitFor(() => expect(lastFilters()).toEqual({ status: undefined, org: 'brightpath' }))
+    await waitFor(() => expect(lastFilters()?.org).toBe('brightpath'))
     rerender(tree('inspire'))
-    await waitFor(() => expect(lastFilters()).toEqual({ status: undefined, org: 'inspire' }))
+    await waitFor(() => expect(lastFilters()?.org).toBe('inspire'))
   })
 })

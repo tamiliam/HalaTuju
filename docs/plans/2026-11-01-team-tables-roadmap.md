@@ -79,6 +79,10 @@ Reviewers). Mentors live on a separate page.
 - Org admin may join Reviewers; self-QC test for them.
 
 **T3 — Mentors under Team, mentor detail** (medium; ~25 files)
+- **Status: LIVE 2026-11-03 (main 99d8ac1c; api-01243-dzq, web-01070-c44).** decisions.md "Team tables T3". Table + Add / Stop / Deactivate (7d), detail
+  page `/admin/organisation/reviewers/mentors/[id]` (`mentor_detail.py`), old page redirects; T2's mentors-only refusal
+  lifted for a signed-in staff mentor with no open case (becomes a mentor login). Owner scope addition: the person
+  page's Permissions tab has one section per table; the Team tables lost their permission column. No migration.
 - Team → Mentors tab (same width table, Add Mentor = 7d add; Stop / Mentor again); the old Mentors page redirects;
   "Invite a mentor" removed.
 - Mentor detail page: profile summary, current and past scholars, meetings logged (count, last, gap between
@@ -94,7 +98,35 @@ sprint start)
 - Permission keys for what a role LABEL still decides after T2: the admin work pages (Announcements, Surveys,
   Development, Sources, Mentors read, sponsor terms/emails — `staff_tables.ADMIN_WORK_KEYS`, empty today) and the
   wallet-credit check (TD-475, still the `finance` role). Then `role` is only a display name.
-- The org admin's lead-only powers stay with the "Later" item below unless the owner widens T5.
+- **T5.0 APPROVED by the owner 2026-11-03 ("approve all")** — decision page
+  https://claude.ai/artifact/1HbE54pJTFu4JznDmNTdXf (evidence: the lead's T5 investigation, page × tier inventory,
+  13 two-person rules, 20 conflict rules). Owner model: Reviewer sees only assigned students; QC implicitly sees
+  ALL students and may decide on any except those they reviewed / interviewed / were assigned (QC self-sufficient,
+  no `see_all` dependency); every team member lands on Organisation → Programmes; the org admin can limit any person
+  to one or a few gifts (default all); admin pages in groups (Organisation, Programme, Engagement, Money) with
+  View / Create-edit / Check / Approve per page as the page needs; the maker never checks or approves; only the org
+  admin sets permissions. Rulings on the 8 questions (all as recommended):
+  1. Keys per PAGE, shown in groups with a "whole group" switch.
+  2. Organisation settings under Organisation; **gift configuration stays under Programme, with each gift** (owner:
+     the rules change by gift) — renamed **Programme Settings** and moved last in the Programme group (2026-11-03,
+     small change c166736a); Contracts under Programme; the Mentors list inside Team view.
+  3. The org admin's lead-only powers (gifts, invitations, sponsor approval, requests, billing, assigning) become
+     keys in T5; no preset grants them — only the org admin ticks them.
+  4. The org admin may not approve a payment run they created when another eligible approver exists; otherwise the
+     fallback stays and is recorded "approved as fallback".
+  5. Wallet credits: create / check / approve by keys, maker never approves; `Donation.created_by` added (closes TD-475).
+  6. Assigning reviewers is a key (Students: create/edit); never to oneself.
+  7. Engagement pages (names every scholar) depend on Students view, like QC did on `see_all`.
+  8. A gift-limited person may READ organisation-wide pages (Team, Invitations, Sources) but not change
+     organisation-wide items; they create announcements / surveys only for their gifts.
+- Live shapes map with NO access lost; only the custom-permission rows are rewritten (data migration with a
+  history row each; `resolve()` reads both vocabularies for one release).
+- Sprints, each with the owner's "yes": **T5a** catalogue v2 + aliases, no gate converted · **T5b** QC
+  self-sufficient + widened self-QC guard (adversarial) · **T5c** pages open by keys, Programmes landing, role display
+  only (adversarial) · **T5d** money: credits maker/check/approve, payments fallback rule, data migration
+  (adversarial) · **T5g** the Permissions tab UI + Guide/FAQ · **T5e** lead powers to keys (adversarial) · **T5f**
+  real gift limits as a fence (M2M; design first + adversarial; last — biggest blast radius; today "Covers" only
+  greys the assign picker, the server ignores it).
 
 Order: T1 → T2 → T3 → T4 → T5 (T3 and T4 could swap). The maintenance roadmap is complete.
 

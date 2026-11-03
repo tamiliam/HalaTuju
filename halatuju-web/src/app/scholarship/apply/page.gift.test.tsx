@@ -161,7 +161,8 @@ describe('D4 — the form names the gift', () => {
     serveIntake(TWO_OPEN, { sabah: SABAH_OPEN })
     mount()
     const change = await screen.findByTestId('apply-gift-change')
-    const nameBox = screen.getByDisplayValue(String(profile.name))
+    // The profile prefill can land after "Change" shows (it flaked the T3 deploy build under load): wait for it.
+    const nameBox = await screen.findByDisplayValue(String(profile.name))
     fireEvent.change(nameBox, { target: { value: 'Typed Before Change' } })
 
     fireEvent.click(change)

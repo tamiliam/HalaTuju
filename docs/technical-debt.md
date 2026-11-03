@@ -7493,6 +7493,8 @@ editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses 
 whose decision is then reopened (`decision_reopened_at`), is named on a case they can no longer open. It existed
 before T2 (the editor had the same window). **Fix:** have the reopen refuse (or reassign) when the assigned person no
 longer holds `review`, or have the reopen screen ask for a new reviewer. *(B · S)*
+**Team tables T3 (2026-11-03) opens the same gap:** a staff mentor converted to a mentor login (leaving their last
+staff table with no open case) can later be named on a reopened decision they can no longer open.
 
 ### [TD-471] Mobile M6a: four everyday console pages have no sandbox surface, so mobile-check cannot measure them - low
 
@@ -7535,7 +7537,7 @@ the corpus (every one-word line after a school there was a real wrap: 3 of 3), s
 institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
 postcode line below the town as the anchor), with a synthetic twin. *(B · S)*
 
-### [TD-477] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next, the maintenance status on a phone - low
+### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next, the maintenance status on a phone - low
 
 **Raised 2026-11-03 by Mobile M6b** (layout only by rule, so each of these was left as it was). (1) Four cockpit doors
 still ask with `window.confirm` — the contractual decline, the nudge, cancelling a scheduled decline and holding an
@@ -7551,3 +7553,17 @@ whether the status buttons should follow the payment rule. *(W · S)*
 **Accepted (M6b review), not debt:** ONE breakpoint decides "phone" across M6b — below `md` by width (the PDF rule's
 `PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and
 the payment controls; the server authorises by role, never by device, so this is a layout choice, not a safety gap.
+
+### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
+
+**Raised 2026-11-03 by Requests list R1.** R1 built ONE Previous / Next for a list's detail pages:
+`src/lib/listNav.ts` (a storage-injectable, SSR-safe record of the page's ids, the list's own URL and the tab's
+name) and `src/components/admin/RequestListNav.tsx` ("‹ Back to <tab>", "‹ Previous · n of m · Next ›", greyed
+ends, focus kept on a live step, ← / → except while typing, with a modifier or under a dialog). The Applications
+cockpit still hand-rolls an older copy: `admin/scholarship/page.tsx` writes `halatuju_admin_scholarship_nav` (ids
+only), `scholarship/[id]/view.tsx` reads it and `view/CockpitHeader.tsx` draws it — no position, no keys, no "back
+to". It was NOT converted in R1 on purpose (plan D8): Mobile M6b re-lays-out exactly that header, and `view.tsx`
+has two lines of ledger room. Also open from R1 (D7): Previous / Next walk only the PAGE the reader came from;
+crossing to the next page would need a fetch from the detail page. **Fix:** after M6b lands, the scholarship list
+writes through `writeListNav` and the cockpit header reads `useListNav` (deleting the hand-rolled code); the
+cross-page step, if wanted, is its own small change. *(W · S)*

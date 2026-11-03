@@ -798,6 +798,9 @@ class TestOrgFenceStaticGuard(TestCase):
                'source_access.py',
                # Student maintenance S7b (2026-11-01) — the mentoring rules, on the day written.
                'mentoring.py',
+               # Requests list R1 (2026-11-03) — the list's tabs, filters and row tags, whose
+               # `Exists` subqueries read OrgRequestComment / OrgRequestAnalysis; on the day written.
+               'org_requests_queue.py',
                # TD-240, closed at code health H3 (2026-09-18). Scanned with BOTH vocabularies:
                # the admin tokens above, and `SPONSOR_WATCHED` below.
                'views_sponsor.py')

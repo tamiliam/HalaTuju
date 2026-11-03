@@ -20,6 +20,7 @@ import {
 } from '@/lib/navigation'
 import { defaultChapterSlug, manualPerms, manualRole, visibleChapters } from '@/content/manual'
 import { ADMIN_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
+import { MENTORS_READ_ROLES, mayReadMentors } from '@/lib/pageGuard'
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessBefore.json')
 const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBefore.json')
@@ -155,7 +156,40 @@ describe('Team tables T1: the console access matrix', () => {
       expect([cell, before[shape][cell]]).toEqual([cell, was])
       expected[cell] = now
     }
-    expect(measured[shape]).toEqual(expected)
+    expect(measured[shape]).toEqual(t3Moves(expected))
+  })
+})
+
+/**
+ * Team tables T3 (2026-11-03, owner ruling 6): THE ONLY CELLS T3 MOVES. The Mentors menu row goes (Mentors are
+ * Team → Mentors), and `/admin/organisation/mentors` is now a redirect matched to the Team row, so opening it
+ * answers what opening Team answers (it only sends the visitor to Team). Who sees the Mentors TAB is
+ * `pageGuard.mayReadMentors` — exactly the old row's roles — pinned below. Nothing else moves.
+ */
+function t3Moves(cells: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...cells }
+  for (const m of MENUS) out[m] = (cells[m] as string[]).filter((id) => !id.startsWith('mentors:'))
+  out['open /admin/organisation/mentors'] = cells['open /admin/organisation/reviewers']
+  for (const m of MENUS) out[m] = programmeSettingsLast(out[m] as string[])
+  return out
+}
+
+/** Owner 2026-11-03 (small change): the gift's Configuration row became "Programme Settings", the LAST row of the
+ *  Programme group (after Contract templates). The same rows, one moved; nobody gains or loses a row. */
+function programmeSettingsLast(ids: string[]): string[] {
+  const row = ids.find((id) => id.startsWith('programmeConfig'))
+  if (!row) return ids
+  const rest = ids.filter((id) => id !== row)
+  const after = rest.findIndex((id) => id.startsWith('contracts'))
+  return after < 0 ? ids : [...rest.slice(0, after + 1), row, ...rest.slice(after + 1)]
+}
+
+describe('Team tables T3: the Mentors tab keeps the old Mentors page\'s readers', () => {
+  const first = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
+  const mixed = JSON.parse(fs.readFileSync(MIXED_FIXTURE, 'utf8')) as Record<string, Record<string, unknown>>
+  const before = { ...first, ...mixed }
+  it.each(Object.keys(SHAPES))('%s: sees the Mentors tab exactly when it opened the old page', (shape) => {
+    expect(mayReadMentors(SHAPES[shape])).toBe(before[shape]['open /admin/organisation/mentors'])
   })
 })
 
@@ -179,6 +213,8 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
     // ADMIN_WORK_KEYS is empty (owner, 2026-11-03): Sources, Mentors, Announcements, Surveys and
     // Development stay on their roles. A row gaining `adminKeys` must name the server gate it mirrors.
     expect(tuple('ADMIN_WORK_KEYS')).toEqual([])
+    // T3: the Mentors tab's readers are the server's ADMIN_WORK roles (+ a super), no key.
+    expect([...MENTORS_READ_ROLES]).toEqual(['super', ...tuple('ADMIN_WORK_ROLES')])
     expect(NAV_ITEMS.filter((i) => i.adminKeys).map((i) => [i.id, i.adminKeys]))
       .toEqual(['administration', 'staff', 'reviewers', 'sponsors'].map((id) => [id, ADMIN_KEYS]))
   })

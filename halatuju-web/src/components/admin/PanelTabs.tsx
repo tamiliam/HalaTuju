@@ -41,7 +41,9 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
 }) {
   const { t } = useT()
   return (
-    <div role="tablist" aria-label={t(ariaLabelKey)} className="mb-6 flex items-center gap-2">
+    // `flex-wrap`: four counted tabs in Tamil do not fit one row at 360 px (Requests list R1), and
+    // a tab bar that runs off the edge is a sideways scroll. A bar that fits is unchanged.
+    <div role="tablist" aria-label={t(ariaLabelKey)} className="mb-6 flex flex-wrap items-center gap-2">
       {tabs.map((tab) => {
         const on = tab.key === active
         return (

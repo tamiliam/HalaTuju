@@ -3,7 +3,6 @@
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate, formatDateTime } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
@@ -25,6 +24,7 @@ import {
 import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 import { RequestAnalysisCard } from '@/components/admin/RequestAnalysisCard'
 import { RequestHoursForm } from '@/components/admin/RequestHoursForm'
+import RequestListNav from '@/components/admin/RequestListNav'
 
 // The Requests detail: the clarification thread + the org's requestee actions (accept / defer /
 // modify / withdraw) and the owner's controls (triage / quote / requote / schedule / done /
@@ -174,7 +174,7 @@ export default function AdminRequestDetailPage() {
 
   return (
     <div>
-      <Link href="/admin/requests" className="text-sm text-primary-600 hover:text-primary-800">← {t('admin.requests.detail.back')}</Link>
+      <RequestListNav id={id} />
 
       <div className="flex items-start justify-between gap-3 mt-3 mb-4">
         <div className="min-w-0">

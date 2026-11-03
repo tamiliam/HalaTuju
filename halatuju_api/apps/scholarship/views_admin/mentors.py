@@ -105,17 +105,22 @@ def invite_mentor(request, admin):
     }, status=status.HTTP_201_CREATED)
 
 
-def mentor_rows(caller, mentors):
+def mentor_rows(caller, mentors, *, team=False):
     """The Mentors page's rows for ``mentors`` — ONE query each for the logins, their profiles and
     their invitations, whatever the page size. An ALLOWLIST: name, email, the mentor's own phone (the
     profile tells them the inviting organisation sees it), status, area, languages, invited / signed-in
     times, `manageable` (the endpoints' own rule, so the screen never offers a refused button) and
-    `scholars_now` (S7b: their open mentoring assignments)."""
+    `scholars_now` (S7b: their open mentoring assignments).
+
+    ``team`` (Team tables T3, the Team -> Mentors table): also `tables` / `lead` (the "Also in" chips,
+    `staff_tables.tables`) and the work columns `meetings_90`, `last_meeting`, `concerns_open`
+    (`mentor_detail.team_columns`, ONE more query)."""
     from .. import mentor_invite
     from ..mentoring import scholars_now
     from ..models import Invitation, ReviewerProfile
     from ..staff_contact import staff_screen_phone
-    logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors)}
+    # The mentor rides along: `status_of` / `mentors_now` read `login.mentor` (no query per row).
+    logins = {a.mentor_id: a for a in PartnerAdmin.objects.filter(mentor__in=mentors).select_related('mentor')}
     now = scholars_now([m.pk for m in mentors])   # S7b: ONE query for every row's open assignments
     profiles = {p.partner_admin_id: p for p in ReviewerProfile.objects.filter(
         partner_admin__in=list(logins.values()))}
@@ -155,6 +160,16 @@ def mentor_rows(caller, mentors):
             'manageable': mentor_invite.manageable(caller, m),
             'scholars_now': now.get(m.pk, 0),   # S7b
         })
+    if team:
+        from apps.courses import staff_permissions as sp
+        from apps.courses import staff_tables
+        from ..mentor_detail import empty_columns, team_columns
+        work = team_columns([m.pk for m in mentors])
+        for m, row in zip(mentors, rows):
+            login = logins.get(m.pk)
+            row['tables'] = list(staff_tables.tables(login)) if login else []
+            row['lead'] = bool(login and sp.is_lead_tier(login))
+            row.update(work.get(m.pk, empty_columns()))
     return rows
 
 
@@ -175,6 +190,13 @@ def mentor_kind_extras(caller, mentor_ids):
 
 class _MentorsBase(_AdminBase):
     """The fence every Mentors endpoint shares."""
+
+    def sees_scholars(self, admin):
+        """T3 review (2026-11-03): may ``admin`` see the SCHOLAR side of a mentor (who they mentor, the
+        standing, the meetings per scholar, the concerns)? The Scholars list's own read rule: `_b40_scope`
+        'all' (`see_all`; a super, the org admin, an admin preset). An admin holding only money keys reads
+        the Mentors table (its gate is the role) but never a scholar's data through it."""
+        return self._b40_scope(admin) == 'all'
 
     def _reader(self, request):
         from .. import mentor_invite
@@ -231,22 +253,53 @@ class AdminMentorsView(_MentorsBase):
             return err
         # S7d: a mentor record with no login (a staff member who never mentored, then deleted) is
         # nobody's row any more: it is not listed.
+        # T3: the Team -> Mentors table's own columns ride on the same rows (`team=True`).
         rows = mentor_rows(admin, list(scope.filter(users__isnull=False).select_related('organisation')
-                                       .order_by('id')))
+                                       .order_by('id')), team=True)
         rows.sort(key=lambda r: (r['name'] or '').lower())
         counts = {s: 0 for s in mentor_invite.STATUSES}
         for r in rows:
             counts[r['status']] += 1
-        return Response({'mentors': rows, 'counts': counts,
+        sees = self.sees_scholars(admin)
+        if not sees:
+            for r in rows:
+                r['concerns_open'] = None   # T3 review: scholar data needs the Scholars list's read key
+        return Response({'mentors': rows, 'counts': counts, 'sees_scholars': sees,
                          'can_invite': mentor_invite.may_invite(admin)})
 
 
 class AdminMentorView(_MentorsBase):
-    """PATCH admin/mentors/<id>/ `{name?, email?}` — staff correct a name or an address UNTIL the
+    """GET admin/mentors/<id>/ — Team tables T3: the MENTOR DETAIL page (`mentor_detail.py`). The Mentors
+    table's own readers (super, org_admin, admin — `_reader`; else 403), the organisation fence (`_in_scope`:
+    another organisation's mentor 404), and only a mentor the table lists (one with a login; else 404).
+    `{mentor: <the table's row>, mentoring_since, figures, current, past}` — never a meeting note.
+
+    PATCH admin/mentors/<id>/ `{name?, email?}` — staff correct a name or an address UNTIL the
     first sign-in. 200 the row; 400 `bad_email` / `name_required` / `not_active` / `bad_request`;
     404; 409 `managed_by_mentor` (signed in: the mentor's details are theirs) or `already_staff`;
     500 `not_configured`; 502 `create_failed` / `retire_failed`. A new address is a new sign-in and
     is sent the invitation (`mentor_invite.edit`)."""
+
+    def get(self, request, pk):
+        from .. import mentor_detail
+        admin, err = self._reader(request)
+        if err:
+            return err
+        scope, err = self._in_scope(request, admin)
+        if err:
+            return err
+        mentor = scope.filter(pk=pk, users__isnull=False).select_related('organisation').first()
+        if mentor is None:
+            return _error('not_found', status.HTTP_404_NOT_FOUND)
+        row = mentor_rows(admin, [mentor], team=True)[0]
+        if not self.sees_scholars(admin):
+            # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).
+            row['concerns_open'] = None
+            return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at),
+                             'sees_scholars': False, 'figures': None, 'current': [], 'past': []})
+        figures, current, past = mentor_detail.scholars_of(mentor)
+        return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at), 'sees_scholars': True,
+                         'figures': figures, 'current': current, 'past': past})
 
     def patch(self, request, pk):
         from .. import mentor_invite

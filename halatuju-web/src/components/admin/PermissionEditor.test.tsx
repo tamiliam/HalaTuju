@@ -25,6 +25,8 @@ const KEYS = ['review', 'see_all', 'qc', 'spending', 'payments_prepare', 'paymen
 const ROHINI: api.StaffPermissionsView = {
   id: 7, name: 'Rohini', role: 'reviewer', is_active: true, editable: true,
   preset: ['review'], permissions: ['review'], custom: false, keys: KEYS,
+  // T3: the tables she sits in decide the sections; Rohini (keys in both) sits in both.
+  tables: ['admins', 'reviewers'],
 }
 const plan = (over: Partial<api.StaffPermissionsPlan>): api.StaffPermissionsPlan => ({
   id: 7, role: 'reviewer', dry_run: true, changed: true, permissions: ['review'], custom: false,
@@ -47,8 +49,16 @@ it('shows the two groups of toggles the server serves, from the person\'s curren
   await open()
   expect(screen.getByText('admin.permEditor.title(name=Rohini)')).toBeTruthy()
   expect(screen.getByText('admin.permEditor.subtitle(preset=admin.role.reviewer)')).toBeTruthy()
-  expect(screen.getByText('admin.permEditor.students')).toBeTruthy()
-  expect(screen.getByText('admin.permEditor.money')).toBeTruthy()
+  // T3: one section per table she sits in (both, here); the old Students / Money groups are gone.
+  const admins = screen.getByTestId('perm-section-admins')
+  const reviewers = screen.getByTestId('perm-section-reviewers')
+  expect(within(admins).getByText('admin.team.colKeys.admins')).toBeTruthy()
+  expect(within(admins).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
+    ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'].map((k) => `admin.perm.${k}.name`))
+  expect(within(reviewers).getAllByRole('switch').map((b) => b.getAttribute('aria-label'))).toEqual(
+    ['admin.perm.review.name', 'admin.perm.qc.name'])
+  expect(screen.queryByText('admin.permEditor.students')).toBeNull()
+  expect(screen.queryByText('admin.permEditor.money')).toBeNull()
   expect(screen.getAllByRole('switch')).toHaveLength(KEYS.length)       // toggles, never checkboxes
   expect(screen.queryByRole('checkbox')).toBeNull()
   expect(isOn('review')).toBe(true)
@@ -248,5 +258,71 @@ describe('Changes', () => {
     render(<PermissionEditor adminId={7} name="Rohini" token="tok" />)
     await waitFor(() => expect(screen.getByTestId('permission-history')).toBeTruthy())
     expect(screen.getByText('admin.permHistory.on(perm=admin.perm.spending.name)')).toBeTruthy()
+  })
+})
+
+describe('Team tables T3: one section per table (owner, 2026-11-03)', () => {
+  const REVIEWER_ONLY = { ...ROHINI, tables: ['reviewers'] }
+
+  it('a Reviewer only: the Reviewer section alone — no See all students, no money switches', async () => {
+    await open(REVIEWER_ONLY)
+    expect(screen.queryByTestId('perm-section-admins')).toBeNull()
+    expect(screen.getAllByRole('switch').map((b) => b.getAttribute('aria-label')))
+      .toEqual(['admin.perm.review.name', 'admin.perm.qc.name'])
+  })
+
+  it('an Admin only: the Admin section alone', async () => {
+    await open({ ...ROHINI, role: 'admin', preset: ['see_all', 'spending', 'payments_prepare'],
+      permissions: ['see_all', 'spending', 'payments_prepare'], tables: ['admins'] })
+    expect(screen.queryByTestId('perm-section-reviewers')).toBeNull()
+    expect(screen.queryByRole('switch', { name: 'admin.perm.review.name' })).toBeNull()
+    expect(screen.getByTestId('perm-section-admins')).toBeTruthy()
+  })
+
+  it('Quality check for a Reviewer only says it needs the Admin permission, and brings See all students', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    await open(REVIEWER_ONLY)
+    expect((toggle('qc') as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByTestId('qc-brings-see-all').textContent).toBe('admin.permEditor.qcBrings')
+    fireEvent.click(toggle('qc'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['review', 'qc', 'see_all'], true, { token: 'tok' }))
+  })
+
+  it('NEVER drops a key held outside the sections on screen', async () => {
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({}))
+    // A QC reviewer: See all students is Quality check's need, held but not shown (not in Admins).
+    await open({ ...REVIEWER_ONLY, role: 'qc', preset: ['see_all', 'qc'], permissions: ['review', 'see_all', 'qc'] })
+    fireEvent.click(toggle('review'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['see_all', 'qc'], true, { token: 'tok' }))
+    jest.clearAllMocks()
+    // Any other key the screen does not show rides along too, through the dry run AND the save.
+    mockApi.saveStaffPermissions.mockResolvedValue(plan({ permissions: ['review', 'spending', 'qc', 'see_all'] }))
+    document.body.innerHTML = ''
+    await open({ ...REVIEWER_ONLY, permissions: ['review', 'spending'] })
+    fireEvent.click(toggle('qc'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['review', 'spending', 'qc', 'see_all'], true, { token: 'tok' }))
+    fireEvent.click(await screen.findByText('admin.permEditor.save'))
+    await waitFor(() => expect(mockApi.saveStaffPermissions).toHaveBeenLastCalledWith(
+      7, ['review', 'spending', 'qc', 'see_all'], false, { token: 'tok' }))
+  })
+
+  it('in both tables, Quality check is held until the Admin permission is on, and says so', async () => {
+    await open()
+    expect((toggle('qc') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText('admin.permEditor.qcHint')).toBeTruthy()
+    expect(screen.queryByTestId('qc-brings-see-all')).toBeNull()
+  })
+})
+
+describe('T3 review: no Reset for somebody sitting in no table', () => {
+  it('hides Reset when tables is empty, and shows it otherwise', async () => {
+    await open({ ...ROHINI, tables: [] })
+    expect(screen.queryByTestId('perm-reset')).toBeNull()
+    document.body.innerHTML = ''
+    await open(ROHINI)
+    expect(screen.getByTestId('perm-reset')).toBeTruthy()
   })
 })

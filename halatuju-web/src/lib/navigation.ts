@@ -248,18 +248,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // exactly the reason the Staff → Invitations rename kept its own route: bookmarks, the
       // highlight rules and the ⌘K key all keep working, and only the word changed. The `id` is
       // likewise still `reviewers` — it is the snapshot key, never derived from the label.
+      //
+      // ⚠ TEAM TABLES T3 (2026-11-03): `/admin/organisation/mentors` REDIRECTS HERE (Team → Mentors) and is
+      // matched to this row, so a bookmark lights Team. Who sees the Mentors TAB and the mentor detail
+      // page is NOT this row's rule: it is `MENTORS_READ_ROLES` (the server's `mentor_invite.may_read`).
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        adminKeys: ORG_READ_KEYS, gate: { mode: 'always' } },
+        adminKeys: ORG_READ_KEYS, gate: { mode: 'always' }, match: ['/admin/organisation/mentors'] },
       // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
       // before the people who fund them, in the order the work actually flows.
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      // ⚠ MENTORS (student maintenance S7a, 2026-10-31): invited here and signing in on the
-      // source pattern. super + org_admin invite and act; admin reads (`GET admin/mentors/`, the
-      // endpoint's own rule). Organisation scope: a mentor belongs to the organisation, not a gift.
-      { id: 'mentors', href: '/admin/organisation/mentors', labelKey: 'admin.mentors.nav',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+      // ⚠ MENTORS had a row here from S7a (2026-10-31) until Team tables T3 (2026-11-03): they are Team →
+      // Mentors now (owner ruling 6), and the old route redirects (matched to the Team row above).
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
@@ -366,9 +367,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
-        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
-        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
       // ⚠ **PAYMENTS AND SPENDING MOVED HERE FROM ORGANISATION — TD-241, owner, 2026-09-11.**
       // Money is raised, released and spent PER GIFT: `PaymentRun.programme` has said so since
       // P2b, and a run that spanned two gifts would pay one benefactor's students from
@@ -400,6 +398,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
+      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
+        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
+        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
     ],
   },
   {
