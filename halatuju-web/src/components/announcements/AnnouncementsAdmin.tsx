@@ -130,7 +130,7 @@ export default function AnnouncementsAdmin({ programme }: { programme?: string }
           <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500"
             data-testid="announcements-empty">{t(`${K}.empty.${tab}`)}</div>
         ) : (
-          <TableFrame minWidth={820} label={t(`${K}.title`)}>
+          <TableFrame minWidth={820} label={t(`${K}.title`)} phoneRows>
             <table className="w-full text-sm">
               <thead className="border-b bg-ground-50">
                 <tr>
@@ -158,10 +158,10 @@ export default function AnnouncementsAdmin({ programme }: { programme?: string }
                           {a.edited_at ? ` · ${t(`${K}.edited`, { date: formatDate(a.edited_at) })}` : ''}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{audienceLabel(t, a)}</td>
-                      <td className="whitespace-nowrap px-4 py-3">{when ? formatDate(when) : '—'}</td>
-                      <td className="px-4 py-3" data-testid={`announcement-emailed-${a.id}`}>{emailedLabel(t, a)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums" data-testid={`announcement-read-${a.id}`}>
+                      <td className="px-4 py-3" data-label={t(`${K}.col.for`)}>{audienceLabel(t, a)}</td>
+                      <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.${dateCol}`)}>{when ? formatDate(when) : '—'}</td>
+                      <td className="px-4 py-3" data-label={t(`${K}.col.emailed`)} data-testid={`announcement-emailed-${a.id}`}>{emailedLabel(t, a)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums" data-label={t(`${K}.col.read`)} data-testid={`announcement-read-${a.id}`}>
                         {a.status === 'published' || a.status === 'withdrawn'
                           ? t(`${K}.read`, { read: String(a.read_count), count: String(a.audience_count) }) : '—'}
                       </td>

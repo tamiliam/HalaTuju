@@ -106,39 +106,39 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
           <div className="flex gap-2">
             {canClose && (
               <button type="button" onClick={onGoToClose}
-                className="h-10 rounded-lg border border-critical-300 bg-ground-0 px-3 text-sm text-critical-700 hover:bg-critical-50">
+                className="h-10 rounded-lg border border-critical-300 bg-ground-0 px-3 text-sm text-critical-700 hover:bg-critical-50 max-md:h-11">
                 {t(`${P}.closeFile`)}
               </button>
             )}
             <button type="button" onClick={() => setDismissed(true)}
-              className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-700 hover:bg-ground-50">
+              className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-700 hover:bg-ground-50 max-md:h-11">
               {t(`${P}.notNow`)}
             </button>
           </div>
         </section>
       )}
 
-      <section className="overflow-hidden rounded-xl border border-ground-200 bg-ground-0">
-        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5">
+      <section className="overflow-hidden md:rounded-xl md:border md:border-ground-200 md:bg-ground-0">
+        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5 max-md:px-0">
           <h2 className="font-semibold text-ground-900">{t(`${P}.title`)}</h2>
           {data.can_issue.length > 0 && !issuing && (
             <button type="button" onClick={() => setIssuing(true)}
-              className="h-10 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white hover:bg-primary-700">
+              className="h-10 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white hover:bg-primary-700 max-md:h-11">
               {t(`${P}.issue`)}
             </button>
           )}
         </div>
-        {message && <p className="border-b px-4 py-2 text-sm text-ground-700 sm:px-5" role="status">{message}</p>}
+        {message && <p className="border-b px-4 py-2 text-sm text-ground-700 sm:px-5 max-md:px-0" role="status">{message}</p>}
         {link && (
-          <p className="border-b px-4 py-2 text-sm sm:px-5">
+          <p className="border-b px-4 py-2 text-sm sm:px-5 max-md:px-0">
             <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">{t(`${P}.openPdf`)}</a>
           </p>
         )}
-        {data.letters.length === 0 && <p className="px-4 py-6 text-sm text-ground-500 sm:px-5">{t(`${P}.empty`)}</p>}
+        {data.letters.length === 0 && <p className="px-4 py-6 text-sm text-ground-500 sm:px-5 max-md:px-0">{t(`${P}.empty`)}</p>}
         <ul className="divide-y divide-ground-100">
           {data.letters.map((l) => (
             <li key={l.id} data-testid={`letter-${l.id}`}
-              className={`flex flex-wrap justify-between gap-3 px-4 py-4 sm:px-5 ${l.withdrawn_at ? 'bg-ground-50' : ''}`}>
+              className={`flex flex-wrap justify-between gap-3 px-4 py-4 sm:px-5 max-md:px-0 ${l.withdrawn_at ? 'bg-ground-50' : ''}`}>
               <div className="flex min-w-0 flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${l.withdrawn_at ? 'bg-ground-100 text-ground-600' : KIND_TONE[l.kind]}`}>
@@ -181,24 +181,24 @@ export default function ScholarLetters({ id, token, canClose, onGoToClose, onCha
                         className="mt-1 block w-72 max-w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
                     </label>
                     <button type="button" onClick={() => withdraw(l)} disabled={!reason.trim() || busy === l.id}
-                      className="h-10 rounded-lg bg-critical-fill px-3 text-sm font-medium text-critical-fill-ink disabled:opacity-50">
+                      className="h-10 rounded-lg bg-critical-fill px-3 text-sm font-medium text-critical-fill-ink disabled:opacity-50 max-md:h-11">
                       {t(`${P}.withdrawConfirm`)}
                     </button>
                     <button type="button" onClick={() => { setWithdrawing(null); setReason('') }}
-                      className="h-10 rounded-lg border border-ground-300 px-3 text-sm text-ground-700">{t('common.cancel')}</button>
+                      className="h-10 rounded-lg border border-ground-300 px-3 text-sm text-ground-700 max-md:h-11">{t('common.cancel')}</button>
                   </div>
                 )}
               </div>
               <div className="flex flex-wrap items-start gap-2">
                 {l.has_pdf && (
                   <button type="button" onClick={() => viewPdf(l)}
-                    className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-800 hover:bg-ground-50">
+                    className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-800 hover:bg-ground-50 max-md:h-11">
                     {t(`${P}.viewPdf`)}
                   </button>
                 )}
                 {data.can_withdraw && !l.withdrawn_at && withdrawing !== l.id && (
                   <button type="button" onClick={() => { setWithdrawing(l.id); setReason('') }}
-                    className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-700 hover:bg-ground-50">
+                    className="h-10 rounded-lg border border-ground-300 bg-ground-0 px-3 text-sm text-ground-700 hover:bg-ground-50 max-md:h-11">
                     {t(`${P}.withdraw`)}
                   </button>
                 )}

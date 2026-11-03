@@ -57,7 +57,7 @@ const run = (over: Partial<api.PaymentRunDetail> = {}): api.PaymentRunDetail => 
 
 const cards = () => screen.getByTestId('payment-cards')
 const cardFor = (name: string) =>
-  within(cards()).getByText(new RegExp(name)).closest('div[class*="rounded-xl"]') as HTMLElement
+  within(cards()).getByText(new RegExp(name)).closest('[data-payment-card]') as HTMLElement
 
 beforeEach(() => {
   jest.clearAllMocks()

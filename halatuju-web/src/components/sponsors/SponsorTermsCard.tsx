@@ -86,7 +86,7 @@ export default function SponsorTermsCard({ token, t }: {
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-start justify-between gap-4 mb-2">
+      <div className="flex items-start justify-between gap-4 mb-2 max-md:flex-col">
         <div>
           <h2 className="text-xl font-bold text-ground-900">{t('admin.sponsors.terms.title')}</h2>
           <p className="text-sm text-ground-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
@@ -148,8 +148,9 @@ export default function SponsorTermsCard({ token, t }: {
         </form>
       )}
 
-      <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4">
-        <table className="w-full text-sm min-w-[640px]">
+      {/* Mobile M7a (rule 7): rows on a phone through the shared `data-phone-rows` CSS; from md the table it was. */}
+      <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4 max-md:overflow-visible max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none" data-phone-rows>
+        <table className="w-full text-sm min-w-[640px] max-md:min-w-0">
           <thead className="bg-ground-50 border-b">
             <tr>
               {(['colVersion', 'colStatus', 'colLanguages', 'colPublishedBy', 'colUpdated'] as const)
@@ -165,17 +166,17 @@ export default function SponsorTermsCard({ token, t }: {
               <tr key={v.id} className="hover:bg-info-50/40 cursor-pointer"
                 onClick={() => router.push(`/admin/sponsors/terms/${v.id}`)}>
                 <td className="px-4 py-3 font-medium text-ground-900">{v.version}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label={t('admin.sponsors.terms.colStatus')}>
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
                     STATUS_TONE[v.status] || STATUS_TONE.archived}`}>
                     {t(`admin.sponsors.terms.status.${v.status}`)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ground-500 uppercase">
+                <td className="px-4 py-3 text-ground-500 uppercase" data-label={t('admin.sponsors.terms.colLanguages')}>
                   {v.languages_available.join(' · ')}
                 </td>
-                <td className="px-4 py-3 text-ground-500">{v.published_by_email || '—'}</td>
-                <td className="px-4 py-3 text-ground-500">
+                <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t('admin.sponsors.terms.colPublishedBy')}>{v.published_by_email || '—'}</td>
+                <td className="px-4 py-3 text-ground-500" data-label={t('admin.sponsors.terms.colUpdated')}>
                   {new Date(v.updated_at).toLocaleDateString('en-GB')}
                 </td>
               </tr>

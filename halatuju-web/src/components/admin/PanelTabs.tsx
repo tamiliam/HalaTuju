@@ -1,6 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
+import { usePhoneWidth } from '@/lib/phoneWidth'
 
 export interface PanelTab<K extends string> {
   key: K
@@ -33,6 +34,9 @@ export interface PanelTab<K extends string> {
  * would make the surfaces look structurally different from each other when the only difference is
  * that one is not built yet — and it would give somebody no reason to expect it ever to appear.
  */
+/** More tabs than this become one chooser on a phone (owner, Mobile M7a). */
+export const PHONE_CHIPS_MAX = 4
+
 export default function PanelTabs<K extends string>({ tabs, active, onSelect, ariaLabelKey }: {
   tabs: readonly PanelTab<K>[]
   active: K
@@ -40,10 +44,29 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
   ariaLabelKey: string
 }) {
   const { t } = useT()
-  return (
-    // `flex-wrap`: four counted tabs in Tamil do not fit one row at 360 px (Requests list R1), and
-    // a tab bar that runs off the edge is a sideways scroll. A bar that fits is unchanged.
-    <div role="tablist" aria-label={t(ariaLabelKey)} className="mb-6 flex flex-wrap items-center gap-2">
+  // Mobile M7a (owner, 2026-11-03): up to PHONE_CHIPS_MAX tabs stay chips on a phone (44 px, wrapping); MORE
+  // become ONE chooser above the content below md (the Guide's pattern) — nine tabs in Tamil were four lines of
+  // chips. From md the bar is the one it always was. The chooser calls the same onSelect with the same keys, and
+  // it REPLACES the bar (below md by width, after mount) instead of sitting beside a hidden copy: one control.
+  const phone = usePhoneWidth()
+  const chooser = phone && tabs.length > PHONE_CHIPS_MAX
+  return (<>
+    {chooser && (
+      <label className="mb-4 block">
+        <span className="sr-only">{t(ariaLabelKey)}</span>
+        <select value={active} onChange={(e) => onSelect(e.target.value as K)} data-panel-chooser
+          className="min-h-11 w-full rounded-lg border border-ground-300 bg-ground-0 px-3 text-ground-800">
+          {tabs.map((tab) => (
+            <option key={tab.key} value={tab.key} disabled={tab.disabled}>
+              {t(tab.labelKey)}{tab.count !== undefined ? ` (${tab.count})` : ''}{tab.disabled ? ` · ${t('admin.soon')}` : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+    )}
+    {/* `flex-wrap`: four counted tabs in Tamil do not fit one row at 360 px (Requests list R1), and
+        a tab bar that runs off the edge is a sideways scroll. A bar that fits is unchanged. */}
+    {!chooser && <div role="tablist" aria-label={t(ariaLabelKey)} className="mb-6 flex flex-wrap items-center gap-2">
       {tabs.map((tab) => {
         const on = tab.key === active
         return (
@@ -51,7 +74,7 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
             aria-disabled={tab.disabled || undefined}
             disabled={tab.disabled}
             onClick={() => !tab.disabled && onSelect(tab.key)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors max-md:inline-flex max-md:min-h-11 max-md:items-center ${
               tab.disabled
                 ? 'cursor-not-allowed border-ground-200 bg-ground-50 text-ground-400'
                 : on ? 'border-info-600 bg-brand-fill text-brand-fill-ink'
@@ -71,6 +94,6 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
           </button>
         )
       })}
-    </div>
-  )
+    </div>}
+  </>)
 }

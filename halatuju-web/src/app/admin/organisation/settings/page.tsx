@@ -15,6 +15,7 @@
 
 import { useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneSection'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import OrganisationColoursTab from '@/components/admin/OrganisationColoursTab'
@@ -44,15 +45,15 @@ export default function AdminOrganisationSettingsPage() {
       <p className="mt-1 text-sm text-ground-600">{t('admin.orgSettings.subtitle')}</p>
 
       <div role="tablist" aria-label={t('admin.orgSettings.title')}
-        className="mt-5 flex gap-6 border-b border-ground-200">
+        className={`mt-5 flex gap-6 border-b border-ground-200 ${PHONE_TAB_BAR}`}>
         {TABS.map((key) => (
           <button key={key} type="button" role="tab" id={`tab-${key}`}
             aria-selected={tab === key} aria-controls={`panel-${key}`}
             data-testid={`tab-${key}`} onClick={() => setTab(key)}
-            className={`-mb-px border-b-2 pb-3 text-sm ${
+            className={`-mb-px border-b-2 pb-3 text-sm ${PHONE_TAB} ${
               tab === key
-                ? 'border-primary-600 font-semibold text-ground-900'
-                : 'border-transparent font-medium text-ground-500 hover:text-ground-700'}`}>
+                ? `border-primary-600 font-semibold text-ground-900 ${PHONE_TAB_ON}`
+                : `border-transparent font-medium text-ground-500 hover:text-ground-700 ${PHONE_TAB_OFF}`}`}>
             {t(`admin.orgSettings.tab.${key}`)}
           </button>
         ))}

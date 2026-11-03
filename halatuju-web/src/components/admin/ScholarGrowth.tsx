@@ -36,7 +36,7 @@ export default function ScholarGrowth({ id, token }: { id: number; token: string
   if (failed) return <p className="text-sm text-critical-600" role="alert">{t(`${K}.loadError`)}</p>
   if (!rows) return <p className="text-sm text-ground-500">{t('common.loading')}</p>
   return (
-    <section className="rounded-xl border border-ground-200 bg-ground-0 px-5 py-2" data-testid="scholar-growth">
+    <section className="md:rounded-xl md:border md:border-ground-200 md:bg-ground-0 md:px-5 py-2" data-testid="scholar-growth">
       <GrowthWork rows={rows} t={t} openFile={openFile} progressLinks />
     </section>
   )

@@ -77,7 +77,7 @@ export default function ScholarControls({ file, token, onChanged }: {
             <div className="flex flex-wrap gap-1.5">
               {offered.map((s) => (holdMove(s) && !c.can_hold) ? null : (
                 <button key={s} type="button" onClick={() => move(s)} disabled={!!busy}
-                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
+                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t(`admin.maintenance.action.${s}`)}
                 </button>
               ))}
@@ -118,7 +118,7 @@ export default function ScholarControls({ file, token, onChanged }: {
           <label className="text-[11px] font-medium text-ground-600">
             {t('admin.closure.reasonLabel')}
             <select value={reason} onChange={(e) => setReason(e.target.value as ClosureReason | '')}
-              className="mt-1 block rounded-lg border px-3 py-1.5 text-sm">
+              className="mt-1 block rounded-lg border px-3 py-1.5 text-sm max-md:min-h-11">
               <option value="">{t('admin.closure.reasonUnset')}</option>
               {c.close_reasons.map((r) => (
                 <option key={r} value={r}>{t(`admin.closure.reason.${r}`)}</option>
@@ -127,7 +127,7 @@ export default function ScholarControls({ file, token, onChanged }: {
           </label>
           {!confirm ? (
             <button type="button" onClick={() => setConfirm(true)} disabled={!!busy || !reason}
-              className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50">
+              className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
               {t('admin.scholars.control.closeFile')}
             </button>
           ) : (
@@ -135,11 +135,11 @@ export default function ScholarControls({ file, token, onChanged }: {
               data-testid="close-confirm">
               <span className="text-sm font-medium text-critical-800">{t('admin.scholarship.orgReject.confirmTitle')}</span>
               <button type="button" onClick={() => setConfirm(false)} disabled={busy === 'close'}
-                className="rounded-lg border px-3 py-1 text-sm text-ground-600 hover:bg-ground-50">
+                className="rounded-lg border px-3 py-1 text-sm text-ground-600 hover:bg-ground-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.scholarship.orgReject.back')}
               </button>
               <button type="button" onClick={close} disabled={busy === 'close'}
-                className="rounded-lg bg-critical-fill px-3 py-1 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50">
+                className="rounded-lg bg-critical-fill px-3 py-1 text-sm font-medium text-critical-fill-ink hover:bg-critical-700 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {busy === 'close' ? t('common.loading') : t('admin.scholars.control.closeFile')}
               </button>
             </span>

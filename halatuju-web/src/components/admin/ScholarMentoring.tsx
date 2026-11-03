@@ -1,5 +1,6 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
@@ -17,7 +18,7 @@ const MODES: MeetingMode[] = ['in_person', 'video', 'phone']
 const REFUSALS = ['mentor_not_found', 'mentor_inactive', 'own_application', 'already_assigned', 'file_closed',
   'conflict', 'too_long', 'no_mentor', 'bad_date', 'future_date', 'before_assignment', 'bad_mode', 'bad_minutes',
   'notes_required']
-const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
+const CARD = PHONE_CARD_XL   // Mobile M7a (rule 15): a section on a phone, this card from md
 const FIELD = 'h-11 w-full rounded-lg border border-ground-300 px-3 text-base md:h-10 md:text-sm focus:border-info-500 focus:ring-2 focus:ring-info-500'
 const PRIMARY = 'h-11 rounded-lg bg-brand-fill px-4 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 md:h-10'
 const SECONDARY = 'h-11 rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-800 hover:bg-ground-50 disabled:opacity-50 md:h-10'
@@ -296,7 +297,7 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
         </section>
       ) : (
         <section data-testid="mentoring-none"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-ground-300 bg-ground-0 p-5">
+          className="flex flex-wrap items-center justify-between gap-3 py-4 md:rounded-xl md:border md:border-dashed md:border-ground-300 md:bg-ground-0 md:p-5">
           <div className="flex flex-col gap-1">
             <strong className="text-base text-ground-900">{t(`${K}.none.title`)}</strong>
             {help && <span className="text-sm text-ground-600">{help}</span>}
@@ -320,9 +321,9 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
             () => t(`${K}.done.ended`, { name: cur.name }))} />
       )}
 
-      <section aria-label={t(`${K}.meetings.title`)} className="flex flex-col rounded-xl border border-ground-200 bg-ground-0"
+      <section aria-label={t(`${K}.meetings.title`)} className="flex flex-col md:rounded-xl md:border md:border-ground-200 md:bg-ground-0"
         data-testid="mentoring-meetings">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ground-200 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ground-200 px-5 py-4 max-md:px-0">
           <h2 className="text-base font-semibold text-ground-900">{t(`${K}.meetings.title`)}</h2>
           {data.can_act && cur && mode === 'view' && (
             <button type="button" className={PRIMARY} onClick={() => { setMode('meeting'); setBanner(null) }}>
@@ -335,10 +336,10 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
             onSubmit={(b) => run(() => logMentoringMeeting(id, b, { token }), () => t(`${K}.done.logged`))} />
         )}
         {data.meetings.length === 0 && (
-          <p className="px-5 py-4 text-sm text-ground-600">{t(`${K}.meetings.none`)}</p>
+          <p className="px-5 py-4 max-md:px-0 text-sm text-ground-600">{t(`${K}.meetings.none`)}</p>
         )}
         {data.meetings.map((m) => (
-          <article key={m.id} className="flex flex-col gap-1 border-b border-ground-100 px-5 py-4 last:border-b-0"
+          <article key={m.id} className="flex flex-col gap-1 border-b border-ground-100 px-5 py-4 last:border-b-0 max-md:px-0"
             data-testid={`mentoring-meeting-${m.id}`}>
             <strong className="text-sm text-ground-900">
               {[formatDate(m.met_on), t(`${K}.mode.${m.mode}`),
@@ -364,7 +365,7 @@ export default function ScholarMentoring({ id, token }: { id: number; token: str
           </article>
         ))}
         {past.map((p) => (
-          <p key={p.id} className="border-t border-ground-100 px-5 py-3 text-sm text-ground-600" data-testid={`mentoring-past-${p.id}`}>
+          <p key={p.id} className="border-t border-ground-100 px-5 py-3 max-md:px-0 text-sm text-ground-600" data-testid={`mentoring-past-${p.id}`}>
             {t(`${K}.history.line`, { name: p.name || '—', from: formatDate(p.started_at), to: formatDate(p.ended_at),
               count: String(p.meetings) })}
             {p.end_reason && ` ${t(`${K}.history.reason`, { reason: p.end_reason })}`}

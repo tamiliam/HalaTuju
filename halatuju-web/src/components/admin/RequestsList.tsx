@@ -202,10 +202,10 @@ export default function RequestsList({ token, org, isSuper, reloadKey, onDark }:
       ) : rows.length === 0 ? (
         <div className="text-center text-ground-500 mt-8">{t('admin.requests.list.empty')}</div>
       ) : (
-        <div className={`space-y-2 ${loading ? 'opacity-60' : ''}`} aria-busy={loading || undefined}>
+        <div className={`space-y-2 max-md:space-y-0 max-md:divide-y max-md:divide-ground-100 ${loading ? 'opacity-60' : ''}`} aria-busy={loading || undefined}>
           {rows.map((r) => (
             <Link key={r.id} href={`/admin/requests/${r.id}`} data-request-row={r.id}
-              className="block bg-ground-0 rounded-xl border hover:border-info-300 hover:bg-info-50/40 transition-colors p-4">
+              className="block md:bg-ground-0 md:rounded-xl md:border hover:border-info-300 hover:bg-info-50/40 transition-colors py-3 md:p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

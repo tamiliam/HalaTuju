@@ -48,6 +48,7 @@ import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words 
 
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneSection'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScope'
@@ -97,16 +98,16 @@ export default function AdminProgrammePage() {
       {/* Understated text tabs on a full-width rule — the console's own restraint. A pill or a
           boxed tab would compete with the brand actions inside each tab. */}
       <div role="tablist" aria-label={t('admin.programme.title')}
-        className="mt-5 flex gap-6 border-b border-ground-200">
+        className={`mt-5 flex gap-6 border-b border-ground-200 ${PHONE_TAB_BAR}`}>
         {TABS.map((key) => (
           <button key={key} type="button" role="tab" id={`tab-${key}`}
             aria-selected={tab === key} aria-controls={`panel-${key}`}
             data-testid={`tab-${key}`}
             onClick={() => setTab(key)}
-            className={`-mb-px border-b-2 pb-3 text-sm transition-colors ${
+            className={`-mb-px border-b-2 pb-3 text-sm ${PHONE_TAB} transition-colors ${
               tab === key
-                ? 'border-primary-600 font-semibold text-ground-900'
-                : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
+                ? `border-primary-600 font-semibold text-ground-900 ${PHONE_TAB_ON}`
+                : `border-transparent text-ground-500 hover:text-ground-800 ${PHONE_TAB_OFF}`}`}>
             {t(`admin.programme.tab.${key}`)}
           </button>
         ))}

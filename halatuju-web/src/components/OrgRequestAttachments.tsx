@@ -117,7 +117,7 @@ export default function OrgRequestAttachments({
   if (!editable && attachments.length === 0) return null
 
   return (
-    <div className="bg-ground-0 rounded-xl border p-5 mb-4"
+    <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4"
       onDragOver={(e) => { if (editable) { e.preventDefault(); setDragging(true) } }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}>

@@ -88,7 +88,7 @@ export default function AdminStudentDetail() {
 
   return (
     <div>
-      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-primary-600 text-sm hover:underline mb-5">
+      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-primary-600 text-sm hover:underline mb-5 max-md:min-h-11">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -100,9 +100,9 @@ export default function AdminStudentDetail() {
         {formatNricDisplay(data.nric)} &middot; {isThirdRoute(data.exam_type) ? t(`admin.scholarship.qualificationLabel.${data.exam_type}`) : data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 md:gap-5">
         {/* Card 1: Maklumat Peribadi */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128100;</span> {t('admin.personalInfo')}
           </h2>
@@ -114,7 +114,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 2: Hubungi & Sekolah */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128222;</span> {t('admin.contactSchool')}
           </h2>
@@ -126,7 +126,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 3: Latar Belakang Keluarga */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128106;</span> {t('admin.familyBackground')}
           </h2>
@@ -141,7 +141,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 4: Kesihatan & Kelayakan */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#127973;</span> {t('admin.healthEligibility')}
           </h2>
@@ -153,7 +153,7 @@ export default function AdminStudentDetail() {
 
         {/* Card 5: SPM Grades */}
         {hasSpmGrades && (
-          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.spmResults')}
             </h2>
@@ -170,7 +170,7 @@ export default function AdminStudentDetail() {
 
         {/* Card 6: STPM Grades */}
         {hasStpmGrades && (
-          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.stpmResults')}
             </h2>
@@ -199,7 +199,7 @@ export default function AdminStudentDetail() {
 
         {/* No grades */}
         {!hasSpmGrades && !hasStpmGrades && (
-          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.examResults')}
             </h2>
@@ -208,7 +208,7 @@ export default function AdminStudentDetail() {
         )}
 
         {/* Card 7: Keutamaan & Isyarat */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#11088;</span> {t('admin.preferencesSignals')}
           </h2>
@@ -236,7 +236,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 8: Kursus Disimpan */}
-        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128218;</span> {t('admin.savedCourses')}
           </h2>
@@ -256,10 +256,10 @@ export default function AdminStudentDetail() {
 
         {/* Card 9: Sumber Rujukan (super admin only) */}
         {isSuper && (
-          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
+          <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:p-6 md:shadow-sm md:border">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128279;</span> {t('admin.referralSource')}
-              <span className="text-[10px] text-ground-400 ml-1">[{t('admin.superAdmin')}]</span>
+              <span className="text-xs md:text-[10px] text-ground-400 ml-1">[{t('admin.superAdmin')}]</span>
             </h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between"><dt className="text-ground-500">{t('admin.source')}</dt><dd>{data.referral_source || '\u2014'}</dd></div>
@@ -271,12 +271,12 @@ export default function AdminStudentDetail() {
 
       {/* Danger Zone - super admin only */}
       {isSuper && (
-        <div className="mt-8 bg-ground-0 border border-critical-200 rounded-xl overflow-hidden">
+        <div className="mt-8 md:bg-ground-0 border border-critical-200 rounded-xl overflow-hidden">
           <div className="px-6 py-4 bg-critical-50 border-b border-critical-200 flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-critical-700 flex items-center gap-2">
                 <span className="text-lg">&#9888;&#65039;</span> {t('admin.dangerZone')}
-                <span className="text-[10px] text-critical-400 ml-1">[{t('admin.superAdmin')}]</span>
+                <span className="text-xs md:text-[10px] text-critical-400 ml-1">[{t('admin.superAdmin')}]</span>
               </h2>
               <p className="text-sm text-critical-600 mt-0.5">
                 {t('admin.dangerWarning')}
@@ -294,7 +294,7 @@ export default function AdminStudentDetail() {
             <button
               onClick={handleDelete}
               disabled={deleteConfirm !== 'delete' || deleting}
-              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-fill-hover hover:text-critical-fill-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 max-md:min-h-11 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-fill-hover hover:text-critical-fill-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {deleting ? t('admin.deleting') : t('admin.deleteStudent')}
             </button>

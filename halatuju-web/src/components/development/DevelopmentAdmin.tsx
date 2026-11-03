@@ -120,7 +120,7 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
           <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500"
             data-testid="modules-empty">{t(`${K}.empty.${tab}`)}</div>
         ) : (
-          <TableFrame minWidth={820} label={t(`${K}.title`)}>
+          <TableFrame minWidth={820} label={t(`${K}.title`)} phoneRows>
             <table className="w-full text-sm">
               <thead className="border-b bg-ground-50">
                 <tr>
@@ -142,9 +142,9 @@ export default function DevelopmentAdmin({ programme }: { programme?: string }) 
                             m.locked ? t(`${K}.started`) : ''].filter(Boolean).join(' · ')}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{audienceLabel(t, m)}</td>
-                      <td className="whitespace-nowrap px-4 py-3">{m.due_on ? formatDate(m.due_on) : t(`${K}.noDue`)}</td>
-                      <td className="whitespace-nowrap px-4 py-3" data-testid={`module-done-${m.id}`}>
+                      <td className="px-4 py-3" data-label={t(`${K}.col.for`)}>{audienceLabel(t, m)}</td>
+                      <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.due`)}>{m.due_on ? formatDate(m.due_on) : t(`${K}.noDue`)}</td>
+                      <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.done`)} data-testid={`module-done-${m.id}`}>
                         {m.status === 'draft' ? '—' : (
                           [t(`${K}.doneOf`, { n: String(m.done_count), count: String(m.audience_count) }),
                             m.to_review_count ? t(`${K}.toReview`, { count: String(m.to_review_count) }) : '']

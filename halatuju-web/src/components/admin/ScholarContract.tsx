@@ -1,12 +1,13 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { getScholarContract, type ScholarContract as ContractPayload } from '@/lib/admin-api'
 
-const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
+const CARD = PHONE_CARD_XL   // Mobile M7a (rule 15): a section on a phone, this card from md
 
 /**
  * The scholar file's Contract tab (student maintenance S5a). Design of record: the canvas file's
@@ -80,7 +81,7 @@ export default function ScholarContract({ id, token }: { id: number; token: stri
             ))}
           </ul>
           <button type="button" onClick={open} disabled={opening}
-            className="mt-4 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50 disabled:opacity-50">
+            className="mt-4 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
             {t('admin.scholars.contractTab.viewPdf')}
           </button>
           {noPdf && <p className="mt-1 text-xs text-ground-500" data-testid="contract-no-pdf">{t('admin.scholars.contractTab.noPdf')}</p>}

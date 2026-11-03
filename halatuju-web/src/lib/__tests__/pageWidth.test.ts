@@ -5,6 +5,9 @@ import { readWeb, walkFloor } from '@/test/sourceGuard'
 
 const ADMIN = path.join(process.cwd(), 'src', 'app', 'admin')
 const COMPONENTS = path.join(process.cwd(), 'src', 'components', 'admin')
+/** Mobile M7a: the list guards read EVERY component folder — the content screens (announcements, surveys,
+ *  development, the partner's own screens) drew tables outside `components/admin` that this guard never saw. */
+const ALL_COMPONENTS = path.join(process.cwd(), 'src', 'components')
 /** These render WITHOUT the shell, so they keep their own width. */
 const CHROMELESS = ['login', 'set-password', 'callback']
 
@@ -24,6 +27,7 @@ describe('the walks this file depends on found something', () => {
     expect(walkFloor(ADMIN, 45, WHY_WALK, { exts: ['.tsx'] }).length).toBeGreaterThanOrEqual(45)
     expect(walkFloor(COMPONENTS, 25, WHY_WALK, { exts: ['.tsx'] }).length)
       .toBeGreaterThanOrEqual(25)
+    expect(walkFloor(ALL_COMPONENTS, 150, WHY_WALK, { exts: ['.tsx'] }).length).toBeGreaterThanOrEqual(150)
   })
 })
 
@@ -207,28 +211,45 @@ describe('every table sits in the shared frame', () => {
       + 'differ per kind and the owner reviews each list',
     'src/app/admin/students/page.tsx':
       'already had cards before this work (the pattern everything else copied)',
+    // Mobile M7a: the Invitations and Mentors tables belong to Team tables T4/T5 (Maintenance), which is
+    // rebuilding those pages now; their phone rows are sequenced after it, not done under it.
+    'src/components/sources/SourceInvite.tsx':
+      'the Invitations page (source and mentor rosters) — Team tables T4/T5 own it; phone rows after T4',
+    'src/components/mentors/MentorsAdmin.tsx':
+      'Team -> Mentors (T3) — Team tables T4/T5 own it; phone rows after T4',
+    'src/components/mentors/MentorInvite.tsx':
+      'the Invitations page (mentor roster) — Team tables T4/T5 own it; phone rows after T4',
   }
 
+  /** The two ways a list draws for a phone: its own `md:hidden` cards, or the SAME table restacked as rows
+   *  (`TableFrame phoneRows` / a `data-phone-rows` wrapper — Mobile M7a, rule 7). */
+  const hasPhoneShape = (src: string) => /md:hidden/.test(src) || /phoneRows/.test(src) || /data-phone-rows/.test(src)
+  const LISTS = () => [...sources(ADMIN), ...sources(ALL_COMPONENTS)]
+
   test('every list surface has phone cards, or a written reason not to', () => {
-    const offenders = [...sources(ADMIN), ...sources(COMPONENTS)]
-      .filter(([, src]) => /<TableFrame/.test(src))
+    const offenders = LISTS()
+      .filter(([, src]) => /<TableFrame|<table/.test(src))
       .filter(([rel]) => !(rel in EXEMPT))
-      .filter(([, src]) => !/md:hidden/.test(src))
+      .filter(([, src]) => !hasPhoneShape(src))
       .map(([rel]) => rel)
     expect(offenders).toEqual([])
   })
 
   test('an exemption names a file that still exists and still has a table', () => {
     // A stale exemption is worse than none: it silently excuses a file that may have changed.
-    const seen = new Set([...sources(ADMIN), ...sources(COMPONENTS)]
-      .filter(([, src]) => /<TableFrame/.test(src))
+    const seen = new Set(LISTS()
+      .filter(([, src]) => /<TableFrame|<table/.test(src))
       .map(([rel]) => rel))
     expect(Object.keys(EXEMPT).filter((rel) => !seen.has(rel))).toEqual([])
   })
 
   test('every <table> has a frame around it', () => {
-    const offenders = [...sources(ADMIN), ...sources(COMPONENTS)]
-      .map(([rel, src]) => [rel, openTags(src, 'table'), openTags(src, 'TableFrame')] as const)
+    // A table restacked by a `data-phone-rows` wrapper of its own (with its own scroller from md) counts as framed.
+    // Not a console list: the student's saved-course comparison (Mobile M3, its own two-column phone shape).
+    const NOT_A_CONSOLE_TABLE = ['src/components/saved/SavedCompare.tsx']
+    const offenders = LISTS().filter(([rel]) => !NOT_A_CONSOLE_TABLE.includes(rel))
+      .map(([rel, src]) => [rel, openTags(src, 'table'),
+        openTags(src, 'TableFrame') + (src.match(/data-phone-rows>/g) ?? []).length] as const)
       .filter(([, tables, frames]) => tables > 0 && frames < tables)
       .map(([rel, tables, frames]) => `${rel}: ${tables} table(s), ${frames} frame(s)`)
     expect(offenders).toEqual([])

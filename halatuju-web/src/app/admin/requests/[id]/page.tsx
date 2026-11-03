@@ -209,14 +209,14 @@ export default function AdminRequestDetailPage() {
       {error && <div className="rounded-lg bg-critical-50 border border-critical-200 text-critical-600 p-3 mb-4">{error}</div>}
 
       {/* Description */}
-      <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+      <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4">
         <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.description')}</h2>
         <p className="text-ground-800 whitespace-pre-wrap">{req.description}</p>
       </div>
 
       {/* Steps to reproduce (bug scoping) */}
       {req.steps_to_reproduce && (
-        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4">
           <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.steps')}</h2>
           <p className="text-ground-800 whitespace-pre-wrap">{req.steps_to_reproduce}</p>
         </div>
@@ -240,7 +240,7 @@ export default function AdminRequestDetailPage() {
           a price is worse than none. Rendered only for the requester — the super has the fuller
           version, with kind/lane/hours, in Owner controls below. */}
       {!isSuper && req.ai_draft_note && (
-        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4">
           <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.aiReading')}</h2>
           <p className="text-ground-800 whitespace-pre-wrap">{req.ai_draft_note}</p>
           <p className="text-xs text-ground-400 mt-2">
@@ -253,7 +253,7 @@ export default function AdminRequestDetailPage() {
       {/* The DISCUSSION (TD-201) — one stream, not a question log. The owner's model is Bugzilla:
           "open discussion/debate, even after it has been assigned to someone". A question is
           simply a comment awaiting a reply, which is why they render together and in one order. */}
-      <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+      <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4">
         <h2 className="text-sm font-semibold text-ground-500 mb-3">{t('admin.requests.detail.thread')}</h2>
         {(req.comments || []).length === 0 ? (
           <p className="text-sm text-ground-400">{t('admin.requests.detail.noComments')}</p>
@@ -312,7 +312,7 @@ export default function AdminRequestDetailPage() {
               className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !answer.trim()}
               onClick={() => run(async () => { const r = await answerOrgRequest(id, { answer }, opt); setAnswer(''); return r })}
-              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.answerSend')}
             </button>
           </div>
@@ -344,7 +344,7 @@ export default function AdminRequestDetailPage() {
                   id, { body: commentText, visibility: commentInternal ? 'internal' : 'shared' }, opt)
                 setCommentText(''); setCommentInternal(false); return r
               })}
-              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.commentSend')}
             </button>
             {isSuper && commentInternal && (
@@ -364,7 +364,7 @@ export default function AdminRequestDetailPage() {
               className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !question.trim()}
               onClick={() => run(async () => { const r = await askOrgRequest(id, { question }, opt); setQuestion(''); return r })}
-              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.askSend')}
             </button>
             <p className="mt-1 text-xs text-ground-400">{t('admin.requests.detail.askHint')}</p>
@@ -375,7 +375,7 @@ export default function AdminRequestDetailPage() {
       {/* Quote (org-facing) — deliberately BELOW the thread (owner, 2026-07-30): the quote is the
           CONCLUSION, so the deliberation that produced it should be read first. */}
       {req.quote_hours != null && (
-        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4">
           <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.quote')}</h2>
           <p className="text-lg font-semibold text-ground-900">
             {/* Hours only — the margin is not shown to the organisation and is no longer on the
@@ -418,24 +418,24 @@ export default function AdminRequestDetailPage() {
 
       {/* Requestee actions (org_admin) */}
       {(has('accept') || has('defer') || has('modify') || has('withdraw')) && (
-        <div className="bg-ground-0 rounded-xl border p-5 mb-4 space-y-3">
+        <div className="border-b border-ground-100 py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 md:mb-4 space-y-3">
           <div className="flex flex-wrap gap-2">
             {has('accept') && (
               <button disabled={busy} onClick={() => run(() => approveOrgRequest(id, opt))}
-                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
+                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.accept')}
               </button>
             )}
             {has('defer') && (
               <button disabled={busy} onClick={() => run(() => deferOrgRequest(id, opt))}
-                className="px-4 bg-caution-fill text-caution-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-caution-fill-hover disabled:opacity-50">
+                className="px-4 bg-caution-fill text-caution-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-caution-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.defer')}
               </button>
             )}
             {has('withdraw') && (
               <button disabled={busy}
                 onClick={() => { if (confirm(t('admin.requests.owner.withdrawConfirm'))) run(() => declineOrgRequest(id, {}, opt)) }}
-                className="px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50">
+                className="px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.withdraw')}
               </button>
             )}
@@ -447,7 +447,7 @@ export default function AdminRequestDetailPage() {
                 className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
               <button disabled={busy || !modifyText.trim()}
                 onClick={() => run(async () => { const r = await modifyOrgRequest(id, { description: modifyText }, opt); setModifyText(''); return r })}
-                className="mt-2 px-4 bg-ground-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-ground-800 disabled:opacity-50">
+                className="mt-2 px-4 bg-ground-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-ground-800 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.modify')}
               </button>
             </div>
@@ -457,7 +457,7 @@ export default function AdminRequestDetailPage() {
 
       {/* Owner controls (super) */}
       {isSuper && (
-        <div className="bg-ground-0 rounded-xl border p-5 space-y-4">
+        <div className="py-4 md:bg-ground-0 md:rounded-xl md:border md:p-5 space-y-4">
           {/* AI draft */}
           <div>
             <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.owner.aiDraft')}</h2>
@@ -535,7 +535,7 @@ export default function AdminRequestDetailPage() {
                 <label className="text-sm">{t('admin.requests.owner.triageKind')}
                   <select value={triageKind}
                     onChange={(e) => { triageTouched.current = true; setTriageKind(e.target.value as 'bug' | 'feature') }}
-                    className="mt-1 w-full border rounded-lg px-3 py-2">
+                    className="mt-1 w-full border rounded-lg px-3 py-2 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                     <option value="feature">{t('admin.requests.kind.feature')}</option>
                     <option value="bug">{t('admin.requests.kind.bug')}</option>
                   </select>
@@ -543,7 +543,7 @@ export default function AdminRequestDetailPage() {
                 <label className="text-sm">{t('admin.requests.owner.triageLane')}
                   <select value={triageLane}
                     onChange={(e) => { triageTouched.current = true; setTriageLane(e.target.value as 'small_change' | 'sprint') }}
-                    className="mt-1 w-full border rounded-lg px-3 py-2">
+                    className="mt-1 w-full border rounded-lg px-3 py-2 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                     <option value="sprint">{t('admin.requests.lane.sprint')}</option>
                     <option value="small_change">{t('admin.requests.lane.small_change')}</option>
                   </select>
@@ -554,7 +554,7 @@ export default function AdminRequestDetailPage() {
                 className="mt-3 w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy}
                 onClick={() => run(() => triageOrgRequest(id, { triaged_kind: triageKind, lane: triageLane, note: triageNote }, opt))}
-                className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+                className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.triage')}
               </button>
             </div>
@@ -598,7 +598,7 @@ export default function AdminRequestDetailPage() {
               <div>
                 <button disabled={busy}
                   onClick={() => run(() => scheduleOrgRequest(id, scheduleDate ? { scheduled_for: scheduleDate } : {}, opt))}
-                  className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
+                  className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t('admin.requests.action.schedule')}
                 </button>
               </div>
@@ -609,7 +609,7 @@ export default function AdminRequestDetailPage() {
           {has('done') && (
             <div className="border-t pt-4">
               <button disabled={busy} onClick={() => run(() => doneOrgRequest(id, opt))}
-                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
+                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.done')}
               </button>
             </div>
@@ -623,7 +623,7 @@ export default function AdminRequestDetailPage() {
                 className="w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy || !declineReason.trim()}
                 onClick={() => { if (confirm(t('admin.requests.owner.declineConfirm'))) run(() => declineOrgRequest(id, { reason: declineReason }, opt)) }}
-                className="mt-2 px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50">
+                className="mt-2 px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                 {t('admin.requests.action.decline')}
               </button>
             </div>

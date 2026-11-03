@@ -72,7 +72,7 @@ export default function SourceApplications() {
 
       {error && <p className="mb-4 text-sm text-critical-600" role="alert">{t(`${K}.applications.error`)}</p>}
 
-      <TableFrame minWidth={720} label={t('admin.scholarship.nav')}>
+      <TableFrame minWidth={720} label={t('admin.scholarship.nav')} phoneRows>
         <table className="w-full text-sm">
           <thead className="border-b bg-ground-50">
             <tr>{COLS.map((c) => <th key={c} className={TH}>{t(`${K}.applications.col.${c}`)}</th>)}</tr>
@@ -85,10 +85,10 @@ export default function SourceApplications() {
                     {a.student_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ground-700">{a.school || '—'}</td>
-                <td className="px-4 py-3 text-ground-700">{t(levelLabelKey(a.level))}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-ground-500">{formatDate(a.submitted_at) || '—'}</td>
-                <td className="px-4 py-3"><StageBadge stage={a.stage} t={t} /></td>
+                <td className="px-4 py-3 text-ground-700" data-label={t(`${K}.applications.col.school`)}>{a.school || '—'}</td>
+                <td className="px-4 py-3 text-ground-700" data-label={t(`${K}.applications.col.level`)}>{t(levelLabelKey(a.level))}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-ground-500" data-label={t(`${K}.applications.col.sent`)}>{formatDate(a.submitted_at) || '—'}</td>
+                <td className="px-4 py-3" data-label={t(`${K}.applications.col.stage`)}><StageBadge stage={a.stage} t={t} /></td>
               </tr>
             ))}
             {data && rows.length === 0 && (

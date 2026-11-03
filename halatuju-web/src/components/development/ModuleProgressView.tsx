@@ -160,7 +160,7 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
         <p className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500" data-testid="progress-empty">
           {t(`${K}.empty`)}</p>
       ) : (
-        <TableFrame minWidth={720} label={t(`${K}.title`, { title: m.title })}>
+        <TableFrame minWidth={720} label={t(`${K}.title`, { title: m.title })} phoneRows>
           <table className="w-full text-sm">
             <thead className="border-b bg-ground-50">
               <tr>
@@ -175,9 +175,9 @@ export default function ModuleProgressView({ id, programme }: { id: number; prog
                     <Link href={`/admin/scholars/${x.application_id}`} className="text-primary-600 hover:underline">{x.name || '—'}</Link>
                     {x.late && <span className="ml-2 text-xs font-semibold text-critical-700" data-testid={`late-${x.application_id}`}>{t(`${K}.late`)}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3">{t(`${K}.lessonsOf`, { read: String(x.read), count: String(x.lessons) })}</td>
-                  <td className="whitespace-nowrap px-4 py-3">{x.task_sent_at ? t(`${K}.sentOn`, { date: formatDate(x.task_sent_at) }) : '—'}</td>
-                  <td className="px-4 py-3">{x.mentor || '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.lessons`)}>{t(`${K}.lessonsOf`, { read: String(x.read), count: String(x.lessons) })}</td>
+                  <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.task`)}>{x.task_sent_at ? t(`${K}.sentOn`, { date: formatDate(x.task_sent_at) }) : '—'}</td>
+                  <td className="px-4 py-3" data-label={t(`${K}.col.mentor`)}>{x.mentor || '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3">
                     {x.task_sent_at && (
                       <button type="button" className={LINK} data-testid={`read-${x.application_id}`}

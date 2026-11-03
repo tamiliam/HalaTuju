@@ -1,5 +1,6 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import Toggle from '@/components/Toggle'
@@ -65,7 +66,7 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
   const shown = compact ? (rows ?? []).slice(0, 6) : (rows ?? [])
   return (
     <section aria-label={t('admin.scholars.activity.title')}
-      className="rounded-xl border border-ground-200 bg-ground-0 p-5">
+      className={PHONE_CARD_XL}>
       <h2 className="mb-3 text-base font-semibold text-ground-900">{t('admin.scholars.activity.title')}</h2>
 
       {readOnly ? (
@@ -76,7 +77,7 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
         <div role="group" aria-label={t('admin.scholars.activity.kindLabel')} className="flex flex-wrap gap-1.5">
           {KINDS.map((k) => (
             <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${kind === k
+              className={`rounded-full border px-3 py-1 text-xs font-medium max-md:min-h-11 max-md:px-4 ${kind === k
                 ? 'border-info-600 bg-info-50 text-info-700'
                 : 'border-ground-300 bg-ground-0 text-ground-700 hover:bg-ground-50'}`}>
               {t(`admin.scholars.activity.kind.${k}`)}
@@ -95,7 +96,7 @@ export default function ScholarActivity({ id, token, compact = false, readOnly =
             {t('admin.scholars.activity.staffOnly')}
           </span>
           <button type="button" disabled={busy || !body.trim()} onClick={save}
-            className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+            className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
             {busy ? t('admin.saving') : t('admin.scholars.activity.save')}
           </button>
         </div>

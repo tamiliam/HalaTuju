@@ -176,7 +176,7 @@ export default function PartnerEmailsCard({ token, t }: {
           </span>
         </button>
         {showWho && (
-          <div className="px-4 sm:px-5 pb-4">
+          <div className="px-4 sm:px-5 pb-4" data-phone-rows>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-ground-400">
@@ -191,7 +191,7 @@ export default function PartnerEmailsCard({ token, t }: {
                     <td className="border-b py-1.5">
                       {o.name} <span className="font-mono text-[11px] text-ground-400">{o.code}</span>
                     </td>
-                    <td className="border-b py-1.5 text-right tabular-nums text-ground-500">{o.students}</td>
+                    <td className="border-b py-1.5 text-right tabular-nums text-ground-500" data-label={t('admin.sources.colStudents')}>{o.students}</td>
                     <td className="border-b py-1.5">
                       {o.is_house_org ? (
                         <span className="text-xs text-ground-400">{t('admin.sources.emails.houseOrg')}</span>

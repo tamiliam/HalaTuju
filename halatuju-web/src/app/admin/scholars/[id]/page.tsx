@@ -15,6 +15,7 @@
 // ⚠ A record this admin may not read, another organisation's, or one with no file all come back
 // 404 — `RecordState` says so neutrally (never "does not exist", never "no access").
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -58,7 +59,8 @@ const TABS: readonly PanelTab<Tab>[] = [
   { key: 'activity', labelKey: 'admin.scholars.tab.activity' },
 ]
 
-const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
+// Mobile M7a (rule 15): a card is a plain SECTION on a phone (a hairline under it), the card it was from md.
+const CARD = PHONE_CARD_XL
 const money = (v: string | null | undefined) => (v == null ? '—' : `RM${rm(v)}`)
 
 function Card({ title, children, testId }: { title: string; children: React.ReactNode; testId?: string }) {
@@ -166,16 +168,16 @@ function StaffScholarFile() {
           {t('admin.scholars.file.thresholds', { min: file.thresholds.minimum, failing: file.thresholds.failing })}
         </p>
       )}
-      <button type="button" onClick={() => setTab('results')} className="self-start text-sm text-primary-600 hover:underline">
+      <button type="button" onClick={() => setTab('results')} className="self-start text-sm text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
         {t('admin.scholars.file.openResults')}
       </button>
     </Card>
   )
   const moneyCard = (
     <Card title={t('admin.scholars.card.money')} testId="card-money">
-      <div className="grid grid-cols-3 gap-2 text-sm">
+      <div className="grid grid-cols-3 gap-2 text-sm max-md:grid-cols-1 max-md:gap-0 max-md:divide-y max-md:divide-ground-100">
         {(['award_amount', 'paid_to_date', 'remaining'] as const).map((k) => (
-          <div key={k}>
+          <div key={k} className="max-md:flex max-md:items-baseline max-md:justify-between max-md:py-2">
             <div className="text-ground-600">{t(`admin.scholars.money.${k}`)}</div>
             <div className="text-base font-semibold tabular-nums text-ground-900">{money(file.money[k])}</div>
           </div>
@@ -190,7 +192,7 @@ function StaffScholarFile() {
       {moneyLinks.length > 0 && (
         <p className="flex gap-4 text-sm">
           {moneyLinks.map((page) => (
-            <Link key={page} href={`/admin/${page}${giftQuery}`} className="text-primary-600 hover:underline">
+            <Link key={page} href={`/admin/${page}${giftQuery}`} className="text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
               {t(page === 'payments' ? 'admin.scholars.money.openPayments' : 'admin.scholars.money.openSpending')}
             </Link>
           ))}
@@ -228,7 +230,7 @@ function StaffScholarFile() {
           </ul>
         </>
       )}
-      <button type="button" onClick={() => setTab('letters')} className="self-start text-sm text-primary-600 hover:underline">
+      <button type="button" onClick={() => setTab('letters')} className="self-start text-sm text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
         {t('admin.scholars.letters.open')}
       </button>
     </Card>
@@ -241,7 +243,7 @@ function StaffScholarFile() {
             count: String(file.mentor.meetings) })
           : t('admin.scholars.mentoring.none.title')}
       </p>
-      <button type="button" onClick={() => setTab('mentoring')} className="self-start text-sm text-primary-600 hover:underline">
+      <button type="button" onClick={() => setTab('mentoring')} className="self-start text-sm text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
         {t('admin.scholars.mentoring.open')}
       </button>
     </Card>
@@ -249,7 +251,7 @@ function StaffScholarFile() {
   const surveysCard = (
     <Card title={t('admin.scholars.card.surveys')} testId="card-surveys">
       <p className="text-sm text-ground-600">{t('admin.scholars.surveys.card')}</p>
-      <button type="button" onClick={() => setTab('surveys')} className="self-start text-sm text-primary-600 hover:underline">
+      <button type="button" onClick={() => setTab('surveys')} className="self-start text-sm text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
         {t('admin.scholars.surveys.open')}
       </button>
     </Card>
@@ -257,7 +259,7 @@ function StaffScholarFile() {
 
   return (
     <div>
-      <Link href="/admin/scholars" className="text-sm text-primary-600 hover:underline">
+      <Link href="/admin/scholars" className="text-sm text-primary-600 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
         ← {t('admin.scholars.title')}
       </Link>
 
@@ -291,7 +293,7 @@ function StaffScholarFile() {
           </div>
         </div>
         <Link href={`/admin/scholarship/${file.id}`}
-          className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50">
+          className="inline-flex h-10 items-center rounded-lg border border-ground-300 bg-ground-0 px-4 text-sm text-ground-700 hover:bg-ground-50 max-md:h-11 max-md:w-full max-md:justify-center">
           {t('admin.scholars.file.viewApplication')}
         </Link>
         <div className="basis-full" ref={controlsRef}>
@@ -305,7 +307,7 @@ function StaffScholarFile() {
       {tab === 'overview' && (
         <div className="flex flex-wrap items-start gap-5">
           <section aria-label={t('admin.scholars.file.summary')}
-            className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-4 md:grid-cols-2">
+            className="grid min-w-0 flex-[999_1_560px] grid-cols-1 gap-0 md:grid-cols-2 md:gap-4">
             {resultsCard}{moneyCard}{contractCard}{lettersCard}{seesMentors && mentorCard}{seesSurveys && surveysCard}
           </section>
           <div className="min-w-0 flex-[1_1_320px] lg:max-w-md">

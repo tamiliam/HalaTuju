@@ -332,7 +332,16 @@ const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/F
   'src/app/admin/scholarship/[id]/view/PostAwardPanels.tsx', 'src/app/admin/scholarship/[id]/view/QcPanel.tsx',
   'src/app/admin/scholarship/[id]/view/RateAndEstimate.tsx',
   'src/app/admin/scholarship/[id]/view/VerificationVerdict.tsx',
-  'src/app/admin/scholarship/[id]/view/shared.tsx']
+  'src/app/admin/scholarship/[id]/view/shared.tsx',
+  // Mobile M7a: the scholar file and its tabs, student detail, the payment run, request detail, the Requests list.
+  'src/app/admin/scholars/[id]/page.tsx', 'src/components/admin/ScholarMoney.tsx',
+  'src/components/admin/ScholarResults.tsx', 'src/components/admin/ScholarContract.tsx',
+  'src/components/admin/ScholarLetters.tsx', 'src/components/admin/ScholarMentoring.tsx',
+  'src/components/admin/ScholarActivity.tsx', 'src/components/admin/ScholarSurveys.tsx',
+  'src/components/admin/ScholarGrowth.tsx', 'src/components/admin/ScholarControls.tsx',
+  'src/app/admin/students/[id]/page.tsx', 'src/app/admin/payments/[id]/page.tsx',
+  'src/app/admin/requests/[id]/page.tsx', 'src/components/OrgRequestAttachments.tsx',
+  'src/components/admin/RequestsList.tsx']
 /** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
 const CONTROL_CONSTS: Record<string, string[]> = {
   'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS
@@ -396,7 +405,10 @@ describe('rule 15 — one box level; sections on phones', () => {
     const section = (src.match(/PHONE_SECTION = '([^']+)'/) ?? [])[1] ?? ''
     const noGap = (src.match(/PHONE_SECTION_NO_GAP = '([^']+)'/) ?? [])[1] ?? ''
     const flat = (src.match(/PHONE_SECTION_FLAT = '([^']+)'/) ?? [])[1] ?? ''
-    for (const t of [...section.split(' '), ...noGap.split(' '), ...flat.split(' ')]) {
+    // Mobile M7a: the console's white card (the scholar file and its tabs).
+    const cardXl = (src.match(/PHONE_CARD_XL = '([^']+)'/) ?? [])[1] ?? ''
+    expect(cardXl).toMatch(/md:rounded-xl/)
+    for (const t of [...section.split(' '), ...noGap.split(' '), ...flat.split(' '), ...cardXl.split(' ')]) {
       if (/^(rounded|shadow|bg-|p-)/.test(t)) throw new Error(`PHONE_SECTION boxes a phone too: ${t}`)
     }
     // The no-gap section is the same section with no margin of its own (M4b: the desktop keeps its spacing).
@@ -653,6 +665,59 @@ describe('rule 11 — the console shell on a phone', () => {
     expect(tools).toMatch(/<Sheet open=\{open\}[\s\S]*data-testid="list-filter-sheet">\s*\{filters\}/)
     expect(tools).not.toMatch(/useState\(['"]/)   // it owns no filter value of its own
     expect(src.slice(src.indexOf('const filterControls'), src.indexOf('const activeFilters'))).not.toMatch(/\btitle=/)
+  })
+})
+
+// ── The console's lists and tabs on a phone (Mobile M7a) ─────────────────────────────────────────────
+/**
+ * Owner, 2026-11-03: a console table is ROWS on a phone; up to four tabs are 44 px chips and more are one chooser.
+ * The rows are the SAME table restacked by CSS (one DOM, one copy of every control), so the guard pins the CSS,
+ * the frame's switch, and that every table using it names its cells.
+ */
+describe('the console lists and tabs on a phone (Mobile M7a)', () => {
+  test('rule 7 — the shared "table as rows" CSS exists, below md only, outside every @layer', () => {
+    const css = readWeb('src/app/globals.css', 'the global stylesheet')
+    const at = css.indexOf('A CONSOLE TABLE AS ROWS ON A PHONE')
+    expect(at).toBeGreaterThan(-1)
+    const block = css.slice(css.indexOf('@media (max-width: 767.98px) {', at), css.indexOf('/* Print styles', at))
+    expect(block).toMatch(/\[data-phone-rows\] thead \{[^}]*position: absolute/)
+    expect(block).toMatch(/\[data-phone-rows\] \[data-table-floor\] \{ min-width: 0 !important; \}/)
+    expect(block).toMatch(/\[data-phone-rows\] td\[data-label\]::before \{[^}]*content: attr\(data-label\)/)
+    expect(block).toMatch(/\[data-phone-rows\] td button, \[data-phone-rows\] td a, \[data-phone-rows\] td select \{\s*min-height: 44px;/)
+    // After the 16 px field rule, which its own guard keeps outside every @layer: so this block is outside too.
+    expect(at).toBeGreaterThan(css.indexOf('TEXT FIELDS ARE 16 PX ON A PHONE'))
+    expect(css.indexOf('@layer', at)).toBe(-1)
+  })
+  test('TableFrame switches it on only when asked, and its scroll floor can be lifted', () => {
+    const src = readWeb('src/components/admin/TableFrame.tsx', 'the console table shell')
+    expect(src).toContain('data-phone-rows={phoneRows || undefined}')
+    expect(src).toMatch(/style=\{\{ minWidth: `\$\{minWidth\}px` \}\} data-table-floor/)
+    expect(src).toMatch(/phoneRows = false,/)
+  })
+  test('every table drawn as rows names its cells (data-label), and its desktop table is untouched', () => {
+    const users = FILES.filter((f) => /<TableFrame\b[^>]*\bphoneRows\b/.test(f.code) || /data-phone-rows>/.test(f.code))
+      .map((f) => f.rel).filter((rel) => !rel.endsWith('TableFrame.tsx'))
+    expect(users.length).toBeGreaterThanOrEqual(7)
+    for (const rel of users) {
+      const src = readWeb(rel, 'a table drawn as rows on a phone')
+      expect(`${rel}: ${(src.match(/data-label=/g) ?? []).length}`).not.toMatch(/: 0$/)
+    }
+  })
+  test('the hand-built underlined tab bars are 44 px chips on a phone, and nothing but max-md: changes', () => {
+    const lib = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
+    for (const name of ['PHONE_TAB_BAR', 'PHONE_TAB', 'PHONE_TAB_ON', 'PHONE_TAB_OFF']) {
+      const cls = (lib.match(new RegExp(`export const ${name} = '([^']+)'`)) ?? [])[1] ?? ''
+      expect(cls.length).toBeGreaterThan(0)
+      expect(cls.split(' ').filter((c) => !c.startsWith('max-md:'))).toEqual([])
+    }
+    expect(lib).toMatch(/PHONE_TAB = '[^']*max-md:min-h-11/)
+    for (const rel of ['src/app/admin/programme/page.tsx', 'src/app/admin/organisation/settings/page.tsx']) {
+      const src = readWeb(rel, 'a page with an underlined tab bar')
+      expect(src).toMatch(/className=\{`mt-5 flex gap-6 border-b border-ground-200 \$\{PHONE_TAB_BAR\}`\}/)
+      expect(src).toMatch(/className=\{`-mb-px border-b-2 pb-3 text-sm \$\{PHONE_TAB\}/)
+      expect(src).toContain('${PHONE_TAB_ON}')
+      expect(src).toContain('${PHONE_TAB_OFF}')
+    }
   })
 })
 

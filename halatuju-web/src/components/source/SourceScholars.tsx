@@ -67,7 +67,7 @@ export default function SourceScholars() {
     <div data-testid="source-scholars">
       <PageTitle title={t('admin.scholars.nav')} subtitle={t(`${K}.scholars.subtitle`)} />
       {error && <p className="mb-4 text-sm text-critical-600" role="alert">{t(`${K}.scholars.error`)}</p>}
-      <TableFrame minWidth={760} label={t('admin.scholars.nav')}>
+      <TableFrame minWidth={760} label={t('admin.scholars.nav')} phoneRows>
         <table className="w-full text-sm">
           <thead className="border-b bg-ground-50">
             <tr>{COLS.map((c) => <th key={c} className={TH}>{t(`${K}.scholars.col.${c}`)}</th>)}</tr>
@@ -80,10 +80,10 @@ export default function SourceScholars() {
                     {s.student_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ground-700">{s.institution || '—'}</td>
-                <td className="px-4 py-3 text-ground-700">{s.course || '—'}</td>
-                <td className="px-4 py-3 text-ground-700">{t(scholarStatusKey(s.status))}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-ground-700" data-label={t(`${K}.scholars.col.institution`)}>{s.institution || '—'}</td>
+                <td className="px-4 py-3 text-ground-700" data-label={t(`${K}.scholars.col.course`)}>{s.course || '—'}</td>
+                <td className="px-4 py-3 text-ground-700" data-label={t(`${K}.scholars.col.status`)}>{t(scholarStatusKey(s.status))}</td>
+                <td className="px-4 py-3" data-label={t(`${K}.scholars.col.contract`)}>
                   {waiting.has(s.id) ? (
                     <Link href={witnessHref(s.id)} className="font-semibold text-primary-600 hover:underline">
                       {t(`${K}.scholars.witnessNeeded`)}

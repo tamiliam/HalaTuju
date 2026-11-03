@@ -117,7 +117,7 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
           <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500"
             data-testid="surveys-empty">{t(`${K}.empty.${tab}`)}</div>
         ) : (
-          <TableFrame minWidth={820} label={t(`${K}.title`)}>
+          <TableFrame minWidth={820} label={t(`${K}.title`)} phoneRows>
             <table className="w-full text-sm">
               <thead className="border-b bg-ground-50">
                 <tr>
@@ -141,9 +141,9 @@ export default function SurveysAdmin({ programme }: { programme?: string }) {
                             s.locked ? t(`${K}.locked`) : ''].filter(Boolean).join(' · ')}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{audienceLabel(t, s)}</td>
-                      <td className="whitespace-nowrap px-4 py-3">{formatDate(s.opens_at)} – {formatDate(s.closes_at)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums" data-testid={`survey-answered-${s.id}`}>
+                      <td className="px-4 py-3" data-label={t(`${K}.col.for`)}>{audienceLabel(t, s)}</td>
+                      <td className="whitespace-nowrap px-4 py-3" data-label={t(`${K}.col.dates`)}>{formatDate(s.opens_at)} – {formatDate(s.closes_at)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums" data-label={t(`${K}.col.answered`)} data-testid={`survey-answered-${s.id}`}>
                         {s.status === 'draft' ? '—'
                           : t(`${K}.answeredOf`, { n: String(s.answered_count), count: String(s.audience_count) })}
                       </td>

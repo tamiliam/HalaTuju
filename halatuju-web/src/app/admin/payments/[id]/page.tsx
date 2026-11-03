@@ -182,13 +182,13 @@ export default function PaymentRunDetailPage() {
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPill(run.status)}`}>{t(`admin.payments.status.${run.status}`)}</span>
         </div>
         {/* Two-segment stat card (Stitch design): STUDENTS | TOTAL AMOUNT */}
-        <div className="flex rounded-xl border bg-ground-0 shadow-sm divide-x">
+        <div className="flex divide-x md:rounded-xl md:border md:bg-ground-0 md:shadow-sm">
           <div className="px-5 py-2 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.studentsHeading')}</p>
+            <p className="text-xs md:text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.studentsHeading')}</p>
             <p className="text-xl font-bold text-ground-900 tabular-nums leading-tight">{run.students}</p>
           </div>
           <div className="px-5 py-2 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.totalAmountHeading')}</p>
+            <p className="text-xs md:text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.totalAmountHeading')}</p>
             <p className="text-xl font-bold text-primary-600 tabular-nums leading-tight">RM {rm(run.total)}</p>
           </div>
         </div>
@@ -219,12 +219,12 @@ export default function PaymentRunDetailPage() {
           the e-wallet ID because it is the one fact here that stops a payment; and a credit
           applied keeps its note. A phone layout that quietly loses a warning is worse than a
           table you have to swipe. */}
-      <div className="mt-5 space-y-2.5 md:hidden" data-testid="payment-cards">
+      <div className="mt-5 divide-y divide-ground-100 md:hidden" data-testid="payment-cards">
         {sortedItems.map((it) => (
-          <div key={it.id}
-            className={`rounded-xl border border-l-[3px] p-3 ${it.included
-              ? 'border-ground-200 border-l-brand-fill bg-ground-0'
-              : 'border-ground-200 border-l-ground-300 bg-ground-50/60'}`}>
+          <div key={it.id} data-payment-card
+            className={`border-l-[3px] py-3 pl-3 ${it.included
+              ? 'border-l-brand-fill'
+              : 'border-l-ground-300 bg-ground-50/60'}`}>
             <div className="flex items-start justify-between gap-3">
               {isFinanceViewer ? (
                 <span className={`text-sm font-semibold ${it.included ? 'text-ground-900' : 'text-ground-500 line-through'}`}>
@@ -232,7 +232,7 @@ export default function PaymentRunDetailPage() {
                 </span>
               ) : (
                 <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer"
-                  className={`text-sm font-semibold hover:underline ${it.included ? 'text-primary-600' : 'text-ground-500 line-through'}`}>
+                  className={`text-sm font-semibold hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center ${it.included ? 'text-primary-600' : 'text-ground-500 line-through'}`}>
                   {it.name || '—'} ↗
                 </a>
               )}
@@ -246,7 +246,7 @@ export default function PaymentRunDetailPage() {
             </div>
 
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-ground-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ground-500">
                 {t('admin.payments.col.amountToPay')}
               </span>
               <span className={`text-lg tabular-nums ${it.included ? 'text-ground-900' : 'text-ground-400'}`}>
@@ -254,34 +254,34 @@ export default function PaymentRunDetailPage() {
               </span>
             </div>
             {Number(it.credit_applied) > 0 && (
-              <p className="mt-0.5 text-[11px] italic text-primary-600">
+              <p className="mt-0.5 text-xs italic text-primary-600">
                 {t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}
               </p>
             )}
             {isDraft && it.included && (
-              <p className="mt-1 text-[11px] text-ground-500" data-testid="edit-on-desktop">
+              <p className="mt-1 text-xs text-ground-500" data-testid="edit-on-desktop">
                 {t('admin.payments.editOnDesktop')}
               </p>
             )}
 
-            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-ground-600">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-xs text-ground-600">
               <span>{it.nric || '—'}</span>
               <span aria-hidden>·</span>
               <span className="tabular-nums">{it.vircle_id || '—'}</span>
               {!it.activated && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-caution-100 px-2 py-0.5 font-sans text-[10.5px] font-medium text-caution-800">
+                <span className="inline-flex items-center gap-1 rounded-full bg-caution-100 px-2 py-0.5 font-sans text-xs font-medium text-caution-800">
                   ⚠ {t('admin.payments.notActivated')}
                 </span>
               )}
               {it.on_hold && (
-                <span data-testid="on-hold-chip" className="inline-flex items-center rounded-full bg-critical-100 px-2 py-0.5 font-sans text-[10.5px] font-medium text-critical-700">
+                <span data-testid="on-hold-chip" className="inline-flex items-center rounded-full bg-critical-100 px-2 py-0.5 font-sans text-xs font-medium text-critical-700">
                   {t('admin.payments.reason.on_hold')}
                 </span>
               )}
 
             </div>
 
-            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ground-600">
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ground-600">
               <span><span className="text-ground-500">{t('admin.payments.col.awardApproved')}</span>{' '}
                 <span className="tabular-nums">RM {rm(it.award_amount)}</span></span>
               <span><span className="text-ground-500">{t('admin.payments.col.paidToDate')}</span>{' '}
@@ -289,7 +289,7 @@ export default function PaymentRunDetailPage() {
             </div>
 
             {!it.included && (
-              <p className="mt-2 border-t border-ground-200 pt-2 text-[11.5px] text-ground-600">
+              <p className="mt-2 border-t border-ground-200 pt-2 text-xs text-ground-600">
                 <span className="font-semibold text-ground-800">{t('admin.payments.leftOut')}</span>{' '}
                 {it.exclude_reason || '—'}
               </p>
@@ -387,14 +387,14 @@ export default function PaymentRunDetailPage() {
 
       {/* Skipped this run */}
       {run.skipped.length > 0 && (
-        <div className="mt-4 rounded-xl border bg-ground-0 p-4">
+        <div className="mt-4 border-t border-ground-100 py-4 md:rounded-xl md:border md:bg-ground-0 md:p-4">
           {/* Request #27: the count beside the heading, styled as the Students figure up top. It
               is the length of the list below — no server field, so the two cannot disagree. */}
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ground-500">🚫 {t('admin.payments.skippedTitle')}
             <span data-testid="skipped-count" className="text-xl font-bold text-ground-900 tabular-nums leading-tight">{run.skipped.length}</span></p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-testid="skipped-cards">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 max-md:gap-0 max-md:divide-y max-md:divide-ground-100" data-testid="skipped-cards">
             {run.skipped.map((s) => (
-              <div key={s.application_id} className="rounded-lg border border-ground-200 bg-ground-50 px-3 py-2 text-sm text-ground-500">
+              <div key={s.application_id} className="py-2 text-sm text-ground-500 md:rounded-lg md:border md:border-ground-200 md:bg-ground-50 md:px-3">
                 <span className="font-medium text-ground-600">{s.name || '—'}</span>
                 <span className="mx-1">—</span>
                 {s.reasons.map((r) => t(`admin.payments.reason.${r}`)).join(', ')}
@@ -406,7 +406,7 @@ export default function PaymentRunDetailPage() {
 
       {/* Sign-off */}
       {!isCompleted && run.status !== 'cancelled' && (
-        <div className="mt-4 rounded-xl border bg-ground-0 p-5">
+        <div className="mt-4 border-t border-ground-100 py-4 md:rounded-xl md:border md:bg-ground-0 md:p-5">
           <h2 className="text-base font-semibold text-ground-900">{t('admin.payments.signOff')}</h2>
           <p className="mt-2 rounded-lg border border-info-100 bg-info-50/60 p-3 text-sm text-ground-700 italic">
             {t('admin.payments.declaration', { month: monthLabelFull(run.period_month), email: run.vircle_email || '—' })}
@@ -421,9 +421,9 @@ export default function PaymentRunDetailPage() {
                 <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
               ) : (<>
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex gap-2 max-md:flex-wrap">
                   <input value={makerName} onChange={(e) => setMakerName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.sign')}</button>
+                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.sign')}</button>
                 </div>
               </>)}
             </div>
@@ -440,9 +440,9 @@ export default function PaymentRunDetailPage() {
                   <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
                 ) : (<>
                   <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2 max-md:flex-wrap">
                     <input value={financeName} onChange={(e) => setFinanceName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.financeSign')}</button>
+                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.financeSign')}</button>
                   </div>
                 </>)}
               </div>
@@ -461,16 +461,16 @@ export default function PaymentRunDetailPage() {
                 {/* Nobody else may approve this run, so the organisation admin does (#39 S2). */}
                 {view.fallback && <p className="mt-1 text-xs text-caution-700" data-testid="approver-fallback">{t('admin.payments.approverFallback')}</p>}
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex gap-2 max-md:flex-wrap">
                   <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.countersign')}</button>
+                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.countersign')}</button>
                 </div>
               </>)}
             </div>
           </div>
           <p className="mt-3 text-xs text-ground-500">{t('admin.payments.signNote')}</p>
           {view.canCancel && (
-            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium max-md:min-h-11 max-md:text-sm text-critical-600 hover:text-critical-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
           )}
         </div>
       )}
@@ -484,7 +484,7 @@ export default function PaymentRunDetailPage() {
               {t('admin.payments.completedOn', { date: formatDate(run.org_admin_signed?.at || run.payment_date) })}
               <span className="opacity-70">·</span> {t('admin.payments.sentToVircle')}
             </p>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-positive-100">{t('admin.payments.referenceCopy')}</p>
+            <p className="text-xs md:text-[11px] font-medium uppercase tracking-wider text-positive-100">{t('admin.payments.referenceCopy')}</p>
           </div>
           <div className="space-y-4 bg-ground-0 p-5">
             {/* A historical run has a null finance triple → the original 2-card layout, with no
@@ -493,7 +493,7 @@ export default function PaymentRunDetailPage() {
               {run.admin_signed && (
                 <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.authorisedBy')}</p>
+                    <p className="text-xs md:text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.authorisedBy')}</p>
                     <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.admin_signed.name}</p>
                     <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.admin_signed.at)}</p>
                   </div>
@@ -503,7 +503,7 @@ export default function PaymentRunDetailPage() {
               {run.finance_signed && (
                 <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.checkedBy')}</p>
+                    <p className="text-xs md:text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.checkedBy')}</p>
                     <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.finance_signed.name}</p>
                     <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.finance_signed.at)}</p>
                   </div>
@@ -513,7 +513,7 @@ export default function PaymentRunDetailPage() {
               {run.org_admin_signed && (
                 <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.approvedBy')}</p>
+                    <p className="text-xs md:text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.approvedBy')}</p>
                     <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.org_admin_signed.name}</p>
                     <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.org_admin_signed.at)}</p>
                   </div>
@@ -528,7 +528,7 @@ export default function PaymentRunDetailPage() {
                 <p className="text-xs text-ground-500">{t('admin.payments.exportedForVircle')}</p>
               </div>
               {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
-              <button onClick={downloadCsv} className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">{t('admin.payments.downloadCsv')}</button>
+              <button onClick={downloadCsv} className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.downloadCsv')}</button>
             </div>
           </div>
         </div>

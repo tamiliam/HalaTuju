@@ -49,6 +49,7 @@ export default function TableFrame({
   minWidth = 640,
   label,
   bare = false,
+  phoneRows = false,
   className = '',
 }: {
   children: React.ReactNode
@@ -61,6 +62,10 @@ export default function TableFrame({
    *  component's own border, background and shadow, keep the scroll floor and the cue. A card
    *  inside a card reads as two objects and flattens the hierarchy. */
   bare?: boolean
+  /** Mobile M7a (rule 7): below md the SAME table restacks as rows — no header row, no card, no scroll floor;
+   *  each cell a line named by its `data-label` (`globals.css`, "A CONSOLE TABLE AS ROWS ON A PHONE"). One DOM,
+   *  one copy of every control. From md the table is exactly what it was. */
+  phoneRows?: boolean
   className?: string
 }) {
   const { t } = useT()
@@ -90,7 +95,7 @@ export default function TableFrame({
   }, [measure, children])
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} data-phone-rows={phoneRows || undefined}>
       {/* The CARD clips — corners only. */}
       <div className={bare
         ? 'overflow-hidden'
@@ -105,7 +110,7 @@ export default function TableFrame({
           data-testid="table-scroller"
           className="overflow-x-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-fill"
         >
-          <div style={{ minWidth: `${minWidth}px` }}>{children}</div>
+          <div style={{ minWidth: `${minWidth}px` }} data-table-floor>{children}</div>
         </div>
       </div>
 

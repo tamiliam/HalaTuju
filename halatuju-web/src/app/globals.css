@@ -738,6 +738,31 @@
   }
 }
 
+/* A CONSOLE TABLE AS ROWS ON A PHONE (Mobile M7a, mobile-standard.md rule 7) — `TableFrame phoneRows`. Below md
+   the SAME table restacks: no header row (it stays for a screen reader), each row a block divided by a hairline,
+   each cell a line whose `data-label` names it, and no card, scroll floor or sideways scroll. ONE DOM: every
+   button is the one the desktop has, with the same handler (no second copy to drift — lessons 2026-09-08). From
+   md nothing here applies. Controls in a row get a 44 px hit area; the cell padding is the row's, not the cell's. */
+@media (max-width: 767.98px) {
+  [data-phone-rows] > div { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+  [data-phone-rows] [data-table-floor] { min-width: 0 !important; }
+  [data-phone-rows] table, [data-phone-rows] tbody, [data-phone-rows] tr, [data-phone-rows] td { display: block; width: 100%; }
+  [data-phone-rows] thead {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+  }
+  [data-phone-rows] tbody > tr { padding: 12px 0; border-top: 1px solid rgb(var(--ground-100)); }
+  [data-phone-rows] tbody > tr:first-child { border-top: 0; }
+  [data-phone-rows] td { padding: 2px 0; text-align: left; white-space: normal; border: 0; }
+  [data-phone-rows] td:empty { display: none; }
+  [data-phone-rows] td[data-label]::before {
+    content: attr(data-label) ' '; font-size: 12px; font-weight: 500; color: rgb(var(--ground-500));
+  }
+  [data-phone-rows] td button, [data-phone-rows] td a, [data-phone-rows] td select {
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center; min-width: 44px;
+  }
+}
+
 /* Print styles for report PDF download */
 @media print {
   body {

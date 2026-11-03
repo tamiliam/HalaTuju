@@ -1,5 +1,6 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
@@ -7,7 +8,7 @@ import { formatDate } from '@/lib/formatDate'
 import { rm } from '@/lib/programmeOverview'
 import { getScholarMoney, type ScholarMoney as MoneyPayload } from '@/lib/admin-api'
 
-const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
+const CARD = PHONE_CARD_XL   // Mobile M7a (rule 15): a section on a phone, this card from md
 const money = (v: string | null | undefined) => (v == null ? '—' : `RM${rm(v)}`)
 
 /**
@@ -43,9 +44,9 @@ export default function ScholarMoney({ id, token, links }: {
   return (
     <div className="flex flex-col gap-4">
       <section className={CARD} aria-label={t('admin.scholars.card.money')}>
-        <div className="grid grid-cols-3 gap-3 text-sm">
+        <div className="grid grid-cols-3 gap-3 text-sm max-md:grid-cols-1 max-md:gap-0 max-md:divide-y max-md:divide-ground-100">
           {(['award_amount', 'paid_to_date', 'remaining'] as const).map((k) => (
-            <div key={k}>
+            <div key={k} className="max-md:flex max-md:items-baseline max-md:justify-between max-md:py-2">
               <div className="text-ground-600">{t(`admin.scholars.money.${k}`)}</div>
               <div className="text-xl font-semibold tabular-nums text-ground-900" data-testid={`money-${k}`}>
                 {money(data[k])}

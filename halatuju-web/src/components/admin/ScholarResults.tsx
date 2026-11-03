@@ -1,5 +1,6 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
@@ -67,7 +68,7 @@ export default function ScholarResults({ id, token, canReview, onChanged }: {
   }
 
   return (
-    <section aria-label={t('admin.scholars.tab.results')} className="rounded-xl border border-ground-200 bg-ground-0 p-5">
+    <section aria-label={t('admin.scholars.tab.results')} className={PHONE_CARD_XL}>
       <h2 className="text-base font-semibold text-ground-900">{t('admin.scholars.tab.results')}</h2>
       <p className="mt-1 text-xs text-ground-500">{t('admin.scholars.results.intro')}</p>
       {failed && <p className="mt-3 text-sm text-critical-600">{t('admin.scholars.results.loadFailed')}</p>}
@@ -98,20 +99,20 @@ export default function ScholarResults({ id, token, canReview, onChanged }: {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {r.slip?.url ? (
                 <button type="button" onClick={() => open(r)}
-                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-primary-600 hover:bg-ground-50">
+                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-primary-600 hover:bg-ground-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t('admin.scholars.results.viewSlip')}
                 </button>
               ) : <span className="text-xs text-ground-400">{t('admin.scholars.results.noSlip')}</span>}
               {/* Owner ruling 2026-10-29: no slip she uploaded, no Accept — Query asks her for it. */}
               {canReview && r.review_status !== 'accepted' && r.slip && (
                 <button type="button" onClick={() => decide(r, 'accepted')} disabled={busy === r.id}
-                  className="rounded-lg bg-brand-fill px-3 py-1 text-xs font-medium text-brand-fill-ink disabled:opacity-50">
+                  className="rounded-lg bg-brand-fill px-3 py-1 text-xs font-medium text-brand-fill-ink disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t('admin.scholars.results.accept')}
                 </button>
               )}
               {canReview && querying !== r.id && (
                 <button type="button" onClick={() => { setQuerying(r.id); setNote('') }} disabled={busy === r.id}
-                  className="rounded-lg border border-caution-300 px-3 py-1 text-xs font-medium text-caution-700 hover:bg-caution-50 disabled:opacity-50">
+                  className="rounded-lg border border-caution-300 px-3 py-1 text-xs font-medium text-caution-700 hover:bg-caution-50 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                   {t('admin.scholars.results.query')}
                 </button>
               )}
@@ -123,11 +124,11 @@ export default function ScholarResults({ id, token, canReview, onChanged }: {
                   className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
                 <div className="flex gap-2">
                   <button type="button" onClick={() => decide(r, 'queried')} disabled={busy === r.id || !note.trim()}
-                    className="rounded-lg bg-caution-fill px-3 py-1 text-xs font-medium text-caution-fill-ink disabled:opacity-50">
+                    className="rounded-lg bg-caution-fill px-3 py-1 text-xs font-medium text-caution-fill-ink disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">
                     {t('admin.scholars.results.sendQuery')}
                   </button>
                   <button type="button" onClick={() => setQuerying(null)}
-                    className="rounded-lg px-3 py-1 text-xs text-ground-600">{t('common.cancel')}</button>
+                    className="rounded-lg px-3 py-1 text-xs text-ground-600 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('common.cancel')}</button>
                 </div>
               </div>
             )}

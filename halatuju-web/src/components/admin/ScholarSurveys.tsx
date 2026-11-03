@@ -1,5 +1,6 @@
 'use client'
 
+import { PHONE_CARD_XL } from '@/lib/phoneSection'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
@@ -7,7 +8,7 @@ import { formatDate } from '@/lib/formatDate'
 import { getScholarSurveys, type AnswerValue, type QuestionKind, type ScholarSurveys as Payload } from '@/lib/admin-api'
 
 const K = 'admin.scholars.surveys'
-const CARD = 'rounded-xl border border-ground-200 bg-ground-0 p-5'
+const CARD = PHONE_CARD_XL   // Mobile M7a (rule 15)
 
 type T = (k: string, vars?: Record<string, string>) => string
 

@@ -175,7 +175,7 @@ export default function AdminRequestsPage() {
             <div className="flex gap-2">
               {(['bug', 'feature'] as const).map((k) => (
                 <button key={k} type="button" onClick={() => setKind(k)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors max-md:min-h-11 ${
                     kind === k ? 'bg-brand-fill text-brand-fill-ink border-info-600'
                     : 'bg-ground-0 text-ground-700 border-ground-300 hover:bg-ground-50'}`}>
                   {t(kindLabelKey(k))}
@@ -200,14 +200,14 @@ export default function AdminRequestsPage() {
               <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.component')}</label>
               <select value={component}
                 onChange={(e) => { setComponent(e.target.value); setSubComponent('') }}
-                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 max-md:min-h-11">
                 <option value="">—</option>
                 {REQUEST_COMPONENT_PARENTS.map((c) => <option key={c} value={c}>{t(componentLabelKey(c))}</option>)}
               </select>
               {/* B40 sub-component — only when the parent surface has children (applications). */}
               {requestSubComponents(component).length > 0 && (
                 <select key={component} value={subComponent} onChange={(e) => setSubComponent(e.target.value)}
-                  className="mt-2 w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
+                  className="mt-2 w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 max-md:min-h-11">
                   <option value="">{t('admin.requests.form.subComponentAll')}</option>
                   {requestSubComponents(component).map((c) => (
                     <option key={c} value={c}>{t(componentLabelKey(c))}</option>
@@ -218,7 +218,7 @@ export default function AdminRequestsPage() {
             <div>
               <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.urgency')}</label>
               <select value={urgency} onChange={(e) => setUrgency(e.target.value)}
-                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 max-md:min-h-11">
                 <option value="">—</option>
                 {URGENCY_OPTIONS.map((u) => <option key={u} value={u}>{t(`admin.requests.urgency.${u}`)}</option>)}
               </select>
@@ -247,7 +247,7 @@ export default function AdminRequestsPage() {
                     <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover bg-ground-50" />
                     <figcaption className="px-1 py-0.5 text-[10px] text-ground-500 truncate" title={f.name}>{f.name} · {formatFileSize(f.size)}</figcaption>
                     <button type="button" onClick={() => unstage(i)}
-                      className="w-full text-[11px] text-critical-600 hover:text-critical-800 py-0.5 border-t">
+                      className="w-full text-[11px] text-critical-600 hover:text-critical-800 py-0.5 border-t max-md:min-h-11 max-md:inline-flex max-md:items-center">
                       {t('admin.requests.attachments.remove')}
                     </button>
                   </figure>
