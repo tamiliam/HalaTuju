@@ -1,7 +1,8 @@
 """The offer-genuineness RULINGS' reading of a page — its folded lines, letterhead, first institution, private
-signs, letter structure — and the word lists they use. Moved verbatim out of `offer_rulings.py` (offer exact-read
-S6 round 5, 2026-11-03, a moves-only split: that file passed the 600-line standard). `offer_rulings` imports
-every name back (`__all__`), so its rulings and every existing import keep working.
+signs, letter structure — and the word lists they use. Moved out of `offer_rulings.py` in S6 round 5 (2026-11-03;
+that file passed the 600-line standard). That move was NOT verbatim, though its commit said so: 8 moved names
+changed and 7 were added inside it (see CHANGELOG, S6 round 6). `offer_rulings` imports every name back
+(`__all__`), so its rulings and every existing import keep working.
 """
 import re
 import unicodedata
@@ -27,6 +28,7 @@ __all__ = [
     '_GLUED_KIND',
     '_GLUED_LABELS',
     '_GLUED_RUJ',
+    '_HEAD_RE',
     '_IC',
     '_INSTITUTES',
     '_JPPKK',
@@ -40,6 +42,7 @@ __all__ = [
     '_ORG_WORDS',
     '_PARTNER',
     '_PERSON_LABELS',
+    '_POLY_DEPARTMENTS',
     '_PORTAL_FURNITURE',
     '_POSTCODE',
     '_PRIVATE_SIGNS',
@@ -60,7 +63,10 @@ __all__ = [
     '_UNIT_TAIL',
     '_VENDOR',
     '_WEB_TAIL',
+    '_allowed_spans',
     '_clean_letterhead',
+    '_confirm_titled',
+    '_excused',
     '_first_institution',
     '_folded_lines',
     '_in_addressee_block',
@@ -70,6 +76,7 @@ __all__ = [
     '_letter_structure',
     '_letterhead_lines',
     '_letterhead_region',
+    '_outside_orgs',
     '_own_identity_lines',
     '_page',
     '_private_mara_letterhead',
@@ -117,11 +124,19 @@ _ORG_RE = re.compile(rf' (?:{_ORG_WORDS}|SDN|BHD|BERHAD)(?= )')
 _ORG_RE_NO_COMPANY = re.compile(rf' (?:{_ORG_WORDS})(?= )')
 #: An institution's OWN unit (round 5, H1): a line naming a faculty / division / centre-for / unit / campus of
 #: the institution is not another organisation ("UNIVERSITI MALAYSIA SABAH / ACADEMIC SERVICES DIVISION").
-_UNIT_LINE = re.compile(r' (?:FACULTY|FAKULTI|DIVISION|BAHAGIAN|CENTRE FOR|CENTER FOR|PUSAT PENGAJIAN|UNIT|JABATAN|'
+#: Round 6: its describing words lead the match ("ACADEMIC SERVICES DIVISION" is one unit, not an academy).
+_UNIT_LINE = re.compile(r' (?:(?:ACADEMIC|STUDENT|SERVICES) )*'
+                        r'(?:FACULTY|FAKULTI|DIVISION|BAHAGIAN|CENTRE FOR|CENTER FOR|PUSAT PENGAJIAN|UNIT|JABATAN|'
                         r'STUDENT SERVICES|HAL EHWAL|DEPARTMENT OF|SCHOOL OF|PUSAT ASASI|CENTRE FOR FOUNDATION)(?= )')
 #: Words that, right after an allowed name on the same line, name its campus or unit (Low 4: "IKTBN KAMPUS
 #: SEPANG", "KKTM TECH CAMPUS").
 _UNIT_TAIL = re.compile(r' (?:KAMPUS|CAMPUS|SERVICES|TECH|CAWANGAN|BRANCH)(?= )')
+#: Round 6 (H-A): the nouns that NAME an institution or a company (never a subject: EDUCATION, TRAINING …). After
+#: a public / unit word on a line, one of these outside an allowed name is another organisation
+#: ("FAKULTI PERNIAGAAN, KOLEJ UNIVERSITI ABC").
+_HEAD_RE = re.compile(r' (?:KOLEJ|COLLEGES?|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|AKADEMI|ACADEMY|'
+                      r'POLITEKNIK|POLYTECHNICS?|MAKTAB|TUISYEN|TUITION|SEKOLAH|SCHOOLS?|SDN|BHD|BERHAD|PLT|LTD|'
+                      r'LIMITED|INC|PUSAT (?:LATIHAN|KEMAHIRAN|PEMBELAJARAN|PENDIDIKAN|BAHASA))(?= )')
 #: Partner wording on a letterhead: a private institution trading on a public one's name.
 _PARTNER = (' PARTNER ', ' RAKAN ', ' BERSAMA ', ' AFFILIATED ', ' FRANCAIS ', ' FRANCHISE ', ' STRATEGIK ',
             ' STRATEGIC ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' ACCREDITED ', ' DIIKTIRAF ',
@@ -168,7 +183,7 @@ _CONFIRM_TITLES = (' PENGESAHAN PELAJAR ', ' PENGESAHAN SEBAGAI PELAJAR ', ' PEN
 _JPPKK = ' JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI '
 _NO_PRIVATE_WING = (
     # (doc_seen, the institution's own names, its public mark anywhere on the page)
-    ('confirmation_polytechnic', (' POLITEKNIK ',), (_JPPKK, ' KEMENTERIAN PENDIDIKAN TINGGI ',
+    ('confirmation_polytechnic', (' POLITEKNIK ', ' POLYTECHNIC '), (_JPPKK, ' KEMENTERIAN PENDIDIKAN TINGGI ',
                                                     ' MINISTRY OF HIGHER EDUCATION ',
                                                     ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')),
     ('confirmation_ums', (' UNIVERSITI MALAYSIA SABAH ', ' UMS '), (' UNIVERSITI MALAYSIA SABAH ',)),
@@ -177,6 +192,8 @@ _NO_PRIVATE_WING = (
       ' SEKOLAH MENENGAH KEBANGSAAN ')),
 )
 CONFIRMATION_SEEN = frozenset(k for k, _n, _m in _NO_PRIVATE_WING) | {'confirmation_ua'}
+#: The polytechnics' department, Malay and English: it names no polytechnic or college (blanked before a scan).
+_POLY_DEPARTMENTS = (_JPPKK, ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')
 #: The least a real confirmation scores on the families (every corpus one: 0.13-0.30).
 CONFIRM_MIN = 0.10
 #: Portal-only furniture (never TAHNIAH / BERJAYA, which offer letters print, nor URL chrome).
@@ -214,7 +231,8 @@ def _incidental(lines, i) -> bool:
     printer line, or the ADDRESSEE's address — within the candidate block (the two lines after her name / IC
     line)?"""
     ln = lines[i]
-    islamic_finance = ' ISLAMIC ' in ln and (' BANK ' in ln or ' BERHAD ' in ln)      # Low 7
+    islamic_finance = ' ISLAMIC ' in ln and (' BANK ' in ln or (' BERHAD ' in ln and not _ORG_RE_NO_COMPANY.search(
+        ln)))                           # round 6: never beside an organisation noun ("ABC ISLAMIC COLLEGE BERHAD")
     if (any(w in ln for w in _FINANCE) or islamic_finance or any(w in ln for w in _VENDOR)
             or any(w in ln for w in _SPONSOR_LINE)):
         return True                     # a bank / insurer / co-operative or a printer — "kepada X Sdn Bhd"
@@ -274,19 +292,16 @@ def _is_contact(ln) -> bool:
 
 def _first_institution(lines, allowed) -> str:
     """'allowed' when the FIRST organisation the page names is one of `allowed`, 'other' when another comes
-    first, '' when none is named. A line beside a public word (a ministry, a department, the federal
-    administration) is the public body, not another organisation."""
+    first, '' when none is named. A line led by a public or unit word (a ministry, a department, a faculty)
+    is the public body or a unit, not another organisation (`_excused`)."""
     for ln in lines:
         if _is_contact(ln):
             continue                    # a web / e-mail / phone line names no institution
         ln = _untitled(_unstreeted(ln))
-        spans = [(ln.find(a), ln.find(a) + len(a)) for a in allowed if a in ln]
+        spans = _allowed_spans(ln, allowed)
         first_allowed = min((s for s, _e in spans), default=None)
-        public = any(w in ln for w in _PUBLIC_WORDS) or bool(_UNIT_LINE.search(ln))
-        tail = [m.start() for m in _UNIT_TAIL.finditer(ln) if spans and m.start() >= min(e for _s, e in spans) - 1]
-        others = [] if public else [m.start() for m in _ORG_RE.finditer(ln)
-                                    if not any(s <= m.start() < e for s, e in spans) and m.start() not in tail]
-        first_other = min(others, default=None)
+        others = _outside_orgs(ln, spans)
+        first_other = None if _excused(ln, others) else min(others, default=None)
         if first_allowed is None and first_other is None:
             continue
         if first_other is None:
@@ -342,12 +357,49 @@ def _clean_letterhead(lines, allowed) -> bool:
         if _is_contact(ln):
             continue
         ln = _unstreeted(ln)
-        rest = ln
-        for a in allowed:
-            rest = rest.replace(a, ' ')
-        if _ORG_RE.search(rest) and not any(w in ln for w in _PUBLIC_WORDS) and not _UNIT_LINE.search(ln):
+        others = _outside_orgs(ln, _allowed_spans(ln, allowed))
+        if others and not _excused(ln, others):
             return False
     return True
+
+
+def _allowed_spans(ln, allowed):
+    """Every place an allowed name sits on the line."""
+    out = []
+    for a in allowed:
+        i = ln.find(a)
+        while i >= 0:
+            out.append((i, i + len(a)))
+            i = ln.find(a, i + 1)
+    return out
+
+
+def _outside_orgs(ln, spans):
+    """Where the line names an organisation noun OUTSIDE an allowed name — never inside one, nor a campus /
+    unit word straight after one (Low 4: "IKTBN KAMPUS SEPANG", "KKTM TECH CAMPUS")."""
+    ends = {e - 1 for _s, e in spans}
+    for m in _UNIT_TAIL.finditer(ln):
+        if m.start() in ends:
+            ends.add(m.end())           # a run of tail words after the name
+    def inside(o):                      # a name's trailing space starts the NEXT word ("IKBN KOLEJ ABC")
+        return any(s <= o < e - 1 for s, e in spans)
+    return [m.start() for m in _ORG_RE.finditer(ln)
+            if not inside(m.start()) and not (m.start() in ends and _UNIT_TAIL.match(ln, m.start()))]
+
+
+def _excused(ln, others) -> bool:
+    """Round 6: a public or unit word excuses a line's organisation nouns ONLY when none of them comes BEFORE
+    it ("KOLEJ ABC (KEMENTERIAN …)", "KOLEJ ABC UNIT KEMASUKAN" are KOLEJ ABC's) and no institution / company
+    name (`_HEAD_RE`) comes after it outside the public words themselves ("FAKULTI PERNIAGAAN, KOLEJ
+    UNIVERSITI ABC")."""
+    covers = [(ln.find(w), ln.find(w) + len(w) - 1) for w in _PUBLIC_WORDS if w in ln] + [
+        m.span() for m in _UNIT_LINE.finditer(ln)]
+    if not covers:
+        return False
+    first = min(s for s, _e in covers)
+    if any(o < first for o in others):
+        return False
+    return not any(_HEAD_RE.match(ln, o) and not any(s <= o < e for s, e in covers) for o in others)
 
 
 def _letter_structure(lines, titles_words, *, min_lines=0, reporting=False, glued=False) -> bool:
@@ -400,6 +452,21 @@ def _unglued(lines):
         else:
             out.append(ln)
     return out
+
+
+def _confirm_titled(lines, probability) -> bool:
+    """Round 6: a confirmation-of-studies page — the score floor (`CONFIRM_MIN`), and its title in the TOP part
+    of the letter: before any offer title, and in the page's first half or its first `_CONFIRM_TOP_CHARS`
+    characters (a letterhead's length) — never a private offer's body "pengesahan pelajar"."""
+    if probability < CONFIRM_MIN:
+        return False
+    page = _page(lines)
+    at = min((page.find(t) for t in _CONFIRM_TITLES if t in page), default=-1)
+    offer = min((page.find(t) for t in _TITLE if t in page), default=len(page))
+    return 0 <= at < offer and at <= max(_CONFIRM_TOP_CHARS, len(page) // 2)
+
+
+_CONFIRM_TOP_CHARS = 400
 
 
 def _own_identity_lines(lines, title_words) -> bool:

@@ -28,7 +28,7 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
     """For EVERY ruled kind: a public body named first + no positive private evidence → never a fail."""
 
     BROKEN = {   # each misses a rule its kind needs, and carries no private evidence
-        'tvet offer, unclean letterhead': _letter('IKBN PEKAN\nPusat Latihan Kemahiran'),
+        # (round 6: an unclean letterhead IS positive private evidence — moved to the test below)
         'tvet offer, no structure': 'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN\nSURAT TAWARAN\nAnda ditawarkan kursus.\n',
         'polytechnic confirmation, thin': 'POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nPENGESAHAN PELAJAR\nNama : Ali\n',
         'UMS confirmation, thin': 'UNIVERSITI MALAYSIA SABAH\nPENGESAHAN PELAJAR\nNama : Ali\n',
@@ -39,7 +39,8 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
 
     def test_no_ruled_kind_ever_fails_without_private_evidence(self):
         for label, text in self.BROKEN.items():
-            for p in (0.0, 0.1, 0.4):
+            # Round 6 (item 4): a confirmation engages the rule only from CONFIRM_MIN (0.10) up; a TVET body at 0.0.
+            for p in ((0.0, 0.1, 0.4) if label.startswith('tvet') else (0.1, 0.4)):
                 with self.subTest(label, p=p):
                     out = ruled_offer(text, _r(p), 'not_offer_letter' if p < 0.35 else 'suspect', 'r', MODEL_VERSION)
                     self.assertNotEqual(out['status'], 'not_offer_letter')
@@ -47,7 +48,8 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
     def test_positive_private_evidence_still_fails(self):
         for text in ('ABC TRAINING SDN BHD\nIKBN PEKAN\nSURAT TAWARAN\n',
                      'POLITEKNIK SWASTA ABC\nPENGESAHAN PELAJAR\nNama : Ali\n',
-                     'KOLEJ ABC\nRakan Strategik IKBN\nSURAT TAWARAN\n'):
+                     'KOLEJ ABC\nRakan Strategik IKBN\nSURAT TAWARAN\n',
+                     _letter('IKBN PEKAN\nPusat Latihan Kemahiran')):     # round 6 (item 1)
             with self.subTest(text=text.splitlines()[0]):
                 self.assertEqual(ruled_offer(text, _r(0.05), 'not_offer_letter', 'r', MODEL_VERSION)['status'],
                                  'not_offer_letter')

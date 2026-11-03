@@ -84,8 +84,20 @@ _SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|PENAJAAN|DIBIAYAI|PEMBIAYAAN|BIA
                       r'COLLABORATION|PINJAMAN|FUNDED|SCHOLARSHIP|SPONSORED\s+BY|SPONSOR)\b',
                       re.IGNORECASE)   # S6 review H3: + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA
 #: A payment / bank / vendor line (S6 review): never part of the letterhead.
-_PAYMENT_LINE = re.compile(r'\b(BAYARAN|AKAUN|BANK|MAYBANK|CIMB|RHB|AMBANK|AFFIN|BSN|AGROBANK|ISLAMIC|'
+_PAYMENT_LINE = re.compile(r'\b(BAYARAN|AKAUN|BANK|MAYBANK|CIMB|RHB|AMBANK|AFFIN|BSN|AGROBANK|'
                            r'TAKAFUL|INSURANS|INSURANCE|KOPERASI|PEMBEKAL|PENCETAK|DICETAK)\b', re.IGNORECASE)
+_ISLAMIC_BERHAD = re.compile(r'\bISLAMIC\b.*\bBERHAD\b|\bBERHAD\b.*\bISLAMIC\b', re.IGNORECASE)
+
+
+def _payment_line(line: str) -> bool:
+    """A payment / bank / vendor line. Round 6: ISLAMIC counts only beside BANK (in `_PAYMENT_LINE`) or beside
+    BERHAD with no organisation noun on the line ("ABC ISLAMIC COLLEGE BERHAD" is a letterhead)."""
+    if _PAYMENT_LINE.search(line):
+        return True
+    if not _ISLAMIC_BERHAD.search(line):
+        return False
+    from .offer_reading import _ORG_RE_NO_COMPANY
+    return not _ORG_RE_NO_COMPANY.search(_fold(line))
 #: A private company / an accredited private centre on the letterhead is never a public issuer.
 _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: Words a public body prints on its letterhead (a ministry, a department, a school); a letterhead
@@ -116,7 +128,7 @@ def _letterhead(ocr_text: str) -> str:
     for line in (ocr_text or '').splitlines():
         if size >= _LETTERHEAD_CHARS:
             break
-        folded = '' if (_SPONSOR.search(line) or _PAYMENT_LINE.search(line)) else _norm_fold_upper_alnum(line)
+        folded = '' if (_SPONSOR.search(line) or _payment_line(line)) else _norm_fold_upper_alnum(line)
         if folded:
             parts.append(folded)
             size += len(folded) + 1
