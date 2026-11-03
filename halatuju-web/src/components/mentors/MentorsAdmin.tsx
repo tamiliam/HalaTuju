@@ -203,7 +203,7 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
               {arrived.length === 0 ? t(mayManage ? `${K}.emptyNone` : `${K}.emptyNoneRead`) : t(`${K}.empty`)}
             </div>
           ) : (
-            <TableFrame minWidth={1100} label={t(`${K}.title`)}>
+            <TableFrame minWidth={1100} label={t(`${K}.title`)} phoneRows>
               <table className="w-full text-sm">
                 <thead className="border-b bg-ground-50">
                   <tr>
@@ -228,16 +228,16 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
                             {m.email}{m.phone ? ` · ${m.phone}` : ''}
                           </span>
                         </td>
-                        <td className="px-4 py-3"><AlsoIn row={m} here="mentors" /></td>
-                        <td className={`px-4 py-3 ${m.area ? '' : 'text-ground-500'}`}>{m.area || t(`${K}.notFilled`)}</td>
-                        <td className={`px-4 py-3 ${langs ? '' : 'text-ground-500'}`}>{langs || t(`${K}.notFilled`)}</td>
-                        <td className="px-4 py-3 tabular-nums" data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>
-                        <td className="px-4 py-3 tabular-nums" data-testid={`mentor-meetings-${m.id}`}>{m.meetings_90 ?? 0}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-4 py-3" data-label={t('admin.team.colAlsoIn')}><AlsoIn row={m} here="mentors" /></td>
+                        <td className={`px-4 py-3 ${m.area ? '' : 'text-ground-500'}`} data-label={t(`${K}.col.area`)}>{m.area || t(`${K}.notFilled`)}</td>
+                        <td className={`px-4 py-3 ${langs ? '' : 'text-ground-500'}`} data-label={t(`${K}.col.languages`)}>{langs || t(`${K}.notFilled`)}</td>
+                        <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.scholarsNow`)} data-testid={`mentor-scholars-${m.id}`}>{m.scholars_now ?? 0}</td>
+                        <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.col.meetings90`)} data-testid={`mentor-meetings-${m.id}`}>{m.meetings_90 ?? 0}</td>
+                        <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.col.lastMeeting`)}>
                           {m.last_meeting ? formatDate(m.last_meeting) : <span className="text-ground-400">-</span>}
                         </td>
                         {/* T3 review: null for a caller without `see_all` (no scholar data) — a dash. */}
-                        <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`}
+                        <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`} data-label={t(`${K}.col.concernsOpen`)}
                           data-testid={`mentor-concerns-${m.id}`}>
                           {m.concerns_open === null ? <span className="text-ground-400">-</span> : (m.concerns_open ?? 0)}</td>
                         <td className="whitespace-nowrap px-4 py-3">
@@ -285,7 +285,7 @@ function Tile({ label, value, testId }: { label: string; value: string; testId: 
 function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[]; past: boolean; testId: string }) {
   const cols = ['scholar', 'since', ...(past ? ['ended'] : []), 'meetings', 'lastMeeting', 'standing', 'concern']
   return (
-    <TableFrame minWidth={760} label={t(`${K}.detail.${past ? 'pastTitle' : 'currentTitle'}`)}>
+    <TableFrame minWidth={760} label={t(`${K}.detail.${past ? 'pastTitle' : 'currentTitle'}`)} phoneRows>
       <table className="w-full text-sm" data-testid={testId}>
         <thead className="border-b bg-ground-50">
           <tr>{cols.map((c) => <th key={c} className={TH}>{t(`${K}.detail.col.${c}`)}</th>)}</tr>
@@ -299,20 +299,20 @@ function ScholarTable({ t, rows, past, testId }: { t: T; rows: MentorScholarRow[
                       className="font-medium text-primary-600 hover:text-primary-800">{s.name || `#${s.application_id}`}</Link>
                   : <span>{s.name || `#${s.application_id}`}</span>}
               </td>
-              <td className="px-4 py-3 whitespace-nowrap">{formatDate(s.since)}</td>
-              {past && <td className="px-4 py-3 whitespace-nowrap">{formatDate(s.ended)}</td>}
-              <td className="px-4 py-3 tabular-nums">{s.meetings}</td>
-              <td className="px-4 py-3 whitespace-nowrap">
+              <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.detail.col.since`)}>{formatDate(s.since)}</td>
+              {past && <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.detail.col.ended`)}>{formatDate(s.ended)}</td>}
+              <td className="px-4 py-3 tabular-nums" data-label={t(`${K}.detail.col.meetings`)}>{s.meetings}</td>
+              <td className="px-4 py-3 whitespace-nowrap" data-label={t(`${K}.detail.col.lastMeeting`)}>
                 {s.last_meeting ? formatDate(s.last_meeting) : <span className="text-ground-400">-</span>}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3" data-label={t(`${K}.detail.col.standing`)}>
                 {s.standing
                   ? <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       STANDING_TONE[s.standing as ScholarStanding] ?? STANDING_TONE.no_result_yet}`}>
                       {t(`admin.scholars.standing.${s.standing}`)}</span>
                   : <span className="text-ground-400">-</span>}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3" data-label={t(`${K}.detail.col.concern`)}>
                 {s.concern
                   ? <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CONCERN_TONE[s.concern]}`}
                       data-testid={`mentor-concern-${s.application_id}`}>{t(`${K}.detail.concern.${s.concern}`)}</span>

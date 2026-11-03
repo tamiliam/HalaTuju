@@ -668,6 +668,37 @@ describe('rule 11 — the console shell on a phone', () => {
   })
 })
 
+// ── Desktop-only pages say so (rule 13, Mobile M7b) ──────────────────────────────────────────────────
+/**
+ * Owner, 2026-11-03: on a phone the shared panel REPLACES a desktop-only page, with one way back. ONE mount (the
+ * shell), by CSS (no flash, the page rendered once), below md by width. Layout, not access: no gate file reads it.
+ */
+describe('desktop-only pages are replaced by the panel on a phone (Mobile M7b)', () => {
+  test('the shell mounts the panel once and hides the page below md only when the route is desktop-only', () => {
+    const shell = readWeb('src/components/admin/AppShell.tsx', 'the console shell')
+    expect((shell.match(/<DesktopOnly\b/g) ?? []).length).toBe(1)
+    expect(shell).toContain('{desktopOnly && <DesktopOnly route={desktopOnly} />}')
+    expect(shell).toContain("className={`${WIDTH_CLASS[pageWidthFor(pathname)]}${desktopOnly ? ' max-md:hidden' : ''}`}")
+    expect(shell).toContain('const desktopOnly = desktopOnlyRoute(pathname)')
+    // No other file draws the panel.
+    const drawers = TSX.filter((f) => /<DesktopOnly\b/.test(f.code)).map((f) => f.rel)
+    expect(drawers).toEqual(['src/components/admin/AppShell.tsx'])
+  })
+  test('the panel shows below md only, and its one way back is 44 px', () => {
+    const src = readWeb('src/components/DesktopOnly.tsx', 'the desktop-only panel')
+    expect(src).toMatch(/<section className="[^"]*\bmd:hidden\b[^"]*" data-desktop-only=\{route\}/)
+    expect(src).toMatch(/const back = '[^']*\bmin-h-11\b/)
+    expect((src.match(/data-desktop-only-back/g) ?? []).length).toBe(2)   // one OR the other is drawn
+  })
+  test('layout, not access: no gate or guard file reads the desktop-only list', () => {
+    for (const rel of ['src/lib/navigation.ts', 'src/lib/pageGuard.ts', 'src/lib/staffPermissions.ts',
+      'src/lib/adminAuthCore.ts']) {
+      if (!fs.existsSync(path.join(WEB_ROOT, rel))) continue
+      expect(`${rel}: ${/desktopOnly|DesktopOnly/.test(readWeb(rel, 'a gate file'))}`).toBe(`${rel}: false`)
+    }
+  })
+})
+
 // ── The console's lists and tabs on a phone (Mobile M7a) ─────────────────────────────────────────────
 /**
  * Owner, 2026-11-03: a console table is ROWS on a phone; up to four tabs are 44 px chips and more are one chooser.

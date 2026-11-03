@@ -3310,6 +3310,20 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "desktopOnly": {
+      "title": "Gunakan komputer untuk halaman ini",
+      "body": "Halaman ini dibina untuk skrin besar. Bukanya di komputer untuk menggunakannya. Tiada apa-apa yang berubah.",
+      "home": "Kembali ke halaman utama",
+      "whyLabel": "Sebab:",
+      "why": {
+        "billingRates": "pentadbir super platform menetapkan kadar setiap perkhidmatan dalam jadual yang lebar — jarang dibuat, dan di meja",
+        "billing": "penggunaan dan invois akhir bulan sesebuah organisasi — angka yang lebar disemak dengan rekod",
+        "courseData": "panel liputan dalaman untuk katalog kursus, digunakan oleh pasukan platform sahaja",
+        "contracts": "versi templat kontrak — ditulis dan dibandingkan di meja, bukan di telefon",
+        "contract": "penyunting klausa: teks undang-undang yang panjang dalam tiga bahasa, disunting sebelah-menyebelah",
+        "sponsorTerms": "menulis dokumen terma penaja — suntingan panjang, bukan kerja untuk telefon"
+      }
+    },
     "useComputer": {
       "payments": "Menandatangani, membatalkan dan mengubah larian pembayaran dilakukan di komputer. Di telefon, larian ini baca sahaja.",
       "newRun": "Larian pembayaran baharu dibuat di komputer.",

@@ -228,7 +228,7 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
     <div data-testid="source-roster">
       {heading('admin.invitations.waitingHeading', waiting.length)}
       {waiting.length === 0 ? empty(`${K}.noneWaiting`) : (
-        <TableFrame minWidth={720} label={t('admin.invitations.waitingHeading')}>
+        <TableFrame minWidth={720} label={t('admin.invitations.waitingHeading')} phoneRows>
           <table className="w-full text-sm">
             <thead className="border-b bg-ground-50">
               <tr>{['source', 'person', 'email', 'sent'].map((c) => <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>)}<th className={TH} /></tr>
@@ -237,9 +237,9 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
               {waiting.map((row) => (
                 <tr key={row.id} data-testid={`source-waiting-${row.id}`}>
                   <td className="px-4 py-3 font-medium text-ground-900">{row.source_name || '—'}</td>
-                  <td className="px-4 py-3">{row.name || '—'}</td>
-                  <td className="px-4 py-3 text-ground-500">{row.email}</td>
-                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{row.sent_at ? formatDate(row.sent_at) : '—'}
+                  <td className="px-4 py-3" data-label={t(`${K}.col.person`)}>{row.name || '—'}</td>
+                  <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t(`${K}.col.email`)}>{row.email}</td>
+                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap" data-label={t(`${K}.col.sent`)}>{row.sent_at ? formatDate(row.sent_at) : '—'}
                     {row.last_send_ok === false && <div className="text-xs text-critical-600">{t('admin.invitations.send.failed')}</div>}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -257,7 +257,7 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
 
       {heading(`${K}.signedIn`, joined.length)}
       {joined.length === 0 ? empty(`${K}.noneSignedIn`) : (
-        <TableFrame minWidth={720} label={t(`${K}.signedIn`)}>
+        <TableFrame minWidth={720} label={t(`${K}.signedIn`)} phoneRows>
           <table className="w-full text-sm">
             <thead className="border-b bg-ground-50">
               <tr>{['source', 'person', 'email', 'lastSeen'].map((c) => <th key={c} className={TH}>{t(`${K}.col.${c}`)}</th>)}<th className={TH} /></tr>
@@ -267,11 +267,11 @@ export function SourceRoster({ data, token, t, canManage, onCancel, onDone }: {
                 <tr key={u.id} data-testid={`source-user-${u.id}`}>
                   <td className="px-4 py-3 font-medium text-ground-900">{u.source_name}
                     <span className="ml-2"><SignInBadge state="joined" t={t} /></span></td>
-                  <td className="px-4 py-3">{u.name || '—'}</td>
-                  <td className="px-4 py-3 text-ground-500">{u.email}
+                  <td className="px-4 py-3" data-label={t(`${K}.col.person`)}>{u.name || '—'}</td>
+                  <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t(`${K}.col.email`)}>{u.email}
                     {u.phone && <span className="block text-xs text-ground-600" data-testid={`source-user-phone-${u.id}`}>
                       <span className="sr-only">{t('admin.reviewer.phone')}: </span>{u.phone}</span>}</td>
-                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{formatDate(u.last_seen_at ?? u.first_seen_at)}</td>
+                  <td className="px-4 py-3 text-ground-500 whitespace-nowrap" data-label={t(`${K}.col.lastSeen`)}>{formatDate(u.last_seen_at ?? u.first_seen_at)}</td>
                   <td className="px-4 py-3">
                     {mayAct(u.id) && (
                       <button type="button" className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50"
