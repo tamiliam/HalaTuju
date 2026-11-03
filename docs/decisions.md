@@ -37,7 +37,7 @@ row has — `permissions` (NULL = the role's preset) and `role` (the preset labe
 5. **A pure mentor login added to a table becomes staff** (7d link rules: the mentor link is kept, `mentors_now`
    holds): Admin = role `admin` + `['see_all']`; Reviewer = role `reviewer` (preset). Only one who has signed in.
 
-**Known consequence (TD-471):** the WALLET-CREDIT check still reads the `finance` ROLE
+**Known consequence (TD-475):** the WALLET-CREDIT check still reads the `finance` ROLE
 (`payments_chain.credit_check_required`). With "Finance" no longer invitable, a new finance person (an Admin with
 `payments_approve`) approves payment runs but does not arm or perform the credit check; existing finance rows are
 unchanged. Moving credits onto permissions (about 3 h, #39's own note) is the follow-up.
@@ -48,7 +48,7 @@ check); a stored tables column (the 0123 lesson); a super-only org-admin-to-Revi
 in the sheet for themselves).
 
 **Revisit if:** T3 adds Mentors (Remove from Admins / Reviewers leaving only Mentors); the owner wants Change role
-back; credits move to keys (TD-471).
+back; credits move to keys (TD-475).
 
 ## Offer letters: the reporting date is the DATE ONLY — the time window is not part of it — 2026-11-03 (owner ruling, offer exact-read S5)
 

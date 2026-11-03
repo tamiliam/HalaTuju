@@ -7475,7 +7475,7 @@ chunk M5 touched (`StudentMenus` → `DisplaySegments`); not yet traced. **Fix:*
 lazy-load or trim it until the route has ≥ 0.25 kB of room; never raise the line. Do it before any change adds weight
 to the apply route. *(W · S)*
 
-### [TD-471] Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
+### [TD-475] Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
 
 **Raised 2026-11-03 by the Team tables T2 build.** Owner rulings 4 and 8 retire the "Finance" label: a finance person
 is now an Admin with `payments_approve`, invited as an Admin and ticked on Team. Payment RUNS read keys since #39 S2,
@@ -7485,7 +7485,7 @@ runs but neither arms nor performs the credit check; existing `finance` rows wor
 the credit chain onto a key (`payments_check` or a new `credits_check`), with its golden tests, or rule that the
 check stays role-bound. *(M · S)*
 
-### [TD-472] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
+### [TD-476] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
 
 **Raised 2026-11-03 by the T2 adversarial review (item 4).** Every door that takes `review` away (the permission
 editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses while `staff_lifecycle.open_cases`

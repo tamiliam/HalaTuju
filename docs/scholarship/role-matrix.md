@@ -60,7 +60,7 @@ work pages (said on the confirm); leaving Admins an `admin` / `finance` becomes 
 their team (`_staff_target_manageable`), plus the organisation admin on THEIR OWN row for Reviewers — the only way an
 org admin holds `review` (stored `['review']`; every other key on a lead row is ignored). A NEW invited Admin holds
 exactly `see_all`; org admins invite Admin / Reviewer only (no Finance / QC). The labels Finance / QC are retired on
-Team and Invitations; existing `finance` / `qc` rows are unchanged (TD-471: credits still read the finance role).
+Team and Invitations; existing `finance` / `qc` rows are unchanged (TD-475: credits still read the finance role).
 
 **Changing a set (#39 Sprint 4, 2026-10-21):** People → a reviewer's page, or **Permissions** beside an
 admin → the card *What <name> can do* (`PATCH admin/admins/<id>/permissions/`). **Only a super or the

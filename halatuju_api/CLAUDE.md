@@ -1187,8 +1187,8 @@ cancellable (`KIND_CANCELLABLE_ROLES`). Access matrix: no cell moved; the two ne
 `components/admin/TeamTables.tsx` (AlsoIn, KeyChips, RemoveControl, TeamAddSheet, TeamRemoveSheet), `StaffTable`
 `team` prop, the person page's `?table=` (PermissionEditor `table`). Deploy: API first, then web (an old web
 ignores the new fields; a new web on an old API shows no Add/Remove). Change role (`staff_lifecycle`) refuses a switch INTO finance / qc (409 `label_retired`); a switch out keeps the
-resolved keys exactly. `change` re-runs `may_act` on the locked row. Open: TD-471 (credits read the finance role),
-TD-472 (a reopened case can strand a removed reviewer; predates T2).
+resolved keys exactly. `change` re-runs `may_act` on the locked row. Open: TD-475 (credits read the finance role),
+TD-476 (a reopened case can strand a removed reviewer; predates T2).
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)
 
