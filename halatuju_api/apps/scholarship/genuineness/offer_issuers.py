@@ -95,7 +95,8 @@ _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 _PUBLIC_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ',
                  ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ',
                  ' LEMBAGA ', ' PERBADANAN ', ' KOLEJ KEJURURAWATAN ', ' AKADEMI BINAAN MALAYSIA ', ' ABM ',
-                 ' AKADEMI PERCUTIAN MALAYSIA ')   # S6 review H7 (three rounds): public bodies' own names
+                 ' AKADEMI PERCUTIAN MALAYSIA ', ' MINISTRY ', ' DEPARTMENT ', ' GOVERNMENT ')
+# S6 reviews H7 (three rounds) + round 5 H2: public bodies' own names, Malay and English.
 _UA_SHORT = ('UM', 'USM', 'UKM', 'UPM', 'UTM', 'UITM', 'UIAM', 'IIUM', 'UUM', 'UNIMAS', 'UMS', 'UPSI',
              'USIM', 'UTEM', 'UMP', 'UNIMAP', 'UTHM', 'UMT', 'UMK', 'UPNM', 'UNISZA')
 _INSTITUTION_WORDS = (' KOLEJ ', ' COLLEGE ', ' UNIVERSITI ', ' UNIVERSITY ', ' INSTITUT ',
