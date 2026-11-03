@@ -39,8 +39,6 @@ day). No migration, no new stored field: the existing `PartnerAdmin.permissions`
 - Guide (org admin "Your team", "Changing what someone can do") and FAQ updated. en / ms / ta strings
   (`admin.team.*`).
 
-## Mobile M6a — the console shell, the case list and the everyday pages on phones (branch mobile-m6, not pushed)
-
 ## Mobile M6a — the console shell, the case list and the everyday pages on phones — LIVE 2026-11-03 (main de48d898, web-01068-hjf)
 
 Owner approved the HTML mock-ups and all four recommendations (decisions.md, the Mobile M6 entry): M6 splits into

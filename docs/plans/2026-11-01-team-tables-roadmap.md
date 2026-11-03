@@ -88,7 +88,15 @@ Reviewers). Mentors live on a separate page.
 - Emails: Admin (the admin emails listed, read-only, with when each is sent), Reviewer (today's editable five),
   Mentor (the editable invitation + "no other email"). Terms: three "Soon" sections.
 
-Order: T1 → T2 → T3 → T4 (T3 and T4 could swap). Then back to Student maintenance Sprint 8 (Announcements).
+**T5 — Every power from permissions** (added 2026-11-03 on the owner's word: "any team member can move between
+roles, and they'd have the powers given them in permissions — there is no fixed role anymore"; design + scope at
+sprint start)
+- Permission keys for what a role LABEL still decides after T2: the admin work pages (Announcements, Surveys,
+  Development, Sources, Mentors read, sponsor terms/emails — `staff_tables.ADMIN_WORK_KEYS`, empty today) and the
+  wallet-credit check (TD-475, still the `finance` role). Then `role` is only a display name.
+- The org admin's lead-only powers stay with the "Later" item below unless the owner widens T5.
+
+Order: T1 → T2 → T3 → T4 → T5 (T3 and T4 could swap). The maintenance roadmap is complete.
 
 ## Later (not in this plan)
 - Moving the org admin's lead-only powers (configuration, gifts, contracts, sponsors, assigning cases, billing,
