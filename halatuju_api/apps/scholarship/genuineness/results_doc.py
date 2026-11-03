@@ -402,8 +402,9 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     # disqualifying — force not_offer_letter (fake) so the ladder applies the −2 step, exactly as a
     # private college that misses the UA list. Overrides the UA-name anchor a SPACE letter would
     # otherwise ride on. Offers only.
-    from .offer_rulings import ministry_letter_naming_a_company     # 1.23.0 (S6)
-    if doc_type == 'offer_letter' and _private_arm_offer(ocr_text) and not ministry_letter_naming_a_company(ocr_text, r):
+    from .offer_rulings import ministry_letter_naming_a_company, tvet_letter_naming_a_company     # 1.23.0 (S6)
+    if (doc_type == 'offer_letter' and _private_arm_offer(ocr_text) and not ministry_letter_naming_a_company(ocr_text, r)
+            and not tvet_letter_naming_a_company(ocr_text, r)):
         return {'status': 'not_offer_letter', 'probability': r['probability'], 'type': r['type'],
                 'present': r['present'], 'missing': r['missing'],
                 'reason': ('private / continuing-education arm (SPACE / Pendidikan Berterusan / '

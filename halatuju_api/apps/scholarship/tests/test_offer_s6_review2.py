@@ -155,8 +155,10 @@ class H7MediumABankBerhadIsNotPrivate(SimpleTestCase):
 class Learnable(SimpleTestCase):
     def test_every_lift_names_its_ruling(self):
         self.assertEqual(ruling_of(_g(REAL_IKBN)), 'tvet_offer')
-        conf = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nRujukan : PO/1\nTarikh : 1 Jun 2026\n'
-                'PENGESAHAN PELAJAR\nNama : Ali\nNo. Kad Pengenalan : 080808-10-5566\nProgram : Diploma\nInstitusi : Contoh\nYang benar,\nPENGARAH\n')
+        conf = ('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nJalan Contoh, 93050 Kuching\nRujukan : PO/1\n'
+                'Tarikh : 1 Jun 2026\nKEPADA SESIAPA YANG BERKENAAN\nPENGESAHAN PELAJAR\nDengan ini disahkan:\n'
+                'Nama : Ali\nNo. Kad Pengenalan : 080808-10-5566\nProgram : Diploma\nInstitusi : Contoh\n'
+                'Semester : 3\nSekian.\nYang benar,\nPENGARAH\n')   # round 4: a confirmation is 12+ lines
         self.assertEqual(ruling_of(_g(conf)), 'confirmation')
         self.assertEqual(ruling_of(_g('Semakan Keputusan\nKeputusan Permohonan\nAnda ditawarkan\n')), 'printout')
         self.assertEqual(ruling_of(ruled_offer('KOLEJ ABC SDN BHD\nTawaran Kemasukan\n', _r(0.4), 'suspect', 'r',

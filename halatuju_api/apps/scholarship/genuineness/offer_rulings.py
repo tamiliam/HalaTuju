@@ -67,18 +67,24 @@ _INSTITUTES = (' INSTITUT KEMAHIRAN BELIA NEGARA ', ' INSTITUT KEMAHIRAN TINGGI 
 _TVET_SPELT = (' TECHNICAL AND VOCATIONAL EDUCATION AND TRAINING ', ' TECHNICAL VOCATIONAL EDUCATION AND TRAINING ',
                ' PENDIDIKAN DAN LATIHAN TEKNIKAL DAN VOKASIONAL ', ' PENDIDIKAN DAN LATIHAN TEKNIK DAN VOKASIONAL ')
 #: The closed-list bodies' own names (agencies + institutes): what a TVET letterhead may name.
-_TVET_NAMES = tuple(dict.fromkeys(_INSTITUTES + _TVET_SPELT + tuple(
+_TVET_NAMES = tuple(dict.fromkeys(_INSTITUTES + tuple(
     f' {x} ' for _d, names, acr in TVET_ISSUERS.values() for x in names + acr)))
 #: Nouns that name an organisation. The FIRST one a page names is its issuer; on a LETTERHEAD every one must be
 #: a name the rule allows (round-3 review: "ABC TRAINING CENTRE" / "ABC EDUCATION GROUP" / "ABC TECH PLT").
-_ORG_NOUNS = (' KOLEJ ', ' COLLEGE ', ' AKADEMI ', ' ACADEMY ', ' UNIVERSITI ', ' UNIVERSITY ', ' INSTITUT ',
-              ' INSTITUTE ', ' TUISYEN ', ' TUITION ', ' SEKOLAH ', ' SCHOOL ', ' POLITEKNIK ', ' POLYTECHNIC ',
-              ' PUSAT LATIHAN ', ' PUSAT KEMAHIRAN ', ' PUSAT PEMBELAJARAN ', ' TRAINING ', ' CENTRE ', ' CENTER ',
-              ' HUB ', ' GROUP ', ' PLT ', ' EDUCATION ', ' LEARNING ', ' SKILLS ', ' ENTERPRISE ',
-              ' RESOURCES ', ' INTERNATIONAL ', ' GLOBAL ', ' SDN ', ' BHD ', ' BERHAD ')
+_ORG_WORDS = (r'KOLEJ|COLLEGES?|AKADEMI|ACADEM(?:Y|IES|IC)|UNIVERSITI|UNIVERSIT(?:Y|IES)|INSTITUT|INSTITUTES?|'
+              r'INSTITUTIONS?|TUISYEN|TUITION|SEKOLAH|SCHOOLS?|POLITEKNIK|POLYTECHNICS?|MAKTAB|'
+              r'PUSAT (?:LATIHAN|KEMAHIRAN|PEMBELAJARAN|PENDIDIKAN|BAHASA)|TRAINING|TRAINERS?|CENTR[A-Z]*|CENTERS?|'
+              r'HUBS?|GROUPS?|PLT|EDU[A-Z]*|LEARNING|SKILLS?|ENTERPRIS[A-Z]*|RESOURCES?|INTERNATIONAL|GLOBAL|'
+              r'SERVIC[A-Z]*|SOLUTIONS?|HOLDINGS?|CORP[A-Z]*|CONSULT[A-Z]*|KONSULT[A-Z]*|VENTURES?|LTD|LIMITED|INC|'
+              r'PERSATUAN|PERTUBUHAN|TECH|KAMPUS|YAYASAN')
+#: An organisation noun, matched by STEM on a folded line (round-4 review: ENTERPRISES, CENTRES, EDUCATIONAL …).
+_ORG_RE = re.compile(rf' (?:{_ORG_WORDS}|SDN|BHD|BERHAD)(?= )')
+#: The same without the company words (the Sdn Bhd excuse asks for an organisation BESIDE the company).
+_ORG_RE_NO_COMPANY = re.compile(rf' (?:{_ORG_WORDS})(?= )')
 #: Partner wording on a letterhead: a private institution trading on a public one's name.
 _PARTNER = (' PARTNER ', ' RAKAN ', ' BERSAMA ', ' AFFILIATED ', ' FRANCAIS ', ' FRANCHISE ', ' STRATEGIK ',
-            ' STRATEGIC ')
+            ' STRATEGIC ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' ACCREDITED ', ' DIIKTIRAF ',
+            ' ASSOCIATION ', ' MEMBER ')   # round 4: + the tie-up words
 _PERSON_LABELS = (' NAMA ', ' KAD PENGENALAN ', ' NO K P ', ' MYKAD ', ' NO KP ', ' NAME ')
 _LABEL_VALUE = re.compile(r' (?:NAMA|NAME|KAD PENGENALAN|NO K P|NO KP|MYKAD) [A-Z0-9]')
 _IC = re.compile(r'\b\d{6}\s?\d{2}\s?\d{4}\b')
@@ -91,7 +97,11 @@ _PRIVATE_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SENDIRIAN BERHAD ', ' SWAS
 #: A bank / insurer / co-operative named on a payment line (its "Berhad" holds the fees, it issues nothing).
 _FINANCE = (' BANK ', ' MAYBANK ', ' CIMB ', ' RHB ', ' AMBANK ', ' AFFIN ', ' BSN ', ' AGROBANK ', ' HONG LEONG ',
             ' BANK ISLAM ', ' ISLAMIC ', ' TAKAFUL ', ' INSURANS ', ' INSURANCE ', ' KOPERASI ', ' AKAUN ')
-_VENDOR = (' PEMBEKAL ', ' PENCETAK ', ' DICETAK ', ' PRINTED BY ')
+_VENDOR = (' PEMBEKAL ', ' PENCETAK ', ' DICETAK ', ' PRINTED BY ', ' SUPPLIER ', ' DIBEKALKAN ')
+#: A sponsor line names who pays (round 4: "Penaja : ABC Sdn Bhd" on a real IKBN letter), never the issuer.
+_SPONSOR_LINE = (' PENAJA ', ' TAJAAN ', ' DITAJA ', ' SPONSOR ', ' SPONSORED BY ')
+#: An ISO / SIRIM certification line names a standard, not an organisation (round 4).
+_CERTIFICATION = re.compile(r' (?:ISO|SIRIM|MS ISO|IQNET) ')
 _ADDRESS = re.compile(r' (?:PETI SURAT|P O BOX|JALAN|LOT|KAMPUNG|TAMAN|LADANG|ESTATE|MILL) |\b\d{5}\b')
 _CONDITIONAL = (' BERSYARAT ', ' CONDITIONAL ')
 #: A real letter's parts (`_letter_structure`).
@@ -157,10 +167,10 @@ def _incidental(lines, i) -> bool:
     printer line, or the ADDRESSEE's address — within the candidate block (the two lines after her name / IC
     line)?"""
     ln = lines[i]
-    if any(w in ln for w in _FINANCE) or any(w in ln for w in _VENDOR):
+    if any(w in ln for w in _FINANCE) or any(w in ln for w in _VENDOR) or any(w in ln for w in _SPONSOR_LINE):
         return True                     # a bank / insurer / co-operative or a printer — "kepada X Sdn Bhd"
                                         # names none of them, so a fee to a company is never excused
-    in_candidate_block = any(_is_person_line(lines[j]) for j in range(max(0, i - 2), i))
+    in_candidate_block = any(_is_person_line(lines[j]) for j in range(max(0, i - 3), i))
     nxt = lines[i + 1] if i + 1 < len(lines) else ''
     return in_candidate_block and bool(_ADDRESS.search(ln) or _ADDRESS.search(nxt))
 
@@ -176,14 +186,26 @@ def _private_mara_letterhead(ocr_text) -> bool:
 
 
 #: A street name ("Jalan Kolej", "Lorong Universiti") names a road, not an institution.
-_STREET = re.compile(r' (?:JALAN|JLN|LORONG|PERSIARAN|LEBUH|LEBUHRAYA) [A-Z0-9]+(?= )')
+_STREET = re.compile(r' (?:JALAN|JLN|LORONG|PERSIARAN|LEBUH|LEBUHRAYA|TAMAN|BANDAR|SEKSYEN|PRESINT) '
+                     r'[A-Z0-9]+(?: [A-Z0-9]+)?(?= )')   # up to two words: "Presint 1 Kolej", "Jalan Kolej Baru"
+#: Web / e-mail tails ("edu.my") inside a long glued line name no institution either.
+_WEB_TAIL = re.compile(r' (?:EDU|GOV|COM|ORG) M ?Y(?= )')   # OCR can space it: 'EDU M Y'
 
 
 def _unstreeted(ln) -> str:
-    """The line without the phrases that name no institution: a street name, "TVET" spelt out."""
-    ln = _STREET.sub(' ', ln)
-    for phrase in _TVET_SPELT:
-        ln = ln.replace(phrase, ' ')
+    """The line without what names no institution: a street name, a web tail, a certification line."""
+    if _CERTIFICATION.search(ln) and len(ln.split()) <= 12:
+        return ' '
+    return _WEB_TAIL.sub(' ', _STREET.sub(' ', ln))
+
+
+def _untitled(ln) -> str:
+    """On a TITLE line only, "TVET" spelt out ("… Technical and Vocational Education and Training") names the
+    sector, not an institution (app 329). Never stripped on the letterhead (round 4: "ABC TECHNICAL AND
+    VOCATIONAL EDUCATION AND TRAINING" is an organisation's name there)."""
+    if any(t in ln for t in _TITLE + _CONFIRM_TITLES):
+        for phrase in _TVET_SPELT:
+            ln = ln.replace(phrase, ' ')
     return ln
 
 
@@ -199,12 +221,12 @@ def _first_institution(lines, allowed) -> str:
     for ln in lines:
         if _is_contact(ln):
             continue                    # a web / e-mail / phone line names no institution
-        ln = _unstreeted(ln)
+        ln = _untitled(_unstreeted(ln))
         spans = [(ln.find(a), ln.find(a) + len(a)) for a in allowed if a in ln]
         first_allowed = min((s for s, _e in spans), default=None)
         public = any(w in ln for w in _PUBLIC_WORDS)
-        others = [] if public else [ln.find(w) for w in _ORG_NOUNS if w in ln
-                                    and not any(s <= ln.find(w) < e for s, e in spans)]
+        others = [] if public else [m.start() for m in _ORG_RE.finditer(ln)
+                                    if not any(s <= m.start() < e for s, e in spans)]
         first_other = min(others, default=None)
         if first_allowed is None and first_other is None:
             continue
@@ -217,13 +239,18 @@ def _first_institution(lines, allowed) -> str:
 
 
 def _letterhead_lines(lines):
-    """The lines above the letter proper — before its first reference, date, title, candidate line or
-    salutation."""
-    stops = _REFERENCE + _TITLE + _CONFIRM_TITLES + _SALUTE
-    for i, ln in enumerate(lines):
-        if any(s in ln for s in stops) or _DATE_RE.search(ln) or _is_person_line(ln):
-            return lines[:i]
-    return lines
+    """The letterhead: the lines before the letter proper — its title, a salutation or the candidate's
+    line. A reference or date line on the way is SKIPPED, not a stop (round 4: "Tarikh : 1 Jun 2026" above
+    "INSTITUT KEMAHIRAN MARA / GERMAN MALAYSIAN INSTITUTE" hid the letterhead)."""
+    stops = _TITLE + _CONFIRM_TITLES + _SALUTE
+    head = []
+    for ln in lines:
+        if any(s in ln for s in stops) or _is_person_line(ln):
+            break
+        if any(r in ln for r in _REFERENCE) or _DATE_RE.search(ln):
+            continue
+        head.append(ln)
+    return head
 
 
 def _clean_letterhead(lines, allowed) -> bool:
@@ -238,12 +265,12 @@ def _clean_letterhead(lines, allowed) -> bool:
         rest = ln
         for a in allowed:
             rest = rest.replace(a, ' ')
-        if any(n in rest for n in _ORG_NOUNS) and not any(w in ln for w in _PUBLIC_WORDS):
+        if _ORG_RE.search(rest) and not any(w in ln for w in _PUBLIC_WORDS):
             return False
     return True
 
 
-def _letter_structure(lines, titles_words, *, min_lines=0, reporting=False) -> bool:
+def _letter_structure(lines, titles_words, *, min_lines=0, reporting=False, glued=False) -> bool:
     """Does the page carry what a real letter is made of, IN A LETTER'S ORDER — a reference line, a dated
     line, a candidate label WITH a value and an IC number, a course / programme line (and, for an offer, a
     reporting line), its title, and a signatory / closing block AFTER the title and the reference — with no
@@ -260,12 +287,42 @@ def _letter_structure(lines, titles_words, *, min_lines=0, reporting=False) -> b
     def at(words):
         return [i for i, ln in enumerate(lines) if any(w in ln for w in words)]
     # A glued text layer (one very long line) runs "RUJUKAN" into its neighbours; there 'RUJ' anywhere counts.
-    refs = at(_REFERENCE) or [i for i, ln in enumerate(lines) if len(ln.split()) > 40 and 'RUJ' in ln]
+    refs = at(_REFERENCE) or [i for i, ln in enumerate(lines)
+                               if (glued or len(ln.split()) > 40) and _GLUED_RUJ.search(ln)]
     titles, closings = at(titles_words), at(_CLOSING)
     return (bool(refs and titles and closings) and any(_DATE_RE.search(ln) for ln in lines)
             and bool(_LABEL_VALUE.search(page)) and bool(_IC.search(page))
             and any(c in page for c in _COURSE) and (not reporting or any(r in page for r in _REPORTING))
             and max(closings) >= min(titles) and max(closings) >= min(refs))
+
+
+#: A glued layer's reference: "RUJ" starting a run of letters — never inside a word ("dirujuk").
+_GLUED_RUJ = re.compile(r'(?<![A-Z])RUJ')    # glued after a phone number ('...0000RUJUKAN'), never 'DIRUJUK'
+#: The labels a glued text layer runs together; split on them before counting a confirmation's lines.
+_GLUED_LABELS = re.compile(r' (?=(?:NAMA|NO KAD PENGENALAN|KAD PENGENALAN|NO MATRIK|NO PELAJAR|PROGRAM|FAKULTI|'
+                           r'SEMESTER|SESI|TARIKH|RUJUKAN|RUJ|PENGESAHAN|YANG BENAR|SEKIAN|STATUS|TEMPOH|KAMPUS) )')
+#: The fewest lines (glued layers split on their labels) a real confirmation of studies has: the corpus's five
+#: hold 42 / 58 / 64 lines and, glued, 15 / 16 segments (round 4, measured).
+_CONFIRM_MIN_LINES = 12
+
+
+def _unglued(lines):
+    """A glued text layer's lines split on the labels it runs together (a photo's lines stay as they are)."""
+    out = []
+    for ln in lines:
+        if len(ln.split()) > 40:
+            out += [f' {seg.strip()} ' for seg in _GLUED_LABELS.split(ln) if seg.strip()]
+        else:
+            out.append(ln)
+    return out
+
+
+def _own_identity_lines(lines, title_words) -> bool:
+    """Round 4: the candidate's NAME label and her IC number sit on lines of their own — never both inside the
+    title line (the "PENGESAHAN PELAJAR NAMA ALI 080808105566 PROGRAM …" one-liner)."""
+    name = [i for i, ln in enumerate(lines) if _LABEL_VALUE.search(ln) and not any(t in ln for t in title_words)]
+    ic = [i for i, ln in enumerate(lines) if _IC.search(ln) and not any(t in ln for t in title_words)]
+    return bool(name and ic)
 
 
 def ruling_of(authenticity) -> str:
@@ -296,13 +353,45 @@ def ministry_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
     scores = r.get('scores') or {}
     if not any(FAMILY_ISSUER_SIG[f] in ((scores.get(f) or {}).get('present') or []) for f in _MINISTRY_FAMILIES):
         return False
-    nouns = tuple(n for n in _ORG_NOUNS if n not in (' SDN ', ' BHD ', ' BERHAD '))
+    return _company_lines_incidental(lines)
+
+
+def _company_lines_incidental(lines) -> bool:
+    """Every "Sdn Bhd" / "Sendirian Berhad" line is incidental (`_incidental`), off the letterhead, with no
+    organisation noun on it or the line before."""
+    head = set(_letterhead_lines(lines))
     for i, ln in enumerate(lines):
         if ' SDN BHD ' in ln or ' SENDIRIAN BERHAD ' in ln:
             near = ln + (lines[i - 1] if i else '')
-            if not _incidental(lines, i) or any(w in near for w in nouns):
+            if ln in head or not _incidental(lines, i) or _ORG_RE_NO_COMPANY.search(_unstreeted(near)):
                 return False
     return True
+
+
+def tvet_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
+    """Round 4: the same excuse for a closed-list TVET body's letter (it prints no ministry issuer line): a
+    real IKBN letter naming its uniform supplier, insurer, sponsor or the student's estate address keeps its
+    rules; a "Sdn Bhd" on the letterhead still vetoes."""
+    from .results_doc import _PRIVATE_ARM_PHRASES
+    lines = _folded_lines(ocr_text)
+    page = _page(lines)
+    hits = [p for p in _PRIVATE_ARM_PHRASES if p in page]
+    if not hits or set(hits) - {'SDN BHD', 'SENDIRIAN BERHAD'} or ' SPACE ' in page:
+        return False
+    return bool(tvet_issuer(_without_incidental_companies(ocr_text), r.get('scores'))) and \
+        _company_lines_incidental(lines)
+
+
+def _without_incidental_companies(ocr_text: str) -> str:
+    """The text without its incidental "Sdn Bhd" lines (a supplier, an insurer, a sponsor, the student's
+    estate address — `_incidental`), so the 600-character letterhead tests of `offer_issuers` do not read a
+    short letter's body company as its letterhead."""
+    from .results_doc import _norm_fold_upper_alnum
+    raws = [raw for raw in unicodedata.normalize('NFKC', ocr_text or '').splitlines() if _norm_fold_upper_alnum(raw)]
+    lines = [f' {_norm_fold_upper_alnum(raw)} ' for raw in raws]
+    keep = [raw for i, (raw, ln) in enumerate(zip(raws, lines))
+            if not ((' SDN BHD ' in ln or ' SENDIRIAN BERHAD ' in ln) and _incidental(lines, i))]
+    return '\n'.join(keep)
 
 
 def _unproven(r, seen, tag, what, model_version):
@@ -316,7 +405,7 @@ def _unproven(r, seen, tag, what, model_version):
 
 
 def _tvet(ocr_text, r, model_version):
-    key = tvet_issuer(ocr_text, r.get('scores'))
+    key = tvet_issuer(_without_incidental_companies(ocr_text), r.get('scores'))
     if not key:
         return None
     name, lines = TVET_ISSUERS[key][0], _folded_lines(ocr_text)
@@ -374,7 +463,10 @@ def _confirmation(ocr_text, r, model_version):
     if seen == 'confirmation_ua':
         return _ruled_status('suspect', r, seen, 'confirmation_ua', 'a public university confirmation-of-studies '
                              'letter - suspect: confirm the government programme (owner ruling 4)', model_version)
-    if not _letter_structure(_folded_lines(ocr_text), _CONFIRM_TITLES):
+    raw = _folded_lines(ocr_text)
+    lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
+    if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
+            and _own_identity_lines(lines, _CONFIRM_TITLES)):
         return _unproven(r, seen, 'confirmation_unverified', 'a confirmation of studies', model_version)
     return _ruled_status('genuine', r, seen, 'confirmation', 'a confirmation-of-studies letter from a public '
                          'institution with no private wing - an acceptable alternative (owner ruling 4)',
