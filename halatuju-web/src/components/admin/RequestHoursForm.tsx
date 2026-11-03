@@ -34,8 +34,9 @@
  * ledger with little headroom.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { OrgRequestAnalysis } from '@/lib/admin-api'
+import { usePhoneWidth } from '@/lib/phoneWidth'
 
 type T = (k: string, vars?: Record<string, string>) => string
 
@@ -91,6 +92,10 @@ export function RequestHoursForm({ analysis, t, busy, onSave }: {
   const [actual, setActual] = useState(analysis.actual_hours || '')
   const [charged, setCharged] = useState(analysis.charged_hours || '')
   const [note, setNote] = useState(analysis.charge_note || '')
+  // Hours are recorded on a computer (owner, M7): a form opened at desktop width closes if the window
+  // narrows to a phone, so its Save is never usable below md (M7a re-review).
+  const phone = usePhoneWidth()
+  useEffect(() => { if (phone) setOpen(false) }, [phone])
 
   const recorded = analysis.charged_hours !== null
   const problem = hoursFormProblem(actual, charged, note)

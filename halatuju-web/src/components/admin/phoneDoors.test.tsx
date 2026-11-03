@@ -17,6 +17,8 @@ import * as api from '@/lib/admin-api'
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
+let mockPhone = false
+jest.mock('@/lib/phoneWidth', () => ({ usePhoneWidth: () => mockPhone }))
 
 const hiddenOnPhone = (el: Element) => !!el.closest('.max-md\\:hidden')
 const phoneNote = (el: Element) => el.className.split(' ').includes('md:hidden') && !hiddenOnPhone(el)
@@ -78,6 +80,18 @@ describe('logging billable hours is read-only on a phone', () => {
     render(<RequestHoursForm analysis={analysis} t={t as never} busy={false} onSave={jest.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'admin.requests.owner.hoursRecord' }))
     expect(screen.getByTestId('hours-form-5')).toBeTruthy()
+  })
+
+  it('a form opened at desktop width closes when the window narrows to a phone (M7a re-review)', () => {
+    mockPhone = false
+    const props = { analysis, t: t as never, busy: false, onSave: jest.fn() }
+    const { rerender } = render(<RequestHoursForm {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: 'admin.requests.owner.hoursRecord' }))
+    expect(screen.getByTestId('hours-form-5')).toBeTruthy()
+    mockPhone = true
+    rerender(<RequestHoursForm {...props} />)
+    expect(screen.queryByTestId('hours-form-5')).toBeNull()
+    mockPhone = false
   })
 })
 
