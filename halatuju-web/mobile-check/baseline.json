@@ -3,7 +3,7 @@
   "measured": {
     "public": "http://localhost:3100",
     "sandbox": "http://localhost:3100",
-    "updated": "2026-11-02"
+    "updated": "2026-11-03"
   },
   "cells": {
     "/ @360 en": {
@@ -69,32 +69,32 @@
     "/admin/login @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/admin/login @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/admin/login @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/admin/login @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/admin/login @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/admin/login @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "/contact @360 en": {
       "overflow": 0,
@@ -632,6 +632,156 @@
       "smallTargets": 0
     },
     "sandbox:action-centre-clear @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-list-filters @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-faq @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-guide @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-list @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:admin-shell-menu @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
       "smallTargets": 0
@@ -1689,32 +1839,32 @@
     "sandbox:pieces @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:pieces @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:pieces @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:pieces @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:pieces @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:pieces @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 2
+      "smallTargets": 0
     },
     "sandbox:profile @360 en": {
       "overflow": 0,
@@ -1749,62 +1899,62 @@
     "sandbox:programme-config @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config-lean @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config-lean @360 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 6
+      "smallTargets": 4
     },
     "sandbox:programme-config-lean @390 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @390 ta": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 5
+      "smallTargets": 3
     },
     "sandbox:programme-config-two-gifts @360 en": {
       "overflow": 0,

@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M6a — the console shell, the case list and the everyday pages on phones (branch mobile-m6, not pushed)
+
+Owner approved the HTML mock-ups and all four recommendations (decisions.md, the Mobile M6 entry): M6 splits into
+M6a and M6b. **No decision door changed** — the cockpit (`view.tsx` and its panels) is M6b's.
+
+- **One pinned phone row** (`admin/Topbar.tsx`): Menu · where you are (the page's name and the gift or
+  organisation, as text) · Search · Notifications · Account, each 44 × 44, notch-padded. Below `md` the theme, Help,
+  the pin and Ctrl K leave the row; from `md` the bar is unchanged and not sticky. Search gained an accessible name
+  (it had none on a phone). Menu triggers and items are 44 px below `md` (`admin/Menu.tsx`).
+- **The phone menu** (`admin/AppShell.tsx`): who you are and a 44 px close, the gift / organisation switchers, every
+  destination at 44 px (`Sidebar`: 44 px rows and 12 px headings below `lg`; the rail is unchanged), then Guide, FAQ,
+  Profile, the theme (`ThemeSegments`) and Log out. **Log out is the account menu's own handler**, moved unchanged
+  into one `signOut` (`await adminSignOut(); router.replace('/admin/login')`) that both doors call; guarded word for
+  word and by behaviour (sign out first, then the sign-in page, from either door). The console is on the plain ground
+  below `md` (the grey desk from it).
+- **The case list** (`admin/scholarship/page.tsx`): rows, not cards, whose whole body opens the case (a chevron says
+  so); the Assign select stays under the row with every rule it had, why it is asleep written under it (it was a
+  tooltip) and an assign error shown on a phone too (it was table-only); Filters open the shared Sheet with the SAME
+  controls as the desktop row (one `filterControls`), with the active count on the button; Sort on phones over the
+  server sort the table headers drive; 12 px minimum; the Source filter is named by `aria-label` (was `title`).
+  Three new words (`admin.scholarship.filters`, `sortLabel`, `sortNewest`; admin slice) in en / ms / ta.
+- **Rule 15 and 44 px on the other everyday pages:** the sign-in screens (`admin/login`, `set-password`: no card
+  below `md`, 48 px fields, 44 px links — class strings only), the auth callback (gutter, the error detail wraps,
+  44 px link), Guide (one chapter chooser above the chapter on a phone; 44 px Previous / Next), FAQ (questions as
+  rows, 44 px chips), Organisation (tiles as rows), the Profile cards (`CARD` is a section below `md`), the 404.
+  The shared `Pagination`'s phone arrows are 44 px (11 screens).
+- **Sandbox:** `src/sandbox/adminM6Surfaces.tsx` — `admin-shell-list`, `admin-shell-menu`, `admin-list-filters`,
+  `admin-shell-guide`, `admin-shell-faq` (a synthetic org_admin; `AppShell` takes a sandbox-only `path`).
+- **Guards and tests:** `mobileStandard.test.ts` "rule 11 — the console shell on a phone" (five) and the M6a screens
+  added to rule 15; `AppShell.test.tsx` "the phone menu"; `page.phone.test.tsx` (five). 15 bites, each red for the
+  right reason. **Raised:** TD-471 (four Must pages without a surface), TD-472 (no console language control).
+
 ## Mobile M6 — phase 1 (branch mobile-m6, not pushed)
 
 - **TD-470 closed: no `process` polyfill on any route.** Three `NEXT_PUBLIC_` names a build may leave unset

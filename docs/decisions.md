@@ -1,5 +1,38 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M6: the console splits into M6a (shell, case list, everyday pages) and M6b (the cockpit); PDFs open in the phone's viewer; a decision bar that jumps, never saves; money actions read-only on a phone — 2026-11-03 (owner approved the mock-ups and all four recommendations)
+
+**Context:** measured at 390 px (M6 phase 1): the console's top bar was not pinned, every control in it was 28-36 px,
+the Search button sat on top of the "HalaTuju" crumb and the 16 px theme select took 123 px in Tamil; the phone menu
+held the destinations only (no theme, Help, Profile or Log out); the case list showed four filter selects before the
+first result, no sort, 11 px text and an Assign reason only in a tooltip; the case page scrolls 227 px sideways with
+19 small targets, its decision panel lands after every document, and PDFs show in an iframe (page one on iPhone).
+**Decisions (owner, 2026-11-03):**
+
+1. **The split:** M6a — the shell (one pinned 44 px phone row: Menu · where you are · Search · Notifications ·
+   Account), the phone menu (who you are, the gift / organisation switchers, every destination at 44 px, then
+   Guide, FAQ, Profile, the theme and Log out), the case list (rows that open the case as a whole, filters in the
+   shared Sheet, Sort on phones, 12 px minimum, no hover-only hints) and the other everyday "Must" pages. **No
+   decision door changes in M6a.** M6b — the case page, its documents and the viewer, with the adversarial review.
+2. **PDFs on a phone open in the phone's own viewer, in a new tab** (every page, zoom; no PDF library, no server
+   change). Images stay inline. Rendering pages as images was the alternative and was not chosen (a heavy library
+   or a new server endpoint). *For M6b.*
+3. **The sticky decision bar shows the chosen outcome and JUMPS to the decision section; Save stays there**, under
+   the justification and the amount, so a decision is never saved from a bar without its reasons on screen. A bar
+   carrying Recommend / Decline / Save was the alternative and was not chosen. *For M6b.*
+4. **Scheduling a tranche and the payment actions are read-only on a phone, with a "use a computer" note** (typed
+   money is checked against records at a desk). Fully usable on a phone was the alternative. *For M6b.*
+
+**How M6a keeps Log out what it was:** the account menu's handler moved, unchanged, into ONE `signOut` in
+`AppShell` (`await adminSignOut(); router.replace('/admin/login')`); the account menu and the phone menu both call
+it, and a guard pins its body word for word and the single call of `adminSignOut`. The theme in the phone menu is
+the student menus' `ThemeSegments` (the same device-local choice the bar's select writes). On a phone the scope
+switchers live in the menu, not the bar (two menus side by side cannot fit 360 px in Tamil); the bar names the page
+and the gift or organisation as text.
+
+**Revisit if:** the console needs a language control (it has none today, at any width); a reviewer works mostly on
+a phone (then the M6b decision bar may want the outcome buttons after all, with a confirm Sheet).
+
 ## Team tables T1: a person's tables are DERIVED; a page gate is today's roles OR the Admins table by a key; a key seat opens READ pages only — 2026-11-03 (owner ruling, option B)
 
 **Owner ruling, 2026-11-03 (relayed by the lead): option B.** *A reviewer seated at the Admins table by her keys

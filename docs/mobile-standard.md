@@ -198,6 +198,15 @@ Three kinds of check, from cheapest to most human:
   Account and Log out. A Sheet on a portal screen passes `className="font-sponsor"` (it is portalled out of the shell).
   Guarded: `mobileStandard.test.ts`, "rule 11 — the sponsor tab bar".
   Sandbox: `sponsor-giving`, `sponsor-account`.
+  **The console has ONE pinned phone row** (Mobile M6a, `src/components/admin/Topbar.tsx`): Menu · where you are ·
+  Search · Notifications · Account, each 44 × 44, padded for the notch; "where you are" is the page's registry name
+  and the gift or organisation as TEXT (`PhoneWhere`). Below `md` the theme, Help, the pin and Ctrl K leave the row;
+  from `md` the bar is unchanged and not sticky. **The phone menu** (`AppShell.tsx`, the named drawer exemption):
+  who you are and a 44 px close, the gift / organisation switchers (they are not in the phone row), every
+  destination at 44 px (`Sidebar` is 44 px below `lg`, its rail 32 px from `lg`), then Guide, FAQ, Profile, the theme
+  (`ThemeSegments`) and Log out — which is the account menu's own `signOut`, never a copy. Menu triggers and items
+  (`admin/Menu.tsx`) are 44 px below `md`. Guarded: `mobileStandard.test.ts`, "rule 11 — the console shell on a
+  phone". Sandbox: `admin-shell-list`, `admin-shell-menu`.
 
 ### 12. Body text is 12 px or more on phones
 - **Why:** smaller text is unreadable for many people. 9–11 px is for badges only.
@@ -258,6 +267,15 @@ Three kinds of check, from cheapest to most human:
   naming the current stage (`sponsor/JourneyLine.tsx`); a page's main money action is a sticky `data-page-bar` whose
   confirm is a `dismissible={false}` Sheet with a ref lock (one request per tap burst — `students/[id]/page.tsx`);
   sign-in screens drop their card below `md` and make every field 48 px (`sponsor/login/page.tsx`).
+  M6a examples (the console's everyday screens; the console is on the plain ground below `md`, the grey desk from
+  it): a list of records is ROWS whose whole body is one link to the record, with a chevron, and any control on a
+  row (the Assign select) sits UNDER the link, never inside it (`admin/scholarship/page.tsx`); a filter row becomes a
+  Filters button + a Sort select on a phone, and the SAME controls (one `filterControls`) render in the desktop row
+  and in the Sheet, so the two can never offer different filters; a disabled control's reason is written under it
+  (a `title=` needs a hover); a long chapter list becomes ONE chooser above the content (`admin/guide/page.tsx`);
+  stat tiles are rows with dividers below `md` (`admin/organisation/page.tsx`); a shared card constant changes in
+  one place (`adminProfile/shared.tsx`'s `CARD`). Swept in M6a: the case list, the console sign-in screens and
+  callback, Guide, FAQ, Organisation, the Profile cards and the 404.
 
 ## Tamil type
 

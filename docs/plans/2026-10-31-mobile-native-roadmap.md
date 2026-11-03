@@ -97,8 +97,20 @@ tabs with the theme / language / Log out in My Account on a phone, and the stick
 decisions.md, the Mobile M5 entry). Sponsor tab bar, slim phone header, rule 15 across the portal, sign-in screens and
 landing, 12 px minimum, filters in a Sheet, terms wizard full width with sticky bars.
 
-**M6 — Admin shell + reviewer cockpit** (high; Stitch first)
-Topbar phone version (sticky; search/theme/help into a menu; breadcrumb truncates); review cockpit on phones: sticky decision bar (SaveBar pattern), 44 px Prev/Next, whole-card tap, sort on phone lists; documents in a full-screen viewer — images inline, PDFs rendered as page images or opened in a new tab.
+**M6 — Admin shell + reviewer cockpit** — split in two (owner, 2026-11-03; decisions.md, the Mobile M6 entry; static
+HTML mock-ups in place of Stitch, approved). Phase 1 closed TD-470 first (no `process` polyfill on any route).
+
+**M6a — Console shell, case list, everyday pages** — BUILT on branch `mobile-m6` (not pushed). One pinned 44 px phone
+row (Menu · where you are · Search · Notifications · Account); the phone menu with who you are, the switchers, 44 px
+destinations, Guide, FAQ, Profile, the theme and Log out (the account menu's own `signOut`); the case list as rows that
+open the case, filters in the Sheet, Sort on phones, 12 px minimum, no hover-only hints; rule 15 on the sign-in screens,
+Guide (one chapter chooser), FAQ, Organisation, the Profile cards and the 404. No decision door touched.
+
+**M6b — The case page, documents and viewer** (high; adversarial review) — sticky decision bar that shows the chosen
+outcome and JUMPS to the decision section (Save stays there); 44 px Prev/Next; rule 15 on the cockpit; documents as
+rows (no inner scroll box; the year chips unchanged); the viewer: images inline, PDFs in the phone's own viewer in a
+new tab; tranche scheduling and payment actions read-only on a phone with a "use a computer" note. Layout only: no
+request, server check or order of steps changes; the reporting-date logic is TD-465's.
 
 **M7 — Admin "Can" screens + desktop-only gate** (medium)
 Cards for scholars/sponsors/payments detail tables; `ScholarMoney` stacks; `PartnerEmailsCard` framed; new `DesktopOnly` panel on billing-rates, billing, course-data, contracts, sponsors/terms/[id], partner template editor.

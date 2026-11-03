@@ -4,11 +4,11 @@
 > `halatuju-web/src/lib/mobileClass.ts`; numbers in `halatuju-web/mobile-check/baseline.json`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **2026-11-02** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
+Baseline last updated **2026-11-03** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **101 routes:** 66 Must · 29 Can · 6 Desktop-only.
-**39 measured** (public page or sandbox surface), **34 fully green.**
+**42 measured** (public page or sandbox surface), **38 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -29,10 +29,10 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/contracts` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | contract template versions — authored and compared at a desk, never on a phone |
 | `/admin/contracts/[id]` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | the clause editor: long legal text in three languages, edited side by side |
 | `/admin/course-data` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | an internal coverage panel for the course catalogue, used by the platform team only |
-| `/admin/faq` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/guide` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/faq` | Must | M6 | 6 (sandbox `admin-shell-faq`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/guide` | Must | M6 | 6 (sandbox `admin-shell-guide`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/invite` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/staff` |
-| `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 2 | ❌ |  |
+| `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/admin/my-students` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/my-students/[id]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/organisation` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
@@ -48,7 +48,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/payments` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/payments/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 6 | ❌ |  |
+| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 4 | ❌ |  |
 | `/admin/programme/announcements` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
@@ -60,7 +60,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/requests/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/scholars` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/scholars/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/scholarship` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship/[id]` | Must | M6 | 6 (sandbox `officer-cockpit`) | 257 | 0 | 19 | ❌ |  |
 | `/admin/set-password` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/sources` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
@@ -138,7 +138,7 @@ Component galleries — measured, but no single route is "them".
 | `header-signed-out` | 6 | 0 | 0 | 0 | ✅ |
 | `header-signed-out-menu` | 6 | 0 | 0 | 0 | ✅ |
 | `onboarding-stepper` | 6 | 0 | 0 | 0 | ✅ |
-| `pieces` | 6 | 0 | 0 | 2 | ❌ |
+| `pieces` | 6 | 0 | 0 | 0 | ✅ |
 | `sheet-locked-confirm` | 6 | 0 | 0 | 0 | ✅ |
 | `sheet-long-form` | 6 | 0 | 0 | 0 | ✅ |
 | `sheet-short` | 6 | 0 | 0 | 0 | ✅ |

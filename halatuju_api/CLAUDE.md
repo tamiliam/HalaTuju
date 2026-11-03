@@ -1161,7 +1161,13 @@ portalled sponsor Sheets carry `.font-sponsor`; `sponsorSignOut` clears `halatuj
 TD-470 closed (M6 phase 1): `/scholarship/apply` has ~1.8 kB under its line; budgets now median 145, `/profile` 193,
 `/scholarship/application` 206. Every `NEXT_PUBLIC_` name a build may leave unset is defined as `''` in `next.config.js`
 (else webpack ships its `process` polyfill to every route) — guarded by `publicEnv.test.ts`.
-NEXT: M6 admin + reviewer cockpit (may split), M7, M8.
+**M6 split (owner 2026-11-03):** M6a (console shell, case list, everyday pages) BUILT on `mobile-m6`, not pushed:
+the console has ONE pinned phone row (`Topbar.tsx`, 44 px controls) and a phone menu (`AppShell.tsx`) with the
+switchers, Guide / FAQ / Profile, the theme and Log out — the account menu's own `signOut`, guarded word for word;
+list = rows that open the case, filters in a Sheet (one `filterControls` for both widths), Sort on phones; sandbox
+`src/sandbox/adminM6Surfaces.tsx` (`AppShell` takes a sandbox-only `path`). M6b next: the cockpit (decision bar that
+JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
+NEXT: M6b, M7, M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)
 

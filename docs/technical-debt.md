@@ -7474,3 +7474,21 @@ against the 187 kB line — under the 0.25 kB near-line rule (it had 0.262 befor
 chunk M5 touched (`StudentMenus` → `DisplaySegments`); not yet traced. **Fix:** find the M5 weight on this route and
 lazy-load or trim it until the route has ≥ 0.25 kB of room; never raise the line. Do it before any change adds weight
 to the apply route. *(W · S)*
+
+### [TD-471] Mobile M6a: four everyday console pages have no sandbox surface, so mobile-check cannot measure them - low
+
+**Raised 2026-11-03 by Mobile M6a.** M6a swept the console's "Must" pages by code and measured the ones with a
+sandbox surface (the shell, the case list and its filter Sheet, Guide, FAQ) at 360 / 390 in all three languages. Four
+are classed Must and still unmeasured in a browser: `/admin/programme/overview` (the dashboard sections and charts),
+`/admin/organisation` (its tiles were made rows; the gift list below them, `GiftProgrammes`, was not swept),
+`/admin/profile` (its cards are sections now through `CARD`; the page itself was not measured) and the mentor pages
+`/admin/my-students` and `[id]` (built to the approved MentorPhone board in S7c, never measured since). **Fix:** a
+surface each in `src/sandbox/adminM6Surfaces.tsx` with fixtures, then fix what mobile-check names. M6b or M8. *(W · S)*
+
+### [TD-472] The console has no language control at any width - low
+
+**Raised 2026-11-03 by Mobile M6a.** The bar, the account menu, the phone menu and the Profile page offer no way to
+choose English / Malay / Tamil (the console follows the device's stored choice from the student side, if any). M6a
+put the theme in the phone menu but did not add a language: a new control on every console page is a decision, not
+a layout change. **Fix:** owner decision (where: the account menu, or Profile); `LanguageSegments` exists for a phone
+menu. *(W · S)*
