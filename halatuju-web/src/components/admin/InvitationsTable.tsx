@@ -6,6 +6,7 @@ import { usePagedRows } from '@/lib/usePagedRows'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import type { InvitationRow } from '@/lib/admin-api'
+import { teamLabelRole } from '@/lib/staffRole'
 
 /**
  * One kind's invitations. Same five columns as every other table on the console —
@@ -109,7 +110,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onCan
                     <td className="px-4 py-3">
                       {/* A staff row always has a role; the dash is the "we hold no answer" case,
                           which is why the whole column goes when the kind never has one. */}
-                      {r.role ? t(`admin.role.${r.role}`) : '—'}
+                      {r.role ? t(`admin.role.${teamLabelRole(r.role)}`) : '—'}
                     </td>
                   )}
                   <td className="px-4 py-3">

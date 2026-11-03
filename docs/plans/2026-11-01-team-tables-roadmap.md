@@ -67,6 +67,10 @@ Reviewers). Mentors live on a separate page.
   pages her keys allow. Accept: no other person's access changes (diff of a page×person matrix before/after).
 
 **T2 — The Team page: Admins · Reviewers · Mentors, Add / Remove** (medium-high; ~35 files)
+- **Status: BUILT, NOT LIVE (2026-11-03, branch maint-s7).** Lead rulings Q1-Q4 (decisions.md "Team tables T2"): Add
+  writes keys only; Remove moves the role only where a label would keep someone seated (leaving Reviewers -> Admin,
+  opening the admin work pages, said on the confirm); the org admin joins Reviewers by a stored `['review']` (self or super only); "Remove"
+  leaving only Mentors refused until T3. The Mentors TAB links to today's page (T3 moves the table). TD-475 open.
 - Tabs in the new order; each table lists its members with only its own permission chips and editor.
 - Add Admin / Add Reviewer / Add Mentor (a Sheet listing existing members not in that table); Remove from table
   (with the doors above). "View-only admin" and "Finance" labels retired from Team and Invitations (an invite as
@@ -84,7 +88,15 @@ Reviewers). Mentors live on a separate page.
 - Emails: Admin (the admin emails listed, read-only, with when each is sent), Reviewer (today's editable five),
   Mentor (the editable invitation + "no other email"). Terms: three "Soon" sections.
 
-Order: T1 → T2 → T3 → T4 (T3 and T4 could swap). Then back to Student maintenance Sprint 8 (Announcements).
+**T5 — Every power from permissions** (added 2026-11-03 on the owner's word: "any team member can move between
+roles, and they'd have the powers given them in permissions — there is no fixed role anymore"; design + scope at
+sprint start)
+- Permission keys for what a role LABEL still decides after T2: the admin work pages (Announcements, Surveys,
+  Development, Sources, Mentors read, sponsor terms/emails — `staff_tables.ADMIN_WORK_KEYS`, empty today) and the
+  wallet-credit check (TD-475, still the `finance` role). Then `role` is only a display name.
+- The org admin's lead-only powers stay with the "Later" item below unless the owner widens T5.
+
+Order: T1 → T2 → T3 → T4 → T5 (T3 and T4 could swap). The maintenance roadmap is complete.
 
 ## Later (not in this plan)
 - Moving the org admin's lead-only powers (configuration, gifts, contracts, sponsors, assigning cases, billing,

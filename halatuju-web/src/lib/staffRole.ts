@@ -28,3 +28,13 @@ export function workSummary(work: Record<string, number> | undefined): string {
   return Object.entries(work ?? {})
     .map(([k, n]) => `${k.replace(/_/g, ' ')}: ${n}`).join(', ')
 }
+
+/** Team tables T2 (owner rulings 4 and 8): "Finance" and "QC" are no longer labels on Team or
+ *  Invitations — a finance person is an Admin (with Approve payment runs), a QC person a Reviewer
+ *  (with Quality check). The stored role is untouched; only the WORD shown changes. */
+const TEAM_LABEL: Readonly<Record<string, string>> = { finance: 'admin', qc: 'reviewer' }
+
+/** The role whose label to show on Team and Invitations (`admin.role.<this>`). */
+export function teamLabelRole(role: string): string {
+  return TEAM_LABEL[role] ?? role
+}

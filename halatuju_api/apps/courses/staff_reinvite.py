@@ -232,9 +232,11 @@ def provision(reuse, *, email, name, role, org, owning_org, temp_password=None, 
         uid, already, err = _new_login(email, name, temp_password)
         if err:
             return None, False, err
+    from . import staff_tables
     created = PartnerAdmin.objects.create(
         email=email, name=name, org=org, role=role, owning_organisation=owning_org,
-        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source, mentor=mentor)
+        supabase_user_id=uid, is_super_admin=(role == 'super'), source=source, mentor=mentor,
+        permissions=staff_tables.invite_permissions(role))   # T2: an invited Admin starts at `see_all`
     return created, already, None
 
 
@@ -290,7 +292,9 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         row.is_active, row.paused_at, row.programme = True, None, None
         # ⚠ BACK TO THE PRESET (request #39): the inviter chose a role, and an old custom set of
         # permissions must never come back with it (roadmap Sprint 4 door list ruling).
-        row.permissions = None
+        # Team tables T2: an Admin starts at `see_all` (`staff_tables.invite_permissions`), as a new row.
+        from . import staff_tables
+        row.permissions = staff_tables.invite_permissions(role)
         # ⚠ Written even when None: a login that was removed at Supabase and could not be
         # re-created (the address now belongs to another account) must not leave a dead UID on the
         # row, or `get_admin`'s email backfill — which links only a row with NO UID — never fires.

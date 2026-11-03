@@ -533,6 +533,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # team members (another organisation's id is 404); the service then refuses the rows
         # nobody edits (an org_admin, a super, a partner, the caller's own) for a super too.
         'AdminStaffPermissionsView': 'staff-target-fenced (_staff_target_manageable)+org_admin-or-super',
+        # Team tables T2: Add / Remove from a table. `staff_tables_admin.may_act` = the same
+        # `_staff_target_manageable` fence, plus an org admin on their OWN row (Reviewers only) and a pure
+        # mentor login of the caller's organisation; anything else is 404. The candidates list is narrowed
+        # to the caller's `owning_organisation` (a super: every organisation, or `?organisation=`).
+        'AdminTeamTableView': 'staff-target-fenced (staff_tables_admin.may_act)+org_admin-or-super',
+        'AdminTeamCandidatesView': 'list-fenced by owning_organisation+org_admin-or-super',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

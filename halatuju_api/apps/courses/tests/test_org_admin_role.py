@@ -302,11 +302,16 @@ class TestFinanceRoleInvites(_Base):
             self._auth(uid)
             return self.client.post('/api/v1/admin/invite/', payload, format='json')
 
-    def test_org_admin_invites_finance_bound_to_own_org(self):
+    def test_org_admin_no_longer_invites_finance_but_an_admin_bound_to_own_org(self):
+        # Team tables T2 (owner rulings 4, 8): "Finance" is not a label anybody is invited as; a finance
+        # person is an Admin who is given Approve payment runs on Team after they join.
         r = self._invite('oa-uid', {'email': 'sam@x.com', 'name': 'Sam', 'role': 'finance'})
+        self.assertEqual((r.status_code, r.json()['code']), (403, 'role_not_allowed'))
+        self.assertFalse(PartnerAdmin.objects.filter(email='sam@x.com').exists())
+        r = self._invite('oa-uid', {'email': 'sam@x.com', 'name': 'Sam', 'role': 'admin'})
         self.assertEqual(r.status_code, 201)
         a = PartnerAdmin.objects.get(email='sam@x.com')
-        self.assertEqual(a.role, 'finance')
+        self.assertEqual((a.role, a.permissions), ('admin', ['see_all']))
         self.assertEqual(a.owning_organisation_id, self.bp.id)   # caller's org, forced
 
     def test_super_invites_finance(self):

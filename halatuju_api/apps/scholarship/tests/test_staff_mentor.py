@@ -349,34 +349,29 @@ class TestTheWaysOut(_Base):
         listed = {m['id'] for m in authed_client(self.lead).get(MENTORS).json()['mentors']}
         self.assertNotIn(mentor.pk, listed)
 
-    def test_admin_to_finance_stops_mentoring_and_keeps_the_link(self):
+    def test_admin_to_finance_is_refused_and_mentoring_is_untouched(self):
+        # Team tables T2 (review 2026-11-03): no switch INTO finance any more (`label_retired`), so this
+        # way out of mentoring is gone; the staff mentor keeps mentoring.
         mentor = self.added(self.officer)
         self.assign(mentor)
         url = f'/api/v1/admin/admins/{self.officer.pk}/role/'
-        dry = authed_client(self.lead).patch(url, {'role': 'finance', 'dry_run': True}, format='json')
-        self.assertTrue(dry.json()['stops_mentoring'])
-        self.assertEqual(self.open_count(mentor), 1)   # a dry run writes nothing
-        r = authed_client(self.lead).patch(url, {'role': 'finance'}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
-        self._stopped(mentor, self.officer)
-        self.assertEqual((self.officer.role, self.officer.mentor_id), ('finance', mentor.pk))
-        # The history keeps the mentor's name (the login is kept).
-        hist = authed_client(self.lead).get(tab(self.app.pk)).json()['history']
-        self.assertEqual(hist[0]['name'], 'Encik Faizal')
-        self.assertEqual(self.act(mentor, 'resume').json().get('code'), 'not_eligible')
-        # Back to Admin brings nothing back by itself; Mentor again does.
-        authed_client(self.lead).patch(url, {'role': 'admin'}, format='json')
+        for dry in (True, False):
+            r = authed_client(self.lead).patch(url, {'role': 'finance', 'dry_run': dry}, format='json')
+            self.assertEqual((r.status_code, r.json()['code']), (409, 'label_retired'))
         self.officer.refresh_from_db()
-        self.assertFalse(self.officer.mentors_now)
-        self.assertEqual(self.act(mentor, 'resume').status_code, 200)
+        self.assertEqual(self.officer.role, 'admin')
+        self.assertTrue(self.officer.mentors_now)
+        self.assertEqual(self.open_count(mentor), 1)
 
-    def test_reviewer_to_qc_keeps_mentoring(self):
+    def test_qc_to_reviewer_keeps_mentoring(self):
+        PartnerAdmin.objects.filter(pk=self.reviewer.pk).update(role='qc')
+        self.reviewer.refresh_from_db()
         mentor = self.added(self.reviewer)
         self.assign(mentor)
         url = f'/api/v1/admin/admins/{self.reviewer.pk}/role/'
-        self.assertFalse(authed_client(self.lead).patch(url, {'role': 'qc', 'dry_run': True},
+        self.assertFalse(authed_client(self.lead).patch(url, {'role': 'reviewer', 'dry_run': True},
                                                         format='json').json()['stops_mentoring'])
-        self.assertEqual(authed_client(self.lead).patch(url, {'role': 'qc'}, format='json').status_code, 200)
+        self.assertEqual(authed_client(self.lead).patch(url, {'role': 'reviewer'}, format='json').status_code, 200)
         self.reviewer.refresh_from_db()
         self.assertTrue(self.reviewer.mentors_now)
         self.assertEqual(self.open_count(mentor), 1)
@@ -388,10 +383,14 @@ class TestFinanceIsNeverAnActiveMentor(_Base):
     def test_through_every_door(self):
         # Add: refused.
         self.assertEqual(self.add(self.finance).json().get('code'), 'not_eligible')
-        # The role change: deactivated in the same write.
+        # The role change into finance is refused since T2; a LEGACY finance row (made by the old switch,
+        # which stopped the mentoring in the same write) is reproduced here.
         mentor = self.added(self.officer)
-        authed_client(self.lead).patch(f'/api/v1/admin/admins/{self.officer.pk}/role/', {'role': 'finance'},
-                                       format='json')
+        r = authed_client(self.lead).patch(f'/api/v1/admin/admins/{self.officer.pk}/role/', {'role': 'finance'},
+                                           format='json')
+        self.assertEqual(r.json()['code'], 'label_retired')
+        staff_mentor.leave(self.officer, by='legacy')
+        PartnerAdmin.objects.filter(pk=self.officer.pk).update(role='finance')
         mentor.refresh_from_db()
         self.assertIsNotNone(mentor.deactivated_at)
         # Mentor again: refused, and nothing written.

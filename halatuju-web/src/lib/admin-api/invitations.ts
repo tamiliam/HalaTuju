@@ -87,6 +87,10 @@ export interface InvitationsPayload {
   /** Roles this caller may grant in this kind. ⚠ NOT the roles LISTED: `org_admin` appears in the
    *  admins table but is appointed at platform level by a super, never from here. */
   invitable_roles: string[]
+  /** Team tables T2: the roles an org admin may still CANCEL here — what this page ever sent, so an old
+   *  pending Finance / QC invitation is not stranded now that only Admin and Reviewer are invited.
+   *  Absent on an api from before T2: then `invitable_roles` answers, as before. */
+  cancellable_roles?: string[]
   /** Gift choices for the sponsor invite form. ACTIVE only, matching what the POST accepts —
    *  an invitation is a prompt to register TODAY, so a gift that is not open yet would be an
    *  invitation through a door that does not open. */

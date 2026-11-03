@@ -1,5 +1,55 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T2: Add / Remove write KEYS; role moves only where a label would keep someone seated; the org admin joins Reviewers by a stored ['review'] — 2026-11-03 (lead rulings Q1-Q4)
+
+**Context:** T2 builds the Team page's Admins and Reviewers tables with Add and Remove (roadmap rulings 1-8). The
+tables stay DERIVED (`staff_tables`, T1); the question was how an Add or a Remove maps onto the two stored things a
+row has — `permissions` (NULL = the role's preset) and `role` (the preset label). No migration, no new field.
+
+**Decision (`apps/scholarship/staff_tables_admin.py`; endpoints `admin/team/<table>/`, `…/candidates/`):**
+1. **Add writes keys, never the role.** Add to Admins = the preset materialised + `see_all`; Add to Reviewers = +
+   `review`. A reviewer added to Admins keeps role `reviewer`, so under T1's option B she reaches the organisation
+   READ pages only. A set equal to the role's preset is stored NULL, as the editor stores it. A QC holder (whose
+   `see_all` is `qc`'s dependency) is refused Add to Admins (`qc_sees_all`): the minimum key would seat nothing, and
+   any other key is more than the minimum.
+2. **Remove takes that table's keys; role moves only where the label would otherwise keep them seated (Q2a / Q2b).**
+   Leaving Admins: `admin` / `finance` → `qc` if `qc` stays, else `reviewer`. Leaving Reviewers: `reviewer` / `qc` →
+   **`admin`** with exactly their admin keys — they become one Admin like an invited Admin and OPEN THE ADMIN WORK
+   PAGES — a GAIN for a reviewer-label row (owner ruling 4; the confirm says so in plain words, review 2026-11-03;
+   flagged to the owner by the lead). A mentor login added to Admins (role `admin`) is told the same. `finance` was rejected as the target: the
+   wallet-credit check is a finance-ROLE rule and would have been armed by a Remove. Refused: the last table
+   ("revoke instead"), only Mentors left (Q2c, until T3), open cases (Reviewers), the lead at Admins.
+3. **The org admin joins Reviewers (Q1, Q4).** Their `permissions` column (never read for the lead before; zero live
+   rows carried a value — the lead checked) may hold `['review']`; `resolve` adds `review` to the fixed tier and
+   IGNORES every other key there. Only Team -> Reviewers -> Add / Remove writes it, and only a super or the org admin
+   on THEIR OWN row; never a fellow org admin, never `manage_team`. The generic editor still refuses the lead.
+   Self-QC and the recorder guard apply unchanged.
+4. **Invitations: one Admin, one Reviewer (rulings 4, 7, 8).** An org admin invites `admin` or `reviewer`; a new or
+   brought-back Admin row stores exactly `['see_all']` (`staff_tables.invite_permissions`) — the first door to write
+   the column at invite time. Old pending finance / qc invitations accept onto today's preset (their row was written
+   when sent) and stay cancellable (`KIND_CANCELLABLE_ROLES`). The labels read Admin / Reviewer on Team and
+   Invitations; stored roles are untouched.
+4b. **Change role under T2 (lead ruling, review 2026-11-03, revising Q3):** the kept endpoint
+   (`admin/admins/<id>/role/`) refuses any switch INTO `finance` or `qc` (409 `label_retired`); a switch OUT
+   (finance -> admin, qc -> reviewer) keeps the person's resolved keys EXACTLY (stored NULL only when equal to the
+   new preset) — no key gained or lost; the finance-role consequence (the credit check) is computed as before.
+   Team -> Add / Remove judges the caller AGAIN on the locked row (`may_act` inside `change`).
+5. **A pure mentor login added to a table becomes staff** (7d link rules: the mentor link is kept, `mentors_now`
+   holds): Admin = role `admin` + `['see_all']`; Reviewer = role `reviewer` (preset). Only one who has signed in.
+
+**Known consequence (TD-475):** the WALLET-CREDIT check still reads the `finance` ROLE
+(`payments_chain.credit_check_required`). With "Finance" no longer invitable, a new finance person (an Admin with
+`payments_approve`) approves payment runs but does not arm or perform the credit check; existing finance rows are
+unchanged. Moving credits onto permissions (about 3 h, #39's own note) is the follow-up.
+
+**Alternatives considered:** keys-only seating for custom rows (role left `reviewer` on a Rohini removed from
+Reviewers: she would keep reviewer menus with no review key); role → `finance` on leaving Reviewers (arms the credit
+check); a stored tables column (the 0123 lesson); a super-only org-admin-to-Reviewers (the design lists the org admin
+in the sheet for themselves).
+
+**Revisit if:** T3 adds Mentors (Remove from Admins / Reviewers leaving only Mentors); the owner wants Change role
+back; credits move to keys (TD-475).
+
 ## Offer letters: the reporting date is the DATE ONLY — the time window is not part of it — 2026-11-03 (owner ruling, offer exact-read S5)
 
 **Context:** checking the 71 stored Exact reads (`review_s5_exact.html`), the owner marked every field right but

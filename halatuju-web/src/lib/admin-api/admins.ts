@@ -50,6 +50,12 @@ export interface AdminItem {
   /** THIS row's dormancy threshold, resolved for the person's own organisation on the server
    *  (Org Config Sprint C). `standingOf` reads it; the old constant is only its fallback. */
   dormant_days?: number
+  /** Team tables T2 (served on both Team lists): see `TeamSeat`. */
+  tables?: string[]
+  lead?: boolean
+  admin_keys?: string[]
+  reviewer_keys?: string[]
+  remove?: TeamRemove
   /** The invitation behind this person. Null when they predate the record. */
   invitation?: {
     /** Decided by the server (`invitations.status_of`); never re-derived on this side. */
@@ -62,6 +68,58 @@ export interface AdminItem {
     expires_at: string | null
     credential_issued: boolean
   } | null
+}
+
+// ── Team tables T2: Team -> Admins / Reviewers -> Add, and Remove from ──────────────────────────────
+
+export type TeamTableName = 'admins' | 'reviewers'
+
+/** Per table the person sits in AND the viewer may act on: `null` = Remove is accepted; a code = why not
+ *  (`last_table`, `mentors_only`, `has_open_cases`, `lead_fixed`, …). Absent = no link at all. Served by
+ *  the same rules the endpoint applies (`staff_tables_admin.row_fields`). */
+export type TeamRemove = Partial<Record<TeamTableName, string | null>>
+
+/** One person the Add sheet offers (`admin/team/<table>/candidates/`). */
+export interface TeamCandidate {
+  id: number
+  name: string
+  email: string
+  /** The organisation admin (only ever offered for Reviewers, and only to themselves or a super). */
+  lead: boolean
+  /** A mentor's own login: added, they join the team as staff. */
+  mentor_only: boolean
+  tables: string[]
+  consequences: string[]
+}
+
+export interface TeamTablePlan {
+  id: number
+  table: TeamTableName
+  action: 'add' | 'remove'
+  dry_run: boolean
+  role: string
+  role_changed: boolean
+  added: string[]
+  removed: string[]
+  consequences: string[]
+  finance_check_off: boolean
+  /** The change makes them role `admin`, which OPENS the admin work pages (Announcements, Surveys,
+   *  Development, Sources, Mentors): a Remove from Reviewers (lead ruling Q2b) or a mentor login added to
+   *  Admins. Said in plain words on the confirm (review 2026-11-03). */
+  opens_admin_pages: boolean
+}
+
+export async function getTeamCandidates(table: TeamTableName, options?: ApiOptions) {
+  return adminFetch<{ table: TeamTableName; candidates: TeamCandidate[] }>(
+    `/api/v1/admin/team/${table}/candidates/`, options)
+}
+
+/** Add a person to a table, or remove them from it; with `dryRun`, what it WOULD do. A refusal throws
+ *  with the server's sentence and its `code`. Never touches a sign-in; never emails. */
+export async function changeTeamTable(table: TeamTableName, adminId: number, action: 'add' | 'remove',
+                                      dryRun: boolean, options?: ApiOptions) {
+  return adminMutate<TeamTablePlan>(`/api/v1/admin/team/${table}/`, 'POST',
+    { admin_id: adminId, action, dry_run: dryRun }, options)
 }
 
 export async function getAdmins(options?: ApiOptions) {

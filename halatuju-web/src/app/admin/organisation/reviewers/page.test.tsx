@@ -84,10 +84,14 @@ const loaded = async () => {
 describe('what the table shows', () => {
   it('draws the columns the surface was approved with', async () => {
     await loaded()
-    for (const key of ['colName', 'colRole', 'colLanguages', 'colAwaiting', 'colInterviewing', 'colCompleted',
+    for (const key of ['colName', 'colLanguages', 'colAwaiting', 'colInterviewing', 'colCompleted',
       'colTurnaround', 'colStatus']) {
       expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
+    // Team tables T2: the Role column became "Also in" and this table's own permissions.
+    expect(ui().getByText('admin.team.colAlsoIn')).toBeTruthy()
+    expect(ui().getByText('admin.team.colKeys.reviewers')).toBeTruthy()
+    expect(ui().queryByText('admin.reviewers.colRole')).toBeNull()
   })
 
   it('replaces Open now with its two halves, and greys a zero (request #51)', async () => {
@@ -122,7 +126,7 @@ describe('the two figures that lie if you let them', () => {
   const turnaroundOf = (id: number) => {
     const row = screen.getAllByRole('row').slice(1).find((r) =>
       r.querySelector('a')!.getAttribute('href')!.endsWith(`/${id}`))!
-    return row.querySelectorAll('td')[6].textContent
+    return row.querySelectorAll('td')[7].textContent   // T2: Also in + permissions before it
   }
 
   it('says "no reviews yet" rather than showing a turnaround of nothing', async () => {
@@ -454,46 +458,12 @@ describe('the staff lifecycle (2026-10-09)', () => {
     expect(mockApi.revokeAdmin).not.toHaveBeenCalled()
   })
 
-  it('Change role offers the pair partner and names the finance-check consequence', async () => {
-    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true)
-    mockApi.changeAdminRole.mockResolvedValue(
-      { id: 21, from: 'admin', to: 'finance', dry_run: true, consequence: 'finance_check_on' })
+  it('⚠ T2: offers NO Change role on either table — Finance and QC are no longer labels', async () => {
     await openAdmins([ASHA])
-    fireEvent.click(adminsTable().getByText('admin.changeRole'))
-    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledTimes(2))
-    expect(mockApi.changeAdminRole).toHaveBeenNthCalledWith(1, 21, 'finance', true, { token: 'tok' })
-    expect(mockApi.changeAdminRole).toHaveBeenNthCalledWith(2, 21, 'finance', false, { token: 'tok' })
-    expect(confirm).toHaveBeenCalledWith('admin.roleChangeConfirm admin.financeCheckOn')
-  })
-
-  it('a NO at the question changes nothing', async () => {
-    jest.spyOn(window, 'confirm').mockReturnValue(false)
-    mockApi.changeAdminRole.mockResolvedValue(
-      { id: 21, from: 'admin', to: 'finance', dry_run: true, consequence: null })
-    await openAdmins([ASHA])
-    fireEvent.click(adminsTable().getByText('admin.changeRole'))
-    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledTimes(1))
-    expect(mockApi.changeAdminRole).toHaveBeenCalledWith(21, 'finance', true, { token: 'tok' })
-  })
-
-  it('shows the server\'s refusal, e.g. open cases', async () => {
-    mockApi.changeAdminRole.mockRejectedValue(new Error('Asha Devi has 2 open case(s) assigned.'))
-    await openAdmins([ASHA])
-    fireEvent.click(adminsTable().getByText('admin.changeRole'))
-    await waitFor(() =>
-      expect(screen.getByText('Asha Devi has 2 open case(s) assigned.')).toBeTruthy())
-  })
-
-  it('a reviewer row switches to QC and the reviewers list is re-read', async () => {
-    jest.spyOn(window, 'confirm').mockReturnValue(true)
-    mockApi.changeAdminRole.mockResolvedValue(
-      { id: 5, from: 'reviewer', to: 'qc', dry_run: false, consequence: null })
-    await loaded()
-    const kavithaRow = ui().getByText('Kavitha Raman').closest('tr') as HTMLElement
-    fireEvent.click(within(kavithaRow).getByText('admin.changeRole'))
-    await waitFor(() => expect(mockApi.changeAdminRole).toHaveBeenCalledWith(
-      5, 'qc', false, { token: 'tok' }))
-    await waitFor(() => expect(mockApi.listReviewers).toHaveBeenCalledTimes(2))
+    expect(adminsTable().queryByText('admin.changeRole')).toBeNull()
+    fireEvent.click(screen.getByText('admin.reviewers.tabReviewers'))
+    await waitFor(() => expect(ui().getByText('Kavitha Raman')).toBeTruthy())
+    expect(ui().queryByText('admin.changeRole')).toBeNull()
   })
 
   it('offers finance no Change role', async () => {
@@ -527,5 +497,142 @@ describe('common profile S2: the optional fourth language', () => {
     expect(ui().getByTestId('other-language-5').textContent).toBe('Kadazandusun')
     expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
     expect(ui().queryByTestId('other-language-6')).toBeNull()
+  })
+})
+
+describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
+  const ROHINI = { id: 31, name: 'Rohini Thiru', email: 'rohini@example.org', role: 'reviewer',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z',
+    manageable: true, tables: ['admins', 'reviewers'], admin_keys: ['see_all', 'spending'],
+    reviewer_keys: ['review'], lead: false, remove: { admins: null, reviewers: 'has_open_cases' },
+  } as unknown as api.AdminItem
+  const LEAD = { id: 32, name: 'Suresh T', email: 'suresh@example.org', role: 'org_admin',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z',
+    manageable: false, tables: ['admins', 'reviewers', 'mentors'], admin_keys: [], reviewer_keys: ['review'],
+    lead: true, remove: {} } as unknown as api.AdminItem
+  const KAMALA = { id: 33, name: 'Kamala Devi', email: 'kamala@example.org', role: 'finance',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z',
+    manageable: true, tables: ['admins'], admin_keys: ['payments_approve'], reviewer_keys: [],
+    lead: false, remove: { admins: 'last_table' } } as unknown as api.AdminItem
+  const adminsTable = () => within(document.querySelector('[data-testid="table-scroller"]') as HTMLElement)
+  const rowOf = (name: string) => adminsTable().getByText(name).closest('tr') as HTMLElement
+
+  const openAdmins = async () => {
+    mockApi.getAdmins.mockResolvedValue({ admins: [LEAD, ROHINI, KAMALA] })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Kamala Devi').length).toBeGreaterThan(0))
+  }
+
+  it('shows the tabs in the owner order: Admins, Reviewers, Mentors, Emails, Terms', async () => {
+    await loaded()
+    const order = ['admin.people.tabAdmins', 'admin.reviewers.tabReviewers', 'admin.team.tabMentors',
+      'admin.reviewers.tabEmails', 'admin.reviewers.tabTerms']
+    const at = order.map((k) => document.body.innerHTML.indexOf(k))
+    expect(at.every((x) => x >= 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+  })
+
+  it('seats a person by their TABLES: Rohini (role reviewer, admin keys) is in Admins too', async () => {
+    await openAdmins()
+    const row = rowOf('Rohini Thiru')
+    expect(within(row).getByText('admin.perm.see_all.name')).toBeTruthy()
+    expect(within(row).getByText('admin.perm.spending.name')).toBeTruthy()
+    expect(within(row).getByText('admin.team.chip.reviewers')).toBeTruthy()       // Also in
+    expect(within(row).queryByText('admin.perm.review.name')).toBeNull()          // not this table's key
+    expect(within(row).getByTestId('remove-from-admins')).toBeTruthy()
+  })
+
+  it('the organisation admin reads "Organisation admin (lead)", with no editor and no Remove', async () => {
+    await openAdmins()
+    const row = rowOf('Suresh T')
+    expect(within(row).getByText('admin.team.leadChip')).toBeTruthy()
+    expect(within(row).queryByText('admin.team.edit.admins')).toBeNull()
+    expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
+  })
+
+  it('a person whose only table this is reads "revoke instead", with no Remove link', async () => {
+    await openAdmins()
+    const row = rowOf('Kamala Devi')
+    expect(within(row).getByText('admin.team.note.last_table')).toBeTruthy()
+    expect(within(row).queryByTestId('remove-from-admins')).toBeNull()
+    expect(within(row).getByText('admin.perm.payments_approve.name')).toBeTruthy()
+    expect(within(row).queryByText('admin.role.finance')).toBeNull()               // label retired
+  })
+
+  it('the Edit link opens the person page for THIS table only', async () => {
+    await openAdmins()
+    expect(within(rowOf('Rohini Thiru')).getByText('admin.team.edit.admins').closest('a')!.getAttribute('href'))
+      .toBe('/admin/organisation/reviewers/admins/31?table=admins')
+  })
+
+  it('Remove asks first, says what it does from the dry run, and only then removes', async () => {
+    mockApi.changeTeamTable.mockResolvedValue({ id: 31, table: 'admins', action: 'remove', dry_run: true,
+      role: 'reviewer', role_changed: false, added: [], removed: ['see_all', 'spending'],
+      consequences: [], finance_check_off: false, opens_admin_pages: false })
+    await openAdmins()
+    fireEvent.click(within(rowOf('Rohini Thiru')).getByTestId('remove-from-admins'))
+    await waitFor(() => expect(mockApi.changeTeamTable).toHaveBeenCalledWith(
+      'admins', 31, 'remove', true, { token: 'tok' }))
+    expect(mockApi.changeTeamTable).toHaveBeenCalledTimes(1)
+    const go = await screen.findByTestId('team-remove-confirm') as HTMLButtonElement
+    await waitFor(() => expect(go.disabled).toBe(false))
+    fireEvent.click(go)
+    await waitFor(() => expect(mockApi.changeTeamTable).toHaveBeenCalledWith(
+      'admins', 31, 'remove', false, { token: 'tok' }))
+  })
+
+  it('⚠ Remove from Reviewers that makes them an Admin SAYS they will open the admin work pages', async () => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], tables: ['admins', 'reviewers'],
+      reviewer_keys: ['review'], remove: { reviewers: null } }], programmes: giftChoices })
+    mockApi.changeTeamTable.mockResolvedValue({ id: 5, table: 'reviewers', action: 'remove', dry_run: true,
+      role: 'admin', role_changed: true, added: [], removed: ['review'], consequences: [],
+      finance_check_off: false, opens_admin_pages: true })
+    await loaded()
+    fireEvent.click(ui().getByTestId('remove-from-reviewers'))
+    expect(await screen.findByText('admin.team.opensAdminPages')).toBeTruthy()
+  })
+
+  it('open cases: the Reviewers row says "reassign first" instead of a Remove link', async () => {
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], tables: ['admins', 'reviewers'],
+      remove: { reviewers: 'has_open_cases' } }], programmes: giftChoices })
+    await loaded()
+    expect(ui().getByText('admin.team.note.has_open_cases')).toBeTruthy()
+    expect(ui().queryByTestId('remove-from-reviewers')).toBeNull()
+  })
+
+  it('Add Reviewer lists the server candidates and adds the one picked', async () => {
+    mockApi.getTeamCandidates.mockResolvedValue({ table: 'reviewers', candidates: [
+      { id: 32, name: 'Suresh T', email: 'suresh@example.org', lead: true, mentor_only: false,
+        tables: ['admins'], consequences: [] }] })
+    mockApi.changeTeamTable.mockResolvedValue({ id: 32, table: 'reviewers', action: 'add', dry_run: true,
+      role: 'org_admin', role_changed: false, added: ['review'], removed: [], consequences: [],
+      finance_check_off: false, opens_admin_pages: false })
+    await loaded()
+    fireEvent.click(screen.getByTestId('team-add-reviewers-open'))
+    await waitFor(() => expect(mockApi.getTeamCandidates).toHaveBeenCalledWith('reviewers', { token: 'tok' }))
+    fireEvent.click(await screen.findByTestId('team-candidate-32'))
+    await waitFor(() => expect(mockApi.changeTeamTable).toHaveBeenCalledWith(
+      'reviewers', 32, 'add', true, { token: 'tok' }))
+    const go = screen.getByTestId('team-add-confirm') as HTMLButtonElement
+    await waitFor(() => expect(go.disabled).toBe(false))
+    fireEvent.click(go)
+    await waitFor(() => expect(mockApi.changeTeamTable).toHaveBeenCalledWith(
+      'reviewers', 32, 'add', false, { token: 'tok' }))
+  })
+
+  it('⚠ offers no Add and no Remove to a viewer who may not edit permissions (admin)', async () => {
+    viewerRole = { role: 'admin' }
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], remove: { reviewers: null } }],
+      programmes: giftChoices })
+    await loaded()
+    expect(screen.queryByTestId('team-add-reviewers-open')).toBeNull()
+    expect(screen.queryByTestId('remove-from-reviewers')).toBeNull()
+  })
+
+  it('the Mentors tab points at today\'s Mentors page (the table moves here in T3)', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.team.tabMentors'))
+    expect(screen.getByTestId('team-mentors-tab')).toBeTruthy()
   })
 })

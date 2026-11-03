@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T2 — the Team page (not yet live)
+
+Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T2); lead rulings Q1-Q4 2026-11-03 (decisions.md the same
+day). No migration, no new stored field: the existing `PartnerAdmin.permissions` column carries every change.
+
+- **Team tabs in the owner's order: Admins · Reviewers · Mentors · Emails · Terms.** A person sits in every table whose
+  hat they wear (the served `tables`); each table shows only ITS keys (Admins: See all students, Spending, Prepare /
+  Check / Approve payment runs; Reviewers: Review assigned students, Quality check) and "Also in" chips for the
+  rest. The organisation admin reads "Organisation admin (lead)", never editable. "Edit admin / reviewer
+  permissions" opens the person page with only that table's keys (`?table=`). The Mentors tab links to today's
+  Mentors page (the table moves in T3). Change role is no longer offered on Team; its endpoint stays but refuses
+  any switch INTO `finance` / `qc` (409 `label_retired`), and a switch out (finance -> admin, qc -> reviewer) keeps
+  the person's keys exactly (review 2026-11-03).
+- **Add Admin / Add Reviewer** (a Sheet of EXISTING active members of the organisation not in that table,
+  `GET admin/team/<table>/candidates/`; `POST admin/team/<table>/` `{admin_id, action, dry_run}`): adds the minimum
+  key (`see_all` / `review`) on top of the materialised preset — nobody loses anything; role untouched; no email;
+  sign-in untouched. A pure mentor login who has signed in becomes an Admin holding `['see_all']` or a Reviewer
+  (7d link kept). The organisation admin may add THEMSELVES to Reviewers (stored `['review']`; a super may too).
+- **Remove from Admins / Reviewers** (confirm Sheet worded from a dry run): takes only that table's keys. Refused on
+  the person's last table ("revoke instead"), when only Mentors would be left (until T3), while open cases remain
+  (Reviewers), and for the lead at Admins. Role moves only where the label would keep them seated: leaving Admins,
+  `admin` / `finance` → `reviewer` (or `qc` if they keep it); leaving Reviewers, `reviewer` / `qc` → `admin` — they
+  become an Admin and OPEN the admin work pages (a gain the confirm says in plain words; lead ruling Q2b).
+- **Labels retired** on Team and Invitations: no "View-only admin", "Finance" or "QC". Invitations offers Admin and
+  Reviewer only (an org admin's invite of `finance` / `qc` is refused); **a new Admin row stores exactly
+  `['see_all']`** (`staff_tables.invite_permissions`). Old pending finance / qc invitations still accept onto
+  today's preset and may still be cancelled (`cancellable_roles`). Invitations order: Admin, Reviewer, Mentor,
+  Source, Sponsor.
+- **The org admin may join Reviewers:** `staff_permissions.resolve` adds `review` to the lead tier only when the
+  row's list names it; every other key there is ignored; the generic permission editor still refuses the lead. The
+  Reviewers list and the assignment picker list them; self-QC still blocks their own reviewed case.
+- Rows of both Team lists serve `tables`, `lead`, `admin_keys`, `reviewer_keys`, `remove` (where Remove is accepted)
+  — no extra query on the Reviewers list (open cases counted in its workload query). Access matrix: no cell moved;
+  the two new routes are declared per shape (`T2_ADDED`).
+- Guide (org admin "Your team", "Changing what someone can do") and FAQ updated. en / ms / ta strings
+  (`admin.team.*`).
+
 ## Mobile M6a — the console shell, the case list and the everyday pages on phones — LIVE 2026-11-03 (main de48d898, web-01068-hjf)
 
 Owner approved the HTML mock-ups and all four recommendations (decisions.md, the Mobile M6 entry): M6 splits into

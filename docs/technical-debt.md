@@ -7475,6 +7475,25 @@ chunk M5 touched (`StudentMenus` → `DisplaySegments`); not yet traced. **Fix:*
 lazy-load or trim it until the route has ≥ 0.25 kB of room; never raise the line. Do it before any change adds weight
 to the apply route. *(W · S)*
 
+### [TD-475] Wallet credits still read the `finance` ROLE, and Finance is no longer invited (Team tables T2) - medium
+
+**Raised 2026-11-03 by the Team tables T2 build.** Owner rulings 4 and 8 retire the "Finance" label: a finance person
+is now an Admin with `payments_approve`, invited as an Admin and ticked on Team. Payment RUNS read keys since #39 S2,
+so they are unaffected. The WALLET-CREDIT chain does not: `payments_chain.credit_check_required` and the credit
+checker are the `finance` ROLE (a deliberate #39 divergence, "about 3 h" to move). So a new finance person approves
+runs but neither arms nor performs the credit check; existing `finance` rows work exactly as before. **Fix:** move
+the credit chain onto a key (`payments_check` or a new `credits_check`), with its golden tests, or rule that the
+check stays role-bound. *(M · S)*
+
+### [TD-476] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
+
+**Raised 2026-11-03 by the T2 adversarial review (item 4).** Every door that takes `review` away (the permission
+editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses while `staff_lifecycle.open_cases`
+> 0 — and a case whose decision is reopened LATER counts again. A reviewer removed while their old case was closed,
+whose decision is then reopened (`decision_reopened_at`), is named on a case they can no longer open. It existed
+before T2 (the editor had the same window). **Fix:** have the reopen refuse (or reassign) when the assigned person no
+longer holds `review`, or have the reopen screen ask for a new reviewer. *(B · S)*
+
 ### [TD-471] Mobile M6a: four everyday console pages have no sandbox surface, so mobile-check cannot measure them - low
 
 **Raised 2026-11-03 by Mobile M6a.** M6a swept the console's "Must" pages by code and measured the ones with a

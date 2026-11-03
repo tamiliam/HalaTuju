@@ -97,11 +97,24 @@ ACCOUNT_AUDIENCES = ('staff', 'source_partner', 'mentor')
 MENTOR_AUDIENCE = 'mentor'
 
 #: kind → the roles INVITABLE from this page. Note `org_admin`'s absence; see above.
+#: ⚠ TEAM TABLES T2 (owner rulings 4 and 8): ONE Admin and ONE Reviewer — "Finance" and "QC" are no
+#: longer labels anybody is invited as (an invited Admin starts at `see_all`; a finance person is an Admin
+#: with `payments_approve`, a QC person a Reviewer with `qc`, ticked on Team). An OLD pending finance / qc
+#: invitation still accepts, and may still be cancelled (`KIND_CANCELLABLE_ROLES`).
 KIND_INVITABLE_ROLES = {
-    KIND_ADMINS: ('admin', 'finance'),
-    KIND_REVIEWERS: ('reviewer', 'qc'),
+    KIND_ADMINS: ('admin',),
+    KIND_REVIEWERS: ('reviewer',),
     # Source sign-in S2: invited through `POST admin/invitations/` with `audience='source_partner'`
     # (`views_admin/source_users.py`), never through the staff invite.
+    KIND_SOURCE: ('source_partner',),
+}
+
+
+#: kind → the roles an org admin may CANCEL an open invitation of: everything this page ever sent,
+#: so a pending invitation from before T2 (finance, qc) is not stranded. Never `org_admin`.
+KIND_CANCELLABLE_ROLES = {
+    KIND_ADMINS: ('admin', 'finance'),
+    KIND_REVIEWERS: ('reviewer', 'qc'),
     KIND_SOURCE: ('source_partner',),
 }
 

@@ -137,6 +137,8 @@ class AdminInvitationsView(_ReviewersBase):
             # What this caller may actually grant here. The FE renders the sub-selection from it
             # rather than keeping its own copy, so the two cannot drift.
             'invitable_roles': list(inv_service.KIND_INVITABLE_ROLES.get(kind, ())),
+            # T2: what an org admin may still CANCEL here (old finance / qc invitations included).
+            'cancellable_roles': list(inv_service.KIND_CANCELLABLE_ROLES.get(kind, ())),
             # The gift choices for the sponsor invite form. ACTIVE only, matching exactly what
             # the POST accepts — an invitation is a prompt to register TODAY, so offering a gift
             # that is not open yet would invite somebody into a door that does not open. (The
@@ -282,7 +284,7 @@ class AdminInvitationCancelView(_ReviewersBase):
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
         inv = qs.first()
-        invitable = {r for roles in inv_service.KIND_INVITABLE_ROLES.values() for r in roles}
+        invitable = {r for roles in inv_service.KIND_CANCELLABLE_ROLES.values() for r in roles}
         # ⚠ A SOURCE invitation provisioned an account too (source sign-in S2), so it is switched
         # off with the invitation exactly as a staff one is (`ACCOUNT_AUDIENCES`).
         account = (inv.partner_admin if inv is not None

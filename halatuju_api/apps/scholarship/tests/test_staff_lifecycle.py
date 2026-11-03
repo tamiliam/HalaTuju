@@ -56,24 +56,33 @@ class TestChangeRole(TestCase):
         cls.super = make_admin('super', super_admin=True)
         cls.foreign_admin = make_admin('org_admin', owning_org=cls.other)
 
-    def test_admin_becomes_finance_and_the_finance_check_switches_on(self):
+    def test_no_switch_into_finance_or_qc_any_more(self):
+        # Team tables T2 (lead ruling, review 2026-11-03): "Finance" and "QC" are permissions on Team now.
+        # Refused BEFORE the old finance-entry rules (open cases, runs), dry run or not; nothing moves.
         target = make_admin('admin', owning_org=self.org)
-        self.assertFalse(payments.credit_check_required(self.org))
-        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
-            r = _role(self.org_admin, target, 'finance')
-        self.assertEqual(r.status_code, 200, r.content[:300])
-        self.assertEqual((r.json()['from'], r.json()['to'], r.json()['consequence']),
-                         ('admin', 'finance', 'finance_check_on'))
+        cohort = make_cohort(owning_organisation=self.org)
+        make_application('assigned', reviewer=target, cohort=cohort)
+        PaymentRun.objects.create(organisation=self.org, created_by=target.email,
+                                  payment_date=datetime.date(2026, 10, 1))
+        for dry in (True, False):
+            r = _role(self.org_admin, target, 'finance', dry_run=dry)
+            self.assertEqual((r.status_code, r.json()['code']), (409, 'label_retired'))
+        rev = make_admin('reviewer', owning_org=self.org, paused_at=timezone.now())
+        self.assertEqual(_role(self.org_admin, rev, 'qc').json()['code'], 'label_retired')
         target.refresh_from_db()
-        self.assertEqual(target.role, 'finance')
-        self.assertFalse(target.is_super_admin)
-        self.assertTrue(payments.credit_check_required(self.org))
-        # #39 S2: the same switch makes them the payment-run APPROVER (the org admin's fallback
-        # goes off) and arms the wallet-credit check (finance-role rule) — both named by one code.
-        self.assertEqual([a.pk for a in sp.holders(self.org, 'payments_approve')], [target.pk])
+        rev.refresh_from_db()
+        self.assertEqual((target.role, rev.role), ('admin', 'reviewer'))
+        self.assertIsNotNone(rev.paused_at)
+        self.assertFalse(payments.credit_check_required(self.org))
+
+    def test_finance_to_admin_is_audited(self):
+        target = make_admin('finance', owning_org=self.org)
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = _role(self.org_admin, target, 'admin')
+        self.assertEqual(r.status_code, 200, r.content[:300])
         line = ' '.join(logs.output)
         self.assertIn('AUDIT staff_role_changed', line)
-        self.assertIn(f'by={self.org_admin.email} target={target.pk} from=admin to=finance', line)
+        self.assertIn(f'by={self.org_admin.email} target={target.pk} from=finance to=admin', line)
 
     def test_a_dry_run_names_the_consequence_and_writes_nothing(self):
         target = make_admin('finance', owning_org=self.org)
@@ -95,17 +104,16 @@ class TestChangeRole(TestCase):
         self.assertIsNone(_role(self.org_admin, target, 'admin').json()['consequence'])
         self.assertTrue(payments.credit_check_required(self.org))
 
-    def test_reviewer_and_qc_switch_both_ways_and_keep_their_cases(self):
-        target = make_admin('reviewer', owning_org=self.org)
+    def test_qc_to_reviewer_keeps_their_cases_and_their_keys(self):
+        target = make_admin('qc', owning_org=self.org)
         app = make_application('assigned', reviewer=target,
                                cohort=make_cohort(owning_organisation=self.org))
-        r = _role(self.org_admin, target, 'qc')
+        r = _role(self.org_admin, target, 'reviewer')
         self.assertEqual((r.status_code, r.json()['consequence']), (200, None), r.content[:300])
         app.refresh_from_db()
         self.assertEqual(app.assigned_to_id, target.pk)          # nothing stranded
-        self.assertEqual(_role(self.org_admin, target, 'reviewer').status_code, 200)
         target.refresh_from_db()
-        self.assertEqual(target.role, 'reviewer')
+        self.assertEqual((target.role, target.permissions), ('reviewer', ['see_all', 'qc']))
 
     def test_everything_outside_the_two_pairs_is_refused(self):
         cases = [('admin', 'reviewer'), ('admin', 'qc'), ('reviewer', 'admin'),
@@ -151,48 +159,9 @@ class TestChangeRole(TestCase):
         self.assertEqual(target.role, 'reviewer')
 
     def test_a_revoked_account_is_restored_first(self):
-        target = make_admin('admin', owning_org=self.org, is_active=False)
-        r = _role(self.org_admin, target, 'finance')
+        target = make_admin('finance', owning_org=self.org, is_active=False)
+        r = _role(self.org_admin, target, 'admin')
         self.assertEqual((r.status_code, r.json()['code']), (400, 'not_active'))
-
-    def test_an_admin_holding_open_cases_cannot_become_finance(self):
-        target = make_admin('admin', owning_org=self.org)
-        cohort = make_cohort(owning_organisation=self.org)
-        make_application('assigned', reviewer=target, cohort=cohort)
-        make_application('recommended', reviewer=target, cohort=cohort)
-        for dry in (True, False):
-            r = _role(self.org_admin, target, 'finance', dry_run=dry)
-            self.assertEqual((r.status_code, r.json()['code'], r.json()['open_cases']),
-                             (409, 'has_open_cases', 2))
-        target.refresh_from_db()
-        self.assertEqual(target.role, 'admin')
-
-    def test_a_finished_case_does_not_block_the_switch(self):
-        target = make_admin('admin', owning_org=self.org)
-        make_application('rejected', reviewer=target,
-                         cohort=make_cohort(owning_organisation=self.org))
-        self.assertEqual(_role(self.org_admin, target, 'finance').status_code, 200)
-
-    def test_an_admin_with_a_run_in_progress_cannot_become_finance(self):
-        target = make_admin('admin', owning_org=self.org)
-        PaymentRun.objects.create(organisation=self.org, created_by=target.email,
-                                  payment_date=datetime.date(2026, 10, 1))
-        r = _role(self.org_admin, target, 'finance')
-        self.assertEqual((r.status_code, r.json()['code']), (409, 'run_in_progress'))
-
-    def test_L3_a_run_they_created_that_somebody_else_signed_still_blocks(self):
-        target = make_admin('admin', owning_org=self.org)
-        PaymentRun.objects.create(organisation=self.org, created_by=target.email,
-                                  status='admin_signed', admin_signed_email='other@example.test',
-                                  payment_date=datetime.date(2026, 10, 1))
-        r = _role(self.org_admin, target, 'finance')
-        self.assertEqual((r.status_code, r.json()['code']), (409, 'run_in_progress'))
-
-    def test_a_finished_run_they_created_does_not_block(self):
-        target = make_admin('admin', owning_org=self.org)
-        PaymentRun.objects.create(organisation=self.org, created_by=target.email,
-                                  status='completed', payment_date=datetime.date(2026, 9, 1))
-        self.assertEqual(_role(self.org_admin, target, 'finance').status_code, 200)
 
     def test_L1_a_malformed_body_is_a_400_never_a_500(self):
         target = make_admin('admin', owning_org=self.org)
@@ -206,42 +175,38 @@ class TestChangeRole(TestCase):
         self.assertEqual(target.role, 'admin')
 
     def test_a_pause_is_kept_between_reviewer_and_qc(self):
-        target = make_admin('reviewer', owning_org=self.org, paused_at=timezone.now())
-        _role(self.org_admin, target, 'qc')
+        target = make_admin('qc', owning_org=self.org, paused_at=timezone.now())
+        self.assertEqual(_role(self.org_admin, target, 'reviewer').status_code, 200)
         target.refresh_from_db()
         self.assertIsNotNone(target.paused_at)
 
-    def test_L2_a_recorder_turned_qc_cannot_qc_their_own_verdict_after_a_reassign(self):
+    def test_L2_a_recorder_given_qc_cannot_qc_their_own_verdict_after_a_reassign(self):
         # The reviewer recorded the verdict; the case was then handed to someone else (so the
-        # assignment no longer names them); they are switched to QC. The recorder guard holds.
+        # assignment no longer names them); they are given Quality check on Team (T2: no switch to QC).
+        # The recorder guard holds.
         recorder = make_admin('reviewer', owning_org=self.org)
         app = make_application('awaiting_qc', outcome='recommend', reviewer=recorder,
                                cohort=make_cohort(owning_organisation=self.org))
         type(app).objects.filter(pk=app.pk).update(
             assigned_to=make_admin('reviewer', owning_org=self.org))
-        self.assertEqual(_role(self.org_admin, recorder, 'qc').status_code, 200)
+        type(recorder).objects.filter(pk=recorder.pk).update(permissions=['review', 'see_all', 'qc'])
         r = authed_client(recorder).post(
             f'/api/v1/admin/scholarship/applications/{app.pk}/qc-decision/',
             {'decision': 'accept'}, format='json')
         self.assertEqual((r.status_code, r.json().get('code')), (403, 'self_verdict_qc_forbidden'))
 
-    def test_moving_to_finance_clears_a_pause(self):
-        target = make_admin('admin', owning_org=self.org, paused_at=timezone.now())
-        _role(self.org_admin, target, 'finance')
-        target.refresh_from_db()
-        self.assertIsNone(target.paused_at)
-
     def test_an_open_invitation_carries_the_new_role_and_an_answered_one_does_not(self):
-        target = make_admin('reviewer', owning_org=self.org)
-        old = invitations.create_or_refresh(audience='staff', email=target.email, role='reviewer',
+        target = make_admin('qc', owning_org=self.org)
+        old = invitations.create_or_refresh(audience='staff', email=target.email, role='qc',
                                             organisation=self.org, partner_admin=target, ttl_days=7)
         Invitation.objects.filter(pk=old.pk).update(accepted_at=timezone.now())
-        live = Invitation.objects.create(audience='staff', email=target.email, role='reviewer',
+        live = Invitation.objects.create(audience='staff', email=target.email, role='qc',
                                          organisation=self.org, partner_admin=target, code='live-x')
-        _role(self.org_admin, target, 'qc')
+        _role(self.org_admin, target, 'reviewer')
         old.refresh_from_db()
         live.refresh_from_db()
-        self.assertEqual((old.role, live.role), ('reviewer', 'qc'))
+        self.assertEqual((old.role, live.role), ('qc', 'reviewer'))
+
 
 
 @override_settings(**SUPABASE)
@@ -353,7 +318,7 @@ class TestInviteAgainAfterCancel(TestCase):
         PartnerAdmin.objects.filter(pk=account.pk).update(is_active=False)
         return account, inv
 
-    def _invite(self, email, role='qc', name='Again'):
+    def _invite(self, email, role='admin', name='Again'):   # T2: an org admin invites Admin / Reviewer
         return authed_client(self.org_admin).post(
             '/api/v1/admin/invite/', {'email': email, 'name': name, 'role': role}, format='json')
 
@@ -363,7 +328,7 @@ class TestInviteAgainAfterCancel(TestCase):
         with patch(f'{REQ}.get', return_value=_resp(body=user)), \
                 patch(f'{REQ}.put', return_value=_resp()) as put, \
                 patch(f'{REQ}.post') as create:
-            r = self._invite(account.email, role='qc')
+            r = self._invite(account.email, role='admin')
         self.assertEqual(r.status_code, 201, r.content[:300])
         self.assertFalse(r.json()['already_registered'])
         create.assert_not_called()                                   # same login, not a new one
@@ -372,10 +337,12 @@ class TestInviteAgainAfterCancel(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(password, mail.outbox[0].body)
         account.refresh_from_db()
-        self.assertEqual((account.is_active, account.role, account.name), (True, 'qc', 'Again'))
+        self.assertEqual((account.is_active, account.role, account.name), (True, 'admin', 'Again'))
+        # Team tables T2: brought back as an Admin, they start at the minimum — never the old set.
+        self.assertEqual(account.permissions, ['see_all'])
         new = Invitation.objects.filter(partner_admin=account).exclude(pk=old.pk).get()
         self.assertEqual((new.role, new.credential_issued, invitations.status_of(new)),
-                         ('qc', True, 'invited'))
+                         ('admin', True, 'invited'))
         old.refresh_from_db()
         self.assertEqual(invitations.status_of(old), 'revoked')
 
@@ -422,7 +389,7 @@ class TestInviteAgainAfterCancel(TestCase):
         user = _auth_user(worker.supabase_user_id, worker.email, signed_in=True, owes=False)
         with patch(f'{REQ}.get', return_value=_resp(body=user)) as get, \
                 patch(f'{REQ}.put') as put, patch(f'{REQ}.post') as post:
-            r = self._invite(worker.email, role='finance', name='New Name')
+            r = self._invite(worker.email, role='admin', name='New Name')
         self.assertEqual(r.status_code, 409, r.content[:300])
         for m in (get, put, post):
             m.assert_not_called()                        # refused on the footprint, before Supabase
@@ -435,7 +402,7 @@ class TestInviteAgainAfterCancel(TestCase):
         make_application('assigned', reviewer=account,
                          cohort=make_cohort(owning_organisation=self.org))
         with patch(f'{REQ}.put') as put:
-            r = self._invite(account.email, role='qc')
+            r = self._invite(account.email, role='admin')
         self.assertEqual(r.status_code, 409)
         put.assert_not_called()
 
@@ -538,13 +505,14 @@ class TestDeleteRemovesTheLogin(TestCase):
         # …and the same address is invited as if for the first time: a NEW login, a password.
         with patch(f'{REQ}.post', return_value=_resp(200, {'id': 'brand-new-uid'})) as create:
             r = authed_client(self.org_admin).post('/api/v1/admin/invite/', {
-                'email': target.email, 'name': 'New Person', 'role': 'finance'}, format='json')
+                'email': target.email, 'name': 'New Person', 'role': 'admin'}, format='json')
         self.assertEqual(r.status_code, 201, r.content[:300])
         self.assertFalse(r.json()['already_registered'])
         password = create.call_args[1]['json']['password']
         self.assertIn(password, mail.outbox[-1].body)
         again = PartnerAdmin.objects.get(email=target.email)
-        self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'finance'))
+        self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'admin'))
+        self.assertEqual(again.permissions, ['see_all'])   # T2: a new Admin starts at the minimum
 
     def test_a_login_that_is_also_a_student_survives(self):
         target = make_admin('admin', owning_org=self.org)
@@ -725,7 +693,7 @@ class TestDeleteRemovesTheLogin(TestCase):
         user['app_metadata']['temp_password_expired'] = True
         with patch(f'{REQ}.get', return_value=_resp(body=user)), patch(f'{REQ}.put') as put:
             r = authed_client(self.org_admin).post('/api/v1/admin/invite/', {
-                'email': account.email, 'name': 'X', 'role': 'qc'}, format='json')
+                'email': account.email, 'name': 'X', 'role': 'reviewer'}, format='json')
         self.assertEqual(r.status_code, 409)
         put.assert_not_called()
 

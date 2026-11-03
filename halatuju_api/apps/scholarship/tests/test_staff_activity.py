@@ -619,11 +619,11 @@ class TestThePeopleActions(_Base):
         row = self.assertOneRow(V.PERMISSIONS_CHANGED, self.org_admin, target, subject_type='staff')
         self.assertEqual(row.meta, {'kind': 'edit', 'added': ['spending'], 'removed': []})
 
-    def test_permissions_changed_by_a_role_change_that_reset_a_custom_set(self):
-        target = make_admin('reviewer', owning_org=self.org, permissions=['review', 'spending'])
-        staff_lifecycle.change_role(target.pk, 'qc', by=self.org_admin)
-        row = self.assertOneRow(V.PERMISSIONS_CHANGED, self.org_admin, target, subject_type='staff')
-        self.assertEqual(row.meta['kind'], 'role_change')
+    def test_a_role_change_keeps_the_keys_so_writes_no_permission_row(self):
+        # Team tables T2 (review 2026-11-03): a switch out keeps the resolved keys exactly — nothing changed.
+        target = make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'spending'])
+        staff_lifecycle.change_role(target.pk, 'reviewer', by=self.org_admin)
+        self.assertFalse(StaffActivity.objects.filter(verb=V.PERMISSIONS_CHANGED).exists())
 
     def test_a_save_that_changes_nothing_writes_nothing(self):
         target = make_admin('reviewer', owning_org=self.org)

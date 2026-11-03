@@ -20,15 +20,15 @@ import SortHeader from '@/components/admin/SortHeader'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
-import { roleBadgeClass } from '@/lib/roleBadge'
 import { formatDate } from '@/lib/formatDate'
+import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
-import { switchableTo } from '@/lib/staffRole'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
+import { AlsoIn, KeyChips, RemoveControl, TeamAddSheet, TeamRemoveSheet } from '@/components/admin/TeamTables'
+import type { TeamTableName } from '@/lib/admin-api'
 import TypedConfirmDialog from '@/components/admin/TypedConfirmDialog'
-import PermissionChips from '@/components/admin/PermissionChips'
 import StaffAvatar from '@/components/admin/StaffAvatar'
 import { TEAM_ROLES } from '@/lib/staffPermissions'
 
@@ -62,7 +62,6 @@ import { TEAM_ROLES } from '@/lib/staffPermissions'
 // honoured rather than reversed. It is a line under the name, not a column: inventing a sort
 // key and a header for a fact most organisations never see is furniture.
 
-const roleBadge = (r: string) => roleBadgeClass(r)
 // A caseload figure: grey at zero (normal, never a flag), bold otherwise.
 const figureTone = (n: number) => (n === 0 ? 'text-ground-400' : 'font-semibold text-ground-900')
 
@@ -81,8 +80,11 @@ export default function AdminReviewersList() {
   // different answer to the question you asked (owner, 2026-09-09).
   const search = useSearchParams()
   const asked = search?.get('tab')
-  const [panel, setPanel] = useState<'reviewers' | 'admins' | 'emails'>(
-    asked === 'admins' ? 'admins' : 'reviewers')
+  // Team tables T2 (owner ruling 1): Admins · Reviewers · Mentors · Emails · Terms. Reviewers stays the
+  // tab you land on ("who can take this case?" is the daily question); `?tab=` opens any other.
+  type Panel = 'admins' | 'reviewers' | 'mentors' | 'emails'
+  const [panel, setPanel] = useState<Panel>(
+    asked === 'admins' || asked === 'mentors' ? asked : 'reviewers')
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
@@ -93,7 +95,7 @@ export default function AdminReviewersList() {
   // the screen because the backend refuses it anyway.
   const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
   const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
-          resend, toggle, changeRole, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
+          resend, toggle, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
   // The admin whose delete is being confirmed (typed confirmation, 2026-10-09). Null = closed.
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -104,6 +106,19 @@ export default function AdminReviewersList() {
   const personHref = (a: AdminItem) =>
     a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
       ? `/admin/organisation/reviewers/admins/${a.id}` : null
+  // Team tables T2: each table's "Edit … permissions" opens the same page, showing only that table's keys.
+  const editHref = (table: TeamTableName) => (a: { id: number; role: string; is_active: boolean;
+                                                     manageable?: boolean }) =>
+    canManage && a.is_active && a.manageable !== false && (TEAM_ROLES as readonly string[]).includes(a.role)
+      ? `/admin/organisation/reviewers/admins/${a.id}?table=${table}` : null
+  // T2: the Add sheet (which table) and the Remove confirm (who, from which table).
+  const [adding, setAdding] = useState<TeamTableName | null>(null)
+  const [removing, setRemoving] = useState<{ id: number; name: string; table: TeamTableName } | null>(null)
+  const teamDone = (text: string) => {
+    setAdding(null); setRemoving(null)
+    setStaffMessage({ type: 'success', text })
+    reloadStaff(); load()
+  }
   // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
   // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -156,10 +171,6 @@ export default function AdminReviewersList() {
     } finally { setDeleteBusy(false); setDeleting(null); reloadStaff() }
   }
 
-  /** A reviewer row's Change role: the hook asks and acts; this page re-reads its own list. */
-  const changeReviewerRole = async (r: AdminReviewer) => {
-    if (await changeRole(r)) load()
-  }
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
   // covers it and the gift would say the same thing on every row — the owner's own 2026-08-02
@@ -184,6 +195,26 @@ export default function AdminReviewersList() {
   // Sort the whole list, then page the sorted result — the other order would sort one page at a
   // time and shuffle rows between pages.
   const sorted = sortReviewers(reviewers, sort.key, sort.dir)
+  // T2: the Admins table's rows — by the served `tables` for anyone active, by the old label for a
+  // revoked person (who sits at no table but must keep their Restore), and by the label for a payload
+  // from before T2 (no `tables`).
+  const adminRows = byCategory(admins).reviewers.concat(byCategory(admins).admins).filter((a) =>
+    a.is_active && a.tables ? a.tables.includes('admins')
+      : byCategory([a]).admins.length > 0)
+    .sort((x, y) => admins.indexOf(x) - admins.indexOf(y))
+  // The reviewer-side cell: the lead's line, this table's own chips and the edit link.
+  const reviewerKeysCell = (r: AdminReviewer) => (
+    <span className="block">
+      <KeyChips keys={r.reviewer_keys} />
+      {r.lead && <span className="mt-0.5 block text-[11px] text-ground-500">{t('admin.team.noSelfQc')}</span>}
+      {editHref('reviewers')(r) && (
+        <Link href={editHref('reviewers')(r) as string}
+          className="mt-0.5 block text-xs text-primary-600 hover:text-primary-800">
+          {t('admin.team.edit.reviewers')}
+        </Link>
+      )}
+    </span>
+  )
   const paged = usePagedRows(sorted)
   const onSort = (col: ReviewerSortKey) => setSort(nextSort(sort, col, firstDirFor(col)))
 
@@ -194,17 +225,19 @@ export default function AdminReviewersList() {
   return (
     <div>
       <h1 className="text-xl sm:text-2xl font-bold">{t('admin.people.title')}</h1>
-      <p className="text-sm text-ground-500 mt-1 mb-4">{t('admin.people.desc')}</p>
+      <p className="text-sm text-ground-500 mt-1 mb-4">{t('admin.team.desc')}</p>
 
       {/* ⚠ THE TAB BAR NOW RENDERS FOR EVERYONE WHO MAY READ THE PAGE. It used to appear only for
           the roles that may edit the emails, which was harmless while Emails was the only other
           panel — but Admins is a READING tab, and hiding the bar would have left `finance` with no
           way to reach it at all. Each tab keeps its own gate instead. */}
       <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
-        onSelect={(k) => setPanel(k as 'reviewers' | 'admins' | 'emails')}
+        onSelect={(k) => setPanel(k as Panel)}
         tabs={[
-          { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
           { key: 'admins', labelKey: 'admin.people.tabAdmins' },
+          { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
+          // T2: the Mentors tab points to today's Mentors page; the table itself moves here in T3.
+          { key: 'mentors', labelKey: 'admin.team.tabMentors' },
           ...(mayEditEmails ? [{ key: 'emails', labelKey: 'admin.reviewers.tabEmails' }] : []),
           // Reviewers sign nothing today. Shown disabled so the surfaces look alike and the panel
           // reads as coming rather than as missing (owner, 2026-08-04).
@@ -215,18 +248,49 @@ export default function AdminReviewersList() {
           emails hiccup can never take the reviewers table down with it. */}
       {panel === 'emails' && mayEditEmails && <ReviewerEmailsCard token={token} t={t} />}
 
+      {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
+          Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}
+      {canManage && (panel === 'admins' || panel === 'reviewers') && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={() => setAdding(panel)} data-testid={`team-add-${panel}-open`}
+            className="min-h-11 rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
+            {t(`admin.team.add.${panel}`)}
+          </button>
+        </div>
+      )}
+      <TeamAddSheet open={adding !== null} table={adding ?? 'admins'} token={token}
+        onClose={() => setAdding(null)} onDone={teamDone} />
+      <TeamRemoveSheet person={removing} table={removing?.table ?? 'admins'} token={token}
+        onClose={() => setRemoving(null)} onDone={teamDone} />
+
+      {panel === 'mentors' && (
+        <div className="rounded-xl border bg-ground-0 p-4 text-sm text-ground-700" data-testid="team-mentors-tab">
+          <p>{t('admin.team.mentorsSoon')}</p>
+          {mayOpen('/admin/organisation/mentors', role) && (
+            <Link href="/admin/organisation/mentors"
+              className="mt-2 inline-block font-medium text-primary-600 hover:text-primary-800">
+              {t('admin.team.openMentors')}
+            </Link>
+          )}
+        </div>
+      )}
+
       {panel === 'admins' && (<>
         <MessageBanner message={staffMessage} />
         {/* The SAME table the platform's two staff screens use — one component, so a third copy
             of "who is in, and may I switch them off" cannot drift from the other two. It already
             knows that revoked beats paused, and already draws phone cards. */}
-        <StaffTable rows={byCategory(admins).admins} busyId={staffBusyId} canAct={canManage}
+        {/* T2: everybody who sits at the Admins table (`tables`, served) — a reviewer holding admin keys
+            too. A revoked person sits at no table, so they are placed by their old label and keep
+            their Restore. "Change role" is gone: Finance and QC are no longer labels (rulings 4, 8). */}
+        <StaffTable rows={adminRows} busyId={staffBusyId} canAct={canManage}
           onResend={canManage ? resend : undefined}
           onToggle={canManage ? toggle : undefined}
           onDelete={canManage ? setDeleting : undefined}
-          onChangeRole={canManage ? changeRole : undefined}
           nameHref={canManage ? personHref : undefined}
-          soleOrgAdmin={soleOrgAdmin} />
+          soleOrgAdmin={soleOrgAdmin}
+          team={{ editHref: editHref('admins'),
+                  onRemove: (a) => setRemoving({ id: a.id, name: a.name, table: 'admins' }) }} />
         {deleting && (
           <TypedConfirmDialog busy={deleteBusy} phrase={deleting.email}
             title={t('admin.programmes.deleteTitle', { name: deleting.name })}
@@ -308,10 +372,10 @@ export default function AdminReviewersList() {
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${roleBadge(r.role)}`}>
-                    {t(`admin.reviewers.role.${r.role}`)}
-                  </span>
-                  <PermissionChips row={r} />
+                  {reviewerKeysCell(r)}
+                  <AlsoIn row={r} here="reviewers" />
+                  {canManage && <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
+                    onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />}
                   {orderedLanguages(r).map((code) => (
                     <span key={code} className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600">
                       {t(`admin.reviewers.lang.${code}`)}
@@ -337,7 +401,13 @@ export default function AdminReviewersList() {
             <thead className="bg-ground-50/80 border-b">
               <tr>
                 <SortHeader col="name" label={t(REVIEWER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
-                <SortHeader col="role" label={t(REVIEWER_SORT_LABEL.role)} sort={sort} onSort={onSort} />
+                {/* T2: "Also in" and this table's own permissions replace the Role column. */}
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
+                  {t('admin.team.colAlsoIn')}
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
+                  {t('admin.team.colKeys.reviewers')}
+                </th>
                 {/* Languages is the one unsortable column — a set has no order to put it in. */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.reviewers.colLanguages')}
@@ -373,6 +443,11 @@ export default function AdminReviewersList() {
                             {r.name || '—'}
                           </Link>
                           <div className="text-xs text-ground-500 mt-0.5">{r.email || '—'}</div>
+                          {r.lead && (
+                            <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] ${roleBadgeClass('org_admin')}`}>
+                              {t('admin.role.org_admin')}
+                            </span>
+                          )}
                           {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                         </div>
                       </div>
@@ -388,13 +463,8 @@ export default function AdminReviewersList() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roleBadge(r.role)}`}>
-                        {t(`admin.reviewers.role.${r.role}`)}
-                      </span>
-                      {/* #39 S4: what this person's set adds to (or takes from) the role. */}
-                      {r.custom && <div className="mt-1"><PermissionChips row={r} /></div>}
-                    </td>
+                    <td className="px-4 py-3"><AlsoIn row={r} here="reviewers" /></td>
+                    <td className="px-4 py-3">{reviewerKeysCell(r)}</td>
                     <td className="px-4 py-3 text-ground-700">
                       {orderedLanguages(r).length === 0 && !r.other_language
                         ? <span className="text-ground-400">—</span>
@@ -454,21 +524,20 @@ export default function AdminReviewersList() {
                     </td>
                     <td className="px-4 py-3">
                       {canManage && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* The organisation admin is never revoked from here (the server refuses
+                              an org_admin acting on one); their way out of this table is Remove. */}
+                          {!r.lead && (
                           <button disabled={busyId === r.id} onClick={() => toggleReviewer(r)}
                             className={`text-xs font-medium disabled:opacity-50 ${
                               r.is_active ? 'text-critical-600 hover:text-critical-800'
                                           : 'text-primary-600 hover:text-primary-800'}`}>
                             {t(r.is_active ? 'admin.revoke' : 'admin.restore')}
                           </button>
-                          {/* Reviewer ↔ QC (2026-10-09). Their cases stay theirs either way. */}
-                          {switchableTo(r) && (
-                            <button disabled={staffBusyId === r.id}
-                              onClick={() => changeReviewerRole(r)}
-                              className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
-                              {t('admin.changeRole')}
-                            </button>
                           )}
+                          {/* T2: "Change role" (Reviewer ↔ QC) is gone — QC is a permission now. */}
+                          <RemoveControl remove={r.remove} table="reviewers" busy={staffBusyId === r.id}
+                            onRemove={() => setRemoving({ id: r.id, name: r.name, table: 'reviewers' })} />
                         </div>
                       )}
                     </td>

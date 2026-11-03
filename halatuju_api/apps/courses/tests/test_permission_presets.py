@@ -584,11 +584,20 @@ class GoldenTable(TestCase):
                 return e.code
         return None
 
+    # Team tables T2 (review 2026-11-03): a switch INTO finance is refused FIRST, as `label_retired`, so
+    # nobody reaches the finance role holding a run or a case. The gate's answer does not move: the same
+    # people are refused the switch, by the earlier door.
+    def _refused_into_finance(self, a, code, open_cases, runs):
+        from apps.scholarship import staff_lifecycle as sl
+        got = self._plan_switch(a, open_cases, runs)
+        into = sl.ROLE_PAIRS.get(a.role, 'finance')
+        return got == code or (into == 'finance' and got == 'label_retired')
+
     def probe_switch_refused_for_unfinished_run(self, a):
-        return self._plan_switch(a, 0, 1) == 'run_in_progress'
+        return self._refused_into_finance(a, 'run_in_progress', 0, 1)
 
     def probe_switch_refused_with_open_cases(self, a):
-        return self._plan_switch(a, 1, 0) == 'has_open_cases'
+        return self._refused_into_finance(a, 'has_open_cases', 1, 0)
 
     def probe_assignable_list_for_org_admin(self, a):
         r = self._http(self.people['org_admin'], 'get', '/api/v1/admin/scholarship/assignable-admins/')

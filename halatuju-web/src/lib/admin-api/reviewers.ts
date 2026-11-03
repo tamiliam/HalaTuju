@@ -7,6 +7,7 @@
  */
 import { adminFetch, adminMutate } from './client'
 import type { ApiOptions } from './client'
+import type { TeamRemove } from './admins'
 
 /**
  * Step a reviewer back from NEW work, or bring them back — the admin's route (super/org_admin).
@@ -69,6 +70,12 @@ export interface AdminReviewer {
   custom?: boolean
   permissions_added?: string[]
   permissions_removed?: string[]
+  /** Team tables T2: the same seat fields as `AdminItem` (`staff_tables_admin.row_fields`). */
+  tables?: string[]
+  lead?: boolean
+  admin_keys?: string[]
+  reviewer_keys?: string[]
+  remove?: TeamRemove
 }
 
 /** A gift the caller may scope a reviewer to. Includes gifts that are not switched on yet:

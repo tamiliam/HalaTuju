@@ -344,25 +344,24 @@ class TestChangeRoleResets(TestCase):
         return authed_client(self.org_admin).patch(
             f'/api/v1/admin/admins/{target.pk}/role/', {'role': role, **extra}, format='json')
 
-    def test_a_custom_set_goes_back_to_the_new_preset_and_the_dry_run_says_so(self):
-        target = make_admin('reviewer', owning_org=self.org)
-        _patch(self.org_admin, target, ['review', 'spending'])
-        dry = self._role(target, 'qc', dry_run=True)
-        self.assertTrue(dry.json()['permissions_reset'])
-        self.assertEqual(_fresh(target).permissions, ['review', 'spending'])
-        r = self._role(target, 'qc')
-        self.assertEqual((r.status_code, r.json()['permissions_reset']), (200, True))
+    def test_a_switch_out_keeps_a_custom_set_exactly_and_records_nothing(self):
+        # Team tables T2 (review 2026-11-03): a switch no longer resets the set — it KEEPS the resolved keys
+        # (no gain, no loss), and there is no switch INTO qc any more.
+        target = make_admin('qc', owning_org=self.org)
+        _patch(self.org_admin, target, ['see_all', 'qc', 'spending'])
+        StaffPermissionChange.objects.all().delete()
+        dry = self._role(target, 'reviewer', dry_run=True)
+        self.assertFalse(dry.json()['permissions_reset'])
+        r = self._role(target, 'reviewer')
+        self.assertEqual((r.status_code, r.json()['permissions_reset']), (200, False))
         target = _fresh(target)
-        self.assertEqual((target.role, target.permissions), ('qc', None))
-        self.assertEqual(sp.resolve(target), ('see_all', 'qc'))
-        h = StaffPermissionChange.objects.filter(kind='role_change').get()
-        self.assertEqual((h.before, h.after, h.role, h.changed_by_email),
-                         (['review', 'spending'], ['see_all', 'qc'], 'qc', self.org_admin.email))
+        self.assertEqual((target.role, target.permissions), ('reviewer', ['see_all', 'qc', 'spending']))
+        self.assertFalse(StaffPermissionChange.objects.exists())
 
-    def test_a_preset_holder_changes_role_with_no_reset_and_no_history(self):
+    def test_a_switch_into_qc_is_refused(self):
         target = make_admin('reviewer', owning_org=self.org)
         r = self._role(target, 'qc')
-        self.assertFalse(r.json()['permissions_reset'])
+        self.assertEqual((r.status_code, r.json()['code']), (409, 'label_retired'))
         self.assertFalse(StaffPermissionChange.objects.exists())
 
 
@@ -473,18 +472,21 @@ class TestReviewFixes(TestCase):
         return authed_client(self.org_admin).patch(
             f'/api/v1/admin/admins/{target.pk}/role/', {'role': role, 'dry_run': True}, format='json')
 
-    def test_change_role_names_the_approval_fallback(self):
-        adm = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)   # no approver yet
-        self.assertIn('approver_fallback_off', self._role(adm, 'finance').json()['consequences'])
+    def test_change_role_moves_no_key_so_names_no_approval_change(self):
+        # Team tables T2: the switch keeps the keys, so the payment chain does not move; only the CREDIT
+        # check (a finance-ROLE rule) still does, as before. Into finance is refused.
+        adm = make_admin('admin', owning_org=self.org, first_seen_at=SEEN)
+        self.assertEqual(self._role(adm, 'finance').json()['code'], 'label_retired')
         fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN)
-        self.assertIn('approver_fallback_on', self._role(fin, 'admin').json()['consequences'])
+        body = self._role(fin, 'admin').json()
+        self.assertEqual(body['consequences'], [])
+        self.assertFalse(body['permissions_reset'])
 
     def test_a_finance_person_without_approve_changes_no_approval_by_switching(self):
         fin = make_admin('finance', owning_org=self.org, first_seen_at=SEEN, permissions=[])
         body = self._role(fin, 'admin').json()
-        self.assertNotIn('approver_fallback_on', body['consequences'])
-        self.assertIn('files_widened_all', body['consequences'])     # the admin preset: see_all
-        self.assertTrue(body['permissions_reset'])
+        self.assertEqual(body['consequences'], [])                    # no key gained (no see_all)
+        self.assertFalse(body['permissions_reset'])
         self.assertEqual(body['consequence'], 'finance_check_off')   # the CREDIT check still moves
 
     # 5 (LOW) — a reopened decision is a held case.

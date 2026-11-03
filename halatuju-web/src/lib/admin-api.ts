@@ -32,9 +32,11 @@ export type {
 // Staff of an organisation: who they are, inviting them, revoking them.
 export {
   getAdmins, deleteAdmin, revokeAdmin, resendAdminInvite, adminSetPassword, inviteAdmin,
-  changeAdminRole,
+  changeAdminRole, changeTeamTable, getTeamCandidates,
 } from './admin-api/admins'
-export type { AdminItem } from './admin-api/admins'
+export type {
+  AdminItem, TeamCandidate, TeamRemove, TeamTableName, TeamTablePlan,
+} from './admin-api/admins'
 
 // Every invitation this organisation has sent, of every kind.
 export {
