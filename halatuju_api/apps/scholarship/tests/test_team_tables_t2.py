@@ -99,6 +99,7 @@ class AddToAdmins(_Base):
         self.assertEqual(r.status_code, 200, r.content[:300])
         m = self.fresh(m)
         self.assertEqual((m.role, m.permissions), ('admin', ['see_all']))
+        self.assertTrue(r.json()['opens_admin_pages'])           # role admin: the confirm says so
         self.assertTrue(m.is_staff_mentor and m.mentors_now)       # 7d: the link is kept
         self.assertEqual(st.tables(m), ('admins', 'mentors'))
         self.assertEqual(sp.resolve(m), ('see_all',))
@@ -186,7 +187,7 @@ class Remove(_Base):
     def test_rohini_leaves_reviewers_and_becomes_an_admin_with_her_admin_keys(self):
         rohini = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'spending'])
         dry = self.act(self.lead, 'reviewers', rohini, 'remove', dry_run=True).json()
-        self.assertTrue(dry['keeps_admin_pages'])                 # Q2b: said in plain words first
+        self.assertTrue(dry['opens_admin_pages'])                 # Q2b: a GAIN, said in plain words first
         self.assertEqual(self.act(self.lead, 'reviewers', rohini, 'remove').status_code, 200)
         rohini = self.fresh(rohini)
         self.assertEqual((rohini.role, rohini.permissions), ('admin', ['see_all', 'spending']))
@@ -422,3 +423,71 @@ class PaymentChainUnchanged(TestCase):
         new = make_admin('admin', owning_org=org, permissions=['see_all'])   # an invited Admin
         self.assertFalse(any(new.has_perm(k) for k in ('payments_prepare', 'payments_check',
                                                        'payments_approve', 'spending')))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class ChangeRoleUnderT2(TestCase):
+    """Review 2026-11-03 (lead ruling, revising Q3): the kept change-role endpoint may not route around T2.
+    No switch INTO `finance` or `qc` (409 `label_retired`); a switch OUT keeps the resolved keys exactly."""
+
+    def setUp(self):
+        self.org = make_org()
+        self.lead = make_admin('org_admin', owning_org=self.org)
+
+    def switch(self, target, role, dry_run=False):
+        return authed_client(self.lead).patch(f'/api/v1/admin/admins/{target.pk}/role/',
+                                              {'role': role, 'dry_run': dry_run}, format='json')
+
+    def test_no_switch_into_finance_or_qc(self):
+        for start, into in (('admin', 'finance'), ('reviewer', 'qc')):
+            person = make_admin(start, owning_org=self.org)
+            for dry in (True, False):
+                r = self.switch(person, into, dry_run=dry)
+                self.assertEqual((r.status_code, r.json()['code']), (409, 'label_retired'), (start, dry))
+            person.refresh_from_db()
+            self.assertEqual((person.role, person.permissions), (start, None))
+
+    def test_finance_to_admin_keeps_exactly_payments_approve(self):
+        fin = make_admin('finance', owning_org=self.org)
+        r = self.switch(fin, 'admin', dry_run=True)
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertFalse(r.json()['permissions_reset'])
+        self.assertEqual(r.json()['consequences'], [])
+        self.assertEqual(r.json()['consequence'], 'finance_check_off')   # the credit check, as before
+        self.assertEqual(self.switch(fin, 'admin').status_code, 200)
+        fin.refresh_from_db()
+        self.assertEqual((fin.role, fin.permissions), ('admin', ['payments_approve']))
+        self.assertEqual(sp.resolve(fin), ('payments_approve',))       # no gain (no see_all), no loss
+
+    def test_qc_to_reviewer_keeps_see_all_and_qc(self):
+        qc = make_admin('qc', owning_org=self.org, permissions=['see_all', 'qc', 'spending'])
+        self.assertEqual(self.switch(qc, 'reviewer').status_code, 200)
+        qc.refresh_from_db()
+        self.assertEqual((qc.role, qc.permissions), ('reviewer', ['see_all', 'qc', 'spending']))
+
+    def test_a_switch_out_equal_to_the_new_preset_is_stored_null(self):
+        fin = make_admin('finance', owning_org=self.org,
+                         permissions=['see_all', 'spending', 'payments_prepare'])
+        self.assertEqual(self.switch(fin, 'admin').status_code, 200)
+        fin.refresh_from_db()
+        self.assertEqual((fin.role, fin.permissions), ('admin', None))
+
+
+class MayActOnTheLockedRow(_Base):
+    """Review 2026-11-03: `change` judges the caller again on the LOCKED row, so a target that moved out
+    of the caller's remit between the view's check and the write is refused."""
+
+    def test_a_target_that_left_the_callers_remit_is_refused_under_the_lock(self):
+        rev = make_admin('reviewer', owning_org=self.org)
+        PartnerAdmin.objects.filter(pk=rev.pk).update(owning_organisation=self.other)   # moved meanwhile
+        with self.assertRaises(sta.Refused) as caught:
+            sta.change(rev.pk, sta.ADMINS, 'add', by=self.lead)
+        self.assertEqual(caught.exception.code, 'not_found')
+        self.assertIsNone(self.fresh(rev).permissions)
+
+    def test_a_target_promoted_to_org_admin_meanwhile_is_refused(self):
+        rev = make_admin('reviewer', owning_org=self.org)
+        PartnerAdmin.objects.filter(pk=rev.pk).update(role='org_admin')
+        with self.assertRaises(sta.Refused) as caught:
+            sta.change(rev.pk, sta.REVIEWERS, 'add', by=self.lead)
+        self.assertEqual(caught.exception.code, 'not_found')

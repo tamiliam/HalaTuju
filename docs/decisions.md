@@ -14,8 +14,9 @@ row has — `permissions` (NULL = the role's preset) and `role` (the preset labe
    any other key is more than the minimum.
 2. **Remove takes that table's keys; role moves only where the label would otherwise keep them seated (Q2a / Q2b).**
    Leaving Admins: `admin` / `finance` → `qc` if `qc` stays, else `reviewer`. Leaving Reviewers: `reviewer` / `qc` →
-   **`admin`** with exactly their admin keys — they become one Admin like an invited Admin and KEEP THE ADMIN PAGES
-   (owner ruling 4; the confirm says so; flagged to the owner by the lead). `finance` was rejected as the target: the
+   **`admin`** with exactly their admin keys — they become one Admin like an invited Admin and OPEN THE ADMIN WORK
+   PAGES — a GAIN for a reviewer-label row (owner ruling 4; the confirm says so in plain words, review 2026-11-03;
+   flagged to the owner by the lead). A mentor login added to Admins (role `admin`) is told the same. `finance` was rejected as the target: the
    wallet-credit check is a finance-ROLE rule and would have been armed by a Remove. Refused: the last table
    ("revoke instead"), only Mentors left (Q2c, until T3), open cases (Reviewers), the lead at Admins.
 3. **The org admin joins Reviewers (Q1, Q4).** Their `permissions` column (never read for the lead before; zero live
@@ -28,6 +29,11 @@ row has — `permissions` (NULL = the role's preset) and `role` (the preset labe
    the column at invite time. Old pending finance / qc invitations accept onto today's preset (their row was written
    when sent) and stay cancellable (`KIND_CANCELLABLE_ROLES`). The labels read Admin / Reviewer on Team and
    Invitations; stored roles are untouched.
+4b. **Change role under T2 (lead ruling, review 2026-11-03, revising Q3):** the kept endpoint
+   (`admin/admins/<id>/role/`) refuses any switch INTO `finance` or `qc` (409 `label_retired`); a switch OUT
+   (finance -> admin, qc -> reviewer) keeps the person's resolved keys EXACTLY (stored NULL only when equal to the
+   new preset) — no key gained or lost; the finance-role consequence (the credit check) is computed as before.
+   Team -> Add / Remove judges the caller AGAIN on the locked row (`may_act` inside `change`).
 5. **A pure mentor login added to a table becomes staff** (7d link rules: the mentor link is kept, `mentors_now`
    holds): Admin = role `admin` + `['see_all']`; Reviewer = role `reviewer` (preset). Only one who has signed in.
 

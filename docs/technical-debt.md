@@ -7485,6 +7485,15 @@ runs but neither arms nor performs the credit check; existing `finance` rows wor
 the credit chain onto a key (`payments_check` or a new `credits_check`), with its golden tests, or rule that the
 check stays role-bound. *(M · S)*
 
+### [TD-472] A case REOPENED after its reviewer lost `review` can strand them (predates Team tables T2) - low
+
+**Raised 2026-11-03 by the T2 adversarial review (item 4).** Every door that takes `review` away (the permission
+editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses while `staff_lifecycle.open_cases`
+> 0 — and a case whose decision is reopened LATER counts again. A reviewer removed while their old case was closed,
+whose decision is then reopened (`decision_reopened_at`), is named on a case they can no longer open. It existed
+before T2 (the editor had the same window). **Fix:** have the reopen refuse (or reassign) when the assigned person no
+longer holds `review`, or have the reopen screen ask for a new reviewer. *(B · S)*
+
 ### [TD-471] Mobile M6a: four everyday console pages have no sandbox surface, so mobile-check cannot measure them - low
 
 **Raised 2026-11-03 by Mobile M6a.** M6a swept the console's "Must" pages by code and measured the ones with a

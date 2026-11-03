@@ -239,7 +239,7 @@ class AdminTeamTableView(_AdminBase):
                          'added': plan['added'], 'removed': plan['removed'],
                          'consequences': plan['consequences'],
                          'finance_check_off': plan['finance_check_off'],
-                         'keeps_admin_pages': plan['keeps_admin_pages']})
+                         'opens_admin_pages': plan['opens_admin_pages']})
 
 
 class AdminTeamCandidatesView(_AdminBase):

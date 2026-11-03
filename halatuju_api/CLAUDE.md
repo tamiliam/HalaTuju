@@ -1177,7 +1177,7 @@ Remove from** live in `apps/scholarship/staff_tables_admin.py` (`may_act`, `plan
 `{admin_id, action: add|remove, dry_run}`) and `AdminTeamCandidatesView` (`GET admin/team/<table>/candidates/`);
 routes in `urls_mentors.py` (urls.py is at the 600-line standard). Add = keys only (+`see_all` / +`review` on the
 materialised preset; role untouched); Remove = that table's keys, and the role moves only where the label would keep
-them seated (`admin`/`finance` -> `reviewer`/`qc`; `reviewer`/`qc` -> `admin`, who keeps the admin pages). The org
+them seated (`admin`/`finance` -> `reviewer`/`qc`; `reviewer`/`qc` -> `admin`, who OPENS the admin work pages; the confirm says so). The org
 admin may hold `['review']` in `permissions` (`staff_permissions.lead_reviews`; `resolve` ignores every other key
 on a lead row; only Add/Remove Reviewers writes it, by a super or the org admin on their OWN row);
 `team_holding(..., with_lead=True)` puts them on the Reviewers list. Both Team lists serve `tables`, `lead`,
@@ -1186,7 +1186,9 @@ stores `['see_all']` (`staff_tables.invite_permissions`); old finance / qc invit
 cancellable (`KIND_CANCELLABLE_ROLES`). Access matrix: no cell moved; the two new routes are `T2_ADDED`. Web:
 `components/admin/TeamTables.tsx` (AlsoIn, KeyChips, RemoveControl, TeamAddSheet, TeamRemoveSheet), `StaffTable`
 `team` prop, the person page's `?table=` (PermissionEditor `table`). Deploy: API first, then web (an old web
-ignores the new fields; a new web on an old API shows no Add/Remove). Open: TD-471 (credits read the finance role).
+ignores the new fields; a new web on an old API shows no Add/Remove). Change role (`staff_lifecycle`) refuses a switch INTO finance / qc (409 `label_retired`); a switch out keeps the
+resolved keys exactly. `change` re-runs `may_act` on the locked row. Open: TD-471 (credits read the finance role),
+TD-472 (a reopened case can strand a removed reviewer; predates T2).
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)
 

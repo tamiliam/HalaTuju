@@ -27,8 +27,10 @@ mentors and is switched Admin → Finance stops mentoring in the same transactio
 the mentor stamped deactivated, every open assignment ended, the link kept); the dry run says so first
 (`stops_mentoring`). Reviewer ↔ QC keeps it. Switching back never brings it back (Mentor again does).
 
-⚠ **A SWITCH RESETS A CUSTOM SET OF PERMISSIONS** (#39 Sprint 4): `change_role` writes `permissions`
-back to NULL, the new role's preset, and the dry run says so first (`permissions_reset`).
+⚠ **A SWITCH KEEPS THE PERSON'S KEYS EXACTLY** (Team tables T2, lead ruling 2026-11-03; it RESET a custom set
+to the new preset in #39 Sprint 4): `change_role` writes the resolved keys back (NULL only when they equal the
+new role's preset), so no switch gives or takes a key. And no switch goes INTO `finance` or `qc` any more
+(`RETIRED_LABELS`, 409 `label_retired`): those are permissions on Team now.
 
 ⚠ **A LOGIN IS ONLY EVER REMOVED WHEN IT IS OURS AND UNUSED.** `retire_login` deletes the Supabase
 user only when nothing else rides on it (no student profile, profile alias or sponsor account),
@@ -41,6 +43,11 @@ from django.db.models import Q
 
 #: The only switches this screen makes. Symmetric by construction.
 ROLE_PAIRS = {'admin': 'finance', 'finance': 'admin', 'reviewer': 'qc', 'qc': 'reviewer'}
+
+#: Team tables T2 (lead ruling, review 2026-11-03): "Finance" and "QC" are no longer labels anybody is
+#: switched INTO (owner rulings 4, 8). A switch OUT (finance -> admin, qc -> reviewer) stays, and keeps the
+#: person's resolved keys EXACTLY — no gain, no loss.
+RETIRED_LABELS = ('finance', 'qc')
 
 FINANCE_CHECK_ON = 'finance_check_on'
 FINANCE_CHECK_OFF = 'finance_check_off'
@@ -119,10 +126,17 @@ def plan_role_change(target, new_role):
             'role_not_switchable', 400,
             'That role change is not available. Admin and Finance switch with each other, and '
             'Reviewer and QC switch with each other.')
+    if new_role in RETIRED_LABELS:
+        raise RoleChangeRefused(
+            'label_retired', 409,
+            '"Finance" and "QC" are no longer roles. Give the person "Approve payment runs" or "Quality '
+            'check" on Team instead.')
     if not target.is_active:
         raise RoleChangeRefused(
             'not_active', 400,
             f"{target.name}'s access is revoked. Restore them before changing their role.")
+    # ⚠ Unreachable since T2 (`RETIRED_LABELS` refuses a switch INTO finance above); kept, with its
+    # consequences below, should the owner ever bring the label back.
     if new_role == 'finance':
         n = open_cases(target)
         if n:
@@ -150,9 +164,12 @@ def plan_role_change(target, new_role):
     return {'from': old, 'to': new_role, 'consequence': consequence,
             # S7d: the switch ends this person's mentoring (a role that may not mentor).
             'stops_mentoring': bool(target.mentors_now and new_role not in PartnerAdmin.STAFF_MENTOR_ROLES),
-            'permissions_reset': staff_permissions.is_custom(target),
+            # T2: the keys are KEPT across a switch out (materialised; NULL only when equal to the new
+            # preset), so nothing is reset and the key consequences are none.
+            'permissions_reset': False,
+            'keeps': list(staff_permissions.resolve(target)),
             'consequences': staff_permissions_admin.consequences(
-                target, staff_permissions.resolve(target), staff_permissions.preset_for(new_role))}
+                target, staff_permissions.resolve(target), staff_permissions.resolve(target))}
 
 
 def change_role(target_id, new_role, *, dry_run=False, by=None):
@@ -166,10 +183,9 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
     OPEN invitation for this person carries the new role too: the Invitations page shows the role
     from it, and a Resend reads the account's.
 
-    ⚠ AND `permissions` GOES BACK TO NULL — the NEW role's preset (#39 Sprint 4). A custom set was
-    chosen on top of the OLD role; carried across a switch it would mean something nobody chose (a
-    Reviewer + Spending switched to QC keeping Spending). The dry run says so (`permissions_reset`),
-    and a reset of a custom set writes a history row (`kind='role_change'`) beside the AUDIT line.
+    ⚠ `permissions` KEEPS THE RESOLVED KEYS (Team tables T2; #39 S4 reset them to the new preset). Only the
+    two switches OUT of a retired label remain (finance -> admin, qc -> reviewer), and the keys are
+    materialised so the person neither gains nor loses one; `permissions_reset` is always False now.
     """
     from apps.courses import staff_permissions
     from apps.courses.models import PartnerAdmin
@@ -183,7 +199,10 @@ def change_role(target_id, new_role, *, dry_run=False, by=None):
         if dry_run:
             return target, plan
         before = staff_permissions.resolve(target)
-        fields = {'role': new_role, 'is_super_admin': False, 'permissions': None}
+        # T2 (review 2026-11-03): the person's resolved keys are KEPT exactly — stored NULL only when they
+        # equal the new role's preset. A switch never gives or takes a key.
+        kept = None if tuple(before) == staff_permissions.preset_for(new_role) else list(before)
+        fields = {'role': new_role, 'is_super_admin': False, 'permissions': kept}
         # ⚠ A pause is KEPT between reviewer and QC on purpose: both are review roles that can be
         # assigned work, so "no new work for now" still means something; only Finance clears it.
         if new_role == 'finance':

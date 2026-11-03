@@ -103,8 +103,10 @@ export interface TeamTablePlan {
   removed: string[]
   consequences: string[]
   finance_check_off: boolean
-  /** Lead ruling Q2b: removed from Reviewers, they become an Admin and keep the admin pages. */
-  keeps_admin_pages: boolean
+  /** The change makes them role `admin`, which OPENS the admin work pages (Announcements, Surveys,
+   *  Development, Sources, Mentors): a Remove from Reviewers (lead ruling Q2b) or a mentor login added to
+   *  Admins. Said in plain words on the confirm (review 2026-11-03). */
+  opens_admin_pages: boolean
 }
 
 export async function getTeamCandidates(table: TeamTableName, options?: ApiOptions) {

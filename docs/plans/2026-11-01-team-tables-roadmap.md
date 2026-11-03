@@ -69,7 +69,7 @@ Reviewers). Mentors live on a separate page.
 **T2 — The Team page: Admins · Reviewers · Mentors, Add / Remove** (medium-high; ~35 files)
 - **Status: BUILT, NOT LIVE (2026-11-03, branch maint-s7).** Lead rulings Q1-Q4 (decisions.md "Team tables T2"): Add
   writes keys only; Remove moves the role only where a label would keep someone seated (leaving Reviewers -> Admin,
-  keeping the admin pages); the org admin joins Reviewers by a stored `['review']` (self or super only); "Remove"
+  opening the admin work pages, said on the confirm); the org admin joins Reviewers by a stored `['review']` (self or super only); "Remove"
   leaving only Mentors refused until T3. The Mentors TAB links to today's page (T3 moves the table). TD-471 open.
 - Tabs in the new order; each table lists its members with only its own permission chips and editor.
 - Add Admin / Add Reviewer / Add Mentor (a Sheet listing existing members not in that table); Remove from table

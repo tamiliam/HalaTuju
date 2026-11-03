@@ -569,7 +569,7 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
   it('Remove asks first, says what it does from the dry run, and only then removes', async () => {
     mockApi.changeTeamTable.mockResolvedValue({ id: 31, table: 'admins', action: 'remove', dry_run: true,
       role: 'reviewer', role_changed: false, added: [], removed: ['see_all', 'spending'],
-      consequences: [], finance_check_off: false, keeps_admin_pages: false })
+      consequences: [], finance_check_off: false, opens_admin_pages: false })
     await openAdmins()
     fireEvent.click(within(rowOf('Rohini Thiru')).getByTestId('remove-from-admins'))
     await waitFor(() => expect(mockApi.changeTeamTable).toHaveBeenCalledWith(
@@ -582,15 +582,15 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
       'admins', 31, 'remove', false, { token: 'tok' }))
   })
 
-  it('⚠ Remove from Reviewers that makes them an Admin SAYS they keep the admin pages', async () => {
+  it('⚠ Remove from Reviewers that makes them an Admin SAYS they will open the admin work pages', async () => {
     mockApi.listReviewers.mockResolvedValue({ reviewers: [{ ...REVIEWERS[0], tables: ['admins', 'reviewers'],
       reviewer_keys: ['review'], remove: { reviewers: null } }], programmes: giftChoices })
     mockApi.changeTeamTable.mockResolvedValue({ id: 5, table: 'reviewers', action: 'remove', dry_run: true,
       role: 'admin', role_changed: true, added: [], removed: ['review'], consequences: [],
-      finance_check_off: false, keeps_admin_pages: true })
+      finance_check_off: false, opens_admin_pages: true })
     await loaded()
     fireEvent.click(ui().getByTestId('remove-from-reviewers'))
-    expect(await screen.findByText('admin.team.keepsAdminPages')).toBeTruthy()
+    expect(await screen.findByText('admin.team.opensAdminPages')).toBeTruthy()
   })
 
   it('open cases: the Reviewers row says "reassign first" instead of a Remove link', async () => {
@@ -607,7 +607,7 @@ describe('Team tables T2: Admins · Reviewers, Add and Remove', () => {
         tables: ['admins'], consequences: [] }] })
     mockApi.changeTeamTable.mockResolvedValue({ id: 32, table: 'reviewers', action: 'add', dry_run: true,
       role: 'org_admin', role_changed: false, added: ['review'], removed: [], consequences: [],
-      finance_check_off: false, keeps_admin_pages: false })
+      finance_check_off: false, opens_admin_pages: false })
     await loaded()
     fireEvent.click(screen.getByTestId('team-add-reviewers-open'))
     await waitFor(() => expect(mockApi.getTeamCandidates).toHaveBeenCalledWith('reviewers', { token: 'tok' }))

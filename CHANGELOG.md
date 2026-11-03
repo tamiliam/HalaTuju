@@ -12,8 +12,9 @@ day). No migration, no new stored field: the existing `PartnerAdmin.permissions`
   Check / Approve payment runs; Reviewers: Review assigned students, Quality check) and "Also in" chips for the
   rest. The organisation admin reads "Organisation admin (lead)", never editable. "Edit admin / reviewer
   permissions" opens the person page with only that table's keys (`?table=`). The Mentors tab links to today's
-  Mentors page (the table moves in T3). Change role (Admin ↔ Finance, Reviewer ↔ QC) is no longer offered on Team;
-  its endpoint stays.
+  Mentors page (the table moves in T3). Change role is no longer offered on Team; its endpoint stays but refuses
+  any switch INTO `finance` / `qc` (409 `label_retired`), and a switch out (finance -> admin, qc -> reviewer) keeps
+  the person's keys exactly (review 2026-11-03).
 - **Add Admin / Add Reviewer** (a Sheet of EXISTING active members of the organisation not in that table,
   `GET admin/team/<table>/candidates/`; `POST admin/team/<table>/` `{admin_id, action, dry_run}`): adds the minimum
   key (`see_all` / `review`) on top of the materialised preset — nobody loses anything; role untouched; no email;
@@ -23,7 +24,7 @@ day). No migration, no new stored field: the existing `PartnerAdmin.permissions`
   the person's last table ("revoke instead"), when only Mentors would be left (until T3), while open cases remain
   (Reviewers), and for the lead at Admins. Role moves only where the label would keep them seated: leaving Admins,
   `admin` / `finance` → `reviewer` (or `qc` if they keep it); leaving Reviewers, `reviewer` / `qc` → `admin` — they
-  stay an Admin and keep the admin pages, and the confirm says so (lead ruling Q2b).
+  become an Admin and OPEN the admin work pages (a gain the confirm says in plain words; lead ruling Q2b).
 - **Labels retired** on Team and Invitations: no "View-only admin", "Finance" or "QC". Invitations offers Admin and
   Reviewer only (an org admin's invite of `finance` / `qc` is refused); **a new Admin row stores exactly
   `['see_all']`** (`staff_tables.invite_permissions`). Old pending finance / qc invitations still accept onto

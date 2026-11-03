@@ -126,7 +126,8 @@ export const roleOrgAdmin: ManualChapter = {
           Reviewers</strong> takes away only that table&rsquo;s permissions, and asks first. It is not offered on
           somebody&rsquo;s only table (revoke them instead), while they still have cases assigned (hand the cases
           on first), or to take you out of Admins. Somebody removed from Reviewers who is still in Admins stays an
-          Admin and keeps the admin pages; the question says so.</span>
+          Admin and will open the admin work pages (Announcements, Surveys, Sources and the like); the question
+          says so.</span>
           <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t

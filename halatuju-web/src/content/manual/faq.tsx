@@ -127,7 +127,8 @@ export const FAQ: Record<Audience, QA[]> = {
       a: <>It takes away that table&rsquo;s permissions only; their other tables, their sign-in and their cases
         stay as they are, and it asks first. It is not offered on somebody&rsquo;s only table (revoke them
         instead) or while they still have cases assigned (hand them on first). Somebody removed from Reviewers
-        who is still in Admins stays an Admin and keeps the admin pages.</>,
+        who is still in Admins becomes an Admin and will open the admin work pages (Announcements, Surveys and
+        the like); the question says so first.</>,
     },
     {
       q: <>An applicant shows <strong>&ldquo;Shared phone: call parent&rdquo;</strong>. What do I do?</>,

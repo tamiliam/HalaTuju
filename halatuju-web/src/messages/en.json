@@ -9163,7 +9163,7 @@
         "admins": "{name} was removed from Admins.",
         "reviewers": "{name} was removed from Reviewers."
       },
-      "keepsAdminPages": "They stay an Admin and keep the admin pages.",
+      "opensAdminPages": "They become an Admin and will open the admin work pages (Announcements, Surveys, Development, Sources, Mentors), which they may not open now.",
       "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
       "note": {
         "last_table": "Only table: revoke instead",

@@ -20,7 +20,7 @@ otherwise keep them seated — their `role`:
                      `reviewer`. Refused for the organisation admin (the lead tier is fixed).
   Remove from Reviewers `review` and `qc` go (and the `see_all` that only served `qc`): the keys left
                      are exactly the Admins table's. Role `reviewer` / `qc` moves to `admin` (lead ruling
-                     Q2b: one Admin, the same as an invited Admin — they keep the admin pages). The org
+                     Q2b: one Admin, the same as an invited Admin — they OPEN the admin work pages). The org
                      admin's stored ['review'] goes back to NULL. Refused while they hold open cases.
 
 ⚠ A KEY SET EQUAL TO THE (new) ROLE'S PRESET IS STORED AS NULL, as the editor stores it, so "custom" stays
@@ -216,8 +216,10 @@ def plan_table_change(target, table, action, *, open_n=None):
                                     and target.owning_organisation_id is not None
                                     and not staff_lifecycle._other_active_finance(target))
     # Lead ruling Q2b: said in plain words on the confirm.
-    out['keeps_admin_pages'] = bool(action == 'remove' and table == REVIEWERS and out['role'] == 'admin'
-                                    and out['role_changed'])
+    # Review 2026-11-03: a change that makes them role `admin` OPENS the admin work pages (the role gate,
+    # `staff_tables.may_do_admin_work`) — a Remove from Reviewers (Q2b) or a mentor login added to Admins.
+    # It can be a GAIN, so the confirm says so in plain words.
+    out['opens_admin_pages'] = bool(out['role_changed'] and out['role'] == 'admin')
     out['added'] = [k for k in out['after'] if k not in out['before']]
     out['removed'] = [k for k in out['before'] if k not in out['after']]
     return out
@@ -292,7 +294,9 @@ def change(target_id, table, action, *, by, dry_run=False):
     from .models import Invitation
     with transaction.atomic():
         target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
-        if target is None:
+        # Review 2026-11-03: the caller's right is judged AGAIN on the LOCKED row — the view's check read
+        # it before the lock, and a role or organisation change landing in between must not slip through.
+        if target is None or not may_act(by, target, table):
             raise Refused('not_found', 404, 'Admin not found')
         p = plan_table_change(target, table, action)
         if dry_run:

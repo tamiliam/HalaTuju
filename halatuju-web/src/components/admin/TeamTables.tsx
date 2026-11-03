@@ -90,7 +90,7 @@ type T = (k: string, vars?: Record<string, string>) => string
 
 const effects = (t: T, plan: TeamTablePlan, name: string) => [
   ...plan.consequences.map((c) => t(`admin.permEditor.effect.${c}`, { name })),
-  plan.keeps_admin_pages ? t('admin.team.keepsAdminPages') : '',
+  plan.opens_admin_pages ? t('admin.team.opensAdminPages') : '',
   plan.finance_check_off ? t('admin.team.financeCheckOff') : '',
 ].filter(Boolean)
 
