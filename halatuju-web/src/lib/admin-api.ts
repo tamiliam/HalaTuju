@@ -102,7 +102,7 @@ export type { OrgItem, SourceItem } from './admin-api/sources'
 // The partner, reviewer, invitation and sponsor e-mail templates an officer authors.
 export {
   getSponsorEmails, updateSponsorEmail, getPartnerEmails, getReviewerEmails, getInvitationEmails,
-  getReviewerSystemEmails, updatePartnerEmail,
+  getReviewerSystemEmails, updatePartnerEmail, getTeamAdminEmails,
 } from './admin-api/emails'
 export type {
   PartnerEmailTemplate, PartnerEmailOrg, PartnerEmailsPayload, SponsorEmailTemplate,

@@ -75,8 +75,8 @@ export const roleOrgAdmin: ManualChapter = {
         mentor</strong> ends the current one (with a reason only staff see; it stays in the history) and starts the
         new one; <strong>End mentoring</strong> ends it. You invite a mentor from <strong>Invitations &rarr;
         Mentor</strong>, like a source; Team &rarr; Mentors lists the mentors who have signed in, and the wording
-        of their invitation &mdash; the only email a mentor receives &mdash; is under <strong>Invitations &rarr;
-        Emails</strong>.
+        of their invitation &mdash; the only email a mentor receives &mdash; is under <strong>Team &rarr;
+        Emails</strong> (the same letter as on Invitations &rarr; Emails).
         A mentor who is invited but has not signed in yet can be assigned; a deactivated one cannot, and nobody can be mentor to their own application. Leave
         <strong> Email the student</strong> on and the student is sent &ldquo;You have a mentor&rdquo; with the
         mentor&rsquo;s name and contact (the phone only if the mentor shares it) &mdash; the system never emails
@@ -138,6 +138,14 @@ export const roleOrgAdmin: ManualChapter = {
           for their page: their scholars now and before, meetings, the average gap between meetings (per scholar),
           concerns raised and still open, and each scholar&rsquo;s standing &mdash; never the meeting notes, which
           stay on each scholar&rsquo;s file.</span>
+          <span className="mt-2 block"><strong>Team &rarr; Emails</strong> has three sections. <strong>Admin
+          emails</strong> lists what your admins are sent today &mdash; the payment run approval and finance check,
+          the payment instruction to Vircle, questions and quotes on your requests, a badly overdue verdict,
+          agreements waiting for countersignature and fully signed, invoices and receipts &mdash; with when each is
+          sent and who receives it; their wording cannot be edited yet. <strong>Reviewer emails</strong> are the
+          five you can edit and switch off, with the six we maintain. <strong>Mentor emails</strong> is the
+          mentor&rsquo;s invitation, the same letter Invitations &rarr; Emails edits. <strong>Team &rarr;
+          Terms</strong> has the same three sections, each marked Soon: nobody signs terms on Team yet.</span>
           <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
           <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
           can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t

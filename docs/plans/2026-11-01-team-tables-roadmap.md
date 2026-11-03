@@ -89,6 +89,9 @@ Reviewers). Mentors live on a separate page.
   meetings), concerns raised / handled, mentoring since — staff only, org-fenced.
 
 **T4 — Emails and Terms in three sections** (low-medium; ~15 files)
+- **Status: BUILT, NOT LIVE 2026-11-03 (branch maint-s7).** decisions.md "Team tables T4". Admin list = the backend
+  registry `admin_email_catalogue.py` (10 rows read off the senders, lead ruling option B: HalaTuju's own inbox not
+  shown), `GET admin/admin-emails/`; Reviewer card moved whole; Mentor = the Invitations card (`only=invite_mentor`).
 - Emails: Admin (the admin emails listed, read-only, with when each is sent), Reviewer (today's editable five),
   Mentor (the editable invitation + "no other email"). Terms: three "Soon" sections.
 

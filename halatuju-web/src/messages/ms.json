@@ -9218,7 +9218,63 @@
         "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
       },
       "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai.",
-      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka."
+      "becomesMentor": "{name} hanya akan tinggal dalam Mentor: mereka kekal dengan log masuk dan penerima biasiswa mereka, dan mulai sekarang hanya melihat Pelajar saya dan Profil mereka.",
+      "emails": {
+        "aria": "E-mel pasukan",
+        "adminTitle": "E-mel pentadbir",
+        "adminNote": "Apa yang dihantar kepada pentadbir hari ini. Kata-katanya belum boleh disunting.",
+        "adminLoadError": "Senarai e-mel pentadbir tidak dapat dimuatkan.",
+        "toLabel": "Kepada:",
+        "reviewerTitle": "E-mel penilai",
+        "mentorTitle": "E-mel mentor",
+        "mentorNone": "Mentor tidak menerima e-mel lain daripada HalaTuju.",
+        "mentorAside": "Tidak dikira di sini: e-mel tetapan semula kata laluan yang diminta mentor semasa log masuk, dan e-mel mana-mana jadual lain yang turut dianggotainya.",
+        "kind": {
+          "payment_approval": "Larian pembayaran menunggu kelulusan",
+          "payment_check": "Larian pembayaran menunggu semakan kewangan",
+          "payment_instruction": "Arahan pembayaran kepada Vircle",
+          "request_question": "Soalan tentang permintaan anda",
+          "request_quote": "Sebut harga untuk permintaan anda",
+          "verdict_escalation": "Keputusan sudah jauh lewat",
+          "countersign_pending": "Perjanjian menunggu tandatangan balas",
+          "agreement_executed": "Salinan perjanjian yang telah lengkap ditandatangani",
+          "invoice": "Invois anda",
+          "receipt": "Resit untuk bayaran anda"
+        },
+        "when": {
+          "payment_approval": "Apabila larian pembayaran sedia untuk tandatangan terakhirnya.",
+          "payment_check": "Apabila orang yang menyediakan larian pembayaran menandatanganinya, jika larian anda memerlukan semakan kewangan.",
+          "payment_instruction": "Apabila larian pembayaran diluluskan.",
+          "request_question": "Apabila HalaTuju bertanya soalan tentang permintaan yang dibuat oleh organisasi anda.",
+          "request_quote": "Apabila HalaTuju menghantar sebut harga untuk sesuatu permintaan.",
+          "verdict_escalation": "Apabila keputusan melepasi tarikh akhir dan hari tangguhnya tanpa apa-apa direkodkan.",
+          "countersign_pending": "Apabila pelajar dan penjamin (serta saksi, jika ada) telah menandatangani; sekali lagi sebagai peringatan.",
+          "agreement_executed": "Apabila perjanjian pelajar telah lengkap ditandatangani.",
+          "invoice": "Apabila HalaTuju menghantar invois kepada organisasi anda.",
+          "receipt": "Apabila HalaTuju merekodkan bayaran organisasi anda."
+        },
+        "to": {
+          "payment_approval": "Sesiapa yang boleh meluluskan pembayaran dan belum menandatanganinya; jika tiada, pentadbir organisasi.",
+          "payment_check": "Sesiapa yang boleh membuat semakan kewangan dan belum menandatanganinya.",
+          "payment_instruction": "Vircle, dengan salinan kepada pelulus dan pentadbir organisasi.",
+          "request_question": "Pentadbir organisasi yang membuat permintaan itu.",
+          "request_quote": "Pentadbir organisasi yang membuat permintaan itu.",
+          "verdict_escalation": "Pentadbir organisasi dan penilai yang ditugaskan.",
+          "countersign_pending": "Alamat yang dinamakan pada perjanjian dana itu (Kontrak); jika tiada, HalaTuju.",
+          "agreement_executed": "Alamat yang dinamakan pada perjanjian dana itu (Kontrak); jika tiada, HalaTuju.",
+          "invoice": "Alamat pengebilan organisasi anda.",
+          "receipt": "Alamat pengebilan organisasi anda."
+        }
+      },
+      "terms": {
+        "soon": "Akan datang",
+        "adminTitle": "Terma pentadbir",
+        "adminText": "Apa yang dipersetujui oleh pentadbir apabila menyertai akan ditetapkan di sini.",
+        "reviewerTitle": "Terma penilai",
+        "reviewerText": "Apa yang dipersetujui oleh penilai sebelum kes pertamanya akan ditetapkan di sini.",
+        "mentorTitle": "Terma mentor",
+        "mentorText": "Apa yang dipersetujui oleh mentor sebelum bertemu pelajar akan ditetapkan di sini."
+      }
     }
   },
   "documentsTab": {

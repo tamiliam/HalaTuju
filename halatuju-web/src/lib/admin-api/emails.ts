@@ -154,3 +154,13 @@ export async function updatePartnerEmail(
     `/api/v1/admin/scholarship/partner-emails/${kind}/`, 'PATCH', data, options)
 }
 
+/**
+ * Team tables T4 — what an organisation's ADMINS are sent today (Team -> Emails -> Admin emails).
+ *
+ * Keys only, in order, from the server's one registry (`admin_email_catalogue.CATALOGUE`, which names each
+ * sender; a new sender cannot skip it). The web words each row (`admin.team.emails.kind/when/to.<key>`).
+ * Read-only: there is no template row, switch or editor behind any of them yet.
+ */
+export async function getTeamAdminEmails(options?: ApiOptions) {
+  return adminFetch<{ emails: { key: string }[] }>('/api/v1/admin/admin-emails/', options)
+}

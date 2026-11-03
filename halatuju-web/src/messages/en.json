@@ -9218,7 +9218,63 @@
         "has_open_cases": "Reassign their cases first"
       },
       "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join.",
-      "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students and their Profile."
+      "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students and their Profile.",
+      "emails": {
+        "aria": "Team emails",
+        "adminTitle": "Admin emails",
+        "adminNote": "What admins are sent today. The wording cannot be edited yet.",
+        "adminLoadError": "The list of admin emails could not be loaded.",
+        "toLabel": "To:",
+        "reviewerTitle": "Reviewer emails",
+        "mentorTitle": "Mentor emails",
+        "mentorNone": "Mentors receive no other email from HalaTuju.",
+        "mentorAside": "Not counted here: a password reset a mentor asks for when signing in, and the emails of any other table they also sit at.",
+        "kind": {
+          "payment_approval": "A payment run is waiting for approval",
+          "payment_check": "A payment run is waiting for the finance check",
+          "payment_instruction": "The payment instruction to Vircle",
+          "request_question": "A question about your request",
+          "request_quote": "A quote for your request",
+          "verdict_escalation": "A verdict is badly overdue",
+          "countersign_pending": "An agreement is waiting for countersignature",
+          "agreement_executed": "A copy of a fully signed agreement",
+          "invoice": "Your invoice",
+          "receipt": "A receipt for your payment"
+        },
+        "when": {
+          "payment_approval": "When a payment run is ready for its final signature.",
+          "payment_check": "When the person who prepared a payment run signs it, if your runs need a finance check.",
+          "payment_instruction": "When a payment run is approved.",
+          "request_question": "When HalaTuju asks a question about a request your organisation made.",
+          "request_quote": "When HalaTuju sends a quote for a request.",
+          "verdict_escalation": "When a verdict is past its due date, and its grace days, with nothing recorded.",
+          "countersign_pending": "When the student and guarantor (and any witness) have signed; again as a reminder.",
+          "agreement_executed": "When a student's agreement is fully signed.",
+          "invoice": "When HalaTuju sends your organisation an invoice.",
+          "receipt": "When HalaTuju records your organisation's payment."
+        },
+        "to": {
+          "payment_approval": "Whoever may approve payments and has not signed it; if nobody can, the organisation admins.",
+          "payment_check": "Whoever may do the finance check and has not signed it.",
+          "payment_instruction": "Vircle, with a copy to the approver and the organisation admins.",
+          "request_question": "The organisation admin who made the request.",
+          "request_quote": "The organisation admin who made the request.",
+          "verdict_escalation": "The organisation admins and the assigned reviewer.",
+          "countersign_pending": "The addresses named on the gift's agreement (Contracts); if none, HalaTuju.",
+          "agreement_executed": "The addresses named on the gift's agreement (Contracts); if none, HalaTuju.",
+          "invoice": "Your organisation's billing addresses.",
+          "receipt": "Your organisation's billing addresses."
+        }
+      },
+      "terms": {
+        "soon": "Soon",
+        "adminTitle": "Admin terms",
+        "adminText": "What an admin agrees to when they join will be set here.",
+        "reviewerTitle": "Reviewer terms",
+        "reviewerText": "What a reviewer agrees to before their first case will be set here.",
+        "mentorTitle": "Mentor terms",
+        "mentorText": "What a mentor agrees to before meeting a student will be set here."
+      }
     }
   },
   "documentsTab": {

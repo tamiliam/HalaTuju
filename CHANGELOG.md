@@ -34,6 +34,29 @@ All notable changes to this project will be documented in this file.
   / ta); the desktop is unchanged; no handler, request or server check changed. Tests: `ScholarControls.phone.test.tsx`
   (6) and a guard in `mobileStandard.test.ts`; both bite (removing the hiding fails each).
 
+## Team tables T4 — Emails and Terms in three sections (not yet live)
+
+Roadmap T4 (owner rulings 1 and 9); decisions.md "Team tables T4"; lead ruling on the admin list's scope (option B).
+No template's wording, switch or sending changed; nobody gains or loses an editor.
+
+- **Team -> Emails** has three sections, in the order of the tables. **Admin emails** (read-only, "What admins are sent
+  today. The wording cannot be edited yet.") lists ten emails with when each is sent and who receives it, by role:
+  payment run waiting for approval, waiting for the finance check, the payment instruction to Vircle, a question and
+  a quote on a request, a badly overdue verdict, an agreement waiting for countersignature, a fully signed agreement,
+  the invoice and the receipt. **Reviewer emails** is today's card, moved whole (the five with switches, the six we
+  maintain). **Mentor emails** is the Invitations card showing only the mentor's invitation — the same template,
+  two doors — with "Mentors receive no other email from HalaTuju."
+- **One registry:** `apps/scholarship/admin_email_catalogue.py` names each row's sender(s); `GET admin/admin-emails/`
+  serves the keys (no address, no organisation data; the sponsor / partner templates' gate, `may_do_admin_work`).
+  `test_admin_email_catalogue` partitions every non-student `send_*` into the list or `NOT_ADMIN_SENDERS` (with a
+  reason), so a new admin email cannot ship unlisted; HalaTuju's own inbox (new request, profile complete, contact
+  form, ops alerts) is not shown as the organisation's. Web words in en/ms/ta, pinned by
+  `teamAdminEmailsDrift.test.ts`.
+- **Team -> Terms** opens: Admin, Reviewer and Mentor terms, each marked Soon with one sentence (it was a disabled tab
+  with no content).
+- The T1 access matrix declares the new cell (`T4_ADDED`, the sponsor-emails list's own cell per shape). Guide (Your
+  team) and FAQ ("Which emails does my team receive?") updated; the mentor letter's home now reads Team -> Emails.
+
 ## Mobile M6b — the reviewer's case page on phones — LIVE 2026-11-03 (main bff52794, web-01072-xpr)
 
 Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,

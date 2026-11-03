@@ -58,6 +58,45 @@ usable on a phone; listed among the M7 doors). Pinned by `ScholarControls.phone.
 maintenance status is read-only on a phone" in `mobileStandard.test.ts` (which also fails on a third caller of the
 status door). TD-480 item 4 closed.
 
+## Team tables T4: the admin emails are ONE backend registry read off the senders; the organisation's people only; the mentor letter has two doors — 2026-11-03 (owner rulings 1, 9; lead ruling option B)
+
+**Context:** Ruling 9 lists the admin emails (about six, hard-coded) on Team -> Emails, read-only; the design board
+named six lines. Read against the sending code, four of the six were wrong: the "run completed" mail goes to VIRCLE,
+copied to the approver and the org admins (not "the run's signers"); a new request goes to HalaTuju's own inbox, while
+the questions and the quote go to the org admin who SUBMITTED it (not "the organisation admin" for all three); "a
+student completed their profile" goes only to HalaTuju's inbox (not "the programme's admins"); the contact form goes
+to HalaTuju's inbox (on the board as "the support address" — HalaTuju's, so not an organisation email). Four more
+reach the organisation's people and were not on the board: the overdue-verdict escalation, the countersignature
+request, the signed-agreement copy, and the invoice / receipt.
+
+**Decision:**
+1. **The list is a backend constant** — `apps/scholarship/admin_email_catalogue.py` (`CATALOGUE`, each row naming
+   its `send_*`), served as keys by `GET admin/admin-emails/`, worded by the web in en/ms/ta. Backend, because the
+   student catalogue (`student_email_catalogue.NOT_STUDENT_SENDERS`) already partitions the whole emails package, so
+   `test_admin_email_catalogue` partitions THAT set again into rows or `NOT_ADMIN_SENDERS` (each with a reason): a new
+   sender is refused twice until classified. A web constant would have needed a grep of Python senders; the server
+   already enumerates them by import.
+2. **Lead ruling (option B):** the section lists only emails that reach the ORGANISATION's own people — ten rows.
+   Everything that reaches only HalaTuju's inbox (`ADMIN_NOTIFY_EMAIL`: request submitted / answered / accepted,
+   profile complete, contact form, sponsor interest, and the five ops alerts) is `NOT_ADMIN`, "sent to HalaTuju, not
+   to your team"; no second group. The two agreement rows are in because their recipients are the gift's agreement's
+   `counterparty_notify_emails`, which the organisation sets on Contracts (else HalaTuju).
+3. **Recipients are said by ROLE**, never an address (pinned on both sides). The gate is the sponsor / partner
+   templates' (`may_do_admin_work`); the tab is offered exactly as before (`mayEditEmails`). The T1 matrix declares
+   the new cell from the sponsor-emails list's.
+4. **Reviewer emails: `ReviewerEmailsCard` moved whole. Mentor emails: one source, two doors** — the Invitations
+   card with `only=['invite_mentor']` (the prop S7b added for the old Mentors page); Invitations -> Emails is
+   unchanged. "Mentors receive no other email from HalaTuju" is true of HalaTuju's own mail (a Resend is the same
+   letter; "You have a mentor" goes to the student); a small line under it says what is not counted — a password
+   reset they ask for at sign-in (Supabase's) and the emails of any other table they sit at.
+5. **Terms** opens (it was disabled, with no content): three "Soon" sections, readable by everyone who reads Team.
+
+**Alternatives considered:** the board's six lines verbatim (four wrong); a web constant plus a sender grep; showing
+HalaTuju's inbox as a second group (options A / C, declined by the lead).
+
+**Revisit if:** the admin emails become editable (the registry is where their rows start); T5 moves the tab's gate
+onto keys.
+
 ## Team tables T5.0: every power from permissions — the owner's model and 8 rulings (2026-11-03)
 
 **Context:** After T2 the owner said "any team member can move between roles, and they'd have the powers given them
