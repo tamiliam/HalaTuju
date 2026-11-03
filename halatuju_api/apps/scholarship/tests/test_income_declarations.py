@@ -133,7 +133,7 @@ class TheExtraction(SimpleTestCase):
         document needs a hand signature — the same stamp alone on a support letter is no approver."""
         from apps.scholarship.income_declaration import approval_counts, approval_missing
         answer = {'issuer_header': 'KEDAI CONTOH', 'approver_name': '', 'approver_title': '',
-                  'has_stamp_or_signature': 'stamp', 'has_signature': 'no'}
+                  'has_stamp_or_signature': 'stamp', 'has_signature': 'no', 'has_stamp': 'yes'}
         for slot, missing in (('salary_slip', ()), ('income_support_doc', ('approver',))):
             with self.subTest(slot):
                 out, _gem = self._read(self._doc(slot), answer, text=UNTITLED)
@@ -197,7 +197,7 @@ class TheExtraction(SimpleTestCase):
                       'Printed, typed or computer-filled text anywhere on the document',
                       'only ink visibly impressed by a rubber stamp is',
                       'Handwriting, even in block capitals or blue ink, is NOT a stamp',
-                      'only a pen-drawn signature or initials is a signature: a name written out by hand in '
+                      'Only a pen-drawn signature or initials is a signature: a name written out by hand in '
                       'block capitals is not',
                       'Printed labels such as "Cop dan tandatangan"', 'EMPTY signature or stamp boxes',
                       'never from a printed label'):
@@ -215,7 +215,8 @@ class TheExtraction(SimpleTestCase):
             with self.subTest(mark=mark, signed=signed):
                 out, _gem = self._read(self._doc(), {'issuer_header': '', 'approver_name': 'CONTOH BIN CONTOH',
                                                      'approver_title': 'KETUA KAMPUNG',
-                                                     'has_stamp_or_signature': mark, 'has_signature': signed})
+                                                     'has_stamp_or_signature': mark, 'has_signature': signed,
+                                                     'has_stamp': 'yes' if mark == 'stamp' else 'no'})
                 doc = self._doc()
                 doc.vision_fields = {'fields': out['fields']}
                 self.assertIs(approval_counts(doc), not missing)
@@ -396,7 +397,10 @@ class TheApproverRule(SimpleTestCase):
                      'has_stamp_or_signature': 'stamp'}, (), ''),                                  # 3A, read today
                    ({**CHECKED, 'has_stamp_or_signature': 'stamp'}, ('header',), 'approval_no_header'),
                    ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'approver_name': 'AH CONTOH',
-                     'has_signature': 'yes'}, ('approver',), 'approval_no_approver')]   # mark "no": has_signature unread
+                     'has_signature': 'yes'}, (), ''),     # #53 follow-up: has_signature decides on a payslip too
+                   ({**CHECKED, 'issuer_header': 'KEDAI CONTOH', 'approver_name': 'AH CONTOH',
+                     'has_stamp_or_signature': 'signature', 'has_signature': 'no'}, ('approver',),
+                    'approval_no_approver')]                                    # contradictory mark: "no" wins
         for slot, seen in (('salary_slip', 'declaration'), ('salary_slip', 'informal'), ('income_support_doc', None)):
             extra = payslip if (slot, seen) == ('salary_slip', 'informal') else support
             for fields, missing, reason in cases + extra:
@@ -471,6 +475,153 @@ class TheApproverRule(SimpleTestCase):
                 slip = self._doc('salary_slip', seen)
                 self.assertIs(is_informal(slip), False)
                 self.assertIs(approval_counts(slip), True)
+
+
+class TheStampIsItsOwnQuestion(SimpleTestCase):
+
+    """#53 follow-up (2026-11-03, owner option A): docs 3023 / 3235 / 4185 / 4204 — a village form SIGNED over a
+    rubber-stamped name block — came back mark "signature" (one word for two marks), `has_signature` "yes", the
+    title read off the stamp, no letterhead: not stamped, so "no issuing body". The stamp is now asked on its own
+    (`has_stamp`) and, when present, alone decides `stamped`. The rules themselves are unchanged."""
+
+    #: The live answer's SHAPE (synthetic name / place).
+    LIVE = {'issuer_header': '', 'approver_name': 'CONTOH BIN CONTOH', 'approver_title': 'PENGERUSI JKKK KG CONTOH',
+            'has_stamp_or_signature': 'signature', 'has_signature': 'yes', 'has_stamp': 'yes'}
+    SLOTS = (('salary_slip', 'declaration'), ('income_support_doc', None))
+
+    def _doc(self, doc_type, seen, fields):
+        vf = {'fields': dict(fields)}
+        if seen:
+            vf['authenticity'] = {'status': 'suspect', 'doc_seen': seen}
+        return ApplicantDocument(doc_type=doc_type, vision_fields=vf)
+
+    def _check(self, cases):
+        from apps.scholarship.income_declaration import approval_counts, approval_missing, approval_unchecked
+        for slot, seen, fields, missing in cases:
+            with self.subTest(slot=slot, seen=seen, fields=fields):
+                doc = self._doc(slot, seen, fields)
+                self.assertIs(approval_unchecked(doc), False)
+                self.assertEqual(approval_missing(doc), missing)
+                self.assertIs(approval_counts(doc), not missing)
+
+    def test_the_live_answer_counts_through_the_read(self):
+        """The exact live answer, through `read_approval`: the new key is stored and the form counts."""
+        from unittest import mock
+        from apps.scholarship.income_declaration import approval_counts, read_approval
+        for slot, seen in self.SLOTS:
+            with self.subTest(slot):
+                doc = self._doc(slot, seen, {})
+                ex = {'fields': {'amount': 'RM800'}, 'warnings': [], 'error': ''}
+                with mock.patch('apps.scholarship.vision._call_gemini_json', return_value=dict(self.LIVE)):
+                    out = read_approval(doc, ex, FORM, lambda: b'img')
+                self.assertEqual(out['fields']['has_stamp'], 'yes')
+                doc.vision_fields['fields'] = out['fields']
+                self.assertIs(approval_counts(doc), True)
+
+    def test_has_stamp_alone_decides_the_stamp(self):
+        no_stamp = {**self.LIVE, 'has_stamp': 'no'}
+        mark_no = {**self.LIVE, 'has_stamp_or_signature': 'no'}
+        mark_stamp_but_no = {**self.LIVE, 'has_stamp_or_signature': 'stamp', 'has_stamp': 'no'}
+        cases = []
+        for slot, seen in self.SLOTS:
+            cases += [(slot, seen, self.LIVE, ()),                      # signed + stamped name block: counts
+                      (slot, seen, no_stamp, ('header',)),              # no stamp, no letterhead: refused
+                      (slot, seen, mark_no, ()),                        # has_stamp "yes" wins over mark "no"
+                      (slot, seen, mark_stamp_but_no, ('header',))]     # has_stamp "no" wins over mark "stamp"
+        self._check(cases)
+
+    def test_a_payslip_keeps_3a_with_has_stamp(self):
+        """3A: on an informal PAYSLIP a stamp alone approves — `has_stamp` "yes" is that stamp, whatever the mark;
+        `has_stamp` "no" is no stamp, whatever the mark."""
+        hdr = {'issuer_header': 'KEDAI CONTOH', 'approver_name': '', 'approver_title': '', 'has_signature': 'no'}
+        self._check([('salary_slip', 'informal', {**hdr, 'has_stamp_or_signature': 'signature', 'has_stamp': 'yes'}, ()),
+                     ('salary_slip', 'informal', {**hdr, 'has_stamp_or_signature': 'no', 'has_stamp': 'yes'}, ()),
+                     ('salary_slip', 'informal', {**hdr, 'has_stamp_or_signature': 'stamp', 'has_stamp': 'no'},
+                      ('approver',)),
+                     ('salary_slip', 'informal', self.LIVE, ()),
+                     ('salary_slip', 'informal', {**self.LIVE, 'has_stamp': 'no'}, ('header',))])
+
+    def test_a_payslip_without_a_stamp_counts_by_a_named_signature(self):
+        """Review: on a payslip `has_signature` decides `signed` too — no stamp (whatever the mark), signed,
+        named, a header: counts by the signature route; unsigned: no approver."""
+        signed = {'issuer_header': 'KEDAI CONTOH', 'approver_name': 'AH CONTOH', 'approver_title': '',
+                  'has_stamp': 'no', 'has_signature': 'yes'}
+        self._check([('salary_slip', 'informal', {**signed, 'has_stamp_or_signature': 'stamp'}, ()),
+                     ('salary_slip', 'informal', {**signed, 'has_stamp_or_signature': 'signature'}, ()),
+                     ('salary_slip', 'informal', {**signed, 'has_stamp_or_signature': 'signature',
+                                                  'has_signature': 'no'}, ('approver',))])
+
+    def test_a_read_without_has_stamp_is_judged_as_before(self):
+        """Legacy reads (no `has_stamp`): the mark decides the stamp, exactly as before — the live defect stays
+        refused until re-read; a stamp mark with `has_signature` counts."""
+        legacy = {k: v for k, v in self.LIVE.items() if k != 'has_stamp'}
+        cases = []
+        for slot, seen in self.SLOTS:
+            cases += [(slot, seen, legacy, ('header',)),
+                      (slot, seen, {**legacy, 'has_stamp_or_signature': 'stamp'}, ())]
+        cases.append(('salary_slip', 'informal', {**legacy, 'has_stamp_or_signature': 'stamp', 'has_signature': 'no',
+                                                  'approver_name': '', 'approver_title': '',
+                                                  'issuer_header': 'KEDAI CONTOH'}, ()))
+        self._check(cases)
+
+    def test_the_unchecked_and_expiry_paths_are_unchanged(self):
+        """`_signature_unknown`, the sweep's once-only re-read and its 72h exit key on `has_signature` only: a
+        read with both new keys, or with `has_signature` only, is judged; a legacy stamp with neither is still
+        "checking" until its window closes."""
+        import time
+        from apps.scholarship.income_declaration import (APPROVAL_TRIED, _signature_unknown, approval_expired,
+                                                         approval_unchecked)
+        stamp = {**CHECKED, 'issuer_header': 'JKKK KAMPUNG CONTOH', 'approver_title': 'KETUA KAMPUNG',
+                 'has_stamp_or_signature': 'stamp'}
+        for fields, unknown in (({**stamp, 'has_signature': 'yes', 'has_stamp': 'yes'}, False),
+                                ({**stamp, 'has_signature': 'yes'}, False), (stamp, True)):
+            for ago, expired in ((3600, False), (73 * 3600, unknown)):
+                with self.subTest(fields=sorted(fields), ago=ago):
+                    doc = self._doc('income_support_doc', None, fields)
+                    doc.vision_fields[APPROVAL_TRIED] = int(time.time()) - ago
+                    self.assertIs(_signature_unknown(doc), unknown)
+                    self.assertIs(approval_expired(doc), expired)
+                    self.assertIs(approval_unchecked(doc), unknown and not expired)
+
+    def test_the_prompt_and_schema_ask_has_stamp(self):
+        from apps.scholarship.income_declaration import _APPROVAL_SCHEMA, APPROVAL_FIELDS, APPROVAL_PROMPT
+        self.assertEqual(APPROVAL_FIELDS['has_stamp'], {'type': 'string', 'enum': ['yes', 'no']})
+        self.assertIn('has_stamp', _APPROVAL_SCHEMA['required'])
+        self.assertIn('has_stamp_or_signature', _APPROVAL_SCHEMA['required'])           # kept, back-compat
+        for words in ('Answer the two deciding questions SEPARATELY',
+                      '"has_stamp" = "yes" ONLY if the stamp / chop of the APPROVER or the ISSUING BODY is visible',
+                      'the official\'s name-block stamp, or an office / company seal or chop by the signature or in '
+                      'the approval box',
+                      'whether or not there is also a signature',
+                      'A copy-certification stamp ("SALINAN DIAKUI SAH", a true-copy stamp), a received / date stamp '
+                      '("DITERIMA"), a postal stamp and similar stamps are NOT a stamp for this question',
+                      '"has_stamp_or_signature" is only a secondary summary',
+                      '"stamp" if "has_stamp" is "yes" (even when there is also a signature)'):
+            with self.subTest(words):
+                self.assertIn(words, APPROVAL_PROMPT)
+        # Review: the block-capital-handwriting rule sits under the has_signature question.
+        self.assertLess(APPROVAL_PROMPT.index('"has_signature" = "yes" ONLY'),
+                        APPROVAL_PROMPT.index('Only a pen-drawn signature or initials is a signature'))
+
+    def test_has_stamp_is_normalised_and_a_blank_or_missing_answer_is_no_stamp(self):
+        """" YES " / "Yes" are yes; a new read whose answer lacks `has_stamp`, or gives a non-string, stores ''
+        (the key present) — not stamped, the mark no longer consulted."""
+        from unittest import mock
+        from apps.scholarship.income_declaration import approval_missing, read_approval
+        base = {**self.LIVE, 'has_stamp_or_signature': 'stamp'}
+        for answer, missing in (({**base, 'has_stamp': ' YES '}, ()), ({**base, 'has_stamp': 'Yes'}, ()),
+                                ({k: v for k, v in base.items() if k != 'has_stamp'}, ('header',)),
+                                ({**base, 'has_stamp': True}, ('header',)), ({**base, 'has_stamp': None}, ('header',))):
+            for slot, seen in self.SLOTS:
+                with self.subTest(slot=slot, has_stamp=answer.get('has_stamp', '<missing>')):
+                    doc = self._doc(slot, seen, {})
+                    ex = {'fields': {'amount': 'RM800'}, 'warnings': [], 'error': ''}
+                    with mock.patch('apps.scholarship.vision._call_gemini_json', return_value=dict(answer)):
+                        out = read_approval(doc, ex, FORM, lambda: b'img')
+                    if not isinstance(answer.get('has_stamp'), str):
+                        self.assertEqual(out['fields']['has_stamp'], '')
+                    doc.vision_fields['fields'] = out['fields']
+                    self.assertEqual(approval_missing(doc), missing)
 
 
 class _Case(TestCase):

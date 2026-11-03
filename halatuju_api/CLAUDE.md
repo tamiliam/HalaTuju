@@ -117,15 +117,21 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 
 ## Testing (full text: `docs/testing.md`)
 
-The deploy gates' own command lines (a serial run passes things the gate refuses):
+The deploy gates' own command lines (a serial run passes things the gate refuses). The heavy ones go
+through the machine-wide queue, so parallel sessions take turns instead of slowing each other down
+(`credit-discipline.md` → Speed). While building, run only the targeted test files, without the queue.
 
 ```bash
-cd halatuju_api && python -m pytest -q -n auto -p no:cacheprovider
+cd halatuju_api && python C:/Users/tamil/Python/Settings/_tools/test_queue.py -- python -m pytest -q -n auto -p no:cacheprovider
 python manage.py check && python manage.py makemigrations --check --dry-run
-cd halatuju-web && npm run gates      # typecheck, lint, i18n, jest, in order
+cd halatuju-web && python C:/Users/tamil/Python/Settings/_tools/test_queue.py -- npm run gates      # typecheck, lint, i18n, jest, in order
 cd halatuju-web && npm run bundle-budget -- --gate
-cd halatuju-web && npm run mobile-check    # ANY UI change, before a push (local only)
+cd halatuju-web && python C:/Users/tamil/Python/Settings/_tools/test_queue.py -- npm run mobile-check    # ANY UI change, before a push (local only)
 ```
+
+- **Full suites run ONCE locally, right before the push, after the last rebase.** Not after each review
+  round or fix — re-run only the affected test files then. Cloud Build runs the full suite again and
+  ships nothing red.
 
 - ⚠ Run the API gate with `-n auto`, not serially. ⚠ Frontend: all four gates before any push that deploys web; tsc and `next lint` need 0 ERRORS (`next build` lints before it emits).
 - ⚠ For any UI change run `npm run mobile-check` (and `npm run mobile-ledger`); ⚠ interactive behaviour needs a RENDERED test, a source-shape guard is not evidence.

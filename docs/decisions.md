@@ -64,6 +64,29 @@ unchanged (the golden tables, `test_team_tables_matrix` against its BEFORE rows)
 small queries more. TD-482 (an earlier interview-draft author is not remembered) and TD-483 (the cockpit's QC panel
 shows for a QC the server will refuse; English refusal) are left for later.
 
+## Request #53 follow-up: the stamp is its own yes/no question; the approval rules are unchanged — 2026-11-03 (owner option A)
+
+**Context:** the informal-income approval read (`income_declaration.APPROVAL_PROMPT`) answered the stamp and the
+signature in ONE word (`has_stamp_or_signature`: "stamp" / "signature" / "no"). After the #53 fix deployed,
+documents 3023, 3235, 4185 and 4204 (village forms signed over a rubber-stamped name block, the title read off the
+stamp, no letterhead) came back "signature": with both marks on the page the model picked one. Not stamped, so the
+header rule (header = letterhead, or stamp + a named / titled approver) failed and the forms were refused "no
+issuing body". Option A was to ask the stamp separately; the alternative, changing the rules, was not chosen.
+
+**Decision (owner, 2026-11-03): option A.** The image read asks `has_stamp` ("yes" / "no") on its own, like
+`has_signature`: the stamp / chop of the APPROVER or ISSUING BODY (a name-block stamp, an office / company seal or
+chop by the signature or approval box); copy-certification ("SALINAN DIAKUI SAH"), received / date ("DITERIMA"),
+postal and similar stamps do not count. When present, `has_stamp` alone decides `stamped` and `has_signature` alone
+decides `signed` (on a payslip too, review); a read from before either key falls back on the one-word mark, which
+stays in the schema as a secondary summary. The rules themselves are unchanged: payslip approver = stamped or
+(signed and named); every other informal document's approver = signed and named; header = letterhead or (stamped
+and named).
+
+**Consequences:** `MODEL_VERSION` 1.24.0, `VERDICT_ENGINE_VERSION` 2026-11-03.2 (a form can now count and move an
+income band). No new sweep clause and no automatic re-read (cost): stored reads keep their old answer until re-read
+by hand; `_signature_unknown`, the sweep, the 72 h exit and the awarded carve-out still key on `has_signature` only.
+Pinned by `TheStampIsItsOwnQuestion` in `test_income_declarations.py`.
+
 ## Mobile M7b: the DesktopOnly panel replaces a desktop-only page on a phone, by CSS, mounted once in the shell; the Team / Invitations / Mentors tables become rows — 2026-11-03 (owner "go m7b"; design approved in M7 phase 1)
 
 **Context:** six routes are classed `desktop` in `mobileClass.ts` (billing-rates, billing, course-data, contracts,
