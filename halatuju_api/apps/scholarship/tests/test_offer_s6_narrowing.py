@@ -535,3 +535,28 @@ class Round10AgencyLetterhead(SimpleTestCase):
                      _agency('JABATAN PEMBANGUNAN KEMAHIRAN', venue='ILP Kuantan')):
             with self.subTest(text.splitlines()[0]):
                 TheProperty._check(self, text)
+
+    # Condition 4 refined (coordinator, 2026-11-03): an institution noun names an organisation only when a NAME
+    # follows it on its line, read in the raw case; the agency's umbrella names count as the agency.
+    def test_generic_institution_words_are_no_organisation(self):
+        for extra in ('Pihak pengurusan institut berhak menarik balik tawaran ini.\n',
+                      'Sila bawa dokumen asal semasa hari pendaftaran di institusi/kolej.\n',
+                      'PIHAK INSTITUT BERHAK MENARIK BALIK TAWARAN INI.\n'):
+            with self.subTest(extra=extra):
+                out = self._out(_agency('MAJLIS AMANAH RAKYAT', extra=extra))
+                self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
+        out = self._out(_agency('KEMENTERIAN BELIA DAN SUKAN', venue='IKBN Pekan',
+                                extra='Pusat Pengajian IKBN Pekan\n'))
+        self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
+
+    def test_a_named_institution_in_the_body_is_another_organisation(self):
+        for extra in ('Latihan amali di Kolej Mercu.\n', 'LATIHAN AMALI DI KOLEJ MERCU JAYA.\n',
+                      'Pengendali : Akademi Mercu\n', 'Kelas tambahan di Pusat Latihan Mercu.\n'):
+            with self.subTest(extra=extra):
+                self.assertNotIn(ruling_of(self._out(_agency('MAJLIS AMANAH RAKYAT', extra=extra))), LIFTS)
+
+    def test_the_agency_umbrella_name_counts_only_for_its_own_agency(self):
+        umbrella = 'Institusi Latihan Kemahiran Belia dan Sukan (ILKBS)\n'
+        out = self._out(_agency('KEMENTERIAN BELIA DAN SUKAN', venue='IKBN Pekan', extra=umbrella))
+        self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
+        self.assertNotIn(ruling_of(self._out(_agency('MAJLIS AMANAH RAKYAT', extra=umbrella))), LIFTS)

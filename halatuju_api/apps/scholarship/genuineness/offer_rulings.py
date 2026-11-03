@@ -157,11 +157,63 @@ def _tvet_lift(r, lines, model_version):
 #: other ministry are not on it.
 _AGENCIES = {
     'tvet_mara': (' MAJLIS AMANAH RAKYAT ', ' MARA ', ' TVETMARA ',
-                  ' BAHAGIAN PENDIDIKAN DAN LATIHAN TEKNIKAL VOKASIONAL MARA '),
-    'tvet_belia_sukan': (' KEMENTERIAN BELIA DAN SUKAN ', ' KBS ', ' MINISTRY OF YOUTH AND SPORTS '),
+                  ' BAHAGIAN PENDIDIKAN DAN LATIHAN TEKNIKAL VOKASIONAL MARA ',
+                  ' INSTITUSI PENDIDIKAN MARA ', ' IPMA '),                    # the agency's umbrella names
+    'tvet_belia_sukan': (' KEMENTERIAN BELIA DAN SUKAN ', ' KBS ', ' MINISTRY OF YOUTH AND SPORTS ',
+                         ' INSTITUSI LATIHAN KEMAHIRAN BELIA DAN SUKAN ', ' ILKBS '),
     'tvet_jtm': (' JABATAN TENAGA MANUSIA ', ' JTM ', ' KEMENTERIAN SUMBER MANUSIA ', ' KSM ',
-                 ' DEPARTMENT OF MANPOWER ', ' MINISTRY OF HUMAN RESOURCES '),
+                 ' DEPARTMENT OF MANPOWER ', ' MINISTRY OF HUMAN RESOURCES ',
+                 ' INSTITUSI LATIHAN JABATAN TENAGA MANUSIA ', ' ILJTM '),
 }
+#: Condition 4 (refined 2026-11-03): an institution noun names another organisation only when a NAME follows it
+#: on its line, read in the raw OCR case ("Kolej Mercu", "KOLEJ MERCU JAYA"; never "pihak institut berhak",
+#: "di institusi/kolej").
+_INSTITUTION_NOUNS = frozenset({'INSTITUT', 'INSTITUSI', 'INSTITUTE', 'INSTITUTES', 'KOLEJ', 'COLLEGE', 'COLLEGES',
+                                'AKADEMI', 'ACADEMY', 'UNIVERSITI', 'UNIVERSITY', 'PUSAT', 'POLITEKNIK',
+                                'POLYTECHNIC', 'MAKTAB', 'SEKOLAH', 'SCHOOL', 'TUISYEN', 'TUITION'})
+_FUNCTION_WORDS = frozenset({
+    'BERHAK', 'INI', 'ITU', 'TERSEBUT', 'BERKENAAN', 'YANG', 'DAN', 'DI', 'KE', 'UNTUK', 'DARI', 'DARIPADA',
+    'KEPADA', 'PADA', 'BAGI', 'OLEH', 'ATAU', 'AKAN', 'TELAH', 'IALAH', 'ADALAH', 'ANDA', 'KAMI', 'TUAN', 'PUAN',
+    'SERTA', 'DENGAN', 'DALAM', 'SEBAGAI', 'SETIAP', 'SEMUA', 'BERIKUT', 'MASING', 'SEMASA', 'SELEPAS', 'SEBELUM',
+    'THE', 'OF', 'AND', 'TO', 'AT', 'IN', 'FOR', 'A', 'AN', 'THIS', 'THAT', 'IS', 'ARE', 'WILL', 'MAY', 'BY', 'ON',
+    'WITH', 'AS', 'YOUR', 'OUR'})
+#: A noun's DESCRIPTOR words ("Pusat Pengajian IKBN Pekan", "Kolej Kemahiran Tinggi Mercu"): skipped to find what
+#: the noun names — the matching institute (allowed) or another name.
+_DESCRIPTORS = frozenset({'PENGAJIAN', 'LATIHAN', 'KEMAHIRAN', 'PENDIDIKAN', 'TINGGI', 'TEKNIKAL', 'VOKASIONAL',
+                          'STUDY', 'STUDIES', 'TRAINING', 'SKILLS'})
+_WORD = re.compile(r'[^\W\d_]+|\d+')
+
+
+def _names_another_organisation(raw, allowed) -> bool:
+    """Condition 4: the RAW line names an organisation other than `allowed` (folded phrases, removed first): an
+    institution noun followed by a name — a capitalised / all-caps token that is no function word and no other
+    institution noun."""
+    toks = _WORD.findall(raw or '')
+    up = [t.upper() for t in toks]
+    covered = [False] * len(toks)
+    for phrase in sorted(allowed, key=len, reverse=True):
+        p = phrase.split()
+        for j in range(len(up) - len(p) + 1):
+            if up[j:j + len(p)] == p and not any(covered[j:j + len(p)]):
+                covered[j:j + len(p)] = [True] * len(p)
+    for j, w in enumerate(up):
+        if covered[j] or w not in _INSTITUTION_NOUNS:
+            continue
+        k = j + 1
+        while k < len(toks) and not covered[k] and up[k] in _DESCRIPTORS and toks[k][:1].isupper():
+            k += 1                      # its descriptor words ("Pusat Pengajian ...")
+        if k >= len(toks) or covered[k]:
+            continue                    # nothing after it, or the matching institute / agency itself
+        nxt = toks[k]
+        if nxt[:1].isupper() and nxt.upper() not in _FUNCTION_WORDS and nxt.upper() not in _INSTITUTION_NOUNS:
+            return True
+    return False
+
+
+def _raw_lines(ocr_text):
+    """The raw OCR lines aligned with `_folded_lines` (the same non-empty filter), case kept."""
+    from .results_doc import _norm_fold_upper_alnum
+    return [raw for raw in unicodedata.normalize('NFKC', ocr_text or '').splitlines() if _norm_fold_upper_alnum(raw)]
 #: Another public body on the line (a ministry / department / council / board not on `_AGENCIES`).
 _OTHER_BODY = re.compile(r' (?:KEMENTERIAN|MINISTRY|JABATAN|DEPARTMENT|MAJLIS|LEMBAGA|PERBADANAN|BAHAGIAN) [A-Z]')
 #: Item 9 (3): money words in the title or the first body lines — no admission.
@@ -184,7 +236,7 @@ def _agency_on_head(lines) -> str:
     return keys.pop() if len(keys) == 1 else ''
 
 
-def _agency_lift(r, lines, model_version):
+def _agency_lift(ocr_text, r, lines, model_version):
     """Item 9: an agency's letterhead + its OWN institute named in the body + an admission title + the full shape
     (no private marker: `_lift`). Tag `tvet_offer`; the reason says `agency_letterhead`."""
     key = _agency_on_head(lines)
@@ -203,15 +255,13 @@ def _agency_lift(r, lines, model_version):
         return None                     # (4) the full offer shape
     if _SLIP in _page(_letterhead_block(lines)):
         return None
-    allowed = sorted(_AGENCIES[key] + _INSTITUTE_KEY[key], key=len, reverse=True)   # 'INSTITUT KEMAHIRAN MARA' before 'MARA'
+    allowed = _AGENCIES[key] + _INSTITUTE_KEY[key]
+    raws = _raw_lines(ocr_text)
     for i, ln in enumerate(body, start=head_n):
-        if _bank_line(ln) or _in_addressee_block(lines, i):
+        if _bank_line(ln) or _in_addressee_block(lines, i) or i >= len(raws):
             continue
-        rest = _unstreeted(_decontact(ln))
-        for n in allowed:
-            rest = rest.replace(n, ' ')
-        if _HEAD_RE.search(rest):
-            return None                 # (4) another organisation named in the body
+        if _names_another_organisation(raws[i], allowed):
+            return None                 # (4) another organisation NAMED in the body
     return _ruled_status('genuine', r, key, 'tvet_offer', f'agency_letterhead: {TVET_ISSUERS[key][0]}: the agency\'s '
                          'own letterhead, its public TVET institute named in the body - a public offer (owner '
                          'ruling 2026-11-03, S6 item 9)', model_version)
@@ -290,7 +340,7 @@ def _lift(ocr_text, r, lines, page, vetoed, model_version):
         lifted = _company_lift(ocr_text, r, lines, model_version)
         if lifted:
             return lifted
-    return (_tvet_lift(r, lines, model_version) or _agency_lift(r, lines, model_version)
+    return (_tvet_lift(r, lines, model_version) or _agency_lift(ocr_text, r, lines, model_version)
             or _confirmation_lift(r, lines, model_version))
 
 

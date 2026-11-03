@@ -803,7 +803,10 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   the three target letters still keep their baseline under condition 4 ("no other organisation named in the
   body"): a228 d3465 / d3466 each have one more "INSTITUT" phrase (four words, none a closed-list name) in the last
   paragraph; a329 has a bare "KOLEJ" ending a sentence ("… di institusi / kolej"), with no name after it on its
-  line. Lifting them needs the owner to rule on those two mentions; no excuse was added.
+  line. The coordinator read them (generic lowercase words; the ILKBS umbrella) and refined condition 4: a noun
+  is another organisation only when a name follows it (raw case, descriptor words skipped), and the umbrella
+  names count as their agency. MEASURED: all three lift (`tvet_offer`, reason `agency_letterhead`); 13 tagged
+  changes; dev 196 / 197, held-out 90 / 90.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

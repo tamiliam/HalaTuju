@@ -82,8 +82,14 @@
    3. the title is an admission offer; PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN / ELAUN / BANTUAN in the title or
       the first body lines = no lift;
    4. the full offer shape and no private marker anywhere (the strict round-8 / 9 rule, no new excuse); no other
-      organisation named in the body but the institute and the agency (a closed-list bank line and the addressee
-      block excepted).
+      organisation NAMED in the body but the institute and the agency (a closed-list bank line and the addressee
+      block excepted). Refined the same day (the coordinator's own condition, within the ruling): an institution
+      noun names an organisation only when a NAME follows it on its line, read in the raw OCR case — a capitalised
+      / all-caps token that is no function word and no other institution noun, after the noun's descriptor words
+      (Pengajian / Latihan / Kemahiran …); "pihak institut berhak", "di institusi/kolej" are generic. The agency's
+      umbrella names count as the agency, for that agency only: ILKBS / Institusi Latihan Kemahiran Belia dan
+      Sukan (KBS), ILJTM / Institusi Latihan Jabatan Tenaga Manusia (JTM), IPMa / Institusi Pendidikan MARA /
+      TVETMARA (MARA).
    `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
    `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
    `Round10AgencyLetterhead`.
