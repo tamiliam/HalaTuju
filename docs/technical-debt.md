@@ -7732,3 +7732,15 @@ registration slip on page 1: page 1 scores 0.07 (not_offer_letter), all pages 0.
 printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the offer page too — one Vision call per
 extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
 corpus first (owner's yes: a paid path). *(B · M)*
+
+### [TD-482] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
+
+**Raised 2026-11-04 by the S6 round-10 review (lead's ruling on M4 for confirmations).** A confirmation of studies
+lifts only when its polytechnic / UMS / Form-6 name comes first on the letterhead, after crest, government, address,
+the institution's own division lines, or a short crest / motto line of at most two words (`offer_rulings.
+_own_division_or_crest`). A private name of one or two words with no institution noun ("MERCU JAYA") passes as such a
+short line, so "MERCU JAYA / POLITEKNIK CONTOH" still lifts (probe in `tests/test_offer_s6_narrowing.py`, class
+`Round10M4Confirmations`). A known crest / motto word list would close it, but the one real corpus letter with such
+lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tightening would drop an owner-ruled
+letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
+motto. *(S6 · S)*

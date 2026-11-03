@@ -812,7 +812,11 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   lines; a loan beside an RM amount never lifts a fail); M4 for the institute lift (`_named_first`); L1 OCR 0 / 1.
   M4 for the confirmation lift is HELD — measured, it drops three owner-ruled confirmations: a188 / a284 carry the
   university's own "BAHAGIAN …" division line above the UMS name, a123 two short lines above its Form-6 name.
-  Needs a ruling: may an institution's own division line, or a crest motto line, precede its name?
+  Needs a ruling: may an institution's own division line, or a crest motto line, precede its name? **Ruled (lead,
+  2026-11-04):** yes — its own division line (no company / private body / other institution on it) or a short
+  crest / motto line (≤ 2 words, no institution noun / company / digit). Built (`_own_division_or_crest`); the three
+  lift again. The r10 "MERCU (no noun) above poly" probe still lifts — a known-motto list would drop a123 — so it is
+  TD-482 (Medium).
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

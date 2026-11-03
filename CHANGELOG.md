@@ -148,6 +148,12 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   institute lift; the body's institution-noun test reads OCR 0 / 1 as O / I. The same first-on-the-letterhead
   rule for confirmations is HELD: it drops a188 / a284 (a "BAHAGIAN …" division line above the UMS name) and a123
   (two short lines above the Form-6 name). Corpus: 13 tagged changes, dev 196 / 197, held-out 90 / 90.
+- **M4 for confirmations (lead's ruling 2026-11-04; class `Round10M4Confirmations`):** the polytechnic / UMS /
+  Form-6 name must come first on the letterhead; above it only crest / government / address lines, the
+  institution's OWN division line (BAHAGIAN / PEJABAT / UNIT / SEKSYEN / JABATAN / PUSAT / DIVISION / OFFICE /
+  DEPARTMENT / CENTRE FOR, naming no company, private body or other institution) or a short crest / motto line
+  (at most two words, no institution noun, company or digit). a188 / a284 / a123 lift again (13 tagged changes).
+  Accepted gap TD-482: a two-word private name with no institution noun passes as a crest line.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

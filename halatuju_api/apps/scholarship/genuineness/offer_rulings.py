@@ -301,8 +301,9 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
                                                  or ' KOLEJ TINGKATAN ENAM ' in head):
             continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
         if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
-                and any(m in page for m in marks) and _clean_letterhead(scan, names)):
-            return seen                 # (round 10 M4 for confirmations held: it drops a188 / a284 / a123)
+                and any(m in page for m in marks) and _clean_letterhead(scan, names)
+                and _named_first(scan, names, divisions=True, then=[_title_segment(scan)])):     # round 10 (M4)
+            return seen
     return ''
 
 
@@ -327,11 +328,26 @@ _ADDRESS_LINE = re.compile(r' (?:JALAN|JLN|LORONG|PERSIARAN|LEBUH|LOT|NO|PETI SU
                            r'TERENGGANU|KUALA LUMPUR|LABUAN|PUTRAJAYA|WILAYAH PERSEKUTUAN)(?= )|(?<!\d)\d{5}(?!\d)')
 
 
-def _named_first(lines, names, agency_names=()) -> bool:
+#: Lead's ruling 2026-11-04 (confirmations): an institution's own DIVISION line may precede its name.
+_DIVISION_LINE = re.compile(r'^ (?:BAHAGIAN|PEJABAT|UNIT|SEKSYEN|JABATAN|PUSAT|DIVISION|OFFICE|DEPARTMENT|CENTRE FOR)(?= )')
+
+
+def _own_division_or_crest(ln) -> bool:
+    """A division line of the institution itself (its remaining words name no company, no private body, no other
+    institution), or a short crest / motto line (at most two words, no institution noun, no company, no digit)."""
+    if any(c in ln for c in _COMPANY_HEAD) or _SB.search(ln) or any(b in ln for b in _PRIVATE_BODIES):
+        return False
+    m = _DIVISION_LINE.search(ln)
+    if m:
+        return not _HEAD_RE.search(ln[m.end():])
+    return len(ln.split()) <= 2 and not _ORG_RE.search(ln) and not any(ch.isdigit() for ch in ln)
+
+
+def _named_first(lines, names, agency_names=(), divisions=False, then=()) -> bool:
     """Round 10 (M4): a closed-list name is on the FIRST letterhead line, or comes only after crest / government
     lines (KERAJAAN MALAYSIA, a ministry / department, the matching agency) and address lines. Any other line before
     it ("MERCU JAYA" above the institute) = no lift."""
-    for ln in _letterhead_lines(lines):
+    for ln in _letterhead_lines(lines) + list(then):        # `then`: a confirmation's own title segment
         if any(n in ln for n in names):
             return True
         rest = ln
@@ -339,6 +355,8 @@ def _named_first(lines, names, agency_names=()) -> bool:
             rest = rest.replace(a, ' ')
         if not rest.strip() or _GOVERNMENT_LINE.search(ln) or _ADDRESS_LINE.search(ln) or _is_contact(ln):
             continue
+        if divisions and _own_division_or_crest(ln):
+            continue                    # confirmations (lead's ruling 2026-11-04)
         return False
     return False
 

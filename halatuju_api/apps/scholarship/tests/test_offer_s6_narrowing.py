@@ -618,3 +618,39 @@ class Round10(SimpleTestCase):
             with self.subTest(extra=extra):
                 self.assertFalse(self._lifted(_agency('MAJLIS AMANAH RAKYAT', extra=extra)))
         self.assertTrue(self._lifted(_agency('MAJLIS AMANAH RAKYAT')))
+
+
+class Round10M4Confirmations(SimpleTestCase):
+    """Lead's ruling 2026-11-04: a confirmation's closed-list name comes first on its letterhead, after crest /
+    government / address lines, the institution's OWN division lines, or a short crest / motto line."""
+
+    def _kind(self, head):
+        return confirmation_kind(_c9(head), 0.2)
+
+    def test_division_and_crest_lines_may_precede_the_name(self):
+        for head, seen in (('BAHAGIAN PENGURUSAN AKADEMIK\nUNIVERSITI MALAYSIA SABAH', 'confirmation_ums'),
+                           ('PEJABAT PENDAFTAR\nUNIVERSITI MALAYSIA SABAH', 'confirmation_ums'),
+                           ('UNIT KEMASUKAN\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI',
+                            'confirmation_polytechnic'),
+                           ('BERILMU BERBAKTI\nKOLEJ TINGKATAN ENAM CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA',
+                            'confirmation_form6'),
+                           ('KERAJAAN MALAYSIA\nKEMENTERIAN PENDIDIKAN TINGGI\nPOLITEKNIK CONTOH',
+                            'confirmation_polytechnic')):
+            with self.subTest(head=head):
+                self.assertEqual(self._kind(head), seen)
+
+    def test_anything_else_above_the_name_is_no_lift(self):
+        for head in ('KOLEJ MERCU\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI',
+                     'MERCU JAYA SDN BHD\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI',
+                     'BAHAGIAN AKADEMIK KOLEJ MERCU\nUNIVERSITI MALAYSIA SABAH',
+                     'UNIT KEMASUKAN MERCU SDN BHD\nUNIVERSITI MALAYSIA SABAH',
+                     'MERCU JAYA EDUCATION GROUP\nUNIVERSITI MALAYSIA SABAH',
+                     'MERCU 123\nUNIVERSITI MALAYSIA SABAH'):      # a short line with a digit is no crest
+            with self.subTest(head=head):
+                self.assertEqual(self._kind(head), '')
+
+    def test_a_two_word_private_name_still_passes_as_a_short_line(self):
+        """TD-482 (Medium, accepted): a one- or two-word private name with no institution noun reads as a crest /
+        motto line; a known-motto list would drop a123, a real Form-6 confirmation."""
+        self.assertEqual(self._kind('MERCU JAYA\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI'),
+                         'confirmation_polytechnic')
