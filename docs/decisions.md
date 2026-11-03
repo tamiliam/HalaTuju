@@ -17,6 +17,48 @@ mapping of live shapes and the T5a–T5g sprint split are in `docs/plans/2026-11
 `created_by` and a maker/check/approve chain (closes TD-475); "Covers" becomes a real gift fence only in T5f (today
 it greys the assign picker and the server ignores it). Every T5 step that moves access gets an adversarial review.
 
+## Requests list R1: the four tabs partition the list; ONE Needs-action rule for the badge and the tab; Previous / Next walks the page you came from; tab counts are of the whole list — 2026-11-03 (owner approved the design and option A)
+
+**Context:** `/admin/requests` was one unpaged list carrying every request's full detail, with a status dropdown the
+server never read (`?status=` was ignored). R1 makes it a paged, server-filtered queue. Plan of record
+`docs/plans/2026-11-03-requests-list-r1-roadmap.md` (D1-D12); design of record the "Requests list" artifact.
+
+**Decision:**
+1. **The tabs PARTITION the list (owner, option A).** Needs action / In progress / Closed, and All is their sum. Every
+   request is in exactly one working tab: In progress is "not terminal AND not needs-action", so an organisation's
+   own untriaged request (waiting only on the engineer) is In progress for them. A test pins the partition.
+2. **ONE Needs-action predicate**, `org_requests_queue.needs_action_q(is_super)`, returning a `Q`. The nav badge
+   (`AdminOrgRequestCountView`) and the Needs-action tab both call it, so the number on the badge is the number on the
+   tab it leads to. Super: untriaged, or a triaged feature with no approved live analysis (TD-205). org_admin: not
+   terminal, and a quote awaiting them or a comment awaiting their reply (TD-201). Every child read is an `Exists`
+   subquery, so the same `Q` works in `.filter()` and inside `Count(filter=...)` without multiplying rows.
+3. **Previous / Next walks only the PAGE the reader came from** (D7), through one shared, storage-injected,
+   SSR-safe hook `src/lib/listNav.ts` (sessionStorage: the page's ids, the list's URL, the tab's name) and
+   `components/admin/RequestListNav.tsx`. A direct link (id not in the record) shows the plain "Back to requests".
+   The Applications cockpit's hand-rolled copy adopts the hook AFTER Mobile M6b re-lays-out its header (D8, TD-477).
+4. **Tab counts are of the WHOLE fenced list** (and the crumb's `?org=`), never of the kind filter or the search —
+   the S7 2026-09-11 rule "a tab's count is of the WHOLE list". The filtered total is the paginator's `count`,
+   printed as "Showing a–b of N".
+
+**Alternatives considered:** (1) the brief's literal In progress (statuses triaged…deferred) — rejected by the owner
+for option A: an organisation's plain `submitted` request would sit in no tab but All, a super's untriaged feature in
+two, and the four counts would not add up. (2) Keeping a copy of the rule in
+the count view — rejected: two copies is how a badge says 3 while the tab says 2. (3) Paging across pages from the
+detail page — needs a fetch from the detail page; a follow-up if wanted. (4) Converting Applications in R1 — M6b
+rewrites that header next, and its view file has two lines of ledger room. (5) Counts that follow the filter —
+the tabs would then disagree with the badge whenever a filter was set.
+
+**Rationale:** the badge brings people to the page, so the first thing they see must agree with it; a partition
+makes every count add up; light rows (no thread, attachments or analyses, so no Supabase signing per row) are what
+make paging cheap.
+
+**Trade-offs:** Previous / Next stops at the page edge (25 rows); the nav record is a snapshot of the list at the
+time it was read, so a request that changes tab while open still walks in its old list; the server default
+`group=all` keeps old callers working, while the web lands on Needs action.
+
+**Revisit if:** the owner wants Previous / Next to cross pages; a third role gets a Requests view (the predicate
+grows a branch); the Applications cockpit converts (TD-477) and the hook needs a cross-page fetch for both.
+
 ## Team tables T3: Mentors are a Team table; the mentor detail page counts work, never notes; a staff mentor may leave their last staff table as a mentor login; permissions live only on the person page — 2026-11-03 (owner ruling 6 + scope addition; builder decisions for the lead to confirm)
 
 **Context:** T3 moves the Mentors page under Team (ruling 6) and adds a mentor detail page; T2 refused "only Mentors

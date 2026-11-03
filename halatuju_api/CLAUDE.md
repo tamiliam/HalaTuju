@@ -1127,6 +1127,21 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
+### STATE AT 2026-11-03 — REQUESTS LIST R1 LIVE (api-01242-ntg, web-01070-c44; no migration)
+
+- `/admin/requests` is a PAGED, server-filtered list: tabs Needs action · In progress · Closed · All (they PARTITION
+  the list; All is the sum), a Bug reports / Features filter on the effective kind, a title / `#id` search, 25 a
+  page; tab / kind / q / page in the URL. Lands on Needs action. Web: `components/admin/RequestsList.tsx`.
+- `org_requests_queue.needs_action_q` is the ONE Needs-action rule: the nav badge (`AdminOrgRequestCountView`) and
+  the Needs-action tab both call it. Change the rule there only, never in a view.
+- List rows are LIGHT (`OrgRequestOrgRowSerializer` / `OrgRequestOwnerRowSerializer`; tags served by `row_tags`):
+  no thread, attachments or analyses — the detail page reads them via `getOrgRequest(id)`. Do not put them back
+  on the row. Tab counts (`summary`) are of the whole fenced list, never the kind / search filter.
+- Server default `group=all`, so an old caller reads what it always did; an unknown group / kind is a 400
+  `bad_filter`. The old `?status=` was never read and is gone.
+- Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
+  Applications cockpit adopts the same hook after Mobile M6b.
+
 ### Mobile-native arc (separate stream) — M0–M6a DONE (M6a live 2026-11-03, main de48d898, web-01068-hjf), NEXT = M6b the cockpit case page
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger

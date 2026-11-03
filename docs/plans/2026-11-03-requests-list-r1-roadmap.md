@@ -1,6 +1,11 @@
 # Requests list R1 — roadmap (2026-11-03)
 
-**Status:** PLAN, awaiting the owner's go. The sprint itself was approved by the owner on 2026-11-03 (design of
+**Status:** ✅ DONE — LIVE 2026-11-03 (api `8e69ecdd` → `halatuju-api-01242-ntg`; web `2da37ff4` →
+`halatuju-web-01070-c44`; no migration). One-sprint plan, kept as the record; retrospective
+`docs/retrospectives/retrospective-2026-11-03-requests-list-r1.md`. Follow-up: TD-477 (Applications adopts
+`lib/listNav.ts` after Mobile M6b).
+
+**Original status:** PLAN, awaiting the owner's go. The sprint itself was approved by the owner on 2026-11-03 (design of
 record: the "Requests list" artifact, https://claude.ai/artifact/KaYimA2jWrJdfpLEaCKYBF). Planned on branch
 `requests-list` at `origin/main c78552d9`. Platform work on the admin Requests module, **not billed**.
 

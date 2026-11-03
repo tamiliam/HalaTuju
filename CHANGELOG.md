@@ -41,7 +41,7 @@ migration, no new stored field.
   the converted mentor login.
 - en / ms / ta strings; Guide (organisation admin: Your team, Changing what someone can do, Mentoring) and FAQ.
 
-## Requests list R1 — tabs, filter, search, pager and Previous / Next (branch requests-list, not pushed)
+## Requests list R1 — tabs, filter, search, pager and Previous / Next (LIVE 2026-11-03; main 8e69ecdd api, 2da37ff4 web; api-01242-ntg, web-01070-c44)
 
 Plan of record: `docs/plans/2026-11-03-requests-list-r1-roadmap.md` (owner approved 2026-11-03, option A: the tabs
 SPLIT the list). Platform work, not billed. No migration, no change to a request's life, permissions or e-mail.
