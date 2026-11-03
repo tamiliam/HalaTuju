@@ -89,6 +89,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 - 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration)
 
 - 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration) — 00397b75
+- 2026-11-03 Team tables T4 (Team -> Emails in three sections: read-only admin list from one backend registry, reviewer card moved, mentor invitation two doors; Terms three "Soon" sections; lead ruling option B; not yet pushed) — d94af772
 
 ## Reviews
 
