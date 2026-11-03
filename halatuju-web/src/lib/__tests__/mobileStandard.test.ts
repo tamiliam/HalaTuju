@@ -317,7 +317,22 @@ const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/F
   'src/app/admin/scholarship/page.tsx', 'src/app/admin/login/page.tsx', 'src/app/admin/set-password/page.tsx',
   'src/app/admin/auth/callback/page.tsx', 'src/app/admin/guide/page.tsx', 'src/app/admin/faq/page.tsx',
   'src/app/admin/organisation/page.tsx', 'src/components/adminProfile/shared.tsx', 'src/app/admin/not-found.tsx',
-  'src/components/admin/CaseListPhoneTools.tsx']
+  'src/components/admin/CaseListPhoneTools.tsx',
+  // Mobile M6b: the cockpit — the case page, its panels, the decision bar.
+  'src/app/admin/scholarship/[id]/view.tsx', 'src/app/admin/scholarship/[id]/view/ApplicantCards.tsx',
+  'src/app/admin/scholarship/[id]/view/AssignAndWitness.tsx',
+  'src/app/admin/scholarship/[id]/view/BlockersPanel.tsx',
+  'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx', 'src/app/admin/scholarship/[id]/view/DecisionBar.tsx',
+  'src/app/admin/scholarship/[id]/view/DecisionCard.tsx',
+  'src/app/admin/scholarship/[id]/view/DocumentsDrawer.tsx',
+  'src/app/admin/scholarship/[id]/view/GeneratedProfile.tsx',
+  'src/app/admin/scholarship/[id]/view/InterviewPanels.tsx',
+  'src/app/admin/scholarship/[id]/view/OrgRejectPanel.tsx',
+  'src/app/admin/scholarship/[id]/view/OutstandingPanel.tsx',
+  'src/app/admin/scholarship/[id]/view/PostAwardPanels.tsx', 'src/app/admin/scholarship/[id]/view/QcPanel.tsx',
+  'src/app/admin/scholarship/[id]/view/RateAndEstimate.tsx',
+  'src/app/admin/scholarship/[id]/view/VerificationVerdict.tsx',
+  'src/app/admin/scholarship/[id]/view/shared.tsx']
 /** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
 const CONTROL_CONSTS: Record<string, string[]> = {
   'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS
@@ -638,6 +653,58 @@ describe('rule 11 — the console shell on a phone', () => {
     expect(tools).toMatch(/<Sheet open=\{open\}[\s\S]*data-testid="list-filter-sheet">\s*\{filters\}/)
     expect(tools).not.toMatch(/useState\(['"]/)   // it owns no filter value of its own
     expect(src.slice(src.indexOf('const filterControls'), src.indexOf('const activeFilters'))).not.toMatch(/\btitle=/)
+  })
+})
+
+// ── The cockpit on a phone (Mobile M6b) ────────────────────────────────────────────────────────────
+/**
+ * Owner, 2026-11-03: the decision bar JUMPS and never saves; a PDF opens in the phone's own viewer; scheduling a
+ * tranche and the payment actions are read-only on a phone. And rule 9 / 15: no scroll box inside the page.
+ */
+describe('the cockpit on a phone', () => {
+  const VIEW = 'src/app/admin/scholarship/[id]/view'
+  test('payments are read-only on a phone: every money control sits in a below-md-hidden container', () => {
+    const src = readWeb(`${VIEW}/PostAwardPanels.tsx`, 'the post-award panels')
+    const box = (marker: string) => {
+      const at = src.indexOf(marker)
+      const open = src.lastIndexOf('<div', at)
+      return { tag: src.slice(open, src.indexOf('>', at) + 1), body: src.slice(at, src.indexOf('</div>', src.indexOf('</button>', at))) }
+    }
+    const actions = box('data-payment-actions')
+    expect(actions.tag).toMatch(/className="[^"]*\bmax-md:hidden\b/)
+    expect(actions.body).toContain('doDisbursementAction(d.id, action)')
+    const schedule = box('data-schedule-tranche')
+    expect(schedule.tag).toMatch(/className="[^"]*\bmax-md:hidden\b/)
+    expect(schedule.body).toContain('onClick={doScheduleTranche}')
+    // Nowhere else: one door each, and both inside those boxes.
+    expect((src.match(/doDisbursementAction\(/g) ?? []).length).toBe(1)
+    expect((src.match(/onClick=\{doScheduleTranche\}/g) ?? []).length).toBe(1)
+    expect(src).toMatch(/<p className="[^"]*\bmd:hidden\b[^"]*" data-payments-use-computer>\s*\{t\('admin\.disbursement\.useComputer'\)\}/)
+  })
+  test('the documents list scrolls in the page on a phone (its own scroll box is md: only)', () => {
+    const src = readWeb(`${VIEW}/DocumentsDrawer.tsx`, 'the documents drawer')
+    const list = (src.match(/<div className="([^"]*)" data-docs-list>/) ?? [])[1] ?? ''
+    expect(list.split(' ')).toEqual(expect.arrayContaining(['md:max-h-[28rem]', 'md:overflow-y-auto']))
+    expect(list.split(' ').filter((c) => /^(max-h-|overflow-y-)/.test(c))).toEqual([])
+  })
+  test('a PDF on a phone is an Open link to a new tab, never an iframe', () => {
+    const src = readWeb('src/components/DocViewer.tsx', 'the document viewer')
+    const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*)/.test(l)).join('\n')
+    expect((code.match(/<iframe\b/g) ?? []).length).toBe(1)
+    expect(src).toMatch(/\{doc\.kind === 'pdf' && !phone && \(\s*<iframe/)
+    expect(src).toMatch(/\{doc\.kind === 'pdf' && phone && \([\s\S]*?<a href=\{doc\.url\} target="_blank" rel="noreferrer"\s*className="[^"]*\bmin-h-12\b/)
+  })
+  test('the decision bar jumps and never decides: no request, no outcome, no Save', () => {
+    const src = readWeb(`${VIEW}/DecisionBar.tsx`, 'the decision bar')
+    const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*)/.test(l)).join('\n')
+    expect(code).toMatch(/<div data-page-bar data-decision-bar\s+className="[^"]*\bsticky bottom-0\b[^"]*\bmd:hidden"/)
+    expect(code).not.toMatch(/^import (?!type )[^\n]*from '@\/lib\/admin-api'/m)   // types only: it can call nothing
+    expect(code).toMatch(/import type \{ AdminScholarshipDetail \} from '@\/lib\/admin-api'/)
+    expect(code).not.toMatch(/\bdo[A-Z]\w*\b|\bfetch\(|setOfficerVerdict|recordVerdict\(/)
+    expect((code.match(/onClick=/g) ?? []).length).toBe(1)
+    expect(code).toMatch(/onClick=\{\(\) => document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
+    const view = readWeb('src/app/admin/scholarship/[id]/view.tsx', 'the cockpit view')
+    expect(view).toMatch(/decisionBarShows\(\{ app, decisionReopened, decisionRecorded, decisionLocked, canWrite \}\) && \(\s*<DecisionBar t=\{t\} outcome=\{officerVerdict\.overall\} canSave=\{canSave\} \/>/)
   })
 })
 

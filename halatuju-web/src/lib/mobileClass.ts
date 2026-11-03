@@ -139,7 +139,10 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/faq': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-faq'] },
   '/admin/programme/overview': { cls: 'must', sprint: 'M6' },
   '/admin/scholarship': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-list', 'admin-shell-menu', 'admin-list-filters'] },
-  '/admin/scholarship/[id]': { cls: 'must', sprint: 'M6', surfaces: ['officer-cockpit'] },
+  '/admin/scholarship/[id]': {
+    cls: 'must', sprint: 'M6',
+    surfaces: ['officer-cockpit', 'cockpit-case', 'cockpit-viewer-image', 'cockpit-viewer-pdf', 'cockpit-payments'],
+  },
   '/admin/organisation': { cls: 'must', sprint: 'M6' },
   '/admin/administration': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
   '/admin/organisation/programmes': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },

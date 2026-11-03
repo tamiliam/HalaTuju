@@ -135,10 +135,10 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
     programme_months: 12,
   },
   anomalies: [
-    { code: 'income_document_older_than_three_months', params: { months: 5 } },
+    { code: 'utility_high_vs_income', params: { utility: 380, percent: 16 } },
   ],
   interview_agenda: [
-    { code: 'income_document_older_than_three_months', kind: 'anomaly', params: { months: 5 } },
+    { code: 'utility_high_vs_income', kind: 'anomaly', params: { utility: 380, percent: 16 } },
     { code: 'household_size_confirm', kind: 'open_query', params: { described: 6 } },
     { code: 'motivation', kind: 'motivation', params: {} },
   ],
@@ -161,7 +161,7 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
       { claim: 'offer_letter', value: 'Not yet', source: '—', verification: 'unverified' },
     ],
     completeness: [{ code: 'offer_letter_missing' }],
-    consistency: [{ code: 'income_document_older_than_three_months', params: { months: 5 } }],
+    consistency: [{ code: 'utility_high_vs_income', params: { utility: 380, percent: 16 } }],
   },
   query_sla: {
     deadline: T(-2),
@@ -368,9 +368,9 @@ export const sandboxCockpitInterview: AdminInterviewSession = {
   id: 41,
   status: 'submitted',
   findings: {
-    income_document_older_than_three_months: {
+    utility_high_vs_income: {
       verdict: 'resolved',
-      rationale: 'Father changed employer in May; the newer payslip is on its way.',
+      rationale: 'The bill covers the family stall downstairs as well; the mother showed the meter split.',
     },
     motivation: { verdict: 'strong', rationale: 'Clear about why chemical engineering, not vague.' },
   },
