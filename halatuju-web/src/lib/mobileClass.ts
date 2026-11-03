@@ -154,27 +154,27 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   // ── The rest of the admin console: lists and detail pages ─────────────────────────────────────
   '/admin': { cls: 'can', sprint: 'M7' },
   '/admin/students': { cls: 'can', sprint: 'M7' },
-  '/admin/students/[id]': { cls: 'can', sprint: 'M7' },
-  '/admin/scholars': { cls: 'can', sprint: 'M7' },
-  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7' },
-  '/admin/programme/announcements': { cls: 'can', sprint: 'M7' },   // maintenance S8: staff write news here
+  '/admin/students/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-student'] },
+  '/admin/scholars': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholars'] },
+  '/admin/scholars/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-scholar-file'] },
+  '/admin/programme/announcements': { cls: 'can', sprint: 'M7', surfaces: ['m7-announcements'] },   // maintenance S8: staff write news here
   '/admin/programme/surveys': { cls: 'can', sprint: 'M7' },   // maintenance S9: staff make surveys here
   '/admin/programme/surveys/[id]': { cls: 'can', sprint: 'M7' },   // maintenance S9: one survey's results
   '/admin/programme/development': { cls: 'can', sprint: 'M7' },   // maintenance S10: staff make modules here
   '/admin/programme/development/[id]': { cls: 'can', sprint: 'M7' },   // maintenance S10: one module's progress
-  '/admin/sponsors': { cls: 'can', sprint: 'M7' },
+  '/admin/sponsors': { cls: 'can', sprint: 'M7', surfaces: ['m7-sponsor-terms'] },
   '/admin/sponsors/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/payments': { cls: 'can', sprint: 'M7' },
-  '/admin/payments/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/payments/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-payment-run'] },
   '/admin/spending': { cls: 'can', sprint: 'M7' },
   '/admin/sources': { cls: 'can', sprint: 'M7' },
   '/admin/partners': { cls: 'can', sprint: 'M7' },
-  '/admin/requests': { cls: 'can', sprint: 'M7' },
-  '/admin/requests/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/requests': { cls: 'can', sprint: 'M7', surfaces: ['m7-requests'] },
+  '/admin/requests/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m7-request'] },
   '/admin/organisations': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/staff': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/mentors': { cls: 'can', sprint: 'M7', redirect: '/admin/organisation/reviewers' },   // T3: Team -> Mentors
-  '/admin/organisation/settings': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/settings': { cls: 'can', sprint: 'M7', surfaces: ['m7-org-settings'] },
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },

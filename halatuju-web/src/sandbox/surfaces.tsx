@@ -51,6 +51,7 @@ import { STUDENT_REST_SURFACES } from './studentM4cSurfaces'
 import { SPONSOR_PORTAL_SURFACES } from './sponsorM5Surfaces'
 import { ADMIN_SHELL_SURFACES } from './adminM6Surfaces'
 import { COCKPIT_PHONE_SURFACES } from './cockpitM6bSurfaces'
+import { ADMIN_CAN_SURFACES } from './adminM7Surfaces'
 import { sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview } from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
@@ -427,7 +428,7 @@ export const SURFACES: Surface[] = [
     ),
   },
   ...SHEET_SURFACES, ...HEADER_SURFACES, ...DISCOVERY_SURFACES, ...SCHOLARSHIP_APPLY_SURFACES, ...STUDENT_PAGE_SURFACES,
-  ...STUDENT_REST_SURFACES, ...SPONSOR_PORTAL_SURFACES, ...ADMIN_SHELL_SURFACES, ...COCKPIT_PHONE_SURFACES,
+  ...STUDENT_REST_SURFACES, ...SPONSOR_PORTAL_SURFACES, ...ADMIN_SHELL_SURFACES, ...COCKPIT_PHONE_SURFACES, ...ADMIN_CAN_SURFACES,
 ]
 
 /**

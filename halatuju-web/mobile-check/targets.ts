@@ -136,7 +136,8 @@ export function publicTargets(): Target[] {
  */
 const SURFACE_FILES = ['surfaces.tsx', 'sheetSurfaces.tsx', 'headerSurfaces.tsx', 'discoverySurfaces.tsx',
   'scholarshipM4Surfaces.tsx', 'studentM4bSurfaces.tsx', 'studentM4cSurfaces.tsx',
-  'sponsorM5Surfaces.tsx', 'adminM6Surfaces.tsx', 'cockpitM6bSurfaces.tsx']
+  'sponsorM5Surfaces.tsx', 'adminM6Surfaces.tsx', 'cockpitM6bSurfaces.tsx',
+  'adminM7Surfaces.tsx']
 
 export function sandboxSlugs(): string[] {
   const slugs: string[] = []
