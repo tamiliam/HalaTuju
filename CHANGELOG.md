@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T5a — permission catalogue v2 + aliases (not yet live)
+
+Roadmap T5 (owner "approve all", rulings 1-8; lead rulings 2026-11-03 on `mentoring.*` and `programmes.edit`);
+decisions.md "Team tables T5a". **Plumbing only: no gate converted, nobody gains or loses a door, users see nothing.**
+No migration, no endpoint, no web change.
+
+- **Catalogue v2** (`apps/courses/staff_permissions_v2.py`): 35 page keys (one per page x tier) in four groups —
+  Organisation, Programme, Engagement, Money — plus the two Reviewer hats `review` and `qc`, unchanged. Rules as data:
+  every edit / prepare / check / approve implies its page's view (approve never implies edit); the Engagement keys
+  (announcements, surveys, development, mentoring) need `students.view`; the 13 lead-only-today keys are marked "no
+  preset grants it". `team.edit` is not offered; `manage_team` stays lead-only and is not v2.
+- **Aliases** old -> v2 (`ALIASES`) and `effective_v2(admin)`: a person's resolved keys through the aliases, plus what
+  their role label and T1 table still open (organisation read pages, admin work pages, the wallet-credit record / maker /
+  void for `admin` and the credit check for `finance`); the lead holds every page key. A pure read: nothing calls it to
+  decide access. `resolve()` is untouched.
+- **Golden table** `apps/courses/tests/test_permission_catalogue_v2.py`: every live shape -> its v2 set by hand;
+  29 of today's doors asked of the real gate for every shape, each covered by v2 keys (one declared unmapped:
+  the graduation-messages list, role reviewer / admin); a v2 key is refused on save (`unknown_permission`) and dropped
+  on read; nothing outside the tests imports the module.
+
 ## Mobile M7a — admin "Can" screens on phones, decided doors read-only — LIVE 2026-11-03 (main 881e5465, web-01074-xhv)
 
 - **M7a — lists, tabs and detail pages on phones** (owner approved the mock-ups and every recommendation; decisions.md,

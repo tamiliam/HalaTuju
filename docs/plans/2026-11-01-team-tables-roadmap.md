@@ -124,6 +124,9 @@ sprint start)
      organisation-wide items; they create announcements / surveys only for their gifts.
 - Live shapes map with NO access lost; only the custom-permission rows are rewritten (data migration with a
   history row each; `resolve()` reads both vocabularies for one release).
+- **T5a: built, not live (2026-11-03, branch maint-s7).** `apps/courses/staff_permissions_v2.py` (catalogue v2,
+  aliases, `effective_v2` read-only), golden `test_permission_catalogue_v2.py`; no gate converted. Lead rulings: the
+  scholar Mentoring tab gets its own Engagement key `mentoring.view/.edit`; `programmes.edit` is in the Programme group.
 - Sprints, each with the owner's "yes": **T5a** catalogue v2 + aliases, no gate converted · **T5b** QC
   self-sufficient + widened self-QC guard (adversarial) · **T5c** pages open by keys, Programmes landing, role display
   only (adversarial) · **T5d** money: credits maker/check/approve, payments fallback rule, data migration

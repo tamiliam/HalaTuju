@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T5a: permission vocabulary v2 sits BESIDE the old one; aliases old -> v2; no gate converted — 2026-11-03 (owner "approve all", rulings 1-8; lead rulings on mentoring and programmes.edit)
+
+**Context:** T5 moves every power onto per-page permission keys. T5a is the plumbing: the vocabulary and its rules,
+with nothing reading it for access, so T5b-T5f can convert one group of gates at a time against a fixed target.
+
+**Decision:**
+- **Where:** `apps/courses/staff_permissions_v2.py` (a leaf beside `staff_permissions`, which stays at its size and
+  meaning). `CATALOGUE_V2` = key -> (group, page, tier, lead_only); `HATS` = `review`, `qc`; `V2_KEYS` = both.
+- **The keys.** Organisation: `invitations.view/.edit`, `team.view`, `sources.view/.edit`,
+  `sponsors.view/.edit/.check/.approve`, `billing.view/.edit`, `requests.view/.edit/.approve`, `settings.edit`.
+  Programme: `students.view/.edit/.approve`, `contracts.view/.edit`, `programmes.edit` (page `programme_settings`,
+  ruling 2 — gift configuration stays under Programme; lead ruling 2026-11-03). Engagement:
+  `announcements.view/.edit`, `surveys.view/.edit`, `development.view/.edit`, `mentoring.view/.edit` (lead ruling
+  2026-11-03: the scholar Mentoring tab names scholars, so `team.view` must never cover it). Money:
+  `payments.view/.prepare/.check/.approve`, `spending.view/.edit`. `team.edit` is not offered in T5; `manage_team`
+  stays lead-tier only and is not v2.
+- **Rules as data:** `IMPLIES` (every non-view tier => its page's view where one exists; approve never implies edit);
+  `DEPENDS_ON_V2` (every Engagement key needs `students.view`, ruling 7); lead-only marks (ruling 3: `programmes.edit`,
+  `invitations.edit`, `sponsors.approve`, `billing.*`, `requests.*`, `settings.edit`, `contracts.*`, `students.edit`,
+  `students.approve` — no preset grants them).
+- **Aliases:** `review -> review`, `qc -> qc`, `see_all -> students.view`, `spending -> spending.view + .edit`,
+  `payments_prepare / _check / _approve -> payments.view + payments.prepare / .check / .approve`, `manage_team -> ()`.
+- **Effective set:** `effective_v2(admin)` = resolved old keys through the aliases + `ORG_READ_V2` when
+  `staff_tables.may_read_org` + `ADMIN_WORK_V2` when `staff_tables.may_do_admin_work` + `LABEL_GRANTS` (`admin`:
+  sponsors view/edit for the wallet-credit record / maker / void; `finance`: sponsors view/check for the credit check),
+  closed under `IMPLIES`; a lead = every page key + `qc` (+ `review` once on Reviewers); a super = every v2 key; an
+  inactive row, a partner, a source user, a mentor login = nothing. It does NOT drop a key whose ruling-7 dependency
+  is missing (`dependency_gaps` reports it), because it describes today.
+- **No gate converted.** Nothing outside the tests imports the module (a test walks the tree). `resolve()` answers
+  exactly what it did. The save door (`asked_set`) still refuses any v2 page key as `unknown_permission`, and `clean`
+  drops one on read; T5g opens writing.
+
+**Golden:** `apps/courses/tests/test_permission_catalogue_v2.py`. Live shapes -> v2: `admin` preset = students.view,
+spending.view/.edit, payments.view/.prepare, invitations.view, team.view, sources.view/.edit, sponsors.view/.edit, all
+eight Engagement keys; `admin[see_all,spending]` = the same minus payments; `admin` inactive = nothing; `finance` =
+payments.view/.approve, invitations.view, team.view, sponsors.view/.check; `org_admin` = every page key + qc;
+`reviewer` = review; `reviewer[review,see_all,spending]` = review, students.view, spending.view/.edit, invitations.view,
+team.view, sponsors.view; `reviewer[review,see_all]` = review, students.view, invitations.view, team.view,
+sponsors.view. Coverage: 29 doors asked of the real gates per shape; the one door no v2 key covers is the
+graduation-messages list (`graduation.py:31`, role reviewer / admin) — T5c decides its key.
+
+**Consequence:** a new page must still be gated the old way AND get a v2 key here (and a door in the coverage test).
+An `admin`-label person whose custom set lacks `see_all` would hold Engagement keys without `students.view`
+(no live row; `dependency_gaps` names it) — T5c / T5d decide.
+
 ## Mobile M7: the admin "Can" screens split into M7a and M7b; desktop-only pages are replaced by a panel; more than four tabs become one chooser; closing a file, deleting a student and a sponsor's gift membership are read-only on a phone — 2026-11-03 (owner approved the mock-ups and every recommendation)
 
 **Context:** the M7 phase-1 audit (390 px, en / ta, nine sandbox surfaces) found Announcements and five other content

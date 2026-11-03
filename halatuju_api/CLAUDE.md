@@ -1201,6 +1201,16 @@ payment run, billable hours, Close file, Delete student, a sponsor's gift member
 tables carry ARIA roles (`TableFrame` `stampTableRoles`). M7b = the `DesktopOnly` panel only.
 NEXT: M7b, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a BUILT, NOT LIVE (branch maint-s7; no migration, no endpoint, no web change)
+
+Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permissions_v2.py` = the v2 vocabulary
+(`CATALOGUE_V2` page x tier in groups Organisation / Programme / Engagement / Money, `HATS` review + qc, `IMPLIES`,
+`DEPENDS_ON_V2`, lead-only marks), `ALIASES` old -> v2, and `effective_v2(admin)` (a READ). **⚠ v2 IS NOT YET A GATE:**
+nothing outside the tests imports it (`NotYetAGate` walks the tree), every page still opens through `resolve` /
+`has_perm`, `staff_tables.may_*` and the role checks, and `asked_set` refuses a v2 key. **A NEW PAGE must still be gated
+the old way AND get a v2 key** in `CATALOGUE_V2` plus a door in `test_permission_catalogue_v2._doors` (the coverage
+test asks the real gate per live shape). Next: T5b (QC self-sufficient).
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 LIVE (main 7871bb39; api-01244-2rq, web-01073-jxr; no migration)
 
 Roadmap T4; decisions.md 2026-11-03 "Team tables T4". **Team -> Emails** = Admin (read-only list) · Reviewer
