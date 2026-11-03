@@ -159,6 +159,8 @@ describe('the Source roster', () => {
     fireEvent.click(screen.getByText('admin.resend'))
     await waitFor(() => expect(mockApi.resendSourceUser).toHaveBeenCalledWith(41, { token: 'tok' }))
     expect(onDone).toHaveBeenCalledWith({ type: 'success', text: 'admin.invitations.resent' })
+    // Cancel is disabled while the resend is busy; under load the click could land before `finally` clears it.
+    await waitFor(() => expect((screen.getByText('admin.invitations.cancel') as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByText('admin.invitations.cancel'))
     expect(onCancel).toHaveBeenCalledWith(PAYLOAD.invitations[0])
   })
