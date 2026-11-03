@@ -1597,7 +1597,9 @@
       "genuineness": {
         "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked.",
         "askFinal": "This is not your final result (it looks like a semester result slip, a student-portal page or a transcript showing your programme still in progress). Only the final version counts: please upload your final academic transcript. Nothing is blocked.",
-        "notResults": "This looks like an offer letter, not a results document. Please upload your final academic transcript. Nothing is blocked."
+        "notResults": "This looks like an offer letter, not a results document. Please upload your final academic transcript. Nothing is blocked.",
+        "offerSuspect": "This doesn't look like an offer letter. If you have your offer letter, please upload it as well. Nothing is blocked — our team may ask you about it.",
+        "offerNotOffer": "This can't be accepted as an offer letter from a public institution (for example, a private college's offer, or a document that is not an offer letter). Please upload your offer letter from a public university, polytechnic, college or skills institute."
       },
       "icCheck": {
         "icNo": "IC No",
@@ -5004,6 +5006,7 @@
           "results": "Results",
           "pathway": "Pathway",
           "official": "Official",
+          "reportingDate": "Reporting date",
           "switched": "Switched",
           "recipient": "Recipient",
           "status": "Status",

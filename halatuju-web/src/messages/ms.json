@@ -1597,7 +1597,9 @@
       "genuineness": {
         "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
         "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip yang menunjukkan pengajian anda masih berjalan). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
-        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat."
+        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
+        "offerSuspect": "Ini tidak kelihatan seperti surat tawaran. Jika anda mempunyai surat tawaran anda, sila muat naik juga. Tiada apa-apa disekat — pasukan kami mungkin bertanya kepada anda tentangnya.",
+        "offerNotOffer": "Ini tidak boleh diterima sebagai surat tawaran daripada institusi awam (contohnya, tawaran kolej swasta, atau dokumen yang bukan surat tawaran). Sila muat naik surat tawaran anda daripada universiti awam, politeknik, kolej atau institut kemahiran."
       },
       "icCheck": {
         "icNo": "No. KP",
@@ -5004,6 +5006,7 @@
           "results": "Keputusan",
           "pathway": "Laluan",
           "official": "Rasmi",
+          "reportingDate": "Tarikh lapor diri",
           "switched": "Ditukar",
           "recipient": "Penerima",
           "status": "Status",

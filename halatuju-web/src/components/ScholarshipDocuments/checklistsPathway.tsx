@@ -32,8 +32,8 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   const chk = doc.pathway_check
   if (!chk) return null
 
-  const badge = (s: PathStatus) => {
-    const kind = pathBadgeKind(s)
+  const badge = (s: PathStatus, tone?: ICCheckKind) => {
+    const kind = tone ?? pathBadgeKind(s)
     const cls: Record<ICCheckKind, string> = {
       match: 'bg-positive-50 text-positive-700 ring-positive-200',
       partial: 'bg-caution-50 text-caution-700 ring-caution-200',
@@ -65,16 +65,17 @@ export function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   const dataRow = (labelKey: string, value: string) =>
     value ? row(t(`scholarship.docs.pathwayCheck.${labelKey}`), value, fromLetter) : null
 
-  // The offer is for a genuinely different college/programme than declared. We mark
-  // the two rows red (Check 1) — but it is NEVER a block: Cikgu Gopal reassures, and
-  // the student confirms which is final when they submit (Check 2).
+  // The offer is for a genuinely different college/programme than declared. We mark the two rows
+  // AMBER, never red (owner's chip table, 2026-11-02: a different pathway is not a fault in the
+  // letter) — and it is NEVER a block: Cikgu Gopal reassures, and the student confirms which is
+  // final when they submit (Check 2).
   const isMismatch = chk.pathway === 'mismatch'
   const pathRow = (labelKey: string, value: string) =>
     value
       ? row(
           t(`scholarship.docs.pathwayCheck.${labelKey}`),
           value,
-          isMismatch ? badge('mismatch') : fromLetter,
+          isMismatch ? badge('mismatch', 'partial') : fromLetter,
         )
       : null
 

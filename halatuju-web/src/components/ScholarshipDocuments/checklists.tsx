@@ -269,7 +269,12 @@ const NOT_FINAL = new Set(['matric_result_slip', 'poly_result_slip', 'poly_porta
   'matric_transcript_not_final', 'poly_transcript_not_final'])
 const NOT_RESULTS = new Set(['matric_offer_letter'])
 
-export function genuinenessNoteKey(docSeen: string | undefined): string {
+export function genuinenessNoteKey(docSeen: string | undefined, docType = '', status = ''): string {
+  // Offer exact-read S6 (owner rulings 2026-11-01): a SUSPECT offer is "not an offer letter — upload
+  // yours if you have it", never a blocker; a not_offer_letter one is a fail (it does block).
+  if (docType === 'offer_letter') {
+    return status.startsWith('not_') ? 'scholarship.docs.genuineness.offerNotOffer' : 'scholarship.docs.genuineness.offerSuspect'
+  }
   if (docSeen && NOT_FINAL.has(docSeen)) return 'scholarship.docs.genuineness.askFinal'
   if (docSeen && NOT_RESULTS.has(docSeen)) return 'scholarship.docs.genuineness.notResults'
   return 'scholarship.docs.genuineness.note'
@@ -283,7 +288,7 @@ export function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: s
       <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
-      <p className="text-xs text-caution-800">{t(genuinenessNoteKey(doc.authenticity?.doc_seen))}</p>
+      <p className="text-xs text-caution-800">{t(genuinenessNoteKey(doc.authenticity?.doc_seen, doc.doc_type, s))}</p>
     </div>
   )
 }

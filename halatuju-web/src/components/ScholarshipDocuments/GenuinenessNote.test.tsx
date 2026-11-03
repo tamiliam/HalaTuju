@@ -14,6 +14,9 @@ import { render, screen } from '@testing-library/react'
 import { GenuinenessNote, genuinenessNoteKey } from './checklists'
 import type { ApplicantDocument } from '@/lib/api'
 import { readApi } from '@/test/apiSource'
+import enMessages from '@/messages/en.json'
+import msMessages from '@/messages/ms.json'
+import taMessages from '@/messages/ta.json'
 
 const t = (key: string) => key
 
@@ -47,5 +50,31 @@ describe('GenuinenessNote — the owner-ruled higher-results pages (M4b)', () =>
       expect(src).toContain(`'${code}'`)
     }
     expect(readApi('apps/scholarship/genuineness/bands.py')).toContain("FINAL_OWED = 'final_owed'")
+  })
+})
+
+describe('GenuinenessNote — an offer letter (offer exact-read S6, owner rulings 2026-11-01)', () => {
+  const offer = (status: string) =>
+    ({ id: 2, doc_type: 'offer_letter', authenticity: { status, reason: '', doc_seen: 'ua_offer' } }) as unknown as ApplicantDocument
+  test('a SUSPECT offer says "not an offer letter — upload yours if you have it" (never a blocker)', () => {
+    render(<GenuinenessNote doc={offer('suspect')} t={t} />)
+    expect(screen.getByText('scholarship.docs.genuineness.offerSuspect')).toBeTruthy()
+  })
+  test('a not_offer_letter offer gets the fail note, never "nothing is blocked"', () => {
+    render(<GenuinenessNote doc={offer('not_offer_letter')} t={t} />)
+    expect(screen.getByText('scholarship.docs.genuineness.offerNotOffer')).toBeTruthy()
+  })
+  test('a genuine offer shows no note', () => {
+    const { container } = render(<GenuinenessNote doc={offer('genuine')} t={t} />)
+    expect(container.textContent).toBe('')
+  })
+  test('the two notes exist in en / ms / ta, and only the suspect one says nothing is blocked', () => {
+    for (const [m, blocked] of [[enMessages, 'Nothing is blocked'], [msMessages, 'Tiada apa-apa disekat'],
+                                [taMessages, 'எதுவும் தடுக்கப்படவில்லை']] as const) {
+      const g = m.scholarship.docs.genuineness
+      expect(g.offerSuspect).toContain(blocked)
+      expect(g.offerNotOffer).toBeTruthy()
+      expect(g.offerNotOffer).not.toContain(blocked)
+    }
   })
 })
