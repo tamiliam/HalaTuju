@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M7 — admin "Can" screens + the desktop-only gate (IN PROGRESS, branch mobile-m7)
+
+- **The maintenance status is read-only on a phone** (owner 2026-11-03, TD-480 item 4: yes). On the scholar file
+  (`ScholarControls.tsx`) and the cockpit's no-file control (`PostAwardPanels.tsx`) the On track / Probation / On hold /
+  Ready to close buttons are hidden below `md`, with a "use a computer" note (`admin.maintenance.useComputer`, en / ms
+  / ta); the desktop is unchanged; no handler, request or server check changed. Tests: `ScholarControls.phone.test.tsx`
+  (6) and a guard in `mobileStandard.test.ts`; both bite (removing the hiding fails each).
+
 ## Mobile M6b — the reviewer's case page on phones — LIVE 2026-11-03 (main bff52794, web-01072-xpr)
 
 Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,

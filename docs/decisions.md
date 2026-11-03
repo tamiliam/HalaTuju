@@ -1,5 +1,23 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M6b follow-up: the maintenance status is read-only on a phone, like the payments — 2026-11-03 (owner, TD-480 item 4: "yes")
+
+**Context:** M6b made tranche scheduling and the payment actions read-only on a phone. Its review noticed the
+maintenance status buttons (On track, Probation, On hold, Ready to close) stayed usable on a phone, yet On hold stops
+a student's money. The owner was asked whether they should follow the payment rule.
+
+**Decision (owner, 2026-11-03): yes.** Below `md` by width the status buttons are hidden with a "use a computer" note
+(`admin.maintenance.useComputer`); from `md` they are exactly what they were. Both places that draw them follow it:
+the scholar file (`components/admin/ScholarControls.tsx`) and the cockpit's control for a payable student with no
+file (`view/PostAwardPanels.tsx`). The current status stays visible on a phone (its badge); the "needs payments
+rights" reason goes with the buttons. Layout only: the handlers, requests and server checks are unchanged.
+
+**Consequences:** the same breakpoint as the payments (below `md` by width; a phone held sideways gets the buttons —
+the server authorises by role, never by device). Close on the scholar file is NOT covered by this ruling (it stays
+usable on a phone; listed among the M7 doors). Pinned by `ScholarControls.phone.test.tsx` and the guard "the
+maintenance status is read-only on a phone" in `mobileStandard.test.ts` (which also fails on a third caller of the
+status door). TD-480 item 4 closed.
+
 ## Team tables T5.0: every power from permissions — the owner's model and 8 rulings (2026-11-03)
 
 **Context:** After T2 the owner said "any team member can move between roles, and they'd have the powers given them

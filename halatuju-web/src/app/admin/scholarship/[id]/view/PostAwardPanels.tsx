@@ -85,7 +85,9 @@ export function PostAwardPanels({
             </span>
           </div>
           <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholars.control.noFileHint')}</p>
-          <div className="flex flex-wrap gap-1.5">
+          {/* ⚠ READ-ONLY ON A PHONE (owner, 2026-11-03, Mobile M6b follow-up): the status follows the
+              payment rule — hidden below md only, with a note; from md the controls they were. */}
+          <div className="flex flex-wrap gap-1.5 max-md:hidden" data-substate-actions>
             {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
               .filter((s) => s !== app.maintenance_substate)
               .filter((s) => holdRight.current || (s !== 'on_hold' && app.maintenance_substate !== 'on_hold'))
@@ -96,8 +98,11 @@ export function PostAwardPanels({
                 </button>
               ))}
           </div>
+          <p className="rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-substate-use-computer>
+            {t('admin.maintenance.useComputer')}
+          </p>
           {!holdRight.current && (
-            <p className="text-xs md:text-[11px] text-ground-500">{t('admin.scholars.control.holdNeedsPayments')}</p>
+            <p className="text-xs md:text-[11px] text-ground-500 max-md:hidden">{t('admin.scholars.control.holdNeedsPayments')}</p>
           )}
           {disbMsg && <p className="text-xs text-caution-700">{disbMsg}</p>}
         </div>

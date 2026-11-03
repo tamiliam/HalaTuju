@@ -4018,6 +4018,7 @@
     },
     "maintenance": {
       "title": "Maintenance status",
+      "useComputer": "Changing the maintenance status is done on a computer. On a phone the status is read-only.",
       "onHoldHint": "Support is paused — tranche releases are blocked until you resume.",
       "substate": {
         "on_track": "On track",

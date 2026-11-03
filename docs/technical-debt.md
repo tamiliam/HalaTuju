@@ -7537,18 +7537,18 @@ the corpus (every one-word line after a school there was a real wrap: 3 of 3), s
 institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
 postcode line below the town as the anchor), with a synthetic twin. *(B · S)*
 
-### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next, the maintenance status on a phone - low
+### [TD-480] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next (the maintenance status on a phone: closed) - low
 
 **Raised 2026-11-03 by Mobile M6b** (layout only by rule, so each of these was left as it was). (1) Four cockpit doors
 still ask with `window.confirm` — the contractual decline, the nudge, cancelling a scheduled decline and holding an
 award — where rule 5 wants the shared Sheet; moving them changes how a door asks, so it is its own small sprint with
 the adversarial review. (2) The referral pill's full source name is a `title` (hover-only); a phone sees the acronym.
 (3) The approved viewer mock-up had Previous / Next between documents; the viewer opens one document at a time
-(Close and open the next). (4) **Owner question:** the maintenance status buttons (On track, Probation, **On hold**,
-Ready to close) stay usable on a phone — the owner's answer covered tranche scheduling and payment actions only, yet
-On hold stops a student's money. **Fix:** (1) one Sheet per door, `dismissible={false}` for the money ones; (2) the
-name as visible text on a phone; (3) Prev / Next in the viewer's footer from the drawer's order; (4) ask the owner
-whether the status buttons should follow the payment rule. *(W · S)*
+(Close and open the next). (4) ~~**Owner question:** the maintenance status buttons stay usable on a phone~~
+**CLOSED 2026-11-03** (owner: yes) — on the `mobile-m7` branch the status buttons are read-only below `md` on the
+scholar file and the cockpit's no-file control, with a "use a computer" note (decisions.md, "Mobile M6b follow-up").
+**Fix:** (1) one Sheet per door, `dismissible={false}` for the money ones; (2) the name as visible text on a phone;
+(3) Prev / Next in the viewer's footer from the drawer's order. *(W · S)*
 
 **Accepted (M6b review), not debt:** ONE breakpoint decides "phone" across M6b — below `md` by width (the PDF rule's
 `PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and

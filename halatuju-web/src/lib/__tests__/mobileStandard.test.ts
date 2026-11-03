@@ -681,6 +681,28 @@ describe('the cockpit on a phone', () => {
     expect((src.match(/onClick=\{doScheduleTranche\}/g) ?? []).length).toBe(1)
     expect(src).toMatch(/<p className="[^"]*\bmd:hidden\b[^"]*" data-payments-use-computer>\s*\{t\('admin\.disbursement\.useComputer'\)\}/)
   })
+  test('the maintenance status is read-only on a phone, everywhere it is drawn (owner 2026-11-03, TD-480 item 4)', () => {
+    // On hold stops a student's money, so the status buttons follow the payment rule. Two places draw them: the
+    // scholar file and the cockpit's no-file control. Each status door is called ONCE, inside its hidden box.
+    const places = [
+      { file: 'src/components/admin/ScholarControls.tsx', door: 'onClick={() => move(s)}' },
+      { file: `${VIEW}/PostAwardPanels.tsx`, door: 'onClick={() => doSetSubstate(s)}' },
+    ]
+    for (const { file, door } of places) {
+      const src = readWeb(file, 'a maintenance status control')
+      const at = src.indexOf('data-substate-actions')
+      expect(at).toBeGreaterThan(-1)
+      const tag = src.slice(src.lastIndexOf('<div', at), src.indexOf('>', at) + 1)
+      expect(tag).toMatch(/className="[^"]*\bmax-md:hidden\b/)
+      const body = src.slice(at, src.indexOf('</button>', at))
+      expect(body).toContain(door)
+      expect(src.split(door).length - 1).toBe(1)
+      expect(src).toMatch(/<p className="[^"]*\bmd:hidden\b[^"]*" data-substate-use-computer>\s*\{t\('admin\.maintenance\.useComputer'\)\}/)
+    }
+    // No third place: the status door is only ever reached through these two components.
+    const callers = TSX.filter((f) => /setMaintenanceSubstate\(|doSetSubstate\(s\)/.test(f.code)).map((f) => f.rel)
+    expect(callers.sort()).toEqual(['src/app/admin/scholarship/[id]/view.tsx', ...places.map((p) => p.file)].sort())
+  })
   test('the documents list scrolls in the page on a phone (its own scroll box is md: only)', () => {
     const src = readWeb(`${VIEW}/DocumentsDrawer.tsx`, 'the documents drawer')
     const list = (src.match(/<div className="([^"]*)" data-docs-list>/) ?? [])[1] ?? ''

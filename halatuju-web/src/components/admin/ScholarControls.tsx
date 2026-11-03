@@ -70,19 +70,27 @@ export default function ScholarControls({ file, token, onChanged }: {
       {c.can_set_substate && (
         <div>
           <p className="mb-1.5 text-xs font-medium text-ground-600">{t('admin.scholars.control.substate')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {offered.map((s) => (holdMove(s) && !c.can_hold) ? null : (
-              <button key={s} type="button" onClick={() => move(s)} disabled={!!busy}
-                className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
-                {t(`admin.maintenance.action.${s}`)}
-              </button>
-            ))}
+          {/* ⚠ READ-ONLY ON A PHONE (owner, 2026-11-03, Mobile M6b follow-up — On hold stops a student's
+              money, so the status follows the payment rule): hidden below md only, with a note; from md
+              these are the controls they were, and the server still judges every request. */}
+          <div className="max-md:hidden" data-substate-actions>
+            <div className="flex flex-wrap gap-1.5">
+              {offered.map((s) => (holdMove(s) && !c.can_hold) ? null : (
+                <button key={s} type="button" onClick={() => move(s)} disabled={!!busy}
+                  className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
+                  {t(`admin.maintenance.action.${s}`)}
+                </button>
+              ))}
+            </div>
+            {!c.can_hold && (
+              <p className="mt-1.5 text-[11px] text-ground-500" data-testid="hold-needs-payments">
+                {t('admin.scholars.control.holdNeedsPayments')}
+              </p>
+            )}
           </div>
-          {!c.can_hold && (
-            <p className="mt-1.5 text-[11px] text-ground-500" data-testid="hold-needs-payments">
-              {t('admin.scholars.control.holdNeedsPayments')}
-            </p>
-          )}
+          <p className="rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-substate-use-computer>
+            {t('admin.maintenance.useComputer')}
+          </p>
           {file.maintenance_substate === 'on_hold' && (
             <p className="mt-1.5 text-[11px] text-critical-600">{t('admin.scholars.control.onHoldHint')}</p>
           )}

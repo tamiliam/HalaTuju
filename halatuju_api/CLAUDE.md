@@ -1187,7 +1187,7 @@ condition, pinned over every stage by `view.decisionBar.test.tsx`); a phone PDF 
 "use a computer" note; the documents' 28rem scroll box is `md:` only; the cockpit's 17 files are on rule 15. The
 year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sandbox `src/sandbox/cockpitM6bSurfaces.tsx`.
 `DecisionCard` gates its Save controls on `decisionBarShows` (one rule). Leftovers TD-480 (four `window.confirm`
-doors to Sheets; owner question: should maintenance status / On hold be read-only on a phone too).
+doors to Sheets). **M7 (branch):** the maintenance status buttons are read-only below `md` too (owner: yes; scholar file + cockpit no-file control).
 NEXT: M7, M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 LIVE 2026-11-03 (main 99d8ac1c; api-01243-dzq, web-01070-c44 — web went out in the Requests R1 build 2da37ff4; no migration)

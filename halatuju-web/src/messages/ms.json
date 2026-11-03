@@ -4018,6 +4018,7 @@
     },
     "maintenance": {
       "title": "Status penyelenggaraan",
+      "useComputer": "Status penyelenggaraan diubah di komputer. Di telefon, status ini baca sahaja.",
       "onHoldHint": "Sokongan ditangguhkan — pelepasan ansuran disekat sehingga anda menyambung semula.",
       "substate": {
         "on_track": "Atas landasan",
