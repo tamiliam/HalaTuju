@@ -16,10 +16,11 @@ from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_ge
 
 # Below the suspect floor (no family signature) the review's H1 rule asks the BODY to name the candidate and
 # the institute again (`offer_rulings._tvet`), so the twin carries a letterhead, filler, then its body.
-IKM = ("INSTITUT KEMAHIRAN MARA KOTA CONTOH\nMAJLIS AMANAH RAKYAT\nJalan Contoh, 88000 Kota Contoh\nSURAT TAWARAN\n"
+IKM = ("INSTITUT KEMAHIRAN MARA KOTA CONTOH\nMAJLIS AMANAH RAKYAT\nJalan Contoh, 88000 Kota Contoh\n"
+       "Rujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\nSURAT TAWARAN\n"
        + 'Dengan sukacitanya dimaklumkan bahawa permohonan anda telah diproses dengan teliti.\n' * 8
        + "Nama : Ali bin Abu\nTahniah, anda ditawarkan tempat di Institut Kemahiran MARA Kota Contoh untuk "
-         "mengikuti Diploma Kemahiran Contoh.\nSila hadir pada 3 Ogos 2026.\n")
+         "mengikuti Diploma Kemahiran Contoh.\nSila hadir pada 3 Ogos 2026.\nSekian, terima kasih.\nYang benar,\nPENGARAH\n")
 IKBN_SLIP = """INSTITUT KEMAHIRAN BELIA NEGARA CONTOH
 SLIP TAWARAN UP_TVET FLEXI
 Anda ditawarkan kursus Sijil Contoh.

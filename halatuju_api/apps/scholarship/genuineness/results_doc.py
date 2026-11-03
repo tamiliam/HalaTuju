@@ -371,7 +371,7 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # UPU (UM's "SALURAN TERBUKA UNIVERSITI MALAYA (SATU)", #31) — is the same IPTS option: red at once,
 # no question (owner, TD-145, 2026-10-04). Matched as the two-word phrases ONLY: the lone word
 # 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
-_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD',
+_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD', 'SENDIRIAN BERHAD',
                         'SALURAN TERBUKA', 'SALURAN SATU')
 
 

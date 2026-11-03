@@ -172,7 +172,7 @@ def judge(rows, rescored=None):
     letter would carry if re-scored now, from pass 2; absent for an app outside the corpus)."""
     rescored = rescored or {}
     t, stop, review = Counter(), [], {'newly_blocked_not_offer': [], 'unblocked': [],
-                                      'blocked_on_a_stale_call': []}
+                                      'blocked_on_a_stale_call': [], 'no_rescore': []}
     for r in rows:
         t['applications'] += 1
         o, n = _BANDS.index(r['band_old']) if r['band_old'] in _BANDS else -1, \
@@ -184,14 +184,19 @@ def judge(rows, rescored=None):
             t['newly_blocked'] += 1
             if r['stored'] == 'not_offer_letter':
                 review['newly_blocked_not_offer'].append(r['app'])
-                if rescored.get(r['app'], 'not_offer_letter') != 'not_offer_letter':
-                    stop.append(f"app {r['app']} newly blocked on a stale call (re-scores "
-                                f"{rescored[r['app']]})")
+                now = rescored.get(r['doc'])
+                if now is None:
+                    review['no_rescore'].append(r['app'])          # not in the corpus: a person looks
+                elif now != 'not_offer_letter':
+                    stop.append(f"app {r['app']} newly blocked on a stale call (re-scores {now})")
             else:
                 stop.append(f"app {r['app']} newly blocked on a stored {r['stored']}")
-        if (r['blocked_old'] and r['blocked_new']
-                and rescored.get(r['app'], 'not_offer_letter') != 'not_offer_letter'):
-            review['blocked_on_a_stale_call'].append(r['app'])
+        if r['blocked_old'] and r['blocked_new']:
+            now = rescored.get(r['doc'])
+            if now is None:
+                review['no_rescore'].append(r['app'])
+            elif now != 'not_offer_letter':
+                review['blocked_on_a_stale_call'].append(r['app'])
         if r['blocked_old'] and not r['blocked_new']:
             t['unblocked'] += 1
             review['unblocked'].append(r['app'])
@@ -216,6 +221,7 @@ def rescore_one(eval_dir, key, doc):
     from apps.scholarship.eval.offer_replay import authenticity_of, production_text
     from apps.scholarship.eval.offer_s4_dry_run import plan_offer_doc
     from apps.scholarship.genuineness.bands import stored_authenticity
+    from apps.scholarship.genuineness.offer_rulings import ruling_of
     from apps.scholarship.pathway_engine import offer_fails, student_offer_check
     text, _route = production_text(os.path.join(eval_dir, 'snapshots'), key)
     new_auth = authenticity_of(text)
@@ -232,7 +238,7 @@ def rescore_one(eval_dir, key, doc):
     return {'key': key, 'doc': doc.pk, 'app': doc.application_id, 'live': doc.superseded_at is None,
             'status': f"{old.get('status') or 'unscored'}->{new_auth['status']}",
             'seen': f"{old.get('doc_seen') or '-'}->{new_auth.get('doc_seen') or '-'}",
-            'fails': offer_fails(d), 'chips': new_chips(chk, _shown_status(d)),
+            'fails': offer_fails(d), 'chips': new_chips(chk, _shown_status(d)), 'ruling': ruling_of(new_auth),
             'realign': f"{before['realign']}->{after['realign']}", 'link': f"{before['link']}->{after['link']}"}
 
 
@@ -258,8 +264,10 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
                    .filter(pk=did, doc_type='offer_letter').first()) if did else None
             if doc is not None:
                 rescored.append(rescore_one(eval_dir, key, doc))
-    now = {r['app']: r['status'].split('->')[-1] for r in rescored if r.get('live') and 'app' in r}
+    now = {r['doc']: r['status'].split('->')[-1] for r in rescored if 'status' in r}    # keyed by DOCUMENT
     verdict, stop, review, t = judge(deploy, now)
+    review['lifted_by_a_ruling'] = [f"doc={r['doc']} {r['seen']} ({r['ruling']})" for r in rescored
+                                    if r.get('ruling') and r.get('status', '').endswith('->genuine')]
     moved = [r for r in rescored if r.get('status', '').split('->')[0] != r.get('status', '').split('->')[-1]]
     for r in deploy:
         changed = {c: f"{r['chips_old'].get(c, '-')}->{r['chips_new'].get(c, '-')}" for c in r['chips_new']
@@ -274,7 +282,8 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
             f"link {r['link']}")
     out(f'rescore pass (S7 preview): letters={len(rescored)} status_moved={len(moved)}')
     out(f"review: newly_blocked_not_offer={review['newly_blocked_not_offer']} unblocked={review['unblocked']} "
-        f"blocked_on_a_stale_call={review['blocked_on_a_stale_call']}")
+        f"blocked_on_a_stale_call={review['blocked_on_a_stale_call']} no_rescore={sorted(set(review['no_rescore']))}")
+    out(f"review: lifted_by_a_ruling={review['lifted_by_a_ruling']}")
     for s in stop:
         out(f'  STOP: {s}')
     out(f'verdict: {verdict}')

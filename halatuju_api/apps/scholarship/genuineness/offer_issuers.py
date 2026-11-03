@@ -70,7 +70,9 @@ TVET_ISSUERS = {
 _PRIVATE_MARA = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ',
                  ' KOLEJ UNIVERSITI POLY TECH MARA ', ' KOLEJ UNIVERSITI POLYTECH MARA ', ' KUPTM ',
                  ' UNIVERSITI POLY TECH MALAYSIA ', ' UNIVERSITI POLYTECH MALAYSIA ', ' UPTM ',
-                 ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ')   # S6 review H3: + KUPTM / UPTM
+                 ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ', ' GERMAN MALAYSIAN INSTITUTE ', ' GMI ')
+# S6 review H3 + owner 2026-11-03: + KUPTM / UPTM / GMI. The test is not who OWNS the institution but
+# whether the programme is treated like an IPTA programme and heavily government-subsidised (decisions.md).
 
 #: How much of the normalised OCR text counts as the letterhead (see the module note).
 _LETTERHEAD_CHARS = 600
@@ -78,8 +80,11 @@ _LETTERHEAD_CHARS = 600
 _OFFER_WORDS = (' TAWARAN ', ' DITAWARKAN ', ' OFFER OF ADMISSION ', ' SURAT TAWARAN ')
 _NOT_OFFER = (' TAWARAN PINJAMAN ',)
 #: A sponsor line names who pays, never who issues (rule 4). Matched on the RAW line, before folding.
-_SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|PENAJAAN|DIBIAYAI|PEMBIAYAAN|BIASISWA|SPONSORED\s+BY|SPONSOR)\b',
+_SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|PENAJAAN|DIBIAYAI|PEMBIAYAAN|BIASISWA|KERJASAMA|USAHASAMA|'
+                      r'COLLABORATION|PINJAMAN|FUNDED|SCHOLARSHIP|SPONSORED\s+BY|SPONSOR)\b',
                       re.IGNORECASE)   # S6 review H3: + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA
+#: A payment / bank / vendor line (S6 review): never part of the letterhead.
+_PAYMENT_LINE = re.compile(r'\b(BAYARAN|AKAUN|BANK|PEMBEKAL|PENCETAK|DICETAK)\b', re.IGNORECASE)
 #: A private company / an accredited private centre on the letterhead is never a public issuer.
 _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: Words a public body prints on its letterhead (a ministry, a department, a school); a letterhead
@@ -87,7 +92,8 @@ _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: universities' common short names count too (C1 review: a UiTM PDF's text layer carries no
 #: letterhead and says only "UiTM").
 _PUBLIC_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ',
-                 ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ')   # S6 H7
+                 ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ',
+                 ' LEMBAGA ', ' PERBADANAN ', ' KOLEJ KEJURURAWATAN ')   # S6 review H7 (both rounds)
 _UA_SHORT = ('UM', 'USM', 'UKM', 'UPM', 'UTM', 'UITM', 'UIAM', 'IIUM', 'UUM', 'UNIMAS', 'UMS', 'UPSI',
              'USIM', 'UTEM', 'UMP', 'UNIMAP', 'UTHM', 'UMT', 'UMK', 'UPNM', 'UNISZA')
 _INSTITUTION_WORDS = (' KOLEJ ', ' COLLEGE ', ' UNIVERSITI ', ' UNIVERSITY ', ' INSTITUT ',
@@ -100,13 +106,14 @@ def _fold(s):
 
 
 def _letterhead(ocr_text: str) -> str:
-    """The folded letterhead: the opening lines up to `_LETTERHEAD_CHARS`, sponsor lines dropped."""
+    """The folded letterhead: the opening lines up to `_LETTERHEAD_CHARS`, sponsor lines and (S6 review)
+    payment / bank / vendor lines dropped — a bank's "Berhad" names who holds the fees, not who issues."""
     from .results_doc import _norm_fold_upper_alnum
     parts, size = [], 0
     for line in (ocr_text or '').splitlines():
         if size >= _LETTERHEAD_CHARS:
             break
-        folded = '' if _SPONSOR.search(line) else _norm_fold_upper_alnum(line)
+        folded = '' if (_SPONSOR.search(line) or _PAYMENT_LINE.search(line)) else _norm_fold_upper_alnum(line)
         if folded:
             parts.append(folded)
             size += len(folded) + 1

@@ -42,6 +42,7 @@ def load_expect(path=EXPECT_PATH):
 def check(eval_dir, expect, split_file=None):
     """One row per expected letter: {key, split, family, expected, today, seen, ok}."""
     from apps.scholarship.eval.offer_replay import authenticity_of, production_text
+    from apps.scholarship.genuineness.offer_rulings import ruling_of     # S6: which ruling set it (learnable)
     orc = _orc()
     split_file = split_file or orc.SPLIT_PATH
     with open(split_file, encoding='utf-8') as fh:
@@ -55,7 +56,7 @@ def check(eval_dir, expect, split_file=None):
         today = auth.get('status')
         rows.append({'key': key, 'split': 'heldout' if key in held else 'dev',
                      'family': ans.get('family') or '', 'expected': want, 'today': today,
-                     'seen': auth.get('doc_seen') or '', 'ok': today == want})
+                     'seen': auth.get('doc_seen') or '', 'ruling': ruling_of(auth) or '-', 'ok': today == want})
     return rows
 
 
@@ -66,7 +67,8 @@ def summarise_genuineness(rows, split):
             'ok': sum(r['ok'] for r in rows),
             'expected': dict(Counter(str(r['expected']) for r in rows)),
             'today': dict(Counter(str(r['today']) for r in rows)),
-            'misses': [{k: r[k] for k in ('key', 'split', 'family', 'expected', 'today', 'seen')}
+            'rulings': dict(Counter(f"{r['ruling']}:{r['today']}" for r in rows if r['ruling'] != '-')),
+            'misses': [{k: r[k] for k in ('key', 'split', 'family', 'expected', 'today', 'seen', 'ruling')}
                        for r in rows if not r['ok']]}
 
 
@@ -85,9 +87,10 @@ def main(argv=None):
               f"{s['ok']} / {s['letters']} as ruled")
         print('  expected: ' + '  '.join(f'{k} {v}' for k, v in sorted(s['expected'].items())))
         print('  today:    ' + '  '.join(f'{k} {v}' for k, v in sorted(s['today'].items())))
+        print('  set by an S6 ruling: ' + ('  '.join(f'{k} {v}' for k, v in sorted(s['rulings'].items())) or 'none'))
         for m in s['misses']:
             print(f"  MISS {m['key']} ({m['split']}, {m['family'] or '-'}): expected {m['expected']}, "
-                  f"today {m['today']} ({m['seen'] or '-'})")
+                  f"today {m['today']} ({m['seen'] or '-'}, ruling {m['ruling']})")
     return 1 if s['misses'] else 0
 
 

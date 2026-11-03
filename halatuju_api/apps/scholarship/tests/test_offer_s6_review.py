@@ -19,9 +19,9 @@ def _r(p, family='ua_offer'):
 _FILLER = 'Dengan sukacitanya dimaklumkan bahawa permohonan anda telah diproses dengan teliti.\n' * 9
 #: A real-shaped IKM letter that scores below the suspect floor (a photo): the letterhead names MARA's TVET
 #: arm, the body names the candidate and the institute again.
-LOW_SCORE_IKM = ('TVETMARA\nMAJLIS AMANAH RAKYAT\nSURAT TAWARAN\n' + _FILLER
+LOW_SCORE_IKM = ('TVETMARA\nMAJLIS AMANAH RAKYAT\nRujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\nSURAT TAWARAN\n' + _FILLER
                  + 'NAMA : ALI BIN ABU\nPusat : INSTITUT KEMAHIRAN MARA CONTOH\nProgram : Diploma Kemahiran Contoh\n'
-                 'Tarikh lapor diri : 3 Ogos 2026\n')
+                 'Tarikh lapor diri : 3 Ogos 2026\nSekian, terima kasih.\nYang benar,\nPENGARAH\n')
 
 
 class H1TheTypedFake(SimpleTestCase):
@@ -167,10 +167,10 @@ class M8TheDryRunStopsOnAStaleBlock(SimpleTestCase):
 
     def test_a_new_block_the_rescore_would_lift_is_a_stop(self):
         from apps.scholarship.eval import offer_s6_dry_run as s6
-        self.assertEqual(s6.judge([self._row()], {7: 'genuine'})[0], 'STOP')
-        self.assertEqual(s6.judge([self._row()], {7: 'not_offer_letter'})[0], 'GO')
+        self.assertEqual(s6.judge([self._row()], {8: 'genuine'})[0], 'STOP')          # keyed by DOCUMENT
+        self.assertEqual(s6.judge([self._row()], {8: 'not_offer_letter'})[0], 'GO')
 
     def test_an_old_block_the_rescore_would_lift_is_listed_for_s7(self):
         from apps.scholarship.eval import offer_s6_dry_run as s6
-        verdict, _stop, review, _t = s6.judge([self._row(blocked_old=True)], {7: 'genuine'})
+        verdict, _stop, review, _t = s6.judge([self._row(blocked_old=True)], {8: 'genuine'})
         self.assertEqual((verdict, review['blocked_on_a_stale_call']), ('GO', [7]))

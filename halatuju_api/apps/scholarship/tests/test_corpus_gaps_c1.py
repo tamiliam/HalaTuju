@@ -35,8 +35,10 @@ NO. KAD PENGENALAN : 080808-10-5566
 PROGRAM : SIJIL KEMAHIRAN MALAYSIA TAHAP 3 TEKNOLOGI AUTOMOTIF
 TARIKH LAPOR DIRI : 5 JULAI 2026
 """
+# S6 review round 2: Q2's genuine needs a real letter's structure (reference, date, title, candidate, a
+# closing after the title), so request #47's twin carries them, as the real letter does.
 ILKBS_OFFER = ("KEMENTERIAN BELIA DAN SUKAN MALAYSIA\nINSTITUT KEMAHIRAN BELIA NEGARA (IKBN) PEKAN\n"
-               + ILKBS_BODY)
+               "Rujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\n" + ILKBS_BODY + "Sekian, terima kasih.\nYang benar,\nPENGARAH\n")
 # The same body with no issuer in it, and forged under an issuer that is NOT on the closed list.
 NEUTRAL_BODY = ILKBS_BODY.replace('INSTITUSI LATIHAN KEMENTERIAN BELIA DAN SUKAN (ILKBS)',
                                   'PUSAT LATIHAN BINTANG')
@@ -95,7 +97,8 @@ class TheScorer(TestCase):
                           ('IKTBN SEPANG', 'tvet_belia_sukan')):
             with self.subTest(head=head):
                 g = signature_genuineness(f'{head}\n{NEUTRAL_BODY}', doc_type='offer_letter')
-                self.assertEqual((g['status'], g['type']), ('genuine', key))       # S6 Q2
+                # S6 round 2: no letter structure (no reference / closing) → the 1.8.0 net, NOT CHECKED
+                self.assertEqual((g['status'], g['type']), (NOT_CHECKED, key))
 
     def test_an_acronym_matches_only_as_a_whole_word(self):
         g = signature_genuineness('PUSAT ILPS SERANTAU\n' + FORGED_UNNAMED, doc_type='offer_letter')
@@ -168,6 +171,7 @@ UITM_TEXT_LAYER = ('TAWARAN KEMASUKAN KE PROGRAM DIPLOMA\nUiTM Cawangan Sabah Ka
                    'Kolej Pengajian Perakaunan\n' + _REG)
 # Owner ruling C: MARA-owned but PRIVATE, and saying so does not make them public.
 KPTM = 'KOLEJ POLY-TECH MARA\nMilik Majlis Amanah Rakyat\nTAWARAN KEMASUKAN\n' + _REG
+STRUCT, CLOSE = 'Rujukan : MARA/1/2\nTarikh : 1 Jun 2026\n', 'Sekian.\nYang benar,\nPENGARAH\n'
 UNIKL = 'UNIVERSITI KUALA LUMPUR (UniKL)\nMilik Majlis Amanah Rakyat\nTAWARAN KEMASUKAN\n' + _REG
 
 
@@ -217,14 +221,18 @@ class TheReviewProbes(TestCase):
         for head in ('KOLEJ MARA BANTING', 'KOLEJ PROFESIONAL MARA BERANANG'):
             with self.subTest(head):
                 g = signature_genuineness(f'{head}\nTAWARAN KEMASUKAN\n{_REG}', doc_type='offer_letter')
-                self.assertEqual((g['status'], g['type']), ('genuine', 'tvet_mara'))      # S6 Q2
+                self.assertEqual((g['status'], g['type']), (NOT_CHECKED, 'tvet_mara'))   # S6 r2: no structure
+                g = signature_genuineness(f'{head}\n{STRUCT}TAWARAN KEMASUKAN\nNama : Ali\n{_REG}{CLOSE}',
+                                          doc_type='offer_letter')
+                self.assertEqual((g['status'], g['type']), ('genuine', 'tvet_mara'))      # with it: Q2
 
     def test_kptm_and_unikl_are_mara_owned_but_private(self):
         for name, text in (('KPTM', KPTM), ('UniKL', UNIKL)):
             with self.subTest(name):
                 g = signature_genuineness(text, doc_type='offer_letter')
                 self.assertEqual(g['status'], 'not_offer_letter')      # S6 rulings 2 / 7 (was suspect)
-                self.assertTrue(g['reason'].startswith('private college / university (IPTS)'))
+                self.assertIn('private college / university (IPTS)', g['reason'])
+                self.assertTrue(g['reason'].startswith('[S6 ruling: private_offer]'))   # learnable
 
 
 #: S6: a TVET page with no offer body still reads NOT CHECKED (the 1.8.0 net) — the doors below pin it.

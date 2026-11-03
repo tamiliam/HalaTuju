@@ -107,7 +107,11 @@ def _is_confirmation(offer):
     """S6 review M9: a confirmation of studies may stand in for an offer, but it names the programme she is
     ON — it never becomes her confirmed pick (`pathway_engine.is_confirmation_letter`)."""
     from ..pathway_engine import is_confirmation_letter
-    return is_confirmation_letter(offer)
+    if is_confirmation_letter(offer):
+        logger.info('confirm_pathway refused a confirmation-of-studies letter (doc %s): a stale '
+                    'pathway_confirm resolves without writing the pick', getattr(offer, 'id', None))
+        return True
+    return False
 
 
 def confirm_pathway(application):
