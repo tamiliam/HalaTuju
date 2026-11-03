@@ -1190,7 +1190,7 @@ year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sand
 doors to Sheets; owner question: should maintenance status / On hold be read-only on a phone too).
 NEXT: M7, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 BUILT, NOT LIVE (branch maint-s7; no migration)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 LIVE (main 7871bb39; api-01244-2rq, web-01073-jxr; no migration)
 
 Roadmap T4; decisions.md 2026-11-03 "Team tables T4". **Team -> Emails** = Admin (read-only list) · Reviewer
 (`ReviewerEmailsCard`, moved whole) · Mentor (`InvitationEmailsCard only=['invite_mentor']`, the same template as
