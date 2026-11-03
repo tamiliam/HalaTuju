@@ -15,6 +15,7 @@ from apps.scholarship.eval import offer_failure_map as fm
 from apps.scholarship.eval import offer_read_check as orc
 from apps.scholarship.eval import offer_replay as rp
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+from apps.scholarship.tests.test_offer_reader import text_pdf
 
 #: Invented values. None may appear in any printed output.
 SECRET_NAME = 'ZORBEX A/L QUENTARO'
@@ -88,11 +89,12 @@ class TestProductionText(SimpleTestCase):
 
 class TestReplayLetter(SimpleTestCase):
     def test_a_lock_is_merged_over_the_stored_read(self):
-        rec = rp.replay_letter(MATRIC_TWIN, 'text_layer', _stored())
+        rec = rp.replay_letter(MATRIC_TWIN, 'text_layer', _stored(), page1_layer=MATRIC_TWIN)
         self.assertEqual(rec['capture'], 'deterministic')
         self.assertEqual(rec['replay']['outcome'], 'locked')
         self.assertEqual(rec['fields']['institution'], SECRET_COLLEGE)          # the parser wins
-        self.assertEqual(rec['fields']['candidate_address'], 'kept from the stored read')
+        self.assertEqual(rec['fields']['candidate_address'], '')          # S5 review L2: an AI-only key, blank
+        self.assertEqual(rec['fields']['offer_date'], '3 MAC 2031')        # read by the parser
         self.assertEqual(rec['replay']['parser_fields']['institution'], SECRET_COLLEGE)
         self.assertNotIn('_family', rec['fields'])
         self.assertEqual(rec['replay']['offer_parser_version'], offer_parse.PARSER_VERSION)
@@ -116,9 +118,13 @@ class TestReplayLetter(SimpleTestCase):
         self.assertNotEqual(auth['status'], 'unrecognised')
 
     def test_the_merge_rule_is_production_s(self):
-        self.assertEqual(rp.merged_over_stored({'a': '1', 'b': '2'}, {'a': '', 'b': '3', '_family': 'x'}),
-                         {'a': '1', 'b': '3'})
-        self.assertEqual(rp.merged_over_stored(None, {'a': '9', '_family': 'x'}), {'a': '9'})
+        # S5: `offer_exact.merge_over` — the parser's own keys whole (a stale AI campus is cleared),
+        # the reporting date merge-preserve (the stored one stays when the parser read none).
+        rec = rp.replay_letter(MATRIC_TWIN.replace('17 OGOS 2031\n', ''), 'vision',
+                               _stored(campus='STALE CAMPUS', programme_code='X1'))
+        self.assertEqual(rec['capture'], 'deterministic')
+        self.assertEqual((rec['fields']['campus'], rec['fields']['programme_code']), ('', ''))
+        self.assertEqual(rec['fields']['reporting_date'], '17 Ogos 2031')
 
 
 class TestMissReason(SimpleTestCase):
@@ -148,12 +154,19 @@ class TestMissReason(SimpleTestCase):
         no_label = MATRIC_TWIN.replace(f'K/P: {SECRET_NRIC}\n', '')
         self.assertEqual(self._reason(no_label), 'layout_variant')
 
-    def test_a_tripped_guard_on_vision_text_is_photo_ocr_noise(self):
+    def test_a_shifted_block_on_vision_text_is_photo_ocr_noise(self):
+        # S5: the shape reader leaves the Jurusan EMPTY rather than shifting a ringgit amount into it.
         shifted = MATRIC_TWIN.replace('SAINS\n', 'RM499.00\n', 1)
         diag = rp.parser_diagnosis(shifted)
-        self.assertEqual(diag['guard'], 'date_or_money')
+        self.assertEqual(diag['empty_required'], ['programme', 'stream'])   # the bracket needs a Jurusan
         self.assertFalse(diag['locked'])
         self.assertEqual(self._reason(shifted), 'photo_ocr_noise')
+
+    def test_an_ic_the_guard_refuses_is_guard_ic_guard(self):
+        # A labelled IC that is malformed (no real birth date) and is not the profile's: blanked → no lock.
+        bad = MATRIC_TWIN.replace(SECRET_NRIC, '019999-14-5678')
+        diag = rp.parser_diagnosis(bad, profile_nric='020304-14-5678')
+        self.assertEqual((diag['guard'], diag['locked']), ('ic_guard', False))
 
 
 class _Corpus:
@@ -169,8 +182,9 @@ class _Corpus:
         self._json(key + '.json', {'vision_fields': {'fields': read, 'capture': 'ai',
                                                      'authenticity': {'doc_seen': seen,
                                                                       'status': 'genuine'}}})
-        with open(os.path.join(self.dir, 'fixtures', 'offer_letter', f'{key}.{ext}'), 'w') as f:
-            f.write('x')
+        # A text-layer PDF is a real PDF carrying the text (S5: the replay reads its page-1 layer).
+        with open(os.path.join(self.dir, 'fixtures', 'offer_letter', f'{key}.{ext}'), 'wb') as f:
+            f.write(text_pdf([text]) if ext == 'pdf' and route == 'text_layer' and text else b'x')
         if route:
             self._json(key + '.ocr.meta.json', {'path': route})
             with open(os.path.join(self.snap, key + '.ocr.txt'), 'w', encoding='utf-8') as f:

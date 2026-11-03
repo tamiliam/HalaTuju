@@ -1999,8 +1999,6 @@ def _offer_context(doc, page1_text):
     return {'profile_nric': getattr(profile, 'nric', '') or '', 'page1_ocr': page1_text or ''}
 
 
-#: The deterministic offer read's stamp (review L1): which reader wrote the fields.
-_DET_OFFER_STAMP = {'offer_reader_inputs': {'reader': 'deterministic'}}
 #: Keys of a read kept on the stored record beside its fields (S4: the offer reader's version + inputs).
 _EX_KEPT = ('parser_version', 'stpm_rows_from_entry', 'stpm_rows_sign_from_point', 'approval_read_error',
             'approval_read_until', 'offer_reader_version', 'offer_reader_inputs')
@@ -2054,31 +2052,19 @@ def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', c
             else:
                 ex['capture'] = 'deterministic'
     elif doc.doc_type == 'offer_letter':
-        # STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read DETERMINISTICALLY
-        # from the OCR text — self-identifying + conservative (offer_parse.parse_govt_offer returns
-        # None unless it locks a coherent identity+pathway+intake read). University (ua_offer) offers
-        # vary, and PISMP's new format is deferred, so those fall through to the Gemini IMAGE read —
-        # `offer_reader`: up to 3 pages + a PDF's text layer, stamped `offer_reader_version` (S4).
-        from .offer_parse import parse_govt_offer
+        # STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read DETERMINISTICALLY from
+        # the OCR text — `offer_exact` (S5): the parser, the IC guard, the merge over the prior read; None
+        # unless it locks. Every other letter goes to the Gemini IMAGE read — `offer_reader` (S4).
+        from .offer_exact import exact_offer_read
         image = _image()
         _r = ocr if (ocr is not None) else ocr_document(doc)
         _otext = (_o.get('text') if _o.get('text') is not None else (_r or {}).get('text', '')) or ''
-        govt = parse_govt_offer(_otext)
-        if govt is not None:
-            govt.pop('_family', None)
-            # MERGE the deterministic fields OVER whatever was read before: the deterministic value
-            # wins where present, but a field the parser didn't produce (e.g. an occasional
-            # reporting_date the layout hid) keeps its prior value — so switching to the Exact read
-            # can never DROP a field the Gemini read had (the reporting-date bonus depends on it).
-            prior = doc.vision_fields.get('fields') if isinstance(getattr(doc, 'vision_fields', None), dict) else None
-            fields = ({**prior, **{k: v for k, v in govt.items() if (v or '').strip()}}
-                      if isinstance(prior, dict) else govt)
-            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic', **_DET_OFFER_STAMP}
-        elif image is not None:
-            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_offer_context(doc, _otext))
-            ex['capture'] = 'ai'
-        else:
-            ex = extract_document_fields(_otext, doc.doc_type, **_offer_context(doc, _otext))
+        _ctx = _offer_context(doc, _otext)
+        ex = exact_offer_read(_otext, prior=getattr(doc, 'vision_fields', None), image=image,
+                              content_type=doc.content_type, **_ctx)
+        if ex is None:
+            ex = (extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type, **_ctx)
+                  if image is not None else extract_document_fields(_otext, doc.doc_type, **_ctx))
             ex['capture'] = 'ai'
     elif doc.doc_type == 'higher_results': ex = _higher_extract(doc, ocr, _image, extract_document_fields)
     elif doc.doc_type == 'birth_certificate':

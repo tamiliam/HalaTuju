@@ -97,7 +97,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertIn('ASASI TEKNOLOGI KEJURUTERAAN', r['programme'])
         self.assertEqual(r['institution'], 'POLITEKNIK SULTAN IDRIS SHAH')
         self.assertNotIn('Tarikh', r['institution'])
-        self.assertIn('15 JUN 2026', r['reporting_date'])
+        self.assertEqual(r['reporting_date'], '15 Jun 2026')        # S5: the house shape, no time
 
     def test_stpm(self):
         r = parse_govt_offer(STPM)
@@ -105,7 +105,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['candidate_name'], 'AISYAH BINTI RAHMAN')
         self.assertEqual(r['candidate_nric'], '080514-14-0354')
         self.assertEqual(r['programme'], 'Tingkatan Enam Semester 1')
-        self.assertEqual(r['intake'], '2026')
+        self.assertEqual(r['intake'], 'SEMESTER 1 TAHUN 2026')       # S5: with its semester words
         self.assertIn('SEKOLAH', r['institution'])
         self.assertIn('2026', r['reporting_date'])
         self.assertEqual(r['stream'], 'SAINS')           # #117 (a) — Bidang now captured (block layout)
@@ -118,7 +118,7 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['candidate_nric'], '080111-14-0499')
         self.assertEqual(r['institution'], 'KOLEJ TINGKATAN ENAM GOMBAK')    # value after the label
         self.assertEqual(r['stream'], 'SAINS')                               # Bidang
-        self.assertIn('08 Jun 2026', r['reporting_date'])                    # Tarikh Lapor Diri, not skipped
+        self.assertEqual(r['reporting_date'], '8 Jun 2026')                  # Tarikh Lapor Diri, not skipped
         self.assertNotIn('Bidang', r['institution'])                        # not swallowed by the institution
 
     def test_matriculation(self):
@@ -127,9 +127,9 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['candidate_name'], 'KUMAR A/L RAJAN')
         self.assertEqual(r['candidate_nric'], '080923-06-0355')
         self.assertIn('Matrikulasi', r['programme'])
-        self.assertEqual(r['intake'], '2026/2027')
+        self.assertEqual(r['intake'], 'SESI 2026/2027')              # S5: with its label
         self.assertEqual(r['institution'], 'KOLEJ MATRIKULASI PAHANG')
-        self.assertIn('JUN 2026', r['reporting_date'])
+        self.assertEqual(r['reporting_date'], '8 Jun 2026')
         # ⚠ THE JURUSAN IS THE STREAM. Its absence here is what starved the pathway check's track
         # axis for every matriculation letter this parser read (0/4 on production 2026-09-10,
         # against 26/26 for the same letters read by Gemini, whose schema says so explicitly).
@@ -145,10 +145,12 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['_family'], 'polytechnic')
         self.assertEqual(r['candidate_name'], 'JANANI A/P SURESH')
         self.assertEqual(r['candidate_nric'], '081014-08-0994')
-        self.assertIn('DIPLOMA', r['programme'])
-        self.assertEqual(r['intake'], '2026/2027')
+        self.assertEqual(r['programme'], 'DIPLOMA PENGAJIAN PERNIAGAAN')   # S5: the code leaves it
+        self.assertEqual(r['programme_code'], 'DPM')
+        self.assertEqual(r['intake'], 'SESI 2026/2027')              # no session numeral printed
         self.assertIn('POLITEKNIK', r['institution'])
-        self.assertIn('JUN 2026', r['reporting_date'])
+        self.assertEqual(r['reporting_date'], '20 Jun 2026')          # the date only, the house shape
+        self.assertEqual(r['offer_date'], '25/05/2026')
 
     def test_university_offer_defers(self):
         # A university offer (no govt-issuer marker) is NOT recognised → None → Gemini.
@@ -203,19 +205,16 @@ class TestMatricBlockShift(SimpleTestCase):
     The letter was fine. The pairing was not.
     """
 
-    def test_the_shift_reproduces_142_exactly(self):
-        # Pinned as the MECHANISM, not as an aspiration: these are the three values that were
-        # actually stored on #142's document. If this stops reproducing them, the cause has moved.
-        from apps.scholarship.offer_parse import _parse_matric
-        lines = [ln.rstrip() for ln in MATRIC_INTERLEAVED.splitlines()]
-        raw = _parse_matric(lines, MATRIC_INTERLEAVED.upper())
-        self.assertEqual(raw['programme'], 'Program Matrikulasi (8 JUN 2026)')
-        self.assertEqual(raw['stream'], '8 JUN 2026')
-        self.assertEqual(raw['reporting_date'], '')
-        # The institution survived — it is read by its own unmistakable 'KOLEJ MATRIKULASI <state>'
-        # scan, not by the block pairing. That is why the Institution matched while the Pathway
-        # chip went red, and why the tick was withheld rather than wrong.
-        self.assertEqual(raw['institution'], 'KOLEJ MATRIKULASI SELANGOR')
+    def test_the_142_shape_no_longer_puts_a_date_in_the_jurusan(self):
+        # 1.3.0 stored #142's document as programme "Program Matrikulasi (8 JUN 2026)", stream
+        # "8 JUN 2026", reporting date '' — a positional zip. Since S5 (2.0.0) each value is taken by
+        # its SHAPE (`_read_block`): no line after "Jurusan:" has a jurusan's shape, so the stream
+        # stays EMPTY (and a required field missing defers), never a date.
+        from apps.scholarship.offer_parse import diagnose
+        d = diagnose(MATRIC_INTERLEAVED)
+        self.assertEqual(d['fields']['stream'], '')
+        self.assertIn('stream', d['empty_required'])
+        self.assertEqual(d['fields']['institution'], 'KOLEJ MATRIKULASI SELANGOR')
 
     def test_a_date_in_the_jurusan_slot_defers_to_gemini(self):
         # ⚠ THE ABSENCE IS THE POINT. A partly-wrong deterministic read is worth LESS than no
@@ -231,7 +230,7 @@ class TestMatricBlockShift(SimpleTestCase):
         r = parse_govt_offer(MATRIC)
         self.assertIsNotNone(r)
         self.assertEqual(r['stream'], 'SAINS')
-        self.assertEqual(r['_offer_parser_version'], '1.3.0')
+        self.assertEqual(r['_offer_parser_version'], '2.0.0')
 
     def test_no_text_slot_may_ever_hold_a_date(self):
         # The general rule, stated once: whatever the layout, a date never belongs in any of these.

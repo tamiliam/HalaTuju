@@ -161,13 +161,14 @@ downloads `offer_review_results.json`. `--apply <that file>` prints counts only 
 lines wrong per field) and changes no answer file — the lead decides. Tests:
 `tests/test_offer_review_page.py` (synthetic twins).
 `--offer-check` (S2) writes `review_s2_offer.html` the same way: every letter (any split) whose answer's `is_offer_letter` is not `yes` or whose stored genuineness status is `not_offer_letter`, with two Right/Wrong lines (our label; the live system's decision) and the labeller's note; it saves `offer_review_s2_results.json`, which `--apply` counts.
+`--exact-reads` (S5) writes `review_s5_exact.html`: the review_s1 card for EVERY letter whose stored read is the fixed-format reader's (`capture='deterministic'`) and has an answer, no sample, every line starting Right; it saves `offer_review_s5_exact_results.json`, which `--apply` counts. Those 71 answers are dev letters (the split's pool is AI reads only, so `offer_split.json` is unchanged).
 
 **Free text, today's free readers, and the failure map (S2).** `capture_ocr.py offer_letter
 --corpus <eval-dir> --reuse-from snapshots` caches OCR for every letter into the corpus's own
 `snapshots/` (gitignored): a digital PDF's text layer (free); else an earlier page-1 Vision capture
 from `eval/snapshots/` (meta `earlier_vision`, no second call); else Vision, one call per page.
 `--dry-run` first prints the counts and the cost and writes nothing. `offer_replay.py --write` runs
-today's deterministic offer reader (`offer_parse.parse_govt_offer`) and the offer genuineness on the
+today's deterministic offer reader (since S5 `offer_exact.exact_offer_read`: the parser, the IC guard, the merge) and the offer genuineness on the
 text production would feed them (the text layer, or Vision **page 1**), no paid call, and writes
 `<key>.replay.json`: a lock is merged over the stored read as a production re-run does; a fallback
 keeps the stored read as a stand-in for the Gemini read it does not make (`capture: ai_stand_in`).
@@ -192,6 +193,21 @@ python -I apps/scholarship/eval/capture_ocr.py offer_letter --corpus apps/schola
 python -I apps/scholarship/eval/offer_replay.py --write
 python -I apps/scholarship/eval/offer_failure_map.py --split dev
 python -I apps/scholarship/eval/offer_read_check.py --split dev --read file:.replay.json
+```
+
+**The Exact read on the corpus (S5) — free.** `offer_parse_check.py` feeds each letter what production feeds
+the fixed-format reader's one entry point (`offer_exact.exact_offer_read`: the text, a digital PDF's page-1
+layer read from the corpus PDF, the profile IC from `context.json` for the IC guard) and prints per letter
+EXACT / INCOMPLETE / WRONG (a lock with a core field wrong or extra) / CONTROL-LOCKED (a lock on a letter that
+is not STPM / matriculation / polytechnic, or is a portal page / not an offer) / FALLBACK, by split, family and
+input kind; the offer date (scored, not core); the IC guard's outcomes; the pipeline score (the lock merged over
+`--base`, default `.fresh_s4d.json` = reader 2.3.0, else that read); and the stored Exact reads that re-lock.
+Exit 1 on any WRONG or control lock. Keys and field names only. Tune on `--split dev`; run `--split heldout`
+once at the end. `offer_replay.py` calls the same entry point. Tests: `tests/test_offer_parse_check.py`.
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_parse_check.py --split dev --eval-dir <corpus>
 ```
 
 **Today's AI reader, measured (S3) — PAID.** `offer_fresh_read.py` runs the production AI offer
@@ -250,6 +266,20 @@ changes — no names. Needs `DATABASE_URL` only. Tests: `tests/test_offer_s4_dry
 ```bash
 cd halatuju_api
 python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--keys K1,K2] [--json]
+```
+
+**S5 on live records (the same dry run).** `offer_s5_caches.py --write` (free, no database) writes
+`<key>.s5_exact.json` for every letter the S5 Exact read locks, and for every stored Exact read it no longer
+locks (a fallback: the corpus's AI read, else the stored read — a flagged GUESS). `offer_s4_dry_run.py --suffix
+.s5_exact.json` then RE-DERIVES each lock against the live row (production profile IC for the IC guard, the
+live `vision_fields` as the merge prior). Every run also counts the money reach per document — whether
+`parse_reporting_date(reporting_date)` and the intake year change (changed / unchanged, never the value) —
+and `new_red:name` / `new_red:ic` (a Name / IC tick that becomes a wrong-person `mismatch`).
+
+```bash
+cd halatuju_api
+python -I apps/scholarship/eval/offer_s5_caches.py --eval-dir <corpus> --write
+python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> --suffix .s5_exact.json
 ```
 
 `fetch_corpus.py` pages every PostgREST read (`limit` + `offset` over a stable `order`, stopping on

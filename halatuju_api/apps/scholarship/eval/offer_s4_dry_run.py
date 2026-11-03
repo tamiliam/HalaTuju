@@ -30,8 +30,21 @@ SAFETY — it reads the production database, so every run is ONE transaction tha
 Refuses to start without DATABASE_URL, or on a database that is not PostgreSQL (`--allow-sqlite` is for
 the tests' fake layer only).
 
+S5 (`--suffix .s5_exact.json`, the caches `offer_s5_caches.py` writes): the Exact read is RE-DERIVED here
+against the LIVE row - `offer_exact.exact_read` on the corpus's cached text, with the production profile IC
+for the IC guard and the live `vision_fields` as the prior it merges over (what a live re-read would store).
+A lock the guard refuses with the production IC would go to the AI reader: unknown here, so the live fields
+stand, flagged `s5:ic_refused_live`. A fallback cache (a stored Exact read S5 no longer locks) carries the
+corpus's AI read, or the stored read when the corpus has none - a GUESS, flagged `fallback:<which>`.
+
+THE MONEY REACH (every suffix): per document, whether `parse_reporting_date(reporting_date)` and the intake
+year the money path reads (`student_offer_check(...)['intake_year']`) change, stored vs new - changed /
+unchanged only, never the value. `new_red:name` / `new_red:ic` count a Name / IC tick that becomes
+`mismatch` (a wrong-person red) where it was not.
+
 Usage (from halatuju_api/; the operator runs it, never an agent):
-  python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--keys K1,K2] [--json]
+  python -I apps/scholarship/eval/offer_s4_dry_run.py --eval-dir <corpus> [--suffix .s5_exact.json]
+      [--keys K1,K2] [--json]
 Env: DATABASE_URL (the session pooler URL). Nothing else is read.
 """
 import argparse
@@ -123,7 +136,7 @@ def doc_id_of(key):
 
 
 def s4_keys(eval_dir, suffix=S4_SUFFIX):
-    return sorted(os.path.basename(p)[:-len(S4_SUFFIX)]
+    return sorted(os.path.basename(p)[:-len(suffix)]
                   for p in glob.glob(os.path.join(eval_dir, 'snapshots', '*' + suffix)))
 
 
@@ -182,6 +195,10 @@ def plan_offer_doc(doc, fields=None):
     from apps.scholarship.pathway_engine import offer_band
     iy = (chk.get('intake_year') or '').strip()
     out['not_offer_dated'] = bool(iy and offer_band(d) == 'not_offer_letter')
+    from apps.scholarship.pathway_engine import parse_reporting_date
+    rd = chk.get('reporting_date')
+    out['_money'] = {'reporting_date': str(parse_reporting_date(rd) if isinstance(rd, str) else None),
+                     'intake_year': iy}                  # compared in `compare_one`, never printed
     return out
 
 
@@ -217,8 +234,27 @@ def compare_one(doc, fields):
     changed = [k for k in ('realign', 'realign_course', 'realign_campus', 'link', 'link_course',
                            'link_campus', 'fill') if stored[k] != s4[k]]
     changed += [f'tick:{k}' for k in TICKS if stored['ticks'][k] != s4['ticks'][k]]
+    m_old, m_new = stored.pop('_money'), s4.pop('_money')
+    money = [f'money:{k}' for k in ('reporting_date', 'intake_year') if m_old[k] != m_new[k]]
+    new_red = [k for k in ('name', 'ic') if s4['ticks'][k] == 'mismatch' and stored['ticks'][k] != 'mismatch']
     return {'doc': doc.pk, 'app': doc.application_id, 'live': doc.superseded_at is None,
-            'stored': stored, 's4': s4, 'changed': changed}
+            'stored': stored, 's4': s4, 'changed': changed, 'money': money, 'new_red': new_red}
+
+
+def s5_fields(eval_dir, key, cache, doc, profile_nric):
+    """(fields, how) for an S5 cache: a lock RE-DERIVED against the live row (the production profile IC, the
+    live `vision_fields` as the prior); a fallback cache's own fields (a guess, flagged)."""
+    if cache.get('s5') != 'locked':
+        return cache.get('fields') or {}, 'fallback:' + str(cache.get('fallback_guess') or 'unknown')
+    from apps.scholarship.eval.offer_replay import page1_of, production_text
+    from apps.scholarship.offer_exact import exact_read
+    text, route = production_text(os.path.join(eval_dir, 'snapshots'), key)
+    ex = exact_read(text, from_text_layer=route == 'text_layer', page1_layer=page1_of(eval_dir, key, route),
+                    prior=doc.vision_fields, profile_nric=profile_nric)
+    if ex is None:
+        live = doc.vision_fields.get('fields') if isinstance(doc.vision_fields, dict) else None
+        return dict(live or {}), 's5:ic_refused_live'
+    return ex['fields'], 's5:' + ex['offer_reader_inputs']['nric_check']
 
 
 def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print, suffix=S4_SUFFIX):
@@ -235,7 +271,10 @@ def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print, suffix=S4_
                 continue
             cache = _cache(eval_dir, key, suffix)
             profile_ic = getattr(getattr(doc.application, 'profile', None), 'nric', '') or ''
-            fields, how = reguard(eval_dir, key, cache, cache.get('fields') or {}, profile_ic)
+            if 's5' in cache:
+                fields, how = s5_fields(eval_dir, key, cache, doc, profile_ic)
+            else:
+                fields, how = reguard(eval_dir, key, cache, cache.get('fields') or {}, profile_ic)
             r = compare_one(doc, fields)
             r['ic_guard'] = how
             totals[f'ic_guard:{how.split(":")[0]}'] += 1
@@ -251,6 +290,9 @@ def dry_run(eval_dir, keys, *, session=read_only_rollback, out=print, suffix=S4_
                 totals[f'not_offer_dated:{which}'] += r[which]['not_offer_dated']
             for c in r['changed']:
                 totals[f'changed:{c}'] += 1
+            for c in r['money'] + [f'new_red:{k}' for k in r['new_red']]:
+                totals[c] += 1
+            totals['money:changed' if r['money'] else 'money:unchanged'] += 1
             out(_line(key, r))
     out('totals: ' + ', '.join(f'{k}={v}' for k, v in sorted(totals.items())))
     return rows, totals
@@ -265,6 +307,8 @@ def _line(key, r):
     ticks = [f"{k} {s['ticks'][k]}->{n['ticks'][k]}" for k in TICKS if s['ticks'][k] != n['ticks'][k]]
     return (f"  {key:<32} doc={r['doc']} app={r['app']} {'live' if r['live'] else 'superseded'} | "
             + ' | '.join(parts) + ' | ticks ' + (', '.join(ticks) or 'same')
+            + f" | money {','.join(m.split(':')[1] for m in r.get('money', [])) or 'same'}"
+            + (f" | NEW_RED {','.join(r['new_red'])}" if r.get('new_red') else '')
             + f" | ic_guard {r.get('ic_guard', '-')}"
             + (f" | eval_blank printed_is_profile={r['eval_blank_printed_is_profile']}"
                if 'eval_blank_printed_is_profile' in r else ''))
@@ -280,7 +324,7 @@ def main(argv=None, *, session=None, out=print):
     args = ap.parse_args(argv)
     keys = [k.strip() for k in args.keys.split(',') if k.strip()] or s4_keys(args.eval_dir, args.suffix)
     if not keys:
-        out(f'No {S4_SUFFIX} caches in {args.eval_dir}.')
+        out(f'No {args.suffix} caches in {args.eval_dir}.')
         return 2
     sess = session or (lambda: read_only_rollback(allow_sqlite=args.allow_sqlite))
     rows, totals = dry_run(args.eval_dir, keys, session=sess, out=(lambda *_: None) if args.json else out,

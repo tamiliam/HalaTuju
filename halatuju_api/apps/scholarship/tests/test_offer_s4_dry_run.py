@@ -198,8 +198,90 @@ class RunTest(TestCase):
                session=lambda: dr.read_only_rollback(allow_sqlite=True), out=lines.append)
         self.assertIn('no_document=1', lines[-1])
 
+    def test_the_money_reach_is_counted_changed_or_unchanged_without_a_value(self):
+        self._cache(fields={**self.stored, 'reporting_date': '8 Jun 2031', 'intake': 'SESI 2031/2032'})
+        lines = []
+        rows, totals = dr.dry_run(self._tmp.name, [self.key], session=lambda: dr.read_only_rollback(allow_sqlite=True),
+                                  out=lines.append)
+        r = rows[self.key]
+        self.assertEqual(r['money'], ['money:reporting_date', 'money:intake_year'])
+        self.assertEqual((totals['money:changed'], totals['money:reporting_date']), (1, 1))
+        self.assertNotIn('_money', r['stored'])
+        self.assertNotIn('2031', ' '.join(lines))                       # the dates themselves never print
+
     def test_campus_tokens_never_print_a_name(self):
         self.assertEqual(dr.campus_token({'institution_id': 'RA-UPM', 'institution': UPM}), 'RA-UPM')
         tok = dr.campus_token({'institution': UPM})
         self.assertTrue(tok.startswith('h:') and 'PUTRA' not in tok.upper())
         self.assertEqual(dr.campus_token({}), '-')
+
+
+class S5Test(TestCase):
+    """The S5 caches (`offer_s5_caches.py`) and the dry run on them: the lock re-derived against the LIVE row
+    with the PRODUCTION profile IC, a fallback flagged as a guess, a new wrong-person red counted."""
+
+    def setUp(self):
+        from apps.scholarship.tests.test_offer_exact import NAME, NRIC, matric
+        from apps.scholarship.tests.test_offer_replay import _Corpus
+        self._tmp = tempfile.TemporaryDirectory()
+        self.c = _Corpus(self._tmp.name)
+        self.app = make_application('submitted')
+        self.app.profile.name = NAME
+        self.app.profile.save(update_fields=['name'])
+        self.doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/offer/x',
+            vision_fields={'fields': {'campus': 'STALE', 'reporting_date': '1 Jan 2031'}, 'capture': 'ai',
+                           'authenticity': {'status': 'genuine', 'doc_seen': 'matriculation'}},
+            vision_run_at=timezone.now())
+        self.key = f'offer_letter__a{self.app.id}__d{self.doc.id}'
+        self.c.letter(self.key, {'campus': 'STALE'}, route='vision', text=matric())
+        self.nric = NRIC
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _run(self):
+        from apps.scholarship.eval import offer_s5_caches as s5
+        s5.build(self._tmp.name, write=True)
+        return dr.dry_run(self._tmp.name, [self.key], session=lambda: dr.read_only_rollback(allow_sqlite=True),
+                          out=lambda *_: None, suffix='.s5_exact.json')
+
+    def _profile_ic(self, nric):
+        self.app.profile.nric = nric
+        self.app.profile.save(update_fields=['nric'])
+
+    def test_a_lock_is_rederived_with_the_production_ic_over_the_live_row(self):
+        self._profile_ic(self.nric.replace('-', ''))
+        rows, totals = self._run()
+        r = rows[self.key]
+        self.assertEqual(r['ic_guard'], 's5:kept_profile')
+        self.assertEqual((r['s4']['ticks']['ic'], r['new_red']), ('match', []))
+        self.assertIn('money:reporting_date', r['money'])               # 1 Jan -> the letter's date
+        self.assertEqual(dr.s4_keys(self._tmp.name, '.s5_exact.json'), [self.key])
+        self.assertEqual(totals['ic_guard:s5'], 1)
+
+    def test_another_persons_labelled_ic_is_counted_as_a_new_red(self):
+        self._profile_ic('020304141111')
+        rows, totals = self._run()
+        self.assertEqual(rows[self.key]['new_red'], ['ic'])
+        self.assertEqual(totals['new_red:ic'], 1)
+
+    def test_a_stored_exact_read_that_no_longer_locks_is_a_flagged_guess(self):
+        from apps.scholarship.tests.test_offer_replay import UNIVERSITY_TWIN
+        self.c.letter(self.key, {'campus': 'STALE'}, route='vision', text=UNIVERSITY_TWIN)
+        self.c._json(self.key + '.json', {'vision_fields': {'fields': {'campus': 'STALE'}, 'capture': 'deterministic'}})
+        rows, totals = self._run()
+        self.assertEqual(rows[self.key]['ic_guard'], 'fallback:stored_unchanged_no_ai_read')
+        self.assertEqual(totals['ic_guard:fallback'], 1)
+
+    def test_the_cache_step_prints_counts_and_keys_only_and_writes_only_with_write(self):
+        from apps.scholarship.eval import offer_s5_caches as s5
+        lines = []
+        self.assertEqual(s5.main(['--eval-dir', self._tmp.name], out=lines.append), 0)
+        self.assertIn('locked 1', lines[0])
+        self.assertFalse(os.path.exists(os.path.join(self.c.snap, self.key + s5.SUFFIX)))
+        s5.main(['--eval-dir', self._tmp.name, '--write'], out=lines.append)
+        rec = json.load(open(os.path.join(self.c.snap, self.key + s5.SUFFIX), encoding='utf-8'))
+        self.assertEqual((rec['s5'], rec['fields']['campus']), ('locked', ''))
+        for secret in ('ZORBEX', 'QUENTARO', '010203'):
+            self.assertNotIn(secret, ' '.join(lines).upper())

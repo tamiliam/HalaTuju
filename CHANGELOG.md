@@ -143,6 +143,94 @@ scrolled sideways on a phone.
   +3.32 (the shared `Sheet`, eager on purpose: it is the only way to filter on a phone and the only way to fund).
   No budget raised. mobile-check: 24 sponsor cells lowered (landing, login, register), the eight new surfaces at 0.
 
+## Offer letters read exactly — Sprint 5 (reader round 2: the Exact read covers more letters) (2026-11-03, not yet pushed)
+
+Production code (the free fixed-format reader); no migration; no paid call (cached text only). Plan:
+`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S5 "Plan (2026-11-03)". Part 1 (`56ff0648`) was the
+owner check page for the 71 stored Exact reads; the owner marked every field right (2026-11-03).
+
+- **Owner ruling 2026-11-03: the reporting date is the DATE ONLY** — a polytechnic letter's time window
+  ("15 JUN 2026 (8.30 PAGI - 11.30 PAGI)", "TENGAHARI", "PETANG") is not part of it. The 20 answer files that
+  carried a time were cut to the date as printed (gitignored corpus; 14 of the 71 S5 answers + 6 older ones). The
+  Exact read stores the date only for every family (`offer_parse.first_date`). The AI reader already did: 0 of
+  166 reader-2.3.0 reads and 0 stored reads carry a time (`vision._normalise_reporting_date` strips it), and
+  `pathway_engine.parse_reporting_date` reads either shape — no AI prompt or `OFFER_READER_VERSION` change.
+- **`offer_parse.py` → `PARSER_VERSION` 2.0.0** (output shape changes). ONE shared block reader (`_read_block`,
+  the 2026-09-10 decision's "revisit if": per-label recovery written once): each label's value is taken by its
+  SHAPE in letter order (label block then values, interleaved, or glued on one line); a line with a later label's
+  shape leaves the label empty; address lines are skipped; a long school / programme name wrapped onto a second
+  line is joined. The single-exit clause-number and date/money guards are unchanged. Fixes the five failure
+  classes the corpus showed: **A** STPM's six numbered labels (2.4-2.6 were unknown, so the block started one
+  label early), "Melapor"; **B** the matriculation glued text layer (`_split_glued`), the engineering letter's
+  "Aliran"; **C** names with no parentage marker (matric: the line directly above "K/P:"; poly: the
+  "NAME (IC)" line above the title, anywhere on the page) in a strict name shape — a single word over 10 letters
+  is OCR glue and never locks; **D** the polytechnic session numeral ("SESI 1:", "SESIl:" → "SESI I : …"); **E**
+  "Tarikh Daftar", "Tarikh dan Masa" / "Daftar" split, a "Sesi" row, a label block split in two runs. The two
+  wrong values: the offer date is a "Tarikh" followed by a date, never "Tarikh dan Masa Daftar" (was the
+  registration date on 16 of 20 poly locks); a range's FIRST day ("8 HINGGA 9 JUN" → 8 JUN). Conventions: the
+  poly code leaves `programme` for `programme_code` (dash or not); the intake keeps its words ("SEMESTER 1 TAHUN
+  2026", "SESI 2026/2027", "SESI I : 2026/2027" — the first 20xx the money path reads is unchanged);
+  `candidate_nric_source` (`label` / `other`); `campus` ''. The offer title is a lock requirement (a portal page
+  or slip never locks); the institution, and the stream for STPM / matriculation, are required. The matric
+  "Program Matrikulasi (X)" bracket stays (decision 2026-09-10). `diagnose()` exposes the walk for the eval.
+- **`offer_exact.py` (new) — the ONE entry point** (`vision`, `offer_replay`, `offer_parse_check`): identity from
+  page 1 (a digital PDF's page-1 layer); the IC through `offer_ic.guard_nric` with the profile IC exactly as on
+  the AI path — **a blanked IC means NO lock** (→ the AI reader); the merge writes the parser's keys whole
+  (name, IC + source, programme, `programme_code`, institution, `campus`, stream, intake, issuer) and keeps
+  merge-preserve for the reporting date (+ label) and the offer date; stores `offer_reader_inputs.nric_check`.
+- `vision.py`: the offer branch calls `exact_offer_read` (net −14 lines; `_run_field_extraction_impl` 306 → 303;
+  `_DET_OFFER_STAMP` moved into `offer_exact`).
+- **`eval/offer_parse_check.py` (new, hand-run)** — EXACT / INCOMPLETE / WRONG / CONTROL-LOCKED / FALLBACK per
+  letter by split, family, input kind; the pipeline score (the lock merged over the 2.3.0 AI read); the stored
+  Exact reads that re-lock; exit 1 on a WRONG or a control lock; keys and field names only. `offer_replay.py`
+  calls the same entry point (profile IC from `context.json`, page 1 from the corpus PDF); new reason guard
+  `ic_guard`.
+- **Measured (free, cached text):** dev 0 WRONG, 0 control locks (86 EXACT); held-out 0 WRONG, 0 control locks
+  (10 EXACT; see the held-out note in the sprint report). Corpus locks 51 → 96 of 287; the 21 at-risk stored
+  Exact reads 21/21 re-lock exact (70 of the 71 stored Exact reads re-lock; the one that does not was a wrong
+  1.3.0 lock on a noisy OCR layer); dev real known-format 16 of 17. Pipeline fully exact: dev 89 → 92 of 126,
+  held-out 63 → 66 of 90, no core field down.
+- **Adversarial review of `9298e2c9` — fixes (each with a synthetic regression test):** **H1** the identity is
+  read from the same source as the body — a digital PDF's page-1 layer only when production's text IS that
+  PDF's layer (`offer_exact.exact_offer_read` compares them), never beside a Vision read; a page-1 identity that
+  disagrees with the whole layer's never locks (guard `identity_disagree`). **H2** a text-layer PDF whose page 1
+  has no usable layer goes to the AI reader (no fall-back to later pages). **M1** every whitespace run that could
+  meet another is bounded (the poly session pattern was cubic: "SESI" + 2,000 spaces took 41 s); a timing test
+  runs every family on 3,000-space runs. **M2** the offer title must start a line, in capitals, and a page with a
+  portal's words (SEMAKAN, layak menerima, Sila Cetak, "Tahniah!") never locks. **M3** the matric name above "K/P:"
+  is never a state or a stamp word; a name wrapped after its BIN / BINTI / A/L / A/P is joined, one cut at its
+  marker is refused. **M4** the reporting date is stored in the AI path's house shape (`_normalise_reporting_date`:
+  "14 Jun 2031"), so a numeric "14/06/2031" now reads in `parse_reporting_date`; the merge never lets a parser date
+  that does not parse replace a prior one that does. Scorer convention unchanged: answers keep dates as printed and
+  `tidy_date` compares both shapes as one date. **L1** a labelled IC must not be followed by a 13th digit. **L2** the
+  AI-only keys (`candidate_address`, `reporting_venue`, `aliran`, `bidang_pengkhususan`, `elektif`) are written blank
+  under an Exact read. `exact_read` is the eval's entry (what production derives, passed in). Dev unchanged (86
+  EXACT, 0 WRONG, 0 control locks, pipeline 92/126). Honest note: `identity_disagree` rarely fires — on a normal
+  digital PDF page 1 is the start of the whole layer, so both reads find the same first identity; it guards the
+  odd file, it is not a measured fix.
+- **Second adversarial review — fixes (each with a synthetic test):** the three family readers moved verbatim to
+  `offer_parse_families.py` first (moves-only commit; `offer_parse.py` was at 551 of 560). The matric name above
+  "K/P:" is read by STRUCTURE: the line right above must pass the name shape on its own with no place or letter
+  word (Kuala Lumpur, Wilayah Persekutuan, Johor Bahru, Kota Kinabalu, Pengarah, Kepada, Lampiran …); it joins the
+  line before only when that line ends on its parentage marker; a line with no marker under a name-like line is a
+  wrapped tail and reads no name — every doubt goes to the AI reader. The block reader caps label lines (40) and
+  only moves forward ("Program" x 8,000 was 3.4 s). IC digits are ASCII 0-9 only (`\d` let fullwidth / Arabic-Indic
+  digits lock an IC), and no 13th digit may follow, even one space or dash away. A stored reporting date that is
+  not text never raises in the merge. A PDF whose bytes are absent never locks (no page 1 to read). Wider portal
+  tells ("Tahniah," / "TAHNIAH." + "anda ditawarkan" / "layak", "S E M A K A N", "Semakan_Keputusan", "Semakan
+  Tawaran", "Tarikh / Portal Semakan", wider spacing in "Sila Cetak" / "Layak Menerima"), zero-width characters
+  stripped before any match; a bare "semakan" is no tell (a real polytechnic letter says it). Dev unchanged (86
+  EXACT, 96 corpus locks, 0 WRONG, 0 control locks, pipeline 92/126), so held-out was not re-run.
+- **The S5 production dry run, prepared (no database touched by the builder):** `eval/offer_s5_caches.py` (new,
+  free) writes `<key>.s5_exact.json` — 96 locks and 1 fallback guess (`offer_letter__a30__d384`, stored read
+  unchanged: the corpus holds no AI read for it). `offer_s4_dry_run.py --suffix .s5_exact.json` re-derives each lock
+  against the live row with the production profile IC; every run now counts the money reach (reporting date as
+  `parse_reporting_date` reads it, intake year) and `new_red:name` / `new_red:ic`. Fixed: `s4_keys` cut every key
+  by the S4 suffix's length whatever `--suffix` was given.
+- Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
+  `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
+  `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.
+
 ## Student maintenance Sprint 10 — development modules — LIVE 2026-11-02 (main acf86f25; api-01238-972, web-01065-4xf; 0201 applied by hand first; Scheduler job halatuju-module-emails hourly, first run OK)
 
 Owner rulings and the approved ModulesAdmin / ModuleStudent / ModuleProgress boards, 2026-11-02 (decisions.md, the

@@ -470,3 +470,61 @@ class TestOfferCheckApply(_Base):
             _key(1): {'fields': {'system_status': {'verdict': 'wrong'}}, 'note': ''}}})
         self.assertEqual(c['unreadable_entries'], 1)
         self.assertEqual(set(c['wrong_by_field']), set(orp.FIELD_NAMES))
+
+
+# ── The exact-read check (`--exact-reads`, offer exact-read S5) ─────────────────────────────
+class TestExactReadsPage(_Base):
+    def _build(self, *extra):
+        c = self.c
+        c.letter(_key(1), _answer(), snapshot={'capture': 'deterministic'}, heldout=False)
+        c.letter(_key(2), _answer(unsure_fields=['intake']), snapshot={'capture': 'deterministic'},
+                 ext='jpg', body=b'\xff\xd8 invented', heldout=False)
+        c.letter(_key(3), _answer(), snapshot={'capture': 'ai'})                  # AI read: off
+        c.letter(_key(4), snapshot={'capture': 'deterministic'}, heldout=False)   # no answer: counted
+        c.letter(_key(5), _answer())                                              # no snapshot: off
+        rc, out = _run(['--eval-dir', self.c.dir, '--exact-reads', *extra])
+        self.assertEqual(rc, 0, out)
+        return out, _text(os.path.join(self.c.dir, orp.S5_PAGE_NAME))
+
+    def test_every_stored_exact_read_with_an_answer_no_sample(self):
+        _, page = self._build()
+        self.assertEqual(len(re.findall(r'<section class="card"', page)), 2)
+        for i, n in ((1, 1), (2, 1), (3, 0), (4, 0), (5, 0)):
+            self.assertEqual(page.count(f'data-key="{_key(i)}"'), n)
+        keys, answers, counts = orp.select_exact_reads(self.c.dir)
+        self.assertEqual(keys, [_key(1), _key(2)])
+        self.assertEqual(counts, {'total': 2, 'skipped': 1})
+
+    def test_its_own_page_storage_and_results_and_every_line_starts_right(self):
+        _, page = self._build()
+        self.assertIn(f'page: "{orp.S5_PAGE_ID}"', page)
+        self.assertIn(orp.S5_STORAGE_KEY, page)
+        self.assertIn(orp.S5_RESULTS_NAME, page)
+        self.assertNotIn(f'"{orp.STORAGE_KEY}"', page)
+        self.assertIn('var MODE = "prefilled"', page)
+        self.assertNotIn('value="wrong" checked', page)
+        self.assertIn(orp.INSTRUCTION, page)
+        self.assertIn('data-field="candidate_nric"', page)
+
+    def test_printed_output_is_counts_and_path_only(self):
+        out, _ = self._build()
+        for secret in (SECRET_NAME, SECRET_NRIC, _key(1), 'Qorvane'):
+            self.assertNotIn(secret, out)
+        self.assertIn('exact-read check: 2 letters (left off, no usable answer: 1)', out)
+        self.assertIn(orp.S5_PAGE_NAME, out)
+        self.assertFalse(os.path.exists(os.path.join(self.c.dir, orp.PAGE_NAME)))
+
+    def test_apply_counts_the_s5_page_like_review_s1(self):
+        res = {'page': orp.S5_PAGE_ID, 'letters': {_key(1): {'fields': {
+            'candidate_name': {'verdict': 'right'}, 'intake': {'verdict': 'wrong', 'correction': 'x'}},
+            'note': ''}}}
+        c = orp.apply_counts(res)
+        self.assertEqual(c['wrong_by_field']['intake'], 1)
+        self.assertEqual(c['letters_with_any_wrong'], 1)
+
+    def test_refuses_a_tracked_folder_of_this_checkout(self):
+        tracked = os.path.dirname(os.path.abspath(orp.__file__))
+        rc, out = _run(['--eval-dir', tracked, '--exact-reads'])
+        self.assertEqual(rc, 2)
+        self.assertIn('Refused', out)
+        self.assertFalse(os.path.exists(os.path.join(tracked, orp.S5_PAGE_NAME)))

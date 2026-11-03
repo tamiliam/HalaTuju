@@ -750,7 +750,8 @@ _DIGIT_COMMON = ['', '', '', '', '123', '123', '012345', '080805081489', '123456
 
 class TestDigitsOfferParse(_Table):
     """`offer_parse`: fed arbitrary OCR text from an offer letter, on the way to an NRIC. Uses
-    `re.sub(r'\\D', ...)`, so it keeps exactly the Unicode DECIMAL digits and nothing else."""
+    `re.sub(r'[^0-9]', ...)` since offer exact-read S5 (second review), so it keeps ASCII 0-9 and
+    nothing else (it was `\\D`, which also kept fullwidth and Arabic-Indic digits; one locked an IC)."""
 
     def test_the_shared_table(self):
         self.check(_fn(offer_parse, '_decimal_digits', '_digits'),
@@ -761,11 +762,13 @@ class TestDigitsOfferParse(_Table):
 
         ONE: a non-string raises. TWO: `\\D` and `str.isdigit()` do not agree on characters that
         are digit-LIKE without being decimal digits. A superscript is a digit to `str.isdigit()`
-        and not to `\\d`; an Arabic-Indic digit is both. The second difference is why this one is
-        NOT merged with the other two: its input is raw OCR text, and an identity number is the
-        wrong place to keep a character that only looks like a digit."""
+        and not to `\\d`; an Arabic-Indic digit is both — and since S5 this one keeps neither (ASCII
+        0-9 only). The second difference is why this one is NOT merged with the other two: its input
+        is raw OCR text, and an identity number is the wrong place to keep a character that only
+        looks like a digit."""
         digits = _fn(offer_parse, '_decimal_digits', '_digits')
-        self.assertEqual(digits('٣'), '٣')       # Arabic-Indic 3 — a decimal digit
+        self.assertEqual(digits('٣'), '')        # Arabic-Indic 3 — dropped since S5 (ASCII 0-9 only)
+        self.assertEqual(digits('３'), '')        # fullwidth 3 — dropped too
         self.assertEqual(digits('³'), '')             # superscript 3 — NOT a decimal digit
         for value in (12, 12.5, Decimal('12'), True, ['1', '2']):
             with self.subTest(value=repr(value)):
