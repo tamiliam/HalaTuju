@@ -125,6 +125,10 @@ Three kinds of check, from cheapest to most human:
   `src/components/CourseDetailShared.tsx`): `sticky bottom-0 md:hidden` — `sticky`, not `fixed`, so it rests
   above the footer at the end and never covers it — padded `pb-[max(0.75rem,env(safe-area-inset-bottom))]`, and it
   calls `useBottomBarInset(ref)` (`src/lib/bottomBarInset.ts`) so the toast rises above it.
+  **A bar that takes the reader to a decision does not MAKE it** (Mobile M6b, `admin/scholarship/[id]/view/DecisionBar.tsx`):
+  the reviewer's phone bar shows the chosen outcome and whether it is ready, and ONE button that scrolls to the decision
+  section; Save stays in the section under its reasons. It shows exactly when the section offers Save
+  (`decisionBarShows`, tested over every stage) and imports types only from the API. Sandbox: `cockpit-case`.
   **Mark it `data-page-bar`** (Mobile M4b): the student tab bar hides while any such bar is on the page (one bottom
   bar at a time), and `mobileStandard.test.ts` fails on an unmarked bar pinned to the foot of a student screen.
   **The student tab bar** (`src/components/StudentTabBar.tsx`) is `fixed`, not sticky — it is the way around, always in
@@ -160,7 +164,10 @@ Three kinds of check, from cheapest to most human:
   (`ScholarshipDocuments/RemoveConfirm.tsx`, lazy, with the phone's own confirm as its fallback), busy per card, and
   the early size / format refusal from `src/lib/uploadCheck.ts`. A long document (the award agreement) opens in a
   tall reader sheet, not a scroll box in the page (`src/components/scholarship/AwardContract.tsx`). PDFs open
-  full-screen or in a new tab on phones.
+  full-screen or in a new tab on phones. **The console viewer** (Mobile M6b, `src/components/DocViewer.tsx`): on a phone —
+  narrow OR touch-first, `PHONE_QUERY` — a PDF is a 44 px Open link to the phone's own viewer in a new tab, never an
+  iframe; the desktop keeps its iframe; images stay inline. Guarded ("the cockpit on a phone") and tested
+  (`DocViewer.phone.test.tsx`). Sandbox: `cockpit-viewer-pdf`, `cockpit-viewer-image`.
 
 ### 10. Long forms keep their progress
 - **Why:** iOS kills a background tab while a student checks WhatsApp or the camera; everything typed is lost.
@@ -276,6 +283,13 @@ Three kinds of check, from cheapest to most human:
   stat tiles are rows with dividers below `md` (`admin/organisation/page.tsx`); a shared card constant changes in
   one place (`adminProfile/shared.tsx`'s `CARD`). Swept in M6a: the case list, the console sign-in screens and
   callback, Guide, FAQ, Organisation, the Profile cards and the 404.
+  M6b examples (the reviewer's case page): a page with many cards and panels converts its card class ONCE by pattern
+  (`rounded-2xl border … bg-ground-0 p-5 shadow-sm` → section + `md:` card) and its controls get `max-md:min-h-11`
+  — the desktop classes untouched; a list that scrolled inside its card (the documents' 28rem box) scrolls in the
+  page below `md`; a big page is split FIRST, moves only, before any layout change (`view/DecisionCard.tsx`). **A
+  control the owner keeps off phones is hidden below `md` with a note saying where to do it** (`PostAwardPanels.tsx`:
+  `max-md:hidden` on the tranche actions and the Schedule form, a `md:hidden` "use a computer" note) — never a
+  disabled look-alike. Swept in M6b: the case page and its panels.
 
 ## Tamil type
 

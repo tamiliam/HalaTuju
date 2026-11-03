@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Mobile M6b — the reviewer's case page on phones (branch mobile-m6b, not pushed)
+
+Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,
+request, `window.confirm`, order of steps or server check changed — every cockpit file was diffed with its class
+strings and comments removed, and only data attributes, one anchor id, the bar's mount and the payments note are new.
+`officerCockpit.ts` is untouched; in `DocumentsDrawer.tsx` only the layout around the chips changed.
+
+- **Split first, moves only:** the decision card left `view.tsx` (oversize ledger) whole for `view/DecisionCard.tsx`;
+  all 255 lines checked; the ledger line went 1338 → 1109.
+- **Rule 15, 44 px, 12 px:** the 23 cockpit cards are sections below `md` (the same cards from it); boxed rows inside
+  are hairline rows; 74 buttons, links, selects and summaries get a 44 px hit area below `md`; body text is 12 px
+  below `md` (badges and chips untouched). The header: Back on its own line, Previous / Next as two 44 px buttons.
+- **The decision bar** (`view/DecisionBar.tsx`, owner): sticky, phones only, `data-page-bar`; the chosen outcome, ready
+  or not, and one button that scrolls to the decision section. It sends nothing; Save stays in the card. It shows
+  exactly when the card offers Save (`decisionBarShows`, tested over every stage, both outcomes and two roles).
+- **Documents:** the 28rem inner scroll box is `md:` only (it trapped the thumb); rows instead of boxes; names wrap;
+  Re-run is 44 px.
+- **The viewer:** on a phone (narrow or touch-first) a PDF is a 44 px Open link to the phone's own viewer in a new tab,
+  never an iframe; images stay inline; the desktop keeps its iframe.
+- **Payments read-only on a phone** (owner): below `md` the tranche actions and the Schedule form are hidden and a "use
+  a computer" note shows; from `md` nothing changed.
+- **The sandbox fixture** named an anomaly code the server never sends (a raw key, 227 px of sideways scroll); it now
+  uses a real one, and the agenda row wraps. Surfaces: `cockpit-case`, `cockpit-viewer-image`, `cockpit-viewer-pdf`,
+  `cockpit-payments` (`src/sandbox/cockpitM6bSurfaces.tsx`).
+- **Guards and tests:** `mobileStandard.test.ts` "the cockpit on a phone" (four) and the cockpit's 17 files on rule 15;
+  `view.decisionBar.test.tsx`, `DocViewer.phone.test.tsx`, `PostAwardPanels.phone.test.tsx`. 11 bites, each red for the
+  right reason. Six new words (admin slice) in en / ms / ta. **Raised:** TD-477 (the leftovers).
+
 ## Team tables T2 — the Team page (not yet live)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T2); lead rulings Q1-Q4 2026-11-03 (decisions.md the same

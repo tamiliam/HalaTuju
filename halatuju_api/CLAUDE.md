@@ -1127,7 +1127,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 ## Next Sprint
 
-### Mobile-native arc (separate stream) — M0–M6a DONE (M6a live 2026-11-03, main de48d898, web-01068-hjf), NEXT = M6b the cockpit case page
+### Mobile-native arc (separate stream) — M0–M6a DONE (M6a live 2026-11-03, main de48d898, web-01068-hjf); M6b BUILT on mobile-m6b (not pushed)
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1165,9 +1165,14 @@ TD-470 closed (M6 phase 1): `/scholarship/apply` has ~1.8 kB under its line; bud
 the console has ONE pinned phone row (`Topbar.tsx`, 44 px controls) and a phone menu (`AppShell.tsx`) with the
 switchers, Guide / FAQ / Profile, the theme and Log out — the account menu's own `signOut`, guarded word for word;
 list = rows that open the case, filters in a Sheet (one `filterControls` for both widths), Sort on phones; sandbox
-`src/sandbox/adminM6Surfaces.tsx` (`AppShell` takes a sandbox-only `path`). M6b next: the cockpit (decision bar that
-JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
-NEXT: M6b, M7, M8.
+`src/sandbox/adminM6Surfaces.tsx` (`AppShell` takes a sandbox-only `path`). **M6b (the cockpit) BUILT on `mobile-m6b`,
+not pushed:** the decision card lives in `view/DecisionCard.tsx` (moved whole; `view.tsx` ledger 1109); the phone's
+`view/DecisionBar.tsx` JUMPS to `#decision-section` and sends nothing (`decisionBarShows` = the card's own Save
+condition, pinned over every stage by `view.decisionBar.test.tsx`); a phone PDF is a new-tab link (`DocViewer`
+`PHONE_QUERY`, narrow OR touch-first), never an iframe; tranche / payment controls are `max-md:hidden` with a
+"use a computer" note; the documents' 28rem scroll box is `md:` only; the cockpit's 17 files are on rule 15. The
+year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sandbox `src/sandbox/cockpitM6bSurfaces.tsx`.
+NEXT: M7, M8.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 BUILT, NOT LIVE (branch maint-s7; no migration)
 
