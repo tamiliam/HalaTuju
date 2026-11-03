@@ -48,7 +48,7 @@ import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words 
 
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneSection'
+import { PHONE_TAB, PHONE_TAB_BAR, PHONE_TAB_OFF, PHONE_TAB_ON } from '@/lib/phoneConsole'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { useProgrammeScope } from '@/lib/programmeScope'

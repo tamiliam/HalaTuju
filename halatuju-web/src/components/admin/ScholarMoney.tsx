@@ -1,6 +1,6 @@
 'use client'
 
-import { PHONE_CARD_XL } from '@/lib/phoneSection'
+import { PHONE_CARD_XL } from '@/lib/phoneConsole'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'

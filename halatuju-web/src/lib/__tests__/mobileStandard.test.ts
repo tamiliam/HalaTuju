@@ -406,7 +406,7 @@ describe('rule 15 — one box level; sections on phones', () => {
     const noGap = (src.match(/PHONE_SECTION_NO_GAP = '([^']+)'/) ?? [])[1] ?? ''
     const flat = (src.match(/PHONE_SECTION_FLAT = '([^']+)'/) ?? [])[1] ?? ''
     // Mobile M7a: the console's white card (the scholar file and its tabs).
-    const cardXl = (src.match(/PHONE_CARD_XL = '([^']+)'/) ?? [])[1] ?? ''
+    const cardXl = (readWeb('src/lib/phoneConsole.ts', 'the console phone classes').match(/PHONE_CARD_XL = '([^']+)'/) ?? [])[1] ?? ''
     expect(cardXl).toMatch(/md:rounded-xl/)
     for (const t of [...section.split(' '), ...noGap.split(' '), ...flat.split(' '), ...cardXl.split(' ')]) {
       if (/^(rounded|shadow|bg-|p-)/.test(t)) throw new Error(`PHONE_SECTION boxes a phone too: ${t}`)
@@ -704,7 +704,9 @@ describe('the console lists and tabs on a phone (Mobile M7a)', () => {
     }
   })
   test('the hand-built underlined tab bars are 44 px chips on a phone, and nothing but max-md: changes', () => {
-    const lib = readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')
+    const lib = readWeb('src/lib/phoneConsole.ts', 'the console phone classes')
+    // Kept out of phoneSection.ts, which every student page imports (it shipped them to every student route).
+    expect(readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')).not.toMatch(/PHONE_TAB|PHONE_CARD_XL/)
     for (const name of ['PHONE_TAB_BAR', 'PHONE_TAB', 'PHONE_TAB_ON', 'PHONE_TAB_OFF']) {
       const cls = (lib.match(new RegExp(`export const ${name} = '([^']+)'`)) ?? [])[1] ?? ''
       expect(cls.length).toBeGreaterThan(0)

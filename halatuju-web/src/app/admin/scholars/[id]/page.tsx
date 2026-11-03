@@ -15,7 +15,7 @@
 // ⚠ A record this admin may not read, another organisation's, or one with no file all come back
 // 404 — `RecordState` says so neutrally (never "does not exist", never "no access").
 
-import { PHONE_CARD_XL } from '@/lib/phoneSection'
+import { PHONE_CARD_XL } from '@/lib/phoneConsole'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
