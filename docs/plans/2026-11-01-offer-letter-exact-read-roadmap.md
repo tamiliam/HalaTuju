@@ -747,8 +747,29 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - A glued text layer is split only when it holds 4+ kinds of label and little single-letter filler; a company
     excuse fails when its two-word name is on the letterhead, or a campus / technology word sits beside it, or on
     the next line; ISLAMIC is finance only beside BANK / BERHAD.
-  - `offer_rulings.py` passed the 600-line standard: its page-reading helpers and word lists moved verbatim to
-    `offer_reading.py` (every name re-exported through `__all__`).
+  - `offer_rulings.py` passed the 600-line standard: its page-reading helpers and word lists moved to
+    `offer_reading.py` (every name re-exported through `__all__`). **CORRECTION (sixth review):** this line and
+    commit f233d33c first said "moved verbatim"; that was wrong — 8 moved names changed and 7 were added inside
+    the move. Not amended; recorded here and in the CHANGELOG. Moves and behaviour changes go in separate
+    commits from now on.
+- **Sixth review (2026-11-03): private letters escaped THROUGH the safety rule — fixed as one change.**
+  - Positive private evidence (`_positive_private`) now includes an UNCLEAN letterhead (an organisation other than
+    the closed-list bodies) and a non-empty `private_college_reason`; a TVET letter with an unclean letterhead
+    returns to its band (no `tvet_unverified` lift).
+  - `_public_first_names` holds only the closed-list bodies' NAMES (TVET names, POLITEKNIK / POLYTECHNIC, UMS, the
+    Form-6 names): a generic KEMENTERIAN / JABATAN / MINISTRY / DEPARTMENT / KERAJAAN / GOVERNMENT line is skipped
+    and the institution after it is the one named first.
+  - `_first_institution` and `_clean_letterhead` share one test (`_outside_orgs` + `_excused`): a public or unit
+    word excuses a line only when no organisation noun outside an allowed name comes BEFORE it and no institution /
+    company name (`_HEAD_RE`) comes after it; campus words straight after an allowed name (`_UNIT_TAIL`) are its
+    campus in both; a unit's describing words lead its match ("ACADEMIC SERVICES DIVISION").
+  - A confirmation engages the rules (and the safety exit) only from `CONFIRM_MIN` and with its title at the top
+    (`_confirm_titled`: before any offer title, within the page's first half or 400 characters). The round-5 test's
+    thin confirmations at p=0.0 now fail by design; its unclean-letterhead TVET case moved to the private-evidence
+    test.
+  - Lows: POLYTECHNIC in `_NO_PRIVATE_WING`; the English polytechnic department blanked like JPPKK; a one-word
+    company name on the letterhead keeps the veto; ISLAMIC is finance only beside BANK, or beside BERHAD with no
+    organisation noun (`_incidental` and `offer_issuers._payment_line`).
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

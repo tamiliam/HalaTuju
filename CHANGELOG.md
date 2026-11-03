@@ -80,6 +80,22 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   division, campus …) and English public names are not other organisations; the unlabelled addressee block ends
   the letterhead; private names beside "Ruj" / the date are read; glued layers split only when really labelled;
   company excuses refuse the letterhead's own name and campus / technology words; `offer_reading.py` (split).
+- **Correction to the fifth review's commit (f233d33c):** its message and `offer_reading.py`'s docstring said the
+  page-reading helpers "moved verbatim". That was wrong: 8 of the moved names were changed and 7 new names were
+  added inside the same move. The commit is not amended; this note and the corrected docstring record it. From
+  here on a move and a behaviour change go in separate commits.
+- **Sixth review — private letters that escaped through the safety rule** (`tests/test_offer_s6_review6.py`):
+  an unclean letterhead (an organisation other than the closed-list bodies) and the private-college reason now
+  count as positive private evidence, and a TVET letter with an unclean letterhead keeps its band; the safety
+  rule's "named first" list holds only the closed-list bodies' names (no generic ministry / department /
+  government word, so "KEMENTERIAN … / KOLEJ ABC" names KOLEJ ABC first); a public or unit word excuses a line
+  only when no organisation noun comes before it and no institution / company name after it ("KOLEJ ABC
+  (KEMENTERIAN …)", "KOLEJ ABC UNIT KEMASUKAN", "FAKULTI PERNIAGAAN, KOLEJ UNIVERSITI ABC" stay private); campus
+  words straight after a closed-list name are its campus on the letterhead test too ("IKTBN KAMPUS SEPANG"); a
+  confirmation engages the rules only from `CONFIRM_MIN` and with its title at the top (before any offer title,
+  within the page's first half / 400 characters); POLYTECHNIC (English) is a polytechnic name; a one-word company
+  name on the letterhead keeps the veto; ISLAMIC is finance only beside BANK, or beside BERHAD with no
+  organisation noun (both the line excuse and `offer_issuers._letterhead`). Dev 197/197 unchanged.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 
