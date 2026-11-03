@@ -790,6 +790,13 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   salutation / Kepada / candidate / name line), skips sponsor lines, and counts a tie-up word only beside an
   institution or company (`_names_an_institution`). Corpus unchanged (13 tagged changes); doc 1810's prod move
   (suspect → not_offer_letter, untagged) is the pre-S6 engine's own call — baseline == S6 there.
+- **Round 9 (2026-11-03): 2 High, 3 Medium, 3 Low — fixed within the contract, stricter.** TVET lift: the
+  institute on the letterhead and an admission title; PUSAT BERTAULIAH private; Form-6 confirmations name Form 6;
+  BLOCK proof only before the public name, the block stops at d/a / u.p.; contact lines read without their tokens;
+  PPPL variants; the narrowed tie-up (anywhere on the page it stops a lift); S/B only after a name; the unit
+  prefix bounded. COST, for the coordinator: a228 d3465 / d3466 and a329 (owner-ruled genuine, app 329 an
+  acceptance letter) have only an agency / ministry name on the letterhead, so they keep their baseline now —
+  dev 195 / 197, held-out 88 / 90.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

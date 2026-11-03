@@ -103,9 +103,13 @@ assert set(_INSTITUTE_KEY) <= set(TVET_ISSUERS) and {n for ns in _INSTITUTE_KEY.
     _INSTITUTES)
 
 
+#: Round 9 (H1): an offer of money, not of a place.
+_NOT_ADMISSION = (' PEMBIAYAAN ', ' PINJAMAN ', ' BIASISWA ', ' TAJAAN ')
+
+
 def _institute_on_letterhead(lines) -> str:
-    """The closed-list key of the public TVET INSTITUTE named on the letterhead block, or ''."""
-    head = _page(_letterhead_block(lines))
+    """The closed-list key of the public TVET INSTITUTE named on the letterhead, or ''."""
+    head = _page(_letterhead_lines(lines))
     for key, names in _INSTITUTE_KEY.items():
         if any(n in head for n in names):
             return key
@@ -131,6 +135,11 @@ def _tvet_lift(r, lines, model_version):
     key = _first_named_institute(lines)
     if not key or not _has_offer_words(_page(lines)) or not _clean_letterhead(lines, _TVET_NAMES):
         return None
+    if _institute_on_letterhead(lines) != key:
+        return None                     # round 9 (H1): the INSTITUTE on the letterhead, not an agency alone
+    title = next((ln for ln in lines if any(t in ln for t in _TITLE)), '')
+    if any(w in title for w in _NOT_ADMISSION):
+        return None                     # round 9 (H1): a financing / loan / scholarship offer is no admission
     if _SLIP in _page(_letterhead_block(lines)):
         return None                     # a slip, not a letter (`_tvet_slip`)
     if not _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES, reporting=True):
@@ -153,6 +162,9 @@ def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> st
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
     head, page = _page(_letterhead_lines(scan)) + _title_segment(scan), _page(lines)
     for seen, names, marks in _NO_PRIVATE_WING:
+        if seen == 'confirmation_form6' and not (any(m in page for m in _FORM6_MARKS)
+                                                 or ' KOLEJ TINGKATAN ENAM ' in head):
+            continue                    # round 9 (H2): an SMK confirmation of Forms 1-5 is no Form 6
         if (any(n in head for n in names) and _first_institution(scan, names) == 'allowed'
                 and any(m in page for m in marks) and _clean_letterhead(scan, names)):
             return seen

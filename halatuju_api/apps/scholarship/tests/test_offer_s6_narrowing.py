@@ -214,9 +214,10 @@ class TheLifts(SimpleTestCase):
 
 class TheBlock(SimpleTestCase):
     def test_letterhead_proof_blocks(self):
-        for head in ('IKBN PEKAN\nABC TRAINING SDN BHD', 'GERMAN MALAYSIAN INSTITUTE', 'UNIVERSITI KUALA LUMPUR',
+        # round 9: a company / tie-up counts only BEFORE the public name, a tie-up only beside an institution noun
+        for head in ('ABC TRAINING SDN BHD\nIKBN PEKAN', 'GERMAN MALAYSIAN INSTITUTE', 'UNIVERSITI KUALA LUMPUR',
                      'UNIVERSITI MALAYSIA SABAH\nPUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN (PPPL)',
-                     'KOLEJ ABC\nRakan Strategik IKBN', 'KOLEJ ABC\nIn collaboration with IKM'):
+                     'KOLEJ ABC\nRakan Strategik : Kolej Contoh\nIKBN', 'KOLEJ ABC\nKerjasama dengan Universiti Contoh'):
             with self.subTest(head=head):
                 out = signature_genuineness(_letter(head), doc_type='offer_letter')
                 self.assertEqual(out['status'], 'not_offer_letter')
@@ -324,7 +325,9 @@ class Round8(SimpleTestCase):
     def test_a_company_on_the_letterhead_in_any_spelling_still_blocks(self):
         for company in ('MERCU JAYA S/B', 'MERCU JAYA SDNBHD', 'MERCU JAYA SDN. BHD.', 'MERCU JAYA SENDIRIAN BERHAD'):
             with self.subTest(company):
-                self.assertEqual(private_proof(_folded_lines(_r8(IK + '\n' + company))), 'company')
+                # round 9 (M1): the company BEFORE the public name; after it, it reads as an addressee
+                self.assertEqual(private_proof(_folded_lines(_r8(company + '\n' + IK))), 'company')
+                self.assertEqual(private_proof(_folded_lines(_r8(IK + '\n' + company))), '')
 
     def test_a_closed_list_bank_line_is_the_only_finance_excuse(self):
         from apps.scholarship.genuineness.offer_rulings import _bank_line
@@ -349,3 +352,123 @@ class Round8(SimpleTestCase):
         t0 = time.perf_counter()
         signature_genuineness(text, doc_type='offer_letter')
         self.assertLess(time.perf_counter() - t0, 5.0)
+
+
+# ── Review round 9 (2026-11-03): stricter again, no new guesses ──────────────────────────────
+def _l9(head, addressee='', body='Kursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\nTempat : {venue}\n',
+        venue='IKBN Pekan', foot='', addr='Jalan Contoh, 26600 Pekan\n'):
+    return (f'{head}\n{addr}Tel : 09-000 0000\nRujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\n'
+            f'{addressee}Nama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\nTuan,\nSURAT TAWARAN KEMASUKAN\n'
+            'Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.\n' + body.format(venue=venue)
+            + 'Sila bawa dokumen asal semasa mendaftar.\nTawaran ini tertakluk kepada syarat.\n'
+            f'Sekian, terima kasih.\nYang benar,\nPENGARAH\n{venue}\n{foot}')
+
+
+def _c9(head, title='PENGESAHAN PELAJAR', prog='Program : Diploma Contoh\nSemester : 3\nSesi : 2026/2027\n'):
+    return (f'{head}\nJalan Contoh, 88400 Kota Kinabalu\nTel : 088-000000\nRujukan : RJ/600-1/2\nTarikh : 1 Jun 2026\n'
+            f'KEPADA SESIAPA YANG BERKENAAN\n{title}\nDengan ini disahkan bahawa:\nNama : Ali bin Abu\n'
+            'No. Kad Pengenalan : 080808-10-5566\n' + prog + 'Sekian, terima kasih.\nYang benar,\nPENGARAH\n')
+
+
+_REST9 = ('Rujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\nNama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\n'
+          'Tuan,\nSURAT TAWARAN KEMASUKAN\nDengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.\n'
+          'Kursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\nTempat : IKBN Pekan\n'
+          'Sila bawa dokumen asal semasa mendaftar.\nTawaran ini tertakluk kepada syarat.\nSekian, terima kasih.\n'
+          'Yang benar,\nPENGARAH\nIKBN Pekan\n')
+_MARA_LOAN = ('MAJLIS AMANAH RAKYAT (MARA)\nBahagian Pembiayaan Pelajaran\nJalan Raja Laut, 50609 Kuala Lumpur\n'
+              'Tel : 03-0000 0000\nRujukan : MARA/PP/600-1\nTarikh : 1 Jun 2026\nNama : Ali bin Abu\n'
+              'No. Kad Pengenalan : 080808-10-5566\nTuan,\nSURAT TAWARAN PEMBIAYAAN PENDIDIKAN\n'
+              'Dengan sukacitanya dimaklumkan bahawa anda ditawarkan pembiayaan pendidikan.\n'
+              'Program : Diploma Kejuruteraan\nInstitusi : Institut Kemahiran MARA Kuantan\n'
+              'Sila hadir ke pejabat MARA negeri untuk menandatangani perjanjian.\n'
+              'Pembiayaan ini tertakluk kepada syarat.\nSekian, terima kasih.\nYang benar,\nPENGARAH\n'
+              'Bahagian Pembiayaan Pelajaran\n')
+
+#: Pages a LIFT must never touch (H1, H2, M2, M3, the body tie-up).
+ROUND9_NEVER_LIFTED = {
+    'private name, JPK accredited centre': _l9('MERCU JAYA\nPUSAT BERTAULIAH JABATAN PEMBANGUNAN KEMAHIRAN'),
+    'private name under the JPK line': _l9('MERCU JAYA\nJABATAN PEMBANGUNAN KEMAHIRAN'),
+    'accredited centre, IKBN only in a later line': _l9(
+        'MERCU JAYA\nPUSAT BERTAULIAH JPK', venue='Mercu Jaya',
+        body='Kursus : Sijil Kemahiran Malaysia\nTarikh lapor diri : 3 Ogos 2026\nTempat : Mercu Jaya\n'
+             'Peperiksaan di IKBN Pekan\n'),
+    'ministry letterhead, IKBN only in the body': _l9('KEMENTERIAN BELIA DAN SUKAN MALAYSIA'),
+    'MARA financing letter': _MARA_LOAN,
+    'MARA loan letter': _MARA_LOAN.replace('SURAT TAWARAN PEMBIAYAAN PENDIDIKAN', 'SURAT TAWARAN PINJAMAN PELAJARAN'),
+    'SMK Form 5 confirmation': _c9('SMK CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA',
+                                   prog='Tingkatan : 5 Sains\nJurusan : Sains Tulen\nSesi Pengajian : 2025\n'),
+    'SMK Form 4, no ministry line': _c9('SEKOLAH MENENGAH KEBANGSAAN CONTOH\nJALAN SEKOLAH',
+                                        title='SURAT PENGESAHAN PELAJAR',
+                                        prog='Tingkatan : 4 Sains\nJurusan : Sains\nSesi Pengajian : 2026\n'),
+    'SMK Form 3, a Bidang line': _c9('SEKOLAH MENENGAH KEBANGSAAN CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA',
+                                     prog='Kelas : Tingkatan 3 Cempaka\nBidang : Tiada\nSesi : 2026\n'),
+    'UMS PPPL in English, OCR-garbled': _c9('UNIVERSITI MALAYSIA SABAH\nCENTRE FOR PROFESSIONAL AND CONTINUlNG EDUCATION'),
+    'UMS PPPL with an ampersand': _c9('UNIVERSITI MALAYSIA SABAH\nPUSAT PENDIDIKAN PROFESIONAL & LANJUTAN'),
+    'UMS, PPPL in the body': _c9('UNIVERSITI MALAYSIA SABAH', prog='Program : Diploma Pengurusan (Pusat Pendidikan '
+                                                                  'Profesional & Lanjutan)\nSemester : 3\nSesi : 2026/2027\n'),
+    'polytechnic, a private college partner in the body': _c9(
+        'POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI',
+        prog='Program : Diploma Kejuruteraan\nTempat pengajian : Kolej ABC (rakan industri)\nSemester : 3\n'),
+    'a private academy on a contact line': _l9('INSTITUT KEMAHIRAN BELIA NEGARA PEKAN\nABC SKILLS ACADEMY  '
+                                               'Tel : 09-111 2222  www.abcskills.com'),
+    'a private academy first, on a contact line': _l9('ABC SKILLS ACADEMY Tel 09-111 2222\n'
+                                                      'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN'),
+}
+#: Pages the BLOCK must never touch (M1, the narrowed tie-up, S/B in an address).
+ROUND9_NEVER_BLOCKED = {
+    'no-postcode head, a d/a Yayasan addressee': ('INSTITUT KEMAHIRAN BELIA NEGARA PEKAN\nPeti Surat 12, Pekan, Pahang\n'
+                                                  'TAN WEI MING\nd/a YAYASAN CONTOH BERHAD\n'
+                                                  'Jalan Dua, 50000 Kuala Lumpur\n' + _REST9),
+    'two columns: the addressee read before the head address': (
+        'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN\nPengurus\nKOPERASI CONTOH BERHAD\nLot 5, 26600 Pekan\n'
+        'Jalan Contoh, 26600 Pekan\n' + _REST9),
+    'an industry partner group on the letterhead': ('INSTITUT LATIHAN PERINDUSTRIAN KUANTAN\nRakan Industri : Contoh '
+                                                    'Group\nJalan Contoh, 25000 Kuantan\n'
+                                                    + _REST9.replace('IKBN', 'ILP')),
+    'S.B. in the head address': ('INSTITUT LATIHAN PERINDUSTRIAN KUANTAN\nLot 3, Kawasan Perindustrian S.B. Jaya, '
+                                 '25000 Kuantan\n' + _REST9.replace('IKBN', 'ILP')),
+    'IKBN, a company in the addressee block': _l9('INSTITUT KEMAHIRAN BELIA NEGARA PEKAN',
+                                                  addressee='MERCU JAYA SDN BHD\nLot 5, 26600 Pekan\n'),
+}
+
+
+class Round9(SimpleTestCase):
+    def test_the_lift_needs_the_institute_itself_and_an_admission(self):
+        for name, text in ROUND9_NEVER_LIFTED.items():
+            with self.subTest(name):
+                out = signature_genuineness(text, doc_type='offer_letter')
+                self.assertNotIn(ruling_of(out), LIFTS)
+                self.assertEqual(out['status'], baseline_status(text))
+
+    def test_the_block_proof_comes_before_the_public_name(self):
+        for name, text in ROUND9_NEVER_BLOCKED.items():
+            with self.subTest(name):
+                out = signature_genuineness(text, doc_type='offer_letter')
+                self.assertEqual(private_proof(_folded_lines(text)), '')
+                self.assertNotEqual(ruling_of(out), 'private_offer')
+
+    def test_what_still_blocks_and_lifts(self):
+        self.assertEqual(private_proof(_folded_lines(_l9('MERCU JAYA S/B\nINSTITUT KEMAHIRAN BELIA NEGARA'))),
+                         'company')
+        self.assertEqual(private_proof(_folded_lines(_l9('KOLEJ ABC\nRakan Strategik : Universiti Contoh'))),
+                         'tie-up wording')
+        self.assertEqual(private_proof(_folded_lines(_c9('UNIVERSITI MALAYSIA SABAH\nPUSAT PENDIDIKAN PROFESIONAL'
+                                                         ' & LANJUTAN'))), 'named private body')
+        out = signature_genuineness(_l9('INSTITUT KEMAHIRAN BELIA NEGARA PEKAN'), doc_type='offer_letter')
+        self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
+        form6 = _c9('KOLEJ TINGKATAN ENAM CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA')
+        self.assertEqual(confirmation_kind(form6, 0.2), 'confirmation_form6')
+        smk6 = _c9('SMK CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA', prog='Tingkatan : 6 Atas\nTINGKATAN 6\nSesi : 2026\n')
+        self.assertEqual(confirmation_kind(smk6, 0.2), 'confirmation_form6')
+
+    def test_round9_pages_obey_the_property(self):
+        for text in list(ROUND9_NEVER_LIFTED.values()) + list(ROUND9_NEVER_BLOCKED.values()):
+            with self.subTest(text.splitlines()[0][:40]):
+                TheProperty._check(self, text)
+
+    def test_a_long_one_line_unit_prefix_stays_fast(self):
+        import time
+        text = 'INSTITUT KEMAHIRAN BELIA NEGARA\n' + ' '.join(['ACADEMIC STUDENT'] * 3000) + '\nTAWARAN\n'
+        t0 = time.perf_counter()
+        signature_genuineness(text, doc_type='offer_letter')
+        self.assertLess(time.perf_counter() - t0, 2.0)

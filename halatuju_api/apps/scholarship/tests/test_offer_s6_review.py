@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.scholarship.genuineness.offer_rulings import confirmation_kind, ruled_offer
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 
 
 def _status(text):
@@ -30,8 +31,11 @@ class H1TheTypedFake(SimpleTestCase):
         self.assertNotEqual(_status(fake), 'genuine')
 
     def test_below_the_floor_the_body_must_name_the_candidate_and_the_institute(self):
-        self.assertEqual(_status(LOW_SCORE_IKM), 'genuine')
-        self.assertNotEqual(_status(LOW_SCORE_IKM.replace('No. Kad Pengenalan : 080808-10-5566', '').replace('NAMA : ALI BIN ABU\n', '')), 'genuine')
+        # S6 round 9 (H1): the INSTITUTE must be on the letterhead — an agency letterhead keeps its baseline.
+        self.assertEqual(_status(LOW_SCORE_IKM), baseline_status(LOW_SCORE_IKM))
+        on_head = LOW_SCORE_IKM.replace('MAJLIS AMANAH RAKYAT\n', 'MAJLIS AMANAH RAKYAT\nINSTITUT KEMAHIRAN MARA CONTOH\n')
+        self.assertEqual(_status(on_head), 'genuine')
+        self.assertNotEqual(_status(on_head.replace('No. Kad Pengenalan : 080808-10-5566', '').replace('NAMA : ALI BIN ABU\n', '')), 'genuine')
 
 
 class H1TheOfficersRequest(TestCase):
@@ -135,7 +139,8 @@ class H7PublicCollegesAreNotFailedOnAbsence(SimpleTestCase):
 
 class LowTheSlipWordInTheBody(SimpleTestCase):
     def test_a_slip_bayaran_below_the_letterhead_is_not_a_tvet_slip(self):
-        text = LOW_SCORE_IKM + 'Sila simpan slip bayaran anda.\n'
+        text = LOW_SCORE_IKM.replace('MAJLIS AMANAH RAKYAT\n', 'MAJLIS AMANAH RAKYAT\nINSTITUT KEMAHIRAN MARA CONTOH\n') + \
+            'Sila simpan slip bayaran anda.\n'    # round 9 (H1): the institute on the letterhead
         self.assertEqual(_status(text), 'genuine')
 
 

@@ -118,13 +118,14 @@ class SafetyRule(SimpleTestCase):
 
 class MediumOtherFirstIsPrivate(SimpleTestCase):
     def test_a_college_with_a_partner_line_reads_private_not_unchecked(self):
-        for word in ('Partner', 'Rakan', 'Affiliated', 'Francais'):
+        # S6 round 9 (Low): a tie-up is RAKAN / KERJASAMA / PARTNER beside an institution NOUN; "Partner IKBN" and
+        # the others are never lifted (KOLEJ ABC is another organisation) and never newly blocked: the baseline.
+        for word in ('Partner', 'Rakan', 'Affiliated', 'Francais', 'Bersama'):
             with self.subTest(word=word):
                 text = _letter(f'KOLEJ ABC\n{word} IKBN')
-                self.assertEqual(_g(text)['status'], 'not_offer_letter')
-        # S6 round 7 (the narrowing, owner option 1): "Bersama" alone is no explicit tie-up word: never lifted, the baseline.
-        text = _letter('KOLEJ ABC\nBersama IKBN')
-        self.assertEqual(_g(text)['status'], baseline_status(text))
+                self.assertEqual(_g(text)['status'], baseline_status(text))
+        text = _letter('KOLEJ ABC\nRakan Strategik Universiti Contoh')
+        self.assertEqual(_g(text)['status'], 'not_offer_letter')
 
 
 _POLY = ('KEMENTERIAN PENDIDIKAN TINGGI\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nRujukan : JPPKK/1\n'

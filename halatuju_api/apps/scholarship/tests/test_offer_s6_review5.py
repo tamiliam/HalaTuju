@@ -51,7 +51,7 @@ class TheSafetyRuleAtOneExit(SimpleTestCase):
 
     def test_positive_private_evidence_still_fails(self):
         for text in ('ABC TRAINING SDN BHD\nIKBN PEKAN\nSURAT TAWARAN\n',
-                     'KOLEJ ABC\nRakan Strategik IKBN\nSURAT TAWARAN\n'):
+                     'KOLEJ ABC\nRakan Strategik Kolej Contoh\nSURAT TAWARAN\n'):    # round 9: beside a noun
             with self.subTest(text=text.splitlines()[0]):
                 out = ruled_offer(text, _r(0.4), 'suspect', 'r', MODEL_VERSION)    # round 7: the BLOCK
                 self.assertEqual((out['status'], ruling_of(out)), ('not_offer_letter', 'private_offer'))

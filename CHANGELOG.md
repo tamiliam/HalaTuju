@@ -121,6 +121,17 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   candidate or patronymic-name line; sponsor lines are skipped; a street name is no tie-up; a tie-up word counts
   only beside an institution or company. The page is folded once per call (proof and marker memoised). Corpus:
   the same 13 tagged changes; a259's incidental-company lift holds.
+- **Round 9 — stricter again, no new guesses** (`tests/test_offer_s6_narrowing.py`, class `Round9`): a TVET lift
+  needs the INSTITUTE itself on the letterhead (an agency / ministry name alone is not enough) and an admission
+  title (PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN is money, not a place); PUSAT BERTAULIAH is a private sign; a
+  Form-6 confirmation names Form 6 (TINGKATAN ENAM / 6, FORM 6 / SIX, PRA-U) or is a KOLEJ TINGKATAN ENAM; a
+  BLOCK company / tie-up line counts only BEFORE any closed-list public name, and the block stops at a "d/a" /
+  "u.p." line; a contact line is read without its contact tokens; PPPL's "&" / English names are named private
+  bodies; a tie-up is RAKAN / KERJASAMA / PARTNER beside KOLEJ / INSTITUT / UNIVERSITI / COLLEGE / UNIVERSITY /
+  ACADEMY, and such a line anywhere stops a lift; "S/B" is a company only right after a name; the unit prefix is
+  bounded. Corpus: 10 tagged changes — a228 d3465 / d3466 (KBS letterhead, IKBN in the body) and a329 (TVETMARA
+  letterhead) lose their lift to the baseline under the institute-on-the-letterhead rule; dev 195 / 197, held-out
+  88 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

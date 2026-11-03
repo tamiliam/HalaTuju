@@ -57,6 +57,9 @@
    - Round 8 (stricter, simpler): the letterhead block is the top lines up to the issuer's first postcode line
      (earlier stops at Ruj / date / title / salutation / Kepada / candidate / name line); "no private marker"
      excuses only a closed-list bank's own "Berhad" line and the addressee block above the title.
+   - Round 9: a TVET lift needs the INSTITUTE itself on the letterhead (an agency / ministry name alone keeps the
+     baseline) and an admission title (not PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN); a Form-6 confirmation names
+     Form 6; a BLOCK company / tie-up line counts only before any closed-list public name.
    The middle logic that guessed in unclear cases is deleted: the round-5 safety exit, the `tvet_unverified` /
    `confirmation_unverified` fallbacks, "an unclean letterhead is private evidence", the conditional-offer block, and
    the other university's confirmation → `suspect` of item 3 (it keeps its baseline now). No new cap to suspect.

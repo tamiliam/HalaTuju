@@ -21,8 +21,8 @@ __all__ = [
     '_PRIVATE_SIGNS', '_REFERENCE', '_REPORTING', '_SALUTE', '_SLIP', '_SPONSOR_LINE', '_STREET', '_TAG', '_TAG_RE',
     '_TIE_UP', '_TITLE', '_TOKEN_SHARE_MAX', '_TVET_NAMES', '_TVET_SPELT', '_UNIQUE_LINES_MIN', '_UNIT_LINE',
     '_UNIT_TAIL', '_WEB_TAIL', '_allowed_spans', '_bank_line', '_clean_letterhead', '_confirm_titled', '_excused',
-    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_is_person_line',
-    '_letter_structure', '_letterhead_block', '_letterhead_lines', '_names_an_institution', '_letterhead_region',
+    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
+    '_letter_structure', '_letterhead_block', '_letterhead_lines', '_letterhead_region',
     '_outside_orgs', '_own_identity_lines', '_page', '_private_marker', '_private_signs', 'private_proof',
     '_ruled_status', '_untitled', '_unglued', '_unstreeted', 'ruling_of',
 ]
@@ -62,13 +62,13 @@ _ORG_WORDS = (r'KOLEJ|COLLEGES?|AKADEMI|ACADEM(?:Y|IES|IC)|UNIVERSITI|UNIVERSIT(
               r'SERVIC[A-Z]*|SOLUTIONS?|HOLDINGS?|CORP[A-Z]*|CONSULT[A-Z]*|KONSULT[A-Z]*|VENTURES?|LTD|LIMITED|INC|'
               r'PERSATUAN|PERTUBUHAN|TECH|KAMPUS|YAYASAN')
 #: An organisation noun, matched by STEM on a folded line (round-4 review: ENTERPRISES, CENTRES, EDUCATIONAL …).
-_ORG_RE = re.compile(rf' (?:{_ORG_WORDS}|SDN|BHD|BERHAD|SDNBHD|S B)(?= )')   # round 8: + SDNBHD, S/B
+_ORG_RE = re.compile(rf' (?:{_ORG_WORDS}|SDN|BHD|BERHAD|SDNBHD)(?= )| S B(?= \d| $)')   # rounds 8-9: SDNBHD, S/B
 #: The same without the company words (the Sdn Bhd excuse asks for an organisation BESIDE the company).
 _ORG_RE_NO_COMPANY = re.compile(rf' (?:{_ORG_WORDS})(?= )')
 #: An institution's OWN unit (round 5, H1): a line naming a faculty / division / centre-for / unit / campus of
 #: the institution is not another organisation ("UNIVERSITI MALAYSIA SABAH / ACADEMIC SERVICES DIVISION").
 #: Round 6: its describing words lead the match ("ACADEMIC SERVICES DIVISION" is one unit, not an academy).
-_UNIT_LINE = re.compile(r' (?:(?:ACADEMIC|STUDENT|SERVICES) )*'
+_UNIT_LINE = re.compile(r' (?:(?:ACADEMIC|STUDENT|SERVICES) ){0,3}'
                         r'(?:FACULTY|FAKULTI|DIVISION|BAHAGIAN|CENTRE FOR|CENTER FOR|PUSAT PENGAJIAN|UNIT|JABATAN|'
                         r'STUDENT SERVICES|HAL EHWAL|DEPARTMENT OF|SCHOOL OF|PUSAT ASASI|CENTRE FOR FOUNDATION)(?= )')
 #: Words that, right after an allowed name on the same line, name its campus or unit (Low 4: "IKTBN KAMPUS
@@ -92,12 +92,15 @@ _PRIVATE_BODIES = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ', 
                    ' KOLEJ UNIVERSITI POLYTECH MARA ', ' KUPTM ', ' UNIVERSITI POLY TECH MALAYSIA ',
                    ' UNIVERSITI POLYTECH MALAYSIA ', ' UPTM ', ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ',
                    ' GERMAN MALAYSIAN INSTITUTE ', ' GMI ', ' SALURAN SATU ', ' SALURAN TERBUKA ',
-                   ' PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN ', ' PUSAT PENDIDIKAN LANJUTAN ', ' PPPL ')
+                   ' PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN ', ' PUSAT PENDIDIKAN LANJUTAN ', ' PPPL ',
+                   # round 9 (M3): '&' / '&amp;' / 'DAN' all fold here; English names
+                   ' PROFESIONAL LANJUTAN ', ' PROFESIONAL AMP LANJUTAN ', ' PROFESSIONAL AND CONTINUING ',
+                   ' CENTRE FOR PROFESSIONAL ', ' CENTER FOR PROFESSIONAL ')
 #: EXPLICIT partner / tie-up words — the BLOCK overlay's (a private institution trading on a public name).
-_TIE_UP = (' PARTNER ', ' RAKAN ', ' RAKAN STRATEGIK ', ' RAKAN KERJASAMA ', ' STRATEGIC PARTNER ', ' AFFILIATED ',
-           ' FRANCAIS ', ' FRANCHISE ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' IN ASSOCIATION WITH ')
+_TIE_UP = (' RAKAN ', ' KERJASAMA ', ' PARTNER ')        # round 9 (Low): only beside an institution noun
+_TIE_UP_NOUN = re.compile(r' (?:KOLEJ|INSTITUT|UNIVERSITI|COLLEGES?|UNIVERSIT(?:Y|IES)|ACADEM(?:Y|IES))(?= )')
 #: A company on a letterhead line (the BLOCK overlay's proof).
-_COMPANY_HEAD = (' SDN BHD ', ' SENDIRIAN BERHAD ', ' BHD ', ' BERHAD ', ' SDNBHD ', ' S B ')   # round 8 (M3)
+_COMPANY_HEAD = (' SDN BHD ', ' SENDIRIAN BERHAD ', ' BHD ', ' BERHAD ', ' SDNBHD ')   # round 8 (M3); S/B: _SB
 #: Partner wording on a letterhead: a private institution trading on a public one's name.
 _PARTNER = (' PARTNER ', ' RAKAN ', ' BERSAMA ', ' AFFILIATED ', ' FRANCAIS ', ' FRANCHISE ', ' STRATEGIK ',
             ' STRATEGIC ', ' KERJASAMA ', ' USAHASAMA ', ' COLLABORATION ', ' ACCREDITED ', ' DIIKTIRAF ',
@@ -109,10 +112,12 @@ _SALUTE = (' TUAN ', ' PUAN ', ' SAUDARA ', ' SAUDARI ', ' SESIAPA ', ' DEAR ')
 #: A contact line (web / e-mail / telephone / fax): "edu.my" in an address names no other institution.
 _CONTACT = re.compile(r' (?:WWW|HTTP|HTTPS|E MEL|EMEL|EMAIL|E MAIL|TEL|TELEFON|FAKS|FAX|EDU MY|GOV MY|COM MY) ')
 #: POSITIVE private evidence, read per line, never on an excused line (`_incidental`).
-_PRIVATE_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SENDIRIAN BERHAD ', ' SDNBHD ', ' S B ', ' SWASTA ',
-                  ' PERSENDIRIAN ', ' IPTS ', ' KPT JPT ')
+_PRIVATE_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SENDIRIAN BERHAD ', ' SDNBHD ', ' SWASTA ',
+                  ' PERSENDIRIAN ', ' IPTS ', ' KPT JPT ', ' PUSAT BERTAULIAH ')   # round 9 (H1): + PUSAT BERTAULIAH
 #: Round 8: the private signs a closed-list bank line may excuse — its own "Berhad"; never SWASTA / IPTS.
-_COMPANY_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SENDIRIAN BERHAD ', ' SDNBHD ', ' S B ')
+_COMPANY_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SENDIRIAN BERHAD ', ' SDNBHD ')
+#: Round 9 (Low): "S/B" is a company only right after its name ('MERCU JAYA S/B'), never 'Kawasan Perindustrian S.B. Jaya'.
+_SB = re.compile(r' S B(?= \d| $)')
 #: Round 8 (H2): THE CLOSED LIST OF BANKS whose own "Berhad" on a payment line names who holds the fees.
 _BANKS = (r'MAYBANK(?: ISLAMIC)?|MALAYAN BANKING|CIMB(?: ISLAMIC)?(?: BANK)?|BANK ISLAM(?: MALAYSIA)?|'
           r'RHB(?: ISLAMIC)?(?: BANK)?|PUBLIC(?: ISLAMIC)? BANK|BANK SIMPANAN NASIONAL|BSN|'
@@ -122,7 +127,7 @@ _BANKS = (r'MAYBANK(?: ISLAMIC)?|MALAYAN BANKING|CIMB(?: ISLAMIC)?(?: BANK)?|BAN
           r'UNITED OVERSEAS BANK|STANDARD CHARTERED(?: SAADIQ)?(?: BANK)?|AL RAJHI(?: BANKING AND INVESTMENT '
           r'CORPORATION)?(?: BANK)?|MBSB(?: BANK)?')
 _BANK_COMPANY = re.compile(rf' (?:{_BANKS})(?: MALAYSIA)?(?: M)? (?:BERHAD|BHD)(?= )')
-_COMPANY_SUFFIX = re.compile(r' (?:SDN BHD|SENDIRIAN BERHAD|BERHAD|BHD|SDNBHD|S B)(?= )')
+_COMPANY_SUFFIX = re.compile(r' (?:SDN BHD|SENDIRIAN BERHAD|BERHAD|BHD|SDNBHD)(?= )| S B(?= \d| $)')
 #: A sponsor line names who pays (round 4: "Penaja : ABC Sdn Bhd" on a real IKBN letter), never the issuer.
 _SPONSOR_LINE = (' PENAJA ', ' TAJAAN ', ' DITAJA ', ' SPONSOR ', ' SPONSORED BY ')
 #: An ISO / SIRIM certification line names a standard, not an organisation (round 4).
@@ -158,6 +163,8 @@ _NO_PRIVATE_WING = (
      (' KEMENTERIAN PENDIDIKAN MALAYSIA ', ' MINISTRY OF EDUCATION MALAYSIA ', ' KOLEJ TINGKATAN ENAM ', ' SMK ',
       ' SEKOLAH MENENGAH KEBANGSAAN ')),
 )
+#: Round 9 (H2): a Form-6 confirmation names Form 6 on its page (an SMK also teaches Forms 1-5).
+_FORM6_MARKS = (' TINGKATAN ENAM ', ' TINGKATAN 6 ', ' FORM 6 ', ' FORM SIX ', ' PRA U ', ' PRA UNIVERSITI ')
 CONFIRMATION_SEEN = frozenset(k for k, _n, _m in _NO_PRIVATE_WING)   # round 7: no confirmation_ua (baseline)
 #: The polytechnics' department, Malay and English: it names no polytechnic or college (blanked before a scan).
 _POLY_DEPARTMENTS = (_JPPKK, ' DEPARTMENT OF POLYTECHNIC AND COMMUNITY COLLEGE EDUCATION ')
@@ -230,12 +237,13 @@ def _private_signs(lines) -> bool:
     """A private sign anywhere: SWASTA / IPTS / PERSENDIRIAN / KPT JPT always; a company unless its line is
     incidental (`_incidental`) or an ISO / SIRIM certification line (it names a standard's body)."""
     page = _page(lines)
-    if not any(s in page for s in _PRIVATE_SIGNS):
+    if not any(s in page for s in _PRIVATE_SIGNS) and not _SB.search(page):
         return False                    # the common case, in one pass
     for i, ln in enumerate(lines):
         if any(s in ln for s in _PRIVATE_SIGNS if s not in _COMPANY_SIGNS):
             return True
-        if any(s in ln for s in _COMPANY_SIGNS) and not _is_certification(ln) and not _incidental(lines, i):
+        company = any(s in ln for s in _COMPANY_SIGNS) or _SB.search(ln)
+        if company and not _is_certification(ln) and not _incidental(lines, i):
             return True
     return False
 
@@ -254,26 +262,47 @@ def _private_proof(lines) -> str:
     """THE BLOCK OVERLAY'S PROOF (S6 round 7), read on the LETTERHEAD BLOCK only (`_letterhead_block`): a
     company ("Sdn Bhd" / "Berhad"), a named private body, or explicit tie-up wording. A bank / payment line
     and an ISO / SIRIM certification line are not proof. '' when there is none."""
+    public, past_public = _public_names(), False
     for ln in _letterhead_block(lines):
         if _is_certification(ln) or _bank_line(ln) or any(w in ln for w in _SPONSOR_LINE):
             continue                    # round 8 (M1): a sponsor line names who pays, never the issuer
-        if any(c in ln for c in _COMPANY_HEAD):
-            return 'company'
         if any(b in ln for b in _PRIVATE_BODIES):
             return 'named private body'
-        street_free = _unstreeted(ln)   # round 8 (H3): "Jalan Rakan" is a road
-        if any(t in street_free for t in _TIE_UP) and _names_an_institution(street_free):
+        if past_public:
+            continue                    # round 9 (M1): below the public name a company / tie-up is no proof
+        first_public = min((ln.find(n) for n in public if n in ln), default=_NOWHERE)
+        if _company_at(ln) < first_public:
+            return 'company'            # a company BEFORE any public name
+        if _tie_up_at(_unstreeted(ln)) < first_public:
             return 'tie-up wording'
+        past_public = first_public < _NOWHERE
     return ''
 
 
-def _names_an_institution(ln) -> bool:
-    """Round 8 (M2): a tie-up word counts only beside an institution or a company — an organisation noun or a
-    public institution's name on its line ("dengan Kolej X", "Rakan Strategik IKBN"), never "Program Latihan
-    Kerjasama Industri"."""
+def _company_at(ln) -> int:
+    """Where the line names a company (`_NOWHERE` when it does not)."""
+    at = [ln.find(c) for c in _COMPANY_HEAD if c in ln] + [m.start() for m in (_SB.search(ln),) if m]
+    return min(at, default=_NOWHERE)
+
+
+#: "Not on this line" for the position helpers.
+_NOWHERE = 10 ** 9
+
+
+def _tie_up_at(ln) -> int:
+    """Round 9 (Low): where the line holds a tie-up word beside an institution noun ("Rakan : Kolej ABC",
+    "kerjasama dengan Universiti X"); never "Program Latihan Kerjasama Industri" or "Rakan Industri : X Group"."""
+    at = [ln.find(t) for t in _TIE_UP if t in ln]
+    return min(at) if at and _TIE_UP_NOUN.search(ln) else _NOWHERE
+
+
+@functools.lru_cache(maxsize=1)
+def _public_names():
+    """The closed-list public names a BLOCK proof must come before (round 9, M1)."""
     from .offer_signatures import _UA_NAMES
-    return (bool(_ORG_RE.search(ln)) or any(n in ln for n in _TVET_NAMES)
-            or any(f' {n} ' in ln for n in _UA_NAMES))
+    return tuple(_TVET_NAMES) + tuple(n for _k, ns, _m in _NO_PRIVATE_WING for n in ns) + tuple(
+        f' {n} ' for n in _UA_NAMES) + _POLY_DEPARTMENTS + (' SEKTOR OPERASI SEKOLAH ', ' BAHAGIAN MATRIKULASI ',
+                                                          ' INSTITUT PENDIDIKAN GURU ')
 
 
 def _private_marker(lines) -> bool:
@@ -286,7 +315,8 @@ def _marker(lines) -> bool:
     """Any private marker on the page — what stops a LIFT: the block's proof, a named private body anywhere,
     or a private sign off the incidental lines."""
     page = _page(lines)
-    return bool(private_proof(lines)) or any(b in page for b in _PRIVATE_BODIES) or _private_signs(lines)
+    return (bool(private_proof(lines)) or any(b in page for b in _PRIVATE_BODIES) or _private_signs(lines)
+            or any(_tie_up_at(_unstreeted(ln)) < _NOWHERE for ln in lines))
 
 
 #: A street name ("Jalan Kolej", "Lorong Universiti") names a road, not an institution.
@@ -303,6 +333,17 @@ def _unstreeted(ln) -> str:
     return _WEB_TAIL.sub(' ', _STREET.sub(' ', ln))
 
 
+#: Round 9 (M2): the contact tokens a contact line is scanned without.
+_CONTACT_TOKENS = re.compile(r' (?:WWW|HTTPS?|E ?MEL|EMAIL|E MAIL|TEL|TELEFON|FAKS|FAX|NO|H P)(?= )|'
+                             r' [A-Z0-9]*\d[A-Z0-9]*(?= )| (?:COM|NET|ORG|EDU|GOV|MY)(?= )')
+
+
+def _decontact(ln) -> str:
+    """The line without its contact tokens (telephone / fax / e-mail / web words, numbers, domain tails); the
+    rest is still read (round 9, M2: "ABC SKILLS ACADEMY Tel : 09-111 2222" names an academy)."""
+    return _CONTACT_TOKENS.sub(' ', ln) if _is_contact(ln) else ln
+
+
 def _is_contact(ln) -> bool:
     """A short contact line (a glued text layer's whole page is one long line, and is never one)."""
     return len(ln.split()) <= 12 and bool(_CONTACT.search(ln))
@@ -313,7 +354,7 @@ def _letterhead_block(lines):
     FIRST postcode line (the issuer's own address). It stops earlier at a reference, date, title, salutation,
     "Kepada", candidate or patronymic-name line, keeping only the text before the stop on that line (a glued
     text layer is one line). Nothing below is letterhead."""
-    stops = _TITLE + _CONFIRM_TITLES + _SALUTE + (' KEPADA ',) + _REFERENCE + _PERSON_LABELS
+    stops = _TITLE + _CONFIRM_TITLES + _SALUTE + (' KEPADA ', ' D A ', ' U P ') + _REFERENCE + _PERSON_LABELS
     head = []
     for ln in lines:
         cuts = [ln.find(s) for s in stops if s in ln] + [m.start() for m in (
@@ -369,9 +410,7 @@ def _first_institution(lines, allowed) -> str:
     'other' when another comes first, '' when none is named. A line led by a public or unit word is the public
     body or a unit (`_excused`)."""
     for ln in lines:
-        if _is_contact(ln):
-            continue                    # a web / e-mail / phone line names no institution
-        ln = _untitled(_unstreeted(ln))
+        ln = _untitled(_unstreeted(_decontact(ln)))     # round 9 (M2): contact tokens only
         spans = _allowed_spans(ln, allowed)
         first_allowed = min((s for s, _e in spans), default=None)
         others = _outside_orgs(ln, spans)
@@ -404,9 +443,7 @@ def _clean_letterhead(lines, allowed) -> bool:
     if any(any(p in ln for p in _PARTNER) for ln in _letterhead_region(lines)):
         return False                    # partner wording on any letterhead line, whole (round 5, Medium 5)
     for ln in _letterhead_lines(lines):
-        if _is_contact(ln):
-            continue
-        ln = _unstreeted(ln)
+        ln = _unstreeted(_decontact(ln))                # round 9 (M2): contact tokens only
         others = _outside_orgs(ln, _allowed_spans(ln, allowed))
         if others and not _excused(ln, others):
             return False
