@@ -21,8 +21,13 @@ export interface ViewerDoc {
  * named exemptions in `mobileStandard.test.ts`. On a phone a PDF is a 44 px Open link to the phone's own
  * viewer in a new tab, not an iframe (Mobile M6b, owner 2026-11-03; page images were not chosen).
  */
-/** What counts as a phone for the PDF rule: narrow, or touch-first (the globals.css 16 px field rule's test). */
-export const PHONE_QUERY = '(max-width: 767.98px), (pointer: coarse)'
+/**
+ * What counts as a phone for the PDF rule: BELOW md, by width only — the same line the cockpit's payment controls
+ * hide at (`max-md:`), so ONE rule decides "phone" (M6b review). An iPad or a touch desktop keeps the iframe, as do
+ * the viewer's other callers on a desktop. A phone held sideways is wider than md and gets the iframe: accepted, a
+ * layout choice (the server authorises by role, never by device).
+ */
+export const PHONE_QUERY = '(max-width: 767.98px)'
 
 export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onClose: () => void }) {
   const { t } = useT()
@@ -35,9 +40,8 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
   if (!doc) return null
 
   // Mobile M6b (owner, 2026-11-03): ON A PHONE a PDF opens in the phone's OWN viewer, in a new tab —
-  // every page, with zoom — never an iframe (iPhone draws page one only, without zoom). "Phone" is a
-  // narrow screen OR a touch-first one (an iPhone held sideways is wider than md). Read when the viewer
-  // opens; a browser without matchMedia is a desktop. Images stay inline everywhere.
+  // every page, with zoom — never an iframe (iPhone draws page one only, without zoom). "Phone" is
+  // below md (`PHONE_QUERY`). Read when the viewer opens; a browser without matchMedia is a desktop. Images stay inline everywhere.
   const phone = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     && window.matchMedia(PHONE_QUERY).matches
   const newTab = (

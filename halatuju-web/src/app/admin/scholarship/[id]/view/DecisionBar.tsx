@@ -9,7 +9,7 @@
  * ⚠ IT DECIDES NOTHING AND SENDS NOTHING. No request, no outcome button, no Save: a decision is only ever
  * saved from the card, under its justification and amount. The bar READS the page's own values (`officerVerdict`,
  * `canSave`) — the same ones the card's buttons read — and shows only while the card offers Save
- * (`decisionBarShows`, the card's own condition; `view.decisionBar.test.tsx` pins the two together).
+ * (`decisionBarShows` — ONE rule: the card gates its Save controls on it too; `view.decisionBar.test.tsx` pins both).
  *
  * `sticky`, not `fixed`: it rests in the flow at the page's end, so it never covers the post-award panels for
  * good. `data-page-bar` (rule 6), so a tab bar would give way to it. Phones only (`md:hidden`).
@@ -21,9 +21,9 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 import type { T } from './shared'
 
 /**
- * True exactly when the decision card shows its Recommend / Decline / Save controls — the card's own three
- * conditions in its own order (DecisionCard.tsx: the card shows, it is not locked, it is not a committed
- * acceptance, the status admits a decision, and this person may write).
+ * True exactly when the decision card shows its Recommend / Decline / Save controls: the card shows, it is not
+ * locked, it is not a committed acceptance, the status admits a decision, and this person may write. ONE rule —
+ * DecisionCard.tsx gates those controls on this function (M6b review), and the phone's bar shows on it.
  */
 export function decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }: {
   app: AdminScholarshipDetail
@@ -43,6 +43,7 @@ export function DecisionBar({ t, outcome, canSave }: {
   t: T
   /** The page's `officerVerdict.overall`: 'accept', 'decline' or nothing chosen yet. */
   outcome: string | undefined
+  /** Ready to save NOW: the page passes `canSave && !busy`, so a Save in flight never reads "Ready" (M6b review). */
   canSave: boolean
 }) {
   // Nothing chosen yet is a dash: the card itself says how to choose (its hint is a sentence, too tall for a bar).

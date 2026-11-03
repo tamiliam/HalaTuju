@@ -1105,7 +1105,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
 
       {/* Mobile M6b: a phone's way back to the decision. It jumps; it never saves (see DecisionBar). */}
       {decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite }) && (
-        <DecisionBar t={t} outcome={officerVerdict.overall} canSave={canSave} />
+        <DecisionBar t={t} outcome={officerVerdict.overall} canSave={canSave && !busy} />
       )}
       </>)}
     </div>

@@ -704,7 +704,13 @@ describe('the cockpit on a phone', () => {
     expect((code.match(/onClick=/g) ?? []).length).toBe(1)
     expect(code).toMatch(/onClick=\{\(\) => document\.getElementById\('decision-section'\)\?\.scrollIntoView\(/)
     const view = readWeb('src/app/admin/scholarship/[id]/view.tsx', 'the cockpit view')
-    expect(view).toMatch(/decisionBarShows\(\{ app, decisionReopened, decisionRecorded, decisionLocked, canWrite \}\) && \(\s*<DecisionBar t=\{t\} outcome=\{officerVerdict\.overall\} canSave=\{canSave\} \/>/)
+    // "Ready" only when nothing is in flight (M6b review).
+    expect(view).toMatch(/decisionBarShows\(\{ app, decisionReopened, decisionRecorded, decisionLocked, canWrite \}\) && \(\s*<DecisionBar t=\{t\} outcome=\{officerVerdict\.overall\} canSave=\{canSave && !busy\} \/>/)
+    // ONE rule (M6b review): the card gates its Save controls on the same helper the bar shows on.
+    const card = readWeb('src/app/admin/scholarship/[id]/view/DecisionCard.tsx', 'the decision card')
+    expect(card).toContain('const saveShows = decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite })')
+    expect(card).toMatch(/\? \(\s*(?:\/\/[^\n]*\n\s*)*saveShows && \(/)
+    expect(card).not.toMatch(/\.includes\(app\.status\)\) \? \(\s*canWrite && \(/)
   })
 })
 

@@ -19,7 +19,7 @@ strings and comments removed, and only data attributes, one anchor id, the bar's
   exactly when the card offers Save (`decisionBarShows`, tested over every stage, both outcomes and two roles).
 - **Documents:** the 28rem inner scroll box is `md:` only (it trapped the thumb); rows instead of boxes; names wrap;
   Re-run is 44 px.
-- **The viewer:** on a phone (narrow or touch-first) a PDF is a 44 px Open link to the phone's own viewer in a new tab,
+- **The viewer:** below `md` (by width) a PDF is a 44 px Open link to the phone's own viewer in a new tab,
   never an iframe; images stay inline; the desktop keeps its iframe.
 - **Payments read-only on a phone** (owner): below `md` the tranche actions and the Schedule form are hidden and a "use
   a computer" note shows; from `md` nothing changed.
@@ -29,6 +29,12 @@ strings and comments removed, and only data attributes, one anchor id, the bar's
 - **Guards and tests:** `mobileStandard.test.ts` "the cockpit on a phone" (four) and the cockpit's 17 files on rule 15;
   `view.decisionBar.test.tsx`, `DocViewer.phone.test.tsx`, `PostAwardPanels.phone.test.tsx`. 11 bites, each red for the
   right reason. Six new words (admin slice) in en / ms / ta. **Raised:** TD-477 (the leftovers).
+- **Review fixes (adversarial review: no blockers):** "phone" is now below `md` by width only for the PDF rule too, the
+  payments' line — an iPad, a touch desktop and the viewer's other callers keep the iframe (a phone held sideways gets
+  it and the payment controls: accepted, the server authorises by role); the bar reads "Ready" only when nothing is in
+  flight (`canSave && !busy`); the card gates its Save controls on `decisionBarShows`, so the bar and the card share ONE
+  rule; the outcome test asserts the button it presses is enabled. TD-477 now asks the owner whether the maintenance
+  status buttons (On hold among them) should follow the payment rule; they stay usable on a phone.
 
 ## Team tables T2 — the Team page (LIVE 2026-11-03; main 54f997a8; api-01241-9hv, web-01069-4vh)
 

@@ -76,10 +76,34 @@ describe('the phone decision bar (Mobile M6b)', () => {
     await loaded()
     const outcome = () => (document.querySelector('[data-bar-outcome]') as HTMLElement).textContent
     expect(outcome()).toBe('—')
-    const decline = screen.getByRole('button', { name: 'admin.scholarship.recordVerdict.decline' }) as HTMLButtonElement
-    if (!decline.disabled) {
-      fireEvent.click(decline)
-      expect(outcome()).toBe('admin.scholarship.recordVerdict.decline')
-    }
+  })
+
+  it.each([
+    ['decline', 'admin.scholarship.recordVerdict.decline'],
+    ['recommend', 'admin.scholarship.recordVerdict.approve'],
+  ] as const)('a recorded %s case: the bar names it, and follows a change of choice', async (recorded, label) => {
+    // A verdict saved but not yet submitted: the controls are LIVE and pre-filled with the recorded outcome
+    // (the #21 / #24 stage), so both buttons can be pressed — asserted, so this cannot pass by skipping.
+    renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: recorded } })
+    await loaded()
+    const outcome = () => (document.querySelector('[data-bar-outcome]') as HTMLElement).textContent
+    expect(outcome()).toBe(label)
+    const other = recorded === 'decline' ? 'approve' : 'decline'
+    const btn = screen.getByRole('button', { name: `admin.scholarship.recordVerdict.${other}` }) as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(outcome()).toBe(`admin.scholarship.recordVerdict.${other}`)
+  })
+
+  it('"Ready to save" only while nothing is in flight (the page passes canSave && !busy)', async () => {
+    const { api } = renderCockpit({ role: 'super', stage: 'verdict_recorded', build: { outcome: 'decline' } })
+    await loaded()
+    const ready = () => document.querySelector('[data-decision-bar]')!.textContent ?? ''
+    const save = screen.getByRole('button', { name: 'admin.scholarship.recordVerdict.saveDecline' }) as HTMLButtonElement
+    expect(save.disabled).toBe(false)
+    expect(ready()).toContain('admin.scholarship.decisionBar.ready')
+    api.recordVerdict.mockReturnValue(new Promise(() => {}))   // a Save that never comes back
+    await act(async () => { fireEvent.click(save) })
+    expect(ready()).toContain('admin.scholarship.decisionBar.notReady')
   })
 })

@@ -1169,7 +1169,7 @@ list = rows that open the case, filters in a Sheet (one `filterControls` for bot
 not pushed:** the decision card lives in `view/DecisionCard.tsx` (moved whole; `view.tsx` ledger 1109); the phone's
 `view/DecisionBar.tsx` JUMPS to `#decision-section` and sends nothing (`decisionBarShows` = the card's own Save
 condition, pinned over every stage by `view.decisionBar.test.tsx`); a phone PDF is a new-tab link (`DocViewer`
-`PHONE_QUERY`, narrow OR touch-first), never an iframe; tranche / payment controls are `max-md:hidden` with a
+`PHONE_QUERY`, below md by width - the same line as the payments), never an iframe; tranche / payment controls are `max-md:hidden` with a
 "use a computer" note; the documents' 28rem scroll box is `md:` only; the cockpit's 17 files are on rule 15. The
 year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sandbox `src/sandbox/cockpitM6bSurfaces.tsx`.
 NEXT: M7, M8.

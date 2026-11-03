@@ -15,6 +15,7 @@ import type { AdminScholarshipDetail } from '@/lib/admin-api'
 
 import { QcOverrideNote, type T } from './shared'
 import { ReopenHeaderControl } from './ReopenHeaderControl'
+import { decisionBarShows } from './DecisionBar'
 
 export function DecisionCard({
   app, t, busy, canWrite, isSuper, error, decisionLocked, decisionReopened, decisionRecorded, reopenOpen, setReopenOpen, reopenReason, setReopenReason, doReopenDecision, doCancelReopen, doCancelDecline, verdictReason, setVerdictReason, reviewerName, reviewerDate, hasQc, qcName, qcDate, recordedOutcome, doReject, stuckAfterVerdict, officerVerdict, selectApprove, selectDecline, approveReady, decisionReady, interviewSubmitted, interviewMissing, hasAssistance, doSave, canSave, verdictMsg, verdictMsgTone,
@@ -58,6 +59,7 @@ export function DecisionCard({
   verdictMsg: string
   verdictMsgTone: 'ok' | 'warn'
 }) {
+  const saveShows = decisionBarShows({ app, decisionReopened, decisionRecorded, decisionLocked, canWrite })
   return (<>
 
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
@@ -246,7 +248,9 @@ export function DecisionCard({
             )}
           </div>
         ) : (decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status)) ? (
-          canWrite && (
+          // ONE rule with the phone's decision bar (M6b review): here every other clause of `decisionBarShows` already
+          // holds, so it answers exactly what `canWrite` answered — and the bar can never disagree with this card.
+          saveShows && (
             <div className="space-y-2">
               {/* The old coarse "still owes: documents / consent" banner moved OUT to its own
                   Blockers card below this one (owner 2026-07-22) — it now names each item

@@ -164,9 +164,10 @@ Three kinds of check, from cheapest to most human:
   (`ScholarshipDocuments/RemoveConfirm.tsx`, lazy, with the phone's own confirm as its fallback), busy per card, and
   the early size / format refusal from `src/lib/uploadCheck.ts`. A long document (the award agreement) opens in a
   tall reader sheet, not a scroll box in the page (`src/components/scholarship/AwardContract.tsx`). PDFs open
-  full-screen or in a new tab on phones. **The console viewer** (Mobile M6b, `src/components/DocViewer.tsx`): on a phone —
-  narrow OR touch-first, `PHONE_QUERY` — a PDF is a 44 px Open link to the phone's own viewer in a new tab, never an
-  iframe; the desktop keeps its iframe; images stay inline. Guarded ("the cockpit on a phone") and tested
+  full-screen or in a new tab on phones. **The shared viewer** (Mobile M6b, `src/components/DocViewer.tsx`; the cockpit,
+  the scholar file, request attachments, the witness screen and My Bursary's contract): below `md` by WIDTH
+  (`PHONE_QUERY`, the same line as `max-md:`) a PDF is a 44 px Open link to the phone's own viewer in a new tab, never an
+  iframe; from `md` — an iPad and a touch desktop included — the iframe it always was; images stay inline. Guarded ("the cockpit on a phone") and tested
   (`DocViewer.phone.test.tsx`). Sandbox: `cockpit-viewer-pdf`, `cockpit-viewer-image`.
 
 ### 10. Long forms keep their progress
@@ -289,7 +290,10 @@ Three kinds of check, from cheapest to most human:
   page below `md`; a big page is split FIRST, moves only, before any layout change (`view/DecisionCard.tsx`). **A
   control the owner keeps off phones is hidden below `md` with a note saying where to do it** (`PostAwardPanels.tsx`:
   `max-md:hidden` on the tranche actions and the Schedule form, a `md:hidden` "use a computer" note) — never a
-  disabled look-alike. Swept in M6b: the case page and its panels.
+  disabled look-alike. **One breakpoint decides "phone" (M6b review):** below `md` by width, for the PDF rule and the
+  payment controls alike — a phone held sideways is wider than `md` and gets both, which is accepted: the server
+  authorises by role, never by device, so this is a layout choice, not a safety gap. Swept in M6b: the case page and
+  its panels.
 
 ## Tamil type
 

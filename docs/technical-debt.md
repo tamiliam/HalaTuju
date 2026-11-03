@@ -7535,15 +7535,19 @@ the corpus (every one-word line after a school there was a real wrap: 3 of 3), s
 institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
 postcode line below the town as the anchor), with a synthetic twin. *(B · S)*
 
-### [TD-477] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next, wide touch phones - low
+### [TD-477] Mobile M6b leftovers: the cockpit's native confirms, the hover-only referral name, viewer Prev / Next, the maintenance status on a phone - low
 
 **Raised 2026-11-03 by Mobile M6b** (layout only by rule, so each of these was left as it was). (1) Four cockpit doors
 still ask with `window.confirm` — the contractual decline, the nudge, cancelling a scheduled decline and holding an
 award — where rule 5 wants the shared Sheet; moving them changes how a door asks, so it is its own small sprint with
 the adversarial review. (2) The referral pill's full source name is a `title` (hover-only); a phone sees the acronym.
 (3) The approved viewer mock-up had Previous / Next between documents; the viewer opens one document at a time
-(Close and open the next). (4) "Read-only payments on a phone" hides the controls below `md`; an iPhone held sideways
-(844-932 px) is past `md` and shows them — the owner's rule is about phones, and the PDF rule already reads
-touch-first (`PHONE_QUERY`). **Fix:** (1) one Sheet per door, `dismissible={false}` for the money ones; (2) the name
-as visible text on a phone; (3) Prev / Next in the viewer's footer from the drawer's order; (4) decide whether
-touch-first should count as a phone for the money controls (owner). *(W · S)*
+(Close and open the next). (4) **Owner question:** the maintenance status buttons (On track, Probation, **On hold**,
+Ready to close) stay usable on a phone — the owner's answer covered tranche scheduling and payment actions only, yet
+On hold stops a student's money. **Fix:** (1) one Sheet per door, `dismissible={false}` for the money ones; (2) the
+name as visible text on a phone; (3) Prev / Next in the viewer's footer from the drawer's order; (4) ask the owner
+whether the status buttons should follow the payment rule. *(W · S)*
+
+**Accepted (M6b review), not debt:** ONE breakpoint decides "phone" across M6b — below `md` by width (the PDF rule's
+`PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and
+the payment controls; the server authorises by role, never by device, so this is a layout choice, not a safety gap.
