@@ -56,6 +56,8 @@ for (const [route, e] of Object.entries(MOBILE_CLASS).sort(([a], [b]) => a.local
     if (clean(w)) tally.green++
   } else if (e.redirect) {
     status = 'n/a (redirect only)'
+  } else if (e.handoff) {
+    status = 'n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough)'
   } else if (e.cls === 'desktop') {
     status = `not yet measurable — desktop-only panel due ${e.sprint}`
   } else {

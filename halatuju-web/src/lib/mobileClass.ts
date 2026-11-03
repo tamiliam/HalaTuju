@@ -44,6 +44,12 @@ interface EntryBase {
   alsoVisit?: readonly string[]
   /** Sandbox surfaces (`src/sandbox/surfaces.tsx` slugs) that mount this route's real screen. */
   surfaces?: readonly string[]
+  /**
+   * A SIGN-IN HAND-OFF (owner, Mobile M8): the page reads the sign-in result off the URL and sends the visitor on —
+   * all it draws is a "signing you in" line, or a failure line with ONE way back to the sign-in page. No form, no
+   * screen of its own, so no sandbox surface: the owner's iPhone walkthrough covers it. The ledger says so.
+   */
+  handoff?: true
 }
 
 export type RouteEntry =
@@ -92,8 +98,8 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/dashboard': { cls: 'must', sprint: 'M2', surfaces: ['dashboard'] },
   '/profile': { cls: 'must', sprint: 'M2', surfaces: ['profile'] },
   '/settings': { cls: 'must', sprint: 'M2', surfaces: ['settings'] },
-  '/verify-email': { cls: 'must', sprint: 'M2' },
-  '/auth/callback': { cls: 'must', sprint: 'M2' },
+  '/verify-email': { cls: 'must', sprint: 'M2', surfaces: ['verify-email-done', 'verify-email-failed'] },
+  '/auth/callback': { cls: 'must', sprint: 'M2', handoff: true },
   '/r/[code]': { cls: 'must', sprint: 'M2', redirect: '/' },
   '/onboarding/exam-type': { cls: 'must', sprint: 'M2', surfaces: ['onboarding-exam-type'] },
   '/onboarding/grades': { cls: 'must', sprint: 'M2', surfaces: ['onboarding-grades'] },
@@ -103,7 +109,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/onboarding/ic': { cls: 'must', sprint: 'M2', redirect: '/dashboard' },
   '/saved': { cls: 'must', sprint: 'M3', surfaces: ['saved-list', 'saved-compare'] },
   '/quiz': { cls: 'must', sprint: 'M3', surfaces: ['quiz'] },
-  '/stpm/quiz': { cls: 'must', sprint: 'M3' },
+  '/stpm/quiz': { cls: 'must', sprint: 'M3', surfaces: ['stpm-quiz', 'stpm-quiz-list'] },
   '/pathway/matric': { cls: 'must', sprint: 'M3', surfaces: ['pathway-matric'] },
   '/pathway/stpm': { cls: 'must', sprint: 'M3', surfaces: ['pathway-stpm'] },
   '/report/[id]': { cls: 'must', sprint: 'M3', surfaces: ['report'] },
@@ -112,10 +118,16 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
     surfaces: ['documents', 'documents-lean', 'application-steps', 'application-steps-lean',
       'action-centre', 'action-centre-clear'],
   },
-  '/scholarship/award': { cls: 'must', sprint: 'M4' },
+  '/scholarship/award': {
+    cls: 'must', sprint: 'M4',
+    surfaces: ['award-sign-adult', 'award-sign-minor', 'award-plain-minor', 'award-quiz', 'award-quiz-question', 'award-signed'],
+  },
   '/scholarship/bursary': { cls: 'must', sprint: 'M4', surfaces: ['bursary-overview', 'bursary-news', 'bursary-surveys', 'bursary-funds', 'bursary-contract',
     'bursary-letters', 'bursary-mentoring'] },
-  '/scholarship/onboarding': { cls: 'must', sprint: 'M4' },
+  '/scholarship/onboarding': {
+    cls: 'must', sprint: 'M4',
+    surfaces: ['scholarship-onboarding-welcome', 'scholarship-onboarding-questions', 'scholarship-onboarding-done'],
+  },
   '/scholarship/in-programme': { cls: 'must', sprint: 'M4', redirect: '/scholarship/bursary' },
 
   // ── Sponsors, signed in (the portal) and their auth pages ─────────────────────────────────────
@@ -123,17 +135,17 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/sponsor/students/[id]': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-pool-student', 'sponsor-fund-confirm'] },
   '/sponsor/my-students/[id]': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-my-student'] },
   '/sponsor/account': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-account'] },
-  '/sponsor/terms': { cls: 'must', sprint: 'M5' },
-  '/sponsor/trust': { cls: 'must', sprint: 'M5' },
-  '/sponsor/[...notFound]': { cls: 'must', sprint: 'M5' },
-  '/sponsor/auth/callback': { cls: 'must', sprint: 'M5' },
-  '/sponsor/auth/confirm': { cls: 'must', sprint: 'M5' },
-  '/sponsor/auth/reset': { cls: 'must', sprint: 'M5' },
+  '/sponsor/terms': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-terms-read'] },
+  '/sponsor/trust': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-trust'] },
+  '/sponsor/[...notFound]': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-not-found'] },
+  '/sponsor/auth/callback': { cls: 'must', sprint: 'M5', handoff: true },
+  '/sponsor/auth/confirm': { cls: 'must', sprint: 'M5', handoff: true },
+  '/sponsor/auth/reset': { cls: 'must', sprint: 'M5', surfaces: ['sponsor-reset'] },
   '/sponsor/pool/[id]': { cls: 'must', sprint: 'M5', redirect: '/sponsor/students/[id]' },
 
   // ── Reviewers and org admins: the everyday screens ────────────────────────────────────────────
   '/admin/set-password': { cls: 'must', sprint: 'M6' },
-  '/admin/auth/callback': { cls: 'must', sprint: 'M6' },
+  '/admin/auth/callback': { cls: 'must', sprint: 'M6', handoff: true },
   '/admin/profile': { cls: 'must', sprint: 'M6' },
   '/admin/guide': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-guide'] },
   '/admin/faq': { cls: 'must', sprint: 'M6', surfaces: ['admin-shell-faq'] },

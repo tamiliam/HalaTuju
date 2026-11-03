@@ -8,7 +8,7 @@ Baseline last updated **2026-11-03** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**53 measured** (public page or sandbox surface), **53 fully green.**
+**61 measured** (public page or sandbox surface), **61 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -23,7 +23,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/[...notFound]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/administration` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
-| `/admin/auth/callback` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
+| `/admin/auth/callback` | Must | M6 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
 | `/admin/billing` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
 | `/admin/billing-rates` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | platform super-admin sets per-service rates in a wide table — rare, and done at a desk |
 | `/admin/contracts` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only`) | 0 | 0 | 0 | ✅ | contract template versions — authored and compared at a desk, never on a phone |
@@ -71,7 +71,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/sponsors/terms/[id]` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | authoring a sponsor’s terms document — long-form editing, not a phone task |
 | `/admin/students` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/students/[id]` | Can | M7 | 6 (sandbox `m7-student`) | 0 | 0 | 0 | ✅ |  |
-| `/auth/callback` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
+| `/auth/callback` | Must | M2 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
 | `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/course/[id]` | Must | M3 | 12 (public page, `/course/stpm-sains`) | 0 | 0 | 0 | ✅ |  |
@@ -95,31 +95,31 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/award` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
+| `/scholarship/award` | Must | M4 | 36 (sandbox `award-sign-adult`, sandbox `award-sign-minor`, sandbox `award-plain-minor`, sandbox `award-quiz`, sandbox `award-quiz-question`, sandbox `award-signed`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/bursary` | Must | M4 | 42 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`, sandbox `bursary-funds`, sandbox `bursary-contract`, sandbox `bursary-letters`, sandbox `bursary-mentoring`) | 0 | 0 | 0 | ✅ |  |
 | `/scholarship/in-programme` | Must | M4 | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
-| `/scholarship/onboarding` | Must | M4 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M4) |  |
+| `/scholarship/onboarding` | Must | M4 | 18 (sandbox `scholarship-onboarding-welcome`, sandbox `scholarship-onboarding-questions`, sandbox `scholarship-onboarding-done`) | 0 | 0 | 0 | ✅ |  |
 | `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor` | Must | M5 | 24 (public page, sandbox `sponsor-landing`, sandbox `sponsor-giving`, sandbox `sponsor-terms-quiz`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/[...notFound]` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/[...notFound]` | Must | M5 | 6 (sandbox `sponsor-not-found`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/account` | Must | M5 | 6 (sandbox `sponsor-account`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/auth/callback` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/sponsor/auth/confirm` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/sponsor/auth/reset` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/auth/callback` | Must | M5 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/sponsor/auth/confirm` | Must | M5 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/sponsor/auth/reset` | Must | M5 | 6 (sandbox `sponsor-reset`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/login` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/my-students/[id]` | Must | M5 | 6 (sandbox `sponsor-my-student`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/pool/[id]` | Must | M5 | — | — | — | — | n/a (redirect only) | redirects to `/sponsor/students/[id]` |
 | `/sponsor/register` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/students` | Must | M5 | 18 (sandbox `sponsor-browse`, sandbox `sponsor-students`, sandbox `sponsor-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/sponsor/students/[id]` | Must | M5 | 12 (sandbox `sponsor-pool-student`, sandbox `sponsor-fund-confirm`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/terms` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
-| `/sponsor/trust` | Must | M5 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M5) |  |
+| `/sponsor/terms` | Must | M5 | 6 (sandbox `sponsor-terms-read`) | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/trust` | Must | M5 | 6 (sandbox `sponsor-trust`) | 0 | 0 | 0 | ✅ |  |
 | `/stpm/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/stpm/quiz` | Must | M3 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M3) |  |
+| `/stpm/quiz` | Must | M3 | 12 (sandbox `stpm-quiz`, sandbox `stpm-quiz-list`) | 0 | 0 | 0 | ✅ |  |
 | `/stpm/search` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/search?qualification=STPM` |
 | `/terms` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/verify-email` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
+| `/verify-email` | Must | M2 | 12 (sandbox `verify-email-done`, sandbox `verify-email-failed`) | 0 | 0 | 0 | ✅ |  |
 
 ## Sandbox surfaces not tied to one route
 
@@ -128,9 +128,6 @@ Component galleries — measured, but no single route is "them".
 | Surface | Cells | Overflow px | Small fields | Small targets | Status |
 |---|---|---|---|---|---|
 | `apply-draft-restored` | 6 | 0 | 0 | 0 | ✅ |
-| `award-plain-minor` | 6 | 0 | 0 | 0 | ✅ |
-| `award-sign-adult` | 6 | 0 | 0 | 0 | ✅ |
-| `award-sign-minor` | 6 | 0 | 0 | 0 | ✅ |
 | `category-colours` | 6 | 0 | 0 | 0 | ✅ |
 | `course-guide` | 6 | 0 | 0 | 0 | ✅ |
 | `documents-remove` | 6 | 0 | 0 | 0 | ✅ |

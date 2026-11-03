@@ -42,6 +42,19 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
   `ProgrammeConfigTab`). `/scholarship/apply`: the gift chooser's Continue (40 px).
 - **Guard:** a `mobileStandard.test.ts` block, "rule 3 — the controls Mobile M8 lifted stay 44 px on a phone".
   mobile-check for the affected surfaces: 0 small targets; `baseline.json` lowered and the ledger regenerated.
+- **Phase B1 — the last student and sponsor screens are measured.** New sandbox surfaces (`src/sandbox/m8Surfaces.tsx`,
+  the REAL pages over fixtures, long Tamil where they show text): the award quiz (start, a checkpoint) and the signed
+  award; scholarship onboarding (welcome, questions, done); the sponsor 404, set-a-new-password (a synthetic recovery
+  session in the sponsor client's storage, sandbox only), the terms read back and the trust page; the STPM quiz (four
+  tiles, three rows); verify e-mail (confirmed, broken link). `/scholarship/award` also claims its three M4 surfaces.
+- **Fixed for phones (`max-md:` only):** the award quiz's Begin / Next / Retry (40 px), the signed award's "Back to my
+  application" (20 px), the sponsor 404's "Back to the sponsor portal" (40 px), verify e-mail's "Go to my profile" and
+  the sponsor sign-in callback's failure link ("Back to login").
+- **Sign-in hand-offs (owner):** `/auth/callback`, `/admin/auth/callback`, `/sponsor/auth/callback` and
+  `/sponsor/auth/confirm` only read the URL and send the visitor on, so they get no surface: `mobileClass.ts` marks them
+  `handoff` and the ledger says "n/a (sign-in hand-off — covered by the owner's iPhone walkthrough)".
+- **Guard:** `mobileStandard.test.ts` — every Must route is measured, a redirect, or one of the four hand-offs (the
+  console screens still waiting for B2 are a closed list that may only shrink), and a hand-off draws no form.
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 

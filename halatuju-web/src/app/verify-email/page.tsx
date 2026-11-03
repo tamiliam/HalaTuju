@@ -53,7 +53,7 @@ function VerifyEmailContent() {
             </div>
             <h1 className="text-lg font-semibold text-ground-900 mb-2">{t('verifyEmail.successTitle')}</h1>
             <p className="text-sm text-ground-600 mb-4">{t('verifyEmail.successMsg', { email })}</p>
-            <Link href="/profile" className="text-primary-600 text-sm font-medium hover:underline">
+            <Link href="/profile" className="text-primary-600 text-sm font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
               {t('verifyEmail.goToProfile')}
             </Link>
           </>
@@ -67,7 +67,7 @@ function VerifyEmailContent() {
             </div>
             <h1 className="text-lg font-semibold text-ground-900 mb-2">{t('verifyEmail.failedTitle')}</h1>
             <p className="text-sm text-ground-600 mb-4">{errorMsg}</p>
-            <Link href="/profile" className="text-primary-600 text-sm font-medium hover:underline">
+            <Link href="/profile" className="text-primary-600 text-sm font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
               {t('verifyEmail.goToProfile')}
             </Link>
           </>

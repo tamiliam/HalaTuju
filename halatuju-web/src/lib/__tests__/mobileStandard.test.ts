@@ -1198,6 +1198,34 @@ describe('every route has a phone class', () => {
       for (const s of e.surfaces ?? []) expect(`${route} → ${s}: ${slugs.includes(s)}`).toBe(`${route} → ${s}: true`)
     }
   })
+
+  /**
+   * Mobile M8: a Must route is REACHED by the check — a public `visit`, a sandbox surface that mounts it, or a
+   * redirect measured where it lands — or it is one of the owner's four sign-in hand-offs. What is left is a CLOSED
+   * list that may only shrink: the console's everyday screens still waiting for their surfaces (M8 phase B2). A new
+   * Must page with none of these fails here, so it can never sit in the ledger as "not yet measurable" unseen.
+   */
+  const STILL_UNMEASURED = ['/admin/[...notFound]', '/admin/my-students', '/admin/my-students/[id]',
+    '/admin/organisation', '/admin/profile', '/admin/programme/overview', '/admin/set-password']
+  /** Owner, Mobile M8: these four only hand the sign-in on, so the owner's iPhone walkthrough covers them. */
+  const HANDOFFS = ['/admin/auth/callback', '/auth/callback', '/sponsor/auth/callback', '/sponsor/auth/confirm']
+
+  test('every Must route is measured, a redirect, or a named sign-in hand-off', () => {
+    const unreached = Object.entries(MOBILE_CLASS)
+      .filter(([, e]) => e.cls === 'must' && !e.visit && !e.surfaces?.length && !e.redirect && !e.handoff)
+      .map(([route]) => route).sort()
+    expect(unreached).toEqual(STILL_UNMEASURED)
+    expect(Object.entries(MOBILE_CLASS).filter(([, e]) => e.handoff).map(([r]) => r).sort()).toEqual(HANDOFFS)
+  })
+
+  test('a sign-in hand-off really only hands off: no field, no form, and it sends the visitor on', () => {
+    // The exemption rests on what the page IS; if one grows a form, it becomes a screen and needs a surface.
+    for (const route of HANDOFFS) {
+      const src = readWeb(`src/app${route}/page.tsx`, 'a hand-off is exempt from a surface only while it draws no form')
+      expect(`${route}: ${/<(form|input|textarea|select)\b/.test(src)}`).toBe(`${route}: false`)
+      expect(`${route}: ${/router\.replace\(/.test(src)}`).toBe(`${route}: true`)
+    }
+  })
 })
 
 // ── The reader itself (M0 review) ─────────────────────────────────────────────────────────────

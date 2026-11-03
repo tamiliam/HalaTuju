@@ -87,7 +87,7 @@ const PORTAL = {
   refreshReferrals: async () => {}, refreshPool: async () => {}, refreshWallet: async () => {},
 }
 
-const SPONSOR_ROUTES: Record<string, () => unknown> = {
+export const SPONSOR_ROUTES: Record<string, () => unknown> = {
   '/api/v1/sponsor/wallet/': () => PORTAL.wallet,
   '/api/v1/sponsor/standing-gift/': () => ({ configured: false, active: false }),
   '/api/v1/sponsor/pool/901/': () => ({ ...sandboxPool[0],
@@ -112,7 +112,7 @@ const SPONSOR_ROUTES: Record<string, () => unknown> = {
       correct: 1, why: 'Identiti pelajar dilindungi.' }] }),
 }
 
-const TERMS = {
+export const TERMS = {
   version: '2026.1', locale_used: 'ms', title: 'Terma penaja', intro: 'Sila baca sebelum anda menaja seorang pelajar.',
   sections: [1, 2, 3].map((n) => ({ order: n, has_quiz: n > 1,
     heading: ['Apa itu tajaan', 'Bagaimana sumbangan anda digunakan', 'Pelajar anda kekal tanpa nama'][n - 1],
@@ -120,14 +120,19 @@ const TERMS = {
       + 'Anda tidak akan melihat nama, gambar atau alamat — hanya rujukan dan profil yang telah disemak.' })),
 }
 
-/** A synthetic approved sponsor at `path` (and `params`), inside the real shell. */
-function Portal({ path, params, nav = true, children }: { path: string; params?: Record<string, string>; nav?: boolean; children: ReactNode }) {
+/**
+ * A synthetic approved sponsor at `path` (and `params`), inside the real shell. `portal` overrides parts of the
+ * portal's data (Mobile M8: the trust page with trustees). Exported for `m8Surfaces.tsx`.
+ */
+export function Portal({ path, params, nav = true, portal, children }: {
+  path: string; params?: Record<string, string>; nav?: boolean; portal?: object; children: ReactNode
+}) {
   return (
     <PathParamsContext.Provider value={params ?? {}}>
         <SponsorAuthContext.Provider value={{
           session: null, token: TOKEN, isLoading: false, isSignedIn: true, account: ACCOUNT, refreshAccount: async () => {},
         }}>
-          <SponsorPortalContext.Provider value={PORTAL}>
+          <SponsorPortalContext.Provider value={{ ...PORTAL, ...portal } as typeof PORTAL}>
             <SponsorShell nav={nav} path={path}>{children}</SponsorShell>
           </SponsorPortalContext.Provider>
         </SponsorAuthContext.Provider>
@@ -136,7 +141,7 @@ function Portal({ path, params, nav = true, children }: { path: string; params?:
 }
 
 /** Taps a control once the page has drawn it (opens a Sheet, starts the quiz) — design review only. */
-function TapOnce({ selector }: { selector: string }) {
+export function TapOnce({ selector }: { selector: string }) {
   const [done, setDone] = useState(false)
   useEffect(() => {
     if (done) return

@@ -312,7 +312,7 @@ export default function ScholarshipAwardPage() {
             {t('scholarship.award.bursary.signed.download')}
           </a>
         )}
-        <Link href="/scholarship/application" className="mt-3 block text-sm font-medium text-ground-500 hover:text-ground-700">
+        <Link href="/scholarship/application" className="mt-3 block text-sm font-medium text-ground-500 hover:text-ground-700 max-md:flex max-md:min-h-11 max-md:items-center max-md:justify-center">
           {t('scholarship.award.empty.cta')}
         </Link>
       </div>
