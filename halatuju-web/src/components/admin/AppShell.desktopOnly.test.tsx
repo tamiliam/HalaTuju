@@ -56,10 +56,15 @@ it.each(['/admin/scholars', '/admin/billing-rates/x', '/admin/contracts/12/edit'
 
 describe('one way back, 44 px', () => {
   const original = window.history.length
-  afterEach(() => Object.defineProperty(window.history, 'length', { value: original, configurable: true }))
+  const setReferrer = (v: string) => Object.defineProperty(document, 'referrer', { value: v, configurable: true })
+  afterEach(() => {
+    Object.defineProperty(window.history, 'length', { value: original, configurable: true })
+    setReferrer('')
+  })
 
-  it('with a page to go back to, it goes back', async () => {
+  it('with a HalaTuju page to go back to, it goes back', async () => {
     Object.defineProperty(window.history, 'length', { value: 3, configurable: true })
+    setReferrer(`${window.location.origin}/admin/scholars`)
     render(<AppShell path="/admin/billing"><p>THE PAGE</p></AppShell>)
     await act(async () => {})
     const backs = document.querySelectorAll('[data-desktop-only-back]')
@@ -76,5 +81,17 @@ describe('one way back, 44 px', () => {
     const backs = document.querySelectorAll('[data-desktop-only-back]')
     expect(backs).toHaveLength(1)
     expect(backs[0].getAttribute('href')).toBe('/admin')
+  })
+
+  it('opened from another site (a Gmail link), Back never leaves HalaTuju: it links to the start page (M7b review)', async () => {
+    Object.defineProperty(window.history, 'length', { value: 3, configurable: true })
+    setReferrer('https://mail.google.com/mail/u/0/')
+    mockBack.mockClear()
+    render(<AppShell path="/admin/billing"><p>THE PAGE</p></AppShell>)
+    await act(async () => {})
+    const backs = document.querySelectorAll('[data-desktop-only-back]')
+    expect(backs).toHaveLength(1)
+    expect(backs[0].getAttribute('href')).toBe('/admin')
+    expect(mockBack).not.toHaveBeenCalled()
   })
 })

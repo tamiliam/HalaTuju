@@ -15,12 +15,19 @@ import { DESKTOP_ONLY } from '@/lib/desktopOnly'
  * ONE way back, 44 px: the page you came from when there is one in this tab, else the console's start page
  * (`/admin`, which sends each role to its own landing).
  */
+export function cameFromThisSite(): boolean {
+  if (typeof window === 'undefined' || window.history.length <= 1 || !document.referrer) return false
+  try { return new URL(document.referrer).origin === window.location.origin } catch { return false }
+}
+
 export function DesktopOnly({ route }: { route: string }) {
   const { t } = useT()
   const router = useRouter()
-  // Known only in the browser: the server and the first paint draw the start-page link.
+  // Known only in the browser: the server and the first paint draw the start-page link. Back only when this tab
+  // came from HalaTuju itself — `history.length` also counts other sites, so a contract link opened from Gmail
+  // would otherwise send Back to Gmail (M7b review). Anything else gets the start-page link.
   const [canGoBack, setCanGoBack] = useState(false)
-  useEffect(() => { setCanGoBack(typeof window !== 'undefined' && window.history.length > 1) }, [])
+  useEffect(() => { setCanGoBack(cameFromThisSite()) }, [])
   const back = 'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-fill px-4 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover'
   return (
     <section className="px-1 pb-6 pt-8 text-center md:hidden" data-desktop-only={route}
