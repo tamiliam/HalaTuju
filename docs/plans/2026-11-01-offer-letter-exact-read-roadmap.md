@@ -730,6 +730,25 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - A glued reference is "RUJ" not preceded by a letter (the UMS layers glue it to a phone number; "dirujuk" is
     not one); TAMAN / BANDAR / SEKSYEN / PRESINT street names and ISO / SIRIM lines name no organisation; a web
     tail is read even when OCR spaces it ("EDU M Y").
+- **Fifth review (2026-11-03): the remaining Highs were wrong blocks of real public letters — fixed as a CLASS.**
+  - **THE SAFETY RULE AT ONE EXIT** (`offer_rulings._safety_exit`; every `ruled_offer` result passes it): a page a
+    ruling engaged on (a closed-list TVET body, or a confirmation-of-studies title) whose FIRST institution is an
+    allowed public body (the TVET list, a polytechnic, UMS, a Form-6 / KPM school, a ministry / department) and
+    which shows NO positive private evidence (a private sign off the excused lines, a private MARA-owned name on
+    the letterhead, partner wording, a fee to a company) may read genuine or suspect — never `not_offer_letter`; a
+    missed rule then reads `tvet_unverified` / `confirmation_unverified`. One test asserts it for every ruled kind
+    (`tests/test_offer_s6_review5.py`).
+  - A university's / institute's OWN unit (faculty, division, centre for …, unit, student services, campus)
+    is not another organisation; English public names (Ministry / Department / Government; ADTEC, ILP, IKBN, IKM,
+    KKTM in English; the ministry marks of a polytechnic / Form-6 confirmation in English).
+  - The addressee block (a patronymic name line then a postcode, below the date) ends the letterhead and excuses a
+    company name inside it unless an institution word sits beside it; a private name sharing a line with "Ruj" /
+    the date is read (the part before them); partner words on any letterhead line, whole.
+  - A glued text layer is split only when it holds 4+ kinds of label and little single-letter filler; a company
+    excuse fails when its two-word name is on the letterhead, or a campus / technology word sits beside it, or on
+    the next line; ISLAMIC is finance only beside BANK / BERHAD.
+  - `offer_rulings.py` passed the 600-line standard: its page-reading helpers and word lists moved verbatim to
+    `offer_reading.py` (every name re-exported through `__all__`).
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

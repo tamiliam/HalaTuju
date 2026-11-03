@@ -74,6 +74,12 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   letterhead skips a reference / date line; TVET letters get the incidental-company excuse (a letterhead "Sdn Bhd"
   still vetoes); spelt-out TVET is neutral only on the title line; glued "RUJ" not inside a word; street / ISO lines
   name no organisation.
+- **Fifth review — the safety rule at one exit** (`tests/test_offer_s6_review5.py`): every ruled result passes
+  `_safety_exit` — a TVET / confirmation page whose first institution is an allowed public body and that shows no
+  positive private evidence is never `not_offer_letter` (a missed rule reads suspect); own-unit lines (faculty,
+  division, campus …) and English public names are not other organisations; the unlabelled addressee block ends
+  the letterhead; private names beside "Ruj" / the date are read; glued layers split only when really labelled;
+  company excuses refuse the letterhead's own name and campus / technology words; `offer_reading.py` (split).
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 
