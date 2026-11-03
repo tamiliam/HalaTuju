@@ -333,3 +333,85 @@ class ThePermissionsTabKnowsTheTables(_Base):
         rev = make_admin('reviewer', owning_org=self.org)
         self.assertEqual(authed_client(self.officer).get(
             f'/api/v1/admin/admins/{rev.pk}/permissions/').status_code, 403)
+
+
+class ScholarDataNeedsTheReadKey(_Base):
+    """T3 review (CONFIRMED hole): the Mentors table's gate is a ROLE (admin), but scholar data elsewhere needs
+    the Scholars list's read key (`_b40_scope` 'all', i.e. `see_all`). An admin holding only money keys reads
+    the mentor's own row, never their scholars, standing, meetings per scholar or concerns."""
+
+    def setUp(self):
+        super().setUp()
+        a = self.assign(self.scholar('NUR AISYAH'))
+        self.meet(a, 5, concern=True)
+
+    def test_a_money_only_admin_sees_the_mentor_but_no_scholar(self):
+        for keys in (['payments_approve'], ['spending']):
+            money = make_admin('admin', owning_org=self.org, permissions=keys)
+            r = self.detail(money)
+            self.assertEqual(r.status_code, 200, keys)
+            body = r.json()
+            self.assertEqual((body['sees_scholars'], body['figures'], body['current'], body['past']),
+                             (False, None, [], []), keys)
+            self.assertIsNone(body['mentor']['concerns_open'])
+            self.assertNotIn('NUR AISYAH', json.dumps(body))
+            listed = authed_client(money).get(MENTORS).json()
+            self.assertFalse(listed['sees_scholars'])
+            self.assertEqual([m['concerns_open'] for m in listed['mentors']], [None])
+
+    def test_see_all_admin_org_admin_and_super_see_the_scholars(self):
+        for caller in (make_admin('admin', owning_org=self.org, permissions=['see_all']), self.officer,
+                       self.lead, make_admin('super', super_admin=True)):
+            body = self.detail(caller).json()
+            self.assertTrue(body['sees_scholars'])
+            self.assertEqual([s['name'] for s in body['current']], ['NUR AISYAH'])
+            self.assertEqual(body['figures']['concerns_open'], 1)
+            listed = authed_client(caller).get(MENTORS).json()
+            self.assertTrue(listed['sees_scholars'])
+            self.assertEqual(listed['mentors'][0]['concerns_open'], 1)
+
+
+class StopAndRemoveSerialise(_Base):
+    """T3 review: Stop mentoring and the Remove that makes a mentor login lock the SAME login row and judge
+    again under it, so the second sees the first's result — never a live mentor login whose mentor is
+    deactivated and who sits in no table."""
+
+    def staff_mentor(self):
+        return make_admin('admin', owning_org=self.org, first_seen_at=timezone.now(),
+                          mentor=Mentor.objects.create(organisation=self.org))
+
+    def test_remove_first_then_stop_is_refused_and_the_mentor_stays_live(self):
+        from apps.scholarship import staff_mentor
+        adm = self.staff_mentor()
+        stale = PartnerAdmin.objects.get(pk=adm.pk)        # the Stop's copy, read before the Remove
+        r = authed_client(self.lead).post('/api/v1/admin/team/admins/',
+                                          {'admin_id': adm.pk, 'action': 'remove'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(stale.role, 'admin')                # still says staff in memory
+        ended, refusal = staff_mentor.stop(self.lead, stale.mentor, stale)
+        self.assertEqual((ended, refusal), (0, 'not_staff'))   # re-judged on the locked row
+        login = PartnerAdmin.objects.get(pk=adm.pk)
+        self.assertEqual(login.role, 'mentor')
+        self.assertIsNone(Mentor.objects.get(pk=adm.mentor_id).deactivated_at)
+        self.assertEqual(st.tables(login), ('mentors',))
+        # …and over the wire: Stop on that row is refused; Deactivate is now theirs.
+        r = authed_client(self.lead).post(f'{MENTORS}{adm.mentor_id}/stop/', {}, format='json')
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'not_staff'))
+
+    def test_stop_first_then_remove_is_refused(self):
+        adm = self.staff_mentor()
+        r = authed_client(self.lead).post(f'{MENTORS}{adm.mentor_id}/stop/', {}, format='json')
+        self.assertEqual(r.status_code, 200)
+        r = authed_client(self.lead).post('/api/v1/admin/team/admins/',
+                                          {'admin_id': adm.pk, 'action': 'remove'}, format='json')
+        self.assertEqual(r.json()['code'], 'last_table')
+        self.assertEqual(PartnerAdmin.objects.get(pk=adm.pk).role, 'admin')
+
+    def test_stop_takes_the_login_row_lock(self):
+        from unittest import mock
+        from apps.scholarship import staff_mentor
+        adm = self.staff_mentor()
+        real = PartnerAdmin.objects.select_for_update
+        with mock.patch.object(PartnerAdmin.objects, 'select_for_update', side_effect=real) as locked:
+            staff_mentor.stop(self.lead, adm.mentor, adm)
+        self.assertTrue(locked.called)

@@ -316,3 +316,13 @@ describe('Team tables T3: one section per table (owner, 2026-11-03)', () => {
     expect(screen.queryByTestId('qc-brings-see-all')).toBeNull()
   })
 })
+
+describe('T3 review: no Reset for somebody sitting in no table', () => {
+  it('hides Reset when tables is empty, and shows it otherwise', async () => {
+    await open({ ...ROHINI, tables: [] })
+    expect(screen.queryByTestId('perm-reset')).toBeNull()
+    document.body.innerHTML = ''
+    await open(ROHINI)
+    expect(screen.getByTestId('perm-reset')).toBeTruthy()
+  })
+})

@@ -35,6 +35,10 @@ migration, no new stored field.
   switched on with it; the server rule is unchanged). A key held outside the sections shown is never dropped on
   save (tested). `GET admin/admins/<id>/permissions/` serves `tables` (read-only). The Team tables lost their
   permission chips and "Edit ... permissions" links (the name opens the person page); "Also in" stays.
+- **Review fixes:** the detail's scholars, figures and every Concerns open are served only to a caller with the
+  Scholars list's read key (`see_all`); a money-only admin sees the mentor's row and a plain line. Stop mentoring
+  locks the login row Team -> Remove locks, so the two serialise. No Reset for somebody in no table. TD-476 notes
+  the converted mentor login.
 - en / ms / ta strings; Guide (organisation admin: Your team, Changing what someone can do, Mentoring) and FAQ.
 
 ## Requests list R1 — tabs, filter, search, pager and Previous / Next (branch requests-list, not pushed)

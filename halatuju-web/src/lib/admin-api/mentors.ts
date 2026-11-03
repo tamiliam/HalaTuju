@@ -41,14 +41,17 @@ export interface MentorRow {
   meetings_90?: number
   /** The latest meeting's date (YYYY-MM-DD), or null. */
   last_meeting?: string | null
-  /** Concerns raised and not marked handled, on files still in maintenance. */
-  concerns_open?: number
+  /** Concerns raised and not marked handled, on files still in maintenance. Null for a caller without
+   *  the Scholars list's read key (`see_all`) — T3 review. */
+  concerns_open?: number | null
 }
 
 export interface MentorsPayload {
   mentors: MentorRow[]
   counts: Record<MentorStatus, number>
   can_invite: boolean
+  /** T3 review: may the caller see the scholar side (`see_all`)? False: no concerns, no detail scholars. */
+  sees_scholars?: boolean
 }
 
 export type MentorAction = 'resend' | 'revoke' | 'deactivate' | 'reactivate' | 'stop' | 'resume'
@@ -111,7 +114,9 @@ export interface MentorScholarRow {
 export interface MentorDetail {
   mentor: MentorRow
   mentoring_since: string | null
-  figures: {
+  /** T3 review: false for a caller without `see_all` — then `figures` is null and both lists are empty. */
+  sees_scholars: boolean
+  figures: null | {
     scholars_now: number
     meetings_90: number
     /** Whole days, per scholar (between each meeting and that scholar's previous one); null = '-'. */

@@ -236,8 +236,10 @@ export default function TeamMentors({ AlsoIn }: { AlsoIn: AlsoInChips }) {
                         <td className="px-4 py-3 whitespace-nowrap">
                           {m.last_meeting ? formatDate(m.last_meeting) : <span className="text-ground-400">-</span>}
                         </td>
+                        {/* T3 review: null for a caller without `see_all` (no scholar data) — a dash. */}
                         <td className={`px-4 py-3 tabular-nums ${m.concerns_open ? 'font-semibold text-caution-700' : ''}`}
-                          data-testid={`mentor-concerns-${m.id}`}>{m.concerns_open ?? 0}</td>
+                          data-testid={`mentor-concerns-${m.id}`}>
+                          {m.concerns_open === null ? <span className="text-ground-400">-</span> : (m.concerns_open ?? 0)}</td>
                         <td className="whitespace-nowrap px-4 py-3">
                           {m.manageable && (
                             <button type="button" disabled={busyId === m.id} data-testid={`mentor-action-${m.id}`}
@@ -358,13 +360,14 @@ export function MentorDetail({ id }: { id: number }) {
   const m = data.mentor
   const f = data.figures
   const langs = languagesLine(m)
+  const sees = data.sees_scholars !== false && f !== null
   const facts = [
     m.area || t(`${K}.notFilled`),
     ...(langs ? [langs] : []),
     ...(data.mentoring_since ? [t(`${K}.detail.since`, { date: formatDate(data.mentoring_since) })] : []),
     m.last_seen_at ? t(`${K}.detail.lastSeen`, { date: formatDate(m.last_seen_at) }) : t(`${K}.detail.lastSeenUnknown`),
   ]
-  const gap = f.average_gap_days === null ? '-'
+  const gap = !f || f.average_gap_days === null ? '-'
     : t(f.average_gap_days === 1 ? `${K}.detail.oneDay` : `${K}.detail.days`, { n: String(f.average_gap_days) })
 
   return (
@@ -384,6 +387,11 @@ export function MentorDetail({ id }: { id: number }) {
           )}
         </div>
       </div>
+      {/* T3 review: the scholar side needs the Scholars list's read key (`see_all`). */}
+      {!sees || !f ? (
+        <p className="rounded-lg border bg-ground-0 p-4 text-sm text-ground-700" data-testid="mentor-needs-see-all">
+          {t(`${K}.detail.needSeeAll`)}</p>
+      ) : (<>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile testId="tile-scholars" label={t(`${K}.detail.tile.scholarsNow`)} value={String(f.scholars_now)} />
         <Tile testId="tile-meetings" label={t(`${K}.detail.tile.meetings90`)} value={String(f.meetings_90)} />
@@ -405,6 +413,7 @@ export function MentorDetail({ id }: { id: number }) {
         </section>
       )}
       <p className="text-xs text-ground-500">{t(`${K}.detail.note`)}</p>
+      </>)}
     </div>
   )
 }

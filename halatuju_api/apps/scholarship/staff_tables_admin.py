@@ -334,6 +334,8 @@ def change(target_id, table, action, *, by, dry_run=False):
     from . import invitations, staff_permissions_admin as spa
     from .models import Invitation
     with transaction.atomic():
+        # ⚠ T3 review: this LOGIN-row lock is the one `staff_mentor.stop` takes too, so a Stop mentoring and
+        # a Remove that would make a mentor login serialise: whichever commits second re-reads the first's.
         target = PartnerAdmin.objects.select_for_update().filter(pk=target_id).first()
         # Review 2026-11-03: the caller's right is judged AGAIN on the LOCKED row — the view's check read
         # it before the lock, and a role or organisation change landing in between must not slip through.

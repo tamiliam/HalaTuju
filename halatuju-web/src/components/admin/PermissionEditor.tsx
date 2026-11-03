@@ -258,11 +258,13 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
           className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
           {t('admin.permEditor.save')}
         </button>
-        <button type="button" disabled={busy || sameSet(want, view.preset)}
+        {/* T3 review: no "back to the preset" for somebody not active or sitting in no table. */}
+        {view.is_active && !(tables && tables.length === 0) && (
+        <button type="button" disabled={busy || sameSet(want, view.preset)} data-testid="perm-reset"
           onClick={() => { setSaved(false); setWant(view.preset) }}
           className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
           {t('admin.permEditor.reset', { preset })}
-        </button>
+        </button>)}
       </div>
       <p className="mt-3 text-xs text-ground-500">{t('admin.permEditor.footnote')}</p>
     </section>

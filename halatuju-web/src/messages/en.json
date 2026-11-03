@@ -8616,7 +8616,8 @@
         "pastTitle": "Past scholars (mentoring ended)",
         "noneNow": "No scholars at the moment.",
         "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
-        "notFound": "This mentor was not found."
+        "notFound": "This mentor was not found.",
+        "needSeeAll": "You need the Admin permission “See all students” to see this mentor's scholars."
       }
     },
     "myStudents": {

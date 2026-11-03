@@ -170,6 +170,12 @@ describe('Team → Mentors', () => {
     expect(mockApi.getStaffMentorCandidates).not.toHaveBeenCalled()
   })
 
+  it('T3 review: a null Concerns open (no See all students) reads as a dash, not 0', async () => {
+    mockApi.getMentors.mockResolvedValue({ ...payload([{ ...ACTIVE, concerns_open: null }]), sees_scholars: false })
+    render(<TeamMentors />)
+    expect((await screen.findByTestId('mentor-concerns-1')).textContent).toBe('-')
+  })
+
   it('with nobody arrived yet, the empty state points at Invitations and Add Mentor', async () => {
     mockApi.getMentors.mockResolvedValue(payload([INVITED]))
     render(<TeamMentors />)
@@ -201,7 +207,7 @@ describe('the mentor detail page', () => {
     last_meeting: '2026-10-28', standing: 'performing', has_file: true, concern: 'open', ...over,
   })
   const DETAIL: api.MentorDetail = {
-    mentor: ACTIVE, mentoring_since: '2026-09-02T00:00:00Z',
+    mentor: ACTIVE, mentoring_since: '2026-09-02T00:00:00Z', sees_scholars: true,
     figures: { scholars_now: 2, meetings_90: 9, average_gap_days: 18, concerns_raised: 3, concerns_open: 1,
       last_meeting: '2026-10-28' },
     current: [scholar({}), scholar({ application_id: 105, name: 'Thivya', meetings: 0, last_meeting: null,
@@ -235,11 +241,22 @@ describe('the mentor detail page', () => {
 
   it("shows '-' for the gap when no scholar has had two meetings, and says when nobody is mentored now", async () => {
     mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, current: [], past: [],
-      figures: { ...DETAIL.figures, average_gap_days: null } })
+      figures: { ...DETAIL.figures!, average_gap_days: null } })
     render(<MentorDetail id={1} />)
     expect((await screen.findByTestId('tile-gap')).textContent).toContain('-')
     expect(screen.getByTestId('mentor-current-none')).toBeTruthy()
     expect(screen.queryByTestId('mentor-past')).toBeNull()
+  })
+
+  it('T3 review: without See all students, the mentor only — a plain line, no figures or scholars', async () => {
+    mockApi.getMentorDetail.mockResolvedValue({ ...DETAIL, sees_scholars: false, figures: null, current: [], past: [],
+      mentor: { ...ACTIVE, concerns_open: null } })
+    render(<MentorDetail id={1} />)
+    expect((await screen.findByTestId('mentor-needs-see-all')).textContent).toBe('admin.mentors.detail.needSeeAll')
+    expect(screen.getByText('Dr Kavitha Raman')).toBeTruthy()
+    expect(screen.queryByTestId('tile-scholars')).toBeNull()
+    expect(screen.queryByTestId('mentor-current')).toBeNull()
+    expect(screen.queryByTestId('mentor-current-none')).toBeNull()
   })
 
   it('a 404 says not found; anything else says it could not load', async () => {

@@ -1181,7 +1181,9 @@ open concern = unhandled on a file in maintenance); `views_admin/mentors.py` `me
 table while mentoring -> role `mentor` (`may_become_mentor`: admin / reviewer / qc, mentors now, signed in, no open
 case; plan `becomes_mentor`), else `mentors_only`. Owner scope addition: `GET admin/admins/<id>/permissions/` serves
 `tables`; `PermissionEditor` has one section per table (no `table` prop any more; `?table=` only picks the back tab);
-the Team tables lost the permission column (`KeyChips` unused there). Deploy: API first, then web.
+the Team tables lost the permission column (`KeyChips` unused there). Review fixes: scholar side only for
+`_b40_scope == 'all'` (`_MentorsBase.sees_scholars`; `sees_scholars` served); `staff_mentor.stop` locks the login
+row. Deploy: API first, then web.
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 LIVE 2026-11-03 (main 54f997a8; api-01241-9hv, web-01069-4vh; no migration)
 

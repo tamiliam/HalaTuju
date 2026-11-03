@@ -191,6 +191,13 @@ def mentor_kind_extras(caller, mentor_ids):
 class _MentorsBase(_AdminBase):
     """The fence every Mentors endpoint shares."""
 
+    def sees_scholars(self, admin):
+        """T3 review (2026-11-03): may ``admin`` see the SCHOLAR side of a mentor (who they mentor, the
+        standing, the meetings per scholar, the concerns)? The Scholars list's own read rule: `_b40_scope`
+        'all' (`see_all`; a super, the org admin, an admin preset). An admin holding only money keys reads
+        the Mentors table (its gate is the role) but never a scholar's data through it."""
+        return self._b40_scope(admin) == 'all'
+
     def _reader(self, request):
         from .. import mentor_invite
         admin = self.get_admin(request)
@@ -253,7 +260,11 @@ class AdminMentorsView(_MentorsBase):
         counts = {s: 0 for s in mentor_invite.STATUSES}
         for r in rows:
             counts[r['status']] += 1
-        return Response({'mentors': rows, 'counts': counts,
+        sees = self.sees_scholars(admin)
+        if not sees:
+            for r in rows:
+                r['concerns_open'] = None   # T3 review: scholar data needs the Scholars list's read key
+        return Response({'mentors': rows, 'counts': counts, 'sees_scholars': sees,
                          'can_invite': mentor_invite.may_invite(admin)})
 
 
@@ -280,9 +291,14 @@ class AdminMentorView(_MentorsBase):
         mentor = scope.filter(pk=pk, users__isnull=False).select_related('organisation').first()
         if mentor is None:
             return _error('not_found', status.HTTP_404_NOT_FOUND)
+        row = mentor_rows(admin, [mentor], team=True)[0]
+        if not self.sees_scholars(admin):
+            # T3 review: the mentor's own row only — no scholar, figure or concern (`sees_scholars`).
+            row['concerns_open'] = None
+            return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at),
+                             'sees_scholars': False, 'figures': None, 'current': [], 'past': []})
         figures, current, past = mentor_detail.scholars_of(mentor)
-        return Response({'mentor': mentor_rows(admin, [mentor], team=True)[0],
-                         'mentoring_since': _iso(mentor.created_at),
+        return Response({'mentor': row, 'mentoring_since': _iso(mentor.created_at), 'sees_scholars': True,
                          'figures': figures, 'current': current, 'past': past})
 
     def patch(self, request, pk):

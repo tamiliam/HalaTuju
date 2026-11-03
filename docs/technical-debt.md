@@ -7493,6 +7493,8 @@ editor, Team -> Remove from Reviewers, the old Admin -> Finance switch) refuses 
 whose decision is then reopened (`decision_reopened_at`), is named on a case they can no longer open. It existed
 before T2 (the editor had the same window). **Fix:** have the reopen refuse (or reassign) when the assigned person no
 longer holds `review`, or have the reopen screen ask for a new reviewer. *(B · S)*
+**Team tables T3 (2026-11-03) opens the same gap:** a staff mentor converted to a mentor login (leaving their last
+staff table with no open case) can later be named on a reopened decision they can no longer open.
 
 ### [TD-471] Mobile M6a: four everyday console pages have no sandbox surface, so mobile-check cannot measure them - low
 

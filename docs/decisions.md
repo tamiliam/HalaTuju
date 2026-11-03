@@ -30,6 +30,14 @@ Team tables carry no permission column.
    says it is the Admin permission; the saved set is always the whole served set changed only by the switches shown.
    No gate changed.
 
+**Review fixes (adversarial review, same day):** (1) SCHOLAR DATA NEEDS THE READ KEY: the Mentors table's gate
+is a role (an admin), so an admin holding only money keys reached the detail's scholars. The scholar side (current /
+past scholars, figures, every `concerns_open`) is served only when `_b40_scope(caller) == 'all'` (the Scholars
+list's rule); otherwise the mentor's own row, `sees_scholars: false`, and the page says "You need See all
+students". (2) Stop mentoring now locks the LOGIN row (`staff_mentor.stop`), the lock Team -> Remove takes, and
+re-judges under it: whichever lands second sees the first. (3) A reopened decision landing on a converted mentor
+login is TD-476's gap (noted there, not fixed). (4) No Reset on the Permissions tab for somebody in no table.
+
 **Alternatives considered:** keep the T2 refusal (the brief allowed it); count gaps across all the mentor's meetings
 (mixes scholars); a mentor-detail chunk of its own (a new runtime entry on every route — the table's chunk is reused).
 

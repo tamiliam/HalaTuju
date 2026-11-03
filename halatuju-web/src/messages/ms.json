@@ -8616,7 +8616,8 @@
         "pastTitle": "Penerima biasiswa lalu (bimbingan tamat)",
         "noneNow": "Tiada penerima biasiswa buat masa ini.",
         "note": "Kakitangan sahaja. Nota pertemuan kekal dalam fail setiap penerima biasiswa. Purata jarak mengira hari antara setiap pertemuan dengan pertemuan sebelumnya bagi penerima biasiswa yang sama.",
-        "notFound": "Mentor ini tidak ditemui."
+        "notFound": "Mentor ini tidak ditemui.",
+        "needSeeAll": "Anda memerlukan kebenaran Pentadbir “Lihat semua pelajar” untuk melihat penerima biasiswa mentor ini."
       }
     },
     "myStudents": {
