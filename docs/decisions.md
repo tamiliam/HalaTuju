@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## Offer letters S6: a pre-U letter on a degree application is a Pathway mismatch (yellow); public TVET offers score genuine; which confirmation letters count — 2026-11-03 (owner go on the S6 plan)
+
+**Context.** The offer exact-read S6 plan (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S6
+"Plan (2026-11-03)") measured today's genuineness against the owner's rulings of 2026-11-01 and the chip table of
+2026-11-02, and put two questions and one default to the owner.
+
+**Decisions (owner, "go, with your recommendations").**
+1. **A matriculation / STPM / Form-6 letter on a degree (tertiary) application reads Pathway `mismatch`** — under
+   the chip table that is a YELLOW Pathway chip and the Check 2 `pathway_confirm` query to the student; never red,
+   no band loss. The matcher's level check itself is TD-473 (Cockpit's), built in `pathway_match.py` after the S6
+   split; S6 only guarantees that `mismatch` is yellow + the query and never a red chip or a band step.
+2. **Public TVET offers (IKBN / IKTBN / ILKBS, IKM / KKTM / Kolej MARA / Kolej Profesional MARA, ILP / ADTEC /
+   JTM — the closed `offer_issuers.TVET_ISSUERS` list) score GENUINE** (Official green) when the institute is named
+   on the LETTERHEAD, the page carries offer wording, and there is no private / sponsor marker (the 2026-10-26 C1
+   rules 2-6 kept). The 1.8.0 "NOT CHECKED" outcome is replaced for these letters. Accepted cost: a well-typed fake
+   naming an institute reads green until a reviewer looks (too few letters per institute to fingerprint).
+3. **Default accepted — confirmation-of-studies letters** (ruling 4 of 2026-11-01): only UMS, the polytechnics and
+   Form-6 colleges count as "no private wing" — such a confirmation is an acceptable alternative to an offer
+   (genuine). Any other university's confirmation reads `suspect` (a person checks it is the government
+   programme). A confirmation letter never writes a course pick.
+
+**What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
+07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
+itself (rule 1). Name / IC `unreadable` is yellow, not red (supersedes S4's "a blank IC is red" pin). `MODEL_VERSION`
+1.23.0; `VERDICT_ENGINE_VERSION` bumped. Stored statuses move only when a letter is re-scored (S7).
+
+**Revisit if:** the bursary funds private colleges; a TVET institute's letters reach ≥3 per issuer (fingerprint
+them); or another university's confirmation letters are shown to carry no private-wing intake.
+
 ## Mobile M8: pills on a phone are `rounded-md` with less side padding, through ONE shared style, on the most-seen pills only — 2026-11-04 (owner option A)
 
 **Context:** on the owner's iPhone walkthrough the fully rounded pills (`rounded-full`) looked too round on a phone

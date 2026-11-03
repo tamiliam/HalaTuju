@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Offer exact-read S6 — the owner's genuineness rulings and the chip table (branch offer-read-s1, not pushed)
+
+Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (S6, "Plan (2026-11-03)"); owner go 2026-11-03
+with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). No migration. No paid call.
+
+- **Three moves-only splits first, each its own commit, suite identical after them (9,997 passed, 3 skipped):**
+  `pathway_engine.py` 633 → 467 (the matcher → new leaf `pathway_match.py`, six names re-exported; its
+  `oversize_files` line left the budget; the superseded-documents guard extended to the new file — TD-473 lands
+  there), `genuineness/results_doc.py` 600 → 482 (the five offer families + the 20 UA names → data-only
+  `offer_signatures.py`, re-exported), `officerCockpit.ts` 1657 → 1620 (the offer chips → leaf `offerFacts.ts`).
+- **Genuineness `MODEL_VERSION` 1.23.0** — `genuineness/offer_rulings.py`, applied by one call after the band:
+  a public TVET offer named on the letterhead with an offer body (a course line and a date / registration line)
+  → **genuine** at any band (Q2; a body-less suspect-band TVET page keeps 1.8.0's NOT CHECKED); a TVET offer slip
+  → suspect (ruling 6); a confirmation of studies from a polytechnic / UMS / a Form-6 college → genuine
+  (`doc_seen` `confirmation_*`), another university's → suspect (ruling 4 + default); a private college's
+  suspect-band offer → not_offer_letter (rulings 2 / 7, incl. KPTM / UniKL); a portal page / e-Daftar printout
+  → never below suspect (ruling 3; an application slip stays not_offer_letter); the private-arm veto's "Sdn Bhd"
+  arm skips a ministry family's own letter (`_private_arm_offer` itself unchanged). **Corpus (287, free):** the
+  14 ruled letters move, nothing else does — `eval/offer_genuineness_check.py` dev 197 / 197, held-out 90 / 90
+  (held-out run twice: once on the first rules, once after a dev-neutral tightening for the C1 typed-fake probe;
+  both 90 / 90). New PII-free `eval/offer_genuineness_expect.json`.
+- **Gates** (`VERDICT_ENGINE_VERSION` 2026-11-03.1): submission blocks ONLY on not_offer_letter
+  (`pathway_engine.offer_fails`, rule 1) — a suspect never blocks (rule 8); the ladder counts only Name / IC
+  **mismatch** as red (`_OFFER_CHIP_RED = {'mismatch'}`) and no longer counts the Pathway chip, so a suspect
+  reads Probable, a not_offer_letter Unsure (still `offer_not_official`, the award disqualifier). The Action
+  Centre still refuses a suspect upload as the answer to an official-offer request. A confirmation letter never
+  writes a pick (realign, link / fill, autofill: `pathway_engine.is_confirmation_letter`). The
+  `offer_official_status` docstring now says what suspect / not_offer_letter mean.
+- **Chips (cockpit, `offerFacts.ts`) — the owner's table:** Name / IC green match · yellow partial / unreadable ·
+  red mismatch; Pathway green (match, or `pathway_set_by_offer`: she declared nothing and a GENUINE offer set the
+  pick — a chip-only flag, `pathway` itself unchanged) · otherwise yellow, NEVER red; Official green genuine (new) ·
+  yellow suspect · red not_offer_letter; Reporting date (new) green read · yellow not printed. The student's
+  "differs from your choice" badge is amber, not red. `DocumentsDrawer.tsx` untouched.
+- **Student words (en / ms / ta):** a suspect offer — "This doesn't look like an offer letter. If you have your
+  offer letter, please upload it as well. Nothing is blocked…"; a not_offer_letter one — "This can't be accepted
+  as an offer letter from a public institution…" (no "Nothing is blocked": it blocks). Cockpit label
+  `fact.reportingDate` reuses the house words for the reporting date.
+- **Dry run:** `offer_s4_dry_run.py --s6` (`eval/offer_s6_dry_run.py`): the deploy pass (old rules vs new on
+  STORED data, every live application) and the re-score pass (the S7 preview), with GO / STOP rules.
+- Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
+  C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
+
+## Team tables T5a — permission catalogue v2 + aliases (not yet live)
+
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
@@ -311,7 +355,6 @@ No template's wording, switch or sending changed; nobody gains or loses an edito
   with no content).
 - The T1 access matrix declares the new cell (`T4_ADDED`, the sponsor-emails list's own cell per shape). Guide (Your
   team) and FAQ ("Which emails does my team receive?") updated; the mentor letter's home now reads Team -> Emails.
-
 ## Mobile M6b — the reviewer's case page on phones — LIVE 2026-11-03 (main bff52794, web-01072-xpr)
 
 Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,

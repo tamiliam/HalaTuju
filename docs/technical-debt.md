@@ -7723,3 +7723,12 @@ shipped R1's and T3's web). Neither sprint touched the apply page. The pattern m
 waits for one thing and asserts on another, exposed by the slower gate machine). **Fix:** read which assertion failed
 from the build log, find the async read it depends on, wait for THAT, and prove it by delaying the mock (as was done for
 `ScholarshipDocuments.test.tsx`). *(T · S)*
+### [TD-481] A scanned multi-page offer is genuineness-scored on page 1 only - medium
+
+**Raised 2026-11-03 by the offer exact-read S6 measurement.** Production scores an offer's genuineness on the OCR
+text it holds: a digital PDF's whole text layer, but for a photo or a SCANNED PDF only the Vision read of page 1
+(`vision._pdf_first_page_png`). One corpus letter (held-out) is a real public-university offer behind an e-Daftar
+registration slip on page 1: page 1 scores 0.07 (not_offer_letter), all pages 0.70 (genuine). S6 makes such a
+printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the offer page too — one Vision call per
+extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
+corpus first (owner's yes: a paid path). *(B · M)*

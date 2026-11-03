@@ -627,7 +627,13 @@ fixed-format letters only, so its lock number is small; dev must carry the evide
 other layouts (a 2027 template) — conservative None remains the default. (f) Labelling 71 letters costs
 ~2-3 h of agent time and ~20 min of the owner's.
 
-### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional)
+### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional) — BUILT 2026-11-03 on offer-read-s1 (not pushed)
+- **Built (owner go 2026-11-03, Q1 / Q2 / the confirmation default — decisions.md):** three moves-only splits
+  (`pathway_match.py`, `offer_signatures.py`, `offerFacts.ts`); `offer_rulings.py` + `MODEL_VERSION` 1.23.0 —
+  `offer_genuineness_check.py` dev 197 / 197, held-out 90 / 90; the gate blocks only not_offer_letter; the ladder
+  counts only Name / IC mismatch (`VERDICT_ENGINE_VERSION` 2026-11-03.1); chips to the owner's table; student
+  notes en / ms / ta; confirmation letters never write a pick; `offer_s4_dry_run.py --s6` for the lead (GO /
+  STOP). TD-481 (page-1-only scoring). See CHANGELOG. Stored statuses move only at S7's re-score.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
