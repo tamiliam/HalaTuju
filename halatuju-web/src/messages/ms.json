@@ -4013,7 +4013,8 @@
         "not_in_maintenance": "Sub-status hanya untuk pelajar dalam peringkat penyelenggaraan.",
         "bad_substate": "Sub-status tidak dikenali.",
         "generic": "Tidak dapat mengemas kini pembayaran. Anda mungkin tiada kebenaran."
-      }
+      },
+      "useComputer": "Menjadualkan ansuran dan mengubah bayaran dilakukan di komputer. Di telefon, lejar ini baca sahaja."
     },
     "maintenance": {
       "title": "Status penyelenggaraan",
@@ -4959,7 +4960,9 @@
         "viewer": {
           "newTab": "Buka dalam tab baharu",
           "close": "Tutup",
-          "noPreview": "Pratonton tidak tersedia untuk format fail ini (HEIC). Buka fail asal untuk melihatnya."
+          "noPreview": "Pratonton tidak tersedia untuk format fail ini (HEIC). Buka fail asal untuk melihatnya.",
+          "pdfPhone": "PDF dibuka dalam pemapar telefon anda sendiri: setiap halaman, dan anda boleh zum.",
+          "openPdf": "Buka PDF"
         },
         "pill": {
           "verified": "Disahkan",
@@ -5115,7 +5118,12 @@
       },
       "filters": "Penapis",
       "sortLabel": "Isih",
-      "sortNewest": "Terbaru dahulu"
+      "sortNewest": "Terbaru dahulu",
+      "decisionBar": {
+        "ready": "Sedia untuk disimpan",
+        "notReady": "Belum sedia untuk disimpan",
+        "go": "Pergi ke keputusan"
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",

@@ -72,7 +72,7 @@ export function OutstandingPanel({
       {showsCheck2Box({
         status: app.status, decisionReopened, hasItems: (app.resolution_items?.length ?? 0) > 0,
       }) && (
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-4">
+      <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.outstanding.title')}</h2>
@@ -130,7 +130,7 @@ export function OutstandingPanel({
                         }
                       }
                       return (
-                        <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
+                        <li key={item.id} className="flex items-start gap-2.5 py-3 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:bg-ground-50 md:p-3">
                           {answered ? (
                             <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
@@ -172,7 +172,7 @@ export function OutstandingPanel({
                             )}
                             {answered && item.resolution_text && (
                               <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700">
+                                <p className="text-xs md:text-[11px] font-semibold uppercase tracking-wide text-primary-700">
                                   {t('admin.scholarship.caveats.studentAnswer')}
                                 </p>
                                 <p className="mt-0.5 text-sm text-ground-800 break-words">{item.resolution_text}</p>
@@ -188,7 +188,7 @@ export function OutstandingPanel({
                               <button
                                 onClick={() => doActionResolution(item.id, 'waive')}
                                 disabled={!!busy}
-                                className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50"
+                                className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center"
                               >
                                 {t('admin.scholarship.caveats.delete')}
                               </button>
@@ -217,7 +217,7 @@ export function OutstandingPanel({
                 placeholder={t('admin.scholarship.raiseQueryPlaceholder')}
                 className="w-full border rounded-lg px-3 py-2 text-sm" />
               <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
-                className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {busy === 'raise' ? t('common.loading') : t('admin.scholarship.raiseQuerySend')}
               </button>
             </div>
@@ -228,7 +228,7 @@ export function OutstandingPanel({
                 return (
               <div className="flex flex-wrap items-center gap-2">
                 <select value={reqCategory} onChange={(e) => onReqCategory(e.target.value)}
-                  className="border rounded-lg px-2 py-1.5 text-sm">
+                  className="border rounded-lg px-2 py-1.5 text-sm max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   <option value="">{t('admin.scholarship.requestDocAny')}</option>
                   {REQUEST_CATEGORIES.map((c) => (
                     <option key={c.key} value={c.key}>{t(`admin.scholarship.requestCat.${c.key}`)}</option>
@@ -237,7 +237,7 @@ export function OutstandingPanel({
                 {/* Context-aware qualifier: "Whose?" (person) or "Which?" (sub-type). Required. */}
                 {cat?.qualifier === 'whose' && (
                   <select value={reqQualifier} onChange={(e) => onReqQualifier(e.target.value)}
-                    className="border rounded-lg px-2 py-1.5 text-sm">
+                    className="border rounded-lg px-2 py-1.5 text-sm max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     <option value="">{t('admin.scholarship.requestDocWhose')}</option>
                     {cat.members!.map((m) => (
                       <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
@@ -246,7 +246,7 @@ export function OutstandingPanel({
                 )}
                 {cat?.qualifier === 'which' && (
                   <select value={reqQualifier} onChange={(e) => onReqQualifier(e.target.value)}
-                    className="border rounded-lg px-2 py-1.5 text-sm">
+                    className="border rounded-lg px-2 py-1.5 text-sm max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     <option value="">{t('admin.scholarship.requestDocWhich')}</option>
                     {cat.options!.map((o) => (
                       <option key={o.value} value={o.value}>{t(`admin.scholarship.requestWhich.${o.value}`)}</option>
@@ -265,7 +265,7 @@ export function OutstandingPanel({
                       generic "Other" still needs a note describing exactly what's wanted. */}
                   <button onClick={doRequestDoc}
                     disabled={!!busy || !reqResolved || (reqResolved.docType === 'other' && !reqDocNote.trim())}
-                    className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
+                    className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
                   </button>
                 </>

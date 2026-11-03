@@ -201,8 +201,8 @@ export function QcOverrideNote({ app, t }: { app: AdminScholarshipDetail; t: (k:
 
 export function Card({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm ${className}`}>
-      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{title}</h2>
+    <div className={`border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm ${className}`}>
+      <h2 className="mb-2.5 text-xs md:text-[11px] font-semibold uppercase tracking-wider text-ground-400">{title}</h2>
       {children}
     </div>
   )
@@ -243,7 +243,7 @@ export function Grades({ grades, trailing, marks }: {
 export function DiffMarker({ label }: { label: string }) {
   return (
     <span title={label} aria-label={label} role="img"
-      className="ml-1 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-caution-100 align-middle text-[10px] font-bold leading-none text-caution-700">
+      className="ml-1 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-caution-100 align-middle text-xs md:text-[10px] font-bold leading-none text-caution-700">
       ≠
     </span>
   )

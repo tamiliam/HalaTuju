@@ -21,7 +21,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
   return (<>
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
+      <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.verdict.title')}</h2>
@@ -75,11 +75,11 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                   )}
                 </div>
                 {/* The estimative-probability band (Kent scale) the colour stands for. */}
-                <p className={`text-[10px] font-semibold uppercase tracking-wide ${labelColour}`}>
+                <p className={`text-xs md:text-[10px] font-semibold uppercase tracking-wide ${labelColour}`}>
                   {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tone]}`)}
                 </p>
                 {!isGreen && (
-                  <p className="text-[11px] text-ground-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
+                  <p className="text-xs md:text-[11px] text-ground-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
                 )}
               </div>
             )
@@ -90,7 +90,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
         </div>
         {/* Legend — the confidence scale the tile colours encode (green→red). */}
         {(app.verdict || []).length > 0 && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ground-400">
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-[10px] text-ground-400">
             {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
               <span key={tn} className="flex items-center gap-1">
                 <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-brand-shape',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
@@ -145,7 +145,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
               if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-ground-600">
-                  <span className="font-medium text-ground-500 uppercase text-[10px] tracking-wide">
+                  <span className="font-medium text-ground-500 uppercase text-xs md:text-[10px] tracking-wide">
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                   {/* Findings first (the active reasoning — e.g. the STR verdict leads the

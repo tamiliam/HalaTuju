@@ -39,7 +39,7 @@ export function BlockersPanel({ app, t, busy, isSuper, role, nudgeMsg, doNudge }
         const codes = app.consent_blockers || []
         const step = stuckStep(codes)
         return (
-          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
             <h2 className="text-base font-semibold tracking-tight text-ground-900">
               {t('admin.scholarship.blockers.title')}
             </h2>
@@ -90,7 +90,7 @@ export function BlockersPanel({ app, t, busy, isSuper, role, nudgeMsg, doNudge }
                 <div className="space-y-2 border-t border-ground-100 pt-3">
                   <button type="button" onClick={doNudge} disabled={!nb.enabled || !!busy}
                     className="w-full rounded-lg border border-info-300 px-3 py-2 text-sm font-medium
-                               text-primary-700 hover:bg-primary-50 disabled:opacity-50 disabled:hover:bg-transparent">
+                               text-primary-700 hover:bg-primary-50 disabled:opacity-50 disabled:hover:bg-transparent max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {busy === 'nudge'
                       ? t('admin.scholarship.blockers.nudge.sending')
                       : t(`admin.scholarship.blockers.nudge.${nb.label}`)}

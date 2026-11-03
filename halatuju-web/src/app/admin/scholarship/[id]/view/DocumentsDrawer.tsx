@@ -34,7 +34,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
   return (<>
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
+      <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
         <div className="mb-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
           <p className="text-xs text-ground-400">{t('admin.scholarship.docsDrawer.subtitle')}</p>
@@ -96,7 +96,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
           const factClass = (s: FactStatus) =>
             s === 'verified' ? 'text-positive-700' : s === 'partial' ? 'text-caution-700'
               : s === 'not' ? 'text-critical-600' : 'text-ground-400'
-          const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
+          const subLabel = 'text-xs md:text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
           // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
           // also surfaces the SPM exam YEAR, an offer letter its intake (course-start) YEAR — coloured
           // by currency vs the cohort (green = current, amber = off), so the officer sees at a glance
@@ -153,7 +153,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
           const docRow = (d: AdminApplicantDocument, unusable = '') => {
             const p = documentPill(d)
             return (
-              <li key={d.id} className="flex items-start gap-2 rounded-lg border border-ground-100 p-2.5 hover:bg-ground-50">
+              <li key={d.id} className="flex items-start gap-2 py-2.5 md:rounded-lg md:border md:border-ground-100 md:p-2.5 md:hover:bg-ground-50">
                 <span className={`shrink-0 mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-sm ${iconBadge(p)}`} aria-hidden>
                   {docIconFor(d.doc_type)}
                 </span>
@@ -162,11 +162,11 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                     {d.download_url ? (
                       <button type="button" onClick={() => openViewer(d)}
                         title={t('admin.scholarship.docsDrawer.view')}
-                        className="text-left text-sm font-medium text-ground-800 hover:text-primary-600 hover:underline truncate max-w-[200px]">
+                        className="text-left text-sm font-medium text-ground-800 hover:text-primary-600 hover:underline truncate max-w-[200px] max-md:max-w-full max-md:whitespace-normal max-md:break-words max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                         {docLabel(d)} <span aria-hidden className="text-[10px] text-ground-400">↗</span>
                       </button>
                     ) : (
-                      <span className="text-sm font-medium text-ground-800 truncate max-w-[200px]">
+                      <span className="text-sm font-medium text-ground-800 truncate max-w-[200px] max-md:max-w-full max-md:whitespace-normal max-md:break-words">
                         {docLabel(d)}
                       </span>
                     )}
@@ -207,19 +207,19 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                     })()}
                   </div>
                   {d.original_filename && (
-                    <p className="text-[11px] text-ground-400 truncate max-w-[230px]" title={d.original_filename}>
+                    <p className="text-xs md:text-[11px] text-ground-400 truncate max-w-[230px] max-md:max-w-full max-md:whitespace-normal max-md:break-all" title={d.original_filename}>
                       ({trunc(d.original_filename, 30)})
                     </p>
                   )}
                   {factLine(d)}
                   {/* TD-157: a Singapore payslip is counted in ringgit — say at what, and at which rate. */}
                   {d.sgd_conversion && (
-                    <p className="mt-0.5 text-[11px] text-ground-600" data-testid="sgd-conversion">
+                    <p className="mt-0.5 text-xs md:text-[11px] text-ground-600" data-testid="sgd-conversion">
                       {t('admin.scholarship.docsDrawer.sgdConverted', d.sgd_conversion)}
                     </p>
                   )}
                   {unusable && (
-                    <p className="text-[11px] font-medium text-critical-600 mt-0.5">
+                    <p className="text-xs md:text-[11px] font-medium text-critical-600 mt-0.5">
                       {t('admin.scholarship.docsDrawer.notUsable.label')}
                       {' — '}
                       {t(`admin.scholarship.docsDrawer.notUsable.reason.${unusable}`)}
@@ -230,7 +230,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                   {(() => {
                     const vals = utilityBillValues(d)
                     return vals.length > 0 ? (
-                      <p className="text-[11px] text-ground-500 mt-0.5">
+                      <p className="text-xs md:text-[11px] text-ground-500 mt-0.5">
                         {vals.map((v, i) => (
                           <span key={v.labelKey}>
                             {i > 0 && <span className="text-ground-300"> · </span>}
@@ -247,7 +247,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                   {(() => {
                     const vals = schoolLeavingValues(d)
                     return vals.length > 0 ? (
-                      <p className="text-[11px] text-ground-500 mt-0.5">
+                      <p className="text-xs md:text-[11px] text-ground-500 mt-0.5">
                         {vals.map((v, i) => (
                           <span key={v.labelKey}>
                             {i > 0 && <span className="text-ground-300"> · </span>}
@@ -264,23 +264,23 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                       at all. Orange used to hold them apart; sharing `caution` would have
                       flattened the distinction an officer most needs to see. */}
                   {d.utility_check?.name_note === 'unrelated' && (
-                    <p className="text-[11px] text-critical-600 mt-0.5">
+                    <p className="text-xs md:text-[11px] text-critical-600 mt-0.5">
                       {t('admin.scholarship.docsDrawer.utilityNote.unrelated', { name: d.utility_check.name })}
                     </p>
                   )}
                   {(d.utility_check?.reasonable_detail === 'water_only'
                     || d.utility_check?.reasonable_detail === 'electricity_only') && (
-                    <p className="text-[11px] text-ground-400 mt-0.5">
+                    <p className="text-xs md:text-[11px] text-ground-400 mt-0.5">
                       {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
                     </p>
                   )}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && !d.academic_check?.higher_kind && (
-                    <p className="text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                    <p className="text-xs md:text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
                   <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
-                    className="text-[11px] text-ground-500 hover:text-ground-700 hover:underline disabled:opacity-50">
+                    className="text-xs md:text-[11px] text-ground-500 hover:text-ground-700 hover:underline disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                     {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
                   </button>
                 </div>
@@ -289,13 +289,13 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
           }
           const placeholderRow = (s: IncomeSlot) => (
             <li key={`ph-${s.docType}-${s.member}`}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-ground-200 p-2.5">
+              className="flex items-center gap-2 py-2.5 md:rounded-lg md:border md:border-dashed md:border-ground-200 md:p-2.5">
               <span className="shrink-0 text-ground-300 text-base" aria-hidden>
                 {s.docType === 'parent_ic' ? '🪪' : '📄'}
               </span>
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-ground-500">{slotLabel(s.docType, s.member)}</span>
-                <span className="text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
+                <span className="text-xs md:text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
               </div>
               <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
                 {t('admin.scholarship.docsDrawer.pill.missing')}
@@ -303,9 +303,11 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
             </li>
           )
           return (
-            // Fixed-height, scrollable: a long document list (11+) no longer pushes the
-            // rest of the cockpit down — the header stays put and the groups scroll.
-            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-1">
+            // Fixed-height, scrollable FROM md: a long document list (11+) no longer pushes the
+            // rest of the cockpit down — the header stays put and the groups scroll. ⚠ NOT on a phone
+            // (Mobile M6b): a scroll box inside a scrolling page traps the thumb, so there the list runs
+            // in the page.
+            <div className="space-y-4 md:max-h-[28rem] md:overflow-y-auto md:pr-1" data-docs-list>
               {sectionKeys.map((key) => {
                 const docs = groups[key]
                 if (key === 'income') {
@@ -313,12 +315,12 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                   // shown only on the STR route with an STR doc; SALARY + UTILITY always (when
                   // they have content). A missing compulsory slot renders a "Missing" placeholder.
                   const sub = incomeSubSections(app, docs)
-                  const subHead = 'text-[9px] font-semibold uppercase tracking-wider text-ground-300 mb-1 mt-2'
+                  const subHead = 'text-xs md:text-[9px] font-semibold uppercase tracking-wider text-ground-300 mb-1 mt-2'
                   const subSection = (headKey: string, slots: IncomeSlot[]) => (
                     slots.length === 0 ? null : (
                       <div key={headKey}>
                         <p className={subHead}>{t(`admin.scholarship.docsDrawer.group.${headKey}`)}</p>
-                        <ul className="space-y-1.5">
+                        <ul className="max-md:divide-y max-md:divide-ground-100 md:space-y-1.5">
                           {slots.map((s) => (s.doc ? docRow(s.doc, s.unusable) : placeholderRow(s)))}
                         </ul>
                       </div>
@@ -341,17 +343,17 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
                 return (
                   <div key={key}>
                     <p className={subLabel}>{t(`admin.scholarship.docsDrawer.group.${key}`)}</p>
-                    <ul className="space-y-1.5">
+                    <ul className="max-md:divide-y max-md:divide-ground-100 md:space-y-1.5">
                       {higherMissing !== null && (
                         <li key="ph-higher" data-testid="higher-missing"
-                          className="flex items-center gap-2 rounded-lg border border-dashed border-ground-200 p-2.5">
+                          className="flex items-center gap-2 py-2.5 md:rounded-lg md:border md:border-dashed md:border-ground-200 md:p-2.5">
                           <span className="shrink-0 text-ground-300 text-base" aria-hidden>📄</span>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-ground-500">
                               {higherMissing ? t(`admin.scholarship.docsDrawer.higherKind.${higherMissing}`)
                                 : t('admin.scholarship.docsDrawer.type.higher_results')}
                             </span>
-                            <span className="text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
+                            <span className="text-xs md:text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
                           </div>
                           <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
                             {t('admin.scholarship.docsDrawer.pill.missing')}
@@ -368,7 +370,7 @@ export function DocumentsDrawer({ app, t, busy, setViewerDoc, doReRunVision }: {
               {groups.superseded.length > 0 && (
                 <div key="superseded" className="pt-2 mt-2 border-t border-ground-100">
                   <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.superseded')}</p>
-                  <ul className="space-y-1.5 opacity-60">{groups.superseded.map((d) => docRow(d))}</ul>
+                  <ul className="max-md:divide-y max-md:divide-ground-100 md:space-y-1.5 opacity-60">{groups.superseded.map((d) => docRow(d))}</ul>
                 </div>
               )}
               {app.documents.length === 0 && (

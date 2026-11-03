@@ -41,23 +41,26 @@ export function CockpitHeader({
   return (<>
 
       {/* Header — applicant identity, status, and key facts at a glance */}
-      <header className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
-        <div className="flex items-center justify-between">
+      <header className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
+        {/* Mobile M6b (owner-approved mock-up): on a phone Back is its own 44 px line and Previous / Next
+            are two 44 px buttons sharing the width; from md the one compact row it always was. The links
+            and their targets are unchanged. */}
+        <div className="flex items-center justify-between max-md:flex-col max-md:items-stretch max-md:gap-1">
           {/* ⚠ NO `?programme=` HERE, on purpose (TD-296). Applications is the all-gifts list — a
               reviewer's only door — and naming this applicant's gift would narrow it on the way
               back: the F2 defect by another road. A bare link returns the person's OWN choice. */}
-          <Link href="/admin/scholarship" className="text-xs text-ground-400 hover:text-ground-600">‹ {t('admin.scholarship.back')}</Link>
+          <Link href="/admin/scholarship" className="text-xs text-ground-400 hover:text-ground-600 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:self-start max-md:text-sm max-md:text-ground-600">‹ {t('admin.scholarship.back')}</Link>
           {(prevId != null || nextId != null) && (
-            <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center gap-1 text-xs max-md:gap-2 max-md:text-sm" data-testid="cockpit-prev-next">
               {prevId != null ? (
-                <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100">‹ {t('admin.scholarship.prev')}</Link>
+                <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-300 max-md:bg-ground-0">‹ {t('admin.scholarship.prev')}</Link>
               ) : (
-                <span className="rounded px-2 py-1 text-ground-300">‹ {t('admin.scholarship.prev')}</span>
+                <span className="rounded px-2 py-1 text-ground-300 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-200">‹ {t('admin.scholarship.prev')}</span>
               )}
               {nextId != null ? (
-                <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100">{t('admin.scholarship.next')} ›</Link>
+                <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-300 max-md:bg-ground-0">{t('admin.scholarship.next')} ›</Link>
               ) : (
-                <span className="rounded px-2 py-1 text-ground-300">{t('admin.scholarship.next')} ›</span>
+                <span className="rounded px-2 py-1 text-ground-300 max-md:min-h-11 max-md:flex-1 max-md:inline-flex max-md:items-center max-md:justify-center max-md:rounded-lg max-md:border max-md:border-ground-200">{t('admin.scholarship.next')} ›</span>
               )}
             </div>
           )}
@@ -78,7 +81,7 @@ export function CockpitHeader({
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing'].includes(app.status) && (
             <button
               onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
-              className="ml-auto rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink shadow-sm hover:bg-brand-fill-hover"
+              className="ml-auto rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink shadow-sm hover:bg-brand-fill-hover max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center"
             >
               {t('admin.scholarship.recordVerdict.title')}
             </button>
@@ -152,7 +155,7 @@ export function CockpitHeader({
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50">
+            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
             {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
           </button>
         </div>
@@ -165,7 +168,7 @@ export function CockpitHeader({
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doHoldAward} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50">
+            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
             {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.holdAward')}
           </button>
         </div>

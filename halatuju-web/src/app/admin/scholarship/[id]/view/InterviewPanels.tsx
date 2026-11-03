@@ -32,7 +32,7 @@ export function RefereesPanel({
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
       {SHOW_REFEREES && (
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
+      <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm">
         <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
         <p className="text-xs text-ground-400 mb-2">{t('admin.scholarship.refHint')}</p>
         <ul className="text-sm text-ground-600 space-y-1">
@@ -43,7 +43,7 @@ export function RefereesPanel({
                 {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
               </span>
               <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-critical-600 hover:underline text-xs shrink-0 disabled:opacity-50">
+                className="text-critical-600 hover:underline text-xs shrink-0 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {t('admin.scholarship.refRemove')}
               </button>
             </li>
@@ -64,7 +64,7 @@ export function RefereesPanel({
             placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
         </div>
         <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
+          className="mt-2 px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
       </div>
@@ -108,7 +108,7 @@ export function InterviewStage({
       {showsInterviewStage({
         status: app.status, decisionReopened, hasInterviewSession: !!app.interview_session,
       }) && (
-      <div id="interview-section" className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+      <div id="interview-section" className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.interview.title')}</h2>
@@ -119,13 +119,13 @@ export function InterviewStage({
                    (reopens this box AND Check 2; Approve/Decline switch off until re-submitted).
                    Post-decision, the Decision panel's Reopen is used instead. */
                 <button onClick={doReopenInterview} disabled={!!busy}
-                  className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100 disabled:opacity-50">
+                  className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'ivreopen' ? t('common.loading') : t('admin.scholarship.interview.reopen')}
                 </button>
               ))
             : (canWrite && (
                 <button onClick={doSuggestGaps} disabled={!!busy}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-brand-fill text-brand-fill-ink disabled:opacity-50">
+                  className="px-2.5 py-1 rounded-lg text-xs bg-brand-fill text-brand-fill-ink disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'gaps' ? t('admin.scholarship.gaps.running')
                     : (app.interview_gaps?.length ?? 0) > 0 ? t('admin.scholarship.gaps.more')
                     : t('admin.scholarship.gaps.button')}
@@ -138,14 +138,14 @@ export function InterviewStage({
             buckets the record leaves unanswered; this is the human checklist behind them. */}
         {canWrite && !interviewLocked && (
           <details className="rounded-lg border border-ground-100 bg-ground-50/60 p-3">
-            <summary className="cursor-pointer text-xs font-medium text-ground-600">
+            <summary className="cursor-pointer text-xs font-medium text-ground-600 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
               {t('admin.scholarship.interviewGuide.title')}
             </summary>
             <div className="mt-2 space-y-2">
               {(['academic', 'financial', 'pathway'] as const).map((b) => (
                 <div key={b}>
                   <p className="text-xs font-semibold text-ground-700">{t(`admin.scholarship.interviewGuide.${b}.title`)}</p>
-                  <ul className="ml-4 list-disc text-[11px] text-ground-500">
+                  <ul className="ml-4 list-disc text-xs md:text-[11px] text-ground-500">
                     {[0, 1, 2].map((i) => {
                       const key = `admin.scholarship.interviewGuide.${b}.q${i}`
                       const txt = t(key)
@@ -154,7 +154,7 @@ export function InterviewStage({
                   </ul>
                 </div>
               ))}
-              <p className="text-[11px] text-ground-400">{t('admin.scholarship.interviewGuide.note')}</p>
+              <p className="text-xs md:text-[11px] text-ground-400">{t('admin.scholarship.interviewGuide.note')}</p>
             </div>
           </details>
         )}
@@ -178,7 +178,7 @@ export function InterviewStage({
                 {answered.map((it) => {
                   const f = findings[it.code]
                   return (
-                    <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
+                    <div key={it.code} className="flex items-start gap-2.5 py-3 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:bg-ground-50 md:p-3">
                       <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                       </svg>
@@ -209,13 +209,13 @@ export function InterviewStage({
                     been on the payload and was rendered nowhere, so an interview credited to the
                     wrong person looked exactly like one credited to the right person. */}
                 {app.interview_session?.interviewer_name && (
-                  <p className="text-[11px] text-ground-400">
+                  <p className="text-xs md:text-[11px] text-ground-400">
                     {t('admin.scholarship.interview.interviewedBy')}{' '}
                     {app.interview_session.interviewer_name}
                   </p>
                 )}
                 {app.interview_session?.submitted_at && (
-                  <p className="text-[11px] text-ground-400">
+                  <p className="text-xs md:text-[11px] text-ground-400">
                     {t('admin.scholarship.interview.submittedOn')} {formatDate(app.interview_session.submitted_at)}
                   </p>
                 )}
@@ -235,20 +235,20 @@ export function InterviewStage({
                     setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
                   const resolved = f.verdict === 'resolved'
                   return (
-                    <li key={it.code} className="border rounded-lg p-3">
+                    <li key={it.code} className="py-3 max-md:border-b max-md:border-ground-100 md:border md:rounded-lg md:p-3">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm text-ground-800 min-w-0">
+                        <p className="text-sm text-ground-800 min-w-0 break-words">
                           {it.ai && <span className="mr-1 rounded bg-brand-fill px-1.5 py-0.5 text-[10px] font-semibold text-brand-fill-ink align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                           {it.label}
                         </p>
                         {canWrite && (
                           <div className="flex shrink-0 gap-1.5">
                             <button onClick={() => doDeleteAgendaItem(it.code)} disabled={!!busy}
-                              className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50">
+                              className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                               {t('admin.scholarship.caveats.delete')}
                             </button>
                             <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
-                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
+                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                               {t('admin.scholarship.interview.verdict.resolved')}
                             </button>
                           </div>
@@ -272,11 +272,11 @@ export function InterviewStage({
             {canWrite && (
               <div className="flex items-center gap-2">
                 <button onClick={doSaveInterview} disabled={!!busy}
-                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
                 </button>
                 <button onClick={doSubmitInterview} disabled={!!busy}
-                  className="px-4 py-2 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
+                  className="px-4 py-2 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
                 {interviewMsg && <span className="text-sm font-medium text-positive-700">{interviewMsg}</span>}

@@ -75,7 +75,7 @@ export function GuardianCallRecord({ appId, phone, t, onDone }: {
 
   if (!open) {
     return (
-      <button type="button" onClick={begin} className="ml-2 text-xs font-medium text-primary-600 hover:underline">
+      <button type="button" onClick={begin} className="ml-2 text-xs font-medium text-primary-600 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
         {t('admin.scholarship.call.record')}
       </button>
     )
@@ -108,10 +108,10 @@ export function GuardianCallRecord({ appId, phone, t, onDone }: {
       <textarea aria-label={t('common.note')} placeholder={t('common.note')} value={note} onChange={e => setNote(e.target.value)} maxLength={2000} rows={2} className={field} />
       {error && <p role="alert" className="text-xs text-critical-600">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={() => setOpen(false)} className="rounded-md border border-ground-300 px-3 py-1.5 text-xs font-medium text-ground-700">
+        <button type="button" onClick={() => setOpen(false)} className="rounded-md border border-ground-300 px-3 py-1.5 text-xs font-medium text-ground-700 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
           {t('common.cancel')}
         </button>
-        <button type="button" onClick={save} disabled={busy || !ready} className="rounded-md bg-brand-fill px-3 py-1.5 text-xs font-medium text-brand-fill-ink disabled:opacity-50">
+        <button type="button" onClick={save} disabled={busy || !ready} className="rounded-md bg-brand-fill px-3 py-1.5 text-xs font-medium text-brand-fill-ink disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
           {busy ? '...' : t('common.save')}
         </button>
       </div>

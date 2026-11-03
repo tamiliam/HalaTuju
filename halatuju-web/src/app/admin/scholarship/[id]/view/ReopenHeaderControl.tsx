@@ -27,7 +27,7 @@ export function ReopenHeaderControl({
   if (offer === 'cancelPendingDecline') {
     return (
       <button onClick={onCancelDecline} disabled={busy === 'cooloff'}
-        className="rounded-lg border border-caution-300 px-2.5 py-1 text-xs text-caution-800 hover:bg-caution-100 disabled:opacity-50">
+        className="rounded-lg border border-caution-300 px-2.5 py-1 text-xs text-caution-800 hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
         {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
       </button>
     )
@@ -35,7 +35,7 @@ export function ReopenHeaderControl({
   if (offer !== 'reopen' || hidden) return null
   return (
     <button onClick={onReopen}
-      className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100">
+      className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
       {t('admin.scholarship.recordVerdict.reopen')}
     </button>
   )

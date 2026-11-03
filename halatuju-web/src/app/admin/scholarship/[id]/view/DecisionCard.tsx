@@ -68,7 +68,7 @@ export function DecisionCard({
           justification box invited writing one. WITH a verdict it stays: that is the frozen
           decision trail (21 rejected records on 2026-08-18), which must not disappear. */}
       {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-4">
+      <div id="decision-section" className="scroll-mt-16 border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.decision.title')}</h2>
           {/* Reopen = REVERSE a recorded decision (super-only; asks for a reason first). A pending
@@ -82,17 +82,17 @@ export function DecisionCard({
         {decisionLocked && isSuper && reopenOpen && (
           <div className="rounded-lg border border-caution-200 bg-caution-50 p-3 space-y-2">
             <p className="text-xs font-medium text-caution-900">{t('admin.scholarship.recordVerdict.reopenTitle')}</p>
-            <p className="text-[11px] text-caution-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
+            <p className="text-xs md:text-[11px] text-caution-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
             <textarea value={reopenReason} rows={2} onChange={(e) => setReopenReason(e.target.value)}
               placeholder={t('admin.scholarship.recordVerdict.reopenPlaceholder')}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="flex items-center gap-2">
               <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
-                className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
               </button>
               <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
-                className="px-3 py-1.5 border rounded-lg text-sm text-ground-600 disabled:opacity-50">
+                className="px-3 py-1.5 border rounded-lg text-sm text-ground-600 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {t('common.cancel')}
               </button>
             </div>
@@ -111,7 +111,7 @@ export function DecisionCard({
             )}
             {isSuper && (
               <button onClick={doCancelReopen} disabled={!!busy}
-                className="px-3 py-1.5 border border-caution-400 text-caution-900 rounded-lg text-xs hover:bg-caution-100 disabled:opacity-50">
+                className="px-3 py-1.5 border border-caution-400 text-caution-900 rounded-lg text-xs hover:bg-caution-100 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.cancelReopen')}
               </button>
             )}
@@ -200,7 +200,7 @@ export function DecisionCard({
             )}
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
               </button>
             )}
@@ -240,7 +240,7 @@ export function DecisionCard({
             <QcOverrideNote app={app} t={t} />
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
               </button>
             )}
@@ -256,7 +256,7 @@ export function DecisionCard({
                   tell whether her decision was recorded — and the only clue she ever had was a
                   message that vanished with the page. */}
               {stuckAfterVerdict && (
-                <p className="rounded-lg bg-caution-50 px-3 py-2 text-[11px] text-caution-800">
+                <p className="rounded-lg bg-caution-50 px-3 py-2 text-xs md:text-[11px] text-caution-800">
                   {t(recordedOutcome === 'decline'
                        ? 'admin.scholarship.recordVerdict.savedNotSubmittedDecline'
                        : 'admin.scholarship.recordVerdict.savedNotSubmitted',
@@ -269,32 +269,32 @@ export function DecisionCard({
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
                       ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
-                      : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'}`}>
+                      : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
                 <button onClick={selectDecline} disabled={!!busy || !decisionReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
                       ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
-                      : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'}`}>
+                      : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-[11px] text-caution-700">{interviewSubmitted && interviewMissing.length > 0
+                <p className="text-xs md:text-[11px] text-caution-700">{interviewSubmitted && interviewMissing.length > 0
                   ? t('admin.scholarship.recordVerdict.findingsIncomplete', { count: String(interviewMissing.length) })
                   : t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
               ) : !officerVerdict.overall ? (
-                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
+                <p className="text-xs md:text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
-                <p className="text-[11px] text-caution-700">{t(app.award_disqualifier
+                <p className="text-xs md:text-[11px] text-caution-700">{t(app.award_disqualifier
                   ? 'admin.scholarship.recordVerdict.approveNeedsReview'
                   : 'admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               ) : null}
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
-                className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50">
+                className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {/* ⚠ THE LABEL FOLLOWS THE CHOSEN OUTCOME (owner, BrightPath #24). One fixed
                     "Save & generate final profile" promised a profile on a DECLINE, which
                     generates none and should not — the reviewer was told the opposite of what

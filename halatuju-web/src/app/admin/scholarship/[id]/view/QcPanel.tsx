@@ -59,7 +59,7 @@ export function QcPanel({
         const isDeclineVerdict = app.officer_verdict?.overall === 'decline'
         const floorBlocked = qcGapFacts.length > 0 && !isDeclineVerdict
         return (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.qcDecision.title')}</h2>
           <p className="text-xs text-ground-600">{t(isDeclineVerdict ? 'admin.scholarship.qcDecision.hintDecline' : 'admin.scholarship.qcDecision.hint')}</p>
           {floorBlocked && (
@@ -81,12 +81,12 @@ export function QcPanel({
                    could only pick one tone for it and chose `positive`, which rendered correctly
                    only because both tones resolve their ink to the same value today. A decline
                    button carrying positive ink is a trap for whoever next tunes one tone. */
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-fill bg-critical-fill text-critical-fill-ink hover:bg-critical-fill-hover' : 'border-positive-fill bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover'}`}>
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-fill bg-critical-fill text-critical-fill-ink hover:bg-critical-fill-hover' : 'border-positive-fill bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                 {busy === 'qc' ? t('common.loading')
                   : t(isDeclineVerdict ? 'admin.scholarship.qcDecision.confirmDecline' : 'admin.scholarship.qcDecision.accept')}
               </button>
               <button onClick={() => { setQcReopenOpen(true); setQcComments('') }} disabled={!!busy}
-                className="rounded-lg border border-caution-600 bg-ground-0 px-4 py-2.5 text-sm font-medium text-caution-700 hover:bg-caution-50 disabled:opacity-50">
+                className="rounded-lg border border-caution-600 bg-ground-0 px-4 py-2.5 text-sm font-medium text-caution-700 hover:bg-caution-50 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {t(isDeclineVerdict ? 'admin.scholarship.qcDecision.reopenOnly' : 'admin.scholarship.qcDecision.reopen')}
               </button>
             </div>
@@ -99,11 +99,11 @@ export function QcPanel({
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
-                  className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
+                  className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
                 </button>
                 <button onClick={() => { setQcOverrideOpen(false); setQcOverrideReason('') }}
-                  className="text-xs text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
+                  className="text-xs text-ground-500 hover:text-ground-700 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">{t('common.cancel')}</button>
               </div>
             </div>
           ) : (
@@ -129,12 +129,12 @@ export function QcPanel({
               )}
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'}`}>
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'} max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}
                 </button>
                 <button onClick={() => { setQcReopenOpen(false); setQcComments(''); setQcRejectMode(false) }}
-                  className="text-xs text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
+                  className="text-xs text-ground-500 hover:text-ground-700 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">{t('common.cancel')}</button>
               </div>
             </div>
           )}

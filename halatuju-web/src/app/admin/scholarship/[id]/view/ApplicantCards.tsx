@@ -114,7 +114,7 @@ export function ApplicantCards({
         const courseLink = (cid: string | undefined, name: string) => {
           const href = courseHref(cid)
           return href
-            ? <a href={href} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">{name}</a>
+            ? <a href={href} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">{name}</a>
             : name
         }
         // Course start: the offer letter's report/registration date — surfaced in the Academic card
@@ -181,7 +181,7 @@ export function ApplicantCards({
                       Verified email only: shown once the student verifies it, else the verified
                       Google login email. */}
                   <Field label={t('admin.scholarship.email')} value={app.verified_email
-                    ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline">{app.verified_email}</a>
+                    ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">{app.verified_email}</a>
                     : null} />
                   <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} verifiedLabel={vtip('address')} /></div>
                 </dl>

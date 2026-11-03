@@ -44,7 +44,7 @@ export function OrgRejectPanel({
             and the status must match services.ORG_REJECT_FROM. Rendering it anywhere else just
             produces a button that 403s or 400s. ─── */}
       {canOrgReject({ isSuper, role: role?.role, status: app.status }) && (
-        <div className="rounded-2xl border border-critical-200 bg-ground-0 p-5 shadow-sm space-y-3">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-critical-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.title')}
           </h2>
@@ -54,7 +54,7 @@ export function OrgRejectPanel({
               <p className="text-xs text-ground-500">{t('admin.scholarship.orgReject.hint')}</p>
               <button type="button" onClick={() => setRejectStep('form')} disabled={!!busy}
                 className="w-full rounded-lg border border-critical-300 px-3 py-2 text-sm font-medium
-                           text-critical-700 hover:bg-critical-50 disabled:opacity-50">
+                           text-critical-700 hover:bg-critical-50 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {t('admin.scholarship.orgReject.start')}
               </button>
             </>
@@ -74,14 +74,14 @@ export function OrgRejectPanel({
               <p className="text-xs text-ground-500">{t('admin.scholarship.orgReject.whyHint')}</p>
               <div className="flex gap-2">
                 <button type="button" onClick={closeReject}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50">
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t('admin.scholarship.orgReject.cancel')}
                 </button>
                 {/* Mandatory reason enforced here AND at the endpoint (400 comments_required). */}
                 <button type="button" onClick={() => setRejectStep('confirm')}
                   disabled={!rejectComments.trim()}
                   className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
-                             hover:bg-critical-700 disabled:opacity-40">
+                             hover:bg-critical-700 disabled:opacity-40 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t('admin.scholarship.orgReject.submit')}
                 </button>
               </div>
@@ -100,12 +100,12 @@ export function OrgRejectPanel({
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setRejectStep('form')} disabled={!!busy}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50">
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t('admin.scholarship.orgReject.back')}
                 </button>
                 <button type="button" onClick={doOrgReject} disabled={!!busy}
                   className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
-                             hover:bg-critical-700 disabled:opacity-50">
+                             hover:bg-critical-700 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {busy === 'orgReject' ? t('admin.scholarship.orgReject.running')
                     : t('admin.scholarship.orgReject.confirmYes')}
                 </button>
@@ -120,7 +120,7 @@ export function OrgRejectPanel({
       {/* The record of an org-admin reject, once made. The reason lives ONLY here (it is never
           emailed), so this is the whole audit surface for an irreversible action. */}
       {app.status === 'rejected' && app.rejection_category === 'incomplete' && app.rejection_comments && (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.recordTitle')}
           </h2>

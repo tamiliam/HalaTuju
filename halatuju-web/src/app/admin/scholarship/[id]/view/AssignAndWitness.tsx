@@ -51,7 +51,7 @@ export function AssignAndWitness({
         const assignLocked = decisionLocked
         const assigned = !!app.assigned_to_id
         return (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
           </h2>
@@ -61,7 +61,7 @@ export function AssignAndWitness({
             title={assignLocked ? t('admin.scholarship.assign.lockedHint')
               : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder"
+            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center"
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
             {/* Assignable options. The backend already returns the org-fenced, review-capable set
@@ -115,7 +115,7 @@ export function AssignAndWitness({
             Restyled from the old wide card: the column is narrow, so the select + button stack
             full-width instead of sitting side by side, and the chrome matches its siblings. ─── */}
       {witnessCardVisible && (
-        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.sources.witness.title')}
           </h2>
@@ -131,7 +131,7 @@ export function AssignAndWitness({
               <p className="text-xs text-ground-500">{t('admin.sources.witness.assignedNext')}</p>
               <button type="button"
                 onClick={() => { setWitnessEditing(true); setWitnessMsg('') }}
-                className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline">
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {t('admin.sources.witness.change')}
               </button>
             </>
@@ -143,14 +143,14 @@ export function AssignAndWitness({
                   : t('admin.sources.witness.help')}
               </p>
               <select
-                className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm focus:border-info-500 focus:ring-2 focus:ring-info-500"
+                className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm focus:border-info-500 focus:ring-2 focus:ring-info-500 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center"
                 value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
                 <option value="">{t('admin.sources.witness.none')}</option>
                 {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
               </select>
               <button type="button" onClick={doAssignWitness}
                 disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
-                className="w-full rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+                className="w-full rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                 {witnessBusy
                   ? t('admin.sources.witness.assigning')
                   : app.witness_org ? t('admin.sources.witness.update') : t('admin.sources.witness.assign')}
@@ -159,7 +159,7 @@ export function AssignAndWitness({
                 <button type="button"
                   onClick={() => { setWitnessEditing(false); setWitnessSel(app.witness_org?.code || ''); setWitnessMsg('') }}
                   disabled={witnessBusy}
-                  className="w-full rounded-lg border border-ground-300 px-4 py-2 text-sm text-ground-600 hover:bg-ground-50 disabled:opacity-50">
+                  className="w-full rounded-lg border border-ground-300 px-4 py-2 text-sm text-ground-600 hover:bg-ground-50 disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
                   {t('common.cancel')}
                 </button>
               )}

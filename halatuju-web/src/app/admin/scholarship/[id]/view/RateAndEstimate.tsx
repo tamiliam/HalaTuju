@@ -48,12 +48,12 @@ export function RateAndEstimate({
       {/* Hidden at shortlisted (pre-submission): its rating can only be saved with the verdict.
           Hidden on a CLOSED case with no verdict, for the same reason at the other end. */}
       {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
-      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+      <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
         <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
         <div className="space-y-2">
           {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
             decisionLocked ? (
-              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
+              <div key={fact} className="flex items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                   officerVerdict[fact] === 'pass' ? 'bg-positive-100 text-positive-700'
@@ -63,7 +63,7 @@ export function RateAndEstimate({
                 </span>
               </div>
             ) : (
-              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
+              <div key={fact} className="flex items-center justify-between gap-2 py-2.5 max-md:border-b max-md:border-ground-100 md:rounded-lg md:border md:border-ground-100 md:p-2.5">
                 <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <div className="flex gap-1.5">
                   <button
@@ -73,7 +73,7 @@ export function RateAndEstimate({
                       officerVerdict[fact] === 'pass'
                         ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-positive-400'
-                    } disabled:opacity-50`}
+                    } disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}
                   >
                     {t('admin.scholarship.recordVerdict.factPass')}
                   </button>
@@ -84,7 +84,7 @@ export function RateAndEstimate({
                       officerVerdict[fact] === 'fail'
                         ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-critical-400'
-                    } disabled:opacity-50`}
+                    } disabled:opacity-50 max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center`}
                   >
                     {t('admin.scholarship.recordVerdict.factFail')}
                   </button>
@@ -98,7 +98,7 @@ export function RateAndEstimate({
           const sugg = aiSuggestionFor(app.verdict || [])
           const facts = ['identity', 'academic', 'pathway', 'income'] as const
           return (
-            <p className="text-[11px] text-ground-400">
+            <p className="text-xs md:text-[11px] text-ground-400">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
               {facts.map((f, i) => (
                 <span key={f}>
@@ -129,7 +129,7 @@ export function RateAndEstimate({
         if (!showsPostSubmissionCards(app.status)) return null
         if (!fe && !showBursary) return null
         return (
-          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
             <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
             {fe ? (fe.known ? (
               <>
@@ -188,7 +188,7 @@ export function RateAndEstimate({
         letterHasDate: (app.documents || []).some(
           (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date),
       }) && (
-        <div className="rounded-2xl border border-caution-200 bg-ground-0 p-5 shadow-sm space-y-2">
+        <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-caution-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-2">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.reportingDateEntry.title')}
           </h2>
@@ -204,7 +204,7 @@ export function RateAndEstimate({
           <button type="button" onClick={doSetReportingDate}
             disabled={!!busy || !reportingDateInput}
             className="w-full rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink
-                       hover:bg-brand-fill-hover disabled:opacity-50">
+                       hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:justify-center">
             {busy === 'reportingDate' ? t('common.loading') : t('admin.scholarship.reportingDateEntry.save')}
           </button>
           {app.reporting_date && (

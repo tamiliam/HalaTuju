@@ -4013,7 +4013,8 @@
         "not_in_maintenance": "Sub-states apply only to a student in maintenance.",
         "bad_substate": "Unknown sub-state.",
         "generic": "Could not update the disbursement. You may not have permission."
-      }
+      },
+      "useComputer": "Scheduling a tranche and changing a payment are done on a computer. On a phone this ledger is read-only."
     },
     "maintenance": {
       "title": "Maintenance status",
@@ -4959,7 +4960,9 @@
         "viewer": {
           "newTab": "Open in new tab",
           "close": "Close",
-          "noPreview": "Preview isn't available for this file format (HEIC). Open the original to view it."
+          "noPreview": "Preview isn't available for this file format (HEIC). Open the original to view it.",
+          "pdfPhone": "A PDF opens in your phone's own viewer: every page, and you can zoom.",
+          "openPdf": "Open the PDF"
         },
         "pill": {
           "verified": "Verified",
@@ -5115,7 +5118,12 @@
       },
       "filters": "Filters",
       "sortLabel": "Sort",
-      "sortNewest": "Newest first"
+      "sortNewest": "Newest first",
+      "decisionBar": {
+        "ready": "Ready to save",
+        "notReady": "Not ready to save yet",
+        "go": "Go to the decision"
+      }
     },
     "students": "Students",
     "invite": "Invite",
