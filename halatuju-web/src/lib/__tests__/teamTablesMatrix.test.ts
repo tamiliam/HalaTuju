@@ -170,7 +170,18 @@ function t3Moves(cells: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...cells }
   for (const m of MENUS) out[m] = (cells[m] as string[]).filter((id) => !id.startsWith('mentors:'))
   out['open /admin/organisation/mentors'] = cells['open /admin/organisation/reviewers']
+  for (const m of MENUS) out[m] = programmeSettingsLast(out[m] as string[])
   return out
+}
+
+/** Owner 2026-11-03 (small change): the gift's Configuration row became "Programme Settings", the LAST row of the
+ *  Programme group (after Contract templates). The same rows, one moved; nobody gains or loses a row. */
+function programmeSettingsLast(ids: string[]): string[] {
+  const row = ids.find((id) => id.startsWith('programmeConfig'))
+  if (!row) return ids
+  const rest = ids.filter((id) => id !== row)
+  const after = rest.findIndex((id) => id.startsWith('contracts'))
+  return after < 0 ? ids : [...rest.slice(0, after + 1), row, ...rest.slice(after + 1)]
 }
 
 describe('Team tables T3: the Mentors tab keeps the old Mentors page\'s readers', () => {

@@ -398,8 +398,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
-      // ⚠ PROGRAMME SETTINGS (owner, 2026-11-03): renamed from "Configuration" so it is not read as
-      // organisation configuration (it holds THIS gift's rules), and moved to the LAST row of the group.
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },
