@@ -1686,6 +1686,276 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:m7-announcements @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-announcements @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-announcements @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-announcements @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-announcements @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-announcements @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-org-settings @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-payment-run @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-request @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-requests @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholar-file @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-scholars @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-sponsor-terms @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:m7-student @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:officer-cockpit @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -2019,12 +2289,12 @@
     "sandbox:programme-config @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config @360 ta": {
       "overflow": 0,
@@ -2034,7 +2304,7 @@
     "sandbox:programme-config @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config @390 ms": {
       "overflow": 0,
@@ -2049,12 +2319,12 @@
     "sandbox:programme-config-lean @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @360 ta": {
       "overflow": 0,
@@ -2064,7 +2334,7 @@
     "sandbox:programme-config-lean @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 4
+      "smallTargets": 3
     },
     "sandbox:programme-config-lean @390 ms": {
       "overflow": 0,
@@ -2079,12 +2349,12 @@
     "sandbox:programme-config-two-gifts @360 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:programme-config-two-gifts @360 ms": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:programme-config-two-gifts @360 ta": {
       "overflow": 0,
@@ -2094,7 +2364,7 @@
     "sandbox:programme-config-two-gifts @390 en": {
       "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 3
+      "smallTargets": 2
     },
     "sandbox:programme-config-two-gifts @390 ms": {
       "overflow": 0,

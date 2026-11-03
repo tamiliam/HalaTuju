@@ -7,8 +7,8 @@
 Baseline last updated **2026-11-03** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
-**101 routes:** 66 Must · 29 Can · 6 Desktop-only.
-**42 measured** (public page or sandbox surface), **39 fully green.**
+**102 routes:** 66 Must · 30 Can · 6 Desktop-only.
+**51 measured** (public page or sandbox surface), **48 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -36,40 +36,41 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/my-students` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/my-students/[id]` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/organisation` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/organisation/mentors` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/mentors` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
 | `/admin/organisation/programmes` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
 | `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisation/reviewers/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisation/reviewers/admins/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisation/settings` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/reviewers/mentors/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/settings` | Can | M7 | 6 (sandbox `m7-org-settings`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/staff` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisations` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/partners` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/payments` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/payments/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/payments/[id]` | Can | M7 | 6 (sandbox `m7-payment-run`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/profile` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
-| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 4 | ❌ |  |
-| `/admin/programme/announcements` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 3 | ❌ |  |
+| `/admin/programme/announcements` | Can | M7 | 6 (sandbox `m7-announcements`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/overview` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/programme/surveys` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/surveys/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/programme/years` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/programme` |
-| `/admin/requests` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/requests/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/scholars` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/scholars/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/requests` | Can | M7 | 6 (sandbox `m7-requests`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/requests/[id]` | Can | M7 | 6 (sandbox `m7-request`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholars` | Can | M7 | 6 (sandbox `m7-scholars`) | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholars/[id]` | Can | M7 | 6 (sandbox `m7-scholar-file`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/set-password` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/sources` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/spending` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/sponsors` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/sponsors` | Can | M7 | 6 (sandbox `m7-sponsor-terms`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/sponsors/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/sponsors/terms/[id]` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | authoring a sponsor’s terms document — long-form editing, not a phone task |
 | `/admin/students` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/students/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/students/[id]` | Can | M7 | 6 (sandbox `m7-student`) | 0 | 0 | 0 | ✅ |  |
 | `/auth/callback` | Must | M2 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M2) |  |
 | `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
 | `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
