@@ -26,6 +26,7 @@ import AdminRequestsPage from './page'
 import * as api from '@/lib/admin-api'
 
 jest.mock('@/lib/admin-api')
+jest.mock('next/navigation', () => jest.requireActual('@/test/giftUrl').navigationMock)
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k, locale: 'en' }) }))
 /** The signed-in role, mutable between mounts — the AppShell.test.tsx pattern. Only an
  *  `org_admin` gets the submit form, and only the submit form gets a paste listener. */
@@ -58,7 +59,10 @@ afterAll(() => {
 beforeEach(() => {
   jest.clearAllMocks()
   mockRole = { role: 'org_admin', is_super_admin: false }
-  mockApi.getOrgRequests.mockResolvedValue({ requests: [] })
+  mockApi.getOrgRequests.mockResolvedValue({
+    count: 0, total_pages: 1, page: 1, page_size: 25, requests: [], ids: [],
+    summary: { action: 0, progress: 0, closed: 0, all: 0 },
+  })
 })
 
 /** The form has arrived, and so has the drop zone the paste stages into. */

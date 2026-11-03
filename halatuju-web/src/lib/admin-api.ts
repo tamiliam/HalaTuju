@@ -199,6 +199,7 @@ export {
 } from './admin-api/requests'
 export type {
   OrgRequestComment, OrgRequestAttachment, OrgRequestAnalysis, OrgRequestDetail,
+  OrgRequestGroup, OrgRequestTag, OrgRequestListRow, OrgRequestListPage,
 } from './admin-api/requests'
 
 // The tenant usage screen, the platform cost ledger and the rate card.

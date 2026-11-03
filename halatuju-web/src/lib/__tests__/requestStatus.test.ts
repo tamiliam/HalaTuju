@@ -64,9 +64,16 @@ describe('requestStatus vocabulary', () => {
     const screens: Array<[string, string]> = [
       ['admin/requests/page.tsx', readWeb('src/app/admin/requests/page.tsx', WHY)],
       ['admin/requests/[id]/page.tsx', readWeb('src/app/admin/requests/[id]/page.tsx', WHY)],
+      // Requests list R1: the list and its Previous / Next moved into components (TD-272: a
+      // guard that reads a moved file follows it).
+      ['components/admin/RequestsList.tsx', readWeb('src/components/admin/RequestsList.tsx', WHY)],
+      ['components/admin/RequestListNav.tsx',
+        readWeb('src/components/admin/RequestListNav.tsx', WHY)],
     ]
     const BANNED = /STATUS_LABELS|STATUS_TONE|statusBadge/
     expect(screens.filter(([, src]) => BANNED.test(src)).map(([n]) => n)).toEqual([])
+    // The positive half: the list still draws its status pill FROM the shared vocabulary.
+    expect(screens[2][1]).toMatch(/statusTone\(r\.status\)/)
   })
 })
 

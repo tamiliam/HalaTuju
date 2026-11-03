@@ -1,29 +1,24 @@
 'use client'
 
 import '@/lib/messagesScholarship'   // TD-416: this page's scholarship.* words (their own slice)
-import { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
+import RequestsList from '@/components/admin/RequestsList'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { useOrgScope } from '@/lib/orgScope'
-import {
-  getOrgRequests, createOrgRequest, uploadOrgRequestAttachment, type OrgRequestDetail,
-} from '@/lib/admin-api'
+import { createOrgRequest, uploadOrgRequestAttachment } from '@/lib/admin-api'
 import { formatFileSize } from '@/lib/scholarship'
 import {
-  REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
-  effectiveKind, filedKindDiffers,
-  REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey, requestActionsFor,
-  listAnalysisTag, listAnalysisTagKey,
+  kindLabelKey, REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
 import { imagesFrom } from '@/lib/screenshotInput'
 
 // The Requests-space landing: a rate-card panel (bugs free · the adjudication rule · features
-// quoted in hours with the owner's approval), a submit form (org_admin), and the org's request
-// list. Ships dark behind REQUESTS_ENABLED — a 404 from the API means the feature is off; the
-// Administration hub card is hidden by the same probe, so a stray visit lands gracefully.
+// quoted in hours with the owner's approval), a submit form (org_admin), and the request list
+// (`RequestsList` — tabs, filter, search and pager since Requests list R1). Ships dark behind
+// REQUESTS_ENABLED — a 404 from the API means the feature is off; the Administration hub card is
+// hidden by the same probe, so a stray visit lands gracefully.
 
 const errText = (t: (k: string) => string, code?: string) => {
   const known = ['bug_is_free', 'bad_hours', 'reason_required', 'triage_ai_unconfigured',
@@ -41,10 +36,8 @@ export default function AdminRequestsPage() {
   const isSuper = effectiveRole(role) === 'super'
   const isOrgAdmin = role?.role === 'org_admin'
 
-  const [requests, setRequests] = useState<OrgRequestDetail[]>([])
-  const [statusF, setStatusF] = useState('')
-  const [loading, setLoading] = useState(true)
   const [dark, setDark] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [error, setError] = useState('')
   // TD-228: the organisation crumb narrows this list (a super's; the server re-fences `?org=`).
   const { selected: org } = useOrgScope()
@@ -64,22 +57,6 @@ export default function AdminRequestsPage() {
   // Staged screenshots (up to 5) — uploaded AFTER the request is created (the chain needs its id).
   const [files, setFiles] = useState<File[]>([])
   const [warn, setWarn] = useState('')
-
-  const load = useCallback(() => {
-    if (!token) return
-    setLoading(true)
-    getOrgRequests({ status: statusF || undefined, org: org || undefined }, { token })
-      .then((d) => { setRequests(d.requests); setDark(false) })
-      .catch((e) => {
-        // A 404 = the feature is dark (REQUESTS_ENABLED off) — show the coming-soon shell.
-        if ((e as { status?: number })?.status === 404 || /404/.test(String(e))) setDark(true)
-        else setError(t('admin.requests.error.generic'))
-      })
-      .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, statusF, org])
-
-  useEffect(() => { load() }, [load])
 
   const MAX_ATTACHMENTS = 5
   const stageFiles = (list: FileList | null) => {
@@ -157,7 +134,7 @@ export default function AdminRequestsPage() {
       setTitle(''); setDescription(''); setKind('bug')
       setComponent(''); setSubComponent(''); setUrgency(''); setSteps(''); setFiles([])
       if (attachFailed) setWarn(t('admin.requests.attachments.createdButFailed'))
-      load()
+      setReloadKey((k) => k + 1)
     } catch (err) {
       setError(errText(t, (err as { code?: string })?.code))
     } finally {
@@ -318,69 +295,8 @@ export default function AdminRequestsPage() {
         </form>
       )}
 
-      {/* Filter + list */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select value={statusF} onChange={(e) => setStatusF(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm">
-          <option value="">{t('admin.requests.list.filterAll')}</option>
-          {REQUEST_STATUSES.map((s) => <option key={s} value={s}>{t(statusLabelKey(s))}</option>)}
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
-      ) : requests.length === 0 ? (
-        <div className="text-center text-ground-500 mt-8">{t('admin.requests.list.empty')}</div>
-      ) : (
-        <div className="space-y-2">
-          {requests.map((r) => {
-            // The badge is a call to action, so it must use the same window as the answer box
-            // itself — derived from requestActionsFor, not re-stated here. An unanswered question
-            // on an accepted request is history, and badging the list for ever is noise.
-            const needsAnswer = isOrgAdmin && requestActionsFor(
-              'org_admin', r.status, r.triaged_kind || '',
-              hasUnansweredQuestions(r.comments),
-            ).includes('answer')
-            // Owner-only: the org payload carries no analyses, so this is null for them.
-            const analysisTag = listAnalysisTag(r.status, r.analyses)
-            return (
-              <Link key={r.id} href={`/admin/requests/${r.id}`}
-                className="block bg-ground-0 rounded-xl border hover:border-info-300 hover:bg-info-50/40 transition-colors p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-ground-900 truncate">{r.title}</span>
-                      {/* The ADJUDICATED kind — what the organisation is charged on. See
-                          `effectiveKind`. */}
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(effectiveKind(r)))}</span>
-                      {filedKindDiffers(r) && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700">
-                          {t('admin.requests.kind.filedAs', { kind: t(kindLabelKey(r.kind)) })}
-                        </span>
-                      )}
-                      {needsAnswer && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-100 text-caution-700">{t('admin.requests.list.answerNeeded')}</span>
-                      )}
-                      {analysisTag && (
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${analysisTag === 'analysed' ? 'bg-positive-100 text-positive-800' : 'bg-caution-100 text-caution-700'}`}>
-                          {t(listAnalysisTagKey(analysisTag))}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-ground-500 mt-1">
-                      {isSuper && r.organisation_name ? `${r.organisation_name} · ` : ''}
-                      {t('admin.requests.list.submittedBy', { name: r.submitted_by_name })} · {formatDate(r.created_at)}
-                    </div>
-                  </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(r.status)}`}>
-                    {t(statusLabelKey(r.status))}
-                  </span>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      )}
+      <RequestsList token={token} org={org} isSuper={isSuper} reloadKey={reloadKey}
+        onDark={() => setDark(true)} />
     </div>
   )
 }

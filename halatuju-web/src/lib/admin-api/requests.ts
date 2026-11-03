@@ -146,13 +146,60 @@ export interface OrgRequestDetail {
   declined_by_role?: string
 }
 
+/** The list's four tabs (Requests list R1). They PARTITION the list — each request is in exactly
+ *  one of action / progress / closed — and `all` is their sum. The server decides membership. */
+export type OrgRequestGroup = 'action' | 'progress' | 'closed' | 'all'
+
+/** A tag the server put on a row. Names, not prose: the list maps each to an i18n key. */
+export type OrgRequestTag = 'answer_needed' | 'analysis_draft' | 'analysed'
+
+/**
+ * One LIST row — what the list draws, and nothing else (no description, thread, screenshots or
+ * analyses; the detail page reads those). `kind` is the FINAL classification. `filed_kind` and
+ * `organisation_name` are on the OWNER's rows only; `filed_kind` is '' unless triage changed it.
+ */
+export interface OrgRequestListRow {
+  id: number
+  title: string
+  kind: string
+  status: string
+  submitted_by_name: string
+  created_at: string
+  tags: OrgRequestTag[]
+  filed_kind?: string
+  organisation_name?: string
+}
+
+/** A page of the list, in the shared pagination envelope. `summary` is the four tab counts of the
+ *  WHOLE list (never the kind or search filter); `count` is the filtered total; `ids` is the page
+ *  in order, for the detail page's Previous / Next. */
+export interface OrgRequestListPage {
+  count: number
+  total_pages: number
+  page: number
+  page_size: number
+  requests: OrgRequestListRow[]
+  summary: Record<OrgRequestGroup, number>
+  ids: number[]
+}
+
+/**
+ * The Requests list, one page. `org` is the organisation crumb (TD-228) — re-fenced server-side;
+ * omitted, nothing narrows. An unknown `group` or `kind` is a 400, never a silent "all".
+ *
+ * ⚠ The `status` filter this used to send was never READ by the server — the dropdown that drove it
+ * filtered nothing. The tabs replace it (Requests list R1, 2026-11-03).
+ */
 export async function getOrgRequests(
-  filters?: { status?: string; org?: string }, options?: ApiOptions
-): Promise<{ requests: OrgRequestDetail[] }> {
-  // `org` is the organisation crumb (TD-228) — re-fenced server-side; omitted, nothing narrows.
+  filters: { group?: OrgRequestGroup; kind?: string; q?: string; page?: number; org?: string },
+  options?: ApiOptions
+): Promise<OrgRequestListPage> {
   const params = new URLSearchParams()
-  if (filters?.status) params.set('status', filters.status)
-  if (filters?.org) params.set('org', filters.org)
+  if (filters.group) params.set('group', filters.group)
+  if (filters.kind) params.set('kind', filters.kind)
+  if (filters.q) params.set('q', filters.q)
+  if (filters.page && filters.page > 1) params.set('page', String(filters.page))
+  if (filters.org) params.set('org', filters.org)
   const qs = params.toString() ? `?${params}` : ''
   return adminFetch(`/api/v1/admin/scholarship/requests/${qs}`, options)
 }

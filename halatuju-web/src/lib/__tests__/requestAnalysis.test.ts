@@ -1,12 +1,13 @@
 /**
- * The engineer's analysis on the Requests screens (owner, 2026-10-05): the badge, the list tag,
- * and the approve wording. Every key these helpers return must exist in en / ms / ta.
+ * The engineer's analysis on the Requests screens (owner, 2026-10-05): the badge and the approve
+ * wording. Every key these helpers return must exist in en / ms / ta. (The LIST tag is served by
+ * the api since Requests list R1 — `org_requests_queue.row_tags`, tested in test_requests_list.py.)
  */
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import {
-  analysisBadge, analysisBadgeKey, analysisBadgeTone, listAnalysisTag, listAnalysisTagKey,
+  analysisBadge, analysisBadgeKey, analysisBadgeTone,
   analysisApproveKind, analysisApproveCopy, hoursAnalysisId, type AnalysisBadge,
 } from '@/lib/requestStatus'
 
@@ -38,29 +39,6 @@ describe('analysisBadge', () => {
   it('every badge key exists in en / ms / ta', () => {
     for (const b of ['draft', 'withdrawn', 'approved', 'superseded'] as AnalysisBadge[]) {
       for (const loc of [en, ms, ta]) expect(has(loc, analysisBadgeKey(b))).toBe(true)
-    }
-  })
-})
-
-describe('listAnalysisTag', () => {
-  it('tags a submitted request by its live analysis', () => {
-    expect(listAnalysisTag('submitted', [draft])).toBe('analysisDraft')
-    expect(listAnalysisTag('submitted', [withdrawn, approved])).toBe('analysed')
-  })
-
-  it('a withdrawn draft alone does not count', () => {
-    expect(listAnalysisTag('submitted', [withdrawn])).toBeNull()
-  })
-
-  it('no tag past submitted, with no analysis, or for the org (no analyses in its payload)', () => {
-    expect(listAnalysisTag('quoted', [approved])).toBeNull()
-    expect(listAnalysisTag('submitted', [])).toBeNull()
-    expect(listAnalysisTag('submitted', undefined)).toBeNull()
-  })
-
-  it('both tag keys exist in en / ms / ta', () => {
-    for (const tag of ['analysed', 'analysisDraft'] as const) {
-      for (const loc of [en, ms, ta]) expect(has(loc, listAnalysisTagKey(tag))).toBe(true)
     }
   })
 })
