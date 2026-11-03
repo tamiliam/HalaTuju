@@ -33,7 +33,7 @@ delegates here, so scholarship callers write `admin.has_perm('qc')` with no new 
 CATALOGUE = (
     'review',            # can be ASSIGNED cases; works on the cases assigned to them (files included)
     'see_all',           # reads every application in the organisation (no writes unless assigned)
-    'qc',                # the QC gate + working on any case in the organisation; needs `see_all`
+    'qc',                # the QC gate + working on any case in the organisation; IMPLIES `see_all` (T5b)
     'spending',          # the Spending page: named students' spending, flags, categories
     'payments_prepare',  # create / edit / cancel runs; signs as MAKER
     'payments_check',    # the optional middle signature (armed while an active member holds it)
@@ -41,9 +41,24 @@ CATALOGUE = (
     'manage_team',       # invite / resend / revoke / restore / delete / change role (lead tier only)
 )
 
-#: A key that needs another key. The editor (Sprint 4) adds the dependency; a stored list that
-#: breaks it is read FAIL-CLOSED here (the dependent key is dropped, never the other one added).
-DEPENDS_ON = {'qc': ('see_all',)}
+#: A key that BRINGS another key with it (Team tables T5b, owner 2026-11-03: "QC implicitly sees ALL
+#: students — QC self-sufficient, no `see_all` dependency"). A stored list naming `qc` is read WITH
+#: `see_all` (`clean`), so `qc` alone reads exactly what `see_all + qc` reads: every `has_perm('see_all')`
+#: reader, `_b40_scope`, the R1 assignment override and the web menus (which read the resolved list off
+#: `admin/role/`) open by construction, with no reader to miss. Until T5b this was `DEPENDS_ON` — a stored
+#: `qc` without `see_all` was DROPPED (read fail-closed) and the editor refused it (`qc_needs_see_all`).
+#: ⚠ IT NEVER SEATS ANYBODY AT ADMINS: `staff_tables.admin_keys` still drops a `see_all` held beside `qc`.
+#: ⚠ The QC gate's separation of duties is NOT here: `apps/scholarship/qc_separation.py`.
+IMPLIES = {'qc': ('see_all',)}
+
+
+def with_implied(keys):
+    """`keys` plus every key they imply (`IMPLIES`), as a set. Never removes a key."""
+    held = set(keys)
+    for key, brings in IMPLIES.items():
+        if key in held:
+            held.update(brings)
+    return held
 
 #: Keys that are never granted to a team member in #39 (owner question 3: "Manage team" stays an
 #: org-admin power). A stored list naming one is read without it.
@@ -92,19 +107,15 @@ def _ordered(keys):
 
 
 def clean(keys):
-    """A stored list read FAIL-CLOSED: unknown keys, lead-tier-only keys, duplicates and a
-    dependent key without its dependency are all dropped. Returns a tuple in catalogue order.
+    """A stored list read FAIL-CLOSED: unknown keys, lead-tier-only keys and duplicates are dropped.
+    Returns a tuple in catalogue order.
 
-    ⚠ It never ADDS a key. A list that says `qc` without `see_all` is a list somebody wrote by hand
-    (the Sprint 4 editor refuses it, `apps/scholarship/staff_permissions_admin.asked_set`); answering
-    it with LESS access is the safe reading."""
+    ⚠ The ONE key it adds is an implied one (`IMPLIES`, T5b): `qc` brings `see_all`. Before T5b a
+    list naming `qc` without `see_all` lost `qc`; it now reads as `see_all + qc`, the QC preset."""
     if not isinstance(keys, (list, tuple)):
         return ()
     held = {k for k in keys if isinstance(k, str) and k in CATALOGUE and k not in LEAD_TIER_ONLY}
-    for key, needs in DEPENDS_ON.items():
-        if key in held and not all(n in held for n in needs):
-            held.discard(key)
-    return _ordered(held)
+    return _ordered(with_implied(held))
 
 
 def preset_for(role):

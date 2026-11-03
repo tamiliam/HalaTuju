@@ -78,7 +78,7 @@ CATALOGUE_V2 = {
 }
 
 #: The Reviewer-table hats keep today's names and meaning in v2 (`review` = assigned cases, `qc` = the
-#: QC gate). They are both vocabularies at once; T5b makes `qc` self-sufficient.
+#: QC gate). They are both vocabularies at once; T5b made `qc` self-sufficient (`HAT_IMPLIES`).
 HATS = ('review', 'qc')
 
 #: Every v2 key, in display order: the page keys, then the hats.
@@ -95,8 +95,13 @@ def _page_view(key):
 #: `prepare`, `check`, `approve` => `view`). ⚠ `approve` NEVER implies `edit` (nor `check`).
 IMPLIES = {k: (_page_view(k),) for k in CATALOGUE_V2 if _page_view(k)}
 
+#: Team tables T5b (owner 2026-11-03, "QC is self-sufficient"): the `qc` HAT implies `students.view` —
+#: the v2 spelling of `staff_permissions.IMPLIES` (`qc` brings `see_all`). Kept apart from `IMPLIES`, whose
+#: rows are page tiers. ⚠ STILL NOT A GATE: QC opens through `resolve` / `_b40_scope`, as before.
+HAT_IMPLIES = {'qc': ('students.view',)}
+
 #: Dependencies as data (ruling 7): the Engagement pages name every scholar, so each needs
-#: `students.view` — as `qc` needed `see_all` in the old vocabulary.
+#: `students.view` — as `qc` needed `see_all` in the old vocabulary until T5b (now `qc` brings it).
 DEPENDS_ON_V2 = {k: ('students.view',) for k, row in CATALOGUE_V2.items() if row[0] == ENGAGEMENT}
 
 #: Old key -> the v2 keys it MEANS. `manage_team` maps to nothing: it is lead-tier only, and the lead
@@ -143,10 +148,12 @@ def v2_order(keys):
 
 
 def with_implied_views(keys):
-    """`keys` plus every view an `edit` / `prepare` / `check` / `approve` implies (never the reverse)."""
+    """`keys` plus every view an `edit` / `prepare` / `check` / `approve` implies (never the reverse),
+    and `students.view` for the `qc` hat (`HAT_IMPLIES`, T5b)."""
     held = set(keys)
     for key in list(held):
         held.update(IMPLIES.get(key, ()))
+        held.update(HAT_IMPLIES.get(key, ()))
     return v2_order(held)
 
 

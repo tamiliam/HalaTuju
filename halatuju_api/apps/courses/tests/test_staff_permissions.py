@@ -40,13 +40,29 @@ class Resolve(TestCase):
 
     def test_a_stored_list_is_read_fail_closed(self):
         a = PartnerAdmin(role='reviewer', permissions=[
-            'review', 'review', 'bogus', 7, 'manage_team', 'qc'])
-        # unknown and non-string dropped; manage_team is never granted; qc without see_all dropped
+            'review', 'review', 'bogus', 7, 'manage_team'])
+        # unknown and non-string dropped; manage_team is never granted
         self.assertEqual(a.permission_set, ('review',))
 
     def test_qc_with_see_all_is_kept(self):
         a = PartnerAdmin(role='reviewer', permissions=['qc', 'see_all'])
         self.assertEqual(a.permission_set, ('see_all', 'qc'))
+
+    def test_qc_alone_brings_see_all(self):
+        # Team tables T5b (owner: "QC is self-sufficient"). Until T5b this list lost `qc` (read
+        # fail-closed as a broken dependency); now `qc` IMPLIES `see_all` and reads as the QC preset.
+        for role in ('reviewer', 'qc', 'admin', 'finance'):
+            with self.subTest(role=role):
+                a = PartnerAdmin(role=role, permissions=['qc'])
+                self.assertEqual(a.permission_set, ('see_all', 'qc'))
+                self.assertTrue(a.has_perm('see_all'))
+        b = PartnerAdmin(role='reviewer', permissions=['review', 'qc', 'bogus', 'manage_team'])
+        self.assertEqual(b.permission_set, ('review', 'see_all', 'qc'))
+        self.assertEqual(sp.IMPLIES, {'qc': ('see_all',)})
+        self.assertFalse(hasattr(sp, 'DEPENDS_ON'))         # the dependency is retired, not empty
+        # The presets are unchanged and already closed under the implication.
+        for role in sp.PRESETS:
+            self.assertEqual(set(sp.preset_for(role)), sp.with_implied(sp.preset_for(role)))
 
     def test_a_non_list_is_read_as_nothing(self):
         for junk in ({'review': True}, 'review', 5):

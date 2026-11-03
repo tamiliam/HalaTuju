@@ -494,12 +494,12 @@ class AdminVerdictMetricsView(_AdminBase):
     Applications page (`/admin/scholarship`, hidden there since 2026-06-13), whose roles are
     super / org_admin / admin / qc / reviewer — so reviewers and QC keep it; partner and finance
     are refused. Since #39 Sprint 3 it reads the Applications page's own permissions (`see_all`
-    or `review`), which the presets give to exactly those five. The card swallows an error silently, so a narrower gate would hide it unseen."""
+    or `review`; T5b `qc` too, through `_b40_scope`), which the presets give to exactly those five. The card swallows an error silently, so a narrower gate would hide it unseen."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.has_perm('see_all') or admin.has_perm('review')):   # #39 S3: the B40 scope
+        if self._b40_scope(admin) == 'none':   # #39 S3 `see_all` or `review`; T5b: or `qc`
             return self._deny_role()
         from ..audit import override_metrics
         # org-fence: _org_scoped applied below (fences the metrics roll-up).

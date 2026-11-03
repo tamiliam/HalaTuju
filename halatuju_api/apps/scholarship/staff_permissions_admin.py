@@ -52,7 +52,12 @@ def asked_set(asked):
     """The asked list as a tuple in catalogue order, or `PermissionChangeRefused`.
 
     ⚠ It REFUSES what `staff_permissions.clean` would quietly drop: the editor must never save
-    something other than what the person saw."""
+    something other than what the person saw.
+
+    ⚠ TEAM TABLES T5b: `qc` IMPLIES `see_all` (`staff_permissions.IMPLIES`) — "QC is self-sufficient".
+    `['qc']` is no longer refused (`qc_needs_see_all` is retired); it is answered as `see_all + qc`, the
+    set `clean` reads it as, so `after`, the history row and the stored list all say what the person can
+    really do. The editor already ticks `see_all` with `qc` (`PermissionEditor`), so the screen agrees."""
     from apps.courses import staff_permissions as sp
     if not isinstance(asked, (list, tuple)) or not all(isinstance(k, str) for k in asked):
         raise PermissionChangeRefused(
@@ -65,12 +70,7 @@ def asked_set(asked):
         raise PermissionChangeRefused(
             'lead_tier', 400, 'Managing the team stays with the organisation admin. It cannot be '
             'given to a team member.')
-    held = set(asked)
-    for key, needs in sp.DEPENDS_ON.items():
-        if key in held and not all(n in held for n in needs):
-            raise PermissionChangeRefused(
-                'qc_needs_see_all', 400,
-                'Quality check needs "See all students": a checker reads every decision.')
+    held = sp.with_implied(asked)
     return tuple(k for k in sp.CATALOGUE if k in held)
 
 

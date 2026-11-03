@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T5b — QC self-sufficient + widened self-QC guard (NOT LIVE YET; branch maint-s7)
+
+Roadmap T5 (owner "approve all": "QC implicitly sees ALL students and may decide on any except those they reviewed /
+interviewed / were assigned"); decisions.md "Team tables T5b". No migration, no new endpoint, no web change.
+
+- **QC is self-sufficient** (`apps/courses/staff_permissions.py`): `qc` now IMPLIES `see_all` (`IMPLIES`, replacing
+  `DEPENDS_ON`). A stored list naming `qc` without `see_all` reads as `see_all + qc` (it used to lose `qc`), so every
+  reader that asks `see_all` — the Applications list and file, Scholars, the AI-reliability card, the R1 assignment
+  override, the web menus (which read the served list) — opens for it by construction. `_b40_scope` names `qc` too.
+  The permission editor accepts `['qc']` and saves it as `see_all + qc` with its history row (`qc_needs_see_all` is
+  retired). A `see_all` beside `qc` still seats nobody at Admins. v2: the `qc` hat implies `students.view`
+  (`HAT_IMPLIES`); v2 is still not a gate. Every live shape and preset is unchanged (goldens green).
+- **QC never decides their own** (`apps/scholarship/qc_separation.py`, called by `_require_qc`): besides the current
+  assignee (`self_qc_forbidden`) and the verdict recorder (`self_verdict_qc_forbidden`), the QC decision (accept,
+  reopen, reject) now refuses a QC who was EVER assigned the case (`AssignmentEvent`, either side —
+  `self_assigned_qc_forbidden`), sat as interviewer on any session (a draft counts) or proposed its interview times
+  (`self_interview_qc_forbidden`), or did other review work on it — the verify-accept, or a recorded verdict, verify-
+  accept, decline-to-QC or interview submit in their activity list (`self_review_qc_forbidden`). 403 as before; a
+  super stays exempt; the organisation admin is held to it.
+- Tests: `test_qc_self_sufficient.py` (reads, guard, real review doors then QC), `test_team_tables_matrix.T5bQcAlone`
+  (every admin door: `qc` alone = the QC preset's BEFORE row; `qc` alone on admin / reviewer = its `see_all` twin),
+  v2 golden shapes `qc_alone` / `reviewer_review_qc`, the editor's `['qc']` save.
+- New debt: TD-481 (the reviewer's Decline door can decline a case at AWAITING QC, past the QC gate — predates T5b),
+  TD-482 (an interview draft's earlier author is not remembered), TD-483 (the cockpit QC panel shows for a QC the
+  server will refuse).
+
 ## Team tables T5a — permission catalogue v2 + aliases (LIVE 2026-11-03; main 55de0610; api-01245-mrb)
 
 Roadmap T5 (owner "approve all", rulings 1-8; lead rulings 2026-11-03 on `mentoring.*` and `programmes.edit`);

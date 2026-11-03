@@ -46,7 +46,9 @@ def is_review_target(admin):
     ⚠ `see_all` ON THE OVERRIDE (Sprint 3 review fix 1): a custom-set admin / qc WITHOUT `see_all`
     and without `review` has `_b40_scope` 'none', so a case handed to them would be STRANDED — they
     could not open it while the nudges and emails still named the student to them. Every preset in
-    the R1 roles holds `see_all`, so the presets answer exactly as before (the golden table)."""
+    the R1 roles holds `see_all`, so the presets answer exactly as before (the golden table).
+    Team tables T5b: `qc` brings `see_all` (`staff_permissions.IMPLIES`), so an admin / qc holding `qc`
+    without a stored `see_all` is a target exactly as the QC preset is — they can open the case."""
     if admin.has_perm('review'):
         return True
     return getattr(admin, 'role', '') in R1_SUPER_TARGET_ROLES and admin.has_perm('see_all')

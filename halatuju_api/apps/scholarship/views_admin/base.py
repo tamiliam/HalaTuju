@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 
 from apps.courses.views_admin import PartnerAdminMixin
 
+from .. import qc_separation
 from ..models import ScholarshipApplication
 from ..services import review_writes_closed
 
@@ -78,7 +79,9 @@ class _AdminBase(PartnerAdminMixin, APIView):
         """
         if admin is None:
             return 'none'
-        if admin.has_perm('see_all'):
+        # Team tables T5b: `qc` is self-sufficient — it reads ALL (`qc` brings `see_all` in `resolve`,
+        # `staff_permissions.IMPLIES`; named here too so this door never hangs on that one line).
+        if admin.has_perm('see_all') or admin.has_perm('qc'):
             return 'all'
         if admin.has_perm('review'):
             return 'assigned'
@@ -261,7 +264,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
         (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
         via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
         selective review remit. org_admin/qc write across the org is safe because the QC
-        recorder guard in _require_qc stops anyone QC-ing a verdict they themselves recorded.
+        separation guard in _require_qc (`qc_separation.refusal`, widened in T5b) stops anyone QC-ing
+        a case they were assigned (ever), interviewed, verify-accepted or recorded the verdict on.
         `finance` never reaches here: its _b40_scope is 'none', so the first test refuses it.)"""
         if admin is None or app is None:
             return False
@@ -327,9 +331,10 @@ class _AdminBase(PartnerAdminMixin, APIView):
         (`interviewed`) — else (None, None, error_response). QC is deliberately NOT assignment-
         scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes.
 
-        Self-QC guard: the senior `qc`/`org_admin` roles can also REVIEW their assigned cases, so
-        they must NOT QC a case they were the assigned reviewer of — that routes to another QC /
-        super. (Super is the owner override and is exempt.)
+        Self-QC guard (Team tables T5b, owner: "QC never decides their own"): a QC holder must NOT
+        QC a case they are or WERE assigned, interviewed (a draft counts), verify-accepted, or
+        recorded the verdict on — that routes to another QC / super. The whole rule is
+        `qc_separation.refusal`; 403 with its code. (Super is the owner override and is exempt.)
 
         `finance` is refused by the role list below — it is a money checker, not a case checker,
         and has no B40 scope to QC with."""
@@ -348,19 +353,12 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, None, Response(
                 {'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
                 status=status.HTTP_400_BAD_REQUEST)
-        if not self.has_role(admin, 'super') and app.assigned_to_id == admin.id:
-            return None, None, Response(
-                {'error': 'You reviewed this case — it must be QC-checked by someone else.',
-                 'code': 'self_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
-        # Recorder guard (2026-07-15): with org_admin/qc able to record a verdict on ANY
-        # own-org case, assignment no longer proves who recorded it. Two-person control
-        # (models.py:482) means the person who RECORDED the verdict must never QC it —
-        # match on the recorder's email (the stable staff key). Super is the owner override.
-        recorder = (app.verdict_decided_by or '').strip().lower()
-        if not self.has_role(admin, 'super') and recorder and recorder == (getattr(admin, 'email', '') or '').strip().lower():
-            return None, None, Response(
-                {'error': 'You recorded this verdict — it must be QC-checked by someone else.',
-                 'code': 'self_verdict_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        # Separation of duties (2026-07-15 recorder guard, widened in T5b): with org_admin/qc able
+        # to work ANY own-org case, the current assignment no longer proves who worked it.
+        code = qc_separation.refusal(admin, app)
+        if code:
+            return None, None, Response({'error': qc_separation.MESSAGES[code], 'code': code},
+                                        status=status.HTTP_403_FORBIDDEN)
         return app, admin, None
 
 

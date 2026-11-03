@@ -1,5 +1,54 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T5b: `qc` IMPLIES `see_all`; the QC decision refuses anyone who worked the case — 2026-11-03 (owner "approve all", T5.0; builder rulings for the lead)
+
+**Context:** the owner's T5 model: "QC implicitly sees ALL students and may decide on any except those they reviewed /
+interviewed / were assigned (QC self-sufficient, no `see_all` dependency)". Until T5b `qc` DEPENDED on `see_all`: a
+stored `qc` without it was dropped on read and refused on save (`qc_needs_see_all`). And `_require_qc` refused only
+the CURRENT assignee and the verdict recorder, while a `qc` holder may write on any case in the organisation
+(`_can_review_app`) — so a reassign laundered self-QC, and an interview or a verify-accept on an unassigned case did
+not count.
+
+**Decision:**
+- **Implication, not a dropped dependency** (`staff_permissions.IMPLIES = {'qc': ('see_all',)}`, read by `clean`).
+  `qc` alone RESOLVES to `see_all + qc`, so it reads exactly what the QC preset reads at every door with no reader to
+  convert or miss — the server's `has_perm('see_all')` sites, `_b40_scope`, the R1 assignment override, and the web
+  (its menus read the served resolved list). Dropping the dependency instead would have left `qc` alone at
+  `('qc',)` and every `see_all` reader to widen one by one, server and web. `_b40_scope` also names `qc` (belt and
+  braces); the AI-reliability card reads `_b40_scope`. The presets are unchanged and already closed under it.
+- **The save door** accepts `['qc']` and answers it as `see_all + qc` (dry run, stored list, history row): what the
+  person can really do. A QC-preset person asked for `['qc']` is unchanged (nothing written). Unticking `see_all`
+  while `qc` stays is a no-op — the web editor already unticks `qc` with it.
+- **Not an Admin hat:** `staff_tables.admin_keys` still drops a `see_all` held beside `qc`; `staff_tables_admin`
+  (Add to Admins' `qc_sees_all` refusal, Remove from Reviewers) unchanged.
+- **R1 super-target:** `qc` alone in role admin / qc IS an assignment target for a super, exactly as the QC preset
+  is — the override's `see_all` test exists so a target can OPEN the case, and `qc` alone can. No live shape moves.
+- **v2:** `HAT_IMPLIES = {'qc': ('students.view',)}` in `with_implied_views`; v2 is still not a gate (`NotYetAGate`).
+- **The guard** is ONE function, `apps/scholarship/qc_separation.refusal`, asked by `_require_qc` after the
+  permission, the fence and the stage. Order and codes: current assignee `self_qc_forbidden`; verdict recorder (email)
+  `self_verdict_qc_forbidden`; verify-accept stamp (`verified_by`) `self_review_qc_forbidden`; ever assigned
+  (`AssignmentEvent` to OR from them) `self_assigned_qc_forbidden`; interviewer on ANY session, draft or submitted, or
+  proposer of interview slots `self_interview_qc_forbidden`; an activity row of theirs on the case for
+  `verdict_recorded` / `verify_accept` / `decline_sent_to_qc` / `interview_submitted` (a verdict someone else later
+  re-recorded overwrites `verdict_decided_by`; the row stays) `self_review_qc_forbidden`. All 403. **Draft interviews
+  count** (sitting in it is the work). A **query** to the student does NOT count (a QC may ask while checking). A
+  **super** is exempt (owner override); the **organisation admin** is not. QC holders KEEP org-wide review writes;
+  the guard then catches them at QC.
+
+**QC-outcome doors (the inventory):** the QC decision `qc-decision` accept / reopen / reject — guarded.
+`reopen-decision` and `cancel-reopen` — super-only (exempt by rule). `award_revert.revert_to_pool` — a system revert
+of a case QC already cleared (or diverted back INTO the QC queue), not a QC decision. `cancel-decline` — returns an
+embargoed decline to the status it came from (a QC-confirmed one back INTO the QC queue), not a decision.
+**Not covered, recorded as TD-481:** the reviewer's Decline door (`reject`, bucket `interview`) accepts a case at
+`interviewed` through `_require_app_write`, so the assignee or any `qc` holder can decline an AWAITING-QC case past
+the QC gate — it predates T5b and is live behaviour, so it is the owner's call. No management command or cron sets a
+QC outcome.
+
+**Consequences:** a hand-set `qc` without `see_all` now reads all and can QC (was refused); every other live shape is
+unchanged (the golden tables, `test_team_tables_matrix` against its BEFORE rows). The QC decision costs up to four
+small queries more. TD-482 (an earlier interview-draft author is not remembered) and TD-483 (the cockpit's QC panel
+shows for a QC the server will refuse; English refusal) are left for later.
+
 ## Team tables T5a: permission vocabulary v2 sits BESIDE the old one; aliases old -> v2; no gate converted — 2026-11-03 (owner "approve all", rulings 1-8; lead rulings on mentoring and programmes.edit)
 
 **Context:** T5 moves every power onto per-page permission keys. T5a is the plumbing: the vocabulary and its rules,

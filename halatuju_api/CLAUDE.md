@@ -1201,6 +1201,18 @@ payment run, billable hours, Close file, Delete student, a sponsor's gift member
 tables carry ARIA roles (`TableFrame` `stampTableRoles`). M7b = the `DesktopOnly` panel only.
 NEXT: M7b, M8.
 
+### ⚠ STATE — TEAM TABLES T5b (NOT LIVE YET; branch maint-s7; no migration, no endpoint, no web change)
+
+Roadmap T5; decisions.md "Team tables T5b". **`qc` IMPLIES `see_all`** (`staff_permissions.IMPLIES`, read by `clean`;
+`DEPENDS_ON` is gone): a stored `['qc']` resolves to `see_all + qc`, so every `see_all` reader opens for it by
+construction; `_b40_scope` names `qc` too; the editor saves `['qc']` as `see_all + qc` (`qc_needs_see_all` retired).
+It is never an Admin hat (`staff_tables.admin_keys` drops that `see_all`). v2: `HAT_IMPLIES` (still not a gate).
+**The QC separation guard is `apps/scholarship/qc_separation.refusal`** (asked by `_require_qc`): refuses the current
+assignee, anyone EVER assigned (`AssignmentEvent`), any interviewer (a draft counts) or slot proposer, the verdict
+recorder, the verify-accepter, and anyone whose activity list records review work on the case; super exempt. **A new
+kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481 (Decline door at
+AWAITING QC), TD-482, TD-483.
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 
 Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permissions_v2.py` = the v2 vocabulary

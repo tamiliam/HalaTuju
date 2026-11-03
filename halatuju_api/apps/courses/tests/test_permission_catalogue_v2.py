@@ -40,6 +40,9 @@ SHAPES = {
     'reviewer_see_all_spending': {'role': 'reviewer', 'permissions': ['review', 'see_all', 'spending']},
     'reviewer_see_all':       {'role': 'reviewer', 'permissions': ['review', 'see_all']},
     'qc':                     {'role': 'qc'},
+    # T5b (owner: "QC is self-sufficient"): `qc` with no stored `see_all` — no live row; it reads as the preset.
+    'qc_alone':               {'role': 'qc', 'permissions': ['qc']},
+    'reviewer_review_qc':     {'role': 'reviewer', 'permissions': ['review', 'qc']},
     'super':                  {'role': 'super', 'super_admin': True},
     'partner':                {'role': 'partner'},
 }
@@ -76,6 +79,9 @@ GOLDEN_V2 = {
     'reviewer_see_all': (('review', 'see_all'), {'review', 'students.view', *_ORG_READ}),
     # The `see_all` beside `qc` does not seat a QC at Admins (T1), so no organisation read pages.
     'qc': (('see_all', 'qc'), {'students.view', 'qc'}),
+    # T5b: `qc` brings `see_all` (old) / `students.view` (v2), and still seats nobody at Admins.
+    'qc_alone': (('see_all', 'qc'), {'students.view', 'qc'}),
+    'reviewer_review_qc': (('review', 'see_all', 'qc'), {'review', 'students.view', 'qc'}),
     'super': (sp.CATALOGUE, {*_EVERY_PAGE_KEY, 'review', 'qc'}),
     'partner': ((), set()),
 }
@@ -132,6 +138,12 @@ class Vocabulary(TestCase):
 
     def test_the_engagement_keys_need_students_view(self):
         self.assertEqual(v2.DEPENDS_ON_V2, {k: ('students.view',) for k in _ENGAGEMENT_ALL})
+
+    def test_the_qc_hat_implies_students_view(self):
+        # T5b: the v2 spelling of `staff_permissions.IMPLIES` — QC sees all students, by itself.
+        self.assertEqual(v2.HAT_IMPLIES, {'qc': ('students.view',)})
+        self.assertEqual(v2.with_implied_views(['qc']), ('students.view', 'qc'))
+        self.assertEqual(v2.with_implied_views(['review']), ('review',))    # review is assigned-only
         self.assertEqual(v2.dependency_gaps(['surveys.view']), {'surveys.view': ('students.view',)})
         self.assertEqual(v2.dependency_gaps(['surveys.view', 'students.view']), {})
 
@@ -257,7 +269,8 @@ def _doors():
 #: A door open today that NO v2 key covers, with why. The graduation-messages list opens by role
 #: (`graduation.py:31`: reviewer / admin) and the approved catalogue has no key for it — T5c decides.
 UNMAPPED = {'graduation_list': ({'admin', 'admin_see_all_spending', 'reviewer',
-                                 'reviewer_see_all_spending', 'reviewer_see_all'},
+                                 'reviewer_see_all_spending', 'reviewer_see_all',
+                                 'reviewer_review_qc'},   # T5b shape: the role list opens it, not a key
                                 'graduation.py:31 role list reviewer/admin; no v2 key in the catalogue')}
 
 MATRIX = Path(__file__).resolve().parents[2] / 'scholarship' / 'tests' / 'fixtures' / \

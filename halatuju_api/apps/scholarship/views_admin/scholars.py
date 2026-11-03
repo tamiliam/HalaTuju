@@ -6,7 +6,7 @@ The reads are shaped in `apps/scholarship/scholars.py`; THIS module is the fence
 ⚠ WHO SEES IT — THE APPLICATIONS RULE, NOT A NEW ONE (docs/decisions.md, 2026-10-29, maintenance S2).
 A scholar file is a view of an application the officer can already open in the cockpit, so it reads
 exactly as much as `_b40_scope` allows there:
-  * `see_all` (super, org_admin, admin, qc presets) — every scholar in their own organisation
+  * `see_all` or `qc` (super, org_admin, admin, qc presets; T5b: `qc` alone) — every scholar in their own organisation
     (a super: every organisation, narrowed to a gift when they have no organisation — TD-334);
   * `review` without `see_all` (reviewer) — ONLY the scholars assigned to them;
   * neither (finance, partner) — 403. Finance never sees a name beside case data (the Spending rule).

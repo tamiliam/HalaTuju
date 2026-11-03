@@ -136,7 +136,6 @@ class TestFenceAndRefusals(TestCase):
         cases = [
             (['review', 'nonsense'], 400, 'unknown_permission'),
             (['review', 'manage_team'], 400, 'lead_tier'),
-            (['qc'], 400, 'qc_needs_see_all'),
             ('review', 400, 'bad_request'),
             ([1, 2], 400, 'bad_request'),
         ]
@@ -153,6 +152,31 @@ class TestFenceAndRefusals(TestCase):
     def test_qc_with_see_all_is_accepted(self):
         r = _patch(self.org_admin, self.reviewer, ['review', 'see_all', 'qc'])
         self.assertEqual(r.status_code, 200, r.content[:300])
+
+    def test_qc_alone_is_saved_as_see_all_plus_qc_with_its_history_row(self):
+        # Team tables T5b: `qc` is self-sufficient. Until T5b `['qc']` was 400 `qc_needs_see_all`; it is
+        # now accepted and answered as what the person can really do — `see_all` + `qc` — in the dry
+        # run, the stored list, the history row and the role payload alike.
+        target = make_admin('reviewer', owning_org=self.org)
+        dry = _patch(self.org_admin, target, ['qc'], dry_run=True)
+        self.assertEqual(dry.status_code, 200, dry.content[:300])
+        self.assertEqual((dry.json()['added'], dry.json()['removed']), (['see_all', 'qc'], ['review']))
+        self.assertIn('files_widened_all', dry.json()['consequences'])
+        r = _patch(self.org_admin, target, ['qc'])
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        self.assertEqual((r.json()['permissions'], r.json()['changed']), (['see_all', 'qc'], True))
+        self.assertEqual(_fresh(target).permissions, ['see_all', 'qc'])
+        h = StaffPermissionChange.objects.get(target=target)
+        self.assertEqual((h.kind, h.before, h.after), ('edit', ['review'], ['see_all', 'qc']))
+        # A QC-preset person asked for `qc` alone is ALREADY that: nothing changes, nothing is written.
+        qc = make_admin('qc', owning_org=self.org)
+        same = _patch(self.org_admin, qc, ['qc'])
+        self.assertEqual((same.status_code, same.json()['changed']), (200, False))
+        self.assertIsNone(_fresh(qc).permissions)
+        self.assertFalse(StaffPermissionChange.objects.filter(target=qc).exists())
+        # And the QC hat never seats them at Admins (it is not an admin key).
+        from apps.courses import staff_tables
+        self.assertEqual(staff_tables.tables(_fresh(target)), ('reviewers',))
 
     def test_a_revoked_person_is_restored_first(self):
         gone = make_admin('reviewer', owning_org=self.org, is_active=False)

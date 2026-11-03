@@ -12,9 +12,10 @@ a changed key and a stopped mentor are all answered the moment they happen.
 
 THE DERIVATION (decisions.md 2026-11-03, "Team tables T1"):
   Admins    — the lead tier (`org_admin`) or a super; the preset labels `admin` / `finance`; or a TEAM
-              member holding an ADMIN KEY (`ADMIN_KEYS`). ⚠ `see_all` held ALONGSIDE `qc` is `qc`'s
-              own dependency (`staff_permissions.DEPENDS_ON`), not an admin hat: the QC preset holds
-              `see_all` + `qc` and is a Reviewer (owner ruling 8: "a QC person is a Reviewer with qc").
+              member holding an ADMIN KEY (`ADMIN_KEYS`). ⚠ `see_all` held ALONGSIDE `qc` is what
+              `qc` itself brings (`staff_permissions.IMPLIES`, T5b; a dependency before), not an admin
+              hat: the QC preset holds `see_all` + `qc`, a saved `['qc']` reads the same, and both are
+              Reviewers (owner ruling 8: "a QC person is a Reviewer with qc").
   Reviewers — the preset labels `reviewer` / `qc`; or a TEAM member holding `review` or `qc`. The lead
               tier holds `qc` but is NOT a Reviewer by it (owner 2026-10-19); since T2 an organisation
               admin sits here once Team -> Reviewers -> Add gave them `review`
@@ -50,7 +51,8 @@ def _team_member(admin):
 
 
 def admin_keys(admin):
-    """The ADMIN keys a team member holds, `see_all` dropped when it is only `qc`'s dependency."""
+    """The ADMIN keys a team member holds, `see_all` dropped when `qc` is held (it is what `qc`
+    brings, T5b `staff_permissions.IMPLIES` — so a `qc` holder can never hold it as an admin hat)."""
     held = set(sp.resolve(admin))
     if 'qc' in held:
         held.discard('see_all')

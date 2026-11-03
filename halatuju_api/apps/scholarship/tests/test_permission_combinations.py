@@ -158,28 +158,29 @@ class TestAdminMinusSpending(pe._Base):
 
 
 class TestQcWithoutSeeAll(pe._Base):
-    """`qc` needs `see_all`. A stored list naming `qc` alone is read FAIL-CLOSED (the key is dropped,
-    never `see_all` added); the Sprint 4 editor refuses to save it."""
+    """Team tables T5b (owner: "QC is self-sufficient"): a stored list naming `qc` alone reads as
+    `see_all + qc`, the QC preset. Until T5b it was read FAIL-CLOSED (`qc` dropped) and the editor
+    refused it; `test_qc_self_sufficient.py` asks every reader door of it."""
 
     def setUp(self):
         super().setUp()
         _grant(self.qc, ['qc'])
 
-    def test_the_list_is_read_without_qc(self):
-        self.assertEqual(self.qc.permission_set, ())
-        self.assertFalse(self.qc.has_perm('qc'))
-        self.assertEqual(_AdminBase()._b40_scope(self.qc), 'none')
+    def test_the_list_is_read_with_see_all(self):
+        self.assertEqual(self.qc.permission_set, ('see_all', 'qc'))
+        self.assertTrue(self.qc.has_perm('qc'))
+        self.assertEqual(_AdminBase()._b40_scope(self.qc), 'all')
 
-    def test_the_qc_gate_and_the_list_refuse_them(self):
+    def test_the_qc_gate_and_the_list_admit_them(self):
         view = _AdminBase()
         case = SimpleNamespace(owning_organisation_id=self.org_a.id, assigned_to_id=None,
                                status='interviewed', verdict_decided_by='')
         with mock.patch.object(view, 'get_admin', return_value=self.qc), \
                 mock.patch.object(view, '_get_application', return_value=case):
             _, _, err = view._require_qc(None, 1)
-        self.assertEqual(err.status_code, 403)
+        self.assertIsNone(err)
         self._auth('pe-qc')
-        self.assertEqual(self.client.get(APPS).status_code, 403)
+        self.assertEqual(self.client.get(APPS).status_code, 200)
 
 
 class TestFinanceWithoutApprove(pe._FinanceBase):

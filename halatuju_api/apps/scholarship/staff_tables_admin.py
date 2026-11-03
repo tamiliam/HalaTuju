@@ -15,8 +15,9 @@ otherwise keep them seated — their `role`:
   Add to Reviewers   keys + `review`. Role unchanged. A pure MENTOR login becomes role `reviewer` (the
                      preset, `review`). An ORGANISATION ADMIN stores ['review'] (`staff_permissions.
                      LEAD_MAY_ADD`) — the lead tier itself never changes.
-  Remove from Admins the person's admin keys go (`staff_tables.admin_keys`; `see_all` stays when it is
-                     `qc`'s dependency). Role `admin` / `finance` moves to `qc` (if `qc` stays) or
+  Remove from Admins the person's admin keys go (`staff_tables.admin_keys`; `see_all` stays when `qc`
+                     brings it, T5b `staff_permissions.IMPLIES`). Role `admin` / `finance` moves to `qc`
+                     (if `qc` stays) or
                      `reviewer`. Refused for the organisation admin (the lead tier is fixed).
   Remove from Reviewers `review` and `qc` go (and the `see_all` that only served `qc`): the keys left
                      are exactly the Admins table's. Role `reviewer` / `qc` moves to `admin` (lead ruling
@@ -165,7 +166,7 @@ def _plan_add(target, table):
                 'stored': [sp.LEAD_MAY_ADD], 'lead': True}
     key = ADD_KEY[table]
     if key in before:
-        # Only `see_all` can be here: held as `qc`'s dependency, it seats nobody at Admins. Giving
+        # Only `see_all` can be here: brought by `qc` (T5b IMPLIES), it seats nobody at Admins. Giving
         # another admin key instead would give MORE than the minimum, so it is refused (T2 deviation).
         raise Refused(QC_SEES_ALL, 400,
                       f'{target.name} already sees every student through Quality check, so the starting '

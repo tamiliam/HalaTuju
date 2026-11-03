@@ -7554,6 +7554,40 @@ scholar file and the cockpit's no-file control, with a "use a computer" note (de
 `PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and
 the payment controls; the server authorises by role, never by device, so this is a layout choice, not a safety gap.
 
+### [TD-481] A case AWAITING QC can be declined through the reviewer's Decline door, past the QC gate - medium
+
+**Raised 2026-11-03 by Team tables T5b** (the QC-door inventory; predates T5b, NOT changed — live behaviour).
+`AdminRejectView` (`POST .../<pk>/reject/ {category: 'interview'}`, `views_admin/applications.py`) is gated by
+`_require_app_write` and `services.decline.admin_reject` allows bucket `interview` FROM `interviewed`
+(`INTERVIEW_REJECT_FROM`). So on a case sitting in AWAITING QC, the current assignee — or any `qc` holder, who writes
+org-wide — can decline it directly: a QC outcome reached without `_require_qc`, its stage check or the widened
+separation guard (`qc_separation.refusal`). The intended road for a reviewer's decline is record-verdict -> submit-
+decline -> QC confirm (owner 2026-07-19). **Fix (needs the owner):** refuse `interview` from `interviewed` on this
+door (a QC decides there), or route it through `_require_qc`; check the cockpit hides Decline at AWAITING QC. A
+regression test asks the door as assignee, as an unrelated QC and as a super. *(A · S)*
+
+### [TD-482] An interview DRAFT's earlier author is not remembered, so the QC guard cannot see them - low
+
+**Raised 2026-11-03 by Team tables T5b.** `qc_separation.refusal` refuses a QC who is `InterviewSession.interviewer`
+on any session of the case (a draft counts). But the draft save moves that credit to whoever wrote content LAST
+(`AdminInterviewView.post`, owner 2026-08-13: an earlier contributor's name is expunged), and a draft save writes no
+activity row (`interview_submitted` is written at submit, for the submitter). So a QC who wrote interview findings
+that a colleague later rewrote is no longer named anywhere the guard reads, and could QC the case. **Fix:** a
+`StaffActivity` row (`interview_drafted`, once per person per session) on an authoring save, added to
+`qc_separation.REVIEW_VERBS`; or a small authors list on the session. *(A · S)*
+
+### [TD-483] The cockpit's QC panel shows for a QC the server will refuse (T5b widened guard) - low
+
+**Raised 2026-11-03 by Team tables T5b.** `view/QcPanel.tsx` hides the QC box only when the caller is the CURRENT
+assignee. Since T5b the server also refuses a QC who was assigned before, interviewed, verify-accepted or recorded the
+verdict (`self_assigned_qc_forbidden`, `self_interview_qc_forbidden`, `self_review_qc_forbidden`); the panel still
+shows, and the 403 shows the server's English sentence (`view.tsx` maps only `self_verdict_qc_forbidden` to words in
+en / ms / ta). Nothing is decided wrongly — the server refuses — but the person meets the refusal only on the click.
+Also stale: `PermissionEditor.tsx` says the server keeps `DEPENDS_ON` (it is `IMPLIES` since T5b; the editor's
+behaviour — ticking `see_all` with `qc` — already matches). **Fix:** serve `qc_refusal` (the code or null, from
+`qc_separation.refusal`) on the application detail for a QC holder; the panel hides with a one-line note in en / ms /
+ta; fix the comment. *(W · S)*
+
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 
 **Raised 2026-11-03 by Requests list R1.** R1 built ONE Previous / Next for a list's detail pages:

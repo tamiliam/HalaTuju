@@ -269,7 +269,9 @@ class AccessMatrix(TestCase):
 
     def measure(self, shape):
         """`{"METHOD route": status}` for one person."""
-        admin = self.people[shape]
+        return self.measure_admin(self.people[shape])
+
+    def measure_admin(self, admin):
         client = authed_client(admin, APIClient(raise_request_exception=False))
         cells = {}
         with mock.patch.object(socket.socket, 'connect', _no_network):
@@ -316,6 +318,49 @@ def _shape_test(shape):
 
 for _shape in SHAPES:
     setattr(AccessMatrix, f'test_matrix_{_shape}', _shape_test(_shape))
+
+
+def _expected_row(shape):
+    """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
+    before = _before()[shape]
+    row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before)}
+    for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
+        row[probe] = now
+    return row
+
+
+class T5bQcAlone(AccessMatrix):
+    """Team tables T5b (owner: "QC is self-sufficient"): a person holding `qc` with NO stored `see_all`
+    reaches EVERY admin door exactly as `see_all + qc` does. Until T5b such a list lost `qc` on read.
+    Each is asked of the whole matrix: the `qc`-role one against the QC preset's own BEFORE row (so nothing
+    the guard widening touched moved for the preset either), the others against a measured twin of the same
+    role holding `see_all + qc` (their role labels open pages of their own)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+        def person(role, keys):
+            return make_admin(role, owning_org=cls.org, permissions=keys)
+        cls.qc_only = person('qc', ['qc'])
+        cls.pairs = ((person('admin', ['qc']), person('admin', ['see_all', 'qc'])),
+                     (person('reviewer', ['review', 'qc']), person('reviewer', ['review', 'see_all', 'qc'])))
+
+    def test_qc_alone_is_the_qc_preset_on_every_door(self):
+        cells, expected = self.measure_admin(self.qc_only), _expected_row('qc')
+        self.assertEqual(sorted(set(cells) ^ set(expected)), [])
+        self.assertEqual({p: (expected[p], cells[p]) for p in cells if cells[p] != expected[p]}, {})
+
+    def test_qc_alone_on_another_role_is_its_see_all_twin_on_every_door(self):
+        for alone, twin in self.pairs:
+            with self.subTest(role=alone.role):
+                a, b = self.measure_admin(alone), self.measure_admin(twin)
+                self.assertEqual({p: (b[p], a[p]) for p in a if a[p] != b[p]}, {})
+
+
+# The subclass inherits every `test_matrix_*` and the derivation test; they run on `AccessMatrix` already.
+for _name in [n for n in dir(AccessMatrix) if n.startswith('test_')]:
+    setattr(T5bQcAlone, _name, None)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
