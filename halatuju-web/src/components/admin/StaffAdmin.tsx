@@ -14,6 +14,7 @@ import StaffAvatar from '@/components/admin/StaffAvatar'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { switchableTo, workSummary } from '@/lib/staffRole'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { AlsoIn, KeyChips, RemoveControl } from '@/components/admin/TeamTables'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -57,7 +58,7 @@ function roleBadge(rl: string) {
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
-                             onDelete, onChangeRole, nameHref, soleOrgAdmin }: {
+                             onDelete, onChangeRole, nameHref, soleOrgAdmin, team }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
@@ -75,9 +76,31 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   /** The sole active org_admin of a tenant cannot be revoked — the backend enforces it; this
    *  just keeps a dead affordance off the screen. */
   soleOrgAdmin?: (a: AdminItem) => boolean
+  /** Team tables T2: this is Team -> ADMINS. The Role column becomes "Also in" and "Admin permissions"
+   *  (only the Admins table's own keys; the organisation admin reads "Organisation admin (lead)"), and a
+   *  row gains "Remove from Admins" where the server says the endpoint accepts it (`remove`). */
+  team?: { onRemove: (a: AdminItem) => void; editHref?: (a: AdminItem) => string | null }
 }) {
   const { t } = useT()
-  const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
+  const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0) + (team ? 1 : 0)
+  /** T2: the Admins table's permission cell — the lead's fixed tier, or this table's own chips. */
+  const adminKeysCell = (a: AdminItem) => a.lead ? (
+    <span className="block">
+      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${roleBadge('org_admin')}`}>
+        {t('admin.team.leadChip')}
+      </span>
+      <span className="mt-0.5 block text-[11px] text-ground-500">{t('admin.team.leadNote')}</span>
+    </span>
+  ) : (
+    <span className="block">
+      <KeyChips keys={a.admin_keys} />
+      {team?.editHref?.(a) && (
+        <Link href={team.editHref(a) as string} className="mt-0.5 block text-xs text-primary-600 hover:text-primary-800">
+          {t('admin.team.edit.admins')}
+        </Link>
+      )}
+    </span>
+  )
 
   /** The status a row shows. ⚠ THE RULE ITSELF NOW LIVES IN `lib/staffStatus` (2026-09-09) —
    *  the Reviewers table needed the same one the moment Revoke arrived on it, and this file
@@ -139,6 +162,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             {t('admin.hasWorkRevoke')}
           </span>
         )}
+        {team && <RemoveControl remove={a.remove} table="admins" busy={busyId === a.id}
+          onRemove={() => team.onRemove(a)} />}
         {onChangeRole && switchableTo(a) && (
           <button disabled={busyId === a.id} onClick={() => onChangeRole(a)}
             className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
@@ -187,12 +212,19 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
+              {team ? (
+                <span className="flex min-w-0 flex-col gap-1">
+                  {adminKeysCell(a)}
+                  <AlsoIn row={a} here="admins" />
+                </span>
+              ) : (
               <span className="flex flex-wrap items-center gap-1">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] ${roleBadge(a.role)}`}>
                   {t(`admin.role.${a.role}`)}
                 </span>
                 <PermissionChips row={a} />
               </span>
+              )}
               {actions}
             </div>
           </div>
@@ -212,7 +244,12 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.nameHeader')}</th>
             <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.emailHeader')}</th>
             {showOrg && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.orgHeader')}</th>}
-            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.roleHeader')}</th>
+            {team ? (<>
+              <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.team.colAlsoIn')}</th>
+              <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.team.colKeys.admins')}</th>
+            </>) : (
+              <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.roleHeader')}</th>
+            )}
             <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.statusHeader')}</th>
             {canAct && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.actionHeader')}</th>}
           </tr>
@@ -228,6 +265,10 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               </td>
               <td className="px-4 py-3 text-ground-500">{a.email}</td>
               {showOrg && <td className="px-4 py-3 text-ground-500">{a.owning_org_name || '—'}</td>}
+              {team ? (<>
+                <td className="px-4 py-3"><AlsoIn row={a} here="admins" /></td>
+                <td className="px-4 py-3">{adminKeysCell(a)}</td>
+              </>) : (
               <td className="px-4 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${roleBadge(a.role)}`}>
                   {t(`admin.role.${a.role}`)}
@@ -235,6 +276,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                 {/* #39 S4: what this person's set adds to (or takes from) the role. */}
                 {a.custom && <div className="mt-1"><PermissionChips row={a} /></div>}
               </td>
+              )}
               {/* Revoked beats paused: a revoked account cannot be brought back by un-pausing,
                   so showing "Paused" over it would name the smaller of two facts. Pause is
                   rendered HERE as well as on the Reviewers table because both screens list the

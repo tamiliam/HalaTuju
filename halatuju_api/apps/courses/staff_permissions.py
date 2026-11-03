@@ -68,6 +68,22 @@ PRESETS = {
 LEAD_ROLE = 'org_admin'
 LEAD_TIER = ('see_all', 'qc', 'spending', 'manage_team')   # Sprint 2: payments_approve removed
 
+#: Team tables T2 (owner ruling 5, lead ruling 2026-11-03): the ONE key an organisation admin may hold
+#: beyond the fixed tier — `review`, so they sit at the Reviewers table and can be assigned cases. It is
+#: stored in the row's `permissions` column (an org_admin's column was never read before T2, and live
+#: had no org_admin row with a value) and ONLY Team -> Reviewers -> Add / Remove writes it
+#: (`apps/scholarship/staff_tables_admin.py`). ⚠ EVERY OTHER KEY IN THAT LIST IS IGNORED: the lead tier
+#: stays fixed, and the generic permission editor still refuses the lead.
+LEAD_MAY_ADD = 'review'
+
+
+def lead_reviews(admin):
+    """Has this ORGANISATION ADMIN joined the Reviewers table (`permissions` names `review`)?"""
+    if admin is None or admin.is_super or admin.role != LEAD_ROLE:
+        return False
+    stored = getattr(admin, 'permissions', None)
+    return isinstance(stored, (list, tuple)) and LEAD_MAY_ADD in stored
+
 
 def _ordered(keys):
     """`keys` in catalogue order, as a tuple. One spelling of a set for every reader."""
@@ -108,7 +124,8 @@ def resolve(admin):
     """THE ONE DOOR: the keys `admin` holds, as a tuple in catalogue order.
 
       super        → every key (a super passes every check; payments still lets them fill ONE slot)
-      org_admin    → the lead tier, whatever `permissions` says (never editable)
+      org_admin    → the lead tier, whatever `permissions` says (never editable) — plus `review`
+                     when Team -> Reviewers added them (T2, `lead_reviews`); nothing else is read
       team member  → `permissions` cleaned, or the preset of `role` when it is NULL
       anyone else  → nothing (a referral partner, a SOURCE user — source sign-in S1 —, an unknown
                      role, None). A source user is never a team member, whatever `permissions` says.
@@ -118,6 +135,8 @@ def resolve(admin):
     if admin.is_super:
         return CATALOGUE
     if admin.role == LEAD_ROLE:
+        if lead_reviews(admin):
+            return _ordered((*LEAD_TIER, LEAD_MAY_ADD))
         return preset_for(LEAD_ROLE)
     if admin.role not in PRESETS:
         return ()
@@ -174,7 +193,7 @@ def holders(organisation, key):
     return [a for a in staff if key in resolve(a)]
 
 
-def team_holding(keys):
+def team_holding(keys, *, with_lead=False):
     """A `Q` for the TEAM MEMBERS who hold ANY of `keys`, to narrow a `PartnerAdmin` queryset
     (Sprint 3: the Reviewers tab and the assignable list).
 
@@ -193,9 +212,14 @@ def team_holding(keys):
     for key in wanted:
         holds(None, key)                   # validates the key, so a typo raises here too
     preset_roles = [r for r in TEAM_ROLES if wanted & set(preset_for(r))]
-    custom = (PartnerAdmin.objects.filter(role__in=TEAM_ROLES, is_super_admin=False,
+    # Team tables T2: ``with_lead`` also answers the ORGANISATION ADMINS who joined the Reviewers table
+    # (`lead_reviews`) when `review` is asked — read in the SAME query (the Reviewers list's budget).
+    roles = (*TEAM_ROLES, LEAD_ROLE) if with_lead and LEAD_MAY_ADD in wanted else TEAM_ROLES
+    custom = (PartnerAdmin.objects.filter(role__in=roles, is_super_admin=False,
                                           permissions__isnull=False)
               .only('id', 'role', 'is_super_admin', 'permissions'))
-    custom_ids = [a.pk for a in custom if wanted & set(resolve(a))]
+    custom_ids = [a.pk for a in custom
+                  if (lead_reviews(a) if a.role == LEAD_ROLE else wanted & set(resolve(a)))]
     return (Q(permissions__isnull=True, role__in=preset_roles, is_super_admin=False)
             | Q(pk__in=custom_ids))
+

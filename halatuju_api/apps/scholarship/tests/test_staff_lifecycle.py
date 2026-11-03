@@ -353,7 +353,7 @@ class TestInviteAgainAfterCancel(TestCase):
         PartnerAdmin.objects.filter(pk=account.pk).update(is_active=False)
         return account, inv
 
-    def _invite(self, email, role='qc', name='Again'):
+    def _invite(self, email, role='admin', name='Again'):   # T2: an org admin invites Admin / Reviewer
         return authed_client(self.org_admin).post(
             '/api/v1/admin/invite/', {'email': email, 'name': name, 'role': role}, format='json')
 
@@ -363,7 +363,7 @@ class TestInviteAgainAfterCancel(TestCase):
         with patch(f'{REQ}.get', return_value=_resp(body=user)), \
                 patch(f'{REQ}.put', return_value=_resp()) as put, \
                 patch(f'{REQ}.post') as create:
-            r = self._invite(account.email, role='qc')
+            r = self._invite(account.email, role='admin')
         self.assertEqual(r.status_code, 201, r.content[:300])
         self.assertFalse(r.json()['already_registered'])
         create.assert_not_called()                                   # same login, not a new one
@@ -372,10 +372,12 @@ class TestInviteAgainAfterCancel(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(password, mail.outbox[0].body)
         account.refresh_from_db()
-        self.assertEqual((account.is_active, account.role, account.name), (True, 'qc', 'Again'))
+        self.assertEqual((account.is_active, account.role, account.name), (True, 'admin', 'Again'))
+        # Team tables T2: brought back as an Admin, they start at the minimum — never the old set.
+        self.assertEqual(account.permissions, ['see_all'])
         new = Invitation.objects.filter(partner_admin=account).exclude(pk=old.pk).get()
         self.assertEqual((new.role, new.credential_issued, invitations.status_of(new)),
-                         ('qc', True, 'invited'))
+                         ('admin', True, 'invited'))
         old.refresh_from_db()
         self.assertEqual(invitations.status_of(old), 'revoked')
 
@@ -422,7 +424,7 @@ class TestInviteAgainAfterCancel(TestCase):
         user = _auth_user(worker.supabase_user_id, worker.email, signed_in=True, owes=False)
         with patch(f'{REQ}.get', return_value=_resp(body=user)) as get, \
                 patch(f'{REQ}.put') as put, patch(f'{REQ}.post') as post:
-            r = self._invite(worker.email, role='finance', name='New Name')
+            r = self._invite(worker.email, role='admin', name='New Name')
         self.assertEqual(r.status_code, 409, r.content[:300])
         for m in (get, put, post):
             m.assert_not_called()                        # refused on the footprint, before Supabase
@@ -435,7 +437,7 @@ class TestInviteAgainAfterCancel(TestCase):
         make_application('assigned', reviewer=account,
                          cohort=make_cohort(owning_organisation=self.org))
         with patch(f'{REQ}.put') as put:
-            r = self._invite(account.email, role='qc')
+            r = self._invite(account.email, role='admin')
         self.assertEqual(r.status_code, 409)
         put.assert_not_called()
 
@@ -538,13 +540,14 @@ class TestDeleteRemovesTheLogin(TestCase):
         # …and the same address is invited as if for the first time: a NEW login, a password.
         with patch(f'{REQ}.post', return_value=_resp(200, {'id': 'brand-new-uid'})) as create:
             r = authed_client(self.org_admin).post('/api/v1/admin/invite/', {
-                'email': target.email, 'name': 'New Person', 'role': 'finance'}, format='json')
+                'email': target.email, 'name': 'New Person', 'role': 'admin'}, format='json')
         self.assertEqual(r.status_code, 201, r.content[:300])
         self.assertFalse(r.json()['already_registered'])
         password = create.call_args[1]['json']['password']
         self.assertIn(password, mail.outbox[-1].body)
         again = PartnerAdmin.objects.get(email=target.email)
-        self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'finance'))
+        self.assertEqual((again.supabase_user_id, again.role), ('brand-new-uid', 'admin'))
+        self.assertEqual(again.permissions, ['see_all'])   # T2: a new Admin starts at the minimum
 
     def test_a_login_that_is_also_a_student_survives(self):
         target = make_admin('admin', owning_org=self.org)
@@ -725,7 +728,7 @@ class TestDeleteRemovesTheLogin(TestCase):
         user['app_metadata']['temp_password_expired'] = True
         with patch(f'{REQ}.get', return_value=_resp(body=user)), patch(f'{REQ}.put') as put:
             r = authed_client(self.org_admin).post('/api/v1/admin/invite/', {
-                'email': account.email, 'name': 'X', 'role': 'qc'}, format='json')
+                'email': account.email, 'name': 'X', 'role': 'reviewer'}, format='json')
         self.assertEqual(r.status_code, 409)
         put.assert_not_called()
 

@@ -5651,7 +5651,7 @@
       "lastOrgAdmin": "Ini satu-satunya pentadbir organisasi — lantik seorang lagi sebelum menarik balik yang ini.",
       "staffRole": {
         "reviewer": "Penilai",
-        "admin": "Pentadbir lihat sahaja",
+        "admin": "Pentadbir",
         "qc": "Kawalan mutu",
         "finance": "Kewangan"
       },
@@ -9099,6 +9099,78 @@
         "loadError": "Kemajuan tidak dapat dimuatkan.",
         "footnote": "Kerja yang sama dipaparkan dalam fail setiap penerima biasiswa (tab Perkembangan) dan, untuk pelajar mereka sendiri, di halaman Pelajar saya mentor. Kakitangan dan mentor sahaja; tidak sekali-kali penaja atau rakan kongsi. “Lewat” muncul selepas tarikh akhir bagi yang belum selesai."
       }
+    },
+    "team": {
+      "desc": "Semua orang yang sudah berada dalam organisasi ini. Seorang boleh berada dalam lebih daripada satu jadual.",
+      "tabMentors": "Mentor",
+      "mentorsSoon": "Buat masa ini mentor disenaraikan di halaman Mentor. Mereka akan berpindah ke tab ini tidak lama lagi.",
+      "openMentors": "Buka Mentor",
+      "add": {
+        "admins": "Tambah Pentadbir",
+        "reviewers": "Tambah Penilai"
+      },
+      "addIntro": {
+        "admins": "Pilih seseorang yang sudah dalam pasukan. Mereka bermula dengan kebenaran minimum, Lihat semua pelajar, dan anda boleh menanda kebenaran pentadbir lain selepas itu. Log masuk mereka tidak diusik dan tiada e-mel dihantar.",
+        "reviewers": "Pilih seseorang yang sudah dalam pasukan: pentadbir, mentor atau pentadbir organisasi. Mereka bermula dengan Menilai pelajar yang ditugaskan; tanda Kawalan mutu selepas itu jika perlu. Tiada sesiapa menyemak mutu kes yang dinilainya sendiri. Log masuk mereka tidak diusik dan tiada e-mel dihantar."
+      },
+      "addCta": {
+        "admins": "Tambah {name} ke Pentadbir",
+        "reviewers": "Tambah {name} ke Penilai"
+      },
+      "added": {
+        "admins": "{name} kini dalam Pentadbir.",
+        "reviewers": "{name} kini dalam Penilai."
+      },
+      "choose": "Pilih seseorang",
+      "search": "Cari mengikut nama atau e-mel",
+      "none": "Tiada orang lain dalam pasukan boleh ditambah ke jadual ini. Orang baharu dijemput di Jemputan.",
+      "loadFailed": "Pasukan tidak dapat dimuatkan. Sila cuba lagi.",
+      "colAlsoIn": "Juga dalam",
+      "colKeys": {
+        "admins": "Kebenaran pentadbir",
+        "reviewers": "Kebenaran penilai"
+      },
+      "chip": {
+        "admins": "Pentadbir",
+        "reviewers": "Penilai",
+        "mentors": "Mentor",
+        "lead": "Pentadbir (ketua)"
+      },
+      "leadChip": "Pentadbir organisasi (ketua)",
+      "leadNote": "Tetap: setiap kebenaran pentadbir serta kuasa ketua",
+      "noSelfQc": "Tidak pernah menyemak mutu kes yang dinilainya sendiri",
+      "edit": {
+        "admins": "Ubah kebenaran pentadbir",
+        "reviewers": "Ubah kebenaran penilai"
+      },
+      "editorOnly": {
+        "admins": "Hanya kebenaran pentadbir ditunjukkan di sini. Kebenaran penilai ada di tab Penilai.",
+        "reviewers": "Hanya kebenaran penilai ditunjukkan di sini. Kebenaran pentadbir ada di tab Pentadbir."
+      },
+      "removeFrom": {
+        "admins": "Keluarkan daripada Pentadbir",
+        "reviewers": "Keluarkan daripada Penilai"
+      },
+      "removeTitle": {
+        "admins": "Keluarkan {name} daripada Pentadbir?",
+        "reviewers": "Keluarkan {name} daripada Penilai?"
+      },
+      "removeBody": {
+        "admins": "Kebenaran pentadbir mereka ditarik balik. Jadual lain dan log masuk mereka kekal seperti sedia ada.",
+        "reviewers": "Kebenaran penilai mereka ditarik balik. Jadual lain dan log masuk mereka kekal seperti sedia ada."
+      },
+      "removed": {
+        "admins": "{name} telah dikeluarkan daripada Pentadbir.",
+        "reviewers": "{name} telah dikeluarkan daripada Penilai."
+      },
+      "keepsAdminPages": "Mereka kekal sebagai Pentadbir dan mengekalkan halaman pentadbir.",
+      "financeCheckOff": "Mereka orang terakhir yang ditetapkan sebagai Kewangan: kredit dompet tidak lagi melalui semakan kewangan.",
+      "note": {
+        "last_table": "Satu-satunya jadual: tarik balik akses",
+        "mentors_only": "Hanya Mentor yang tinggal: tarik balik akses atau hentikan bimbingan",
+        "has_open_cases": "Serahkan kes mereka kepada orang lain dahulu"
+      },
+      "inviteAdminNote": "Pentadbir yang dijemput bermula dengan Lihat semua pelajar. Tanda kebenaran pentadbir lain di Pasukan selepas mereka menyertai."
     }
   },
   "documentsTab": {

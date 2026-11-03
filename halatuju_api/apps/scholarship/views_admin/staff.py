@@ -191,3 +191,81 @@ def _permission_history(target, viewer):
                     'removed': [k for k in before if k not in after],
                     'at': r.created_at, 'by': by, 'by_super': by_super})
     return out
+
+
+class AdminTeamTableView(_AdminBase):
+    """POST admin/team/<table>/ ``{admin_id, action: add|remove, dry_run?}`` — Team -> Admins / Reviewers
+    -> Add, or Remove from (Team tables T2). The rules are `staff_tables_admin`; this is the door.
+
+    Only a super or an organisation admin knocks (who may edit permissions on Team today); a person the
+    caller may not act on (`staff_tables_admin.may_act`: another organisation's, a fellow organisation
+    admin, a super, a referral partner, a source user) is 404, never 403. The org admin may add or remove
+    THEMSELVES at Reviewers (lead ruling Q4). Never touches a sign-in; never emails. ``dry_run: true``
+    answers what the change WOULD do and refuses exactly as the write would."""
+
+    def post(self, request, table):
+        from apps.courses.models import PartnerAdmin
+        from .. import staff_tables_admin as sta
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+        body = request.data if isinstance(request.data, dict) else None
+        action = body.get('action') if body else None
+        try:
+            target_id = int(body.get('admin_id')) if body else None
+        except (TypeError, ValueError):
+            target_id = None
+        if table not in sta.TABLES or action not in ('add', 'remove') or target_id is None:
+            return Response({'error': 'admin_id, and action add or remove, are required.',
+                             'code': 'bad_request'}, status=status.HTTP_400_BAD_REQUEST)
+        target = PartnerAdmin.objects.filter(pk=target_id).first()
+        if target is None or not sta.may_act(admin, target, table):
+            return Response({'error': 'Admin not found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        dry_run = body.get('dry_run') is True
+        try:
+            target, plan = sta.change(target.pk, table, action, by=admin, dry_run=dry_run)
+        except sta.Refused as refused:
+            return Response({'error': refused.message, 'code': refused.code, **refused.extra},
+                            status=refused.status)
+        if not dry_run:
+            logger.info('AUDIT staff_table_%s by=%s target=%s table=%s role=%s->%s before=%s after=%s',
+                        action, admin.email or '', target.pk, table, plan['role_from'], plan['role'],
+                        ','.join(plan['before']) or '-', ','.join(plan['after']) or '-')
+        return Response({'id': target.pk, 'table': table, 'action': action, 'dry_run': dry_run,
+                         'role': plan['role'], 'role_changed': plan['role_changed'],
+                         'added': plan['added'], 'removed': plan['removed'],
+                         'consequences': plan['consequences'],
+                         'finance_check_off': plan['finance_check_off'],
+                         'keeps_admin_pages': plan['keeps_admin_pages']})
+
+
+class AdminTeamCandidatesView(_AdminBase):
+    """GET admin/team/<table>/candidates/ — the Add sheet: ACTIVE members of the caller's organisation
+    (a super: every organisation, or ``?organisation=<id>``) the caller may act on, not in that table,
+    whom an Add would accept. Revoked / inactive people and other organisations' are never listed."""
+
+    def get(self, request, table):
+        from apps.courses import staff_permissions as sp
+        from apps.courses import staff_tables
+        from .. import staff_tables_admin as sta
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+        if table not in sta.TABLES:
+            return Response({'error': 'Not found', 'code': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        org_id = admin.owning_organisation_id
+        if admin.is_super:
+            raw = request.query_params.get('organisation')
+            org_id = int(raw) if raw and raw.isdigit() else None
+        rows = []
+        for a, plan in sta.candidates(admin, table, org_id):
+            rows.append({'id': a.pk, 'name': a.name, 'email': a.email,
+                         'lead': sp.is_lead_tier(a), 'mentor_only': a.is_mentor,
+                         'tables': list(staff_tables.tables(a)),
+                         'consequences': plan.get('consequences', [])})
+        return Response({'table': table, 'candidates': rows})

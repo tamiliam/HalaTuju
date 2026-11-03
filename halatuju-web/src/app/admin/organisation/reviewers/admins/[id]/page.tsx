@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -10,6 +10,7 @@ import { getStaffPermissions, type StaffPermissionsView } from '@/lib/admin-api/
 import { effectiveRole } from '@/lib/navigation'
 import { mayOpen } from '@/lib/pageGuard'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { teamLabelRole } from '@/lib/staffRole'
 import RecordState from '@/components/admin/RecordState'
 import PanelTabs from '@/components/admin/PanelTabs'
 import LazyPermissionEditor from '@/components/admin/LazyPermissionEditor'
@@ -35,6 +36,10 @@ export default function AdminPersonPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
+  // Team tables T2: which table's permissions this visit edits (`?table=admins|reviewers`); the card
+  // shows only that table's keys. Absent (an old link) = every key, as before.
+  const asked = useSearchParams()?.get('table')
+  const table = asked === 'admins' || asked === 'reviewers' ? asked : undefined
   const viewerRole = effectiveRole(role)
   const mayView = mayOpen('/admin/organisation/reviewers', role)   // T1: with the served tables
   const mayManage = viewerRole === 'super' || viewerRole === 'org_admin'
@@ -61,7 +66,7 @@ export default function AdminPersonPage() {
   return (
     <div className="space-y-3.5">
       {/* `?tab=admins` is what the Team page reads, so Back lands on the tab the person came from. */}
-      <Link href="/admin/organisation/reviewers?tab=admins"
+      <Link href={`/admin/organisation/reviewers?tab=${table ?? 'admins'}`}
         className="text-sm text-primary-600 hover:text-primary-800">
         ← {t('admin.person.back')}
       </Link>
@@ -69,7 +74,7 @@ export default function AdminPersonPage() {
       <section className="bg-ground-0 rounded-xl shadow-sm border px-4 sm:px-5 py-4">
         <h1 className="text-lg sm:text-xl font-bold truncate">{who}</h1>
         <p className="text-sm text-ground-500 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <span>{t(`admin.role.${view.role}`)}</span>
+          <span>{t(`admin.role.${teamLabelRole(view.role)}`)}</span>
           <span aria-hidden>·</span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STAFF_STATUS_TONE[status]}`}>
             {t(`admin.reviewers.status.${status}`)}
@@ -93,7 +98,7 @@ export default function AdminPersonPage() {
         tabs={[{ key: 'permissions', labelKey: 'admin.person.tabPermissions' }]} />
 
       {token && (
-        <LazyPermissionEditor adminId={view.id} name={who} token={token} initial={view} />
+        <LazyPermissionEditor adminId={view.id} name={who} token={token} initial={view} table={table} />
       )}
     </div>
   )

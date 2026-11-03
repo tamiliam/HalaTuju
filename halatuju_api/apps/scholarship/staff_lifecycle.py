@@ -62,6 +62,13 @@ def team_cards(admins):
     return staff_photo.team_cards(admins)
 
 
+def team_table_fields(caller, admins):
+    """Team tables T2: `staff_tables_admin.row_fields` — here so `apps.courses.views_staff` reaches it
+    through its ONE scholarship door (`views_admin.scholarship_staff()`), as `team_cards` does."""
+    from . import staff_tables_admin
+    return staff_tables_admin.row_fields(caller, admins)
+
+
 def open_cases(admin):
     """How many cases ``admin`` still HOLDS: in-play applications assigned to them, and — #39 S4
     review fix 5 — any assigned case whose decision has been REOPENED (`decision_reopened_at`), which

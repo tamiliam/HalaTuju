@@ -5651,7 +5651,7 @@
       "lastOrgAdmin": "This is the organisation's only administrator — assign another before revoking this one.",
       "staffRole": {
         "reviewer": "Reviewer",
-        "admin": "View-only admin",
+        "admin": "Admin",
         "qc": "QC",
         "finance": "Finance"
       },
@@ -9099,6 +9099,78 @@
         "loadError": "The progress could not be loaded.",
         "footnote": "The same work shows on each scholar’s file (Growth tab) and, for their own students, on the mentor’s My students page. Staff and the mentor only; never sponsors or partners. “Late” appears after the due date for those not done."
       }
+    },
+    "team": {
+      "desc": "Everybody who is already in this organisation. One person can sit in more than one table.",
+      "tabMentors": "Mentors",
+      "mentorsSoon": "Mentors are listed on the Mentors page for now. They move into this tab soon.",
+      "openMentors": "Open Mentors",
+      "add": {
+        "admins": "Add Admin",
+        "reviewers": "Add Reviewer"
+      },
+      "addIntro": {
+        "admins": "Pick someone already in the team. They start with the minimum, See all students, and you tick more admin permissions after. Their sign-in is not touched and no email is sent.",
+        "reviewers": "Pick someone already in the team: an admin, a mentor or the organisation admin. They start with Review assigned students; tick Quality check after if wanted. Nobody ever quality-checks a case they reviewed. Their sign-in is not touched and no email is sent."
+      },
+      "addCta": {
+        "admins": "Add {name} to Admins",
+        "reviewers": "Add {name} to Reviewers"
+      },
+      "added": {
+        "admins": "{name} is now in Admins.",
+        "reviewers": "{name} is now in Reviewers."
+      },
+      "choose": "Choose a person",
+      "search": "Search by name or email",
+      "none": "Nobody else in the team can be added to this table. New people are invited on Invitations.",
+      "loadFailed": "The team could not be loaded. Please try again.",
+      "colAlsoIn": "Also in",
+      "colKeys": {
+        "admins": "Admin permissions",
+        "reviewers": "Reviewer permissions"
+      },
+      "chip": {
+        "admins": "Admin",
+        "reviewers": "Reviewer",
+        "mentors": "Mentor",
+        "lead": "Admin (lead)"
+      },
+      "leadChip": "Organisation admin (lead)",
+      "leadNote": "Fixed: every admin permission plus the lead powers",
+      "noSelfQc": "Never quality-checks a case they reviewed",
+      "edit": {
+        "admins": "Edit admin permissions",
+        "reviewers": "Edit reviewer permissions"
+      },
+      "editorOnly": {
+        "admins": "Only admin permissions are shown here. Reviewer permissions are on the Reviewers tab.",
+        "reviewers": "Only reviewer permissions are shown here. Admin permissions are on the Admins tab."
+      },
+      "removeFrom": {
+        "admins": "Remove from Admins",
+        "reviewers": "Remove from Reviewers"
+      },
+      "removeTitle": {
+        "admins": "Remove {name} from Admins?",
+        "reviewers": "Remove {name} from Reviewers?"
+      },
+      "removeBody": {
+        "admins": "Their admin permissions are taken away. Their other tables and their sign-in stay as they are.",
+        "reviewers": "Their reviewer permissions are taken away. Their other tables and their sign-in stay as they are."
+      },
+      "removed": {
+        "admins": "{name} was removed from Admins.",
+        "reviewers": "{name} was removed from Reviewers."
+      },
+      "keepsAdminPages": "They stay an Admin and keep the admin pages.",
+      "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
+      "note": {
+        "last_table": "Only table: revoke instead",
+        "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead",
+        "has_open_cases": "Reassign their cases first"
+      },
+      "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join."
     }
   },
   "documentsTab": {

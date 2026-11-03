@@ -116,6 +116,21 @@ EXPECTED_CHANGES = {
 }
 
 
+#: Team tables T2 (2026-11-03): the two ROUTES added since the fixtures were made — Team -> Admins /
+#: Reviewers -> Add / Remove (`views_admin/staff.py`). Not a moved cell: a NEW one, so it is declared
+#: here per shape rather than written into the fixture. Only a super or an organisation admin knocks
+#: (who may edit permissions on Team today); the probe's table is `x`, so they get 404 (GET, unknown
+#: table) and 400 (POST, empty body). Everybody else is 403 — `manage_team` opens nothing, and a person
+#: seated at Admins by keys (Rohini) gains NOTHING here.
+T2_ADDED = ('GET api/v1/admin/team/<str:table>/candidates/', 'POST api/v1/admin/team/<str:table>/')
+T2_KNOCKS = ('super', 'org_admin', 'org_admin_mentor')
+
+
+def t2_added_cells(shape):
+    knocks = shape in T2_KNOCKS
+    return {T2_ADDED[0]: 404 if knocks else 403, T2_ADDED[1]: 400 if knocks else 403}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -262,7 +277,7 @@ def _shape_test(shape):
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
         before = _before()[shape]
-        expected = dict(before)
+        expected = {**before, **t2_added_cells(shape)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now

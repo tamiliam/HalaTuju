@@ -1169,6 +1169,25 @@ list = rows that open the case, filters in a Sheet (one `filterControls` for bot
 JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
 NEXT: M6b, M7, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 BUILT, NOT LIVE (branch maint-s7; no migration)
+
+Roadmap T2; decisions.md 2026-11-03 "Team tables T2" (lead rulings Q1-Q4). **Team -> Admins / Reviewers -> Add and
+Remove from** live in `apps/scholarship/staff_tables_admin.py` (`may_act`, `plan_table_change`, `change`,
+`candidates`, `row_fields`); views `views_admin/staff.py` `AdminTeamTableView` (`POST admin/team/<table>/`
+`{admin_id, action: add|remove, dry_run}`) and `AdminTeamCandidatesView` (`GET admin/team/<table>/candidates/`);
+routes in `urls_mentors.py` (urls.py is at the 600-line standard). Add = keys only (+`see_all` / +`review` on the
+materialised preset; role untouched); Remove = that table's keys, and the role moves only where the label would keep
+them seated (`admin`/`finance` -> `reviewer`/`qc`; `reviewer`/`qc` -> `admin`, who keeps the admin pages). The org
+admin may hold `['review']` in `permissions` (`staff_permissions.lead_reviews`; `resolve` ignores every other key
+on a lead row; only Add/Remove Reviewers writes it, by a super or the org admin on their OWN row);
+`team_holding(..., with_lead=True)` puts them on the Reviewers list. Both Team lists serve `tables`, `lead`,
+`admin_keys`, `reviewer_keys`, `remove`. Invites: an org admin invites `admin` / `reviewer` only; a new Admin row
+stores `['see_all']` (`staff_tables.invite_permissions`); old finance / qc invitations still accept and stay
+cancellable (`KIND_CANCELLABLE_ROLES`). Access matrix: no cell moved; the two new routes are `T2_ADDED`. Web:
+`components/admin/TeamTables.tsx` (AlsoIn, KeyChips, RemoveControl, TeamAddSheet, TeamRemoveSheet), `StaffTable`
+`team` prop, the person page's `?table=` (PermissionEditor `table`). Deploy: API first, then web (an old web
+ignores the new fields; a new web on an old API shows no Add/Remove). Open: TD-471 (credits read the finance role).
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T1 LIVE 2026-11-03 (main 83cddf96; api-01239-5jr, web-01067-6fr; hats plumbing; no migration)
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md`; ruling decisions.md 2026-11-03 (option B). A person's

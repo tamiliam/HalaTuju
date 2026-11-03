@@ -27,7 +27,7 @@ from rest_framework.views import APIView
 
 from . import referral_links, staff_reinvite, staff_tables
 from .models import PartnerAdmin, PartnerOrganisation
-from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES, _ORG_ADMIN_MANAGEABLE_ROLES,
+from .views_admin import (PROGRAMME_STAFF_ROLES, _DELETABLE_ROLES,
                           PartnerAdminMixin, _deletable_now, _invitation_dict, _invitations_for,
                           _record_invitation, _record_invitation_send, _staff_target_manageable,
                           scholarship_staff, send_partner_welcome_email, staff_mentor_leaves)
@@ -38,6 +38,9 @@ logger = logging.getLogger('apps.courses.views_admin')
 #: organisation's staff, a platform account (super, referral partner). It confirms nothing about
 #: the other account — not its organisation, its role, its name or whether it is switched off.
 NOT_INVITABLE = "This email address can't be invited. Ask HalaTuju support."
+
+#: Team tables T2: the roles an organisation admin may INVITE (one Admin, one Reviewer).
+ORG_ADMIN_INVITABLE_ROLES = frozenset({'admin', 'reviewer'})
 
 
 def _permission_chips(admin):
@@ -84,7 +87,9 @@ def already_exists_answer(caller, existing):
     if existing is None or not _listed_on_people(caller, existing):
         return Response({'error': NOT_INVITABLE, 'code': 'not_invitable'}, status=409)
     role = 'super' if existing.is_super else existing.role
-    label = dict(PartnerAdmin.ROLE_CHOICES).get(role, role)
+    # Team tables T2: "Finance" and "QC" are no longer labels (owner rulings 4 and 8) — they read as the
+    # table they sit at, Admin and Reviewer.
+    label = dict(PartnerAdmin.ROLE_CHOICES).get({'finance': 'admin', 'qc': 'reviewer'}.get(role, role), role)
     name = existing.name
     if caller.is_super:
         org = existing.owning_organisation.name if existing.owning_organisation_id else 'no organisation'
@@ -215,7 +220,9 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if caller_super:
             invitable = {'admin', 'partner', 'reviewer', 'qc', 'org_admin', 'finance'}
         else:
-            invitable = _ORG_ADMIN_MANAGEABLE_ROLES
+            # Team tables T2: an org admin invites an Admin or a Reviewer — never "Finance" or "QC"
+            # (owner rulings 4 and 8). It still MANAGES all four (`_ORG_ADMIN_MANAGEABLE_ROLES`).
+            invitable = ORG_ADMIN_INVITABLE_ROLES
         role = request.data.get('role', 'reviewer')
         if role not in invitable:
             if caller_super:
@@ -416,7 +423,7 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         # ⚠ A SOURCE USER IS NOT STAFF (source sign-in S1, C3), so not even a super's roster lists one;
         # the org list below already narrows to PROGRAMME_STAFF_ROLES. S2 gives sources their own list.
-        admins = (PartnerAdmin.objects.select_related('org', 'owning_organisation')
+        admins = (PartnerAdmin.objects.select_related('org', 'owning_organisation', 'mentor')
                   .exclude(role__in=PartnerAdmin.NOT_STAFF_ROLES).order_by('-created_at'))   # + mentors (S7a)
         if not admin.is_super:
             # ⚠ **SEEING IS NOT MANAGING (2026-09-09).** This used to filter the LIST by
@@ -442,6 +449,8 @@ class AdminListView(PartnerAdminMixin, APIView):
         staff_footprint, staff_lifecycle = scholarship_staff()
         # Common profile S2: each person's photo, and their phone ONLY if they show it to the team.
         cards = staff_lifecycle.team_cards(admins)
+        # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
+        seats = staff_lifecycle.team_table_fields(admin, admins)
         _dormant_cache = {}
 
         def _dormant_for(a):
@@ -499,6 +508,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # the screen renders a word rather than re-deriving the rule — the same split
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
                 'invitation': _invitation_dict(invites.get(a.id)),
+                **seats[a.id],
                 **cards[a.id],
             })
         return Response({'admins': data})

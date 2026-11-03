@@ -31,11 +31,12 @@ const MentorInviteForm = lazySource(
 const MentorRoster = lazySource(
   () => import('@/components/sources/SourceInvite').then((m) => m.MentorRoster))
 
-const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'mentor', 'sponsors']
+// Team tables T2 (owner ruling 7): Admin, Reviewer, Mentor, Source, Sponsor.
+const KINDS: InvitationKind[] = ['admins', 'reviewers', 'mentor', 'source', 'sponsors']
 
 /** The staff roles this page can grant. The SERVER decides which apply to the selected kind
  *  (`invitable_roles`); this type only keeps the invite client honest. */
-type StaffRole = 'reviewer' | 'admin' | 'qc' | 'finance'
+type StaffRole = 'reviewer' | 'admin'   // T2: "Finance" and "QC" are no longer invited (owner rulings 4, 8)
 
 /** The staff row behind an invitation, for the two actions that act on the ACCOUNT rather than on
  *  the invitation. Only `id` and `is_active` are read; guarded by `admin_id` at every call site. */
@@ -314,6 +315,12 @@ export default function OrganisationInvitationsPage() {
                   ))}
                 </div>
               )}
+              {/* T2 (owner ruling 4): one Admin, starting at the minimum — no "View-only" or "Finance". */}
+              {kind === 'admins' && (
+                <p className="text-xs text-ground-500" data-testid="invite-admin-minimum">
+                  {t('admin.team.inviteAdminNote')}
+                </p>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <input className={inputCls} placeholder={t('admin.name')} value={sName}
                   onChange={(e) => setSName(e.target.value)} required />
@@ -406,7 +413,7 @@ export default function OrganisationInvitationsPage() {
                never an organisation admin's invitation; a sponsor row carries no role. A super
                cancels any. The server holds the same rule (404). */
             canCancel={(row: InvitationRow) =>
-              r === 'super' || !row.role || invitable.includes(row.role)}
+              r === 'super' || !row.role || (data?.cancellable_roles ?? invitable).includes(row.role)}
             empty={emptyWords}
           />
         </>)}

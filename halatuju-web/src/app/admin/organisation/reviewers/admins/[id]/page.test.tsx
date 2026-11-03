@@ -16,7 +16,7 @@ jest.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) =>
     <a href={href}>{children}</a>,
 }))
-jest.mock('next/navigation', () => ({ useParams: () => ({ id: '14' }) }))
+jest.mock('next/navigation', () => ({ useParams: () => ({ id: '14' }), useSearchParams: () => null }))
 jest.mock('@/lib/i18n', () => ({
   useT: () => ({
     t: (k: string, p?: Record<string, string>) =>

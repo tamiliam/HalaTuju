@@ -54,10 +54,15 @@ class Resolve(TestCase):
                 self.assertEqual(PartnerAdmin(role='reviewer', permissions=junk).permission_set, ())
 
     def test_the_lead_tier_ignores_a_stored_list(self):
-        a = PartnerAdmin(role='org_admin', permissions=['review'])
+        # Team tables T2 (lead ruling Q1): `review` is the ONE key an org admin's list may add (Team ->
+        # Reviewers -> Add); every other key in it is ignored, and the tier itself never changes.
+        a = PartnerAdmin(role='org_admin', permissions=['payments_approve', 'payments_check'])
         self.assertEqual(set(a.permission_set), set(sp.LEAD_TIER))
         self.assertFalse(sp.is_custom(a))
         self.assertTrue(sp.is_lead_tier(a))
+        b = PartnerAdmin(role='org_admin', permissions=['review', 'payments_approve'])
+        self.assertEqual(set(b.permission_set), set(sp.LEAD_TIER) | {'review'})
+        self.assertFalse(sp.is_custom(b))
 
     def test_a_super_holds_every_key_by_flag_or_by_role(self):
         for a in (PartnerAdmin(role='reviewer', is_super_admin=True), PartnerAdmin(role='super')):

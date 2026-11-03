@@ -123,10 +123,11 @@ export const FAQ: Record<Audience, QA[]> = {
         again. The same holds for <strong>See all students</strong> on an admin who is holding a case.</>,
     },
     {
-      q: <>Somebody&rsquo;s permissions changed when I changed their role. Why?</>,
-      a: <>A changed set was chosen on top of the OLD role, so <strong>Change role</strong> puts it back to the
-        new role&rsquo;s usual set; the question says so before you answer. Open the <strong>Permissions</strong> tab on their page to
-        add anything back.</>,
+      q: <>What does <strong>Remove from Admins</strong> (or Reviewers) do?</>,
+      a: <>It takes away that table&rsquo;s permissions only; their other tables, their sign-in and their cases
+        stay as they are, and it asks first. It is not offered on somebody&rsquo;s only table (revoke them
+        instead) or while they still have cases assigned (hand them on first). Somebody removed from Reviewers
+        who is still in Admins stays an Admin and keeps the admin pages.</>,
     },
     {
       q: <>An applicant shows <strong>&ldquo;Shared phone: call parent&rdquo;</strong>. What do I do?</>,
@@ -230,26 +231,25 @@ export const FAQ: Record<Audience, QA[]> = {
         cancel a run.</>,
     },
     {
-      q: <>Can I appoint a finance admin myself?</>,
-      a: <>Yes. <strong>Invitations</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active,
-        they approve your payment runs instead of you &mdash; including a run already waiting for approval &mdash;
-        and wallet credits gain their finance check.</>,
+      q: <>Can I appoint somebody to approve payment runs myself?</>,
+      a: <>Yes. Invite them as an <strong>Admin</strong> on <strong>Invitations</strong> (or use <strong>Add
+        Admin</strong> on Team for somebody already in your team), then on Team &rarr; Admins use <strong>Edit admin
+        permissions</strong> and switch on <strong>Approve payment runs</strong>. Once they have signed in,
+        they approve your payment runs instead of you &mdash; including a run already waiting for approval.</>,
     },
     {
       q: <>How do I know which reviewer can take another case?</>,
-      a: <>Open <strong>People</strong>. <strong>Awaiting review</strong> counts the cases a reviewer has not
+      a: <>Open <strong>Team</strong> &rarr; Reviewers. <strong>Awaiting review</strong> counts the cases a reviewer has not
         started; <strong>Interviewing</strong> counts the ones they are working on. A grey 0 under Awaiting
         review means they can take a new case now, even while interviews are still running. Click either
         heading to sort by it.</>,
     },
     {
-      q: <>Can I change somebody&rsquo;s role?</>,
-      a: <>Yes, within two pairs: <strong>Admin</strong> and <strong>Finance</strong>, and
-        <strong> Reviewer</strong> and <strong>QC</strong>. Use <strong>Change role</strong> on their row in
-        <strong> People</strong>. Appointing the first finance admin makes them your payment-run approver and adds
-        the finance check to wallet credits; moving the only one to Admin hands run approval back to you and
-        removes that check &mdash; the question tells you. A reviewer who becomes QC (or back) keeps the cases
-        already assigned to them.</>,
+      q: <>Can one person be an admin and a reviewer?</>,
+      a: <>Yes. On <strong>Team</strong>, <strong>Add Admin</strong> or <strong>Add Reviewer</strong> puts somebody
+        already in your team into that table too, starting with that table&rsquo;s minimum permission
+        (<em>See all students</em>, or <em>Review assigned students</em>). Nothing they had is taken away, and no
+        email is sent. You can add yourself to Reviewers; you will never quality-check a case you reviewed.</>,
     },
     {
       q: <>I cancelled an invitation, or deleted someone, by mistake. Can I invite them again?</>,

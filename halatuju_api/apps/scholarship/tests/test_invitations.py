@@ -263,7 +263,11 @@ class TestTheFourKinds(TestCase):
         # successor; reading it the other way would hide them from their own table.
         payload = self._get('admins')
         self.assertIn('oa2@k.test', {x['email'] for x in payload['invitations']})
-        self.assertEqual(sorted(payload['invitable_roles']), ['admin', 'finance'])
+        # Team tables T2 (owner rulings 4, 8): one Admin — "Finance" is no longer invited; an old
+        # pending finance invitation is still cancellable (`cancellable_roles`).
+        self.assertEqual(sorted(payload['invitable_roles']), ['admin'])
+        self.assertEqual(sorted(payload['cancellable_roles']), ['admin', 'finance'])
+        self.assertNotIn('org_admin', payload['cancellable_roles'])
 
     def test_sponsors_holds_sponsor_invitations_with_no_account_behind_them(self):
         rows = self._get('sponsors')['invitations']

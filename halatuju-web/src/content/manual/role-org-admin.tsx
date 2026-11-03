@@ -107,28 +107,35 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-team',
       title: 'Your team',
       body: (
-        <>Open <strong>Invitations</strong> from the menu to build your
-        team. You can invite three programme roles into your organisation:
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li><strong>Reviewer</strong> — works the applicants you assign them.</li>
-            <li><strong>View-only admin</strong> — sees everything in your organisation, read-only.</li>
-            <li><strong>QC</strong> — the second pair of eyes (and an overflow reviewer).</li>
-          </ul>
-          <span className="mt-2 block">On <strong>People</strong> you can <strong>Resend</strong> a sign-in
-          invite or <strong>Revoke</strong> (and later restore) access — each asks you first. One safeguard: you
-          can&rsquo;t revoke the <strong>last</strong> organisation admin — the Revoke option simply isn&rsquo;t
+        <>Open <strong>Invitations</strong> from the menu to bring new people in. You invite an
+        <strong> Admin</strong>, a <strong>Reviewer</strong>, a <strong>Mentor</strong>, a <strong>Source</strong> or
+        a <strong>Sponsor</strong>. A new Admin starts with the minimum, <em>See all students</em>; you tick
+        more admin permissions on Team once they have joined. There is no separate &ldquo;View-only
+        admin&rdquo;, &ldquo;Finance&rdquo; or &ldquo;QC&rdquo; any more: a finance person is an Admin with
+        <em> Approve payment runs</em>, and a QC person is a Reviewer with <em>Quality check</em>.
+          <span className="mt-2 block"><strong>Team</strong> has a table for each hat &mdash;
+          <strong> Admins</strong>, <strong>Reviewers</strong> and <strong>Mentors</strong> &mdash; and one person can
+          sit in more than one. Each table shows only its own permissions, and &ldquo;Also in&rdquo; names the
+          person&rsquo;s other tables.</span>
+          <span className="mt-2 block"><strong>Add Admin</strong> and <strong>Add Reviewer</strong> (top right of
+          the table) add somebody who is <em>already</em> in your team: added to Admins they get <em>See all
+          students</em>, added to Reviewers they get <em>Review assigned students</em>. Nothing they had is taken
+          away, their sign-in is not touched and no email is sent. You can add yourself to Reviewers to be
+          assigned cases; you will never quality-check a case you reviewed.</span>
+          <span className="mt-2 block"><strong>Remove from Admins</strong> or <strong>Remove from
+          Reviewers</strong> takes away only that table&rsquo;s permissions, and asks first. It is not offered on
+          somebody&rsquo;s only table (revoke them instead), while they still have cases assigned (hand the cases
+          on first), or to take you out of Admins. Somebody removed from Reviewers who is still in Admins stays an
+          Admin and keeps the admin pages; the question says so.</span>
+          <span className="mt-2 block">On Team you can also <strong>Resend</strong> a sign-in invite or
+          <strong> Revoke</strong> (and later restore) access &mdash; each asks you first. One safeguard: you
+          can&rsquo;t revoke the <strong>last</strong> organisation admin &mdash; the Revoke option simply isn&rsquo;t
           offered on the sole admin, so your organisation is never left without one.</span>
-          <span className="mt-2 block"><strong>Change role</strong> switches somebody between
-          <strong> Admin</strong> and <strong>Finance</strong>, or between <strong>Reviewer</strong> and
-          <strong> QC</strong> — nothing else. If the switch gives your organisation its first finance admin
-          (who then approves payment runs, and checks wallet credits) or removes the last one (run approval comes
-          back to you), the question says so before you answer. An admin who still has cases assigned, or a payment run
-          they made or signed that isn&rsquo;t finished, can&rsquo;t become Finance until that is handed on.</span>
           <span className="mt-2 block"><strong>Delete</strong> is offered only for an admin who has done no work
           yet; you type their email address to confirm, and it removes their sign-in and their invitation
           history. Anybody with work on record is revoked instead, and the row says so. Cancelling an
           invitation on <strong>Invitations</strong> stops its emailed password working, and you can invite the
-          same address again afterwards — they get a fresh password.</span></>
+          same address again afterwards &mdash; they get a fresh password.</span></>
       ),
       img: '/manual/org-admin-team.png',
       alt: 'The Invitations page with invite and revoke controls (placeholder)',
@@ -137,11 +144,11 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-permissions',
       title: 'Changing what someone can do',
       body: (
-        <>Each person&rsquo;s role is a <strong>starting set</strong> of permissions, and you can change it. On
-        <strong> Team</strong>, click the person&rsquo;s name (on the Reviewers or the Admins tab) and open the
-        <strong> Permissions</strong> tab on their page: the card <strong>What &hellip; can do</strong> lists them in two groups: <em>Students</em> (Review
-        assigned students, See all students, Quality check) and <em>Money</em> (Spending, Prepare, Check and
-        Approve payment runs). Switch one on or off and the line underneath says what saving would do
+        <>What somebody can do is their <strong>permissions</strong>, and you can change them. On
+        <strong> Team</strong>, use <strong>Edit admin permissions</strong> on the Admins tab or <strong>Edit
+        reviewer permissions</strong> on the Reviewers tab: the card <strong>What &hellip; can do</strong> shows only
+        that table&rsquo;s permissions &mdash; Admins: See all students, Spending, Prepare, Check and Approve payment
+        runs; Reviewers: Review assigned students and Quality check. Switch one on or off and the line underneath says what saving would do
         &mdash; for example that giving someone <em>Approve payment runs</em> makes them the approver, so you
         stop approving runs. Nothing changes until you press <strong>Save changes</strong>; <strong>Reset</strong>
         puts the role&rsquo;s usual set back. A person whose set differs from their role shows a
@@ -152,12 +159,9 @@ export const roleOrgAdmin: ManualChapter = {
             holding cases keeps <em>See all students</em>) until the cases are handed to someone else.</li>
             <li>Nobody signs a payment run twice: a person may prepare <em>and</em> approve runs, never both on the
             same run &mdash; and nobody checks or approves a run they created.</li>
-            <li>A Reviewer or QC keeps <em>Review assigned students</em> or <em>Quality check</em>; without both they
-            would disappear from People. For someone who only needs Spending or to view, invite them as an
-            <strong> Admin</strong> instead.</li>
+            <li>Somebody who is only a Reviewer keeps <em>Review assigned students</em> or <em>Quality
+            check</em>; to take both away, use <strong>Remove from Reviewers</strong> (or revoke them).</li>
             <li>A revoked person&rsquo;s permissions can&rsquo;t be changed until you restore them.</li>
-            <li><strong>Change role</strong> puts a changed set back to the new role&rsquo;s usual set, and says so
-            before you answer.</li>
             <li>You cannot change your own permissions, another organisation admin&rsquo;s, or give anyone
             <em> Manage the team</em> &mdash; that stays with you.</li>
           </ul>

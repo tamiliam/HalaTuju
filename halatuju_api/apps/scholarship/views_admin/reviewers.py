@@ -118,12 +118,17 @@ def _reviewer_workloads(admins, *, organisation_id=None, programme=None, cohort=
     by_email = {a.id: (a.email or '').strip().lower() for a in admins}
     out = {i: {'open_now': 0, 'awaiting_review': 0, 'interviewing': 0, 'completed': 0,
                'recommended': 0, 'declined': 0, 'rejected_after_review': 0, 'awaiting_qc': 0,
-               'unaccounted': 0, '_days': []}
+               'unaccounted': 0, '_days': [], '_open_cases': 0}
            for i in ids}
-    for aid, status, assigned_at, decided_at, verdict, recommended_at in rows.values_list(
+    from ..services.apply_gate import IN_PLAY_STATUSES
+    for aid, status, assigned_at, decided_at, verdict, recommended_at, reopened in rows.values_list(
             'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict',
-            'recommended_at'):
+            'recommended_at', 'decision_reopened_at'):
         slot = out[aid]
+        # Team tables T2: `staff_lifecycle.open_cases`'s count, read in this same query (Remove from
+        # Reviewers is refused while it is above zero). Internal: never serialised by `_reviewer_dict`.
+        if status in IN_PLAY_STATUSES or reopened is not None:
+            slot['_open_cases'] += 1
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:
                 slot['open_now'] += 1
@@ -260,10 +265,12 @@ class _ReviewersBase(_AdminBase):
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
         # ⚠ #39 Sprint 3: the TEAM MEMBERS who hold `review` or `qc` (was the roles reviewer, qc —
         # exactly the presets holding either). The organisation admin's lead tier holds `qc` but
-        # stays OFF this tab (owner, 2026-10-19: "yes"), which `team_holding` guarantees.
+        # stays OFF this tab by its tier (owner, 2026-10-19: "yes"), which `team_holding` guarantees —
+        # until Team -> Reviewers -> Add gives them `review` (Team tables T2, owner ruling 5).
         qs = (PartnerAdmin.objects
-              .filter(Q(is_super_admin=True) | staff_permissions.team_holding(('review', 'qc')))
-              .select_related('reviewer_profile', 'programme').order_by('name'))
+              .filter(Q(is_super_admin=True)
+                      | staff_permissions.team_holding(('review', 'qc'), with_lead=True))
+              .select_related('reviewer_profile', 'programme', 'mentor').order_by('name'))
         if not include_revoked:
             qs = qs.filter(is_active=True)
         if org_id is not None:
@@ -300,8 +307,12 @@ class AdminReviewerListView(_ReviewersBase):
         # one query and one batch signing call for the page (`staff_photo.team_cards`).
         from .. import staff_photo
         cards = staff_photo.team_cards(rows)
+        # Team tables T2: each row's tables, each table's own keys, and where Remove is accepted.
+        from .. import staff_tables_admin
+        seats = staff_tables_admin.row_fields(
+            admin, rows, open_counts={i: w['_open_cases'] for i, w in work.items()})
         return Response({
-            'reviewers': [{**_reviewer_dict(r, work[r.id]), **cards[r.id]} for r in rows],
+            'reviewers': [{**_reviewer_dict(r, work[r.id]), **seats[r.id], **cards[r.id]} for r in rows],
             # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
             # can offer the change wherever a reviewer is shown, without a second round trip.
             'programmes': self._gift_choices(admin),
