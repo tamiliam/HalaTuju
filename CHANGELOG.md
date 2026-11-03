@@ -12,7 +12,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   `oversize_files` line left the budget; the superseded-documents guard extended to the new file — TD-473 lands
   there), `genuineness/results_doc.py` 600 → 482 (the five offer families + the 20 UA names → data-only
   `offer_signatures.py`, re-exported), `officerCockpit.ts` 1657 → 1620 (the offer chips → leaf `offerFacts.ts`).
-- **Genuineness `MODEL_VERSION` 1.23.0** — `genuineness/offer_rulings.py`, applied by one call after the band:
+- **Genuineness `MODEL_VERSION` 1.24.0** (1.23.0 went to request #53 on main) — `genuineness/offer_rulings.py`, applied by one call after the band:
   a public TVET offer named on the letterhead with an offer body (a course line and a date / registration line)
   → **genuine** at any band (Q2; a body-less suspect-band TVET page keeps 1.8.0's NOT CHECKED); a TVET offer slip
   → suspect (ruling 6); a confirmation of studies from a polytechnic / UMS / a Form-6 college → genuine

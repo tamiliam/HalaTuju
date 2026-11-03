@@ -1,5 +1,5 @@
 """The owner's offer-letter genuineness rulings, applied ON TOP OF the pre-S6 call (offer exact-read S6,
-MODEL_VERSION 1.23.0).
+MODEL_VERSION 1.24.0).
 
 A genuineness status is a BURSARY decision, not a document type (owner, 2026-11-01, `docs/decisions.md`):
 `not_offer_letter` is a FAIL, `suspect` means "not sure, a person decides", `genuine` is a public offer we

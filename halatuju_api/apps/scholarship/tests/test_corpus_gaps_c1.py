@@ -3,7 +3,7 @@ public TVET issuer we have not fingerprinted reads NOT CHECKED — no genuinenes
 block, never an official-document request, a plain officer line — and a private college gets an
 honest reason. Everything else scores EXACTLY as before.
 
-SUPERSEDED IN PART (offer exact-read S6, MODEL_VERSION 1.23.0, owner 2026-11-03 Q2 + rulings 2 / 7):
+SUPERSEDED IN PART (offer exact-read S6, MODEL_VERSION 1.24.0, owner 2026-11-03 Q2 + rulings 2 / 7):
 a closed-list TVET offer named on the letterhead WITH an offer body now reads GENUINE (at any band), not
 NOT CHECKED; a private college's suspect-band offer (incl. KPTM / UniKL, ruling C) now reads
 not_offer_letter. NOT CHECKED remains for a body-less suspect-band TVET page. The guards (letterhead

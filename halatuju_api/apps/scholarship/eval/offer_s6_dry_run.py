@@ -15,7 +15,7 @@ TWO PASSES.
        * each offer chip's colour, OLD (main's `documentFacts`, mirrored below) -> NEW (`offerFacts.ts`,
          mirrored below): name, ic, pathway, official, reportingDate.
   2. RE-SCORE (the corpus letters, `--eval-dir`): the S7 preview. Genuineness is re-scored in memory from
-     the corpus's cached text with MODEL 1.23.0 (`offer_replay.authenticity_of`), put on an in-memory COPY
+     the corpus's cached text with MODEL 1.24.0 (`offer_replay.authenticity_of`), put on an in-memory COPY
      of the document, and the doc-level outcomes re-read: status / doc_seen, the Official and Pathway
      chips, `offer_fails`, and the pick planners (`plan_bumi_realign`, `plan_offer_link`) — what S7's
      re-score would move. (The band after a re-score is S7's own dry run: the verdict reads the database.)

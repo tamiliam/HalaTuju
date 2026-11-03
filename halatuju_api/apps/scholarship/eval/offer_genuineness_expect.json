@@ -1,6 +1,6 @@
 {
  "about": "Offer letters - the EXPECTED bursary genuineness status per corpus letter (offer exact-read S6, 2026-11-03). Keys only (PII-free). Every letter's call under MODEL 1.22.0 was checked against the owner's rulings (decisions.md 2026-11-01 rule 3 and 2026-11-03) and the answers; 14 letters are ruled to move (portal / e-Daftar printouts -> suspect 3; public confirmation letters -> genuine 5; public TVET offers -> genuine 3; a TVET offer slip -> suspect 1; a private conditional offer -> not_offer_letter 1; a polytechnic offer the 'Sdn Bhd' veto failed -> genuine 1); every other letter keeps its 1.22.0 call. null = no text (no signal). Read by eval/offer_genuineness_check.py.",
- "model_version_ruled": "1.23.0",
+ "model_version_ruled": "1.24.0",
  "expect": {
   "offer_letter__a101__d2187": "genuine",
   "offer_letter__a102__d1274": "genuine",
