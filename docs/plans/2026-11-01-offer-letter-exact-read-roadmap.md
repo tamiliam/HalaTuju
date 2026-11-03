@@ -689,6 +689,26 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - Dry run: an app with no corpus re-score is its own `no_rescore` bucket; the re-score map is keyed by
     DOCUMENT; every re-score lifted by a ruling is listed (`lifted_by_a_ruling`). A stale `pathway_confirm` on a
     confirmation letter is logged.
+- **Third review (2026-11-03): H2 closed; the rest fixed** (`tests/test_offer_s6_review3.py`, the reviewer's probes).
+  - The letterhead (the lines above the letter's first reference / date / title / candidate line / salutation)
+    may name ONLY the allowed bodies — no other organisation noun once the allowed names are taken out (street
+    names, web / e-mail / phone lines excepted), no partner wording (`_clean_letterhead`). A strict per-line
+    allowlist was measured and rejected: on the real letters the "letterhead" region also holds the town / state,
+    the ministry's English name, a building, crest noise and — on the IKBN photos — the addressee block, so an
+    allowlist fails all eight real ruling letters; the noun test fails none.
+  - The structure test now also asks for a candidate label WITH a value, an IC number, a course line, a reporting
+    line (offers) and 12+ lines (offers); below the floor the body names the institute again. Measured on the three
+    real TVET letters: every requirement costs nothing (107 / 60 / 60 lines, an IC, a labelled name, a course and a
+    reporting line on each; the IKM photo names its institute in the body). The UMS text layers are one glued line,
+    so a date's left edge is "not a digit" and a glued line's "RUJ" counts as the reference.
+  - THE SAFETY RULE: a closed-list public body, no positive private evidence, one rule missed → suspect below the
+    floor (NOT CHECKED in the suspect band, as 1.8.0) — never a fail. Another organisation named first → a fail by
+    its private reason. Bank / insurer / co-operative lines excuse a "Berhad"; a fee "kepada X Sdn Bhd" does not;
+    an address excuses a "Sdn Bhd" only in the candidate block. Akademi Binaan Malaysia (ABM) is public. A UniKL /
+    KPTM / GMI LETTERHEAD fails; a mention in the body does not. UMS PPPL is a private wing (decisions S6 item 6).
+  - Performance: `Counter` for the token share; 40 000 lines under one second (a timing test).
+  - Dry run: `newly_blocked_no_rescore` vs `blocked_before_and_after_no_rescore`; `moves_by_ruling` lists every
+    re-score move.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

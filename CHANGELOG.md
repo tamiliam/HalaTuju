@@ -62,6 +62,13 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   (`[S6 ruling: <tag>]`, `offer_rulings.ruling_of`), counted by `offer_genuineness_check.py`. The dry run gains
   `no_rescore` and `lifted_by_a_ruling` and keys re-scores by document. The `offer_not_official` text says what
   private means (en / ms / ta).
+- **Third review** (`tests/test_offer_s6_review3.py`): the letterhead may name only the allowed bodies (no other
+  organisation noun, no partner wording); the structure test asks for a labelled name, an IC number, a course
+  and a reporting line and 12+ lines; below the floor the body names the institute again; the SAFETY RULE — a
+  closed-list public body with no private evidence that misses a rule reads suspect (NOT CHECKED in the suspect
+  band), never a fail; another organisation named first is a fail by its reason; bank / insurer / co-operative
+  lines excuse a "Berhad", a fee to a company does not; ABM public; UniKL fails only on the letterhead; UMS PPPL
+  private (owner); linear-time token share (40 000 lines < 1 s); dry-run no-rescore buckets and moves by ruling.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

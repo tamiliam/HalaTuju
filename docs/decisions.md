@@ -38,6 +38,9 @@
    subsidised. That is why UM's Saluran Terbuka ("SATU", self-funded) channel is private although UM is an IPTA.
    GMI (German-Malaysian Institute) joins the MARA-owned private list beside UniKL / KPTM / KUPTM / UPTM; UM SATU
    keeps failing (`results_doc._private_arm_offer`). The student's `offer_not_official` text says the same.
+6. **UMS's PPPL is PRIVATE (owner, 2026-11-03, the same subsidy test).** UMS's self-funded "Pusat Pendidikan
+   Profesional dan Lanjutan" (PPPL; also written "Pusat Pendidikan Lanjutan") is a private wing, like UTM SPACE:
+   a PPPL confirmation or offer reads `not_offer_letter` (`results_doc._PRIVATE_ARM_PHRASES`).
 
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
