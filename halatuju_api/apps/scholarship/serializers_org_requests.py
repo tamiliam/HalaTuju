@@ -325,3 +325,63 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
 
     def get_quote_hours(self, obj):
         return str(obj.quote_hours) if obj.quote_hours is not None else None
+
+
+# ── The LIST row (Requests list R1, 2026-11-03) ───────────────────────────────────────
+# A row is what the list DRAWS, and nothing else: no description, no thread, no attachments (so
+# no Supabase signing per row), no analyses. The detail page reads `getOrgRequest(id)` for the
+# rest. Two classes again, for the reason given above: an exact-key snapshot pins each, and the
+# org one names no owner-only key. `tags` is served (`org_requests_queue.row_tags`), never derived
+# in the browser, and is computed per role from `annotate_tags` columns.
+
+class OrgRequestOrgRowSerializer(serializers.Serializer):
+    """One row of an ORGANISATION's list. `kind` is the FINAL classification, exactly as on
+    `OrgRequestOrgSerializer.get_kind` — and there is no "filed as" for the organisation (owner,
+    2026-10-29). Input is an ``OrgRequest`` from `org_requests_queue.annotate_tags`."""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    kind = serializers.SerializerMethodField()
+    status = serializers.CharField()
+    submitted_by_name = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
+    tags = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        return org_requests._effective_kind(obj)
+
+    def get_submitted_by_name(self, obj):
+        return (getattr(obj.submitted_by, 'name', '') or '').strip()
+
+    def get_tags(self, obj):
+        from . import org_requests_queue
+        return org_requests_queue.row_tags(obj, is_super=False)
+
+
+class OrgRequestOwnerRowSerializer(serializers.Serializer):
+    """One row of the OWNER's list: the organisation row plus whose it is and, ONLY when triage
+    changed it, the kind that was filed (`filed_kind`, '' otherwise) — the "Filed as X" chip."""
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    kind = serializers.SerializerMethodField()
+    filed_kind = serializers.SerializerMethodField()
+    status = serializers.CharField()
+    organisation_name = serializers.SerializerMethodField()
+    submitted_by_name = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
+    tags = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        return org_requests._effective_kind(obj)
+
+    def get_filed_kind(self, obj):
+        return obj.kind if org_requests._effective_kind(obj) != obj.kind else ''
+
+    def get_organisation_name(self, obj):
+        return (getattr(obj.organisation, 'name', '') or '').strip()
+
+    def get_submitted_by_name(self, obj):
+        return (getattr(obj.submitted_by, 'name', '') or '').strip()
+
+    def get_tags(self, obj):
+        from . import org_requests_queue
+        return org_requests_queue.row_tags(obj, is_super=True)

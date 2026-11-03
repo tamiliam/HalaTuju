@@ -6,13 +6,14 @@ Part of the `views_admin` package. Every name below is re-exported from
 """
 import logging
 
-from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.response import Response
+from halatuju.pagination import FlexiblePageNumberPagination
 
 from .. import staff_activity
-from ..models import OrgRequest, OrgRequestAnalysis, OrgRequestComment
+from ..models import OrgRequest
 from ..serializers_admin import OrgRequestOrgSerializer, OrgRequestOwnerSerializer
+from ..serializers_org_requests import OrgRequestOrgRowSerializer, OrgRequestOwnerRowSerializer
 from .base import _AdminBase
 
 #: THE PACKAGE'S LOGGER NAME, SPELLED OUT. `__name__` here would read
@@ -130,25 +131,35 @@ class AdminOrgRequestListView(_OrgRequestsBase):
         org, err = self._org_narrowing(request, admin)
         if err:
             return err
-        # TD-291: every per-row read is PREFETCHED — the thread, the attachments and (owner
-        # payload only) the analyses — so the page costs the same few queries at any length. The
-        # readers (`org_requests.comments_for`, `approved_analysis`, `get_analyses`) filter the
-        # loaded rows themselves; `test_query_budgets.TestTheRequestsListQueryBudget` holds it.
-        # org-fence: a prefetch only loads children of the fenced requests below.
-        prefetch = [Prefetch('comments', OrgRequestComment.objects.select_related('author_admin')),
-                    'attachments']
-        if self.has_role(admin, 'super'):
-            # org-fence: as above — children of the fenced list only.
-            prefetch.append(Prefetch('analyses',
-                                     OrgRequestAnalysis.objects.select_related('approved_by')))
+        from .. import org_requests_queue as queue
+        filters, ok = queue.parse_filters(request.query_params)
+        if not ok:          # an unknown group/kind is refused, never read as "all" (R1, D6)
+            return Response({'error': 'bad_filter', 'code': 'bad_filter'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        is_super = self.has_role(admin, 'super')
+        # Requests list R1 (2026-11-03): a PAGED list of LIGHT rows. The thread, attachments and
+        # analyses the TD-291 prefetch used to load are not on a row any more — the detail page
+        # reads them — so a page is: the tab counts (one aggregate), the paginator's count, and
+        # the page itself with its tags as `Exists` columns. `TestTheRequestsListQueryBudget`.
         # org-fence: list scoped to the caller's organisation (super global) via _org_scoped.
-        qs = self._org_scoped(
-            OrgRequest.objects.select_related('organisation', 'submitted_by', 'approved_by')
-            .prefetch_related(*prefetch),
-            admin, field='organisation_id')
+        qs = self._org_scoped(OrgRequest.objects.all(), admin, field='organisation_id')
         if org is not None:
             qs = qs.filter(organisation=org)
-        return Response({'requests': [self._serialize(admin, r) for r in qs]})
+        rows = queue.annotate_tags(
+            qs.filter(queue.filters_q(filters, is_super=is_super))
+            .select_related('organisation', 'submitted_by')
+            .order_by('-created_at', '-id'),       # the id breaks ties, so paging is stable
+            is_super=is_super)
+        paginator = FlexiblePageNumberPagination()
+        page = paginator.paginate_queryset(rows, request, view=self)
+        row_serializer = OrgRequestOwnerRowSerializer if is_super else OrgRequestOrgRowSerializer
+        return paginator.envelope(
+            row_serializer(page, many=True).data, results_key='requests',
+            # The tab counts are of the WHOLE (fenced, crumb-narrowed) list, never of the kind or
+            # search filter — `count` beside them is the filtered total.
+            summary=queue.tab_counts(qs, is_super=is_super),
+            # The page's ids in order, for the detail page's Previous / Next.
+            ids=[r.id for r in page])
 
     def post(self, request):
         gate = self._flag()
@@ -206,48 +217,21 @@ class AdminOrgRequestCountView(_OrgRequestsBase):
         admin, err = self._org_side(request)
         if err:
             return err
-        from django.db.models import Count, Q
+        # Requests list R1 (2026-11-03): the rule lives in ONE place, `needs_action_q`, which the
+        # list's "Needs action" tab also reads — so the badge that brings somebody to the page and
+        # the tab they land on cannot disagree. TD-205 (super: untriaged, or a triaged feature
+        # with no approved live analysis) and TD-201 (org_admin: not terminal, and a quote or a
+        # question waiting on them) are written out in its docstring; the tests that pinned this
+        # endpoint before the move are unchanged.
+        from .. import org_requests_queue as queue
         if self.has_role(admin, 'super'):
-            # TD-205: "waiting on us" is BOTH ends of the engineer's involvement. Untriaged is the
-            # obvious half. The other is a triaged FEATURE with no approved analysis — it cannot be
-            # quoted at all (`analysis_required` refuses), so it is stuck BY CONSTRUCTION and
-            # nothing else says so. A triaged BUG is deliberately NOT counted: a bug is free and
-            # schedulable straight from triage, so it waits on a decision, not on an analysis.
-            #
-            # A filtered Count, and one annotate only (two multi-valued annotates multiply each
-            # other — this project has been bitten by that).
-            #
-            # A single `.exclude(analyses__approved_at__isnull=False, analyses__superseded_at__
-            # isnull=True)` is EQUIVALENT here and was measured to be, not assumed: Django compiles
-            # one multi-condition exclude into a single NOT EXISTS with both conditions on the same
-            # joined row, which is exactly "has no approved, live analysis". The multi-valued
-            # negation trap is real but belongs to CHAINED `.exclude(a).exclude(b)`, which asks two
-            # independent questions of two different rows. Count is kept for being explicit about
-            # the zero and for not needing `.distinct()`, NOT because exclude is broken — an
-            # earlier version of this comment claimed it was, and a bite-check disproved it.
-            #
-            # An approved analysis always carries ≥1 cited file because `approve_analysis` refuses
-            # otherwise, so this agrees with `org_requests.approved_analysis` without re-testing it.
             # org-fence: super is global by design for the triage badge.
-            waiting = OrgRequest.objects.annotate(
-                live_analyses=Count('analyses', filter=Q(analyses__approved_at__isnull=False,
-                                                         analyses__superseded_at__isnull=True)),
-            ).filter(
-                Q(status='submitted')
-                | Q(status='triaged', triaged_kind='feature', live_analyses=0)
-            )
-            return Response({'count': waiting.count()})
-        # TD-201: "needs you" is a quote awaiting a decision, or a question awaiting a reply —
-        # the latter is now a comment row, so it is one subquery instead of walking a JSON list
-        # per request.
+            return Response({'count': OrgRequest.objects.filter(
+                queue.needs_action_q(True)).count()})
         # org-fence: own org only (org_admin). Kept ADJACENT to the query — the static guard reads
         # a 200-char window, so an explanation wedged in between silently un-fences it.
-        qs = OrgRequest.objects.filter(
-            organisation_id=admin.owning_organisation_id,
-        ).exclude(status__in=('done', 'declined'))
-        return Response({'count': qs.filter(
-            Q(status='quoted') | Q(comments__awaiting_reply=True)
-        ).distinct().count()})
+        qs = OrgRequest.objects.filter(organisation_id=admin.owning_organisation_id)
+        return Response({'count': qs.filter(queue.needs_action_q(False)).count()})
 
 
 class AdminOrgRequestDetailView(_OrgRequestsBase):

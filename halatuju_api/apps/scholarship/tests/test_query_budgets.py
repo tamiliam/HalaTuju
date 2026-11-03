@@ -608,6 +608,10 @@ class TestCheck2SyncQueryBudget(WhoseStrBase):
 #: TD-228 (2026-10-05): `super-narrowed` is the super's list named to ONE organisation by the crumb
 #: (`?org=<code>`), with a second organisation's request on the table that must not be listed — the
 #: super reading plus the one lookup that resolves the code, and still flat across rows.
+#: Requests list R1 (2026-11-03): the list is PAGED and a row is LIGHT (no thread, screenshots or
+#: analyses; tags as `Exists` columns). A reading is now auth + the tab-count aggregate + the
+#: paginator's count + the page. MEASURED: org_admin 5 / 5 (flat — two counts arrived as two
+#: prefetches left), super 5 / 5 and narrowed 6 / 6 (each fell by one); budgets lowered to match.
 REQUESTS_ROUTE = 'api/v1/admin/scholarship/requests/'
 REQUESTS_BUDGETS = {key: RECORD.get(key) for key in (
     f'{REQUESTS_ROUTE}::GET::org_admin-2-rows', f'{REQUESTS_ROUTE}::GET::org_admin-6-rows',
@@ -633,8 +637,11 @@ class TestTheRequestsListQueryBudget(TestCase):
         for i in range(n):
             req = OrgRequest.objects.create(organisation=org, submitted_by=oa, kind='feature',
                                             title=f'Request {i}', description='a page')
-            OrgRequestComment.objects.create(org_request=req, author_kind='org', author_admin=oa,
-                                             body='shared', visibility='shared')
+            # R1: the shared comment is a QUESTION to the organisation, so the org's row carries
+            # its "Answer needed" tag and the tag's `Exists` column is in the reading.
+            OrgRequestComment.objects.create(org_request=req, author_kind='owner', author_admin=sup,
+                                             body='shared', visibility='shared',
+                                             awaiting_reply=True)
             OrgRequestComment.objects.create(org_request=req, author_kind='owner', author_admin=sup,
                                              body='internal', visibility='internal')
             OrgRequestAttachment.objects.create(
@@ -656,13 +663,13 @@ class TestTheRequestsListQueryBudget(TestCase):
         self.assertEqual(response.status_code, 200, response.content[:200])
         listed = response.json()['requests']
         self.assertEqual(len(listed), n, 'the fixture stopped listing what it is named for')
-        # The prefetch must not change WHAT is served: the org sees the shared comment only, the
-        # owner both, and the owner payload still names the approved analysis.
-        comments = [c['body'] for c in listed[0]['comments']]
-        self.assertEqual(comments, ['shared'] if role == 'org_admin' else ['shared', 'internal'])
-        self.assertEqual(len(listed[0]['attachments']), 1)
-        if role.startswith('super'):
-            self.assertEqual(listed[0]['analyses'][0]['cited_files'], ['a.py'])
+        # Requests list R1 (2026-11-03): a row is LIGHT — no thread, no screenshots, no analyses
+        # (the detail page reads those) — and its tags are served from `Exists` columns on the
+        # page query: the org's open question, the owner's approved analysis.
+        for heavy in ('comments', 'attachments', 'analyses', 'description'):
+            self.assertNotIn(heavy, listed[0], heavy)
+        self.assertEqual(listed[0]['tags'],
+                         ['answer_needed'] if role == 'org_admin' else ['analysed'])
         return len(captured.captured_queries)
 
     def test_each_reading_stays_inside_its_budget(self):
