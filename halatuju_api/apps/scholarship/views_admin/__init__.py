@@ -127,7 +127,7 @@ from .letters import (
 )
 from .org_emails import (
     _SponsorEmailsBase, _partner_email_dict, _sponsor_email_dict, AdminPartnerEmailDetailView,
-    AdminPartnerEmailsView, AdminSponsorEmailDetailView, AdminSponsorEmailsView,
+    AdminPartnerEmailsView, AdminSponsorEmailDetailView, AdminSponsorEmailsView, AdminTeamAdminEmailsView,
 )
 from .overview import AdminOverviewLayoutView, AdminProgrammeOverviewView
 from .profiles import (

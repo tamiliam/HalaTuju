@@ -1190,6 +1190,18 @@ year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sand
 doors to Sheets; owner question: should maintenance status / On hold be read-only on a phone too).
 NEXT: M7, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 BUILT, NOT LIVE (branch maint-s7; no migration)
+
+Roadmap T4; decisions.md 2026-11-03 "Team tables T4". **Team -> Emails** = Admin (read-only list) · Reviewer
+(`ReviewerEmailsCard`, moved whole) · Mentor (`InvitationEmailsCard only=['invite_mentor']`, the same template as
+Invitations -> Emails), in `components/admin/TeamEmails.tsx` (also `TeamTerms`: three "Soon" sections; the Terms tab is
+no longer disabled). The admin list is `apps/scholarship/admin_email_catalogue.py` (`CATALOGUE` of ten rows, each naming
+its sender; `NOT_ADMIN_SENDERS` with reasons) served as keys by `GET admin/admin-emails/`
+(`views_admin/org_emails.py` `AdminTeamAdminEmailsView`, the `_SponsorEmailsBase` gate; route in `urls_mentors.py`;
+matrix cell `T4_ADDED`). **A new non-student `send_*` must be classified there** (`test_admin_email_catalogue`), and its
+row needs en/ms/ta words under `admin.team.emails.kind/when/to` (`teamAdminEmailsDrift.test.ts`). HalaTuju's own inbox
+(`ADMIN_NOTIFY_EMAIL`) is never listed as the organisation's (lead ruling). Deploy: API first, then web.
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 LIVE 2026-11-03 (main 99d8ac1c; api-01243-dzq, web-01070-c44 — web went out in the Requests R1 build 2da37ff4; no migration)
 
 Roadmap T3; decisions.md 2026-11-03 "Team tables T3". **Team -> Mentors** is the old Mentors page's table

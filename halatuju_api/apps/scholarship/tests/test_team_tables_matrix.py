@@ -144,6 +144,17 @@ def t3_added_cells(before):
     return {T3_ADDED: 404 if listed == 200 else listed}
 
 
+#: Team tables T4 (2026-11-03): Team -> Emails -> Admin emails (`AdminTeamAdminEmailsView`). A NEW cell,
+#: declared per shape from the sponsor-emails list's own cell — the same gate (`_SponsorEmailsBase`,
+#: `staff_tables.may_do_admin_work`): whoever reads those templates reads this list, nobody else.
+T4_ADDED = 'GET api/v1/admin/admin-emails/'
+T4_SAME_AS = 'GET api/v1/admin/scholarship/sponsor-emails/'
+
+
+def t4_added_cells(before):
+    return {T4_ADDED: before[T4_SAME_AS]}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -290,7 +301,7 @@ def _shape_test(shape):
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
         before = _before()[shape]
-        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before)}
+        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now

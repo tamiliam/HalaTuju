@@ -204,6 +204,47 @@ describe('the Emails tab', () => {
     // The tab also lists the seven emails nobody can edit. Its own request, so the auto-mock
     // must answer it or the card throws on mount.
     mockApi.getReviewerSystemEmails.mockResolvedValue({ emails: [] })
+    // T4: the tab's other two sections — the admin list (keys from the server's registry) and the
+    // mentor invitation (Invitations' own card and endpoint).
+    mockApi.getTeamAdminEmails.mockResolvedValue({ emails: [{ key: 'payment_approval' }, { key: 'invoice' }] })
+    mockApi.getInvitationEmails.mockResolvedValue({
+      templates: [
+        { ...TEMPLATES[0], kind: 'invite_admin', to_reviewer: false },
+        { ...TEMPLATES[0], kind: 'invite_mentor', to_reviewer: false },
+      ], organisations: [], qualifying_count: 0, partner_count: 0, comms_enabled: true,
+    } as unknown as api.PartnerEmailsPayload)
+  })
+
+  it('T4: three sections in the order of the tables — Admin, Reviewer, Mentor', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
+    await waitFor(() => expect(screen.getByTestId('team-admin-email-invoice')).toBeTruthy())
+    const at = ['team-emails-admin', 'team-emails-reviewer', 'team-emails-mentor']
+      .map((id) => document.body.innerHTML.indexOf(`data-testid="${id}"`))
+    expect(at.every((x) => x >= 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+  })
+
+  it('T4: the admin list is read-only — what, when, to whom; no switch, no editor', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
+    const row = await screen.findByTestId('team-admin-email-payment_approval')
+    expect(within(row).getByText('admin.team.emails.kind.payment_approval')).toBeTruthy()
+    expect(within(row).getByText('admin.team.emails.when.payment_approval')).toBeTruthy()
+    expect(within(row).getByText('admin.team.emails.to.payment_approval')).toBeTruthy()
+    expect(within(screen.getByTestId('team-emails-admin')).queryByRole('switch')).toBeNull()
+    expect(within(screen.getByTestId('team-emails-admin')).queryByRole('button')).toBeNull()
+    expect(screen.getByText('admin.team.emails.adminNote')).toBeTruthy()
+  })
+
+  it('T4: the mentor section is the invitation card showing ONLY the mentor letter, with the line', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
+    const mentor = screen.getByTestId('team-emails-mentor')
+    await waitFor(() => expect(within(mentor).getByText('admin.invitations.emails.kind.invite_mentor')).toBeTruthy())
+    expect(within(mentor).queryByText('admin.invitations.emails.kind.invite_admin')).toBeNull()
+    expect(within(mentor).getByTestId('invitation-emails-note').textContent).toBe('admin.team.emails.mentorNone')
+    expect(mockApi.getInvitationEmails).toHaveBeenCalled()
   })
 
   it('opens on the reviewers list, not the emails — the list is what the page is for', async () => {
@@ -234,6 +275,20 @@ describe('the Emails tab', () => {
     viewerRole = { role: 'finance' }
     await loaded()
     expect(screen.queryByText('admin.reviewers.tabEmails')).toBeNull()
+  })
+})
+
+describe('the Terms tab (T4)', () => {
+  it('opens for everyone who reads the page, with the three sections each marked Soon', async () => {
+    viewerRole = { role: 'finance' }
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabTerms'))
+    for (const k of ['admin', 'reviewer', 'mentor']) {
+      const sec = screen.getByTestId(`team-terms-${k}`)
+      expect(within(sec).getByText(`admin.team.terms.${k}Title`)).toBeTruthy()
+      expect(within(sec).getByText('admin.team.terms.soon')).toBeTruthy()
+      expect(within(sec).getByText(`admin.team.terms.${k}Text`)).toBeTruthy()
+    }
   })
 })
 

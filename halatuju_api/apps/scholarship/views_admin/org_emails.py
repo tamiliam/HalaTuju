@@ -314,3 +314,20 @@ class AdminSponsorEmailDetailView(_SponsorEmailsBase):
             fields += ['updated_by_email', 'updated_at']
             tpl.save(update_fields=fields)
         return Response(_sponsor_email_dict(tpl))
+
+
+class AdminTeamAdminEmailsView(_SponsorEmailsBase):
+    """GET admin/admin-emails/ — Team -> Emails -> Admin emails: what an organisation's admins are sent today
+    (Team tables T4, owner ruling 9). READ-ONLY by construction: no PATCH, no switch, no template row.
+
+    The list is `admin_email_catalogue.CATALOGUE` (keys only; the web words each row). It carries NO
+    organisation data and no address — the same rows for every tenant — so there is nothing to fence; it is
+    gated to the people who read the reviewer templates beside it (`staff_tables.may_do_admin_work`, the
+    partner-emails gate), never wider.
+    """
+    def get(self, request):
+        admin, err = self._emails_admin(request)
+        if err:
+            return err
+        from .. import admin_email_catalogue
+        return Response({'emails': admin_email_catalogue.rows()})

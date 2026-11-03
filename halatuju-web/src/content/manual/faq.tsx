@@ -254,6 +254,14 @@ export const FAQ: Record<Audience, QA[]> = {
         email is sent. You can add yourself to Reviewers; you will never quality-check a case you reviewed.</>,
     },
     {
+      q: <>Which emails does my team receive?</>,
+      a: <>Open <strong>Team &rarr; Emails</strong>. <strong>Admin emails</strong> lists what your admins are sent
+        today, when, and to whom (by role, never an address); the wording cannot be edited yet.
+        <strong> Reviewer emails</strong> are the five you can edit and switch off. <strong>Mentor emails</strong>
+        is the mentor&rsquo;s invitation &mdash; mentors receive no other email from HalaTuju (a password reset
+        they ask for when signing in comes from the sign-in service).</>,
+    },
+    {
       q: <>I cancelled an invitation, or deleted someone, by mistake. Can I invite them again?</>,
       a: <>Yes. Invite the same email address again from <strong>Invitations</strong>, with the role you choose
         this time. They are sent a fresh temporary password &mdash; or, if they already sign in to HalaTuju

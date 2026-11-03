@@ -486,6 +486,9 @@ class TestFenceCoverageCompleteness(TestCase):
         # there is no organisation data in it to narrow — so it is exempt on content, not on
         # oversight. The role gate is inherited from `_ReviewersBase` all the same.
         'AdminReviewerSystemEmailsView': 'no-org-data (static system copy) + reviewers role gate',
+        # Team tables T4: Team -> Emails -> Admin emails — the registry's KEYS only (no address, no
+        # organisation data; the same rows for every tenant), gated like the sponsor / partner templates.
+        'AdminTeamAdminEmailsView': 'no-org-data (static registry keys) + may_do_admin_work gate',
         # Invitations. ⚠ Fenced on `Invitation.organisation` and NOT through `PartnerAdmin`: a
         # sponsor invitation has no staff row to fence through (it creates no account), so
         # fencing through the invitee would silently drop that whole kind.

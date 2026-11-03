@@ -20,7 +20,7 @@ import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import SortHeader from '@/components/admin/SortHeader'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
-import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
+import TeamEmails, { TeamTerms } from '@/components/admin/TeamEmails'
 import { formatDate } from '@/lib/formatDate'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
@@ -87,7 +87,7 @@ export default function AdminReviewersList() {
   const asked = search?.get('tab')
   // Team tables T2 (owner ruling 1): Admins · Reviewers · Mentors · Emails · Terms. Reviewers stays the
   // tab you land on ("who can take this case?" is the daily question); `?tab=` opens any other.
-  type Panel = 'admins' | 'reviewers' | 'mentors' | 'emails'
+  type Panel = 'admins' | 'reviewers' | 'mentors' | 'emails' | 'terms'
   const [panel, setPanel] = useState<Panel>(
     asked === 'admins' || asked === 'mentors' ? asked : 'reviewers')
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
@@ -234,14 +234,17 @@ export default function AdminReviewersList() {
           // T3: the Mentors TABLE (owner ruling 6) — for who read the old Mentors page (`mayReadMentors`).
           ...(mayMentors ? [{ key: 'mentors', labelKey: 'admin.team.tabMentors' }] : []),
           ...(mayEditEmails ? [{ key: 'emails', labelKey: 'admin.reviewers.tabEmails' }] : []),
-          // Reviewers sign nothing today. Shown disabled so the surfaces look alike and the panel
-          // reads as coming rather than as missing (owner, 2026-08-04).
-          { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
+          // T4: Terms opens — three "Soon" sections (Admin, Reviewer, Mentor). Nobody signs anything on
+          // Team yet; it was a disabled tab with no content before, so nothing is lost. Everyone who reads
+          // the page may read it (it says only what is coming).
+          { key: 'terms', labelKey: 'admin.reviewers.tabTerms' },
         ]} />
 
       {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an
-          emails hiccup can never take the reviewers table down with it. */}
-      {panel === 'emails' && mayEditEmails && <ReviewerEmailsCard token={token} t={t} />}
+          emails hiccup can never take the reviewers table down with it. T4: three sections — Admin
+          (read-only list), Reviewer (the five, moved whole), Mentor (the invitation, Invitations' card). */}
+      {panel === 'emails' && mayEditEmails && <TeamEmails token={token} t={t} />}
+      {panel === 'terms' && <TeamTerms t={t} />}
 
       {/* T2: Add Admin / Add Reviewer — an EXISTING member only; new people are invited on Invitations.
           Offered to whoever may edit permissions on Team (super, org_admin); the endpoint re-checks. */}

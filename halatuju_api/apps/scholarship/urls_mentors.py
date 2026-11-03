@@ -5,6 +5,7 @@ S7c (2026-11-01): a mentor's own students (`admin/mentor/students/`).
 S7d (2026-11-01): a staff member added as a mentor (`admin/mentors/staff/`).
 Team tables T2 (2026-11-03): Team -> Admins / Reviewers -> Add and Remove from (`admin/team/<table>/`,
 `admin/team/<table>/candidates/`) — the Team page's routes live beside the mentors' (Mentors joins Team in T3).
+Team tables T4 (2026-11-03): Team -> Emails -> Admin emails (`admin/admin-emails/`, read-only).
 
 Kept apart from `urls.py`, which sits at the 600-line standard. Like `urls_letters.py`, NOT an
 `include()`: `urls.py` ADDS this list to its own `urlpatterns`, so every route is a top-level route
@@ -16,7 +17,7 @@ from .views_admin import (
     AdminMentorActionView, AdminMentorStudentModuleFileView, AdminMentorStudentSessionsView, AdminMentorStudentView,
     AdminMentorStudentsView, AdminMentorView, AdminMentorsView, AdminScholarMentoringActionView,
     AdminScholarMentoringSessionsView, AdminScholarMentoringView, AdminStaffMentorsView, AdminTeamCandidatesView,
-    AdminTeamTableView,
+    AdminTeamAdminEmailsView, AdminTeamTableView,
 )
 from .views_bursary import BursaryMentoringView
 
@@ -33,6 +34,7 @@ urlpatterns = [
     path('admin/mentor/students/<int:pk>/', AdminMentorStudentView.as_view()),
     path('admin/mentor/students/<int:pk>/sessions/', AdminMentorStudentSessionsView.as_view()),
     path('admin/mentor/students/<int:pk>/modules/<int:mid>/file/', AdminMentorStudentModuleFileView.as_view()),
+    path('admin/admin-emails/', AdminTeamAdminEmailsView.as_view()),   # T4: Team -> Emails -> Admin emails
     path('admin/team/<str:table>/', AdminTeamTableView.as_view()),
     path('admin/team/<str:table>/candidates/', AdminTeamCandidatesView.as_view()),
 ]
