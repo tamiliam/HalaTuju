@@ -11,6 +11,8 @@ import { useNavProbes } from '@/lib/useNavProbes'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
 import { withGiftHrefs } from '@/lib/giftHref'
 import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
+import { desktopOnlyRoute } from '@/lib/desktopOnly'
+import { DesktopOnly } from '@/components/DesktopOnly'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
 import { OrgScopeProvider } from '@/lib/orgScope'
@@ -138,6 +140,7 @@ function Chrome(
   const { t } = useT()
   const routerPath = usePathname()
   const pathname = path ?? routerPath
+  const desktopOnly = desktopOnlyRoute(pathname)
   const router = useRouter()
 
   const [pendingSponsors, setPendingSponsors] = useState(0)
@@ -477,7 +480,11 @@ function Chrome(
             answer. Left-aligned, never `mx-auto`: centring is what made the B40 cockpit look like
             a different console. */}
         <main className="min-w-0 flex-1 p-4 md:p-6">
-          <div className={WIDTH_CLASS[pageWidthFor(pathname)]}>
+          {/* ⚠ A DESKTOP-ONLY PAGE (Mobile M7b, owner): below md the shared panel REPLACES it — by CSS, so the
+              page is rendered once and no door flashes; from md nothing here changes. Layout, not access. */}
+          {desktopOnly && <DesktopOnly route={desktopOnly} />}
+          <div className={`${WIDTH_CLASS[pageWidthFor(pathname)]}${desktopOnly ? ' max-md:hidden' : ''}`}
+            data-desktop-only-page={desktopOnly ? '' : undefined}>
             <OrgScopeProvider value={orgScope}>{children}</OrgScopeProvider>
           </div>
         </main>

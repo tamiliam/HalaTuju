@@ -3310,6 +3310,20 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "desktopOnly": {
+      "title": "Use a computer for this page",
+      "body": "This page is built for a large screen. Open it on a computer to work on it. Nothing here has changed.",
+      "home": "Back to the start page",
+      "whyLabel": "Why:",
+      "why": {
+        "billingRates": "platform super-admin sets per-service rates in a wide table — rare, and done at a desk",
+        "billing": "month-end usage and invoices for an organisation — wide figures checked against records",
+        "courseData": "an internal coverage panel for the course catalogue, used by the platform team only",
+        "contracts": "contract template versions — authored and compared at a desk, never on a phone",
+        "contract": "the clause editor: long legal text in three languages, edited side by side",
+        "sponsorTerms": "authoring a sponsor’s terms document — long-form editing, not a phone task"
+      }
+    },
     "useComputer": {
       "payments": "Signing, cancelling and changing a payment run are done on a computer. On a phone this run is read-only.",
       "newRun": "A new payment run is made on a computer.",

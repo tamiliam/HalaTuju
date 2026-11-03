@@ -10,17 +10,22 @@ covers every declared amount.) Ruling 2A: EVERY informal document, not only a re
 reads as the INFORMAL family or as a DECLARATION form (`authenticity.doc_seen`). A formal payslip, an EPF
 statement and an unscored payslip are not (no genuineness signal is our gap, not the family's — TD-410).
 
-**What the read must find**, in four fields read off the document's IMAGE by one multimodal call
+**What the read must find**, in five fields read off the document's IMAGE by one multimodal call
 (`APPROVAL_FIELDS`, `read_approval` — review round 2: OCR text cannot tell a stamped box from an empty one
 whose label is printed, nor see a hand signature): an issuing body (`issuer_header`) and an approver — a visible official stamp / company chop on its own
 (owner ruling 3A, 2026-10-28), or a hand signature by a named or titled person (`approver_name` /
 `approver_title`; `has_stamp_or_signature` reads "stamp" / "signature" / "no").
+Owner ruling 2026-11-03 (request #53): *"We cannot accept a document without a signature. Pay slips are
+different."* — so 3A's stamp-alone stays for a payslip (`salary_slip`) only; every other informal document
+needs a HANDWRITTEN signature (`has_signature`, a fifth field: "yes" / "no", stamp or no stamp).
 
 **Never checked is not "missing"** (TD-394: never pass on what nobody has read — and never blame the
 family for OUR gap). A document read before these fields existed carries none of them (`approval_unchecked`):
 it does not count, and the family is told we are still checking (the gate's existing "try again later"),
 never "get it signed"; Check 2 asks nothing about it until it is re-read. A successful image read stores
-all four keys and a failed one (our side) stores none, so the two states stay tellable apart.
+every key and a failed one (our side) stores none, so the two states stay tellable apart. A non-payslip
+read from before `has_signature` whose mark is a STAMP is unchecked too (2026-11-03): whether it is also
+signed was never asked — it neither passes nor is refused until it is re-read.
 
 One reader for every door: `income_shown.proof_flagged` (so the gate, the cluster, the verdict, Check 2 and
 TD-409's hold), the student's blocker (`member_approval_state`), the coach (`approval_coach`) and the
@@ -32,13 +37,22 @@ from datetime import timedelta
 from .genuineness.declaration_doc import DECLARATION
 
 _STR = {'type': 'string'}
-#: The four approval fields — read from the document's IMAGE (`read_approval`), never from its OCR text.
+#: The approval fields — read from the document's IMAGE (`read_approval`), never from its OCR text.
+#: `has_signature` (2026-11-03 ruling): a hand signature anywhere, stamp or no stamp — the single
+#: `has_stamp_or_signature` answer cannot tell a stamped document that is ALSO signed from one that is not.
 APPROVAL_FIELDS = {'issuer_header': _STR, 'approver_name': _STR, 'approver_title': _STR,
-                   'has_stamp_or_signature': {'type': 'string', 'enum': ['stamp', 'signature', 'no']}}
+                   'has_stamp_or_signature': {'type': 'string', 'enum': ['stamp', 'signature', 'no']},
+                   'has_signature': {'type': 'string', 'enum': ['yes', 'no']}}
 _APPROVAL_SCHEMA = {'type': 'object', 'properties': APPROVAL_FIELDS, 'required': list(APPROVAL_FIELDS)}
 #: Review round 2: a TEXT read cannot see ink. Real forms print their box labels ("Cop dan tandatangan",
 #: "Tandatangan dan Cop Rasmi") whether the box is stamped or EMPTY, and a hand signature has no text at
 #: all — so the approval is read from the picture, in its own multimodal call.
+#: Request #53 (2026-11-03): a Ketua Kampung's borderless blue NAME stamp (name, title, village; no seal) was
+#: read as "signature" with no header, so an approved village form was refused. A stamped name block is a
+#: stamp; printed or typed text, in any font or position, still is not (a false stamp would let an
+#: unapproved form count — review 2026-11-03 widened that guard from "the form's own print").
+#: Owner ruling 2026-11-03 (#53): a non-payslip document needs a signature, so `has_signature` is asked on
+#: its own — a stamped name block or a printed name is not one.
 APPROVAL_PROMPT = (
     'This image is a Malaysian income document (an employer\'s or village head\'s letter, an informal '
     'payslip, or an income declaration form). Look at the PICTURE, not just the words. Return: '
@@ -48,7 +62,19 @@ APPROVAL_PROMPT = (
     'income), empty if none; "approver_title" = their position (e.g. Ketua Kampung, Penghulu, Guru Besar, '
     'Pengurus), empty if none; "has_stamp_or_signature" = "stamp" ONLY if an actual ink or rubber-stamp '
     'impression / company chop is visible on the page (with or without a signature), "signature" ONLY if '
-    'a HANDWRITTEN signature is visible and no stamp, else "no". Printed labels such as "Cop dan '
+    'a HANDWRITTEN signature is visible and no stamp, else "no". A rubber-stamped NAME BLOCK IS a stamp: '
+    'a name and/or title / position and/or place impressed in stamp ink (often blue or purple, slightly '
+    'uneven, faded or tilted; in a photocopy or black-and-white scan a stamp may be black or grey), WITH '
+    'OR WITHOUT a border, round seal or crest. Printed, typed or computer-filled text anywhere on the '
+    'document (even in a different font, size or position, and however official it reads) is NOT a '
+    'stamp; only ink visibly impressed by a rubber stamp is. Handwriting, even in block capitals or blue '
+    'ink, is NOT a stamp; but only a pen-drawn signature or initials is a signature: a name written out '
+    'by hand in block capitals is not. '
+    '"has_signature" = "yes" ONLY if a HANDWRITTEN signature (a pen-drawn signature or initials) is '
+    'visible anywhere on the page, whether or not there is also a stamp, else "no". A stamped name '
+    'block, a rubber stamp, a printed or typed name, a name written out by hand in block capitals and an '
+    'empty signature line are NOT a signature. '
+    'Printed labels such as "Cop dan '
     'tandatangan", printed logos, QR codes and EMPTY signature or stamp boxes are NOT a stamp and NOT a '
     'signature. Leave "approver_name" and "approver_title" EMPTY if the approver line is blank or only '
     'printed: a title must come from the approver\'s own stamp or handwriting, never from a printed label '
@@ -57,7 +83,7 @@ _INFORMAL_TEXT_FAMILIES = frozenset({'informal', 'declaration'})
 
 
 def read_approval(doc, ex, ocr_text, image_fn):
-    """Add the four approval fields to a fresh read ``ex`` of an INFORMAL income document — every
+    """Add the approval fields (`APPROVAL_FIELDS`) to a fresh read ``ex`` of an INFORMAL income document — every
     `income_support_doc`, and a payslip whose OCR text the salary model reads as informal or a declaration
     (`genuineness.declaration_doc.income_doc_genuineness`, deterministic, no call) — from ONE multimodal
     Gemini call on the document's image (`image_fn`, the read's own fetch-once helper). ⚠ COST: one extra
@@ -120,8 +146,18 @@ def approval_expired(doc) -> bool:
     "still checking" — the officer checks it by eye and the family is asked again (the normal ask)."""
     import time
     vf = _vf(doc)
-    return (is_informal(doc) and APPROVAL_ERROR in vf and not any(k in _fields(doc) for k in APPROVAL_FIELDS)
-            and float(vf.get(APPROVAL_UNTIL) or 0) <= time.time())
+    if (is_informal(doc) and APPROVAL_ERROR in vf and not any(k in _fields(doc) for k in APPROVAL_FIELDS)
+            and float(vf.get(APPROVAL_UNTIL) or 0) <= time.time()):
+        return True
+    # 2026-11-03: a stamped read from before `has_signature` whose ONE sweep re-read (`APPROVAL_TRIED`) did
+    # not land (the old read kept) gives up after the same window — never "still checking" for ever.
+    tried = vf.get(APPROVAL_TRIED)
+    return (isinstance(tried, (int, float)) and _signature_unknown(doc)
+            and tried + APPROVAL_RETRY_WINDOW.total_seconds() <= time.time())
+
+
+#: Stamped on a row by the hourly sweep before its approval re-read (`services.read_retry`, epoch seconds).
+APPROVAL_TRIED = 'approval_reread_at'
 
 #: The payslip families that are informal income documents (`genuineness.salary_doc` / `declaration_doc`).
 _INFORMAL_SLIP_FAMILIES = frozenset({'informal', DECLARATION})
@@ -202,10 +238,54 @@ def _fields(doc) -> dict:
     return f if isinstance(f, dict) else {}
 
 
+#: The `has_stamp_or_signature` answers that mean a stamp / chop, and those that mean a hand signature ("yes"
+#: is an older wording, taken as a signature; "both" a legacy alias carrying the two).
+STAMP_MARKS = ('stamp', 'chop', 'cop', 'both')
+SIGNATURE_MARKS = ('signature', 'yes', 'ya', 'true', 'both')
+
+
+def _mark(f) -> str:
+    return str(f.get('has_stamp_or_signature') or '').strip().lower()
+
+
+def _past_award(doc) -> bool:
+    """The document's case is awarded / funded, or was closed after funding began (`closure.ever_awarded_q`)."""
+    from .closure import POST_AWARD_STATUSES
+    if not getattr(doc, 'application_id', None):
+        return False
+    app = doc.application
+    return app.status in POST_AWARD_STATUSES or (app.status == 'closed' and app.active_at is not None)
+
+
+def needs_signature(doc) -> bool:
+    """Owner ruling 2026-11-03 (#53): every informal document but a PAYSLIP needs a hand signature — decided
+    by what the document IS, not its slot: only a slip read as the informal payslip family keeps ruling 3A;
+    a declaration form or a letter uploaded in the payslip slot needs the signature too. A read from before
+    `has_signature` on a case at or past award keeps the judgement it was awarded on (3A)."""
+    if getattr(doc, 'doc_type', '') == 'salary_slip' and _seen(doc) == 'informal':
+        return False
+    return 'has_signature' in _fields(doc) or not _past_award(doc)
+
+
+def _signature_unknown(doc) -> bool:
+    """A signature-needing read from before `has_signature` whose mark is a stamp (not "both"): whether it is
+    ALSO signed was never asked — not yet checked, never passed and never refused (TD-394)."""
+    f = _fields(doc)
+    mark = _mark(f)
+    return ('has_signature' not in f and mark in STAMP_MARKS and mark not in SIGNATURE_MARKS
+            and needs_signature(doc))
+
+
 def approval_unchecked(doc) -> bool:
     """An informal document NOT judged yet (none of the keys): read before the approval fields, or its image
-    read failed on our side and is still inside its retry window (`approval_expired` takes over after)."""
-    return is_informal(doc) and not any(k in _fields(doc) for k in APPROVAL_FIELDS) and not approval_expired(doc)
+    read failed on our side and is still inside its retry window (`approval_expired` takes over after) — or
+    (2026-11-03) a stamped signature-needing read before `has_signature` (`_signature_unknown`), until its
+    sweep re-read lands or its window closes."""
+    if not is_informal(doc):
+        return False
+    if not any(k in _fields(doc) for k in APPROVAL_FIELDS):
+        return not approval_expired(doc)
+    return _signature_unknown(doc) and not approval_expired(doc)
 
 
 def approval_missing(doc) -> tuple:
@@ -217,7 +297,15 @@ def approval_missing(doc) -> tuple:
     own — a small shop's chopped payslip counts with no named signer; a hand SIGNATURE without a stamp
     still needs a named or titled signer (`approver_name` / `approver_title`); a letter with neither — a
     QR code or logo only, or unmarked — has none. ``has_stamp_or_signature`` reads "stamp" / "signature" /
-    "no"; a bare "yes" (an older wording) is taken as a signature, the stricter of the two."""
+    "no"; a bare "yes" (an older wording) is taken as a signature, the stricter of the two.
+
+    Owner ruling 2026-11-03 (#53, *"We cannot accept a document without a signature. Pay slips are
+    different."*; and *"they need ketua kampung etc who needs to sign"*): 3A's stamp-alone holds for a
+    PAYSLIP only (`needs_signature`). Every other informal document needs a HAND signature by a KNOWN signer
+    — a name or title from their stamp or beside the signature: ``has_signature`` "yes" decides alone when it
+    was asked (a contradictory mark never helps); only a read from before it falls back on the mark. A
+    stamp with no signature, or a signature nobody is named for, is no approver. The header rule is
+    unchanged."""
     if not is_informal(doc) or approval_unchecked(doc):
         return ()
     if approval_expired(doc):
@@ -228,11 +316,15 @@ def approval_missing(doc) -> tuple:
         v = f.get(key)
         return isinstance(v, str) and bool(v.strip())
 
-    mark = str(f.get('has_stamp_or_signature') or '').strip().lower()
-    stamped = mark in ('stamp', 'chop', 'cop', 'both')
-    signed = mark in ('signature', 'yes', 'ya', 'true')
+    mark = _mark(f)
+    stamped = mark in STAMP_MARKS
     named = filled('approver_name') or filled('approver_title')
-    approver = stamped or (signed and named)
+    if needs_signature(doc):                     # 2026-11-03: a known signer's hand signature, nothing less
+        signed = (str(f.get('has_signature') or '').strip().lower() == 'yes' if 'has_signature' in f
+                  else mark in SIGNATURE_MARKS)
+        approver = signed and named
+    else:                                        # a payslip: 3A, a chop alone approves (`has_signature` unread)
+        approver = stamped or (mark in SIGNATURE_MARKS and named)
     # Hotfix 2026-10-28 (live re-read): a village form has no letterhead — a STAMP with a named / titled
     # approver (Ketua Kampung, Pengerusi JKKK, Pesuruhjaya Sumpah…) IS the issuing authority. So approved =
     # (stamp + named) or (header + signature + named) or (header + stamp); header-only or unmarked still fails.

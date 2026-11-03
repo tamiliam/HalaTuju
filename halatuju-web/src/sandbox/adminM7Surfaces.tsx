@@ -26,6 +26,8 @@ import StudentDetailPage from '@/app/admin/students/[id]/page'
 import OrgSettingsPage from '@/app/admin/organisation/settings/page'
 import RequestDetailPage from '@/app/admin/requests/[id]/page'
 import RequestsPage from '@/app/admin/requests/page'
+import ContractsPage from '@/app/admin/contracts/page'
+import ContractEditorPage from '@/app/admin/contracts/[id]/page'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
 interface Surface { slug: string; title: string; note: string; render: () => ReactNode; routes?: Record<string, () => unknown> }
@@ -246,5 +248,20 @@ export const ADMIN_CAN_SURFACES: Surface[] = [
         requestRow(8, 'Betulkan ejaan pada surat tawaran', 'in_progress'), requestRow(9, 'Eksport senarai pelajar', 'done')],
     }) },
     render: () => <Console path="/admin/requests"><RequestsPage /></Console>,
+  },
+  {
+    slug: 'm7b-desktop-only',
+    title: 'Admin — a desktop-only page on a phone (Contract templates)',
+    note: 'Mobile M7b (owner): below md the shared panel REPLACES the page — why, and one 44 px way back; from md the '
+      + 'page as it was.',
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/contracts/': () => ({ templates: [] }) },
+    render: () => <Console path="/admin/contracts" role={SUPER}><ContractsPage /></Console>,
+  },
+  {
+    slug: 'm7b-desktop-only-editor',
+    title: 'Admin — a desktop-only editor on a phone (one contract template)',
+    note: 'Mobile M7b: a dynamic desktop-only route (contracts/[id]) gets the same panel with its own reason.',
+    routes: { ...SCOPES },
+    render: () => <Console path="/admin/contracts/1" role={SUPER} params={{ id: '1' }}><ContractEditorPage /></Console>,
   },
 ]

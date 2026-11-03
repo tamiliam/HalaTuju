@@ -211,14 +211,6 @@ describe('every table sits in the shared frame', () => {
       + 'differ per kind and the owner reviews each list',
     'src/app/admin/students/page.tsx':
       'already had cards before this work (the pattern everything else copied)',
-    // Mobile M7a: the Invitations and Mentors tables belong to Team tables T4/T5 (Maintenance), which is
-    // rebuilding those pages now; their phone rows are sequenced after it, not done under it.
-    'src/components/sources/SourceInvite.tsx':
-      'the Invitations page (source and mentor rosters) — Team tables T4/T5 own it; phone rows after T4',
-    'src/components/mentors/MentorsAdmin.tsx':
-      'Team -> Mentors (T3) — Team tables T4/T5 own it; phone rows after T4',
-    'src/components/mentors/MentorInvite.tsx':
-      'the Invitations page (mentor roster) — Team tables T4/T5 own it; phone rows after T4',
   }
 
   /** The two ways a list draws for a phone: its own `md:hidden` cards, or the SAME table restacked as rows

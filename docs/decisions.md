@@ -49,6 +49,35 @@ unchanged (the golden tables, `test_team_tables_matrix` against its BEFORE rows)
 small queries more. TD-482 (an earlier interview-draft author is not remembered) and TD-483 (the cockpit's QC panel
 shows for a QC the server will refuse; English refusal) are left for later.
 
+## Mobile M7b: the DesktopOnly panel replaces a desktop-only page on a phone, by CSS, mounted once in the shell; the Team / Invitations / Mentors tables become rows — 2026-11-03 (owner "go m7b"; design approved in M7 phase 1)
+
+**Context:** six routes are classed `desktop` in `mobileClass.ts` (billing-rates, billing, course-data, contracts,
+contracts/[id], sponsors/terms/[id]); on a phone they were half-working tables. The owner approved the panel at
+phase 1 (mock-up `c-desktop-only`): it REPLACES the page below md, with one way back.
+
+**Builder decisions (for the lead to confirm):**
+
+1. **CSS, not JS.** `AppShell` draws `<DesktopOnly>` (`md:hidden`) beside the page and adds `max-md:hidden` to the
+   page's wrapper, both from ONE lookup (`desktopOnlyRoute(pathname)`). No flash at first paint and the page is
+   rendered once — its doors are never drawn twice. The cost, accepted: on a phone the hidden page still mounts and
+   reads its data (a desktop-only page is rare on a phone, and a JS width switch would flash the page first).
+2. **A small list beside `mobileClass.ts`.** `lib/desktopOnly.ts` holds the six routes and their reason keys, because
+   `AppShell` runs on every console route and importing the whole route table would weigh on all of them.
+   `desktopOnly.test.ts` holds it EQUAL to the `desktop` class and maps every route of the app (the panel on a
+   desktop-only route, never on another); routes match EXACTLY (`/admin/billing` is not `/admin/billing-rates`).
+3. **The reason is the route's own `why`.** The English line is `mobileClass.ts`'s `why`, word for word (pinned), and
+   Malay and Tamil are translations beside it (`admin.desktopOnly.why.*`).
+4. **One way back, 44 px:** Back (the browser's own) when this tab has a page to go back to, else a link to the
+   console's start page `/admin`, which sends each role to its own landing. The mock-up said "Back to Overview";
+   there is no one Overview for every role, so the fallback is named "Back to the start page".
+5. **Layout, not access:** no gate or guard file reads the list (guarded); the pages' own gates are untouched.
+6. **Team / Invitations / Mentors tables as rows** (Maintenance said yes): `TableFrame phoneRows` + `data-label` on
+   Team -> Mentors and a mentor's scholars (`MentorsAdmin`), the source rosters (`SourceInvite`) and the mentor
+   roster (`MentorInvite`); their exemptions left the table guard. `TeamTables.tsx` draws no table (its Add / Remove
+   panels are lists of buttons), so it is unchanged. Staff-access actions in these rows (Resend / Cancel an
+   invitation, Remove a source user, Resend / Revoke a mentor invitation, Stop / Deactivate a mentor) are NOT hidden
+   on a phone — that is Maintenance's call — only restacked with a 44 px hit area.
+
 ## Team tables T5a: permission vocabulary v2 sits BESIDE the old one; aliases old -> v2; no gate converted — 2026-11-03 (owner "approve all", rulings 1-8; lead rulings on mentoring and programmes.edit)
 
 **Context:** T5 moves every power onto per-page permission keys. T5a is the plumbing: the vocabulary and its rules,

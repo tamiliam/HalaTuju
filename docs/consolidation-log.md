@@ -7,6 +7,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries and the four sprint lines wrongly logged here are listed in that review, and line by line in git at `6e1d66db`)_
 
+- 2026-11-03 fix: request #53 - stamped name blocks are stamps; support letters need a signed, named approver (Maintenance; logged by the M7b close) — 581432ea
 - 2026-10-29 a75d80ff fix: STPM results page streams follow the MPM grouping - Sains Sukan under Arts only, Matematik (M) and ICT under both (halatuju-web/src/lib/stpmResultsSubjects.ts, halatuju-web/src/lib/__tests__/stpmSubjectsDrift.test.ts)
 - 2026-10-30 1a6f8cd1 feat: request 50 - sort the applications list by Assigned, unassigned last (halatuju_api/apps/scholarship/views_admin/applications.py, halatuju-web/src/app/admin/scholarship/page.tsx, test_admin_scholarship.py)
 - 2026-10-30 bf79bea6 refactor: move the reviewer FAQ out of faq.tsx (moves only) (halatuju-web/src/content/manual/faq.tsx, faq-reviewer.tsx, types.ts — the 600-line standard)
@@ -18,6 +19,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-11-01 9ef402a4 fix: My activity asks for 6 rows first, 20 per Show older (owner) (ActivityCard.tsx, admin-api/profiles.ts + tests)
 - 2026-11-01 8e6773d5 fix: My activity shows 10 rows first and no per-row rebuilt tag (owner) (ActivityCard.tsx, en/ms/ta, manual Guide + FAQ + tests)
 - 2026-11-03 159e824f 07f6da5d fix: Programme Settings - the gift's Configuration row renamed and moved last in the Programme group (owner) (navigation.ts + test, en/ms/ta, manual Guide + FAQ; also the apply gift test waits for the prefill, a deploy-build flake)
+- 2026-11-03 a3495aa9 docs: slim halatuju_api/CLAUDE.md (CLAUDE.md, docs/*)
 
 ## Sprints since the last review
 
@@ -36,6 +38,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-03 Mobile-native Sprint M6a (phase 1 TD-470: no process polyfill on any route; console pinned phone row + phone menu with the one signOut, case list rows / filter Sheet / Sort, rule 15 on sign-in, Guide, FAQ, Organisation, Profile cards; live de48d898) — 885ded66 49530969 fd1879dd 2457bc7f 2ef29328
 - 2026-11-03 Mobile-native Sprint M6b (the cockpit on phones: decision card split out, moves only; sections, 44 px, 12 px; the decision bar that jumps; documents without the inner scroll box; PDFs in the phone's viewer; payments read-only on a phone; layout only; live bff52794) — 3da191d7 932814ca d29b9447 979baefb
 - 2026-11-03 Mobile-native Sprint M7a (phase 1: maintenance status read-only on a phone, TD-480 item 4; owner split M7a / M7b; tabs: four chips, more one chooser; console tables as rows by CSS; rule 15 on the scholar file, student detail, payment run, request detail; table guard on every component folder; layout only, then the review: every decided door read-only on a phone, table ARIA roles; live 881e5465) — 66f8e80d efa1ecaa ed7afe2c b6624afc d9360541 e24c2834 881e5465
+- 2026-11-03 Mobile-native Sprint M7b (the DesktopOnly panel replaces the six desktop-only pages below md, by CSS, mounted once in AppShell from lib/desktopOnly.ts held equal to mobileClass; one way back; the why as the reason in en/ms/ta; Team -> Mentors, the source and mentor rosters as rows, staff-access actions not hidden; LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2) — 782738d9 47c82f0b 586bf355
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 

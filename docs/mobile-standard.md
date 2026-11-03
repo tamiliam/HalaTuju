@@ -239,8 +239,13 @@ Three kinds of check, from cheapest to most human:
 - **Why:** half-working is worse than an honest "use a computer for this".
 - **Checked by:** static guard (every route is classed in `src/lib/mobileClass.ts`, and a desktop-only
   route cannot compile without a written reason) and review.
-- **Copy this:** the shared `DesktopOnly` panel (built in M7) below `md`, with a read-only summary
-  where useful.
+- **Copy this:** nothing per page — `AppShell` draws the shared panel (`src/components/DesktopOnly.tsx`, Mobile M7b) for
+  every route classed `desktop`, from ONE list (`src/lib/desktopOnly.ts`, held equal to `mobileClass.ts`). Below md
+  by width the panel REPLACES the page by CSS (`md:hidden` panel, `max-md:hidden` page: no flash, the page rendered
+  once): a title, "open it on a computer", ONE 44 px way back (Back when the tab has history, else the start page)
+  and the route's own `why` in en / ms / ta. A new desktop-only route needs its entry in both lists and a reason in
+  three languages, or `desktopOnly.test.ts` fails. Layout, not access. Sandbox: `m7b-desktop-only`,
+  `m7b-desktop-only-editor`.
 
 ### 14. Design at 390 px first
 - **Why:** a desktop design squeezed down is never as good as a phone design widened.

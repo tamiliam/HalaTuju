@@ -120,7 +120,7 @@ export function MentorRoster({ data, token, t, canManage, onDone }: {
           {t('admin.invitations.mentor.noneWaiting')}
         </div>
       ) : (
-        <TableFrame minWidth={640} label={t('admin.invitations.waitingHeading')}>
+        <TableFrame minWidth={640} label={t('admin.invitations.waitingHeading')} phoneRows>
           <table className="w-full text-sm">
             <thead className="border-b bg-ground-50">
               <tr>{['name', 'email', 'sent'].map((c) => <th key={c} className={TH}>{t(`admin.invitations.mentor.col.${c}`)}</th>)}<th className={TH} /></tr>
@@ -131,8 +131,8 @@ export function MentorRoster({ data, token, t, canManage, onDone }: {
                 return (
                   <tr key={row.id} data-testid={`mentor-waiting-${row.id}`}>
                     <td className="px-4 py-3 font-medium text-ground-900">{row.name || '—'}</td>
-                    <td className="px-4 py-3 text-ground-500">{row.email}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-ground-500">{row.sent_at ? formatDate(row.sent_at) : '—'}
+                    <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t('admin.invitations.mentor.col.email')}>{row.email}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-ground-500" data-label={t('admin.invitations.mentor.col.sent')}>{row.sent_at ? formatDate(row.sent_at) : '—'}
                       {row.last_send_ok === false && <div className="text-xs text-critical-600">{t('admin.invitations.send.failed')}</div>}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
