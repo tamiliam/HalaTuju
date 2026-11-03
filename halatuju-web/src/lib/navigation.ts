@@ -367,9 +367,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
         scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
-        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
-        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
       // ⚠ **PAYMENTS AND SPENDING MOVED HERE FROM ORGANISATION — TD-241, owner, 2026-09-11.**
       // Money is raised, released and spent PER GIFT: `PaymentRun.programme` has said so since
       // P2b, and a run that spanned two gifts would pay one benefactor's students from
@@ -401,6 +398,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // Not a fence: the endpoint re-resolves `?programme=` inside the caller's own organisation.
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
+      // ⚠ PROGRAMME SETTINGS (owner, 2026-11-03): renamed from "Configuration" so it is not read as
+      // organisation configuration (it holds THIS gift's rules), and moved to the LAST row of the group.
+      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
+        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
+        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
     ],
   },
   {

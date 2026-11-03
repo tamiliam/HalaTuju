@@ -296,7 +296,7 @@ export const roleOrgAdmin: ManualChapter = {
         you are charged for, and at what rate, stays with us.
         <br /><br />
         Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
-        <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
+        <strong> Programme Settings</strong> (everything you set about one gift — its rules, what it asks applicants
         for, which organisations its &ldquo;Who referred you?&rdquo; list offers — and whether that list also
         offers <strong>Facebook / WhatsApp</strong> and <strong>Halatuju.xyz</strong>; <strong>Other</strong> is
         always there; <strong>Academic results</strong> is always required, like household income: the SPM

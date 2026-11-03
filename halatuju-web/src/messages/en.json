@@ -7136,7 +7136,7 @@
     },
     "programme": {
       "config": {
-        "nav": "Configuration",
+        "nav": "Programme Settings",
         "subtitle": "Set each item to Required, Optional or Not asked. Changes apply to new applications immediately. Applications already submitted retain the form as it stood at submission.",
         "liveWarning": "{n} students are part-way through an application right now. Anything you make required will be asked of them too — they'll see it the next time they open their application.",
         "liveWarningNone": "No applications are in progress, so changes affect new applicants only.",
@@ -7213,7 +7213,7 @@
         "justification": "Why they need support",
         "anything_else": "Anything else"
       },
-      "title": "Configuration",
+      "title": "Programme settings",
       "subtitle": "Configure what this programme requires from applicants.",
       "tab": {
         "config": "What we ask for",

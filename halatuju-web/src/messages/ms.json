@@ -7136,7 +7136,7 @@
     },
     "programme": {
       "config": {
-        "nav": "Konfigurasi",
+        "nav": "Tetapan Program",
         "subtitle": "Tetapkan setiap item kepada Diperlukan, Pilihan atau Tidak ditanya. Perubahan berkuat kuasa serta-merta bagi permohonan baharu. Permohonan yang telah dihantar mengekalkan borang seperti pada masa penghantaran.",
         "liveWarning": "{n} pelajar sedang mengisi permohonan sekarang. Apa sahaja yang anda jadikan wajib akan diminta daripada mereka juga — mereka akan melihatnya apabila membuka permohonan mereka semula.",
         "liveWarningNone": "Tiada permohonan sedang dalam proses, jadi perubahan hanya menjejaskan pemohon baharu.",
@@ -7213,7 +7213,7 @@
         "justification": "Sebab memerlukan bantuan",
         "anything_else": "Apa-apa lagi"
       },
-      "title": "Konfigurasi",
+      "title": "Tetapan program",
       "subtitle": "Konfigurasikan perkara yang diperlukan oleh program ini daripada pemohon.",
       "tab": {
         "config": "Apa yang kami minta",

@@ -174,7 +174,7 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Can a gift stop offering <strong>Facebook / WhatsApp</strong> or <strong>Halatuju.xyz</strong> as
         &ldquo;Who referred you?&rdquo;</>,
-      a: <>Yes, each on its own, for one gift at a time. Open the gift&rsquo;s <strong>Configuration</strong>; under
+      a: <>Yes, each on its own, for one gift at a time. Open the gift&rsquo;s <strong>Programme Settings</strong>; under
         &ldquo;Who referred you?&rdquo;, below your organisation&rsquo;s sources, <strong>Fixed choices</strong> has a
         switch for each. Turn one off and press <strong>Save</strong>: that gift&rsquo;s apply form stops offering
         it, and your other gifts are not affected. Every gift starts with both on. <strong>Other</strong> is

@@ -88,8 +88,8 @@ describe('visibleNav per role', () => {
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
-      'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
+      'spending', 'contracts', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -110,8 +110,8 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
-      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
-      'spending', 'contracts',
+      'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
+      'spending', 'contracts', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     admin: [
@@ -603,8 +603,8 @@ describe('visibleNav groups', () => {
   it('the programme scope is ten rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
     expect(prog.items.map((i) => i.id)).toEqual(
-      ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
-        'spending', 'contracts'])
+      ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
+        'spending', 'contracts', 'programmeConfig'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -685,8 +685,8 @@ describe('visibleNav groups', () => {
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id)).toEqual(
-        ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
-          'spending', 'contracts'])
+        ['programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
+          'spending', 'contracts', 'programmeConfig'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted
@@ -718,7 +718,7 @@ describe('visibleNav groups', () => {
     // Was exactly one row (`programmeConfig`) until 2026-09-28; the money rows joined it.
     it('marks exactly the four rows that act on one gift', () => {
       expect(NAV_ITEMS.filter((i) => i.needsProgramme).map((i) => i.id))
-        .toEqual(['scholars', 'programmeConfig', 'payments', 'spending'])
+        .toEqual(['scholars', 'payments', 'spending', 'programmeConfig'])
     })
   })
 
