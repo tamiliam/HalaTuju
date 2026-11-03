@@ -34,7 +34,7 @@ All notable changes to this project will be documented in this file.
   / ta); the desktop is unchanged; no handler, request or server check changed. Tests: `ScholarControls.phone.test.tsx`
   (6) and a guard in `mobileStandard.test.ts`; both bite (removing the hiding fails each).
 
-## Team tables T4 — Emails and Terms in three sections (not yet live)
+## Team tables T4 — Emails and Terms in three sections (LIVE 2026-11-03; main 7871bb39; api-01244-2rq, web-01073-jxr)
 
 Roadmap T4 (owner rulings 1 and 9); decisions.md "Team tables T4"; lead ruling on the admin list's scope (option B).
 No template's wording, switch or sending changed; nobody gains or loses an editor.

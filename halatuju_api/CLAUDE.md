@@ -1197,7 +1197,7 @@ a console table becomes rows on a phone by CSS — `<TableFrame phoneRows>` + `d
 Sandbox `src/sandbox/adminM7Surfaces.tsx` (`m7-*`; detail pages get their id through `PathParamsContext`).
 NEXT: M7b, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 BUILT, NOT LIVE (branch maint-s7; no migration)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T4 LIVE (main 7871bb39; api-01244-2rq, web-01073-jxr; no migration)
 
 Roadmap T4; decisions.md 2026-11-03 "Team tables T4". **Team -> Emails** = Admin (read-only list) · Reviewer
 (`ReviewerEmailsCard`, moved whole) · Mentor (`InvitationEmailsCard only=['invite_mentor']`, the same template as
