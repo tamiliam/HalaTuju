@@ -7492,3 +7492,26 @@ choose English / Malay / Tamil (the console follows the device's stored choice f
 put the theme in the phone menu but did not add a language: a new control on every console page is a decision, not
 a layout change. **Fix:** owner decision (where: the account menu, or Profile); `LanguageSegments` exists for a phone
 menu. *(W · S)*
+
+### [TD-473] A pre-U offer letter can tick Pathway 'match' against a degree pick by one shared word - medium (owner: Cockpit)
+
+**Raised 2026-11-03 by the offer exact-read S5 production dry run** (Cockpit's review of the diff). App 187, doc
+2511 (superseded): a matriculation letter, programme "Program Matrikulasi (KEJURUTERAAN)", ticks Pathway `match`
+against a degree pick (Kejuruteraan Awam) because `pathway_engine._field_status` finds the shared word
+KEJURUTERAAN. A matric / STPM / Tingkatan Enam letter on a tertiary application is a different route, whatever word
+the two names share. **Fix (Cockpit's two points):** (1) check the LEVEL before the shared word: a pre-U letter
+(matriculation / STPM / Tingkatan Enam) against a tertiary pick is never `match`; Cockpit leans to `mismatch`
+(Check 1 records facts; a matric letter on a degree application is a different route) — to confirm with the owner,
+against the chip-colour ruling (decisions.md 2026-11-02: Pathway is never red). (2) `pathway_engine.py` is at its
+line limit (633 against its 613 entry + slack), so a verbatim split comes first, its own commit. Every door of the
+Pathway tick first (sprint-start 3b). *(B · M)*
+
+### [TD-474] An STPM school name followed by a one-word town line takes the town - low
+
+**Raised 2026-11-03 by the offer exact-read S5 adversarial review (L3, left open).** `offer_parse._read_block` joins a
+long school name wrapped onto a second line (`wraps=('institution',)`, `_wrapped`: one capitalised word, not an
+address word or a state). A school name that fits on one line, followed by a one-word TOWN line (e.g. "KLANG") that
+is not in `_NOT_WRAP`, would be read as part of the institution. Not seen in
+the corpus (every one-word line after a school there was a real wrap: 3 of 3), so the rule stays; a wrong
+institution here is a `wrong` institution tick, not a person red. **Fix:** a town list beside `_NOT_WRAP` (or the
+postcode line below the town as the anchor), with a synthetic twin. *(B · S)*

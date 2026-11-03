@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## Offer letters: the reporting date is the DATE ONLY — the time window is not part of it — 2026-11-03 (owner ruling, offer exact-read S5)
+
+**Context:** checking the 71 stored Exact reads (`review_s5_exact.html`), the owner marked every field right but
+noted on 14 polytechnic letters that the answer's reporting date carried the registration window, e.g.
+"15 JUN 2026 (8.30 PAGI - 11.30 PAGI)" — "most of the time, but not always".
+**Decision:** the reporting date is the DATE only. The time window ("PAGI", "PETANG", "TENGAH HARI", the
+"TENGAHARI" typo, in brackets or not) is not part of it, and no time field is added.
+**What follows:** the 20 answer files that carried a time were cut to the date as printed (gitignored corpus). The
+Exact read (`offer_parse.first_date` + `house_date`) stores the date only, in the AI path's house shape
+("15 Jun 2026", `vision._normalise_reporting_date`), so `pathway_engine.parse_reporting_date` reads it. The AI
+reader already complied (0 of 166 reader-2.3.0 reads carried a time; its prompt says "a date without its weekday
+or time" and the sanitiser strips one), so no prompt or `OFFER_READER_VERSION` change. The scorer's convention is
+unchanged: answers keep a date as printed and `tidy_date` compares both shapes as one date.
+
 ## Mobile M6: the console splits into M6a (shell, case list, everyday pages) and M6b (the cockpit); PDFs open in the phone's viewer; a decision bar that jumps, never saves; money actions read-only on a phone — 2026-11-03 (owner approved the mock-ups and all four recommendations)
 
 **Context:** measured at 390 px (M6 phase 1): the console's top bar was not pinned, every control in it was 28-36 px,

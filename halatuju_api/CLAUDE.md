@@ -1210,15 +1210,22 @@ tab (lazy `ScholarGrowth`), the mentor page's Growth section, the bursary Growth
 **MAINTENANCE ROADMAP COMPLETE (Sprints 1–10 live). NEXT (maintenance stream): the parked Team tables T1–T4
 (`docs/plans/2026-11-01-team-tables-roadmap.md`) only on the owner's word.**
 
-### Offer letters read exactly (separate stream) — S1–S4 LIVE 2026-11-02 (main cfd02d91; api-01237-gdp), NEXT = S5
+### Offer letters read exactly (separate stream) — S1–S5 LIVE (S5 2026-11-03, main ae443f45; api-01240-cg2), NEXT = S6
 
-Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. Reader `offer_reader.py` (`OFFER_READER_VERSION`
+Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`. AI reader `offer_reader.py` (`OFFER_READER_VERSION`
 2.4.0) + IC guard `offer_ic.py` (a non-label or source-less IC is corroborate-only: exactly the profile IC, never a
-`mismatch`). Any reader change: score with `eval/offer_read_check.py` on held-out AND dev, then the production dry
-run `eval/offer_s4_dry_run.py` (read-only, rolled back; send the realign/link/ticks diff to the matcher session) and
-an adversarial review before the push. Paid Gemini runs only on the owner's yes. NEXT: S5 known-format exact reader;
-S6 genuineness + the owner's chip-colour ruling (`docs/decisions.md` 2026-11-02; app 329 named); S7 live re-read;
-the money sprint is separate (TD-465).
+`mismatch`). The fixed-format Exact read (STPM / matric / poly) is `offer_exact.exact_offer_read` — the ONE entry
+point (`offer_parse.py` 2.0.0 shared block reader + `offer_parse_families.py`; the IC guard runs on it and a blanked IC
+means NO lock; the parser's keys are written whole, the dates merge-preserve; the reporting date is the DATE ONLY in
+the house shape, decisions.md 2026-11-03). Any reader change: `eval/offer_parse_check.py` (Exact read: 0 WRONG / 0
+control locks) and `eval/offer_read_check.py` on dev, held-out ONCE at the end, then the production dry run
+`eval/offer_s4_dry_run.py` (read-only, rolled back; `--suffix .s5_exact.json` after `offer_s5_caches.py --write` for
+the Exact read; send the realign/link/ticks diff to the matcher session; it counts the money reach and any new
+wrong-person red) and an adversarial review before the push. Paid Gemini runs only on the owner's yes. NEXT: S6
+genuineness + the owner's chip-colour ruling (`docs/decisions.md` 2026-11-02; app 329 named); S7 live re-read (now
+safe for the 21 at-risk reads; list = the 6 reporting-date letters + every live letter whose Exact read changed);
+S8 keep it exact; the money sprint is separate (TD-465); TD-473 (Cockpit: a pre-U letter ticks Pathway `match`
+against a degree pick by a shared word; `pathway_engine.py` split first).
 
 ### ⚠ STATE AT 2026-11-02 — STUDENT MAINTENANCE SPRINT 9 LIVE 2026-11-02 (main ab806a87; api-01236-jkr, web-01062-wx2; 0200 applied by hand first; Scheduler job halatuju-survey-emails hourly, first run OK) — surveys
 

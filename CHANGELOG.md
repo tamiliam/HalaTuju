@@ -143,7 +143,7 @@ scrolled sideways on a phone.
   +3.32 (the shared `Sheet`, eager on purpose: it is the only way to filter on a phone and the only way to fund).
   No budget raised. mobile-check: 24 sponsor cells lowered (landing, login, register), the eight new surfaces at 0.
 
-## Offer letters read exactly — Sprint 5 (reader round 2: the Exact read covers more letters) (2026-11-03, not yet pushed)
+## Offer letters read exactly — Sprint 5 (reader round 2: the Exact read covers more letters) — LIVE 2026-11-03 (main ae443f45; api-01240-cg2; parser 2.0.0; no migration; owner go after the production dry run)
 
 Production code (the free fixed-format reader); no migration; no paid call (cached text only). Plan:
 `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S5 "Plan (2026-11-03)". Part 1 (`56ff0648`) was the
@@ -227,6 +227,12 @@ owner check page for the 71 stored Exact reads; the owner marked every field rig
   against the live row with the production profile IC; every run now counts the money reach (reporting date as
   `parse_reporting_date` reads it, intake year) and `new_red:name` / `new_red:ic`. Fixed: `s4_keys` cut every key
   by the S4 suffix's length whatever `--suffix` was given.
+- **Production dry run (read-only, rolled back; the lead, 2026-11-03):** 96 locks, 87 on live documents;
+  `new_red` 0; `money:intake_year` 0; `s5:ic_refused_live` 0; `money:reporting_date` 6 (apps 114, 29: 6 -> 7 JUN,
+  the "Tarikh Kemasukan ke kolej" not the online-registration end; 58, 71: 9 -> 8 JUN, a range's first day; 319, 419:
+  blank -> filled), every one matching the owner's answers; realign 3 -> `same_course` (177, 319, 378), fill 1
+  (177), Name tick mismatch -> partial 1 (177), pathway ticks -> match 7. The Cockpit session reviewed the diff:
+  no objection; one finding logged as TD-473.
 - Tests: `test_offer_parse_s5.py` (a twin per class, the value bugs, date-only, conventions, never-locks),
   `test_offer_exact.py` (guard, merge, page 1, the vision branch), `test_offer_parse_check.py`;
   `test_offer_parser.py` / `test_offer_replay.py` moved to the 2.0.0 conventions.

@@ -440,7 +440,16 @@ Small sprints. Sprint 1 ends with the baseline; no reader change before Sprint 4
   live application, read-only); the S4 branch's reverted change (`course_start.py`, commit `90fd9234`) as a
   starting point.
 
-### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code)
+### S5 — Reader round 2: the Exact read covers more letters (medium, ~8 h; production code) — ✅ DONE, LIVE 2026-11-03 (main ae443f45; api-01240-cg2)
+- **Result:** `PARSER_VERSION` 2.0.0 + `offer_exact.py` (the one entry point; the IC guard on the Exact path).
+  Corpus locks 51 -> 96 of 287; 0 WRONG and 0 control locks on dev (86 EXACT) and held-out (10 EXACT; held-out run
+  3 times — see the retrospective); pipeline fully exact dev 89 -> 92 / 126, held-out 63 -> 66 / 90; the 21 at-risk
+  stored Exact reads 21 / 21 re-lock; dev real known-format 16 / 17. Production dry run: 87 live locks, 0 new red,
+  0 intake-year change, 6 reporting dates changed (all matching the owner's answers). Two adversarial review rounds
+  (2 High, 2 Medium, all fixed). Retrospective `docs/retrospectives/retrospective-2026-11-03-offer-exact-read-s5.md`;
+  owner ruling decisions.md 2026-11-03 (the reporting date is the date only); TD-473 (Cockpit), TD-474.
+  **S7 is now safe** for the 21 at-risk reads: its list = the 6 reporting-date letters + every live letter whose
+  Exact read changed.
 - **Goal:** more letters read by the free, deterministic reader, with no new errors.
 - **Scope:** `offer_parse.py` — FIRST the 48 known-format letters (STPM 9, matriculation 17, polytechnic 22; 27 PDF,
   21 photo; Sabah 22, flagship 26) whose stored read is the AI reader's: find why the fixed-format reader did not
