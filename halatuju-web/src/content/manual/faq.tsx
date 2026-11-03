@@ -111,7 +111,8 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>How do I let somebody do more (or less) than their role?</>,
       a: <>On <strong>Team</strong>, click the person&rsquo;s name (on the Reviewers or the Admins tab) and open
-        the <strong>Permissions</strong> tab on their page. Switch permissions on or off, read the line underneath
+        the <strong>Permissions</strong> tab on their page &mdash; the only place permissions are set. It has a
+        section for each table they sit in (Admin permissions, Reviewer permissions). Switch permissions on or off, read the line underneath
         &mdash; it says what saving would do &mdash; and press <strong>Save changes</strong>. <strong>Reset</strong>
         returns them to their role&rsquo;s usual set, and <strong>Changes</strong> underneath lists who changed
         what, and when. See <em>Changing what someone can do</em> in your chapter of the Guide.</>,
@@ -234,8 +235,8 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Can I appoint somebody to approve payment runs myself?</>,
       a: <>Yes. Invite them as an <strong>Admin</strong> on <strong>Invitations</strong> (or use <strong>Add
-        Admin</strong> on Team for somebody already in your team), then on Team &rarr; Admins use <strong>Edit admin
-        permissions</strong> and switch on <strong>Approve payment runs</strong>. Once they have signed in,
+        Admin</strong> on Team for somebody already in your team), then on Team &rarr; Admins click their name, open
+        <strong> Permissions</strong> and switch on <strong>Approve payment runs</strong>. Once they have signed in,
         they approve your payment runs instead of you &mdash; including a run already waiting for approval.</>,
     },
     {
@@ -300,8 +301,9 @@ export const FAQ: Record<Audience, QA[]> = {
         details, letters or staff notes. A mentor can never be assigned to their own application, and a
         deactivated mentor&rsquo;s students lose them at once. A member of staff (an organisation admin,
         admin, reviewer or QC &mdash; never finance) can also be a mentor on their own sign-in: an organisation
-        admin adds them with <strong>Add a staff member as mentor</strong> on Organisation &rarr; Mentors (no
-        email is sent). <strong>Stop mentoring</strong>, a revoke, or a switch to Finance ends their mentoring;
+        admin adds them with <strong>Add Mentor</strong> on Team &rarr; Mentors (no email is sent). Each
+        mentor&rsquo;s page (click their name there) shows their scholars, meetings and concerns &mdash; never the
+        meeting notes. <strong>Stop mentoring</strong>, a revoke, or a switch to Finance ends their mentoring;
         their staff sign-in is never touched.</>,
     },
     {

@@ -36,8 +36,8 @@ export default function AdminPersonPage() {
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
-  // Team tables T2: which table's permissions this visit edits (`?table=admins|reviewers`); the card
-  // shows only that table's keys. Absent (an old link) = every key, as before.
+  // `?table=admins|reviewers` (T2's links) now only picks the Team tab the back link returns to: since T3
+  // the card shows one section per table the person sits in, whichever link opened it.
   const asked = useSearchParams()?.get('table')
   const table = asked === 'admins' || asked === 'reviewers' ? asked : undefined
   const viewerRole = effectiveRole(role)
@@ -98,7 +98,7 @@ export default function AdminPersonPage() {
         tabs={[{ key: 'permissions', labelKey: 'admin.person.tabPermissions' }]} />
 
       {token && (
-        <LazyPermissionEditor adminId={view.id} name={who} token={token} initial={view} table={table} />
+        <LazyPermissionEditor adminId={view.id} name={who} token={token} initial={view} />
       )}
     </div>
   )

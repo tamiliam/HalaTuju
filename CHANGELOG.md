@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T3 — Mentors under Team, mentor detail (not yet live)
+
+Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (ruling 6, T3); decisions.md 2026-11-03 "Team tables T3". No
+migration, no new stored field.
+
+- **Team -> Mentors is the Mentors table** (the TeamMentors board): Mentor (name -> the detail page; email) · Also in
+  · Area · Languages · Scholars now · Meetings (90 days) · Last meeting · Concerns open · the action. The list is the
+  old Mentors page's, unchanged (mentors who have signed in, plus every staff member who mentors; Active · n /
+  Inactive · n; "n waiting to accept: see Invitations"). Shown to exactly who read the old page (super, org_admin,
+  admin — `pageGuard.mayReadMentors`, the server's `mentor_invite.may_read`). `GET admin/mentors/` rows gain
+  `tables`, `lead`, `meetings_90`, `last_meeting`, `concerns_open` (one aggregate query, `mentor_detail.team_columns`).
+- **Add Mentor** = 7d's "Add a staff member as mentor" Sheet (no email, sign-in untouched). **Remove** = 7d's Stop
+  mentoring (staff) / Deactivate (a mentor login), confirmed in the shared Sheet; under Inactive, Mentor again /
+  Reactivate. "Invite a mentor" is gone: mentors are invited on Invitations -> Mentor; their invitation's wording
+  stays on Invitations -> Emails.
+- **Mentor detail page** `/admin/organisation/reviewers/mentors/[id]` (`GET admin/mentors/<id>/`; the table's
+  readers; another organisation's mentor 404): area, languages, mentoring since, last signed in; tiles Scholars now ·
+  Meetings (90 days) · Average gap between meetings (per scholar, all time; '-' until a scholar has two meetings) ·
+  Concerns raised / open (open = not handled on a file still in maintenance); current and past scholars with since /
+  ended, meetings, last meeting, standing (the Scholars list's own reading) and concern state. Never a meeting note,
+  next step, minutes, end reason or who logged. Fixed query count (tested).
+- **The old Mentors page redirects** to Team -> Mentors (matched to the Team menu row); the Mentors menu row went.
+- **T2's "only Mentors would be left" refusal is lifted where the shape is a 7a mentor login**: an admin, reviewer
+  or QC who mentors now, has signed in and holds no open case may leave their last staff table and becomes role
+  `mentor` (link kept, permissions NULL, sign-in untouched, no email; the confirm says so). Anyone else is still
+  refused `mentors_only`. The way back is T2's Add.
+- **Owner scope addition: permissions live only on the person page.** The Permissions tab shows one section per
+  table the person sits in — "Admin permissions" (See all students, Spending, the three payment keys) for Admins,
+  "Reviewer permissions" (Review assigned students, Quality check) for Reviewers; the old Students / Money groups
+  went. Quality check's note says it needs the Admin permission "See all students" (for a Reviewer only, it is
+  switched on with it; the server rule is unchanged). A key held outside the sections shown is never dropped on
+  save (tested). `GET admin/admins/<id>/permissions/` serves `tables` (read-only). The Team tables lost their
+  permission chips and "Edit ... permissions" links (the name opens the person page); "Also in" stays.
+- en / ms / ta strings; Guide (organisation admin: Your team, Changing what someone can do, Mentoring) and FAQ.
+
 ## Requests list R1 — tabs, filter, search, pager and Previous / Next (branch requests-list, not pushed)
 
 Plan of record: `docs/plans/2026-11-03-requests-list-r1-roadmap.md` (owner approved 2026-11-03, option A: the tabs

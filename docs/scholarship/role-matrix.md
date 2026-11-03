@@ -62,6 +62,13 @@ org admin holds `review` (stored `['review']`; every other key on a lead row is 
 exactly `see_all`; org admins invite Admin / Reviewer only (no Finance / QC). The labels Finance / QC are retired on
 Team and Invitations; existing `finance` / `qc` rows are unchanged (TD-475: credits still read the finance role).
 
+**Team tables T3 (2026-11-03, built, not live):** Team -> **Mentors** and the mentor detail page
+(`GET admin/mentors/<id>/`) are read by exactly who read the Mentors page (super, org_admin, admin; their own
+organisation; another organisation's mentor 404); Add Mentor / Stop mentoring / Deactivate are 7d's (super, org_admin).
+Remove from a person's LAST staff table while they mentor is accepted only for a signed-in admin / reviewer / QC with
+no open case, and makes them a MENTOR LOGIN (role `mentor`: My students and Profile only; sign-in untouched). The
+Permissions tab shows one section per table; who may edit is unchanged. No other cell moves.
+
 **Changing a set (#39 Sprint 4, 2026-10-21):** People → a reviewer's page, or **Permissions** beside an
 admin → the card *What <name> can do* (`PATCH admin/admins/<id>/permissions/`). **Only a super or the
 organisation admin**, and only on a TEAM member of their own organisation — never their own row, an
@@ -487,7 +494,8 @@ A mentor's own sign-in (`PartnerAdmin.mentor` → `scholarship.Mentor`). Not sta
 denies the role (`mentor_methods`, deny by default), and it reaches only its OWN account — `admin/role/`,
 `admin/me/` (GET/PATCH, incl. its `mentoring_area`), `admin/me/photo/`, `admin/me/password/`,
 `admin/set-password/` and `admin/reviewer-profile/` (qualifications, languages, address; never a pause).
-**Menu:** Profile only; lands on Profile. **The Mentors page** (Organisation → Mentors,
+**Menu:** Profile only; lands on Profile. **The Mentors page** (Organisation → Mentors; since Team tables T3,
+Team → Mentors, the old route redirecting,
 `GET admin/mentors/`): super, org_admin and admin read their own organisation's mentors (name, email, the
 mentor's own phone, area, languages, status); **invite / resend / revoke / deactivate / reactivate and the
 name/email correction before the first sign-in: `super` and `org_admin` only**. Staff never edit a

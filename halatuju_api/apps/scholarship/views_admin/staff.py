@@ -107,6 +107,7 @@ class AdminStaffPermissionsView(_AdminBase):
 
     def get(self, request, admin_id):
         from apps.courses import staff_permissions as sp
+        from apps.courses import staff_tables
         from .. import staff_permissions_admin as spa
         admin, target, err = self._target(request, admin_id)
         if err:
@@ -124,6 +125,9 @@ class AdminStaffPermissionsView(_AdminBase):
                          'preset': list(sp.preset_for(target.role)),
                          'permissions': list(sp.resolve(target)),
                          'custom': sp.is_custom(target), 'keys': list(spa.editable_keys()),
+                         # Team tables T3 (owner): the Permissions tab shows one section per table the
+                         # person sits in (Admin permissions, Reviewer permissions). Read-only.
+                         'tables': list(staff_tables.tables(target)),
                          'history': _permission_history(target, admin)})
 
 
@@ -239,7 +243,9 @@ class AdminTeamTableView(_AdminBase):
                          'added': plan['added'], 'removed': plan['removed'],
                          'consequences': plan['consequences'],
                          'finance_check_off': plan['finance_check_off'],
-                         'opens_admin_pages': plan['opens_admin_pages']})
+                         'opens_admin_pages': plan['opens_admin_pages'],
+                         # T3: leaving their last staff table, they stay on as a mentor login.
+                         'becomes_mentor': plan['becomes_mentor']})
 
 
 class AdminTeamCandidatesView(_AdminBase):

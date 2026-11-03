@@ -1169,6 +1169,20 @@ list = rows that open the case, filters in a Sheet (one `filterControls` for bot
 JUMPS, Save stays; PDFs in a new tab; tranche / payment actions read-only on a phone).
 NEXT: M6b, M7, M8.
 
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T3 BUILT, NOT LIVE (branch maint-s7; no migration)
+
+Roadmap T3; decisions.md 2026-11-03 "Team tables T3". **Team -> Mentors** is the old Mentors page's table
+(`components/mentors/MentorsAdmin.tsx`, default `TeamMentors` + `MentorDetail`, ONE lazy chunk loaded by the Team page
+and by `/admin/organisation/reviewers/mentors/[id]`); `/admin/organisation/mentors` redirects (matched to the Team nav
+row; the Mentors row went). Readers = `mentor_invite.may_read` (web `pageGuard.mayReadMentors`). Backend:
+`apps/scholarship/mentor_detail.py` (`team_columns` one query; `scholars_of` fixed queries; per-scholar average gap;
+open concern = unhandled on a file in maintenance); `views_admin/mentors.py` `mentor_rows(team=True)` and
+`AdminMentorView.get` (`GET admin/mentors/<id>/`, matrix cell `T3_ADDED`). `staff_tables_admin`: leaving the last staff
+table while mentoring -> role `mentor` (`may_become_mentor`: admin / reviewer / qc, mentors now, signed in, no open
+case; plan `becomes_mentor`), else `mentors_only`. Owner scope addition: `GET admin/admins/<id>/permissions/` serves
+`tables`; `PermissionEditor` has one section per table (no `table` prop any more; `?table=` only picks the back tab);
+the Team tables lost the permission column (`KeyChips` unused there). Deploy: API first, then web.
+
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T2 LIVE 2026-11-03 (main 54f997a8; api-01241-9hv, web-01069-4vh; no migration)
 
 Roadmap T2; decisions.md 2026-11-03 "Team tables T2" (lead rulings Q1-Q4). **Team -> Admins / Reviewers -> Add and

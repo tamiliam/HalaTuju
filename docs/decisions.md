@@ -1,5 +1,41 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T3: Mentors are a Team table; the mentor detail page counts work, never notes; a staff mentor may leave their last staff table as a mentor login; permissions live only on the person page — 2026-11-03 (owner ruling 6 + scope addition; builder decisions for the lead to confirm)
+
+**Context:** T3 moves the Mentors page under Team (ruling 6) and adds a mentor detail page; T2 refused "only Mentors
+would be left" until T3. The owner then added: the person page's Permissions tab shows one section per table, and the
+Team tables carry no permission column.
+
+**Decision:**
+1. **The table is the old page's list, unchanged** (mentors who signed in + every staff mentor; Active / Inactive),
+   read by the old page's readers only (`mentor_invite.may_read`; web `pageGuard.mayReadMentors`, pinned to the
+   server's `ADMIN_WORK_ROLES` and to the T1 web matrix's old `open /admin/organisation/mentors` cell per shape).
+   Add / Stop mentoring / Deactivate are 7d's endpoints, untouched. The old route redirects; matched to the Team row,
+   so opening it now answers what opening Team answers (it only redirects) — the one moved web-matrix cell, declared.
+2. **The detail page's figures (`mentor_detail.py`, one home for the table and the page):** meetings in the last 90
+   days counts `met_on` from today - 89 (local date) inclusive; the average gap is PER SCHOLAR (days between each
+   meeting and that scholar's previous one with this mentor, all time, averaged, rounded; None/'-' until a scholar
+   has two) — gaps between different scholars' meetings say nothing about cadence; a concern is OPEN only while
+   unhandled on a file in maintenance (the Scholars list's rule: a closed file's concern can never be handled).
+   Standing is `scholars.rows` -> `standing.standing_for` (the list's reading). An allowlist: no notes, next step,
+   minutes, end reason or logger. `GET admin/mentors/<id>/` (the access matrix declares the new cell from the list's).
+3. **Leaving the last staff table while mentoring** becomes a MENTOR LOGIN (role `mentor`, link kept, permissions
+   NULL) — the 7a shape, the mirror of T2's "a mentor login added to a table becomes staff" — ONLY for an admin,
+   reviewer or QC who mentors now, has signed in (`first_seen_at`: a never-signed-in row would read "invited" and
+   could be Resent a mentor letter) and holds no open case. Never the lead (fixed at Admins), never finance (cannot
+   mentor). The UPDATE also requires the mentor record still live, so a Stop landing first wins. Otherwise
+   `mentors_only` as before. No stored field.
+4. **Permissions only on the person page (owner):** sections from the served `tables` at load (`GET .../permissions/`
+   now serves them); Quality check for somebody not in Admins switches "See all students" on with it (T2's rule) and
+   says it is the Admin permission; the saved set is always the whole served set changed only by the switches shown.
+   No gate changed.
+
+**Alternatives considered:** keep the T2 refusal (the brief allowed it); count gaps across all the mentor's meetings
+(mixes scholars); a mentor-detail chunk of its own (a new runtime entry on every route — the table's chunk is reused).
+
+**Revisit if:** the owner wants the 90-day window or the gap measured differently; a never-signed-in staff mentor
+should be allowed to become a mentor login; T5 moves page access onto keys.
+
 ## Team tables T2: Add / Remove write KEYS; role moves only where a label would keep someone seated; the org admin joins Reviewers by a stored ['review'] — 2026-11-03 (lead rulings Q1-Q4)
 
 **Context:** T2 builds the Team page's Admins and Reviewers tables with Add and Remove (roadmap rulings 1-8). The

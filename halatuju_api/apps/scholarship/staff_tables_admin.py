@@ -26,9 +26,17 @@ otherwise keep them seated — their `role`:
 ⚠ A KEY SET EQUAL TO THE (new) ROLE'S PRESET IS STORED AS NULL, as the editor stores it, so "custom" stays
 derivable. A preset row is MATERIALISED before a key is added, so nobody loses anything by an Add.
 
-⚠ REFUSED: the person's LAST table ("revoke instead"); the last STAFF table when only Mentors would be
-left (until T3: "revoke, or stop mentoring"); a revoked or inactive row; a super; anyone outside the
-caller's remit (the view answers 404 for those).
+⚠ REFUSED: the person's LAST table ("revoke instead"); a revoked or inactive row; a super; anyone outside
+the caller's remit (the view answers 404 for those).
+
+⚠ TEAM TABLES T3 (2026-11-03): THE LAST STAFF TABLE WHEN THEY STILL MENTOR. T2 refused it ("only Mentors
+would be left", until T3). It is now accepted ONLY where the shape is already one 7a / 7d support — a
+MENTOR LOGIN (role `mentor`, the link kept, permissions NULL): the person keeps their sign-in, their mentor
+record and every scholar, and from then on sees My students and their Profile only (`may_become_mentor`:
+an admin, reviewer or QC — never the organisation admin, who never leaves Admins, and never finance, who
+cannot mentor — who mentors NOW, HAS SIGNED IN, and holds no open case). Anyone else is still refused
+`mentors_only` ("revoke, or stop mentoring"). The reverse door is T2's (a mentor login added to a table
+becomes staff). No email; the sign-in untouched; no stored field.
 
 ⚠ WHO MAY: whoever may edit permissions on Team today — a super, or an organisation admin on their own
 organisation's TEAM members (`_staff_target_manageable`) — PLUS (lead ruling Q4) an organisation admin
@@ -56,6 +64,10 @@ MENTORS_ONLY = 'mentors_only'
 HAS_OPEN_CASES = 'has_open_cases'
 LEAD_FIXED = 'lead_fixed'
 QC_SEES_ALL = 'qc_sees_all'
+
+#: T3: the staff roles that may leave their last STAFF table and stay on as a mentor login. Never
+#: `org_admin` (the lead never leaves Admins), never `finance` (it cannot mentor: `mentors_now` is false).
+TO_MENTOR_ROLES = ('admin', 'reviewer', 'qc')
 
 Refused = PermissionChangeRefused
 
@@ -112,6 +124,14 @@ def _other(table):
     return REVIEWERS if table == ADMINS else ADMINS
 
 
+def may_become_mentor(target, open_n):
+    """T3: may ``target``, leaving their last STAFF table, stay on as a mentor login? (See the module
+    docstring.) ``open_n`` is their open-case count (`staff_lifecycle.open_cases`)."""
+    from apps.courses import staff_tables
+    return (target.role in TO_MENTOR_ROLES and target.is_active and staff_tables.in_mentors(target)
+            and target.first_seen_at is not None and not open_n)
+
+
 def _refuse_basic(target):
     from apps.courses import staff_permissions as sp
     if target.is_super or not (target.role in sp.TEAM_ROLES or target.role == sp.LEAD_ROLE
@@ -165,20 +185,35 @@ def _plan_remove(target, table, open_n):
     if not _in(target, table):
         raise Refused('not_in', 400, f'{target.name} is not in this table.')
     other = _other(table)
+    to_mentor = False
     if not _in(target, other):
-        if staff_tables.in_mentors(target):
+        if not staff_tables.in_mentors(target):
+            raise Refused(LAST_TABLE, 400,
+                          f'This is the only table {target.name} is in. Revoke their access instead.')
+        # T3: only Mentors would be left — accepted as a mentor login where that shape is safe.
+        n = staff_lifecycle.open_cases(target) if open_n is None else open_n
+        if n:
+            raise Refused(HAS_OPEN_CASES, 409,
+                          f'{target.name} has {n} open case(s) assigned. Reassign their cases first.',
+                          open_cases=n)
+        if not may_become_mentor(target, n):
             raise Refused(MENTORS_ONLY, 400,
-                          f'{target.name} would be left only in Mentors. Revoke their access, or stop '
-                          'their mentoring, instead.')
-        raise Refused(LAST_TABLE, 400,
-                      f'This is the only table {target.name} is in. Revoke their access instead.')
-    if table == REVIEWERS:
+                          f'{target.name} would be left only in Mentors, which is possible only for an '
+                          'admin, reviewer or QC who has signed in. Revoke their access, or stop their '
+                          'mentoring, instead.')
+        to_mentor = True
+    if table == REVIEWERS and not to_mentor:
         n = staff_lifecycle.open_cases(target) if open_n is None else open_n
         if n:
             raise Refused(HAS_OPEN_CASES, 409,
                           f'{target.name} has {n} open case(s) assigned. Reassign their cases first.',
                           open_cases=n)
     before = list(sp.resolve(target))
+    if to_mentor:
+        # A mentor login holds no staff key; its row stores NULL (the 7a shape).
+        from apps.courses.models import PartnerAdmin
+        return {'role': PartnerAdmin.MENTOR_ROLE, 'before': before, 'after': [], 'stored': None,
+                'to_mentor': True}
     if sp.is_lead_tier(target):
         return {'role': target.role, 'before': before, 'after': list(sp.preset_for(target.role)),
                 'stored': None, 'lead': True}
@@ -205,6 +240,8 @@ def plan_table_change(target, table, action, *, open_n=None):
     out['role_from'] = target.role
     out['role_changed'] = out['role'] != target.role
     lead = out.pop('lead', False)
+    # T3: they leave their last staff table and stay on as a mentor login — said on the confirm.
+    out['becomes_mentor'] = out.pop('to_mentor', False)
     if not lead and not target.is_mentor:
         # The editor's own stranding rule (a Remove from Admins taking `see_all` from somebody who
         # reaches assigned cases only through it) — the same check, the same words.
@@ -238,7 +275,11 @@ def _cheap_refusal(target, table, open_n):
     if not _in(target, table):
         return 'not_in'
     if not _in(target, _other(table)):
-        return MENTORS_ONLY if staff_tables.in_mentors(target) else LAST_TABLE
+        if not staff_tables.in_mentors(target):
+            return LAST_TABLE
+        if open_n:
+            return HAS_OPEN_CASES
+        return None if may_become_mentor(target, open_n) else MENTORS_ONLY   # T3
     if table == REVIEWERS and open_n:
         return HAS_OPEN_CASES
     return None
@@ -305,10 +346,15 @@ def change(target_id, table, action, *, by, dry_run=False):
         if p['role_changed']:
             fields['role'] = p['role']
             fields['is_super_admin'] = False
-        done = PartnerAdmin.objects.filter(pk=target.pk, role=p['role_from'], is_active=True).update(**fields)
+        rows = PartnerAdmin.objects.filter(pk=target.pk, role=p['role_from'], is_active=True)
+        if p['becomes_mentor']:
+            # T3: the mentor link and the mentor record must still be live as the row is written (the
+            # lock above holds the login; a Stop mentoring racing this one stamps the mentor first).
+            rows = rows.filter(mentor__isnull=False, mentor__deactivated_at__isnull=True)
+        done = rows.update(**fields)
         if not done:
             raise Refused('changed', 409, 'Somebody changed this person a moment ago. Reload and try again.')
-        if p['role_changed'] and not target.is_mentor:
+        if p['role_changed'] and not target.is_mentor and not p['becomes_mentor']:
             # As `change_role` does: an OPEN staff invitation carries the role the Invitations page shows.
             invitations.open_only(Invitation.objects.filter(
                 audience='staff', partner_admin=target)).update(role=p['role'])

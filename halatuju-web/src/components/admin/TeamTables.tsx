@@ -30,7 +30,7 @@ const CHIP: Record<string, string> = {
 }
 
 /** The person's OTHER tables, as small chips ("Admin (lead)" for the organisation admin). */
-export function AlsoIn({ row, here }: { row: Seat; here: TeamTableName }) {
+export function AlsoIn({ row, here }: { row: Seat; here: TeamTableName | 'mentors' }) {
   const { t } = useT()
   const others = (row.tables ?? []).filter((x) => x !== here)
   if (others.length === 0) return <span className="text-ground-400">—</span>
@@ -92,6 +92,7 @@ const effects = (t: T, plan: TeamTablePlan, name: string) => [
   ...plan.consequences.map((c) => t(`admin.permEditor.effect.${c}`, { name })),
   plan.opens_admin_pages ? t('admin.team.opensAdminPages') : '',
   plan.finance_check_off ? t('admin.team.financeCheckOff') : '',
+  plan.becomes_mentor ? t('admin.team.becomesMentor', { name }) : '',
 ].filter(Boolean)
 
 /** Team -> Add Admin / Add Reviewer: an EXISTING member of the team, never a new person. */

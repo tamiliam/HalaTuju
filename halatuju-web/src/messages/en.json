@@ -6729,7 +6729,7 @@
           "mentor": "Mentor",
           "invitedOption": "{name} — invited, not signed in yet",
           "scholarsNow": "{count} scholars",
-          "noneAvailable": "There is no other mentor to choose. Invite one on Organisation → Mentors.",
+          "noneAvailable": "There is no other mentor to choose. Invite one on Invitations → Mentor, or add one on Team → Mentors.",
           "reason": "Reason (staff only)",
           "reasonPlaceholder": "For example: changed course",
           "email": "Email the student \"You have a mentor\" with the mentor's name and contact",
@@ -8103,11 +8103,9 @@
     "permEditor": {
       "title": "What {name} can do",
       "subtitle": "Starts from the {preset} set. Switch on extra permissions when they need them.",
-      "students": "Students",
-      "money": "Money",
       "custom": "Custom",
       "changed": "changed",
-      "qcHint": "Needs “See all students” first.",
+      "qcHint": "Quality check needs the Admin permission “See all students”.",
       "save": "Save changes",
       "reset": "Reset to {preset}",
       "footnote": "You cannot change your own permissions or an organisation admin's.",
@@ -8129,7 +8127,8 @@
         "files_widened_all": "{name} will be able to read every student’s file in this organisation.",
         "files_widened_assigned": "{name} will open the files of the students assigned to them.",
         "prepare_and_approve": "{name} can prepare and approve runs, but never both on the same run."
-      }
+      },
+      "qcBrings": "Quality check needs the Admin permission “See all students”, so it is switched on with it."
     },
     "person": {
       "back": "Team",
@@ -8482,7 +8481,6 @@
       "nav": "Mentors",
       "title": "Mentors",
       "intro": "The people who mentor your scholars — invited mentors who have signed in, and staff who also mentor. Invite a mentor from Invitations; each mentor fills in their own profile.",
-      "inviteOpen": "Invite a mentor",
       "invite": {
         "name": "Name",
         "note": "The mentor gets an invitation email. After signing in, they fill in their area, languages, About and phone. You cannot edit those details; the mentor keeps them up to date.",
@@ -8518,7 +8516,10 @@
         "languages": "Languages",
         "status": "Status",
         "actions": "Actions",
-        "scholarsNow": "Scholars now"
+        "scholarsNow": "Scholars now",
+        "meetings90": "Meetings (90 days)",
+        "lastMeeting": "Last meeting",
+        "concernsOpen": "Concerns open"
       },
       "notFilled": "Not filled in yet",
       "activeSeen": "Active · last signed in {date}",
@@ -8546,7 +8547,7 @@
         "resume": "{name} mentors again. Assign them to scholars on each file.",
         "added": "{name} is now a mentor too. No email was sent — tell them yourself."
       },
-      "note": "Assign a mentor on a scholar's file, Mentoring tab — an invited mentor can be assigned before they sign in. This page lists the mentors who have signed in; mentors waiting to accept are on Invitations → Mentor, and one switched off before signing in comes back by inviting the same address there again. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file.",
+      "note": "Assign a mentor on a scholar's file, Mentoring tab. New mentors are invited on Invitations → Mentor; Add Mentor adds someone already in your team. This table lists the mentors who have signed in and the staff who also mentor. A mentor is never deleted: Deactivate instead, which also ends their mentoring. Past meetings stay on each scholar's file. Click a name for the mentor's page.",
       "empty": "No mentors in this list.",
       "loadError": "We could not load the mentors.",
       "profile": {
@@ -8562,16 +8563,10 @@
         "aboutSeen": "Your students see your About. Written for colleagues? Check it reads well for a student.",
         "accessMentor": "{role} · Mentor"
       },
-      "tabsAria": "Mentors sections",
-      "tab": {
-        "mentors": "Mentors"
-      },
-      "emailsNote": "Mentors receive no other email from HalaTuju.",
-      "waiting": "{count} waiting to accept —",
+      "waiting": "{count} waiting to accept:",
       "seeInvitations": "see Invitations",
-      "emptyNone": "No mentors yet. Invite one with \"Invite a mentor\".",
+      "emptyNone": "No mentors yet. Invite one on Invitations → Mentor, or add someone already in your team with \"Add Mentor\".",
       "emptyNoneRead": "No mentors yet.",
-      "addStaff": "Add a staff member as mentor",
       "staffSheet": {
         "title": "Add a staff member as mentor",
         "intro": "They keep their role and everything they can do now. They gain \"My students\" and a Mentoring card on their profile. No email is sent — tell them yourself.",
@@ -8584,7 +8579,45 @@
         "loadError": "We could not load the staff list."
       },
       "staffTag": "Staff · {role}",
-      "staffNote": "\"Stop mentoring\" ends a staff member's mentoring (their scholars are left without a mentor, and it shows on each file); their staff sign-in is not touched. If a staff member's account is revoked, their mentoring ends too. A staff mentor appears under Inactive after Stop mentoring, with \"Mentor again\"."
+      "staffNote": "\"Stop mentoring\" ends a staff member's mentoring (their scholars are left without a mentor, and it shows on each file); their staff sign-in is not touched. If a staff member's account is revoked, their mentoring ends too. A staff mentor appears under Inactive after Stop mentoring, with \"Mentor again\".",
+      "addMentor": "Add Mentor",
+      "removeTitle": {
+        "stop": "Stop {name} mentoring?",
+        "deactivate": "Deactivate {name}?"
+      },
+      "detail": {
+        "back": "Team · Mentors",
+        "since": "mentoring since {date}",
+        "lastSeen": "last signed in {date}",
+        "lastSeenUnknown": "sign-in not recorded",
+        "days": "{n} days",
+        "oneDay": "1 day",
+        "tile": {
+          "scholarsNow": "Scholars now",
+          "meetings90": "Meetings (90 days)",
+          "averageGap": "Average gap between meetings",
+          "concerns": "Concerns raised / open"
+        },
+        "col": {
+          "scholar": "Scholar",
+          "since": "Since",
+          "ended": "Ended",
+          "meetings": "Meetings",
+          "lastMeeting": "Last meeting",
+          "standing": "Standing",
+          "concern": "Concern"
+        },
+        "concern": {
+          "open": "Open",
+          "handled": "Handled",
+          "closed": "File closed"
+        },
+        "currentTitle": "Scholars now",
+        "pastTitle": "Past scholars (mentoring ended)",
+        "noneNow": "No scholars at the moment.",
+        "note": "Staff only. Meeting notes stay on each scholar's file. The average gap counts the days between each meeting and that scholar's previous one.",
+        "notFound": "This mentor was not found."
+      }
     },
     "myStudents": {
       "title": "My students",
@@ -9103,8 +9136,6 @@
     "team": {
       "desc": "Everybody who is already in this organisation. One person can sit in more than one table.",
       "tabMentors": "Mentors",
-      "mentorsSoon": "Mentors are listed on the Mentors page for now. They move into this tab soon.",
-      "openMentors": "Open Mentors",
       "add": {
         "admins": "Add Admin",
         "reviewers": "Add Reviewer"
@@ -9139,14 +9170,6 @@
       "leadChip": "Organisation admin (lead)",
       "leadNote": "Fixed: every admin permission plus the lead powers",
       "noSelfQc": "Never quality-checks a case they reviewed",
-      "edit": {
-        "admins": "Edit admin permissions",
-        "reviewers": "Edit reviewer permissions"
-      },
-      "editorOnly": {
-        "admins": "Only admin permissions are shown here. Reviewer permissions are on the Reviewers tab.",
-        "reviewers": "Only reviewer permissions are shown here. Admin permissions are on the Admins tab."
-      },
       "removeFrom": {
         "admins": "Remove from Admins",
         "reviewers": "Remove from Reviewers"
@@ -9167,10 +9190,11 @@
       "financeCheckOff": "They were the last person set up as Finance: wallet credits will skip the finance check.",
       "note": {
         "last_table": "Only table: revoke instead",
-        "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead",
+        "mentors_only": "Only Mentors would be left: revoke or stop mentoring instead (they must have signed in to stay on as a mentor)",
         "has_open_cases": "Reassign their cases first"
       },
-      "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join."
+      "inviteAdminNote": "An invited Admin starts with See all students. Tick more admin permissions on Team after they join.",
+      "becomesMentor": "{name} will be left only in Mentors: they keep their sign-in and their scholars, and from now on see only My students and their Profile."
     }
   },
   "documentsTab": {

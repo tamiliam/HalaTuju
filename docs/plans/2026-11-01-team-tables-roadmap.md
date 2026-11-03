@@ -79,6 +79,10 @@ Reviewers). Mentors live on a separate page.
 - Org admin may join Reviewers; self-QC test for them.
 
 **T3 — Mentors under Team, mentor detail** (medium; ~25 files)
+- **Status: built, not live (2026-11-03).** decisions.md "Team tables T3". Table + Add / Stop / Deactivate (7d), detail
+  page `/admin/organisation/reviewers/mentors/[id]` (`mentor_detail.py`), old page redirects; T2's mentors-only refusal
+  lifted for a signed-in staff mentor with no open case (becomes a mentor login). Owner scope addition: the person
+  page's Permissions tab has one section per table; the Team tables lost their permission column. No migration.
 - Team → Mentors tab (same width table, Add Mentor = 7d add; Stop / Mentor again); the old Mentors page redirects;
   "Invite a mentor" removed.
 - Mentor detail page: profile summary, current and past scholars, meetings logged (count, last, gap between

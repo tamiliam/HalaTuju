@@ -107,6 +107,8 @@ export interface TeamTablePlan {
    *  Development, Sources, Mentors): a Remove from Reviewers (lead ruling Q2b) or a mentor login added to
    *  Admins. Said in plain words on the confirm (review 2026-11-03). */
   opens_admin_pages: boolean
+  /** T3: leaving their last staff table, they stay on as a mentor login (My students and Profile only). */
+  becomes_mentor?: boolean
 }
 
 export async function getTeamCandidates(table: TeamTableName, options?: ApiOptions) {
@@ -194,6 +196,8 @@ export interface StaffPermissionsView {
   paused?: boolean
   /** The latest changes, newest first (the server caps the list). */
   history?: StaffPermissionChangeRow[]
+  /** Team tables T3: the tables the person sits in — the Permissions tab shows one section per table. */
+  tables?: string[]
 }
 
 /** One recorded change of somebody's permissions. `kind: 'role_change'` = a Change role put the set

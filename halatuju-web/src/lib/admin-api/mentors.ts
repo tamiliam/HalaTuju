@@ -32,6 +32,17 @@ export interface MentorRow {
   /** S7d: the STAFF role of a staff member who also mentors ("Staff · <role>"); null for a mentor
    *  login. Only Stop mentoring / Mentor again act on such a row; their sign-in is People's. */
   staff_role?: string | null
+  // ── Team tables T3 (the Team -> Mentors table; `GET admin/mentors/` and the detail only) ──
+  /** The tables this person sits in (`staff_tables.tables`) — the "Also in" chips. */
+  tables?: string[]
+  /** The organisation admin ("Admin (lead)"). */
+  lead?: boolean
+  /** Meetings with this mentor whose date is in the last 90 days (today included). */
+  meetings_90?: number
+  /** The latest meeting's date (YYYY-MM-DD), or null. */
+  last_meeting?: string | null
+  /** Concerns raised and not marked handled, on files still in maintenance. */
+  concerns_open?: number
 }
 
 export interface MentorsPayload {
@@ -79,4 +90,41 @@ export async function addStaffMentor(adminId: number, options?: ApiOptions) {
 export async function mentorAction(id: number, action: MentorAction, options?: ApiOptions) {
   return adminMutate<MentorRow & { emailed: boolean | null }>(
     `/api/v1/admin/mentors/${id}/${action}/`, 'POST', {}, options)
+}
+
+/** Team tables T3: one scholar on the mentor detail page — never a meeting note. */
+export interface MentorScholarRow {
+  application_id: number
+  name: string
+  since: string | null
+  /** Set for a PAST scholar (the mentoring ended). */
+  ended: string | null
+  meetings: number
+  last_meeting: string | null
+  /** `standing.py`'s word; null when the student has no maintenance file (e.g. an award reverted). */
+  standing: string | null
+  has_file: boolean
+  /** `open` (not handled, file live), `handled`, `closed` (raised on a file now closed), or null. */
+  concern: 'open' | 'handled' | 'closed' | null
+}
+
+export interface MentorDetail {
+  mentor: MentorRow
+  mentoring_since: string | null
+  figures: {
+    scholars_now: number
+    meetings_90: number
+    /** Whole days, per scholar (between each meeting and that scholar's previous one); null = '-'. */
+    average_gap_days: number | null
+    concerns_raised: number
+    concerns_open: number
+    last_meeting: string | null
+  }
+  current: MentorScholarRow[]
+  past: MentorScholarRow[]
+}
+
+/** Team tables T3: the mentor detail page (super, org_admin, admin; org-fenced — 404 otherwise). */
+export async function getMentorDetail(id: number, options?: ApiOptions) {
+  return adminFetch<MentorDetail>(`/api/v1/admin/mentors/${id}/`, options)
 }

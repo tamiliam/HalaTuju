@@ -29,11 +29,15 @@ import {
  * it) passes it as `initial`, and the card asks nothing more until a save.
  */
 
-const STUDENTS = ['review', 'see_all', 'qc']
-const MONEY = ['spending', 'payments_prepare', 'payments_check', 'payments_approve']
-
-/** Team tables T2 (owner ruling 2): each table shows and edits only ITS OWN keys — the server's
- *  `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
+/**
+ * Team tables T3 (owner, 2026-11-03): ONE SECTION PER TABLE THE PERSON SITS IN — the server's `tables`.
+ * "Admin permissions" (`see_all`, `spending`, the three payment keys) only for somebody in Admins;
+ * "Reviewer permissions" (`review`, `qc`) only for somebody in Reviewers. The old Students / Money groups,
+ * which showed every key to everyone, are gone. "See all students" is an ADMIN permission; Quality check
+ * still needs it (the server's `DEPENDS_ON`, unchanged), and its note says so.
+ * ⚠ A KEY THE PERSON HOLDS OUTSIDE THEIR SECTIONS IS NEVER DROPPED: the saved set is the whole set the
+ * server served, changed only by the switches on screen (and Quality check's own dependency).
+ * The keys are the server's `staff_tables_admin.ADMIN_TABLE_KEYS` / `REVIEWER_TABLE_KEYS`. */
 export const TABLE_KEYS = {
   admins: ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve'],
   reviewers: ['review', 'qc'],
@@ -49,9 +53,6 @@ export interface PermissionEditorProps {
   onSaved?: () => void
   /** The GET this page already made, so the card does not make it twice. */
   initial?: StaffPermissionsView
-  /** Team tables T2: opened from one table — show and change only that table's keys. The keys of the
-   *  person's other tables ride along unchanged in the saved set. Absent = every key (as before). */
-  table?: TeamTable
 }
 
 type Refusal = { message: string; code: string }
@@ -59,7 +60,7 @@ type Refusal = { message: string; code: string }
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((k) => b.includes(k))
 
-export default function PermissionEditor({ adminId, name, token, onSaved, initial, table }: PermissionEditorProps) {
+export default function PermissionEditor({ adminId, name, token, onSaved, initial }: PermissionEditorProps) {
   const { t } = useT()
   const [view, setView] = useState<StaffPermissionsView | null>(initial ?? null)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -96,9 +97,14 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
       })
   }, [adminId, token, view, want, dirty])
 
-  // T2, the Reviewers table: "See all students" is not shown there, so Quality check brings it along —
-  // and takes it away again unless it was an ADMIN key before (held without Quality check), so turning
-  // Quality check off never leaves somebody seated at Admins by a key nobody ticked.
+  // T3: the sections are the tables the server seated them at when the card loaded (a payload from before
+  // T3, with no `tables`, shows both). They stay put while the switches move, and follow the next read.
+  const tables = view?.tables
+  const inAdmins = !tables || tables.includes('admins')
+  const inReviewers = !tables || tables.includes('reviewers')
+  // Somebody NOT in Admins has no "See all students" switch, so Quality check brings it along — and takes
+  // it away again unless it was an ADMIN key before (held without Quality check), so turning Quality check
+  // off never leaves somebody seated at Admins by a key nobody ticked (T2's rule, kept).
   const seeAllWasAdmin = !!view && view.permissions.includes('see_all') && !view.permissions.includes('qc')
   const flip = useCallback((key: string, on: boolean) => {
     setSaved(false)
@@ -106,13 +112,13 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
       let next = on ? [...cur, key] : cur.filter((k) => k !== key)
       // Quality check needs See all students: switching the second off takes the first with it.
       if (key === 'see_all' && !on) next = next.filter((k) => k !== 'qc')
-      if (table === 'reviewers' && key === 'qc') {
+      if (!inAdmins && key === 'qc') {
         if (on && !next.includes('see_all')) next = [...next, 'see_all']
         if (!on && !seeAllWasAdmin) next = next.filter((k) => k !== 'see_all')
       }
       return next
     })
-  }, [table, seeAllWasAdmin])
+  }, [inAdmins, seeAllWasAdmin])
 
   if (loadFailed) {
     return <p className="text-sm text-critical-600">{t('admin.permEditor.loadFailed', { name })}</p>
@@ -166,7 +172,7 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
 
   const row = (key: string) => {
     const on = want.includes(key)
-    const blocked = key === 'qc' && !want.includes('see_all') && table !== 'reviewers'
+    const blocked = key === 'qc' && !want.includes('see_all') && inAdmins
     const changed = on !== view.permissions.includes(key)
     return (
       <div key={key} data-key={key} className="flex items-center justify-between gap-4 py-2.5">
@@ -181,6 +187,9 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
           </div>
           <div className="text-[13px] text-ground-500">{t(`admin.perm.${key}.desc`)}</div>
           {blocked && <div className="text-xs text-caution-700">{t('admin.permEditor.qcHint')}</div>}
+          {key === 'qc' && !inAdmins && (
+            <div className="text-xs text-ground-500" data-testid="qc-brings-see-all">{t('admin.permEditor.qcBrings')}</div>
+          )}
         </div>
         <Toggle on={on} disabled={blocked || busy} label={t(`admin.perm.${key}.name`)}
           onChange={(v) => flip(key, v)} />
@@ -188,22 +197,19 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
     )
   }
 
-  // T2: only this table's keys; at Admins, "See all students" held beside Quality check is that
-  // check's own need (the Reviewers table's), never an admin switch.
-  const inTable = (k: string) => !table || ((TABLE_KEYS[table] as readonly string[]).includes(k)
-    && !(table === 'admins' && k === 'see_all' && view.permissions.includes('qc')))
-  const group = (title: string, keys: string[]) => {
-    const shown = keys.filter((k) => view.keys.includes(k) && inTable(k))
+  const group = (testId: string, title: string, keys: readonly string[]) => {
+    const shown = keys.filter((k) => view.keys.includes(k))
     if (shown.length === 0) return null
     return (
-      <div className="mt-2 border-t border-ground-100 pt-3">
+      <div className="mt-2 border-t border-ground-100 pt-3" data-testid={testId}>
         <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ground-500">{title}</h3>
         {shown.map(row)}
       </div>
     )
   }
-  // A key the server adds later still gets a switch, under Money's line, rather than vanishing.
-  const other = view.keys.filter((k) => !STUDENTS.includes(k) && !MONEY.includes(k) && inTable(k))
+  // A key the server adds later still gets a switch, under the sections, rather than vanishing.
+  const known: readonly string[] = [...TABLE_KEYS.admins, ...TABLE_KEYS.reviewers]
+  const other = view.keys.filter((k) => !known.includes(k))
   const custom = !sameSet(want, view.preset)
   // Review fix 1: a Reviewer or QC holding neither key would vanish from People; the server refuses
   // it (`would_leave_people`) and the hint says why before the refusal arrives.
@@ -228,19 +234,13 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
         )}
       </div>
       <p className="mb-2 mt-0.5 text-sm text-ground-500">{t('admin.permEditor.subtitle', { preset })}</p>
-      {table && (
-        <p className="mb-2 text-xs text-ground-500" data-testid="table-only-note">
-          {t(`admin.team.editorOnly.${table}`)}
-        </p>
-      )}
-
-      {group(t('admin.permEditor.students'), STUDENTS)}
+      {inAdmins && group('perm-section-admins', t('admin.team.colKeys.admins'), TABLE_KEYS.admins)}
+      {inReviewers && group('perm-section-reviewers', t('admin.team.colKeys.reviewers'), TABLE_KEYS.reviewers)}
       {unlisted && (
         <p className="text-xs text-caution-700" data-testid="unlisted-hint">
           {t('admin.permEditor.unlistedHint')}
         </p>
       )}
-      {group(t('admin.permEditor.money'), MONEY)}
       {other.length > 0 && <div className="mt-2 border-t border-ground-100 pt-3">{other.map(row)}</div>}
 
       {refusal ? (
@@ -258,12 +258,11 @@ export default function PermissionEditor({ adminId, name, token, onSaved, initia
           className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
           {t('admin.permEditor.save')}
         </button>
-        {/* T2: "back to the preset" would reach into the person's OTHER table, so a one-table card has none. */}
-        {!table && <button type="button" disabled={busy || sameSet(want, view.preset)}
+        <button type="button" disabled={busy || sameSet(want, view.preset)}
           onClick={() => { setSaved(false); setWant(view.preset) }}
           className="rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50 disabled:opacity-50">
           {t('admin.permEditor.reset', { preset })}
-        </button>}
+        </button>
       </div>
       <p className="mt-3 text-xs text-ground-500">{t('admin.permEditor.footnote')}</p>
     </section>

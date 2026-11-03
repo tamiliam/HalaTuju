@@ -78,13 +78,15 @@ describe('visibleNav per role', () => {
     // lost reach (super + org_admin, as before); only its position moved.
     // ⚠ S7a (2026-10-31): `mentors` is NEW in the Organisation group, after Sources, for super,
     // org_admin and admin (admin reads; the endpoint refuses everyone else). Nobody else gained reach.
+    // ⚠ Team tables T3 (2026-11-03): `mentors` LEFT the menu — Mentors are Team → Mentors (owner ruling 6),
+    // shown to the same three (`pageGuard.mayReadMentors`); the old route redirects to Team.
     // ⚠ S8 (2026-11-01): `announcements` is NEW in the Programme group, after Scholars, for super,
     // org_admin and admin (all three POST — `announcements.may_post`). Nobody else gained reach.
     // ⚠ S9 (2026-11-02): `surveys` is NEW after Announcements, for the same three (`surveys.may_make`).
     // ⚠ S10 (2026-11-02): `development` is NEW after Surveys, for the same three (`development.may_make`).
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
       'spending', 'contracts',
@@ -106,14 +108,14 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'programmeConfig', 'payments',
       'spending', 'contracts',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'mentors', 'sponsors',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],

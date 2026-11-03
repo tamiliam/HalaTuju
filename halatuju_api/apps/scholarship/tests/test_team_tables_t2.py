@@ -215,9 +215,12 @@ class Remove(_Base):
         rev = make_admin('reviewer', owning_org=self.org)
         self.assertEqual(self.act(self.lead, 'reviewers', rev, 'remove').json()['code'], 'last_table')
 
-    def test_only_mentors_left_is_refused_until_t3(self):
+    def test_only_mentors_left_is_refused_for_one_who_never_signed_in(self):
+        # T3 lifted T2's refusal only where the mentor-login shape is safe (`test_team_tables_t3.py`); a
+        # staff mentor who has never signed in is still refused.
         from apps.scholarship.models import Mentor
         adm = make_admin('admin', owning_org=self.org, mentor=Mentor.objects.create(organisation=self.org))
+        self.assertIsNone(adm.first_seen_at)
         r = self.act(self.lead, 'admins', adm, 'remove')
         self.assertEqual((r.status_code, r.json()['code']), (400, 'mentors_only'))
 

@@ -1,23 +1,23 @@
 'use client'
 
-import { lazySource } from '@/components/source/LazySource'
-import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 /**
- * Organisation → **Mentors** (student maintenance S7a, 2026-10-31; the MentorsAdmin board).
+ * Organisation → Mentors had a page of its own from student maintenance S7a (2026-10-31) until Team
+ * tables T3 (2026-11-03, owner ruling 6): mentors are a TEAM table now — Team → Mentors — beside Admins
+ * and Reviewers, and the menu row went.
  *
- * ⚠ THE SCREEN IS ITS OWN CHUNK. The route carries only this loader (`lazySource`, the house
- * pattern), so the page adds next to nothing to its first load — the shared first-load median has
- * a fraction of a kB of room (TD-427), and a new route lands IN that median.
+ * This stays as a permanent redirect, the same shape as `/admin/organisation/programmes`: it costs one
+ * file, and a dead admin link costs somebody a support message. `navigation.ts` matches this path to
+ * the Team row, so a bookmark also lights the right part of the sidebar. "Invite a mentor" went with the
+ * page: mentors are invited on Invitations → Mentor; the Mentors emails tab's template is on
+ * Invitations → Emails.
  */
-const MentorsAdmin = lazySource(() => import('@/components/mentors/MentorsAdmin').then((m) => m.default))
-
-/**
- * ⚠ THE EMAILS TAB'S CARD IS IMPORTED HERE, BY THE ROUTE, AND HANDED IN (S7b follow-up review fix 5).
- * It needs the shared template editor; reached from the lazy screen, that editor's chunk became an
- * entry in the webpack runtime every route downloads. From the route it is ordinary first-load JS of
- * this admin page only (well under the median), and the screen itself stays lazy.
- */
-export default function MentorsPage() {
-  return <MentorsAdmin EmailsCard={InvitationEmailsCard} />
+export default function MentorsRedirect() {
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/admin/organisation/reviewers?tab=mentors')
+  }, [router])
+  return null
 }
