@@ -1296,6 +1296,126 @@
       "smallInputs": 0,
       "smallTargets": 0
     },
+    "sandbox:cockpit-case @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-case @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-case @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-case @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-case @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-case @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-payments @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-image @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @360 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @360 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @360 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @390 en": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @390 ms": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
+    "sandbox:cockpit-viewer-pdf @390 ta": {
+      "overflow": 0,
+      "smallInputs": 0,
+      "smallTargets": 0
+    },
     "sandbox:course-guide @360 en": {
       "overflow": 0,
       "smallInputs": 0,
@@ -1567,34 +1687,34 @@
       "smallTargets": 0
     },
     "sandbox:officer-cockpit @360 en": {
-      "overflow": 257,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:officer-cockpit @360 ms": {
-      "overflow": 257,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:officer-cockpit @360 ta": {
-      "overflow": 257,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:officer-cockpit @390 en": {
-      "overflow": 227,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:officer-cockpit @390 ms": {
-      "overflow": 227,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:officer-cockpit @390 ta": {
-      "overflow": 227,
+      "overflow": 0,
       "smallInputs": 0,
-      "smallTargets": 19
+      "smallTargets": 0
     },
     "sandbox:onboarding-exam-type @360 en": {
       "overflow": 0,

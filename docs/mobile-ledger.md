@@ -8,7 +8,7 @@ Baseline last updated **2026-11-03** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **101 routes:** 66 Must · 29 Can · 6 Desktop-only.
-**42 measured** (public page or sandbox surface), **38 fully green.**
+**42 measured** (public page or sandbox surface), **39 fully green.**
 
 How to read a row: the three numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -61,7 +61,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/scholars` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/scholars/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholarship/[id]` | Must | M6 | 6 (sandbox `officer-cockpit`) | 257 | 0 | 19 | ❌ |  |
+| `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | ✅ |  |
 | `/admin/set-password` | Must | M6 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M6) |  |
 | `/admin/sources` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/spending` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
