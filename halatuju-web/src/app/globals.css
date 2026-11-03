@@ -742,7 +742,10 @@
    the SAME table restacks: no header row (it stays for a screen reader), each row a block divided by a hairline,
    each cell a line whose `data-label` names it, and no card, scroll floor or sideways scroll. ONE DOM: every
    button is the one the desktop has, with the same handler (no second copy to drift — lessons 2026-09-08). From
-   md nothing here applies. Controls in a row get a 44 px hit area; the cell padding is the row's, not the cell's. */
+   md nothing here applies. Controls in a row get a 44 px hit area; the cell padding is the row's, not the cell's.
+   The header row is hidden the screen-reader way (clipped, not display:none), and because `display: block` can
+   cost a table its semantics in WebKit / VoiceOver, the elements carry explicit ARIA roles (`stampTableRoles` in
+   TableFrame; written into a raw table's markup). */
 @media (max-width: 767.98px) {
   [data-phone-rows] > div { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
   [data-phone-rows] [data-table-floor] { min-width: 0 !important; }

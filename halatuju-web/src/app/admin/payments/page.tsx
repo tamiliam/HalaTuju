@@ -183,12 +183,19 @@ export default function PaymentsLandingPage() {
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.payments.title')}</h1>
           <p className="mt-1 text-sm text-ground-500">{t('admin.payments.subtitle')}</p>
+          {offerNewRun && (
+            <p className="mt-2 text-sm text-info-700 md:hidden" data-new-run-use-computer>{t('admin.useComputer.newRun')}</p>
+          )}
         </div>
+        {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): a new run is made at a desk — hidden below md only, with a
+            note; from md the button it was, opening the same Sheet. */}
         {offerNewRun && (
-          <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
-            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
-            + {t('admin.payments.newRun')}
-          </button>
+          <div className="shrink-0 max-md:hidden" data-new-run>
+            <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
+              className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
+              + {t('admin.payments.newRun')}
+            </button>
+          </div>
         )}
         {canCreate && newRunBlocked && (
           <p className="max-w-xs text-right text-sm text-ground-500" data-testid="new-run-blocked">

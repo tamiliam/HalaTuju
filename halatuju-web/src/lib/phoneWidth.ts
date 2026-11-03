@@ -20,8 +20,13 @@ export function usePhoneWidth(): boolean {
     const mq = window.matchMedia(PHONE_WIDTH_QUERY)
     const update = () => setPhone(mq.matches)
     update()
-    mq.addEventListener?.('change', update)
-    return () => mq.removeEventListener?.('change', update)
+    // Safari before 14 has only the old addListener / removeListener on a MediaQueryList.
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', update)
+      return () => mq.removeEventListener('change', update)
+    }
+    mq.addListener?.(update)
+    return () => mq.removeListener?.(update)
   }, [])
   return phone
 }

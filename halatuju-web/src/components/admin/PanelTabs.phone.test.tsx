@@ -49,6 +49,19 @@ it('a phone with four tabs keeps the chips, each 44 px tall', async () => {
   for (const tab of screen.getAllByRole('tab')) expect(tab.className.split(' ')).toContain('max-md:min-h-11')
 })
 
+it('Safari before 14 (only addListener on the media query) still gets the chooser, and lets go on unmount', async () => {
+  const add = jest.fn()
+  const remove = jest.fn()
+  window.matchMedia = ((q: string) => ({ matches: q === PHONE_WIDTH_QUERY, media: q, addListener: add,
+    removeListener: remove })) as unknown as typeof window.matchMedia
+  const { unmount } = render(<PanelTabs tabs={tabs(6)} active="k0" onSelect={jest.fn()} ariaLabelKey="aria" />)
+  await act(async () => {})
+  expect(document.querySelector('[data-panel-chooser]')).not.toBeNull()
+  expect(add).toHaveBeenCalledTimes(1)
+  unmount()
+  expect(remove).toHaveBeenCalledWith(add.mock.calls[0][0])
+})
+
 it('from md, and with no matchMedia, nine tabs are the bar they always were', async () => {
   for (const w of [false, null] as const) {
     widthIs(w)

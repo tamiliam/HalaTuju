@@ -701,7 +701,17 @@ describe('the console lists and tabs on a phone (Mobile M7a)', () => {
     for (const rel of users) {
       const src = readWeb(rel, 'a table drawn as rows on a phone')
       expect(`${rel}: ${(src.match(/data-label=/g) ?? []).length}`).not.toMatch(/: 0$/)
+      // M7a review: a restacked table keeps its semantics for a screen reader. TableFrame stamps the roles
+      // (`stampTableRoles`); a raw table under a `data-phone-rows` wrapper writes them itself.
+      if (/data-phone-rows>/.test(src)) {
+        for (const role of ['table', 'rowgroup', 'row', 'columnheader', 'cell']) {
+          expect(`${rel}: role="${role}" ${src.includes(`role="${role}"`)}`).toBe(`${rel}: role="${role}" true`)
+        }
+      }
     }
+    const frame = readWeb('src/components/admin/TableFrame.tsx', 'the console table shell')
+    for (const pair of [`set('table', 'table')`, `set('thead, tbody, tfoot', 'rowgroup')`, `set('tr', 'row')`,
+      `set('th', 'columnheader')`, `set('td', 'cell')`]) expect(frame).toContain(pair)
   })
   test('the hand-built underlined tab bars are 44 px chips on a phone, and nothing but max-md: changes', () => {
     const lib = readWeb('src/lib/phoneConsole.ts', 'the console phone classes')
@@ -766,9 +776,75 @@ describe('the cockpit on a phone', () => {
       expect(src.split(door).length - 1).toBe(1)
       expect(src).toMatch(/<p className="[^"]*\bmd:hidden\b[^"]*" data-substate-use-computer>\s*\{t\('admin\.maintenance\.useComputer'\)\}/)
     }
-    // No third place: the status door is only ever reached through these two components.
-    const callers = TSX.filter((f) => /setMaintenanceSubstate\(|doSetSubstate\(s\)/.test(f.code)).map((f) => f.rel)
+    // No third place (M7a review: any argument, and the buttons' own labels): the status door is reached only
+    // through these two components, and only they draw a status button.
+    const live = (f: { raw: string }) => f.raw.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*|\{\/\*)/.test(l)).join('\n')
+    const callers = TSX.filter((f) => /setMaintenanceSubstate\(|doSetSubstate\(/.test(live(f))).map((f) => f.rel)
     expect(callers.sort()).toEqual(['src/app/admin/scholarship/[id]/view.tsx', ...places.map((p) => p.file)].sort())
+    const labels = TSX.filter((f) => /maintenance\.action\./.test(live(f))).map((f) => f.rel)
+    expect(labels.sort()).toEqual(places.map((p) => p.file).sort())
+  })
+  test('every decided door is read-only on a phone (owner, Mobile M7): hidden below md, with a note', () => {
+    // Each door's every call sits inside an element marked with its hook whose OWN class list carries
+    // max-md:hidden; the file has the md:hidden note with its words. A call outside the box (a second button, a
+    // copy) fails, whatever its argument. Below md by WIDTH — the one line (M6b review).
+    const live = (src: string) => src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*\*|\{\/\*)/.test(l)).join('\n')
+    /** The element that carries `hook`: its opening tag and its whole body (balanced on that tag name). */
+    const boxes = (src: string, hook: string) => {
+      const out: { tag: string; body: string; from: number; to: number }[] = []
+      const next = (from: number) => {   // the whole attribute only: `data-new-run`, never `data-new-run-use-computer`
+        let i = src.indexOf(hook, from)
+        while (i > -1 && !/[\s>]/.test(src[i + hook.length] ?? '')) i = src.indexOf(hook, i + 1)
+        return i
+      }
+      let at = next(0)
+      while (at > -1) {
+        const open = src.lastIndexOf('<', at)
+        const name = (src.slice(open + 1).match(/^[A-Za-z]+/) ?? [''])[0]
+        const tagEnd = src.indexOf('>', at) + 1
+        let depth = 1
+        let i = tagEnd
+        const re = new RegExp(`<${name}(?=[\\s>])|</${name}>`, 'g')
+        re.lastIndex = tagEnd
+        let m: RegExpExecArray | null
+        while (depth > 0 && (m = re.exec(src))) { depth += m[0].startsWith('</') ? -1 : 1; i = re.lastIndex }
+        out.push({ tag: src.slice(open, tagEnd), body: src.slice(tagEnd, i), from: open, to: i })
+        at = next(tagEnd)
+      }
+      return out
+    }
+    const DOORS: { file: string; hook: string; door: RegExp; count: number; note: string; scope?: [string, string] }[] = [
+      { file: 'src/app/admin/payments/[id]/page.tsx', hook: 'data-payment-sign', door: /\bsign\(/g, count: 3,
+        note: 'payments' },
+      { file: 'src/app/admin/payments/[id]/page.tsx', hook: 'data-payment-cancel', door: /\bdoCancel\b(?! = )/g, count: 1,
+        note: 'payments' },
+      // The phone cards' include Toggle (the desktop table keeps its own; the table is md-only).
+      { file: 'src/app/admin/payments/[id]/page.tsx', hook: 'data-payment-include', door: /\bpatchItem\(/g, count: 1,
+        note: 'payments', scope: ['data-testid="payment-cards"', '<TableFrame'] },
+      { file: 'src/app/admin/payments/page.tsx', hook: 'data-new-run', door: /setDialogOpen\(true\)/g, count: 1,
+        note: 'newRun' },
+      { file: 'src/components/admin/RequestHoursForm.tsx', hook: 'data-hours-open', door: /setOpen\(true\)/g, count: 1,
+        note: 'hours' },
+      { file: 'src/components/admin/ScholarControls.tsx', hook: 'data-close-actions',
+        door: /setConfirm\(true\)|onClick=\{close\}|setReason\(/g, count: 3, note: 'close' },
+      { file: 'src/app/admin/students/[id]/page.tsx', hook: 'data-delete-actions',
+        door: /handleDelete\b(?! = )|setDeleteConfirm\(/g, count: 2, note: 'deleteStudent' },
+      { file: 'src/app/admin/sponsors/[id]/page.tsx', hook: 'data-membership-actions', door: /\bsetGift\(/g, count: 2,
+        note: 'membership' },
+    ]
+    for (const d of DOORS) {
+      let src = live(readWeb(d.file, 'a door read-only on a phone'))
+      if (d.scope) src = src.slice(src.indexOf(d.scope[0]), src.indexOf(d.scope[1], src.indexOf(d.scope[0])))
+      const found = boxes(src, d.hook)
+      expect(`${d.file} ${d.hook}: ${found.length}`).not.toMatch(/: 0$/)
+      for (const b of found) expect(`${d.file} ${d.hook} ${b.tag}`).toMatch(/className=["{`][^>]*\bmax-md:hidden\b/)
+      const calls = Array.from(src.matchAll(d.door)).map((m) => m.index!)
+      expect(`${d.file} ${d.door}: ${calls.length}`).toBe(`${d.file} ${d.door}: ${d.count}`)
+      const outside = calls.filter((i) => !found.some((b) => i > b.from && i < b.to))
+      expect(`${d.file} ${d.door} outside its box: ${outside.length}`).toBe(`${d.file} ${d.door} outside its box: 0`)
+      const whole = readWeb(d.file, 'a door read-only on a phone')
+      expect(whole).toMatch(new RegExp(`className="[^"]*\\bmd:hidden\\b[^"]*"[^>]*>\\s*\\{t\\('admin\\.useComputer\\.${d.note}'\\)\\}`))
+    }
   })
   test('the documents list scrolls in the page on a phone (its own scroll box is md: only)', () => {
     const src = readWeb(`${VIEW}/DocumentsDrawer.tsx`, 'the documents drawer')

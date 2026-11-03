@@ -150,39 +150,39 @@ export default function SponsorTermsCard({ token, t }: {
 
       {/* Mobile M7a (rule 7): rows on a phone through the shared `data-phone-rows` CSS; from md the table it was. */}
       <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4 max-md:overflow-visible max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none" data-phone-rows>
-        <table className="w-full text-sm min-w-[640px] max-md:min-w-0">
-          <thead className="bg-ground-50 border-b">
-            <tr>
+        <table role="table" className="w-full text-sm min-w-[640px] max-md:min-w-0">
+          <thead role="rowgroup" className="bg-ground-50 border-b">
+            <tr role="row">
               {(['colVersion', 'colStatus', 'colLanguages', 'colPublishedBy', 'colUpdated'] as const)
                 .map((c) => (
-                  <th key={c} className="text-left px-4 py-3 font-medium text-ground-600">
+                  <th role="columnheader" key={c} className="text-left px-4 py-3 font-medium text-ground-600">
                     {t(`admin.sponsors.terms.${c}`)}
                   </th>
                 ))}
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody role="rowgroup" className="divide-y">
             {data.versions.map((v) => (
-              <tr key={v.id} className="hover:bg-info-50/40 cursor-pointer"
+              <tr role="row" key={v.id} className="hover:bg-info-50/40 cursor-pointer"
                 onClick={() => router.push(`/admin/sponsors/terms/${v.id}`)}>
-                <td className="px-4 py-3 font-medium text-ground-900">{v.version}</td>
-                <td className="px-4 py-3" data-label={t('admin.sponsors.terms.colStatus')}>
+                <td role="cell" className="px-4 py-3 font-medium text-ground-900">{v.version}</td>
+                <td role="cell" className="px-4 py-3" data-label={t('admin.sponsors.terms.colStatus')}>
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
                     STATUS_TONE[v.status] || STATUS_TONE.archived}`}>
                     {t(`admin.sponsors.terms.status.${v.status}`)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ground-500 uppercase" data-label={t('admin.sponsors.terms.colLanguages')}>
+                <td role="cell" className="px-4 py-3 text-ground-500 uppercase" data-label={t('admin.sponsors.terms.colLanguages')}>
                   {v.languages_available.join(' · ')}
                 </td>
-                <td className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t('admin.sponsors.terms.colPublishedBy')}>{v.published_by_email || '—'}</td>
-                <td className="px-4 py-3 text-ground-500" data-label={t('admin.sponsors.terms.colUpdated')}>
+                <td role="cell" className="px-4 py-3 text-ground-500 max-md:break-all" data-label={t('admin.sponsors.terms.colPublishedBy')}>{v.published_by_email || '—'}</td>
+                <td role="cell" className="px-4 py-3 text-ground-500" data-label={t('admin.sponsors.terms.colUpdated')}>
                   {new Date(v.updated_at).toLocaleDateString('en-GB')}
                 </td>
               </tr>
             ))}
             {data.versions.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">
+              <tr role="row"><td role="cell" colSpan={5} className="px-4 py-6 text-center text-ground-400">
                 {t('admin.sponsors.terms.noVersions')}
               </td></tr>
             )}

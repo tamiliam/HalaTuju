@@ -566,7 +566,14 @@ export default function AdminSponsorDetailPage() {
                       ? t(`admin.sponsors.detail.giftStatus.${g.status}`)
                       : t('admin.sponsors.detail.giftStatus.none')}
                   </span>
+                  {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): accepting a sponsor into a gift unlocks money —
+                      hidden below md only, with a note; from md the buttons they were. */}
                   {maySetGift && (
+                    <span className="md:hidden text-xs text-info-700" data-membership-use-computer>
+                      {t('admin.useComputer.membership')}
+                    </span>
+                  )}
+                  {maySetGift && (<span className="max-md:hidden" data-membership-actions>{
                     g.status === 'approved' ? (
                       <button
                         type="button"
@@ -586,7 +593,7 @@ export default function AdminSponsorDetailPage() {
                         {t('admin.sponsors.detail.giftAccept')}
                       </button>
                     )
-                  )}
+                  }</span>)}
                 </span>
               </li>
             ))}

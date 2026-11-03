@@ -114,10 +114,15 @@ export function RequestHoursForm({ analysis, t, busy, onSave }: {
              so the owner has to be able to see that from the request, not only from billing. */
           <p className="text-xs text-caution-700">{t('admin.requests.owner.hoursMissing')}</p>
         )}
-        <button type="button" disabled={busy} onClick={() => setOpen(true)}
-          className="mt-1 text-xs text-ground-500 underline disabled:opacity-40">
-          {t(recorded ? 'admin.requests.owner.hoursEdit' : 'admin.requests.owner.hoursRecord')}
-        </button>
+        {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): billable hours are logged at a desk — the only way into
+            the form is hidden below md, with a note; from md the button it was. */}
+        <div className="max-md:hidden" data-hours-open>
+          <button type="button" disabled={busy} onClick={() => setOpen(true)}
+            className="mt-1 text-xs text-ground-500 underline disabled:opacity-40">
+            {t(recorded ? 'admin.requests.owner.hoursEdit' : 'admin.requests.owner.hoursRecord')}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-info-700 md:hidden" data-hours-use-computer>{t('admin.useComputer.hours')}</p>
       </div>
     )
   }

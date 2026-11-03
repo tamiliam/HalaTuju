@@ -3310,6 +3310,14 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "useComputer": {
+      "payments": "Menandatangani, membatalkan dan mengubah larian pembayaran dilakukan di komputer. Di telefon, larian ini baca sahaja.",
+      "newRun": "Larian pembayaran baharu dibuat di komputer.",
+      "hours": "Jam kerja direkodkan di komputer.",
+      "close": "Fail ditutup di komputer.",
+      "deleteStudent": "Pelajar dipadam di komputer.",
+      "membership": "Menerima penaja ke dalam satu pemberian, atau menarik balik, dilakukan di komputer."
+    },
     "billingRates": {
       "title": "Kadar bil",
       "subtitle": "Margin dan kadar sejam yang menukar apa yang kami bayar, dan jam yang kami kerjakan, kepada apa yang kami caj.",

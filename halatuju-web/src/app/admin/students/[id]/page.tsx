@@ -283,7 +283,10 @@ export default function AdminStudentDetail() {
               </p>
             </div>
           </div>
-          <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): deleting a student is done at a desk — the typed
+              confirmation and Delete are hidden below md only, with a note; from md they are what they were. */}
+          <p className="px-4 py-4 text-sm text-info-700 md:hidden" data-delete-use-computer>{t('admin.useComputer.deleteStudent')}</p>
+          <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 max-md:hidden" data-delete-actions>
             <input
               type="text"
               value={deleteConfirm}

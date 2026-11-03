@@ -177,22 +177,22 @@ export default function PartnerEmailsCard({ token, t }: {
         </button>
         {showWho && (
           <div className="px-4 sm:px-5 pb-4" data-phone-rows>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-ground-400">
-                  <th className="border-b py-1.5 font-medium">{t('admin.sources.colOrganisation')}</th>
-                  <th className="border-b py-1.5 font-medium text-right w-20">{t('admin.sources.colStudents')}</th>
-                  <th className="border-b py-1.5 font-medium w-56">{t('admin.sources.colEmail')}</th>
+            <table role="table" className="w-full text-sm">
+              <thead role="rowgroup">
+                <tr role="row" className="text-left text-[11px] uppercase tracking-wide text-ground-400">
+                  <th role="columnheader" className="border-b py-1.5 font-medium">{t('admin.sources.colOrganisation')}</th>
+                  <th role="columnheader" className="border-b py-1.5 font-medium text-right w-20">{t('admin.sources.colStudents')}</th>
+                  <th role="columnheader" className="border-b py-1.5 font-medium w-56">{t('admin.sources.colEmail')}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup">
                 {data.organisations.map((o) => (
-                  <tr key={o.id}>
-                    <td className="border-b py-1.5">
+                  <tr role="row" key={o.id}>
+                    <td role="cell" className="border-b py-1.5">
                       {o.name} <span className="font-mono text-[11px] text-ground-400">{o.code}</span>
                     </td>
-                    <td className="border-b py-1.5 text-right tabular-nums text-ground-500" data-label={t('admin.sources.colStudents')}>{o.students}</td>
-                    <td className="border-b py-1.5">
+                    <td role="cell" className="border-b py-1.5 text-right tabular-nums text-ground-500" data-label={t('admin.sources.colStudents')}>{o.students}</td>
+                    <td role="cell" className="border-b py-1.5">
                       {o.is_house_org ? (
                         <span className="text-xs text-ground-400">{t('admin.sources.emails.houseOrg')}</span>
                       ) : o.qualifies ? (

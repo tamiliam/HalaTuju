@@ -236,13 +236,17 @@ export default function PaymentRunDetailPage() {
                   {it.name || '—'} ↗
                 </a>
               )}
-              {/* The one control that stays live on a phone. Disabled once the run is past draft,
-                  exactly as in the table. */}
-              <Toggle on={it.included} disabled={!isDraft}
-                label={t('admin.payments.col.include')}
-                onChange={(v) => isDraft && patchItem(it.id, v
-                  ? { included: true }
-                  : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })} />
+              {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): include / exclude is changed at a desk, like every
+                  money control here. The card (phones only) keeps the Toggle in a below-md-hidden wrapper, so it
+                  is never drawn on a phone; the desktop table has its own. Left out shows as the struck name and
+                  the reason below. */}
+              <span className="max-md:hidden" data-payment-include>
+                <Toggle on={it.included} disabled={!isDraft}
+                  label={t('admin.payments.col.include')}
+                  onChange={(v) => isDraft && patchItem(it.id, v
+                    ? { included: true }
+                    : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })} />
+              </span>
             </div>
 
             <div className="mt-2 flex items-baseline gap-2">
@@ -420,8 +424,8 @@ export default function PaymentRunDetailPage() {
               ) : view.yourStep !== 'sign' ? (
                 <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
               ) : (<>
-                <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                <div className="mt-2 flex gap-2 max-md:flex-wrap">
+                <p className="mt-1 text-xs text-ground-500 max-md:hidden">{t('admin.payments.typedNameHint')}</p>
+                <div className="mt-2 flex gap-2 max-md:hidden" data-payment-sign>
                   <input value={makerName} onChange={(e) => setMakerName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
                   <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.sign')}</button>
                 </div>
@@ -439,8 +443,8 @@ export default function PaymentRunDetailPage() {
                 ) : view.yourStep !== 'check' ? (
                   <p className="mt-1 text-xs text-ground-400">{t('admin.payments.awaitingStep')}</p>
                 ) : (<>
-                  <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                  <div className="mt-2 flex gap-2 max-md:flex-wrap">
+                  <p className="mt-1 text-xs text-ground-500 max-md:hidden">{t('admin.payments.typedNameHint')}</p>
+                  <div className="mt-2 flex gap-2 max-md:hidden" data-payment-sign>
                     <input value={financeName} onChange={(e) => setFinanceName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
                     <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.financeSign')}</button>
                   </div>
@@ -460,8 +464,8 @@ export default function PaymentRunDetailPage() {
               ) : (<>
                 {/* Nobody else may approve this run, so the organisation admin does (#39 S2). */}
                 {view.fallback && <p className="mt-1 text-xs text-caution-700" data-testid="approver-fallback">{t('admin.payments.approverFallback')}</p>}
-                <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
-                <div className="mt-2 flex gap-2 max-md:flex-wrap">
+                <p className="mt-1 text-xs text-ground-500 max-md:hidden">{t('admin.payments.typedNameHint')}</p>
+                <div className="mt-2 flex gap-2 max-md:hidden" data-payment-sign>
                   <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
                   <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50 max-md:min-h-11 max-md:inline-flex max-md:items-center">{t('admin.payments.countersign')}</button>
                 </div>
@@ -470,8 +474,15 @@ export default function PaymentRunDetailPage() {
           </div>
           <p className="mt-3 text-xs text-ground-500">{t('admin.payments.signNote')}</p>
           {view.canCancel && (
-            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium max-md:min-h-11 max-md:text-sm text-critical-600 hover:text-critical-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+            <div className="max-md:hidden" data-payment-cancel>
+              <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+            </div>
           )}
+          {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): signing, cancelling and changing a run are done at a
+              desk — hidden below md only, with this note; from md the controls they were. */}
+          <p className="mt-3 rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-payment-run-use-computer>
+            {t('admin.useComputer.payments')}
+          </p>
         </div>
       )}
 

@@ -44,6 +44,25 @@ export const TH =
 /** The same cell, right-aligned — for money and counts, which read better on their right edge. */
 export const TH_RIGHT = `${TH.replace('text-left', 'text-right')}`
 
+/**
+ * Mobile M7a review: a table restacked with `display: block` (`globals.css`, "A CONSOLE TABLE AS ROWS ON A
+ * PHONE") can lose its table semantics in WebKit / VoiceOver. Explicit ARIA roles keep it a table to a screen
+ * reader at every width: table, rowgroup, row, columnheader / rowheader (`th scope="row"`), cell. A role the
+ * markup already sets is kept.
+ */
+export function stampTableRoles(root: HTMLElement | null): void {
+  if (!root) return
+  const set = (selector: string, role: string) => root.querySelectorAll(selector).forEach((el) => {
+    if (!el.getAttribute('role')) el.setAttribute('role', role)
+  })
+  set('table', 'table')
+  set('thead, tbody, tfoot', 'rowgroup')
+  set('tr', 'row')
+  set('th[scope="row"]', 'rowheader')
+  set('th', 'columnheader')
+  set('td', 'cell')
+}
+
 export default function TableFrame({
   children,
   minWidth = 640,
@@ -70,6 +89,16 @@ export default function TableFrame({
 }) {
   const { t } = useT()
   const scroller = useRef<HTMLDivElement>(null)
+  // Rows arrive after a fetch, so the roles are stamped again whenever the table's content changes.
+  useEffect(() => {
+    if (!phoneRows || !scroller.current) return
+    const el = scroller.current
+    stampTableRoles(el)
+    if (typeof MutationObserver === 'undefined') return
+    const mo = new MutationObserver(() => stampTableRoles(el))
+    mo.observe(el, { childList: true, subtree: true })
+    return () => mo.disconnect()
+  }, [phoneRows])
   const [more, setMore] = useState(false)
 
   // `more` is measured, never assumed: the cue must not claim there is content to the right when

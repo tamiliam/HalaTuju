@@ -104,8 +104,15 @@ export default function ScholarControls({ file, token, onChanged }: {
         </p>
       )}
 
+      {/* ⚠ READ-ONLY ON A PHONE (owner, Mobile M7): closing a file is final and ends the money — the reason,
+          the checklist and Close are hidden below md only, with a note; from md they are what they were. */}
       {c.close_reasons.length > 0 && (
-        <div className="space-y-2">
+        <p className="rounded-lg bg-info-50 px-3 py-2 text-sm text-info-700 md:hidden" data-close-use-computer>
+          {t('admin.useComputer.close')}
+        </p>
+      )}
+      {c.close_reasons.length > 0 && (
+        <div className="space-y-2 max-md:hidden" data-close-actions>
         {/* The funded-close note and the offboarding checklist (carried from the cockpit's card, S3
             review M2) — read BEFORE the irreversible confirm. */}
         <p className="text-xs text-ground-500">{t('admin.closure.note')}</p>

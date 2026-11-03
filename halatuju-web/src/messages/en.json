@@ -3310,6 +3310,14 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "useComputer": {
+      "payments": "Signing, cancelling and changing a payment run are done on a computer. On a phone this run is read-only.",
+      "newRun": "A new payment run is made on a computer.",
+      "hours": "Hours are logged on a computer.",
+      "close": "Closing a file is done on a computer.",
+      "deleteStudent": "Deleting a student is done on a computer.",
+      "membership": "Accepting a sponsor into a gift, or taking them back, is done on a computer."
+    },
     "billingRates": {
       "title": "Billing rates",
       "subtitle": "The margins and the hourly rate that turn what we pay, and the hours we work, into what we charge.",
