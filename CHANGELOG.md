@@ -23,6 +23,39 @@ All notable changes to this project will be documented in this file.
   split, 44 px, no gate file reads it). Ten bite-checks, each fails. Sandbox `m7b-desktop-only`,
   `m7b-desktop-only-editor`.
 
+## Request #53 follow-up: the stamp is its own question (2026-11-03)
+
+- **Live evidence:** after the #53 fix deployed, document 3023 was re-read: a village JKKK income form, a hand
+  signature over a blue rubber-stamped name block (name, "PENGERUSI JKKK KG ...", place), no letterhead. The image
+  read answered `has_stamp_or_signature` "signature", `has_signature` "yes", approver name and title filled (the
+  title off the stamp), `issuer_header` empty. One word cannot carry two marks: with a stamp AND a signature on the
+  page the model picked "signature", despite the prompt's "stamp ... (with or without a signature)". Not stamped, so
+  header = `issuer_header` or (stamped and named) failed and the form was refused "no issuing body". The same
+  pattern on documents 3235, 4185 and 4204 (mark "signature", title KETUA KAMPUNG, no header).
+- **The fix (owner option A; rules unchanged; docs/decisions.md):** the image read asks a sixth field, `has_stamp`
+  ("yes" / "no": the stamp / chop of the APPROVER or ISSUING BODY, a borderless stamped name block or an office /
+  company seal by the signature or approval box, whether or not there is also a signature; copy-certification
+  "SALINAN DIAKUI SAH", received "DITERIMA", postal and similar stamps, printed / typed text and handwriting are
+  not), in `APPROVAL_FIELDS` and required in the schema. In `approval_missing`, when `has_stamp` is present it ALONE
+  decides `stamped`, and `has_signature` alone decides `signed` (review: on a payslip too; it was the mark there);
+  a read without them falls back on the mark exactly as before. The rules are identical: payslip approver = stamped
+  or (signed and named); signature-needing approver = signed and named; header = `issuer_header` or (stamped and
+  named). `has_stamp_or_signature` stays in the schema and prompt, reworded as a secondary summary of the two
+  deciding questions; the block-capital-handwriting sentence moved under the `has_signature` question.
+- **Legacy reads:** no new sweep clause and no automatic re-read (cost). `_signature_unknown`, the sweep, the 72 h
+  exit and the awarded carve-out key on `has_signature` only, so they behave the same for reads with both new keys,
+  with `has_signature` only, and with neither. 3023 / 3235 / 4185 / 4204 need a re-read by hand after the deploy.
+- **Versions:** genuineness `MODEL_VERSION` 1.24.0; `VERDICT_ENGINE_VERSION` 2026-11-03.2 (a form that now counts can
+  move an income band).
+- **Tests:** `test_income_declarations.py` `TheStampIsItsOwnQuestion`: the exact live answer (mark "signature",
+  signed, `has_stamp` "yes", name + title, no header) counts on a declaration in the payslip slot and on a support
+  document, through `read_approval` too; with `has_stamp` "no" it is refused (header); `has_stamp` "yes" beats mark
+  "no", `has_stamp` "no" beats mark "stamp"; a payslip with `has_stamp` "yes" alone counts (3A); legacy reads without
+  `has_stamp` judged as before; unchecked / sweep / expiry unchanged for all three read shapes; prompt / schema pins
+  (incl. the copy-certification / received / postal exclusion); " YES " / "Yes" normalised, a missing or
+  non-string `has_stamp` stored '' and not stamped; a payslip with no stamp, signed and named, counts by the
+  signature route (the old "payslip `has_signature` unread" case now counts).
+
 ## Request #53: a village head's name stamp counts as a stamp (2026-11-03)
 
 - **The bug:** a village income form (application 279, documents 4185 and 4204) carried the Ketua Kampung's signature
