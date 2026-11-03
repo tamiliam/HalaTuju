@@ -97,7 +97,7 @@
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
 itself (rule 1). Name / IC `unreadable` is yellow, not red (supersedes S4's "a blank IC is red" pin). `MODEL_VERSION`
-1.24.0 (1.23.0 went to request #53); `VERDICT_ENGINE_VERSION` 2026-11-03.2. Stored statuses move only when a letter is re-scored (S7).
+1.25.0 (1.23.0 / 1.24.0 went to request #53 and its follow-up); `VERDICT_ENGINE_VERSION` 2026-11-04.1. Stored statuses move only when a letter is re-scored (S7).
 
 **Revisit if:** the bursary funds private colleges; a TVET institute's letters reach ≥3 per issuer (fingerprint
 them); or another university's confirmation letters are shown to carry no private-wing intake.

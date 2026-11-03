@@ -220,7 +220,7 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 ### Offer letters read exactly (separate stream): S1-S5 LIVE; S6 BUILT on offer-read-s1, not pushed
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (the older stream notes: `docs/sprint-history.md`).
-S6 = genuineness `MODEL_VERSION` 1.24.0: the pre-S6 call is the BASELINE (`results_doc.baseline_genuineness`);
+S6 = genuineness `MODEL_VERSION` 1.25.0: the pre-S6 call is the BASELINE (`results_doc.baseline_genuineness`);
 `genuineness/offer_rulings.apply_rulings` changes it only by a BLOCK (letterhead private proof) or a LIFT (full proof)
 or rulings 3 / 6, each tagged `[S6 ruling: <tag>]`. A genuineness change re-runs `eval/offer_genuineness_check.py`
 (dev; held-out once; it lists every call that differs from the baseline). Before the push: the lead's
