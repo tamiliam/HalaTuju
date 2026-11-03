@@ -1201,7 +1201,7 @@ payment run, billable hours, Close file, Delete student, a sponsor's gift member
 tables carry ARIA roles (`TableFrame` `stampTableRoles`). M7b = the `DesktopOnly` panel only.
 NEXT: M7b, M8.
 
-### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a BUILT, NOT LIVE (branch maint-s7; no migration, no endpoint, no web change)
+### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 
 Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permissions_v2.py` = the v2 vocabulary
 (`CATALOGUE_V2` page x tier in groups Organisation / Programme / Engagement / Money, `HATS` review + qc, `IMPLIES`,

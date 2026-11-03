@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T5a — permission catalogue v2 + aliases (not yet live)
+## Team tables T5a — permission catalogue v2 + aliases (LIVE 2026-11-03; main 55de0610; api-01245-mrb)
 
 Roadmap T5 (owner "approve all", rulings 1-8; lead rulings 2026-11-03 on `mentoring.*` and `programmes.edit`);
 decisions.md "Team tables T5a". **Plumbing only: no gate converted, nobody gains or loses a door, users see nothing.**
