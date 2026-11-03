@@ -343,7 +343,7 @@ function StaffScholarshipList() {
           />
         </div>
         <CaseListPhoneTools filters={filterControls} activeFilters={activeFilters} sort={sort} sortDir={sortDir}
-          canAssign={canAssign} count={data ? data.count : null}
+          canAssign={canAssign} count={data && !loading ? data.count : null}
           onSort={(key, dir) => { setSort(key); setSortDir(dir); setPage(1) }} />
         <div className="hidden md:contents">{filterControls}</div>
       </div>
