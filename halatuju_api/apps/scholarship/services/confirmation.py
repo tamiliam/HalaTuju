@@ -103,6 +103,13 @@ def confirm_profile(application):
     return True
 
 
+def _is_confirmation(offer):
+    """S6 review M9: a confirmation of studies may stand in for an offer, but it names the programme she is
+    ON — it never becomes her confirmed pick (`pathway_engine.is_confirmation_letter`)."""
+    from ..pathway_engine import is_confirmation_letter
+    return is_confirmation_letter(offer)
+
+
 def confirm_pathway(application):
     """Record the student's latest offer letter as their FINAL chosen pathway.
 
@@ -117,7 +124,7 @@ def confirm_pathway(application):
     offer = (ApplicantDocument.objects.filter(
                 application=application, doc_type='offer_letter', superseded_at__isnull=True)
              .order_by(*SNAPSHOT_ORDER).first())
-    if offer is None:
+    if offer is None or _is_confirmation(offer):     # S6 review M9: never the pick from a confirmation
         return False
     chk = student_offer_check(offer)
     # Write-side guard (defence-in-depth): never store a mis-slotted offer value — a date/'Tarikh'

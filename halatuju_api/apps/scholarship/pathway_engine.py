@@ -18,9 +18,12 @@ import re
 from .genuineness.offer_issuers import FAMILY_ISSUER_SIG as _FAMILY_ISSUER_SIG
 # The lenient offer-vs-declared matcher moved verbatim to `pathway_match` (offer exact-read S6 split);
 # every name is re-exported so existing imports keep working.
-from .pathway_match import (
-    _GENERIC_TOKENS, _declared_pathway, _field_status, catalogue_declared_institution,
-    distinctive_tokens, offer_pathway_match)
+from .pathway_match import _GENERIC_TOKENS as _GENERIC_TOKENS  # explicit re-exports: ruff keeps them
+from .pathway_match import _declared_pathway as _declared_pathway
+from .pathway_match import _field_status as _field_status
+from .pathway_match import catalogue_declared_institution as catalogue_declared_institution
+from .pathway_match import distinctive_tokens as distinctive_tokens
+from .pathway_match import offer_pathway_match as offer_pathway_match
 from .vision import name_match, nric_match
 
 
@@ -237,7 +240,9 @@ def offer_hearing_ok(doc) -> bool:
     a SCORED, non-fake offer — ``genuine`` OR ``suspect``. A fake (``not_offer_letter``) gets no
     hearing (just the red flag + submission block); an UNKNOWN/unscored offer also gets none (we don't
     ask which pathway until the offer's genuineness is actually scored)."""
-    return offer_band(doc) in ('genuine', 'suspect')
+    # S6 review M9: a confirmation of studies may stand in for an offer but never asks "is this your final
+    # pathway?" — answering Yes would write its programme as the pick (`confirmation.confirm_pathway`).
+    return offer_band(doc) in ('genuine', 'suspect') and not is_confirmation_letter(doc)
 
 
 def student_offer_check(doc) -> dict:

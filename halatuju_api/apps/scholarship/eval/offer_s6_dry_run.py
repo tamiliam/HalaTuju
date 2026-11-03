@@ -25,9 +25,13 @@ Prints ids and outcomes only — never a name, an IC, a programme or an institut
 GO / STOP (the operator reads the `verdict` line at the end):
   STOP  any application's Pathway band FALLS (old -> new, stored data);
   STOP  any application becomes BLOCKED whose stored offer is not `not_offer_letter`;
+  STOP  any NEWLY blocked application whose letter, re-scored at the current MODEL (pass 2), would NOT be
+        `not_offer_letter` — S6 would block it on a stale stored call (review M8, 2026-11-03);
   STOP  any Name / IC chip turns red that was not red;
   STOP  any Pathway chip is red under the new rules;
   STOP  the tool hit a refused write / Storage / Gemini (it raises);
+  REVIEW `blocked_on_a_stale_call`: an open application blocked BEFORE and AFTER S6 whose re-score would
+        lift the fail (app 329's shape, a confirmation, a printout) — S7 should re-score these first;
   REVIEW (not a stop) every NEWLY blocked `not_offer_letter` application (rule 1 makes it a fail where the
         date bonus used to lift its band) and every UNBLOCKED one (each must be a stored `suspect`) — the
         lists go to the owner;
@@ -163,9 +167,12 @@ def deploy_one(application):
             'set_by_offer': bool(chk.get('pathway_set_by_offer'))}
 
 
-def judge(rows):
-    """The GO / STOP verdict and its counts, from the deploy rows."""
-    t, stop, review = Counter(), [], {'newly_blocked_not_offer': [], 'unblocked': []}
+def judge(rows, rescored=None):
+    """The GO / STOP verdict and its counts, from the deploy rows (+ `rescored`: app -> the status its live
+    letter would carry if re-scored now, from pass 2; absent for an app outside the corpus)."""
+    rescored = rescored or {}
+    t, stop, review = Counter(), [], {'newly_blocked_not_offer': [], 'unblocked': [],
+                                      'blocked_on_a_stale_call': []}
     for r in rows:
         t['applications'] += 1
         o, n = _BANDS.index(r['band_old']) if r['band_old'] in _BANDS else -1, \
@@ -177,8 +184,14 @@ def judge(rows):
             t['newly_blocked'] += 1
             if r['stored'] == 'not_offer_letter':
                 review['newly_blocked_not_offer'].append(r['app'])
+                if rescored.get(r['app'], 'not_offer_letter') != 'not_offer_letter':
+                    stop.append(f"app {r['app']} newly blocked on a stale call (re-scores "
+                                f"{rescored[r['app']]})")
             else:
                 stop.append(f"app {r['app']} newly blocked on a stored {r['stored']}")
+        if (r['blocked_old'] and r['blocked_new']
+                and rescored.get(r['app'], 'not_offer_letter') != 'not_offer_letter'):
+            review['blocked_on_a_stale_call'].append(r['app'])
         if r['blocked_old'] and not r['blocked_new']:
             t['unblocked'] += 1
             review['unblocked'].append(r['app'])
@@ -245,7 +258,8 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
                    .filter(pk=did, doc_type='offer_letter').first()) if did else None
             if doc is not None:
                 rescored.append(rescore_one(eval_dir, key, doc))
-    verdict, stop, review, t = judge(deploy)
+    now = {r['app']: r['status'].split('->')[-1] for r in rescored if r.get('live') and 'app' in r}
+    verdict, stop, review, t = judge(deploy, now)
     moved = [r for r in rescored if r.get('status', '').split('->')[0] != r.get('status', '').split('->')[-1]]
     for r in deploy:
         changed = {c: f"{r['chips_old'].get(c, '-')}->{r['chips_new'].get(c, '-')}" for c in r['chips_new']
@@ -259,7 +273,8 @@ def run_s6(eval_dir, keys, *, all_live, session, out=print):
             f"{r['status']} ({r['seen']}) fails={r['fails']} chips={r['chips']} realign {r['realign']} "
             f"link {r['link']}")
     out(f'rescore pass (S7 preview): letters={len(rescored)} status_moved={len(moved)}')
-    out(f"review: newly_blocked_not_offer={review['newly_blocked_not_offer']} unblocked={review['unblocked']}")
+    out(f"review: newly_blocked_not_offer={review['newly_blocked_not_offer']} unblocked={review['unblocked']} "
+        f"blocked_on_a_stale_call={review['blocked_on_a_stale_call']}")
     for s in stop:
         out(f'  STOP: {s}')
     out(f'verdict: {verdict}')

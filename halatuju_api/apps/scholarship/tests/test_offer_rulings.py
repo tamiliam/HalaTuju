@@ -14,13 +14,12 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.offer_rulings import confirmation_kind, ruled_offer
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
 
-IKM = """INSTITUT KEMAHIRAN MARA KOTA CONTOH
-MAJLIS AMANAH RAKYAT
-Jalan Contoh, 88000 Kota Contoh
-SURAT TAWARAN
-Tahniah, anda ditawarkan tempat untuk mengikuti Diploma Kemahiran Contoh.
-Sila hadir pada 3 Ogos 2026.
-"""
+# Below the suspect floor (no family signature) the review's H1 rule asks the BODY to name the candidate and
+# the institute again (`offer_rulings._tvet`), so the twin carries a letterhead, filler, then its body.
+IKM = ("INSTITUT KEMAHIRAN MARA KOTA CONTOH\nMAJLIS AMANAH RAKYAT\nJalan Contoh, 88000 Kota Contoh\nSURAT TAWARAN\n"
+       + 'Dengan sukacitanya dimaklumkan bahawa permohonan anda telah diproses dengan teliti.\n' * 8
+       + "Nama : Ali bin Abu\nTahniah, anda ditawarkan tempat di Institut Kemahiran MARA Kota Contoh untuk "
+         "mengikuti Diploma Kemahiran Contoh.\nSila hadir pada 3 Ogos 2026.\n")
 IKBN_SLIP = """INSTITUT KEMAHIRAN BELIA NEGARA CONTOH
 SLIP TAWARAN UP_TVET FLEXI
 Anda ditawarkan kursus Sijil Contoh.
@@ -37,16 +36,22 @@ Anda ditawarkan Diploma Contoh.
 
 
 def _confirm(head):
+    # S6 review H4: a confirmation names the student / programme and scores above `CONFIRM_MIN` (the
+    # "Program" / "Institusi" / "Bidang" labels a real one prints give the family score its floor).
     return f"""{head}
 Jalan Contoh, 90000 Bandar Contoh
 PENGESAHAN PELAJAR
 Dengan ini disahkan bahawa penama di bawah adalah pelajar yang sedang mengikuti pengajian.
+Nama : Ali bin Abu
+Program : Diploma Contoh
+Institusi : Contoh
+Bidang : Sains
 """
 
 
-POLY_CONFIRM = _confirm('POLITEKNIK CONTOH\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI')
+POLY_CONFIRM = _confirm('POLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI')
 UMS_CONFIRM = _confirm('UNIVERSITI MALAYSIA SABAH\nBahagian Perkhidmatan Akademik')
-FORM6_CONFIRM = _confirm('KOLEJ TINGKATAN ENAM CONTOH').replace('PENGESAHAN PELAJAR', 'PENGESAHAN BELAJAR')
+FORM6_CONFIRM = _confirm('KOLEJ TINGKATAN ENAM CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA').replace('PENGESAHAN PELAJAR', 'PENGESAHAN BELAJAR')
 UM_CONFIRM = _confirm('UNIVERSITI MALAYA\nJabatan Pendaftar')
 PRIVATE_CONFIRM = _confirm('KOLEJ CONTOH\nKampus Utama')
 JPPKK_ONLY_CONFIRM = _confirm('JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\nKementerian Pendidikan Tinggi')

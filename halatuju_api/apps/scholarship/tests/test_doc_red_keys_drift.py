@@ -58,8 +58,8 @@ KNOWN_DIFFERENCES = {
     ('epf', 'nric_status'): (True, False, 'as above — EPF is supplementary at the gate'),
     ('offer_letter', 'not_genuine'): (True, False,
         'A non-official offer: the Action Centre refuses it as the answer to "upload your official '
-        'offer"; the gate has its OWN offer-genuineness blocker (with the STPM and Probable+ '
-        'exemptions), outside document_red_blockers.'),
+        'offer"; the gate has its OWN offer-genuineness blocker (S6: a not_offer_letter only, never '
+        'a suspect; the STPM route exempt), outside document_red_blockers.'),
 }
 
 

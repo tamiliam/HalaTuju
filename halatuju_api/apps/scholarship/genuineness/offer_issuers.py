@@ -67,7 +67,10 @@ TVET_ISSUERS = {
 }
 #: Owner ruling C: MARA-OWNED but PRIVATE. Anywhere on the page, it rules the net out and the
 #: private-college reason in — the "MARA" in their names never makes them a public issuer.
-_PRIVATE_MARA = (' KOLEJ POLY TECH MARA ', ' KPTM ', ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ')
+_PRIVATE_MARA = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ',
+                 ' KOLEJ UNIVERSITI POLY TECH MARA ', ' KOLEJ UNIVERSITI POLYTECH MARA ', ' KUPTM ',
+                 ' UNIVERSITI POLY TECH MALAYSIA ', ' UNIVERSITI POLYTECH MALAYSIA ', ' UPTM ',
+                 ' UNIVERSITI KUALA LUMPUR ', ' UNIKL ')   # S6 review H3: + KUPTM / UPTM
 
 #: How much of the normalised OCR text counts as the letterhead (see the module note).
 _LETTERHEAD_CHARS = 600
@@ -75,14 +78,16 @@ _LETTERHEAD_CHARS = 600
 _OFFER_WORDS = (' TAWARAN ', ' DITAWARKAN ', ' OFFER OF ADMISSION ', ' SURAT TAWARAN ')
 _NOT_OFFER = (' TAWARAN PINJAMAN ',)
 #: A sponsor line names who pays, never who issues (rule 4). Matched on the RAW line, before folding.
-_SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|SPONSORED\s+BY|SPONSOR)\b', re.IGNORECASE)
+_SPONSOR = re.compile(r'\b(TAJAAN|DITAJA|PENAJA|PENAJAAN|DIBIAYAI|PEMBIAYAAN|BIASISWA|SPONSORED\s+BY|SPONSOR)\b',
+                      re.IGNORECASE)   # S6 review H3: + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA
 #: A private company / an accredited private centre on the letterhead is never a public issuer.
 _PRIVATE_HEAD = (' SDN BHD ', ' BHD ', ' BERHAD ', ' PUSAT BERTAULIAH ')
 #: Words a public body prints on its letterhead (a ministry, a department, a school); a letterhead
 #: naming an institution with NONE of these, and no public issuer, reads as a private one. The public
 #: universities' common short names count too (C1 review: a UiTM PDF's text layer carries no
 #: letterhead and says only "UiTM").
-_PUBLIC_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ')
+_PUBLIC_WORDS = (' KEMENTERIAN ', ' JABATAN ', ' KERAJAAN ', ' MAJLIS ', ' SEKOLAH ', ' TINGKATAN ',
+                 ' KOLEJ KOMUNITI ', ' KOLEJ MATRIKULASI ', ' KOLEJ VOKASIONAL ', ' ASWARA ', ' ILKKM ')   # S6 H7
 _UA_SHORT = ('UM', 'USM', 'UKM', 'UPM', 'UTM', 'UITM', 'UIAM', 'IIUM', 'UUM', 'UNIMAS', 'UMS', 'UPSI',
              'USIM', 'UTEM', 'UMP', 'UNIMAP', 'UTHM', 'UMT', 'UMK', 'UPNM', 'UNISZA')
 _INSTITUTION_WORDS = (' KOLEJ ', ' COLLEGE ', ' UNIVERSITI ', ' UNIVERSITY ', ' INSTITUT ',
@@ -196,10 +201,16 @@ def officer_must_close(doc, item) -> bool:
     offer is NOT CHECKED and `item` is an OFFICER's own offer-letter request. The officer asked for
     the official offer and nobody has checked this one — so it waits for the officer, who closes it
     by hand. System and Check-2 requests are untouched, and it never blocks the student."""
-    from .bands import NOT_CHECKED, stored_status
-    return (getattr(doc, 'doc_type', '') == 'offer_letter' and getattr(item, 'source', '') == 'officer'
-            and getattr(item, 'doc_type', '') == 'offer_letter'
-            and stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED)
+    from .bands import NOT_CHECKED, stored_authenticity, stored_status
+    if not (getattr(doc, 'doc_type', '') == 'offer_letter' and getattr(item, 'source', '') == 'officer'
+            and getattr(item, 'doc_type', '') == 'offer_letter'):
+        return False
+    # S6 review H1: an offer the owner's RULINGS (not a fingerprinted family) made genuine — a public TVET
+    # offer, a confirmation of studies — is still the officer's to close: nobody fingerprinted it.
+    from .offer_rulings import CONFIRMATION_SEEN
+    seen = stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '')
+    return (stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED or seen in TVET_ISSUERS
+            or seen in CONFIRMATION_SEEN)
 
 
 def hold_for_officer(item) -> None:

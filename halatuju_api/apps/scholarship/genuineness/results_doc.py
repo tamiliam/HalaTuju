@@ -23,9 +23,12 @@ from .epf_app_doc import epf_app_scores, screen_at_most_suspect
 from .stpm_doc import STPM_LISTS
 # The five offer-letter families + the 20 UA names moved verbatim to `offer_signatures` (offer
 # exact-read S6 split); re-exported here, so every existing import keeps working.
-from .offer_signatures import (
-    MATRIC_OFFER_SIGNATURES, PISMP_OFFER_SIGNATURES, POLY_OFFER_SIGNATURES, STPM_OFFER_SIGNATURES,
-    UA_OFFER_SIGNATURES, _UA_NAMES)
+from .offer_signatures import MATRIC_OFFER_SIGNATURES as MATRIC_OFFER_SIGNATURES  # explicit re-exports
+from .offer_signatures import PISMP_OFFER_SIGNATURES as PISMP_OFFER_SIGNATURES
+from .offer_signatures import POLY_OFFER_SIGNATURES as POLY_OFFER_SIGNATURES
+from .offer_signatures import STPM_OFFER_SIGNATURES as STPM_OFFER_SIGNATURES
+from .offer_signatures import UA_OFFER_SIGNATURES as UA_OFFER_SIGNATURES
+from .offer_signatures import _UA_NAMES as _UA_NAMES
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
 # identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a

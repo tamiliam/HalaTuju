@@ -181,11 +181,7 @@ class TheReviewProbes(TestCase):
     def test_each_probe_scores_exactly_as_before(self):
         for name, text in REVIEW_PROBES.items():
             with self.subTest(name):
-                if name == 'a private college MARA sponsors':      # S6 rulings 2 / 7: now a fail
-                    self.assertEqual(signature_genuineness(text, doc_type='offer_letter')['status'],
-                                     'not_offer_letter')
-                    continue
-                g = self.assertAsBefore(text)
+                g = self.assertAsBefore(text)       # S6 review H7: no positive private sign, so as before
                 self.assertNotIn(g['status'], (NOT_CHECKED, 'genuine'))
 
     def test_a_fake_below_the_suspect_floor_is_never_not_checked(self):
@@ -194,8 +190,10 @@ class TheReviewProbes(TestCase):
             self.assertEqual(self.assertAsBefore(REVIEW_PROBES[name])['status'], 'not_offer_letter')
 
     def test_a_sponsor_is_not_the_issuer(self):
+        # S6 review H7: a fail needs POSITIVE private evidence; this letterhead has none (only the absence of a
+        # public word), so it stays suspect — a person decides. KPTM / UniKL (named private) do fail, below.
         g = signature_genuineness(REVIEW_PROBES['a private college MARA sponsors'], doc_type='offer_letter')
-        self.assertEqual(g['status'], 'not_offer_letter')          # S6 rulings 2 / 7 (was suspect)
+        self.assertEqual(g['status'], 'suspect')
         self.assertTrue(g['reason'].startswith('private college / university (IPTS)'))
         self.assertNotEqual(self.assertAsBefore(SPONSOR_ACRONYM)['status'], NOT_CHECKED)
 

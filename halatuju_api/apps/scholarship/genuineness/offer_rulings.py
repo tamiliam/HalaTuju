@@ -33,11 +33,25 @@ Calibrated on the 287-letter offer corpus (S6): 14 letters move as ruled; none o
 public offers and none of the rightly rejected letters moves (`eval/offer_genuineness_check.py`). Pure.
 """
 from .bands import GENUINE_MIN, SUSPECT_MAX
-from .offer_issuers import (TVET_ISSUERS, _fold, _has_offer_words, _letterhead, private_college_reason,
+from .offer_issuers import (_PRIVATE_MARA, TVET_ISSUERS, _fold, _has_offer_words, _letterhead, private_college_reason,
                             tvet_issuer, unfingerprinted_offer)
 
 #: A TVET page that calls itself a SLIP (e.g. the JPK UP_TVET "Slip Tawaran") is not an offer letter.
+#: Read on the letterhead / title only (S6 review): a real offer may mention a "slip bayaran" below.
 _SLIP = ' SLIP '
+#: S6 review H2: only an INSTITUTE earns Q2's genuine — never an agency (MARA, TVETMARA, JTM, JPK, the
+#: ministry, ILKBS) on its own: a private college prints "accredited by JPK" or a MARA sponsor line.
+_INSTITUTES = (' INSTITUT KEMAHIRAN BELIA NEGARA ', ' INSTITUT KEMAHIRAN TINGGI BELIA NEGARA ', ' IKBN ',
+               ' IKTBN ', ' INSTITUT KEMAHIRAN MARA ', ' IKM ', ' KOLEJ KEMAHIRAN TINGGI MARA ', ' KKTM ',
+               ' KOLEJ MARA ', ' KOLEJ PROFESIONAL MARA ', ' INSTITUT LATIHAN PERINDUSTRIAN ', ' ILP ',
+               ' ADTEC ', ' PUSAT LATIHAN TEKNOLOGI TINGGI ', ' ILJTM ')
+#: S6 review H1: below the suspect floor a TVET letter needs a candidate label in its body.
+_PERSON_LABELS = (' NAMA ', ' KAD PENGENALAN ', ' NO K P ', ' MYKAD ', ' NO KP ')
+#: S6 review H4 / H5 / H7: POSITIVE private evidence (never just the absence of a public word).
+_PRIVATE_SIGNS = (' SDN BHD ', ' BHD ', ' BERHAD ', ' SWASTA ', ' PERSENDIRIAN ', ' IPTS ', ' MQA ',
+                  ' AGENSI KELAYAKAN MALAYSIA ', ' MALAYSIAN QUALIFICATIONS AGENCY ', ' KPT JPT ')
+#: A conditional offer (ruling 7: a PRIVATE conditional offer is a fail).
+_CONDITIONAL = (' BERSYARAT ', ' CONDITIONAL ')
 #: A confirmation-of-studies letter's own title.
 _CONFIRM_TITLES = (' PENGESAHAN PELAJAR ', ' PENGESAHAN SEBAGAI PELAJAR ', ' PENGESAHAN BELAJAR ',
                    ' PENGESAHAN STATUS PELAJAR ')
@@ -50,8 +64,9 @@ _NO_PRIVATE_WING = (('confirmation_polytechnic', (' POLITEKNIK ',)),
 CONFIRMATION_SEEN = frozenset(k for k, _ in _NO_PRIVATE_WING) | {'confirmation_ua'}
 #: A result / download page's own furniture (portal pages print several; a letter prints none of them
 #: as a pair).
-_PORTAL_FURNITURE = (' SEMAKAN KEPUTUSAN ', ' KEPUTUSAN PERMOHONAN ', ' TAHNIAH ', ' MUAT TURUN ',
-                     ' CETAK ', ' LOG KELUAR ', ' BERJAYA ')
+#: S6 review H5: portal-only furniture — never TAHNIAH / BERJAYA, which ordinary offer letters print.
+_PORTAL_FURNITURE = (' SEMAKAN KEPUTUSAN ', ' KEPUTUSAN PERMOHONAN ', ' MUAT TURUN ', ' CETAK ',
+                     ' LOG KELUAR ')   # no URL chrome: a private letter prints its web address too
 #: An e-Daftar registration slip printed in front of (or instead of) the offer.
 _EDAFTAR = (' SLIP E DAFTAR ', ' SLIP EDAFTAR ')
 #: An APPLICATION slip: the student applied, nobody offered anything.
@@ -76,7 +91,16 @@ def ministry_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
     if hits != ['SDN BHD'] or ' SPACE ' in page:
         return False
     scores = r.get('scores') or {}
-    return any(FAMILY_ISSUER_SIG[f] in ((scores.get(f) or {}).get('present') or []) for f in _MINISTRY_FAMILIES)
+    if not any(FAMILY_ISSUER_SIG[f] in ((scores.get(f) or {}).get('present') or []) for f in _MINISTRY_FAMILIES):
+        return False
+    # S6 review H6: the letter must OPEN with the ministry, not a company — "ABC COLLEGE SDN BHD ... with
+    # the cooperation of JPPKK" stays vetoed. The ministry line has to come before the first "Sdn Bhd".
+    from .offer_signatures import MATRIC_OFFER_SIGNATURES, PISMP_OFFER_SIGNATURES, POLY_OFFER_SIGNATURES, \
+        STPM_OFFER_SIGNATURES
+    lines = [pat for sigs in (STPM_OFFER_SIGNATURES, MATRIC_OFFER_SIGNATURES, POLY_OFFER_SIGNATURES,
+                              PISMP_OFFER_SIGNATURES) for _l, pats, w, _k in sigs if w == 3 for pat in pats]
+    first_ministry = min((page.find(f' {x} ') for x in lines if f' {x} ' in page), default=-1)
+    return 0 <= first_ministry < page.find(' SDN BHD ')
 
 
 def _ruled_status(status, r, seen, reason, model_version):
@@ -96,27 +120,49 @@ def _tvet(ocr_text, r, model_version):
     if not key:
         return None
     name = TVET_ISSUERS[key][0]
-    page = _fold(ocr_text)
-    if _SLIP in page:
+    page, head = _fold(ocr_text), _letterhead(ocr_text)
+    if _SLIP in head:
         return _ruled_status('suspect', r, key, f'{name}: a TVET offer SLIP, not an offer letter - suspect '
                        '(owner ruling 6, 2026-11-01); a person checks it', model_version)
     if not (any(w in page for w in _COURSE_WORDS) and any(w in page for w in _DATE_WORDS)):
         return None
+    if not any(i in page for i in _INSTITUTES) or any(s in page for s in _PRIVATE_SIGNS):
+        return None                     # H2: an agency alone, or any private sign → the 1.8.0 path
+    if r['probability'] < SUSPECT_MAX:
+        # H1: below the floor, the body itself must name the candidate and the institute again — a short
+        # typed page under an institute's name is not lifted to green.
+        lead, whole = head.strip(), page.strip()
+        body = f' {whole[len(lead):]} ' if lead and whole.startswith(lead) else ''
+        if not (any(lb in body for lb in _PERSON_LABELS) and any(i in body for i in _INSTITUTES)):
+            return None
     return _ruled_status('genuine', r, key, f'{name}: a public TVET offer named on the letterhead - a public '
                    'offer (owner rulings 5, 2026-11-01, and Q2, 2026-11-03)', model_version)
 
 
-def confirmation_kind(ocr_text: str) -> str:
+#: S6 review H4: each no-private-wing issuer's own PUBLIC marker, besides its name on the letterhead.
+_PUBLIC_MARK = {'confirmation_polytechnic': (_JPPKK, ' KEMENTERIAN PENDIDIKAN TINGGI '),
+                'confirmation_ums': (' UNIVERSITI MALAYSIA SABAH ',),
+                'confirmation_form6': (' KEMENTERIAN PENDIDIKAN ', ' SMK ', ' SEKOLAH MENENGAH KEBANGSAAN ',
+                                       ' KOLEJ TINGKATAN ENAM ')}
+#: A confirmation's body names the student or the programme.
+_CONFIRM_BODY = _PERSON_LABELS + (' PROGRAM ', ' KURSUS ', ' BIDANG ')
+#: The least a real confirmation scores on the families (every corpus one: 0.13-0.30); a bare title on a
+#: blank page scores 0.
+CONFIRM_MIN = 0.10
+
+
+def confirmation_kind(ocr_text: str, probability: float = 1.0) -> str:
     """The `confirmation_*` code of a confirmation-of-studies letter, or ''."""
     page = _fold(ocr_text)
-    if not any(t in page for t in _CONFIRM_TITLES):
+    if not any(t in page for t in _CONFIRM_TITLES) or probability < CONFIRM_MIN:
         return ''
     from .offer_issuers import _PRIVATE_HEAD, _PRIVATE_MARA
     head = _letterhead(ocr_text).replace(_JPPKK, ' ')
-    if any(p in page for p in _PRIVATE_MARA) or any(p in head for p in _PRIVATE_HEAD):
-        return ''                       # a private (or MARA-owned private) institution's letter
+    if (any(p in page for p in _PRIVATE_MARA) or any(p in head for p in _PRIVATE_HEAD)
+            or any(s in page for s in _PRIVATE_SIGNS) or not any(b in page for b in _CONFIRM_BODY)):
+        return ''                       # a private institution's letter, or no student / programme on it
     for seen, names in _NO_PRIVATE_WING:
-        if any(n in head for n in names):
+        if any(n in head for n in names) and any(m in page for m in _PUBLIC_MARK[seen]):
             return seen
     from .offer_issuers import _UA_SHORT
     from .results_doc import _UA_NAMES
@@ -126,7 +172,7 @@ def confirmation_kind(ocr_text: str) -> str:
 
 
 def _confirmation(ocr_text, r, model_version):
-    seen = confirmation_kind(ocr_text)
+    seen = confirmation_kind(ocr_text, r['probability'])
     if not seen:
         return None
     if seen == 'confirmation_ua':
@@ -138,8 +184,8 @@ def _confirmation(ocr_text, r, model_version):
 
 def _printout(ocr_text) -> bool:
     page = _fold(ocr_text)
-    if _APPLICATION_SLIP in page:
-        return False
+    if _APPLICATION_SLIP in page or any(s in page for s in _PRIVATE_SIGNS):
+        return False                    # H5: never lift a page that shows a private sign
     if any(m in page for m in _EDAFTAR):
         return True
     return _has_offer_words(page) and sum(1 for m in _PORTAL_FURNITURE if m in page) >= 2
@@ -151,7 +197,11 @@ def ruled_offer(ocr_text: str, r: dict, status: str, reason: str, model_version:
     if ruled:
         return ruled
     if status == 'suspect' and SUSPECT_MAX <= r['probability'] < GENUINE_MIN and not _printout(ocr_text):
-        why = private_college_reason(ocr_text, r)
+        # H7: a fail only on POSITIVE private evidence, or a conditional offer from a letterhead that names no
+        # public body (ruling 7) — never a public college photographed without its ministry line.
+        page = _fold(ocr_text)
+        why = private_college_reason(ocr_text, r) if (
+            any(s in page for s in _PRIVATE_SIGNS + _PRIVATE_MARA) or any(c in page for c in _CONDITIONAL)) else ''
         if why:
             return _ruled_status('not_offer_letter', r, r['type'], f'{why} (owner rulings 2 + 7)', model_version)
     out = unfingerprinted_offer(ocr_text, r, status, reason, model_version)
