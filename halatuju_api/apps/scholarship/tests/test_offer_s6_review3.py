@@ -174,3 +174,16 @@ class OwnerPppl(SimpleTestCase):
             with self.subTest(head=head):
                 self.assertEqual(_g(f'{head}\nPENGESAHAN PELAJAR\nNama : Ali\nTAWARAN KEMASUKAN\n')['status'],
                                  'not_offer_letter')
+
+
+class TvetSpeltOutIsNotAnotherInstitution(SimpleTestCase):
+    """Found by the final held-out run (round 3): an IKM offer titled "… Technical and Vocational Education and
+    Training" read its EDUCATION / TRAINING as another organisation named before the institute."""
+
+    def test_an_offer_title_spelling_out_tvet_still_lifts(self):
+        text = REAL.replace('SURAT TAWARAN KEMASUKAN\n',
+                            'SURAT TAWARAN KEMASUKAN PROGRAM TECHNICAL AND VOCATIONAL EDUCATION AND TRAINING\n')
+        self.assertEqual(_g(text)['status'], 'genuine')
+
+    def test_a_training_centre_is_still_another_organisation(self):
+        self.assertNotEqual(_g(_letter('ABC TRAINING CENTRE\nIKBN'))['status'], 'genuine')

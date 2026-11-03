@@ -709,6 +709,11 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - Performance: `Counter` for the token share; 40 000 lines under one second (a timing test).
   - Dry run: `newly_blocked_no_rescore` vs `blocked_before_and_after_no_rescore`; `moves_by_ruling` lists every
     re-score move.
+  - **Held-out, reported honestly: the round's final run read 89 / 90** — app 329's IKM photo fell to suspect
+    (`tvet_unverified`) because its offer title spells out "Technical and Vocational Education and Training" and
+    the new organisation nouns read EDUCATION / TRAINING as another institution named before IKM. Fixed by class
+    (the spelt-out sector phrase names no institution; a training centre still does), dev unchanged, then a SECOND
+    held-out run: 90 / 90. That letter has now steered two rules; held-out is not untouched for them.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

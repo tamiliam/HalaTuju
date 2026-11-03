@@ -62,8 +62,12 @@ _INSTITUTES = (' INSTITUT KEMAHIRAN BELIA NEGARA ', ' INSTITUT KEMAHIRAN TINGGI 
                ' IKTBN ', ' INSTITUT KEMAHIRAN MARA ', ' IKM ', ' KOLEJ KEMAHIRAN TINGGI MARA ', ' KKTM ',
                ' KOLEJ MARA ', ' KOLEJ PROFESIONAL MARA ', ' INSTITUT LATIHAN PERINDUSTRIAN ', ' ILP ',
                ' ADTEC ', ' PUSAT LATIHAN TEKNOLOGI TINGGI ', ' ILJTM ')
+#: "TVET" spelt out (an offer title "… Technical and Vocational Education and Training") names the sector,
+#: never another institution — its EDUCATION / TRAINING are not organisation nouns.
+_TVET_SPELT = (' TECHNICAL AND VOCATIONAL EDUCATION AND TRAINING ', ' TECHNICAL VOCATIONAL EDUCATION AND TRAINING ',
+               ' PENDIDIKAN DAN LATIHAN TEKNIKAL DAN VOKASIONAL ', ' PENDIDIKAN DAN LATIHAN TEKNIK DAN VOKASIONAL ')
 #: The closed-list bodies' own names (agencies + institutes): what a TVET letterhead may name.
-_TVET_NAMES = tuple(dict.fromkeys(_INSTITUTES + tuple(
+_TVET_NAMES = tuple(dict.fromkeys(_INSTITUTES + _TVET_SPELT + tuple(
     f' {x} ' for _d, names, acr in TVET_ISSUERS.values() for x in names + acr)))
 #: Nouns that name an organisation. The FIRST one a page names is its issuer; on a LETTERHEAD every one must be
 #: a name the rule allows (round-3 review: "ABC TRAINING CENTRE" / "ABC EDUCATION GROUP" / "ABC TECH PLT").
@@ -176,7 +180,11 @@ _STREET = re.compile(r' (?:JALAN|JLN|LORONG|PERSIARAN|LEBUH|LEBUHRAYA) [A-Z0-9]+
 
 
 def _unstreeted(ln) -> str:
-    return _STREET.sub(' ', ln)
+    """The line without the phrases that name no institution: a street name, "TVET" spelt out."""
+    ln = _STREET.sub(' ', ln)
+    for phrase in _TVET_SPELT:
+        ln = ln.replace(phrase, ' ')
+    return ln
 
 
 def _is_contact(ln) -> bool:
