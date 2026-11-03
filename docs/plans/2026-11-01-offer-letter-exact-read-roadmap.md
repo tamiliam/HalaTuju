@@ -783,6 +783,13 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   - Measured: 13 corpus letters differ from the baseline, each tagged (dev 6, held-out 7); 274 equal the pre-S6
     engine (checked against a detached pre-S6 checkout). Dev 196 / 197: a391 (conditional private offer, no
     letterhead proof) keeps its baseline `suspect` — a coordinator / owner call whether its expected label moves.
+- **Round 8 (2026-11-03): 3 High — both overlays made STRICTER and SIMPLER, no new guesses.** LIFT excuses only a
+  closed-list bank's own "Berhad" line and the addressee block above the title (`offer_reading._bank_line`,
+  `_in_addressee_block`); every other company line, SWASTA / IPTS, S/B / SDNBHD is a marker. BLOCK reads only the
+  true letterhead (`_letterhead_block`: top → first postcode line, earlier stops at Ruj / date / title /
+  salutation / Kepada / candidate / name line), skips sponsor lines, and counts a tie-up word only beside an
+  institution or company (`_names_an_institution`). Corpus unchanged (13 tagged changes); doc 1810's prod move
+  (suspect → not_offer_letter, untagged) is the pre-S6 engine's own call — baseline == S6 there.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

@@ -14,6 +14,7 @@ from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.offer_rulings import confirmation_kind, ruled_offer
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
 from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
+from apps.scholarship.genuineness.offer_rulings import ruling_of
 
 # Below the suspect floor (no family signature) the review's H1 rule asks the BODY to name the candidate and
 # the institute again (`offer_rulings._tvet`), so the twin carries a letterhead, filler, then its body.
@@ -176,8 +177,11 @@ class TestPrintoutsAndPrivate(SimpleTestCase):
 
 class TestPrivateArmVeto(SimpleTestCase):
     def test_a_ministry_family_letter_naming_a_bank_sdn_bhd_is_not_vetoed(self):
+        # S6 round 8 (almost no excuses): only a closed-list bank's own "Berhad" excuses a company line; an
+        # unlisted "Bank Contoh Sdn Bhd" is a private marker, so the pre-S6 veto stands (the baseline).
         out = signature_genuineness(POLY_OFFER_SDN, doc_type='offer_letter')
-        self.assertEqual(out['status'], 'genuine')
+        self.assertEqual(out['status'], baseline_status(POLY_OFFER_SDN))
+        self.assertEqual(ruling_of(out), '')
 
     def test_a_private_college_on_a_sdn_bhd_letterhead_is_still_vetoed(self):
         text = ('KOLEJ CONTOH SDN BHD\nSURAT TAWARAN PENGAJIAN\nProgram : Diploma Contoh\nInstitusi : Kolej Contoh\n'

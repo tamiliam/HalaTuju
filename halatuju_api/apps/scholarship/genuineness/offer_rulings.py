@@ -41,24 +41,24 @@ from .offer_reading import *    # every name re-exported (`offer_reading.__all__
 
 
 # ── The incidental-company excuse (a lift over the pre-S6 veto) ───────────────────────────
-def ministry_letter_naming_a_company(ocr_text: str, r: dict) -> bool:
+def ministry_letter_naming_a_company(ocr_text: str, r: dict, lines=None) -> bool:
     """True when the pre-S6 private-arm veto (`results_doc._private_arm_offer`) fired ONLY on "Sdn Bhd",
     a ministry family's own issuer line is on the page, and EVERY such line is incidental (`_incidental`: a
-    bank / vendor / sponsor line, or the addressee's address) with no organisation noun on it or the line
-    before, and not the letterhead's own name."""
+    closed-list bank's own line, or the addressee block above the title — round 8) with no organisation noun
+    on it or the line before, and not the letterhead's own name."""
     from .offer_issuers import FAMILY_ISSUER_SIG
-    if not _veto_only_by_a_company(ocr_text):
+    lines = _folded_lines(ocr_text) if lines is None else lines
+    if not _veto_only_by_a_company(_page(lines)):
         return False
     scores = r.get('scores') or {}
     if not any(FAMILY_ISSUER_SIG[f] in ((scores.get(f) or {}).get('present') or []) for f in _MINISTRY_FAMILIES):
         return False
-    return _company_lines_incidental(_folded_lines(ocr_text))
+    return _company_lines_incidental(lines)
 
 
-def _veto_only_by_a_company(ocr_text: str) -> bool:
-    """The pre-S6 veto fired, and only its "Sdn Bhd" arm did."""
+def _veto_only_by_a_company(page: str) -> bool:
+    """The pre-S6 veto fired, and only its "Sdn Bhd" arm did (`page`: the folded page)."""
     from .results_doc import _PRIVATE_ARM_PHRASES
-    page = _page(_folded_lines(ocr_text))
     hits = [p for p in _PRIVATE_ARM_PHRASES if p in page]
     return bool(hits) and not (set(hits) - {'SDN BHD'}) and ' SPACE ' not in page
 
@@ -68,7 +68,7 @@ def _company_lines_incidental(lines) -> bool:
     organisation noun on it or the line before."""
     head = _letterhead_lines(lines)
     for i, ln in enumerate(lines):
-        if ' SDN BHD ' in ln or ' SENDIRIAN BERHAD ' in ln:
+        if any(c in ln for c in _COMPANY_SIGNS):      # round 8 (M3): every company spelling
             near = (lines[i - 1] if i else '') + ln + (lines[i + 1] if i + 1 < len(lines) else '')
             name = [w for w in ln.split(' SDN BHD ')[0].split(' SENDIRIAN BERHAD ')[0].split()
                     if w not in _LABEL_WORDS][-2:]
@@ -124,7 +124,7 @@ def _first_named_institute(lines) -> str:
     return ''
 
 
-def _tvet_lift(ocr_text, r, lines, model_version):
+def _tvet_lift(r, lines, model_version):
     head = _page(_letterhead_lines(lines))
     if not any(n in head for n in _TVET_NAMES):
         return None                     # no closed-list body named on the letterhead
@@ -143,11 +143,11 @@ def _tvet_lift(ocr_text, r, lines, model_version):
                          'offer letter - a public offer (owner rulings 5 and Q2)', model_version)
 
 
-def confirmation_kind(ocr_text: str, probability: float = 1.0) -> str:
+def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> str:
     """The `confirmation_*` code of a confirmation-of-studies letter from a no-private-wing public institution
     named on its letterhead block, or '' (no title at the top, below the score floor, a private marker, or a
     letterhead naming another organisation)."""
-    lines = _folded_lines(ocr_text)
+    lines = _folded_lines(ocr_text) if lines is None else lines
     if not _confirm_titled(lines, probability) or _private_marker(lines):
         return ''
     scan = _without_poly_department(lines)                 # the department's name names no polytechnic
@@ -180,11 +180,10 @@ def _without_poly_department(lines):
     return out
 
 
-def _confirmation_lift(ocr_text, r, model_version):
-    seen = confirmation_kind(ocr_text, r['probability'])
+def _confirmation_lift(r, raw, model_version):
+    seen = confirmation_kind('', r['probability'], lines=raw)
     if not seen:
         return None
-    raw = _folded_lines(ocr_text)
     lines, glued = _unglued(raw), any(len(ln.split()) > 40 for ln in raw)
     if not (_letter_structure(lines, _CONFIRM_TITLES, min_lines=_CONFIRM_MIN_LINES, glued=glued)
             and _own_identity_lines(lines, _CONFIRM_TITLES)):
@@ -194,33 +193,32 @@ def _confirmation_lift(ocr_text, r, model_version):
                          model_version)
 
 
-def _company_lift(ocr_text, r, model_version):
+def _company_lift(ocr_text, r, lines, model_version):
     """A ministry family's own letter, scoring genuine, that the pre-S6 veto blocked only for an incidental
     company line."""
-    if r['probability'] < GENUINE_MIN or not ministry_letter_naming_a_company(ocr_text, r):
+    if r['probability'] < GENUINE_MIN or not ministry_letter_naming_a_company(ocr_text, r, lines):
         return None
     return _ruled_status('genuine', r, r['type'], 'incidental_company', f"{r['type'].replace('_', ' ')} letter: "
-                         'its only "Sdn Bhd" is an incidental line (a supplier, a bank, the addressee) - the '
+                         'its only "Sdn Bhd" is an incidental line (a bank\'s own, the addressee) - the '
                          'family scores genuine', model_version)
 
 
-def _lift(ocr_text, r, baseline, model_version):
+def _lift(ocr_text, r, lines, page, vetoed, model_version):
     """LIFT → genuine, only on the full proof (module note 2); None when any part is unclear."""
-    lines = _folded_lines(ocr_text)
     if _private_marker(lines):
         return None
-    if _vetoed(ocr_text):
-        if not (_veto_only_by_a_company(ocr_text) and _company_lines_incidental(lines)):
+    if vetoed:
+        if not (_veto_only_by_a_company(page) and _company_lines_incidental(lines)):
             return None                 # a SPACE / SATU / letterhead company veto stands
-        lifted = _company_lift(ocr_text, r, model_version)
+        lifted = _company_lift(ocr_text, r, lines, model_version)
         if lifted:
             return lifted
-    return _tvet_lift(ocr_text, r, lines, model_version) or _confirmation_lift(ocr_text, r, model_version)
+    return _tvet_lift(r, lines, model_version) or _confirmation_lift(r, lines, model_version)
 
 
 # ── BLOCK ─────────────────────────────────────────────────────────────────────────────────
-def _block(ocr_text, r, model_version):
-    proof = private_proof(_folded_lines(ocr_text))
+def _block(r, lines, model_version):
+    proof = private_proof(lines)
     if not proof:
         return None
     return _ruled_status('not_offer_letter', r, r['type'], 'private_offer', f'private college / university (IPTS): '
@@ -229,8 +227,7 @@ def _block(ocr_text, r, model_version):
 
 
 # ── SOFTENING a fail on its own proof (owner rulings 3 + 6) ───────────────────────────────
-def _tvet_slip(ocr_text, r, model_version):
-    lines = _folded_lines(ocr_text)
+def _tvet_slip(r, lines, model_version):
     key = _institute_on_letterhead(lines) or _agency_on_letterhead(lines)
     if not key or _SLIP not in _page(_letterhead_block(lines)) or not _has_offer_words(_page(lines)):
         return None
@@ -246,8 +243,7 @@ def _agency_on_letterhead(lines) -> str:
     return ''
 
 
-def _printout(ocr_text, r) -> bool:
-    lines = _folded_lines(ocr_text)
+def _printout(ocr_text, r, lines) -> bool:
     page = _page(lines)
     if (_APPLICATION_SLIP in page or _private_marker(lines)
             or private_college_reason(ocr_text, r, public_words=_PUBLIC_LINE_WORDS)):
@@ -257,15 +253,15 @@ def _printout(ocr_text, r) -> bool:
     return _has_offer_words(page) and sum(1 for m in _PORTAL_FURNITURE if m in page) >= 2
 
 
-def _soften(ocr_text, r, baseline, model_version):
-    if baseline.get('status') != 'not_offer_letter' or private_proof(_folded_lines(ocr_text)):
+def _soften(ocr_text, r, baseline, lines, page, vetoed, model_version):
+    if baseline.get('status') != 'not_offer_letter' or private_proof(lines):
         return None
-    if _vetoed(ocr_text) and not _veto_only_by_a_company(ocr_text):
+    if vetoed and not _veto_only_by_a_company(page):
         return None
-    slip = _tvet_slip(ocr_text, r, model_version) if not _private_marker(_folded_lines(ocr_text)) else None
+    slip = _tvet_slip(r, lines, model_version) if not _private_marker(lines) else None
     if slip:
         return slip
-    if _printout(ocr_text, r):
+    if _printout(ocr_text, r, lines):
         return {**baseline, 'reason': (_TAG.format('printout') + 'an admission printout / portal page, '
                                                 f"not the offer letter - suspect (owner ruling 3); "
                                                 f"{baseline['reason']}")[:300], 'status': 'suspect'}
@@ -294,15 +290,17 @@ def apply_rulings(ocr_text: str, r: dict, baseline: dict, model_version: str) ->
     """The genuineness of an offer: the BASELINE (`results_doc.baseline_genuineness`), changed only by the
     BLOCK, a LIFT or a softening ruling (module note). A changed call always carries its ruling tag."""
     ocr_text = unicodedata.normalize('NFKC', ocr_text or '')
+    lines = _folded_lines(ocr_text)                         # round 8 (perf): the page is folded ONCE
     if baseline.get('status') != 'not_offer_letter':
-        blocked = _block(ocr_text, r, model_version)
+        blocked = _block(r, lines, model_version)
         if blocked:
             return blocked
     if baseline.get('status') != 'genuine':
-        lifted = _lift(ocr_text, r, baseline, model_version)
+        page, vetoed = _page(lines), _vetoed(ocr_text)
+        lifted = _lift(ocr_text, r, lines, page, vetoed, model_version)
         if lifted:
             return lifted
-        softened = _soften(ocr_text, r, baseline, model_version)
+        softened = _soften(ocr_text, r, baseline, lines, page, vetoed, model_version)
         if softened:
             return softened
     return baseline

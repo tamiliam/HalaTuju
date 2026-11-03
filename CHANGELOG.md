@@ -111,6 +111,16 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   with its tag (an untagged change is a MISS): 13 corpus letters change, all tagged; the other 274 equal the
   pre-S6 engine's output. Dev 196 / 197 — a391 (a private college's CONDITIONAL offer, no letterhead proof) keeps
   its baseline `suspect` instead of the old `not_offer_letter`; held-out 90 / 90.
+- **Round 8 — the two overlays made stricter and simpler** (`tests/test_offer_s6_narrowing.py`, class `Round8`):
+  the LIFT's "no private marker anywhere" keeps only two excuses — a closed-list BANK's own "Berhad" line
+  (Maybank, CIMB, Bank Islam, RHB, Public Bank, BSN, AmBank, Hong Leong, Bank Rakyat, Affin, Alliance, Agrobank,
+  Muamalat, OCBC, HSBC, UOB, Standard Chartered, Al Rajhi, MBSB) and the addressee block BETWEEN the reference /
+  date and the title (never after it); a supplier, sponsor, footer, signature or a fee to a company is a marker,
+  SWASTA / IPTS never excused; S/B, SDNBHD, SDN. BHD. are company words. The BLOCK's letterhead is the lines from
+  the top to the first postcode line, stopping earlier at a reference, date, title, salutation, "Kepada",
+  candidate or patronymic-name line; sponsor lines are skipped; a street name is no tie-up; a tie-up word counts
+  only beside an institution or company. The page is folded once per call (proof and marker memoised). Corpus:
+  the same 13 tagged changes; a259's incidental-company lift holds.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

@@ -3,8 +3,9 @@ each (N1-N8). Every letter is invented (`test_no_gitignored_corpus.py`)."""
 from django.test import SimpleTestCase
 
 from apps.scholarship.genuineness.offer_rulings import (_first_institution, _folded_lines, _letter_structure,
-                                                         _TITLE, confirmation_kind, ruled_offer)
+                                                         _TITLE, confirmation_kind, ruled_offer, ruling_of)
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 from apps.scholarship.tests.test_offer_s6_review3 import REAL, _letter
 
 
@@ -58,7 +59,13 @@ class N3CompanyLinesOnARealTvetLetter(SimpleTestCase):
                                                 '31000 Batu Gajah\n')),
                 ('sponsor', REAL.replace('Sila bawa', 'Penaja : ABC Sdn Bhd\nSila bawa'))):
             with self.subTest(label):
-                self.assertNotEqual(_g(text)['status'], 'not_offer_letter')
+                # S6 round 8 (almost no excuses): a supplier / insurer / sponsor line is a private marker (no lift),
+                # never a new block: the baseline; the addressee's estate above the title is still excused.
+                out = _g(text)
+                if label == 'estate address':
+                    self.assertNotEqual(out['status'], 'not_offer_letter')
+                else:
+                    self.assertEqual((out['status'], ruling_of(out)), (baseline_status(text), ''))
 
     def test_a_sdn_bhd_on_the_letterhead_still_vetoes(self):
         self.assertEqual(_g(_letter('ABC TRAINING SDN BHD\nIKBN PEKAN'))['status'], 'not_offer_letter')

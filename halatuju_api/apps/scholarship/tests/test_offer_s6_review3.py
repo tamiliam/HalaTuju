@@ -107,10 +107,13 @@ class SafetyRule(SimpleTestCase):
                 self.assertIn(_g(text)['status'], ('genuine', 'suspect', 'unchecked'))
 
     def test_a_bank_berhad_is_not_private_evidence(self):
-        for line in ('Akaun Maybank Islamic Berhad', 'CIMB Bank Berhad', 'RHB Islamic Berhad',
-                     'Koperasi Contoh Berhad', 'Contoh Takaful Malaysia Berhad', 'Insurans Contoh Berhad'):
+        for line in ('Akaun Maybank Islamic Berhad', 'CIMB Bank Berhad', 'RHB Islamic Berhad'):
             with self.subTest(line=line):
                 self.assertFalse(_private_signs(_folded_lines(f'IKBN\nRujukan 1\n{line}\n')))
+        # S6 round 8 (almost no excuses): a co-operative or an insurer is no closed-list bank: a private marker.
+        for line in ('Koperasi Contoh Berhad', 'Contoh Takaful Malaysia Berhad', 'Insurans Contoh Berhad'):
+            with self.subTest(line=line):
+                self.assertTrue(_private_signs(_folded_lines(f'IKBN\nRujukan 1\n{line}\n')))
 
 
 class MediumOtherFirstIsPrivate(SimpleTestCase):

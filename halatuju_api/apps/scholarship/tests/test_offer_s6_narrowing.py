@@ -229,3 +229,123 @@ class TheBlock(SimpleTestCase):
                        body='Kursus : Sijil Contoh\nTarikh lapor diri : 3 Ogos 2026\nPenaja : ABC Holdings Berhad\n')
         self.assertEqual(private_proof(_folded_lines(text)), '')
         self.assertNotEqual(ruling_of(signature_genuineness(text, doc_type='offer_letter')), 'private_offer')
+
+
+# ── Review round 8 (2026-11-03): stricter, simpler overlays ─────────────────────────────────
+IK = 'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN'
+
+
+def _r8(head, *, body='Kursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\nTempat : IKBN Pekan\n',
+        foot='', sign='PENGARAH\nIKBN Pekan\n'):
+    return (f'{head}\nJalan Contoh, 26600 Pekan\nTel : 09-000 0000\nRujukan : KBS.600-1/2/3\nTarikh : 1 Jun 2026\n'
+            'Nama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\nTuan,\nSURAT TAWARAN KEMASUKAN\n'
+            'Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.\n' + body
+            + 'Sila bawa dokumen asal semasa mendaftar.\nTawaran ini tertakluk kepada syarat.\n'
+            f'Sekian, terima kasih.\nYang benar,\n{sign}{foot}')
+
+
+_POLY8 = ('KEMENTERIAN PENDIDIKAN TINGGI\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI\n{addr}'
+          'Ruj. Kami : JPPKK/600-2/1\n{date}\n{addr2}SURAT TAWARAN PENGAJIAN\nNama : Ali bin Abu\n'
+          'No. Kad Pengenalan : 080808-10-5566\nProgram : Diploma Kejuruteraan Contoh\nInstitusi : Politeknik Contoh\n'
+          'Tarikh dan Masa Daftar : 3 Jul 2026\nTawaran ini adalah muktamad dan terbatal sekiranya anda tidak mendaftar '
+          'di institusi\nTawaran ini tertakluk kepada kesahihan maklumat dalam borang permohonan\nSekian.\nPENGARAH\n')
+_UA8 = ('UNIVERSITI PUTRA MALAYSIA\nPEJABAT PENDAFTAR\n{addr}Tarikh : {date} 2026\n'
+        'TAWARAN KEMASUKAN KE PROGRAM PENGAJIAN DIPLOMA\nNama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\n'
+        'Program Pengajian : Diploma Contoh\nTarikh pendaftaran : 3 Jul 2026\nPertukaran program adalah tidak '
+        'dibenarkan\nTawaran ini adalah muktamad\nSekian.\nPENDAFTAR\n')
+_ESTATE = 'ALI BIN ABU\nRUMAH PEKERJA, LADANG BUKIT CONTOH\nSIME CONTOH PLANTATION BERHAD\n31000 BATU GAJAH, PERAK\n'
+_POLY_HEAD = _POLY8.format(addr='', date='Tarikh : 1 Jun 2026', addr2='')
+
+#: Private pages a LIFT must never touch (H1 / H1b-d, H2 / H2b, M3).
+ROUND8_NEVER_LIFTED = {
+    'signed by a Sdn Bhd above an address': _r8(IK, sign='PENGARAH\nMERCU JAYA SDN BHD\n'
+                                                        'No 5 Jalan Contoh Dua, 50450 Kuala Lumpur\n'),
+    'fees to the operator company account': _r8(IK, body='Kursus : Sijil Contoh\nTarikh lapor diri : 3 Ogos 2026\n'
+                                                     'Yuran RM3,000 hendaklah dibayar ke akaun MERCU JAYA SDN BHD '
+                                                     '(Maybank)\n'),
+    'Swasta beside a bank': _r8(IK, body='Kursus : Sijil Contoh\nTarikh lapor diri : 3 Ogos 2026\n'
+                                     'Institusi latihan swasta bertauliah, bayaran ke akaun Bank Mercu\n'),
+    'company footer with registration and address': _r8(IK, foot='MERCU JAYA SDN BHD (123456-X)\n'
+                                                                 'Lot 5, Jalan Dua, 50450 Kuala Lumpur\n'),
+    'company footer, Sendirian Berhad': _r8(IK, foot='MERCU JAYA SENDIRIAN BERHAD\n'
+                                                     'Lot 5, Jalan Dua, 50450 Kuala Lumpur\n'),
+    'company footer, Berhad only': _r8(IK, foot='MERCU JAYA BERHAD\nLot 5, Jalan Dua, 50450 Kuala Lumpur\n'),
+    'company footer, no address': _r8(IK, foot='Dikeluarkan oleh MERCU JAYA SDN BHD\n'),
+    'footer glued SDNBHD': _r8(IK, foot='Dikeluarkan oleh MERCU JAYA SDNBHD\n'),
+    'footer S/B': _r8(IK, foot='Dikeluarkan oleh MERCU JAYA S/B\n'),
+    'letterhead S/B under IKBN': _r8(IK + '\nMERCU JAYA S/B'),
+    'footer company, postcode 3 lines down': _r8(IK, foot='MERCU JAYA SDN BHD\nTingkat 3, Wisma Contoh\nJalan Dua\n'
+                                                         '50450 Kuala Lumpur\n'),
+    'footer company, postcode 4 lines down': _r8(IK, foot='MERCU JAYA SDN BHD\nTingkat 3\nWisma Contoh\nJalan Dua\n'
+                                                         '50450 Kuala Lumpur\n'),
+    'ministry family + company footer with address': (_POLY_HEAD + 'MERCU JAYA SDN BHD\n'
+                                                      'Lot 5, Jalan Dua, 50450 Kuala Lumpur\n'),
+    'ministry family + company signs': _POLY_HEAD + 'MERCU JAYA SDN BHD\n',
+}
+#: Public pages the BLOCK must never touch (H3 / H3b-d, M1, M2).
+ROUND8_NEVER_BLOCKED = {
+    'poly, addressee before Ruj: estate Berhad': _POLY8.format(addr=_ESTATE, date='Tarikh : 1 Jun 2026', addr2=''),
+    'poly, addressee before Ruj: Jalan Rakan': _POLY8.format(
+        addr='ALI BIN ABU\nNO 3 JALAN RAKAN 2, TAMAN CONTOH\n31000 BATU GAJAH, PERAK\n', date='Tarikh : 1 Jun 2026',
+        addr2=''),
+    'poly, addressee d/a Koperasi Berhad': _POLY8.format(
+        addr='ALI BIN ABU\nD/A FELCRA CONTOH BERHAD\n31000 BATU GAJAH, PERAK\n', date='Tarikh : 1 Jun 2026', addr2=''),
+    'IKBN sponsor Berhad on the letterhead': _r8(IK + '\nPenaja : Petroliam Contoh Berhad'),
+    'IKBN Program Latihan Kerjasama Industri': _r8(IK + '\nProgram Latihan Kerjasama Industri'),
+    'UA addressee estate Berhad, odd date': _UA8.format(
+        addr='ALI BIN ABU\nLADANG CONTOH, KUMPULAN CONTOH BERHAD\n31000 BATU GAJAH\n', date='1hb Jun'),
+    'UA addressee estate Berhad, normal date': _UA8.format(
+        addr='ALI BIN ABU\nLADANG CONTOH, KUMPULAN CONTOH BERHAD\n31000 BATU GAJAH\n', date='1 Jun'),
+    'poly Ruj + date first, estate Berhad': _POLY8.format(addr='', date='Tarikh : 1 Jun 2026', addr2=_ESTATE),
+    'poly Ruj first, no date, estate Berhad': _POLY8.format(addr='', date='', addr2=_ESTATE).replace('\n\n', '\n'),
+    'poly, 5-line address, Berhad 4 above the postcode': _POLY8.format(
+        addr='', date='Tarikh : 1 Jun 2026', addr2='ALI BIN ABU\nSIME CONTOH PLANTATION BERHAD\nRUMAH PEKERJA NO 3\n'
+                                                   'LADANG BUKIT CONTOH\nBATU GAJAH\n31000 PERAK\n'),
+    'poly English date, estate Berhad': _POLY8.format(addr='', date='Date : June 1, 2026', addr2=_ESTATE).replace(
+        'Ruj. Kami : JPPKK/600-2/1\n', ''),
+}
+
+
+class Round8(SimpleTestCase):
+    def test_the_lift_has_almost_no_excuses(self):
+        for name, text in ROUND8_NEVER_LIFTED.items():
+            with self.subTest(name):
+                out = signature_genuineness(text, doc_type='offer_letter')
+                self.assertNotIn(ruling_of(out), LIFTS)
+                self.assertNotEqual(out['status'], 'genuine')
+
+    def test_the_block_reads_only_the_true_letterhead(self):
+        for name, text in ROUND8_NEVER_BLOCKED.items():
+            with self.subTest(name):
+                out = signature_genuineness(text, doc_type='offer_letter')
+                self.assertEqual(private_proof(_folded_lines(text)), '')
+                self.assertEqual((out['status'], ruling_of(out)), (baseline_status(text), ''))
+
+    def test_a_company_on_the_letterhead_in_any_spelling_still_blocks(self):
+        for company in ('MERCU JAYA S/B', 'MERCU JAYA SDNBHD', 'MERCU JAYA SDN. BHD.', 'MERCU JAYA SENDIRIAN BERHAD'):
+            with self.subTest(company):
+                self.assertEqual(private_proof(_folded_lines(_r8(IK + '\n' + company))), 'company')
+
+    def test_a_closed_list_bank_line_is_the_only_finance_excuse(self):
+        from apps.scholarship.genuineness.offer_rulings import _bank_line
+        for ln in ('Bayaran ke akaun Maybank Berhad', 'CIMB Bank Berhad', 'Bank Islam Malaysia Berhad',
+                   'Public Bank Berhad', 'Hong Leong Islamic Bank Berhad'):
+            with self.subTest(ln):
+                self.assertTrue(_bank_line(_folded_lines(ln)[0]))
+        for ln in ('dibayar ke akaun MERCU JAYA SDN BHD (Maybank)', 'Takaful Contoh Berhad', 'Koperasi Contoh Berhad',
+                   'Bayaran ke akaun Bank Mercu Berhad'):
+            with self.subTest(ln):
+                self.assertFalse(_bank_line(_folded_lines(ln)[0]))
+
+    def test_round8_pages_obey_the_property(self):
+        for text in list(ROUND8_NEVER_LIFTED.values()) + list(ROUND8_NEVER_BLOCKED.values()):
+            with self.subTest(text.splitlines()[0][:40]):
+                TheProperty._check(self, text)
+
+    def test_a_long_page_stays_fast(self):
+        import time
+        text = 'INSTITUT KEMAHIRAN BELIA NEGARA\nSURAT TAWARAN\n' + ''.join(
+            f'Baris {i} ABC SDN BHD contoh\n' for i in range(4000))
+        t0 = time.perf_counter()
+        signature_genuineness(text, doc_type='offer_letter')
+        self.assertLess(time.perf_counter() - t0, 5.0)

@@ -109,7 +109,7 @@ class Lows(SimpleTestCase):
 
     def test_islamic_excuses_only_a_bank_or_a_bare_berhad(self):
         self.assertTrue(_incidental(_folded_lines('Bank Islam Malaysia Berhad'), 0))
-        self.assertTrue(_incidental(_folded_lines('ABC Islamic Berhad'), 0))
+        self.assertFalse(_incidental(_folded_lines('ABC Islamic Berhad'), 0))      # round 8: no closed-list bank
         self.assertFalse(_incidental(_folded_lines('ABC Islamic College Berhad'), 0))
 
     def test_an_islamic_college_berhad_on_the_letterhead_is_block_proof(self):

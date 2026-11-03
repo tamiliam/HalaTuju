@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.scholarship.genuineness.offer_rulings import confirmation_kind, ruled_offer, ruling_of
 from apps.scholarship.genuineness.results_doc import MODEL_VERSION, signature_genuineness
+from apps.scholarship.tests.test_offer_s6_narrowing import baseline_status
 
 HEAD = 'Rujukan : ABC/600-1/2\nTarikh : 1 Jun 2026\n'
 TAIL = 'Sekian, terima kasih.\nYang benar,\nPENGARAH\n'
@@ -121,10 +122,13 @@ _POLY = ('KEMENTERIAN PENDIDIKAN TINGGI\nJABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ
 
 class H6WhereTheCompanySits(SimpleTestCase):
     def test_a_company_on_a_payment_line_or_the_addressees_estate_is_not_the_issuer(self):
-        self.assertEqual(_g(_POLY.format(addr='', pay='Bayaran ke akaun Bank Contoh Sdn Bhd.\n', foot=''))['status'],
-                         'genuine')
-        self.assertEqual(_g(_POLY.format(addr='LADANG CONTOH SDN BHD\nPETI SURAT 1, 90000 SANDAKAN\n', pay='',
-                                         foot=''))['status'], 'genuine')
+        # S6 round 8 (almost no excuses): an unlisted bank's company is no excuse - the baseline (the veto stands);
+        # the addressee's estate, between the reference / date and the title, still is.
+        text = _POLY.format(addr='', pay='Bayaran ke akaun Bank Contoh Sdn Bhd.\n', foot='')
+        out = _g(text)
+        self.assertEqual((out['status'], ruling_of(out)), (baseline_status(text), ''))
+        out = _g(_POLY.format(addr='LADANG CONTOH SDN BHD\nPETI SURAT 1, 90000 SANDAKAN\n', pay='', foot=''))
+        self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'incidental_company'))
 
     def test_a_company_anywhere_else_keeps_the_veto(self):
         for addr, foot in (('', 'Hakcipta ABC College Sdn Bhd\n'), ('ABC COLLEGE SDN BHD\n', ''),

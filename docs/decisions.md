@@ -54,6 +54,9 @@
      ministry family's own letter scoring genuine that the pre-S6 veto blocked only for a supplier / bank /
      addressee "Sdn Bhd").
    - Rulings 3 and 6 still soften a fail on their own proof (`printout`, `tvet_slip` → `suspect`).
+   - Round 8 (stricter, simpler): the letterhead block is the top lines up to the issuer's first postcode line
+     (earlier stops at Ruj / date / title / salutation / Kepada / candidate / name line); "no private marker"
+     excuses only a closed-list bank's own "Berhad" line and the addressee block above the title.
    The middle logic that guessed in unclear cases is deleted: the round-5 safety exit, the `tvet_unverified` /
    `confirmation_unverified` fallbacks, "an unclean letterhead is private evidence", the conditional-offer block, and
    the other university's confirmation → `suspect` of item 3 (it keeps its baseline now). No new cap to suspect.
