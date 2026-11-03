@@ -119,7 +119,8 @@ request, server check or order of steps changes; the reporting-date logic is TD-
 entry; static HTML mock-ups approved, every recommendation approved). Phase 1 made the maintenance status buttons
 read-only on a phone (TD-480 item 4, owner: yes).
 
-**M7a — Lists, tabs and detail pages** (medium) — BUILT on `mobile-m7`, not pushed. The shared tabs (up to four 44 px
+**M7a — Lists, tabs and detail pages** (medium) — DONE, live 2026-11-03 (main 881e5465, web-01074-xhv;
+retrospective `docs/retrospectives/retrospective-2026-11-03-mobile-m7a.md`). The shared tabs (up to four 44 px
 chips, more as one chooser); six scroll-only tables and the Sponsors Terms table as rows on a phone (the same table
 restacked by CSS, `TableFrame phoneRows`); the two underlined tab bars as chips; rule 15 on the scholar file and its
 tabs (`ScholarMoney` stacks), student detail, the payment run, request detail and (light) the Requests list; the

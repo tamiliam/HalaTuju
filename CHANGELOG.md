@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Mobile M7 — admin "Can" screens + the desktop-only gate (IN PROGRESS, branch mobile-m7)
+## Mobile M7a — admin "Can" screens on phones, decided doors read-only — LIVE 2026-11-03 (main 881e5465, web-01074-xhv)
 
 - **M7a — lists, tabs and detail pages on phones** (owner approved the mock-ups and every recommendation; decisions.md,
   the Mobile M7 entry). Layout only: no onClick, disabled rule, request, confirm or server check changed.
@@ -251,7 +251,7 @@ M6a and M6b. **No decision door changed** — the cockpit (`view.tsx` and its pa
   added to rule 15; `AppShell.test.tsx` "the phone menu"; `page.phone.test.tsx` (five). 15 bites, each red for the
   right reason. **Raised:** TD-471 (four Must pages without a surface), TD-472 (no console language control).
 
-## Mobile M6 — phase 1 (branch mobile-m6, not pushed)
+## Mobile M6 — phase 1 (TD-470) — LIVE 2026-11-03 with M6a (main de48d898)
 
 - **TD-470 closed: no `process` polyfill on any route.** Three `NEXT_PUBLIC_` names a build may leave unset
   (`ORG_CODE`, unset on Cloud Run on purpose; the Turnstile key and the app version, set only by the Dockerfile) were

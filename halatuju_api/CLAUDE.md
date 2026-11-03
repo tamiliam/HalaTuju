@@ -1142,7 +1142,7 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
-### Mobile-native arc (separate stream) — M0–M6b DONE (M6b live 2026-11-03, main bff52794, web-01072-xpr); M7a BUILT on `mobile-m7` (not pushed), NEXT = M7b desktop-only gate + doors
+### Mobile-native arc (separate stream) — M0–M7a DONE (M7a live 2026-11-03, main 881e5465, web-01074-xhv), NEXT = M7b the DesktopOnly panel
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger
 `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (default run measures THIS branch with live
@@ -1187,9 +1187,9 @@ condition, pinned over every stage by `view.decisionBar.test.tsx`); a phone PDF 
 "use a computer" note; the documents' 28rem scroll box is `md:` only; the cockpit's 17 files are on rule 15. The
 year chips and `officerCockpit.ts` are untouched (offer-read S6 owns them). Sandbox `src/sandbox/cockpitM6bSurfaces.tsx`.
 `DecisionCard` gates its Save controls on `decisionBarShows` (one rule). Leftovers TD-480 (four `window.confirm`
-doors to Sheets). **M7 (branch):** the maintenance status buttons are read-only below `md` too (owner: yes; scholar file + cockpit no-file control).
+doors to Sheets). **M7a (live):** the maintenance status buttons are read-only below `md` too (owner: yes; scholar file + cockpit no-file control).
 **M7 (owner 2026-11-03: split M7a / M7b; desktop-only = the panel REPLACES the page; >4 tabs = one chooser; Close
-file, Delete student, gift membership read-only on a phone in M7b).** M7a: `PanelTabs` is 44 px chips up to four
+file, Delete student, gift membership read-only on a phone — moved into M7a by its review).** M7a: `PanelTabs` is 44 px chips up to four
 tabs and ONE chooser above that on a phone (`lib/phoneWidth.ts` `usePhoneWidth`, below md by width after mount);
 a console table becomes rows on a phone by CSS — `<TableFrame phoneRows>` + `data-label` on cells (or a
 `data-phone-rows` wrapper on a raw table), never a second rendering; the console white card is `PHONE_CARD_XL` and the tab chips `PHONE_TAB*`, both in `lib/phoneConsole.ts` (NEVER `phoneSection.ts`: it ships to every student route);
