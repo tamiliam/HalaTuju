@@ -143,6 +143,18 @@ Three kinds of check, from cheapest to most human:
   `TableFrame` (`src/components/admin/TableFrame.tsx`) for genuinely wide data. A side-by-side COMPARISON
   on a phone: two columns, each row's label a heading line above its two values, and a chooser for the second
   column when there are more (`src/components/saved/SavedCompare.tsx`, Mobile M3; sandbox `saved-compare`).
+  **A console table as ROWS** (Mobile M7a): `<TableFrame phoneRows>` and a `data-label` on each cell after the first.
+  Below md the SAME table restacks by CSS (`globals.css`, "A CONSOLE TABLE AS ROWS ON A PHONE"): the header row only
+  for a screen reader, each row a block divided by a hairline, each cell a line named by its label, controls 44 px,
+  no card and no scroll floor. One DOM, so every button is the desktop's own with its handler — no second copy of a
+  door, and no test meets "found multiple elements". A raw table outside the frame takes a `data-phone-rows` wrapper
+  (`sponsors/SponsorTermsCard.tsx`). Guarded: `pageWidth.test.ts` now reads EVERY component folder, and
+  `mobileStandard.test.ts` ("the console lists and tabs on a phone") pins the CSS and that each such table names its
+  cells. Sandbox: `m7-announcements`, `m7-sponsor-terms`.
+  **Tabs on a phone** (Mobile M7a, owner): up to four are 44 px chips that wrap; MORE become one chooser above the
+  content (`admin/PanelTabs.tsx`, `PHONE_CHIPS_MAX`), replacing the bar by width after mount (`lib/phoneWidth.ts`, the
+  same line as `DocViewer`'s `PHONE_QUERY`). A hand-built underlined bar adds `PHONE_TAB_BAR` / `PHONE_TAB` /
+  `PHONE_TAB_ON` / `PHONE_TAB_OFF` (`lib/phoneConsole.ts`, all `max-md:` — the console's classes live there, never in `phoneSection.ts`, which ships to every student route). Sandbox: `m7-scholar-file`, `m7-org-settings`.
 
 ### 8. The right keyboard for every field
 - **Why:** a number pad for a postcode, the one-time-code row for an OTP — fewer mistakes, faster.
@@ -294,6 +306,12 @@ Three kinds of check, from cheapest to most human:
   payment controls alike — a phone held sideways is wider than `md` and gets both, which is accepted: the server
   authorises by role, never by device, so this is a layout choice, not a safety gap. Swept in M6b: the case page and
   its panels.
+  M7a examples (the console's "Can" detail pages): the console's white card `rounded-xl border border-ground-200
+  bg-ground-0 p-5` is `PHONE_CARD_XL` in `lib/phoneConsole.ts` (the scholar file and every tab); three figures in a row (`ScholarMoney`)
+  become hairline rows, label left and amount right; a list of boxed rows (the payment run's phone cards, the
+  Requests list) is divided, not boxed, and a test finds a row by a hook (`data-payment-card`), never by its look; a
+  coloured callout (the danger zone) keeps its box but not the white ground. Swept in M7a: the scholar file and its
+  tabs, student detail, the payment run, request detail and the Requests list (light).
 
 ## Tamil type
 

@@ -115,8 +115,23 @@ rows (no inner scroll box; the year chips unchanged); the viewer: images inline,
 new tab; tranche scheduling and payment actions read-only on a phone with a "use a computer" note. Layout only: no
 request, server check or order of steps changes; the reporting-date logic is TD-465's.
 
-**M7 — Admin "Can" screens + desktop-only gate** (medium)
-Cards for scholars/sponsors/payments detail tables; `ScholarMoney` stacks; `PartnerEmailsCard` framed; new `DesktopOnly` panel on billing-rates, billing, course-data, contracts, sponsors/terms/[id], partner template editor.
+**M7 — Admin "Can" screens + desktop-only gate** — split in two (owner, 2026-11-03; decisions.md, the Mobile M7
+entry; static HTML mock-ups approved, every recommendation approved). Phase 1 made the maintenance status buttons
+read-only on a phone (TD-480 item 4, owner: yes).
+
+**M7a — Lists, tabs and detail pages** (medium) — BUILT on `mobile-m7`, not pushed. The shared tabs (up to four 44 px
+chips, more as one chooser); six scroll-only tables and the Sponsors Terms table as rows on a phone (the same table
+restacked by CSS, `TableFrame phoneRows`); the two underlined tab bars as chips; rule 15 on the scholar file and its
+tabs (`ScholarMoney` stacks), student detail, the payment run, request detail and (light) the Requests list; the
+table guard widened to every component folder; sandbox surfaces `adminM7Surfaces.tsx`. Layout only.
+
+**M7b — The desktop-only gate and the doors** (medium; adversarial review) — the shared `DesktopOnly` panel REPLACES
+billing-rates, billing, course-data, contracts, contracts/[id] and sponsors/terms/[id] below md, with one way back
+(mounted once from `mobileClass`); the partner template editor (inline, no route) read-only on a phone; money doors
+(the payment run's sign-offs, Cancel run, include / exclude and amounts, New payment run, billable hours), Close file,
+Delete student and a sponsor's gift membership read-only on a phone with a "use a computer" note. Later, with
+Maintenance (Team tables T4/T5): Team, Invitations, Mentors, PermissionEditor and the person page, GiftProgrammes,
+the Sponsors credits, Overview.
 
 **M8 — Close-out** (low)
 Full re-measure (all routes × 360/390 × 3 languages); decide manifest `display: 'standalone'` only once every screen has its own way back and sign-in links are proven inside the installed app (M0 ships `'browser'`); owner real-iPhone walkthrough with a short checklist, all floors at 0, ledger 100 % green, retrospective, memory + `projects.json` updated.

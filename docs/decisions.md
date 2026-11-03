@@ -1,5 +1,45 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M7: the admin "Can" screens split into M7a and M7b; desktop-only pages are replaced by a panel; more than four tabs become one chooser; closing a file, deleting a student and a sponsor's gift membership are read-only on a phone — 2026-11-03 (owner approved the mock-ups and every recommendation)
+
+**Context:** the M7 phase-1 audit (390 px, en / ta, nine sandbox surfaces) found Announcements and five other content
+tables scrolling up to 341 px sideways, the organisation settings tab bar running off the edge, 22 small targets on
+the scholar file (nine tabs wrapping into four lines of chips in Tamil), and cards inside cards on the detail pages.
+The desktop-only pages (billing, contracts, course data, sponsor terms) were half-working tables on a phone.
+
+**Decisions (owner, 2026-11-03):**
+
+1. **The split:** M7a (layout: the shared tabs, tables as rows, rule 15 on the detail pages, the widened table
+   guard, sandbox surfaces) and then M7b (the desktop-only panel and the doors).
+2. **Desktop-only pages:** below md the shared panel REPLACES the page ("use a computer for this page"), with one
+   way back. A banner over a readable page was the alternative and was not chosen.
+3. **Tabs:** up to four are 44 px chips on a phone; more than four become ONE chooser above the content (the Guide's
+   pattern). From md the bar is unchanged.
+4. **Doors:** closing a scholar's file, deleting a student and approving / rejecting a sponsor's gift membership
+   are read-only on a phone, like money (M6b). With the money doors the audit listed (the payment run's sign-offs,
+   Cancel run, include / exclude and amount edits, New payment run, billable hours on a request; the sponsor
+   credits later, with Team tables T5d), that rule is built in M7b.
+
+**Builder decisions (M7a, for the lead to confirm):**
+
+- **A table becomes rows by CSS, not by a second rendering.** `TableFrame phoneRows` marks the frame; one block in
+  `globals.css` restacks the SAME table below md (no header row, each row a block with a hairline, each cell a line
+  named by its `data-label`, controls 44 px, the scroll floor lifted). One DOM: every button is the desktop's own,
+  with its handler, so no door is copied and no test meets "found multiple elements" (lessons 2026-09-08). A raw
+  table outside the frame uses the same CSS through a `data-phone-rows` wrapper (Sponsors Terms, the partner list in
+  the emails card).
+- **The tab chooser replaces the bar by width after mount** (`usePhoneWidth`, the same line as `DocViewer`'s
+  `PHONE_QUERY`, pinned equal): one control in the DOM, not a hidden copy beside a visible one. The first paint is
+  the desktop bar; a phone swaps on mount.
+- **The Invitations rosters (`SourceInvite`, `MentorInvite`) and Team -> Mentors stay as they are**, exempt in the
+  table guard by name: Team tables T4/T5 own those pages now. Their rows follow T4.
+- **The Applications list for a source partner (`SourceApplications`)** is the sixth scroll-only table in M7a in
+  place of `SourceInvite`.
+
+**Consequences:** `pageWidth.test.ts` reads every component folder (it read only `components/admin`); a list
+passes with its own `md:hidden` cards, `TableFrame phoneRows` or a `data-phone-rows` wrapper. The doors are
+restyled for 44 px in M7a and hidden in M7b; the M7a door list is in the M7a CHANGELOG entry for the review.
+
 ## Mobile M6b follow-up: the maintenance status is read-only on a phone, like the payments — 2026-11-03 (owner, TD-480 item 4: "yes")
 
 **Context:** M6b made tranche scheduling and the payment actions read-only on a phone. Its review noticed the

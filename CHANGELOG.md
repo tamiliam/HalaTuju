@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## Mobile M7 — admin "Can" screens + the desktop-only gate (IN PROGRESS, branch mobile-m7)
 
+- **M7a — lists, tabs and detail pages on phones** (owner approved the mock-ups and every recommendation; decisions.md,
+  the Mobile M7 entry). Layout only: no onClick, disabled rule, request, confirm or server check changed.
+  - **Tabs:** `PanelTabs` — up to four 44 px chips; more than four are ONE chooser on a phone (the scholar file's nine,
+    the Team page's), replacing the bar by width after mount (`lib/phoneWidth.ts`, the same line as `DocViewer`).
+    Organisation settings and the programme page (underlined bars) are 44 px chips on a phone (`PHONE_TAB*`).
+  - **Tables as rows:** `TableFrame phoneRows` + `data-label` cells; ONE block in `globals.css` restacks the same
+    table below md (one DOM, one copy of every control). Announcements, Surveys, Development, a module's progress,
+    the partner's Scholars and Applications; the Sponsors Terms table and the emails card's partner list through a
+    `data-phone-rows` wrapper. The worst cell went from 341 px of sideways scroll to 0.
+  - **Rule 15:** the scholar file and all its tabs (`PHONE_CARD_XL`; `ScholarMoney` stacks), student detail, the
+    payment run (rows, 12 px; its cards found by `data-payment-card`), request detail and the Requests list (light).
+  - **Guards:** `pageWidth.test.ts` reads every component folder (it saw `components/admin` only); a new
+    `mobileStandard.test.ts` block pins the rows CSS, the frame switch, the named cells and the chip constants; the
+    rule-15 list gained the M7a screens. `PanelTabs.phone.test.tsx`, `phoneWidth.test.ts`. Every one bites.
+  - **Sandbox:** `src/sandbox/adminM7Surfaces.tsx` (nine surfaces, `m7-*`).
+  - **Doors restyled (44 px on a phone, nothing else; hidden in M7b) — for the adversarial review:**
+    `ScholarControls.tsx` (Close file, its confirm and reason select); `ScholarResults.tsx` (Accept / Query a result);
+    `ScholarLetters.tsx` (Issue, Withdraw + confirm, the PDF); `ScholarContract.tsx` (open the contract PDF);
+    `students/[id]/page.tsx` (Delete student); `payments/[id]/page.tsx` (Maker / Finance / Approver sign-off, Cancel
+    run, the student link; the include Toggle unchanged); `requests/[id]/page.tsx` (approve the quote, defer,
+    withdraw, triage, schedule, done, decline, post comment); `requests/page.tsx` (the new-request form);
+    `source/SourceScholars.tsx` (the witness link, restacked). Not touched: Team, Invitations, Mentors,
+    PermissionEditor, GiftProgrammes, the Sponsors credits, Overview (Team tables T4/T5 own them).
+
 - **The maintenance status is read-only on a phone** (owner 2026-11-03, TD-480 item 4: yes). On the scholar file
   (`ScholarControls.tsx`) and the cockpit's no-file control (`PostAwardPanels.tsx`) the On track / Probation / On hold /
   Ready to close buttons are hidden below `md`, with a "use a computer" note (`admin.maintenance.useComputer`, en / ms
