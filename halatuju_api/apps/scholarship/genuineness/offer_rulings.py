@@ -152,6 +152,71 @@ def _tvet_lift(r, lines, model_version):
                          'offer letter - a public offer (owner rulings 5 and Q2)', model_version)
 
 
+#: Owner ruling 2026-11-03 (decisions.md S6 item 9): the AGENCIES whose own letterhead may carry an institute's
+#: admission offer, each with its own institutes (`_INSTITUTE_KEY`). JPK (it accredits private centres) and any
+#: other ministry are not on it.
+_AGENCIES = {
+    'tvet_mara': (' MAJLIS AMANAH RAKYAT ', ' MARA ', ' TVETMARA ',
+                  ' BAHAGIAN PENDIDIKAN DAN LATIHAN TEKNIKAL VOKASIONAL MARA '),
+    'tvet_belia_sukan': (' KEMENTERIAN BELIA DAN SUKAN ', ' KBS ', ' MINISTRY OF YOUTH AND SPORTS '),
+    'tvet_jtm': (' JABATAN TENAGA MANUSIA ', ' JTM ', ' KEMENTERIAN SUMBER MANUSIA ', ' KSM ',
+                 ' DEPARTMENT OF MANPOWER ', ' MINISTRY OF HUMAN RESOURCES '),
+}
+#: Another public body on the line (a ministry / department / council / board not on `_AGENCIES`).
+_OTHER_BODY = re.compile(r' (?:KEMENTERIAN|MINISTRY|JABATAN|DEPARTMENT|MAJLIS|LEMBAGA|PERBADANAN|BAHAGIAN) [A-Z]')
+#: Item 9 (3): money words in the title or the first body lines — no admission.
+_MONEY = _NOT_ADMISSION + (' ELAUN ', ' BANTUAN ')
+
+
+def _agency_on_head(lines) -> str:
+    """Item 9 (1): the ONE agency the letterhead names, when it names that agency and no other organisation or
+    public body ('' otherwise)."""
+    keys = set()
+    for ln in _letterhead_lines(lines):
+        ln = _unstreeted(_decontact(ln))
+        for key, names in _AGENCIES.items():
+            for n in names:
+                if n in ln:
+                    keys.add(key)
+                    ln = ln.replace(n, ' ')
+        if _ORG_RE.search(ln) or _OTHER_BODY.search(ln) or any(n in ln for n in _TVET_NAMES):
+            return ''                   # another organisation, JPK, or an unlisted ministry on the letterhead
+    return keys.pop() if len(keys) == 1 else ''
+
+
+def _agency_lift(r, lines, model_version):
+    """Item 9: an agency's letterhead + its OWN institute named in the body + an admission title + the full shape
+    (no private marker: `_lift`). Tag `tvet_offer`; the reason says `agency_letterhead`."""
+    key = _agency_on_head(lines)
+    if not key:
+        return None
+    head_n = len(_letterhead_lines(lines))
+    body = lines[head_n:]
+    named = {k for ln in body for k, names in _INSTITUTE_KEY.items() if any(n in ln for n in names)}
+    if named != {key}:
+        return None                     # (2) no institute, or another agency's (a parent mismatch)
+    at = next((i for i, ln in enumerate(lines) if any(t in ln for t in _TITLE)), None)
+    if at is None or any(w in ln for ln in lines[at:at + 4] for w in _MONEY):
+        return None                     # (3) no admission title, or money in the title / first body lines
+    if not (_has_offer_words(_page(lines)) and _letter_structure(lines, _TITLE, min_lines=_OFFER_MIN_LINES,
+                                                                  reporting=True)):
+        return None                     # (4) the full offer shape
+    if _SLIP in _page(_letterhead_block(lines)):
+        return None
+    allowed = sorted(_AGENCIES[key] + _INSTITUTE_KEY[key], key=len, reverse=True)   # 'INSTITUT KEMAHIRAN MARA' before 'MARA'
+    for i, ln in enumerate(body, start=head_n):
+        if _bank_line(ln) or _in_addressee_block(lines, i):
+            continue
+        rest = _unstreeted(_decontact(ln))
+        for n in allowed:
+            rest = rest.replace(n, ' ')
+        if _HEAD_RE.search(rest):
+            return None                 # (4) another organisation named in the body
+    return _ruled_status('genuine', r, key, 'tvet_offer', f'agency_letterhead: {TVET_ISSUERS[key][0]}: the agency\'s '
+                         'own letterhead, its public TVET institute named in the body - a public offer (owner '
+                         'ruling 2026-11-03, S6 item 9)', model_version)
+
+
 def confirmation_kind(ocr_text: str, probability: float = 1.0, lines=None) -> str:
     """The `confirmation_*` code of a confirmation-of-studies letter from a no-private-wing public institution
     named on its letterhead block, or '' (no title at the top, below the score floor, a private marker, or a
@@ -225,7 +290,8 @@ def _lift(ocr_text, r, lines, page, vetoed, model_version):
         lifted = _company_lift(ocr_text, r, lines, model_version)
         if lifted:
             return lifted
-    return _tvet_lift(r, lines, model_version) or _confirmation_lift(r, lines, model_version)
+    return (_tvet_lift(r, lines, model_version) or _agency_lift(r, lines, model_version)
+            or _confirmation_lift(r, lines, model_version))
 
 
 # ── BLOCK ─────────────────────────────────────────────────────────────────────────────────

@@ -132,6 +132,12 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   bounded. Corpus: 10 tagged changes — a228 d3465 / d3466 (KBS letterhead, IKBN in the body) and a329 (TVETMARA
   letterhead) lose their lift to the baseline under the institute-on-the-letterhead rule; dev 195 / 197, held-out
   88 / 90.
+- **The agency-letterhead lift (owner ruling, decisions.md S6 item 9):** `offer_rulings._agency_lift` — one of MARA
+  / TVETMARA / KBS / JTM-KSM alone on the letterhead, its own institute in the body, an admission title (no money
+  word in the title or first body lines), the full shape, no private marker, no other organisation in the body.
+  Tag `tvet_offer`, reason `agency_letterhead: …`, `doc_seen` the closed-list key. Tests: class
+  `Round10AgencyLetterhead`. Corpus: a228 d3465 / d3466 and a329 still do NOT lift — each body names one more
+  institution word beside its institute and agency (see the roadmap); the coordinator / owner decides.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

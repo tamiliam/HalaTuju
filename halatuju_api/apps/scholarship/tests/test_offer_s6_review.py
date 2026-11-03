@@ -31,8 +31,12 @@ class H1TheTypedFake(SimpleTestCase):
         self.assertNotEqual(_status(fake), 'genuine')
 
     def test_below_the_floor_the_body_must_name_the_candidate_and_the_institute(self):
-        # S6 round 9 (H1): the INSTITUTE must be on the letterhead — an agency letterhead keeps its baseline.
-        self.assertEqual(_status(LOW_SCORE_IKM), baseline_status(LOW_SCORE_IKM))
+        # S6 round 9 (H1) + the owner's item 9: an agency letterhead lifts only by the agency-letterhead rule —
+        # its own institute (IKM under MARA) in the body, an admission title, the full shape.
+        out = signature_genuineness(LOW_SCORE_IKM, doc_type='offer_letter')
+        self.assertEqual((out['status'], out['type']), ('genuine', 'tvet_mara'))
+        self.assertIn('agency_letterhead', out['reason'])
+        self.assertNotEqual(baseline_status(LOW_SCORE_IKM), 'genuine')
         on_head = LOW_SCORE_IKM.replace('MAJLIS AMANAH RAKYAT\n', 'MAJLIS AMANAH RAKYAT\nINSTITUT KEMAHIRAN MARA CONTOH\n')
         self.assertEqual(_status(on_head), 'genuine')
         self.assertNotEqual(_status(on_head.replace('No. Kad Pengenalan : 080808-10-5566', '').replace('NAMA : ALI BIN ABU\n', '')), 'genuine')

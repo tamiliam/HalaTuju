@@ -392,7 +392,7 @@ ROUND9_NEVER_LIFTED = {
         'MERCU JAYA\nPUSAT BERTAULIAH JPK', venue='Mercu Jaya',
         body='Kursus : Sijil Kemahiran Malaysia\nTarikh lapor diri : 3 Ogos 2026\nTempat : Mercu Jaya\n'
              'Peperiksaan di IKBN Pekan\n'),
-    'ministry letterhead, IKBN only in the body': _l9('KEMENTERIAN BELIA DAN SUKAN MALAYSIA'),
+    # (the KBS-letterhead + IKBN-body admission now lifts by the owner's S6 item 9: class Round10)
     'MARA financing letter': _MARA_LOAN,
     'MARA loan letter': _MARA_LOAN.replace('SURAT TAWARAN PEMBIAYAAN PENDIDIKAN', 'SURAT TAWARAN PINJAMAN PELAJARAN'),
     'SMK Form 5 confirmation': _c9('SMK CONTOH\nKEMENTERIAN PENDIDIKAN MALAYSIA',
@@ -472,3 +472,66 @@ class Round9(SimpleTestCase):
         t0 = time.perf_counter()
         signature_genuineness(text, doc_type='offer_letter')
         self.assertLess(time.perf_counter() - t0, 2.0)
+
+
+# ── Owner ruling 2026-11-03 (decisions.md S6 item 9): ONE narrow agency-letterhead lift ───────────────
+def _agency(head, *, title='SURAT TAWARAN KEMASUKAN', venue='Institut Kemahiran MARA Kuantan', extra=''):
+    return (f'{head}\nJalan Raja Laut, 50609 Kuala Lumpur\nTel : 03-0000 0000\nRujukan : AG/600-1/2\n'
+            f'Tarikh : 1 Jun 2026\nNama : Ali bin Abu\nNo. Kad Pengenalan : 080808-10-5566\nTuan,\n{title}\n'
+            'Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.\nKursus : Sijil Kemahiran Contoh\n'
+            f'Tarikh lapor diri : 3 Ogos 2026\nTempat : {venue}\n{extra}Sila bawa dokumen asal semasa mendaftar.\n'
+            'Tawaran ini tertakluk kepada syarat.\nSekian, terima kasih.\nYang benar,\nPENGARAH\n')
+
+
+class Round10AgencyLetterhead(SimpleTestCase):
+    def _out(self, text):
+        return signature_genuineness(text, doc_type='offer_letter')
+
+    def test_a_clean_agency_admission_lifts(self):
+        for head, venue, key in (('MAJLIS AMANAH RAKYAT', 'Institut Kemahiran MARA Kuantan', 'tvet_mara'),
+                                 ('TVETMARA\nMAJLIS AMANAH RAKYAT', 'KKTM Kuantan', 'tvet_mara'),
+                                 ('KEMENTERIAN BELIA DAN SUKAN MALAYSIA', 'IKBN Pekan', 'tvet_belia_sukan'),
+                                 ('JABATAN TENAGA MANUSIA\nKEMENTERIAN SUMBER MANUSIA', 'ILP Kuantan', 'tvet_jtm')):
+            with self.subTest(head=head):
+                out = self._out(_agency(head, venue=venue))
+                self.assertEqual((out['status'], out['type'], ruling_of(out)), ('genuine', key, 'tvet_offer'))
+                self.assertIn('agency_letterhead', out['reason'])
+
+    def test_the_r9_mara_financing_and_loan_letters_stay_out(self):
+        for name in ('MARA financing letter', 'MARA loan letter'):
+            with self.subTest(name):
+                out = self._out(ROUND9_NEVER_LIFTED[name])
+                self.assertNotIn(ruling_of(out), LIFTS)
+        for title in ('SURAT TAWARAN PEMBIAYAAN PENDIDIKAN', 'SURAT TAWARAN PINJAMAN PELAJARAN',
+                      'SURAT TAWARAN BIASISWA', 'SURAT TAWARAN ELAUN LATIHAN', 'SURAT TAWARAN BANTUAN'):
+            with self.subTest(title):
+                self.assertNotIn(ruling_of(self._out(_agency('MAJLIS AMANAH RAKYAT', title=title))), LIFTS)
+        money_body = _agency('MAJLIS AMANAH RAKYAT').replace('anda ditawarkan tempat.',
+                                                             'anda ditawarkan tempat dengan tajaan penuh.')
+        self.assertNotIn(ruling_of(self._out(money_body)), LIFTS)
+
+    def test_a_parent_mismatch_never_lifts(self):
+        for head, venue in (('MAJLIS AMANAH RAKYAT', 'IKBN Pekan'), ('KEMENTERIAN BELIA DAN SUKAN', 'ILP Kuantan'),
+                            ('JABATAN TENAGA MANUSIA', 'Institut Kemahiran MARA Kuantan')):
+            with self.subTest(head=head):
+                self.assertNotIn(ruling_of(self._out(_agency(head, venue=venue))), LIFTS)
+
+    def test_jpk_or_an_unlisted_ministry_letterhead_never_lifts(self):
+        for head, venue in (('JABATAN PEMBANGUNAN KEMAHIRAN', 'ILP Kuantan'),
+                            ('JABATAN TENAGA MANUSIA\nJABATAN PEMBANGUNAN KEMAHIRAN', 'ILP Kuantan'),
+                            ('KEMENTERIAN PENDIDIKAN TINGGI', 'Institut Kemahiran MARA Kuantan'),
+                            ('MAJLIS AMANAH RAKYAT\nKEMENTERIAN KEMAJUAN DESA', 'Institut Kemahiran MARA Kuantan')):
+            with self.subTest(head=head):
+                self.assertNotIn(ruling_of(self._out(_agency(head, venue=venue))), LIFTS)
+
+    def test_another_organisation_in_the_body_never_lifts(self):
+        for extra in ('Latihan amali di Kolej ABC Kuantan.\n', 'Pengendali kursus : Akademi Mercu\n',
+                      'Yuran dibayar kepada Mercu Jaya Sdn Bhd.\n'):
+            with self.subTest(extra=extra):
+                self.assertNotIn(ruling_of(self._out(_agency('MAJLIS AMANAH RAKYAT', extra=extra))), LIFTS)
+
+    def test_the_agency_lift_obeys_the_property(self):
+        for text in (_agency('MAJLIS AMANAH RAKYAT'), _agency('MAJLIS AMANAH RAKYAT', venue='IKBN Pekan'),
+                     _agency('JABATAN PEMBANGUNAN KEMAHIRAN', venue='ILP Kuantan')):
+            with self.subTest(text.splitlines()[0]):
+                TheProperty._check(self, text)

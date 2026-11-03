@@ -797,6 +797,13 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   prefix bounded. COST, for the coordinator: a228 d3465 / d3466 and a329 (owner-ruled genuine, app 329 an
   acceptance letter) have only an agency / ministry name on the letterhead, so they keep their baseline now —
   dev 195 / 197, held-out 88 / 90.
+- **Owner ruling (S6 item 9): the agency-letterhead lift** (`_agency_lift`; class `Round10AgencyLetterhead`). Built as
+  ruled; clean MARA + IKM, TVETMARA + KKTM, KBS + IKBN and JTM/KSM + ILP admissions lift; the r9 financing / loan
+  letters, parent mismatches, JPK / unlisted-ministry letterheads and a private body in the body do not. MEASURED:
+  the three target letters still keep their baseline under condition 4 ("no other organisation named in the
+  body"): a228 d3465 / d3466 each have one more "INSTITUT" phrase (four words, none a closed-list name) in the last
+  paragraph; a329 has a bare "KOLEJ" ending a sentence ("… di institusi / kolej"), with no name after it on its
+  line. Lifting them needs the owner to rule on those two mentions; no excuse was added.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

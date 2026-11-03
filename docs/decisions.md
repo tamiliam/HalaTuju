@@ -70,6 +70,23 @@
    TVET institutes (`offer_reading._INSTITUTES`, key `tvet_jtm`), under the same rules (the letterhead, the full
    offer shape, no private marker). The pre-S6 1.8.0 net (`offer_issuers.TVET_ISSUERS`) is the baseline's and
    stays as it was. Probes: `tests/test_offer_s6_narrowing.py`.
+9. **ONE narrow agency-letterhead lift (owner, 2026-11-03, after review round 9).** A TVET offer on an AGENCY's own
+   letterhead lifts (tag `tvet_offer`, the reason starts `agency_letterhead:`) only when ALL hold
+   (`offer_rulings._agency_lift`):
+   1. the letterhead names ONE of MARA / Majlis Amanah Rakyat, TVETMARA / Bahagian Pendidikan dan Latihan Teknikal
+      Vokasional MARA, Kementerian Belia dan Sukan (KBS), Jabatan Tenaga Manusia (JTM) / Kementerian Sumber
+      Manusia, and no other organisation or public body. JPK (it accredits private centres) and any other ministry
+      are NOT on the list;
+   2. a closed-list public TVET institute is named in the body and its parent is that agency (IKM / KKTM / Kolej
+      MARA <- MARA / TVETMARA; IKBN / IKTBN <- KBS; ILP / ADTEC / JMTI / CIAST <- JTM / KSM); a mismatch = no lift;
+   3. the title is an admission offer; PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN / ELAUN / BANTUAN in the title or
+      the first body lines = no lift;
+   4. the full offer shape and no private marker anywhere (the strict round-8 / 9 rule, no new excuse); no other
+      organisation named in the body but the institute and the agency (a closed-list bank line and the addressee
+      block excepted).
+   `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
+   `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
+   `Round10AgencyLetterhead`.
 
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
