@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Live; owner phone check pending.
 
+**Hotfix — two "Programmes" rows in the sidebar:** the Organisation Overview row (labelKey admin.orgPage.nav, chord V) still read "Programmes" beside the new landing row. Relabelled Overview / Gambaran / கண்ணோட்டம். Regression test: halatuju-web/src/lib/navigation.labels.test.ts (no repeated label per group for every role and locale; no shared chord).
+
 **S1 — server:**
 - **New `GET admin/scholarship/my-programmes/`** (`views_admin/my_programmes.py`, `AdminMyProgrammesView`) →
   `{every_gift, programmes: [{id, code, name_en/ms/ta, is_active, lifecycle, archived, opens, ...}]}`, by code.
