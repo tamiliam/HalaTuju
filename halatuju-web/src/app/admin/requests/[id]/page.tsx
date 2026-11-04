@@ -176,8 +176,10 @@ export default function AdminRequestDetailPage() {
     <div>
       <RequestListNav id={id} />
 
-      <div className="flex items-start justify-between gap-3 mt-3 mb-4">
-        <div className="min-w-0">
+      {/* Mobile M8: below md the status goes under the heading (beside it, the column was 174 px and a chip
+          spilled out of it), and a long word or chip wraps anywhere rather than leave the column. */}
+      <div className="flex items-start justify-between gap-3 mt-3 mb-4 max-md:flex-col max-md:gap-2">
+        <div className="min-w-0 max-md:max-w-full [overflow-wrap:anywhere]">
           <h1 className="text-2xl font-bold text-ground-900">{req.title}</h1>
           <div className="text-xs text-ground-500 mt-1 flex items-center gap-2 flex-wrap">
             {/* The ADJUDICATED kind, because that is what the organisation is charged on. When
@@ -194,7 +196,7 @@ export default function AdminRequestDetailPage() {
               <span className="px-1.5 py-0.5 rounded-full bg-category-2-surface text-category-2-ink">{t(`admin.requests.component.${req.component}`)}</span>
             )}
             {req.urgency && (
-              <span className="px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700">{t(`admin.requests.urgency.${req.urgency}`)}</span>
+              <span className="min-w-0 px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700">{t(`admin.requests.urgency.${req.urgency}`)}</span>
             )}
             {isSuper && req.organisation_name && <span>{req.organisation_name}</span>}
             <span>{t('admin.requests.list.submittedBy', { name: req.submitted_by_name })}</span>

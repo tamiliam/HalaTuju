@@ -79,7 +79,7 @@ export default function MyGivingPage() {
                   </p>
                 </div>
               </div>
-              <span className="inline-flex min-h-11 items-center text-sm font-semibold text-positive-700 bg-positive-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
+              <span className="inline-flex min-h-11 items-center text-sm font-semibold text-positive-700 bg-positive-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0 max-md:whitespace-normal max-md:shrink">
                 {t('sponsorPortal.trust.assured.cta')} →
               </span>
             </div>
@@ -105,9 +105,11 @@ export default function MyGivingPage() {
       {impact && (
         <section className={`${PHONE_SECTION_NO_GAP} md:max-w-md`}>
           <h2 className="font-semibold text-ground-900">{t('sponsorPortal.impact.givingTitle')}</h2>
-          <div className="flex items-center gap-5 mt-4">
-            <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center" style={{ background: donut }}>
-              <div className="bg-ground-0 w-16 h-16 rounded-full grid place-items-center text-center">
+          <div className="flex items-center gap-5 mt-4 max-md:gap-4">
+            {/* Mobile M8: below md the ring is 128 px and its hole 88 px — the 64 px hole could not hold the Tamil
+                "கிடைக்கிறது" or a four-figure sum (they spilled out of the circle). */}
+            <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center max-md:w-32 max-md:h-32" style={{ background: donut }}>
+              <div className="bg-ground-0 w-16 h-16 rounded-full grid place-items-center text-center max-md:w-[5.5rem] max-md:h-[5.5rem]">
                 <span className="text-xs leading-tight text-ground-500">
                   {t('sponsorPortal.impact.available')}<br /><b className="text-ground-900 text-sm">RM {available.toLocaleString()}</b>
                 </span>
@@ -230,9 +232,9 @@ function Stat({ label, value, sub, valueClass = 'text-ground-900' }: { label: st
 
 function LegendRow({ color, label, amount }: { color: string; label: string; amount: number }) {
   return (
-    <li className="flex items-center justify-between">
-      <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />{label}</span>
-      <b>RM {amount.toLocaleString()}</b>
+    <li className="flex items-center justify-between max-md:gap-2">
+      <span className="flex min-w-0 items-center gap-2 [overflow-wrap:anywhere]"><span className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ background: color }} />{label}</span>
+      <b className="shrink-0">RM {amount.toLocaleString()}</b>
     </li>
   )
 }

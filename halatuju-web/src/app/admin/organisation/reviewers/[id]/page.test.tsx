@@ -379,3 +379,15 @@ describe('#39 Sprint 4: the permission card, and Pause on the target rule of the
     expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
   })
 })
+
+/* Mobile M8 follow-up (owner's iPhone, 2026-11-04): four figures in one unwrapped row ran 70 px past the card at
+ * 360. Below md they are two by two across the card; from md the row is the one it always was. */
+describe('the summary figures on a phone', () => {
+  it('are a two-by-two grid below md and the unchanged row from md', async () => {
+    await loaded()
+    const figures = screen.getByTestId('reviewer-figures').className.split(' ')
+    for (const c of ['max-md:grid', 'max-md:grid-cols-2', 'max-md:w-full']) expect(figures).toContain(c)
+    for (const c of ['flex', 'gap-6', 'md:gap-8']) expect(figures).toContain(c)
+    expect(screen.getByTestId('reviewer-figures').children).toHaveLength(4)
+  })
+})

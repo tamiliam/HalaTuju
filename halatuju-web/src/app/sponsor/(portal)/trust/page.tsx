@@ -124,7 +124,9 @@ export default function TrustPage() {
           <div className="flex-1">
             <h2 className="font-semibold text-ground-900">{t('sponsorPortal.trust.assurance.title')}</h2>
             <p className="text-sm text-ground-500 mt-1 max-w-2xl">{t('sponsorPortal.trust.assurance.body')}</p>
-            <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+            {/* Mobile M8: three across on a phone left ~54 px a box — "RM 1,180,000" and the Tamil captions spilled
+                out. Below md they are rows: the figure, then what it counts. */}
+            <div className="grid grid-cols-3 gap-2 mt-3 text-center max-md:grid-cols-1 max-md:text-left">
               <AssureStat value={String(a.students_verified ?? 0)} label={t('sponsorPortal.trust.assurance.verified')} />
               <AssureStat value={formatRM(a.disbursed || '0')} label={t('sponsorPortal.trust.assurance.disbursed')} />
               <AssureStat value={a.fy || '—'} label={t('sponsorPortal.trust.assurance.latestReport')} />
@@ -166,9 +168,9 @@ function FigureBars({ figures, total, tone }: {
 
 function AssureStat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="bg-positive-50 rounded-xl p-3">
-      <p className="text-lg font-bold text-positive-700">{value}</p>
-      <p className="text-xs text-ground-500">{label}</p>
+    <div className="bg-positive-50 rounded-xl p-3 max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-2">
+      <p className="text-lg font-bold text-positive-700 [overflow-wrap:anywhere]">{value}</p>
+      <p className="text-xs text-ground-500 [overflow-wrap:anywhere]">{label}</p>
     </div>
   )
 }

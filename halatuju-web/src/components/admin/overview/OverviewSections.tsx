@@ -55,12 +55,15 @@ export interface SectionProps {
   t: Translate
 }
 
-/** A headline figure. Deliberately not a component per section — a tile is a tile. */
+/** A headline figure. Deliberately not a component per section — a tile is a tile.
+ *  ⚠ Mobile M8: on a phone a two-up tile is ~113 px inside, and `RM504,000.00` in `text-xl` is 138 px — it
+ *  spilled out of the box. Below md the figure is 16 px with a little less padding, and a longer one wraps
+ *  (`overflow-wrap:anywhere`) rather than leave the box. */
 export function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="rounded-xl border border-ground-200 bg-ground-0 p-3.5">
+    <div className="rounded-xl border border-ground-200 bg-ground-0 p-3.5 max-md:p-3">
       <div className="text-[11px] font-medium text-ground-500">{label}</div>
-      <div className="mt-0.5 text-xl font-semibold tabular-nums text-ground-900">{value}</div>
+      <div className="mt-0.5 text-xl font-semibold tabular-nums text-ground-900 max-md:text-base [overflow-wrap:anywhere]">{value}</div>
       {note && <div className="mt-0.5 text-[11px] text-ground-400">{note}</div>}
     </div>
   )
@@ -84,6 +87,11 @@ export function Card({ title, note, children, testId }: {
 }
 
 const rmFig = (v: string) => `RM${rm(v)}`
+
+/** One of the money chart's three totals: a row below sm (label left, figure right), a box from sm. */
+const TOTAL_BOX = 'flex items-center justify-between gap-3 rounded-lg border border-ground-200 p-3 sm:block'
+const TOTAL_FIGURE = 'mt-0.5 text-lg font-semibold tabular-nums text-ground-900 max-sm:mt-0 [overflow-wrap:anywhere]'
+
 
 /** ⚠ SIGNED. `rm` knows nothing about a minus, so a negative gap would render `RM-40.00`, which
  *  reads as a typo rather than as a number. The gap IS allowed to be negative — a parent may top
@@ -178,7 +186,7 @@ export function ApplicationsSeriesSection({ data, t }: SectionProps) {
   const monthName = monthNamer(t)
   const monthTick = (iso: string) => monthName(monthOf(iso))
   return (
-    <div className="mt-3 grid gap-3 lg:grid-cols-2" data-testid="overview-applications-series">
+    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2" data-testid="overview-applications-series">
       {/* ⚠ VALUES ON HOVER, MONTHS ON THE AXIS, NOTHING BENEATH (owner, 2026-09-18). The
           weekly columns stay; the labels sit at each month's first week. */}
       <Card title={t(`${K}.series.applicationsPerWeek`)}>
@@ -272,34 +280,36 @@ export function MoneySeriesSection({ data, t }: SectionProps) {
             month's running figures, which the server already carries — each with the
             swatch of the mark that draws it: the blue bar, the grey bar, the dotted line. */}
         {lastMonth && (
-          <dl className="mt-4 grid grid-cols-3 gap-3" data-testid="money-totals">
-            <div className="rounded-lg border border-ground-200 p-3">
+          // ⚠ Mobile M8: three across on a phone left each figure 53 px for `RM40,000.00` (113 px) — it spilled
+          // out of its box. Below sm they are three ROWS, the label left and the figure right.
+          <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3" data-testid="money-totals">
+            <div className={TOTAL_BOX}>
               <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
                 <span className="inline-block h-2.5 w-2.5 rounded-sm bg-brand-shape"
                   data-testid="swatch-payments" />
                 {t(`${K}.series.payments`)}
               </dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+              <dd className={TOTAL_FIGURE}>
                 {rmFig(lastMonth.released_cum)}
               </dd>
             </div>
-            <div className="rounded-lg border border-ground-200 p-3">
+            <div className={TOTAL_BOX}>
               <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
                 <span className="inline-block h-2.5 w-2.5 rounded-sm bg-ground-300"
                   data-testid="swatch-spending" />
                 {t(`${K}.series.spending`)}
               </dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+              <dd className={TOTAL_FIGURE}>
                 {rmFig(lastMonth.spent_cum)}
               </dd>
             </div>
-            <div className="rounded-lg border border-ground-200 p-3">
+            <div className={TOTAL_BOX}>
               <dt className="flex items-center gap-1.5 text-[11px] font-medium text-ground-500">
                 <span className="inline-block w-4 border-t-2 border-dotted border-ground-600"
                   data-testid="swatch-balance" />
                 {t(`${K}.series.balance`)}
               </dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+              <dd className={TOTAL_FIGURE}>
                 {signed(lastMonth.gap)}
               </dd>
             </div>
@@ -307,7 +317,9 @@ export function MoneySeriesSection({ data, t }: SectionProps) {
         )}
       </Card>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      {/* ⚠ `grid-cols-1` (minmax(0, 1fr)) below lg, not the implicit auto track: an auto track grows to its
+          widest card's content, and on a Tamil phone that pushed every card 16 px out of the page (Mobile M8). */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {/* ⚠ THE DENOMINATOR IS NAMED IN WORDS BENEATH THE CHART. "Average spend" is
             meaningless without "of whom", and the server's answer is: students with a live
             wallet that week. */}

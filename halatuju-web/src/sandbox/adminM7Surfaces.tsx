@@ -137,10 +137,10 @@ const STUDENT = {
 }
 
 const REQUEST = {
-  id: 7, kind: 'feature', title: 'Tambah laporan bulanan untuk penaja', component: 'sponsors', urgency: 'normal',
+  id: 7, kind: 'feature', title: 'Tambah laporan bulanan untuk penaja', component: 'sponsors', urgency: 'nice_to_have',
   description: 'Penaja kami mahu satu ringkasan bulanan: pelajar yang ditaja, wang yang dikeluarkan dan keputusan semester.',
   steps_to_reproduce: '', status: 'quoted',
-  comments: [{ id: 1, author_name: 'Pentadbir Contoh', author_role: 'org_admin', body: 'Boleh mula selepas cuti?',
+  comments: [{ id: 1, author_name: 'Pentadbir Contoh', author_role: 'org_admin', author_kind: 'org', body: 'Boleh mula selepas cuti?',
     shared: true, created_at: '2026-10-29T08:00:00Z' }],
   attachments: [], quote_hours: '6.0', quote_note: 'Satu laporan PDF, dihantar pada 1 hb setiap bulan.',
   quoted_at: '2026-10-30T08:00:00Z', approved_at: null, approved_by_name: '', approved_by_role: '', scheduled_for: null,

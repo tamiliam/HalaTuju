@@ -40,7 +40,7 @@ export function GeneratedProfile({
         hasProfile: !!(profile?.final_markdown || profile?.current_markdown),
       }) && (
       <div className="border-b border-ground-100 py-4 md:rounded-2xl md:border md:border-ground-200 md:bg-ground-0 md:p-5 md:shadow-sm space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 max-md:flex-wrap">
           <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t(profile?.final_markdown ? 'admin.scholarship.profileFinalTitle' : 'admin.scholarship.profileTitle')}
           </h2>

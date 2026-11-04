@@ -153,8 +153,8 @@ function StaffScholarsPage() {
 
       <section aria-label={t('admin.scholars.summary')} className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-6">
         {tiles.map((tile) => (
-          <div key={tile.key} className="rounded-xl border border-ground-200 bg-ground-0 p-4">
-            <div className="text-sm text-ground-600">{t(`admin.scholars.tile.${tile.key}`)}</div>
+          <div key={tile.key} className="min-w-0 rounded-xl border border-ground-200 bg-ground-0 p-4 max-md:p-3">
+            <div className="text-sm text-ground-600 max-md:break-words">{t(`admin.scholars.tile.${tile.key}`)}</div>
             <div className={`mt-1 text-2xl font-semibold tabular-nums ${tile.tone}`}>
               {tile.value ?? '—'}
             </div>
