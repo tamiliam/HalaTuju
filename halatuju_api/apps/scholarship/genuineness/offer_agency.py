@@ -27,7 +27,8 @@ import os
 import re
 
 from .offer_reading import (_COMPANY_HEAD, _PRIVATE_BODIES, _POSTCODE, _SB, _TIE_UP, _TVET_NAMES, _TVET_SPELT,
-                            _bank_line, _in_addressee_block, _is_contact, _letterhead_lines, _page, is_org_token)
+                            _bank_line, _in_addressee_block, _is_contact, _letterhead_lines, _page, glued_org,
+                            is_org_token)
 from .offer_rulings import _ADDRESS_LINE, _AGENCIES, _FUNCTION_WORDS, _GOVERNMENT_LINE, _INSTITUTE_KEY, _WORD
 
 #: Organisation words: ONE shared list with the letterhead tests (`offer_reading.is_org_token`, round 11 H1).
@@ -147,25 +148,13 @@ def _campus_end(up, k, covered, key, places):
     return k
 
 
-def _glued_org(word) -> bool:
-    """Round 11 (M3): an organisation word glued to a name, no space needed ("MERCUACADEMY", "KOLEJMERCU",
-    "MERCUEDU")."""
-    return any(word.startswith(n) or word.endswith(n) for n in _GLUE_STEMS if len(word) > len(n))
-
-
-#: The organisation stems a glued token is read for (round 11, M3).
-_GLUE_STEMS = _GLUE_NOUNS + ('ACADEMY', 'ACADEMIES', 'CENTRE', 'CENTER', 'SKILLS', 'TRAINING', 'LEARNING', 'EDU',
-                             'GROUP', 'HOLDINGS', 'ENTERPRISE', 'SOLUTIONS', 'TECH', 'GLOBAL', 'INTERNATIONAL',
-                             'YAYASAN', 'PERSATUAN', 'KOPERASI', 'SYARIKAT')
-
-
 def _is_fragment(ln, echoes=frozenset()) -> bool:
     """(2) + round 11 (M7, the lead's ruling): a one-token fragment that is JUNK (no alphabetic run of four or more
     letters) or an OCR ECHO of an address word below (a 5+ letter substring shared with one of `echoes`) — and no
     organisation word (glued or not), no company / private body / tie-up word."""
     words = ln.split()
     junk = not re.search(r'[A-Z]{4,}', ln)
-    return (len(words) == 1 and (junk or _echoes(words[0], echoes)) and not _glued_org(words[0])
+    return (len(words) == 1 and (junk or _echoes(words[0], echoes)) and not glued_org(words[0])
             and not is_org_word(words[0]) and not any(c in ln for c in _COMPANY_HEAD)
             and not _SB.search(ln) and not any(b in ln for b in _PRIVATE_BODIES) and not any(t in ln for t in _TIE_UP))
 
@@ -175,10 +164,46 @@ def _echoes(word, echoes) -> bool:
     return any(word[i:i + 5] in e for e in echoes for i in range(len(word) - 4))
 
 
-def _address_words(lines) -> frozenset:
-    """The words of the page's address lines (a postcode, or an address word, on them)."""
-    return frozenset(w for ln in lines if _POSTCODE.search(ln) or _ADDRESS_LINE.search(ln) or _MORE_ADDRESS.search(ln)
-                     for w in ln.split() if len(w) >= 5 and w.isalpha())
+def _head_address(lines, key) -> list:
+    """Round 12 (M1 / M3): the letterhead's OWN address lines — after the agency line, through its first postcode."""
+    head = _letterhead_lines(lines)
+    at = next((i for i, ln in enumerate(head) if any(n in ln for n in _AGENCIES[key])), None)
+    out = []
+    for ln in head[at + 1:] if at is not None else []:
+        out.append(ln)
+        if _POSTCODE.search(ln):
+            break
+    return out
+
+
+def _addressee_block(lines) -> list:
+    """The ADDRESSEE lines: a KEPADA line's block on the letterhead through its postcode, and every block between a
+    reference / date line and the next title line with the candidate's name / IC line between them (a two-letter
+    scan has one per letter), through its postcode."""
+    from .offer_reading import _CONFIRM_TITLES, _DATE_RE, _REFERENCE, _TITLE, _is_person_line
+    out, head = [], _letterhead_lines(lines)
+    at = next((i for i, ln in enumerate(head) if ' KEPADA ' in ln), None)
+    for ln in head[at + 1:at + 6] if at is not None else []:
+        out.append(ln)
+        if _POSTCODE.search(ln):
+            break
+    titles = [i for i, ln in enumerate(lines) if any(t in ln for t in _TITLE + _CONFIRM_TITLES)]
+    for i, ln in enumerate(lines):
+        if any(r in ln for r in _REFERENCE) or _DATE_RE.search(ln):
+            stop = next((t for t in titles if t > i), None)
+            if stop is not None and stop - i <= 6 and any(_is_person_line(x) for x in lines[i + 1:stop]):
+                for x in lines[i + 1:stop]:
+                    out.append(x)
+                    if _POSTCODE.search(x):
+                        break
+    return out
+
+
+def _echo_words(lines, key) -> frozenset:
+    """The words a fragment may echo: the letterhead's own address and the addressee block(s) (5+ letters)."""
+    def words(block):
+        return frozenset(w for ln in block for w in ln.split() if len(w) >= 5 and w.isalpha())
+    return words(_head_address(lines, key)) | words(_addressee_block(lines))
 
 
 def _agency_first(lines, key) -> bool:
@@ -190,7 +215,8 @@ def _agency_first(lines, key) -> bool:
     if _AGENT_WORDS.search(_page(lines)):
         return False
     head, i, fragments = _letterhead_lines(lines), 0, 0
-    if any(_glued_org(w) for ln in head for w in ln.split() if not any(w in a.split() for a in _AGENCIES[key])):
+    echoes = _echo_words(lines, key)
+    if any(glued_org(w, _AGENCIES[key]) for ln in head for w in ln.split()):
         return False                # round 11 (M3): a glued organisation word on the letterhead
     while i < len(head):
         ln = head[i]
@@ -210,7 +236,7 @@ def _agency_first(lines, key) -> bool:
                 j += 1
             i = j
             continue
-        if _is_fragment(ln, _address_words(lines[i + 1:])) and fragments < 3:   # junk or an address echo
+        if _is_fragment(ln, echoes) and fragments < 3:   # junk, or an echo of the letterhead / addressee address
             fragments += 1
             i += 1
             continue
@@ -308,13 +334,14 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
     org_extra = OTHER_AGENCY_TOKENS | {t for k, ts in AGENCY_TOKENS.items() if k != key for t in ts}
     other_full = OTHER_FULL_NAMES + tuple(n for k, ns in AGENCY_FULL_NAMES.items() if k != key for n in ns)
     umbrella = tuple(n for n in _AGENCIES[key] if any(is_org_word(w) for w in n.split()))
+    head_places = {w for ln in _head_address(lines, key) for w in ln.split() if not is_org_word(w)}
     for i in range(head_n, len(lines)):
         if (_bank_line(lines[i]) or _in_addressee_block(lines, i) or i >= len(raws)
                 or _label_only(lines[i])):
             continue
         raw, toks = raws[i], _tokens(raws[i])
         up = [t.upper() for t, _s, _e in toks]
-        places = _letterhead_places([ln for j, ln in enumerate(lines) if j != i])   # never the line's own words
+        places = head_places                                   # round 12 (M3): the letterhead's own address
         covered = [False] * len(toks)
         _cover(up, _TVET_SPELT, covered)                       # the sector's name, spelt out
         for start, end in _cover(up, _INSTITUTE_KEY[key], covered):
@@ -327,7 +354,9 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                     if toks[k][1] >= label.start() and not (bad and b0 <= toks[k][1] < b1):
                         covered[k] = True                         # round 11 (M1): an odd bracket stays tested
             k = _campus_end(up, end, covered, key, places)
-            if k < len(toks) and not covered[k] and toks[k][0][:1].isupper() and up[k] not in _FUNCTION_WORDS:
+            while k < len(toks) and not covered[k] and up[k] in _FUNCTION_WORDS:
+                k += 1                                            # round 12: "IKM Kuantan Sila Mercu Jaya"
+            if k < len(toks) and not covered[k] and toks[k][0][:1].isupper():
                 return f'after the institute: {up[k]}'            # (e) "IKM Mercu"
         for start, end in _cover(up, _AGENCIES[key], covered):
             if any(' '.join(up[start:end]) == n.strip() for n in umbrella):     # round 11 (M2): after an umbrella
@@ -336,11 +365,17 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                     return f'after the umbrella: {up[k]}'
         for start, _end in _cover(up, other_full, covered):
             return f"another agency: {' '.join(up[start:_end])}"  # (3)
+        allowed_names = _INSTITUTE_KEY[key] + _AGENCIES[key]
+        for j, w in enumerate(up):
+            if not covered[j] and w not in places and glued_org(w, allowed_names):
+                return f'glued organisation word: {len(w)} letters'   # round 12 (H1) "MercuAcademy"
         nxt_toks = _tokens(raws[i + 1]) if i + 1 < len(raws) else []
         for j, w in enumerate(up):
             if covered[j] or not (is_org_word(w) or w in org_extra):
                 continue
-            if w in WEAK_SUFFIXES and _after_descriptor(up, j):
+            named_after = (j + 1 < len(toks) and not covered[j + 1] and toks[j + 1][0][:1].isupper()
+                           and up[j + 1] not in _FUNCTION_WORDS)
+            if w in WEAK_SUFFIXES and not named_after and _after_descriptor(up, j, toks, covered):
                 continue                                          # "& Pendidikan Global" (a slogan), never a name
             if toks[j][0].islower() and is_org_word(w):          # (c) a bare generic noun, lowercase
                 # round 11 (M4): only when no name follows within three tokens, across punctuation / the line end
@@ -359,17 +394,19 @@ DESCRIPTORS = frozenset({'PENDIDIKAN', 'LATIHAN', 'KEMAHIRAN', 'TEKNIKAL', 'VOKA
                          'TRAINING', 'TECHNICAL', 'VOCATIONAL'})
 
 
-def _after_descriptor(up, j) -> bool:
-    """The word before `up[j]` is a descriptor (or DAN / AND after one; "&" is no token)."""
+def _after_descriptor(up, j, toks=None, covered=None) -> bool:
+    """The word before `up[j]` is a descriptor (or DAN / AND after one; "&" is no token) — and (round 12, H2) no
+    capitalised word that is no function word and no descriptor stands before that descriptor run on the line
+    ("Mercu Technical Solutions" names Mercu; "Ke arah Pendidikan & Latihan Global" names nothing)."""
     k = j - 1
-    if k >= 0 and up[k] in ('DAN', 'AND'):
+    while k >= 0 and (up[k] in DESCRIPTORS or up[k] in ('DAN', 'AND')):
         k -= 1
-    return k >= 0 and up[k] in DESCRIPTORS
-
-
-def _letterhead_places(lines) -> set:
-    """The words of the letterhead and of every address line on the page (a postcode on it)."""
-    out = set()
-    for ln in _letterhead_lines(lines) + [ln for ln in lines if _POSTCODE.search(ln)]:
-        out.update(ln.split())
-    return {w for w in out if not is_org_word(w)}
+    if k == j - 1 or up[k + 1] not in DESCRIPTORS:
+        return False
+    for x in range(k + 1):
+        if covered and covered[x]:
+            continue
+        word = toks[x][0] if toks else up[x]
+        if (word[:1].isupper() and up[x] not in _FUNCTION_WORDS and up[x] not in DESCRIPTORS):
+            return False
+    return True

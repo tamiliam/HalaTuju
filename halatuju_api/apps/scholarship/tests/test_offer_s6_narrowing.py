@@ -935,3 +935,132 @@ class Round11(SimpleTestCase):
         for head in ('TAMAN\n' + _M, 'BIRU\n' + _M):          # a 4+ letter fragment with no echo: no lift
             with self.subTest(head=head):
                 self.assertFalse(self._lifted(_a11(head)))
+
+
+# ── Review round 12 (2026-11-04): one glued-name test, the descriptor run, the echo / campus sources ──────────
+_TM = 'Taman Mercu Jaya, 25000 Kuantan'
+ROUND12_NEVER_LIFTED = {
+    'echo MERCUSKILL (glued SKILL)': _a11('MERCUSKILL\n' + _M, addr=_TM),
+    'echo MERCUHUB': _a11('MERCUHUB\n' + _M, addr=_TM),
+    'echo MERCUTRAINERS': _a11('MERCUTRAINERS\n' + _M, addr=_TM),
+    'echo MERCUINSTITUTION': _a11('MERCUINSTITUTION\n' + _M, addr=_TM),
+    'echo MERCUTUITION': _a11('MERCUTUITION\n' + _M, addr=_TM),
+    'echo MERCUCORP': _a11('MERCUCORP\n' + _M, addr=_TM),
+    'echo MERCUPLT': _a11('MERCUPLT\n' + _M, addr=_TM),
+    'an echo only from a body address line': _a11('MERCU\n' + _M, extra='Alamat surat-menyurat: Lot 5, Taman Mercu, '
+                                                                        '25000 Kuantan\n'),
+    'Mercu Technical Solutions': _a11(_M, extra='Latihan industri di Mercu Technical Solutions.\n'),
+    'Mercu Vocational Skills': _a11(_M, extra='Latihan industri di Mercu Vocational Skills.\n'),
+    'Mercu Technical Skills': _a11(_M, extra='Latihan industri di Mercu Technical Skills.\n'),
+    'Latihan Skills Mercu': _a11(_M, extra='Latihan amali di Latihan Skills Mercu.\n'),
+    'Mercu Kemahiran Global': _a11(_M, extra='Latihan amali di Mercu Kemahiran Global.\n'),
+    'Mercu Pendidikan Global': _a11(_M, extra='Latihan amali di Mercu Pendidikan Global.\n'),
+    'Mercu Technical & Vocational Skills': _a11(_M, extra='Latihan amali di Mercu Technical & Vocational Skills.\n'),
+    'Mercu Teknikal Ventures': _a11(_M, extra='Latihan industri di Mercu Teknikal Ventures.\n'),
+    'Mercu Vocational Tech': _a11(_M, extra='Latihan industri di Mercu Vocational Tech.\n'),
+    'Mercu Latihan dan Kemahiran Global': _a11(_M, extra='Latihan industri di Mercu Latihan dan Kemahiran Global.\n'),
+    'Penyedia latihan : Mercu Technical Solutions': _a11(_M, extra='Penyedia latihan : Mercu Technical Solutions\n'),
+    'Mercu Training Solutions': _a11(_M, extra='Latihan industri di Mercu Training Solutions.\n'),
+    'Mercu Education Global': _a11(_M, extra='Latihan industri di Mercu Education Global.\n'),
+    'Mercu Latihan Edu': _a11(_M, extra='Latihan industri di Mercu Latihan Edu.\n'),
+    'KBS: Mercu Kemahiran Skills': _a11(_K, venue='IKBN Pekan', extra='Latihan industri di Mercu Kemahiran Skills.\n'),
+    'JTM: Mercu Technical Solutions': _a11(_J, venue='ADTEC Kulim', extra='Latihan industri di Mercu Technical '
+                                                                          'Solutions.\n'),
+    'IKM Kuantan Sila Mercu Jaya': _a11(_M, venue='IKM Kuantan Sila Mercu Jaya'),
+    'kolej at a line end, MOHON MERCU ACADEMY': _a11(_M, extra='Latihan di kolej\nMOHON MERCU ACADEMY\n'),
+    'kolej sila Mercu Academy': _a11(_M, extra='latihan di kolej sila Mercu Academy.\n'),
+    'kolej sila hubungi pihak Mercu Academy': _a11(_M, extra='latihan di kolej sila hubungi pihak Mercu Academy.\n'),
+    'Harap maklum kolej Mercu': _a11(_M, extra='Harap maklum kolej Mercu menerima anda.\n'),
+    'IKM Kuantan Mercu Jaya Academy': _a11(_M, venue='IKM Kuantan Mercu Jaya Academy', addr=_TM),
+    'IKM Kuantan Mercu, an address in the footer': _a11(_M, venue='IKM Kuantan Mercu',
+                                                        extra='Alamat: Taman Mercu, 25000 Kuantan\n'),
+    'IKM Kuantan Pusat Mercu': _a11(_M, venue='IKM Kuantan Pusat Mercu', addr='Pusat Mercu, 25000 Kuantan'),
+    'body MercuAcademy': _a11(_M, extra='Latihan amali di MercuAcademy.\n'),
+    'body MERCUACADEMY': _a11(_M, extra='Latihan amali di MERCUACADEMY.\n'),
+    'body MercuSkills': _a11(_M, extra='Latihan amali di MercuSkills.\n'),
+    'body MercuTraining': _a11(_M, extra='Latihan amali di MercuTraining.\n'),
+    'body MercuEdu': _a11(_M, extra='Latihan amali di MercuEdu.\n'),
+    'body MercuCollege': _a11(_M, extra='Latihan amali di MercuCollege.\n'),
+    'body MercuTuition': _a11(_M, extra='Kelas di MercuTuition.\n'),
+    'body MercuTech': _a11(_M, extra='Latihan amali di MercuTech.\n'),
+    'body Kolej-Mercu': _a11(_M, extra='Latihan amali di Kolej-Mercu.\n'),
+    'body MercuKolej': _a11(_M, extra='Latihan amali di MercuKolej.\n'),
+    'venue IKM Kuantan / MercuAcademy': _a11(_M, venue='IKM Kuantan / MercuAcademy'),
+    'letterhead MERCUTUITION, no echo': _a11('MERCUTUITION\n' + _M),
+    'institute lift: MERCUACADEMY on line 2': _a11(_IKBN11 + '\nMERCUACADEMY', venue='IKBN Pekan'),
+    'institute lift: MercuCollege on line 2': _a11(_IKBN11 + '\nMercuCollege', venue='IKBN Pekan'),
+    'institute lift: MERCUACADEMY on the same line': _a11(_IKBN11 + ' MERCUACADEMY', venue='IKBN Pekan'),
+    'institute lift: MERCUTUITION on line 2': _a11(_IKBN11 + '\nMERCUTUITION', venue='IKBN Pekan'),
+    'institute lift: Mercu Technical Solutions': _a11(_IKBN11 + '\nMercu Technical Solutions', venue='IKBN Pekan'),
+    'institute lift: MERCU PENDIDIKAN GLOBAL': _a11(_IKBN11 + '\nMERCU PENDIDIKAN GLOBAL', venue='IKBN Pekan'),
+    'Pusat Latihan Skills Mercu': _a11(_M, extra='Latihan amali di Pusat Latihan Skills Mercu.\n'),
+    'Kemahiran Tech Mercu': _a11(_M, extra='Latihan amali di Kemahiran Tech Mercu.\n'),
+    'KBS body MercuAcademy': _a11(_K, venue='IKBN Pekan', extra='Latihan amali di MercuAcademy.\n'),
+    'JTM body MercuCollege': _a11(_J, venue='ADTEC Kulim', extra='Latihan amali di MercuCollege.\n'),
+    'body EduMercu': _a11(_M, extra='Penyedia latihan : EduMercu\n'),
+    'body MercuAcademy Sdn Bhd': _a11(_M, extra='Latihan amali di MercuAcademy Sdn Bhd.\n'),
+}
+#: Public pages with odd characters: never lifted wrongly, never newly blocked (the normaliser).
+ROUND12_PUBLIC = {
+    'a trademark sign': _a11(_IKBN11 + '™', venue='IKBN Pekan'),
+    'a full-width letterhead': _a11('ＩＮＳＴＩＴＵＴ ＫＥＭＡＨＩＲＡＮ ＢＥＬＩＡ ＮＥＧＡＲＡ ＰＥＫＡＮ', venue='IKBN Pekan'),
+    'a zero-width space in the name': _a11('INSTITUT KEMAHIRAN BELIA NEGA​RA PEKAN', venue='IKBN Pekan'),
+    'Tamil text in the body': _a11(_IKBN11, venue='IKBN Pekan', extra='தமிழ் மாணவர்\n'),
+    'a Jawi crest line': _a11('مجليس امانه رعيت\n' + _IKBN11, venue='IKBN Pekan'),
+}
+
+
+class Round12(SimpleTestCase):
+    def _out(self, text):
+        return signature_genuineness(text, doc_type='offer_letter')
+
+    def test_every_r12_probe_stays_out(self):
+        for name, text in ROUND12_NEVER_LIFTED.items():
+            with self.subTest(name):
+                self.assertNotIn(ruling_of(self._out(text)), LIFTS)
+
+    def test_odd_characters_on_public_pages(self):
+        for name, text in ROUND12_PUBLIC.items():
+            with self.subTest(name):
+                self.assertEqual(ruling_of(self._out(text)), 'tvet_offer')
+
+    def test_a_company_hidden_by_odd_characters_still_blocks(self):
+        for head in ('MERCU S­dn B­hd\n' + _IKBN11, 'MERCU Ѕdn Вhd\n' + _IKBN11):
+            with self.subTest(head=head):
+                self.assertEqual(ruling_of(self._out(_a11(head, venue='IKBN Pekan'))), 'private_offer')
+
+    def test_the_descriptor_slogans_still_pass(self):
+        for extra in ('Ke arah Pendidikan & Latihan Global.\n', 'Keusahawanan\n& Pendidikan Global\n'):
+            with self.subTest(extra=extra):
+                self.assertIn(ruling_of(self._out(_a11(_M, extra=extra))), LIFTS)
+
+    def test_one_glued_name_test(self):
+        """H1: one test from the shared words (start: institution nouns; end: any word), never an ordinary word."""
+        from apps.scholarship.genuineness.offer_reading import glued_org, is_org_token
+        from apps.scholarship.genuineness.offer_text import _GLUE_WORDS
+        for w in ('MERCUACADEMY', 'KOLEJMERCU', 'MERCUSKILLS', 'MERCUEDU', 'MERCUHUB', 'MERCUTUITION', 'EDUMERCU'[:0]
+                  or 'MERCUPLT'):
+            with self.subTest(w):
+                self.assertTrue(glued_org(w))
+        for w in ('HUBUNGI', 'HUBUNGAN', 'INCLUDE', 'TECHNICAL', 'TECHNOLOGY', 'SCHEDULE', 'AKADEMIK', 'PUSATNYA',
+                  'UNIVERSITIMALAYSIASABAH', 'KOLEJ', 'ACADEMY'):
+            with self.subTest(w):
+                self.assertFalse(glued_org(w))
+        import re
+        for w in ('KOLEJ', 'COLLEGES', 'AKADEMI', 'ACADEMIES', 'UNIVERSITIES', 'INSTITUTIONS', 'INSTITUSI', 'TUISYEN',
+                  'SCHOOLS', 'POLYTECHNICS', 'MAKTAB', 'PUSAT', 'TRAINERS', 'CENTRES', 'CENTERS', 'HUBS', 'GROUPS',
+                  'PLT', 'EDU', 'EDUCATION', 'LEARNING', 'SKILLS', 'ENTERPRISES', 'RESOURCES', 'INTERNATIONAL',
+                  'GLOBAL', 'SERVICES', 'SOLUTIONS', 'HOLDINGS', 'CORP', 'CORPORATION', 'CONSULTANCY', 'VENTURES',
+                  'LTD', 'LIMITED', 'INC', 'PERSATUAN', 'PERTUBUHAN', 'TECH', 'KAMPUS', 'YAYASAN', 'KOPERASI',
+                  'SYARIKAT', 'CONSORTIUM', 'MAJLIS'):
+            with self.subTest(glue_word=w):                     # every glue word is the shared list's word
+                self.assertTrue(re.fullmatch(_GLUE_WORDS, w))
+                self.assertTrue(is_org_token(w))
+
+    def test_known_gaps_accepted_by_the_rules(self):
+        """Within the agreed rules (reported to the lead): an echo / campus word the letterhead's OWN address gives,
+        and a name four or more tokens after a lowercase noun."""
+        for text in (_a11('MERCU\n' + _M, addr=_TM), _a11(_M, venue='IKM Kuantan Mercu Jaya', addr=_TM),
+                     _a11(_M, extra='latihan di kolej sila hubungi pihak Mercu Jaya.\n')):
+            with self.subTest(text=text.splitlines()[0]):
+                self.assertIn(ruling_of(self._out(text)), LIFTS)

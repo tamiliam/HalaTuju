@@ -9,7 +9,7 @@ import re
 from collections import Counter
 
 from .offer_issuers import TVET_ISSUERS
-from .offer_text import logo_strip, normalise_s6, own_issuer_line
+from .offer_text import glued_org, logo_strip, normalise_s6, own_issuer_line
 
 __all__ = [
     'CONFIRMATION_SEEN', 'CONFIRM_MIN', '_BANK_COMPANY', '_COMPANY_HEAD', '_COMPANY_SIGNS', '_COMPANY_SUFFIX',
@@ -21,7 +21,7 @@ __all__ = [
     '_PRIVATE_SIGNS', '_REFERENCE', '_REPORTING', '_SALUTE', '_SLIP', '_SPONSOR_LINE', '_STREET', '_TAG', '_TAG_RE',
     '_TIE_UP', '_TITLE', '_TOKEN_SHARE_MAX', '_TVET_NAMES', '_TVET_SPELT', '_UNIQUE_LINES_MIN', '_UNIT_LINE',
     '_UNIT_TAIL', '_WEB_TAIL', '_allowed_spans', '_bank_line', '_clean_letterhead', '_confirm_titled', '_excused',
-    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', 'is_org_token', 'normalise_s6', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
+    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', 'is_org_token', 'glued_org', 'normalise_s6', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
     '_letter_structure', '_letterhead_block', '_letterhead_lines', '_letterhead_region',
     '_outside_orgs', '_own_identity_lines', '_page', '_private_marker', '_private_signs', 'private_proof',
     '_ruled_status', '_untitled', '_unglued', '_unstreeted', 'ruling_of',
@@ -484,8 +484,11 @@ def _outside_orgs(ln, spans):
             ends.add(m.end())           # a run of tail words after the name
     def inside(o):                      # a name's trailing space starts the NEXT word ("IKBN KOLEJ ABC")
         return any(s <= o < e - 1 for s, e in spans)
-    return [m.start() for m in _ORG_RE.finditer(ln)
-            if not inside(m.start()) and not (m.start() in ends and _UNIT_TAIL.match(ln, m.start()))]
+    out = [m.start() for m in _ORG_RE.finditer(ln)
+           if not inside(m.start()) and not (m.start() in ends and _UNIT_TAIL.match(ln, m.start()))]
+    out += [m.start() for m in re.finditer(r' ([A-Z]+)(?= )', ln)            # round 12 (H1): glued names
+            if not inside(m.start()) and glued_org(m.group(1))]
+    return sorted(set(out))
 
 
 def _excused(ln, others) -> bool:

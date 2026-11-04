@@ -175,6 +175,15 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   one-token fragments above the agency, each junk or an OCR echo of an address word below; GLOBAL / TECH / SKILLS
   … after a descriptor ("Pendidikan Global") is no organisation. All-lowercase names stay a known gap (TD-491).
   13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- **Round 12 (2 High, 3 Medium; class `Round12`):** ONE glued-name test (`offer_text.glued_org`: an institution
+  noun at a token's start, any shared-list word at its end, the rest 3+ letters; whole words, since the list's
+  open stems would swallow "HUBUNGI" / "SCHEDULE"; allowed names written without spaces skipped) used on every
+  body token, the fragments, the agency letterhead and the institute / confirmation letterhead test; the
+  descriptor exception holds only with no name before the descriptor run and none after the weak word; echo and
+  campus words come only from the letterhead's own address (and the catalogue), echoes also from the addressee
+  block(s) — a KEPADA block or a reference / date line with the candidate line before the next title (a329's
+  echo is on its second letter's addressee address); a function word after the institute no longer hides the
+  name after it. Corpus scan: 13 glued tokens in 9 of the 287 letters (glued institution phrases), no call moves.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

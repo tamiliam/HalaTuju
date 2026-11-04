@@ -826,6 +826,10 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   bracket / umbrella / glued / lowercase-lookahead rules; agents stop every lift; M6 named-body proof; one
   normaliser). a329 needed two lead rulings (an address-echo fragment above the agency; "Pendidikan Global" a
   slogan); all three owner-ruled agency letters lift. 13 tagged changes.
+- **Round 12 (2026-11-04): 2 High, 3 Medium — fixed, stricter only** (one glued-name test everywhere; the
+  descriptor run; echo / campus words from the letterhead's own address, echoes also from the addressee
+  blocks). Accepted within the rules and pinned: an echo or campus word the letterhead's OWN address gives, and a
+  name four or more tokens after a lowercase noun. 13 tagged changes.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
