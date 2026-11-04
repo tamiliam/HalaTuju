@@ -7752,5 +7752,8 @@ motto. *(S6 · S)*
 institute, the agency and the labels are taken out, but a private operator named without one ("latihan industri di
 Mercu Engineering Works") reads as ordinary prose and the letter lifts. Accepted and pinned
 (`tests/test_offer_s6_narrowing.py`, `Round10AgencyClosedWorld.test_a_private_name_with_no_organisation_word_is_a_known_gap`).
+Round 11 adds a second accepted case of the same gap: a name in ALL-LOWERCASE OCR ("latihan di kolej / mercu jaya",
+"IKM Kuantan mercu jaya") is not read as a name (OCR almost never prints a letterhead name that way); pinned in
+`Round11.test_an_all_lowercase_name_is_a_known_gap`.
 **Fix:** a capitalised-name test that knows the letter's own words (people, places, course titles) - only once the
 corpus holds enough agency letters to measure it. *(S6 · M)*

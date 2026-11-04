@@ -6,10 +6,10 @@ middle logic used. `offer_rulings` imports every name back (`__all__`).
 """
 import functools
 import re
-import unicodedata
 from collections import Counter
 
 from .offer_issuers import TVET_ISSUERS
+from .offer_text import logo_strip, normalise_s6, own_issuer_line
 
 __all__ = [
     'CONFIRMATION_SEEN', 'CONFIRM_MIN', '_BANK_COMPANY', '_COMPANY_HEAD', '_COMPANY_SIGNS', '_COMPANY_SUFFIX',
@@ -21,7 +21,7 @@ __all__ = [
     '_PRIVATE_SIGNS', '_REFERENCE', '_REPORTING', '_SALUTE', '_SLIP', '_SPONSOR_LINE', '_STREET', '_TAG', '_TAG_RE',
     '_TIE_UP', '_TITLE', '_TOKEN_SHARE_MAX', '_TVET_NAMES', '_TVET_SPELT', '_UNIQUE_LINES_MIN', '_UNIT_LINE',
     '_UNIT_TAIL', '_WEB_TAIL', '_allowed_spans', '_bank_line', '_clean_letterhead', '_confirm_titled', '_excused',
-    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
+    '_first_institution', '_folded_lines', '_in_addressee_block', '_incidental', '_is_contact', '_decontact', 'is_org_token', 'normalise_s6', '_company_at', '_tie_up_at', '_public_names', '_SB', '_TIE_UP_NOUN', '_FORM6_MARKS', '_is_person_line',
     '_letter_structure', '_letterhead_block', '_letterhead_lines', '_letterhead_region',
     '_outside_orgs', '_own_identity_lines', '_page', '_private_marker', '_private_signs', 'private_proof',
     '_ruled_status', '_untitled', '_unglued', '_unstreeted', 'ruling_of',
@@ -60,11 +60,22 @@ _ORG_WORDS = (r'KOLEJ|COLLEGES?|AKADEMI|ACADEM(?:Y|IES|IC)|UNIVERSITI|UNIVERSIT(
               r'PUSAT (?:LATIHAN|KEMAHIRAN|PEMBELAJARAN|PENDIDIKAN|BAHASA)|TRAINING|TRAINERS?|CENTR[A-Z]*|CENTERS?|'
               r'HUBS?|GROUPS?|PLT|EDU[A-Z]*|LEARNING|SKILLS?|ENTERPRIS[A-Z]*|RESOURCES?|INTERNATIONAL|GLOBAL|'
               r'SERVIC[A-Z]*|SOLUTIONS?|HOLDINGS?|CORP[A-Z]*|CONSULT[A-Z]*|KONSULT[A-Z]*|VENTURES?|LTD|LIMITED|INC|'
-              r'PERSATUAN|PERTUBUHAN|TECH|KAMPUS|YAYASAN')
+              r'PERSATUAN|PERTUBUHAN|TECH|KAMPUS|YAYASAN|KOPERASI|SYARIKAT|CONSORTI[A-Z]*')   # round 11: + 3
 #: An organisation noun, matched by STEM on a folded line (round-4 review: ENTERPRISES, CENTRES, EDUCATIONAL …).
 _ORG_RE = re.compile(rf' (?:{_ORG_WORDS}|SDN|BHD|BERHAD|SDNBHD)(?= )| S B(?= \d| $)')   # rounds 8-9: SDNBHD, S/B
 #: The same without the company words (the Sdn Bhd excuse asks for an organisation BESIDE the company).
 _ORG_RE_NO_COMPANY = re.compile(rf' (?:{_ORG_WORDS})(?= )')
+#: Round 11 (H1): the same list as ONE token test, for the agency lift's closed world (`offer_agency`) — plus the
+#: bare words a body names an organisation with there (PUSAT, MAJLIS, AGENSI / AGENCY, INSTITUSI).
+_ORG_TOKEN = re.compile(rf'(?:{_ORG_WORDS}|PUSAT|MAJLIS|AGENSI|AGENCY|INSTITUSI)')   # INSTITUSI: a form label
+#: on a LETTERHEAD (round 4), so only here
+
+
+def is_org_token(word) -> bool:
+    """An organisation word (one folded token), from the one shared list `_ORG_WORDS`."""
+    return bool(_ORG_TOKEN.fullmatch(word or ''))
+
+
 #: An institution's OWN unit (round 5, H1): a line naming a faculty / division / centre-for / unit / campus of
 #: the institution is not another organisation ("UNIVERSITI MALAYSIA SABAH / ACADEMIC SERVICES DIVISION").
 #: Round 6: its describing words lead the match ("ACADEMIC SERVICES DIVISION" is one unit, not an academy).
@@ -94,7 +105,8 @@ _PRIVATE_BODIES = (' KOLEJ POLY TECH MARA ', ' KOLEJ POLYTECH MARA ', ' KPTM ', 
                    ' GERMAN MALAYSIAN INSTITUTE ', ' GMI ', ' SALURAN SATU ', ' SALURAN TERBUKA ',
                    ' PUSAT PENDIDIKAN PROFESIONAL DAN LANJUTAN ', ' PUSAT PENDIDIKAN LANJUTAN ', ' PPPL ',
                    # round 9 (M3): '&' / '&amp;' / 'DAN' all fold here; English names
-                   ' PROFESIONAL LANJUTAN ', ' PROFESIONAL AMP LANJUTAN ', ' PROFESSIONAL AND CONTINUING ',
+                   ' PUSAT PENDIDIKAN PROFESIONAL LANJUTAN ', ' PROFESIONAL LANJUTAN ', ' PROFESIONAL AMP LANJUTAN ',
+                   ' PROFESSIONAL AND CONTINUING ',
                    ' CENTRE FOR PROFESSIONAL ', ' CENTER FOR PROFESSIONAL ')
 #: EXPLICIT partner / tie-up words — the BLOCK overlay's (a private institution trading on a public name).
 _TIE_UP = (' RAKAN ', ' KERJASAMA ', ' PARTNER ')        # round 9 (Low): only beside an institution noun
@@ -181,10 +193,10 @@ _MINISTRY_FAMILIES = ('stpm', 'matriculation', 'polytechnic', 'pismp')
 
 # ── Reading the page ──────────────────────────────────────────────────────────────────────
 def _folded_lines(ocr_text):
-    """The page's non-empty lines, NFKC-normalised (full-width letters are letters) and folded."""
+    """The page's non-empty lines, normalised (`normalise_s6`) and folded."""
     from .results_doc import _norm_fold_upper_alnum
     out = []
-    for raw in unicodedata.normalize('NFKC', ocr_text or '').splitlines():
+    for raw in normalise_s6(ocr_text).splitlines():     # round 11: the one S6 normaliser
         f = _norm_fold_upper_alnum(raw)
         if f:
             out.append(f' {f} ')
@@ -266,7 +278,9 @@ def _private_proof(lines) -> str:
     for ln in _letterhead_block(lines):
         if _is_certification(ln) or _bank_line(ln) or any(w in ln for w in _SPONSOR_LINE):
             continue                    # round 8 (M1): a sponsor line names who pays, never the issuer
-        if any(b in ln for b in _PRIVATE_BODIES):
+        named = _unstreeted(ln)         # round 11 (M6): "Jalan GMI" is a road
+        if (any(b in named for b in _PRIVATE_BODIES) and not _is_contact(ln) and not logo_strip(ln)
+                and (not past_public or own_issuer_line(named, _PRIVATE_BODIES))):
             return 'named private body'
         if past_public:
             continue                    # round 9 (M1): below the public name a company / tie-up is no proof

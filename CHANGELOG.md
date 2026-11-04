@@ -163,6 +163,18 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   excepted); operator phrases, other agencies' full names and acronyms, glued nouns, a line-end noun with a name
   on the next line all block; the agency first on the letterhead, name lines below it block, WAKIL / EJEN / AGEN
   block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-491.
+- **Round 11 (1 High, 7 Medium, a Low; class `Round11`):** ONE organisation-word list (`offer_reading._ORG_WORDS`
+  + KOPERASI / SYARIKAT / CONSORTI*, read by the agency lift through `is_org_token`, a drift test); campus words
+  after an allowed name are whole CATALOGUED campus phrases (or states / KAMPUS / address words of other lines); a
+  label's bracket holds only label words or the family's acronyms; an umbrella name followed by a name blocks;
+  glued organisation stems block on the letterhead and as fragments; a lowercase generic noun blocks when a name
+  follows within three tokens (across punctuation and the line end); WAKIL / EJEN / AGEN stop every lift; a named
+  private body is block proof only before the public name or alone on its line (contact lines, logo strips and
+  street names skipped); one normaliser for every S6 check (`normalise_s6`: accents, full-width, zero-width /
+  soft hyphen, Cyrillic / Greek lookalikes; spaced letters joined). The lead's a329 rulings: up to three
+  one-token fragments above the agency, each junk or an OCR echo of an address word below; GLOBAL / TECH / SKILLS
+  … after a descriptor ("Pendidikan Global") is no organisation. All-lowercase names stay a known gap (TD-491).
+  13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

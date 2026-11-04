@@ -822,6 +822,10 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   by family: 66 JTM / 52 KBS / 284 MARA words). MEASURED: a228 d3465 / d3466 and a329 lift, the clean MARA / KBS
   / JTM controls lift, every r10 agency probe stays out except "Mercu Engineering Works" (no organisation word;
   TD-491, pinned). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- **Round 11 (2026-11-04): 1 High, 7 Medium — all fixed, stricter only** (one org list; catalogued campus phrases;
+  bracket / umbrella / glued / lowercase-lookahead rules; agents stop every lift; M6 named-body proof; one
+  normaliser). a329 needed two lead rulings (an address-echo fragment above the agency; "Pendidikan Global" a
+  slogan); all three owner-ruled agency letters lift. 13 tagged changes.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is

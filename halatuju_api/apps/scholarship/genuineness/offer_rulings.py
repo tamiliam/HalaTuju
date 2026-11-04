@@ -31,7 +31,6 @@ Every call that differs from the baseline carries `[S6 ruling: <tag>]` (`ruling_
 override or a later corpus answer shows which rule was wrong (`eval/offer_genuineness_check.py`). Pure.
 """
 import re
-import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX
 from .offer_issuers import TVET_ISSUERS, _has_offer_words, private_college_reason, unfingerprinted_offer
@@ -148,7 +147,13 @@ def _first_named_institute(lines) -> str:
     return ''
 
 
+#: Round 11 (M5): a representative, never the issuer — no lift of any kind.
+_AGENT_WORDS = re.compile(r' (?:WAKIL|EJEN|AGEN)(?= )')
+
+
 def _tvet_lift(r, lines, model_version):
+    if _AGENT_WORDS.search(_page(lines)):
+        return None                     # round 11 (M5): WAKIL / EJEN / AGEN
     head = _page(_letterhead_lines(lines))
     if not any(n in head for n in _TVET_NAMES):
         return None                     # no closed-list body named on the letterhead
@@ -191,7 +196,7 @@ _FUNCTION_WORDS = frozenset({
     'BERHAK', 'INI', 'ITU', 'TERSEBUT', 'BERKENAAN', 'YANG', 'DAN', 'DI', 'KE', 'UNTUK', 'DARI', 'DARIPADA',
     'KEPADA', 'PADA', 'BAGI', 'OLEH', 'ATAU', 'AKAN', 'TELAH', 'IALAH', 'ADALAH', 'ANDA', 'KAMI', 'TUAN', 'PUAN',
     'SERTA', 'DENGAN', 'DALAM', 'SEBAGAI', 'SETIAP', 'SEMUA', 'BERIKUT', 'MASING', 'SEMASA', 'SELEPAS', 'SEBELUM',
-    'SEPERTI', 'SEPERTIMANA',                                     # lead's ruling 2026-11-04 (4)
+    'SEPERTI', 'SEPERTIMANA', 'SILA', 'MOHON', 'HARAP',         # lead's ruling 2026-11-04 (4); round 11
     'THE', 'OF', 'AND', 'TO', 'AT', 'IN', 'FOR', 'A', 'AN', 'THIS', 'THAT', 'IS', 'ARE', 'WILL', 'MAY', 'BY', 'ON',
     'WITH', 'AS', 'YOUR', 'OUR'})
 _WORD = re.compile(r'[^\W_]+')                # letters with any digits ('K0LEJ')
@@ -200,7 +205,7 @@ _WORD = re.compile(r'[^\W_]+')                # letters with any digits ('K0LEJ'
 def _raw_lines(ocr_text):
     """The raw OCR lines aligned with `_folded_lines` (the same non-empty filter), case kept."""
     from .results_doc import _norm_fold_upper_alnum
-    return [raw for raw in unicodedata.normalize('NFKC', ocr_text or '').splitlines() if _norm_fold_upper_alnum(raw)]
+    return [raw for raw in normalise_s6(ocr_text).splitlines() if _norm_fold_upper_alnum(raw)]
 #: Another public body on the line (a ministry / department / council / board not on `_AGENCIES`).
 _OTHER_BODY = re.compile(r' (?:KEMENTERIAN|MINISTRY|JABATAN|DEPARTMENT|MAJLIS|LEMBAGA|PERBADANAN|BAHAGIAN) [A-Z]')
 #: Item 9 (3): money words in the title or the first body lines — no admission.
@@ -333,6 +338,8 @@ def _without_poly_department(lines):
 
 
 def _confirmation_lift(r, raw, model_version):
+    if _AGENT_WORDS.search(_page(raw)):
+        return None                     # round 11 (M5): WAKIL / EJEN / AGEN
     seen = confirmation_kind('', r['probability'], lines=raw)
     if not seen:
         return None
@@ -444,7 +451,7 @@ def ruled_offer(ocr_text: str, r: dict, status: str, reason: str, model_version:
 def apply_rulings(ocr_text: str, r: dict, baseline: dict, model_version: str) -> dict:
     """The genuineness of an offer: the BASELINE (`results_doc.baseline_genuineness`), changed only by the
     BLOCK, a LIFT or a softening ruling (module note). A changed call always carries its ruling tag."""
-    ocr_text = unicodedata.normalize('NFKC', ocr_text or '')
+    ocr_text = normalise_s6(ocr_text)                       # round 11: the one S6 normaliser
     lines = _folded_lines(ocr_text)                         # round 8 (perf): the page is folded ONCE
     if baseline.get('status') != 'not_offer_letter':
         blocked = _block(r, lines, model_version)

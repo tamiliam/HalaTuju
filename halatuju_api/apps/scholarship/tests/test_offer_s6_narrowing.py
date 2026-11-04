@@ -670,9 +670,8 @@ def _ag(head, **kw):
 
 #: The r10 probes of the agency lift that must stay out (invented text).
 ROUND10_AGENCY_NEVER_LIFTED = {
-    'lowercase kolej mercu jaya': _ag(_M, extra='Latihan amali di kolej mercu jaya.\n'),
     'Kolej mercu (lowercase name)': _ag(_M, extra='Latihan amali di Kolej mercu.\n'),
-    'akademi mercu': _ag(_M, extra='Pengendali : akademi mercu\n'),
+    # ("akademi mercu" and "pusat latihan mercu", all-lowercase names: the TD-491 gap, pinned in Round11)
     'Mercu Skills Academy (name before the noun)': _ag(_M, extra='Pengendali kursus : Mercu Skills Academy\n'),
     'Mercu Training Centre': _ag(_M, extra='Pengendali kursus : Mercu Training Centre\n'),
     'Mercu Jaya Enterprise': _ag(_M, extra='Pengendali kursus : Mercu Jaya Enterprise\n'),
@@ -744,8 +743,6 @@ ROUND10_AGENCY_NEVER_LIFTED = {
     'Kolej Komuniti in the body': _ag(_M, extra='Penempatan : Kolej Komuniti Kuantan\n'),
     'ILKBS umbrella in a MARA letter': _ag(_M, extra='Rujuk ILKBS\n'),
     'KBS head, Kolej MARA in the body': _ag(_K, venue='IKBN Pekan', extra='Pindah dari Kolej MARA Kuantan\n'),
-    'JTM head, pusat latihan mercu': _ag('JABATAN TENAGA MANUSIA', venue='ADTEC Kulim',
-                                         extra='Latihan industri: pusat latihan mercu\n'),
     'JTM head, JPK and a Pusat Bertauliah': _ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
                                                 extra='Diiktiraf oleh Jabatan Pembangunan Kemahiran (JPK) melalui '
                                                       'Pusat Bertauliah Mercu.\n'),
@@ -778,7 +775,8 @@ class Round10AgencyClosedWorld(SimpleTestCase):
                             (_K, 'Semasa hari pendaftaran di institusi/kolej.\n')):
             with self.subTest(extra=extra):
                 self.assertTrue(self._lifted(_ag(head, venue='IKBN Pekan', extra=extra)))
-        for head in ('123\nTAMAN\n9\nKEPADA\n' + _K, 'BIRU\n' + _K):
+        # round 11 (the lead's a329 ruling): a fragment is junk or an echo of an address word below ("LUMPURR")
+        for head in ('123\nLUMPURR\n9\nKEPADA\n' + _K, '9\n' + _K):
             with self.subTest(head=head):
                 self.assertTrue(self._lifted(_ag(head, venue='IKBN Pekan')))
         for head in ('MERCU JAYA EDU\n' + _K, 'ALPHA\nBETA\nGAMMA\nDELTA\n' + _K):     # four one-token lines > 3
@@ -803,3 +801,137 @@ class Round10AgencyClosedWorld(SimpleTestCase):
         """TD-491 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
         self.assertTrue(self._lifted(_ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
                                          extra='Latihan industri di Mercu Engineering Works.\n')))
+
+
+# ── Review round 11 (2026-11-04): one org list, the bracket / umbrella / glue / lowercase rules, M5-M7, normaliser ──
+def _a11(head, *, title='SURAT TAWARAN KEMASUKAN', venue='Institut Kemahiran MARA Kuantan', extra='',
+         addr='Jalan Raja Laut, 50609 Kuala Lumpur'):
+    return (f'{head}\n{addr}\nTel : 03-0000 0000\nRujukan : AG/600-1/2\nTarikh : 1 Jun 2026\nNama : Ali bin Abu\n'
+            f'No. Kad Pengenalan : 080808-10-5566\nTuan,\n{title}\nDengan sukacitanya dimaklumkan bahawa anda '
+            f'ditawarkan tempat.\nKursus : Sijil Kemahiran Contoh\nTarikh lapor diri : 3 Ogos 2026\nTempat : {venue}\n'
+            f'{extra}Sila bawa dokumen asal semasa mendaftar.\nTawaran ini tertakluk kepada syarat.\nSekian, terima '
+            'kasih.\nYang benar,\nPENGARAH\n')
+
+
+_IKBN11 = 'INSTITUT KEMAHIRAN BELIA NEGARA PEKAN'
+_J = 'JABATAN TENAGA MANUSIA'
+_BODY11 = ('Institution', 'MERCU SKILLS INSTITUTION', 'Mercu Academies', 'Mercu Universities', 'Mercu Schools',
+           'Mercu Centres', 'Yayasan Mercu', 'Persatuan Mercu', 'Pusat Tuisyen Mercu', 'Mercu Tuition', 'Mercu Skills',
+           'Mercu Tech', 'Mercu International', 'Mercu Global', 'Mercu Ltd', 'Mercu Corporation', 'Mercu Solutions',
+           'Koperasi Mercu', 'Syarikat Mercu', 'Mercu Academic', 'Mercu Educational', 'Mercu Trainers', 'Kampus Mercu',
+           'Mercu Consortium', 'Mercu Ventures', 'Mercu Corp', 'Pertubuhan Mercu', 'Persatuan Usahawan Mercu')
+ROUND11_NEVER_LIFTED = dict(
+    {f'body: {w}': _a11(_M, extra=f'Latihan amali di {w}.\n') for w in _BODY11},
+    **{
+        'label bracket before the institute': _a11(_M, venue='(Kolej Mercu) Institut Kemahiran MARA Kuantan'),
+        'Tempat (Kolej Mercu) : IKM': _a11(_M, extra='Tempat (Kolej Mercu) : IKM Kuantan\n'),
+        'Pusat (Mercu Skills Academy) : IKM': _a11(_M, extra='Pusat (Mercu Skills Academy) : IKM Kuantan\n'),
+        'Lokasi (Kolej Mercu Jaya) - IKM': _a11(_M, extra='Lokasi (Kolej Mercu Jaya) - IKM Kuantan\n'),
+        'a name before the label': _a11(_M, extra='Kolej Mercu Tempat : IKM Kuantan\n'),
+        'Tempat Latihan (Kolej Mercu)': _a11(_M, extra='Tempat Latihan (Kolej Mercu): IKM Kuantan\n'),
+        'umbrella IPMA + a private name': _a11(_M, extra='Penyelaras : Institusi Pendidikan MARA Mercu Jaya\n'),
+        'umbrella ILKBS + a private name': _a11(_K, venue='IKBN Pekan', extra='Penyelaras : Institusi Latihan '
+                                                                              'Kemahiran Belia dan Sukan Mercu\n'),
+        'umbrella ILJTM + a private name': _a11(_J, venue='ADTEC Kulim', extra='Penyelaras : Institusi Latihan '
+                                                                               'Jabatan Tenaga Manusia Mercu\n'),
+        'BPLTV MARA + Kolej Mercu': _a11(_M, extra='Bahagian Pendidikan dan Latihan Teknikal Vokasional MARA Kolej '
+                                                   'Mercu\n'),
+        'IKM + uncatalogued words': _a11(_M, venue='IKM Jaya Prima'),
+        'IKM Kuantan Jaya Prima Academy': _a11(_M, venue='IKM Kuantan Jaya Prima Academy'),
+        'IKM Kuantan Kampus Mercu': _a11(_M, venue='IKM Kuantan Kampus Mercu'),
+        'IKM Kuantan, Mercu': _a11(_M, venue='IKM Kuantan, Mercu'),
+        'IKM Kuantan (Mercu)': _a11(_M, venue='IKM Kuantan (Mercu)'),
+        'IKM Kuantan Mercu, a postcode line': _a11(_M, venue='IKM Kuantan Mercu, 25000 Kuantan'),
+        'IKM Kuantan GIATMARA Mercu': _a11(_M, venue='IKM Kuantan GIATMARA Mercu'),
+        'IKM Japan Industrial Mercu': _a11(_M, venue='IKM Japan Industrial Mercu'),
+        'a fragment MERCU above the agency': _a11('MERCU\n' + _M),
+        'two fragments MERCU / JAYA': _a11('MERCU\nJAYA\n' + _M),
+        'three fragments': _a11('MERCU\nJAYA\nPRIMA\n' + _M),
+        'MERCUEDU': _a11('MERCUEDU\n' + _M),
+        'MERCUACADEMY': _a11('MERCUACADEMY\n' + _M),
+        'KOLEJMERCU': _a11('KOLEJMERCU\n' + _M),
+        'lowercase kolej swasta Mercu': _a11(_M, extra='latihan di kolej swasta Mercu.\n'),
+        'lowercase kolej di Mercu Jaya': _a11(_M, extra='latihan di kolej di Mercu Jaya.\n'),
+        'lowercase kolej, Mercu Jaya': _a11(_M, extra='latihan di kolej, Mercu Jaya.\n'),
+        'lowercase kolej : Mercu Jaya': _a11(_M, extra='nama kolej : Mercu Jaya\n'),
+        'lowercase kolej, line end, DI MERCU JAYA': _a11(_M, extra='latihan di kolej\nDI MERCU JAYA\n'),
+        'lowercase kolej yang Mercu': _a11(_M, extra='latihan di kolej yang Mercu.\n'),
+        'accented Kolèj': _a11(_M, extra='Latihan amali di Kolèj Mercu.\n'),
+        'full-width Ｋｏｌｅｊ': _a11(_M, extra='Latihan amali di Ｋｏｌｅｊ Mercu.\n'),
+        'Cyrillic o': _a11(_M, extra='Latihan amali di Kоlej Mercu.\n'),
+        'a soft hyphen': _a11(_M, extra='Latihan amali di Ko­lej Mercu.\n'),
+        'a zero-width space': _a11(_M, extra='Latihan amali di Ko​lej Mercu.\n'),
+        'spaced K O L E J': _a11(_M, extra='Latihan amali di K O L E J Mercu.\n'),
+        'Kolej_Mercu': _a11(_M, extra='Latihan amali di Kolej_Mercu.\n'),
+        'kolej. Mercu Jaya': _a11(_M, extra='Latihan amali di kolej. Mercu Jaya\n'),
+        'institute lift: MERCU JAYA (WAKIL IKBN)': _a11('MERCU JAYA (WAKIL IKBN)', venue='IKBN Pekan'),
+        'institute lift: EJEN : MERCU JAYA': _a11(_IKBN11 + '\nEJEN : MERCU JAYA', venue='IKBN Pekan'),
+    })
+#: Public pages the BLOCK must not newly fail (M6).
+ROUND11_NEVER_NEWLY_BLOCKED = {
+    'GMI in a street name': _a11(_IKBN11, venue='IKBN Pekan', addr='Lot 5 Jalan GMI, 26600 Pekan'),
+    'GMI in a street line above the institute': _a11('Lot 5 Jalan GMI\n' + _IKBN11, venue='IKBN Pekan'),
+    'KPTM in an e-mail line': _a11(_M, addr='Emel : info@kptm.mara.gov.my, 50609 Kuala Lumpur'),
+    'a logo strip under the agency': _a11(_M + '\nIKM KKTM KPM GMI'),
+    'a logo strip below the address': _a11(_M, addr='Jalan Raja Laut, 50609 Kuala Lumpur\nIKM KKTM GMI UNIKL'),
+    'a logo strip under the institute': _a11('INSTITUT KEMAHIRAN MARA KUANTAN\nIKM KKTM GMI', venue='IKM Kuantan'),
+}
+
+
+class Round11(SimpleTestCase):
+    def _lifted(self, text):
+        return ruling_of(signature_genuineness(text, doc_type='offer_letter')) in LIFTS
+
+    def test_the_controls_lift(self):
+        for text in (_a11(_M), _a11(_IKBN11, venue='IKBN Pekan')):
+            with self.subTest(text.splitlines()[0]):
+                self.assertTrue(self._lifted(text))
+
+    def test_every_r11_probe_stays_out(self):
+        for name, text in ROUND11_NEVER_LIFTED.items():
+            with self.subTest(name):
+                self.assertFalse(self._lifted(text))
+
+    def test_no_r11_public_page_is_newly_blocked(self):
+        for name, text in ROUND11_NEVER_NEWLY_BLOCKED.items():
+            with self.subTest(name):
+                out = signature_genuineness(text, doc_type='offer_letter')
+                self.assertNotEqual(ruling_of(out), 'private_offer')
+
+    def test_one_organisation_word_list(self):
+        """H1: the agency lift's word test IS the letterhead list; the two cannot drift."""
+        from apps.scholarship.genuineness import offer_agency, offer_reading
+        self.assertIs(offer_agency.is_org_word, offer_reading.is_org_token)
+        for w in ('KOLEJ', 'INSTITUTION', 'INSTITUTIONS', 'ACADEMIES', 'SCHOOLS', 'CENTRES', 'CENTERS', 'UNIVERSITIES',
+                  'COLLEGES', 'INSTITUTES', 'YAYASAN', 'PERSATUAN', 'PERTUBUHAN', 'KOPERASI', 'SYARIKAT', 'KAMPUS',
+                  'LTD', 'LIMITED', 'CORPORATION', 'INC', 'INTERNATIONAL', 'GLOBAL', 'TECH', 'SKILLS', 'SOLUTIONS',
+                  'VENTURES', 'CONSORTIUM', 'EDUCATIONAL', 'TRAINERS'):
+            with self.subTest(w):
+                self.assertTrue(offer_reading.is_org_token(w))
+                self.assertTrue(offer_reading._ORG_RE.search(f' {w} '))
+
+    def test_the_lead_rulings_for_a329(self):
+        """A one-word fragment above the agency that echoes an address word below lifts; a weak suffix after a
+        descriptor ("Pendidikan Global") is no organisation."""
+        echo = _a11('LUMPURR\n' + _M)
+        self.assertTrue(self._lifted(echo))
+        self.assertTrue(self._lifted(_a11(_M, extra='Keusahawanan & Pendidikan Global\n')))
+        for extra in ('Mercu Global\n', 'Mercu Skills Ltd\n', 'Mercu Tech\n'):
+            with self.subTest(extra=extra):
+                self.assertFalse(self._lifted(_a11(_M, extra=extra)))
+
+    def test_the_one_normaliser(self):
+        from apps.scholarship.genuineness.offer_reading import normalise_s6
+        self.assertEqual(normalise_s6('Kolèj Ｋｏｌｅｊ Kоlej Ko­lej Ko​lej'), 'Kolej Kolej Kolej Kolej Kolej')
+
+    def test_an_all_lowercase_name_is_a_known_gap(self):
+        """TD-491 (accepted): a name in all-lowercase OCR is not read as a name."""
+        self.assertTrue(self._lifted(_a11(_M, extra='latihan di kolej\nmercu jaya\n')))
+        self.assertTrue(self._lifted(_a11(_M, venue='IKM Kuantan mercu jaya')))
+        self.assertTrue(self._lifted(_a11(_M, extra='Pengendali : akademi mercu\n')))
+        self.assertTrue(self._lifted(_a11(_M, extra='Latihan amali di kolej mercu jaya.\n')))
+        self.assertTrue(self._lifted(_a11('JABATAN TENAGA MANUSIA', venue='ADTEC Kulim',
+                                          extra='Latihan industri: pusat latihan mercu\n')))
+        for head in ('TAMAN\n' + _M, 'BIRU\n' + _M):          # a 4+ letter fragment with no echo: no lift
+            with self.subTest(head=head):
+                self.assertFalse(self._lifted(_a11(head)))
