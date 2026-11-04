@@ -7681,6 +7681,10 @@ four numbers, so nothing is broken — they only look boxier than the rest of th
 onto `PHONE_SECTION` / `PHONE_CARD_XL` (and their pills onto `lib/phonePill.ts`), add both files to the rule-15 and
 rule-17 lists in `mobileStandard.test.ts`, and update the MentorPhone board to match. *(M · S)*
 
+### [TD-490] The Programme Overview charts paint the desktop box first on a phone, then swap - low
+
+**Raised 2026-11-04 by the Mobile M8 close review (accepted, NOT fixed; two-deploys-per-feature rule).** `Charts.tsx` (`useChartBox`, line ~43) reads `usePhoneWidth`, so on a phone the first paint draws the desktop viewBox and the phone box replaces it after mount: a brief layout jump. No effect from md. **Fix:** render both SVGs and switch them by CSS (`md:hidden` / `max-md:hidden`), so the first paint is already right; keep `Charts.phone.test.tsx` (its text-size guard bites) and add a case that both SVGs exist. *(S · S)*
+
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 
 **Raised 2026-11-03 by Requests list R1.** R1 built ONE Previous / Next for a list's detail pages:
