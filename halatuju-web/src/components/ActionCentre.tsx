@@ -50,8 +50,7 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { setOnboardingReturn } from '@/lib/scholarship'
-import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'
-import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
+import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'; import { PHONE_PILL_SM } from '@/lib/phonePill'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
