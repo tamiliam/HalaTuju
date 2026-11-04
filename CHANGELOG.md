@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T5c — pages open by keys (branch t5c, not yet live)
+## Team tables T5c part 1 — pages open by keys (LIVE 2026-11-04; main ac68a361; api-01251-l9v, web-01081-957)
 
 decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds
 one field to `admin/role/`); no live access moved, on the server or in the console.
