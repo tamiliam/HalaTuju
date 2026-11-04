@@ -198,9 +198,11 @@ function Chrome(
     () => withGiftHrefs(visibleNav({
       role: r, probes, pathname, permissions: role?.permissions, mentoring: role?.mentoring,
       tables: role?.tables,   // Team tables T1
+      pageKeys: role?.page_keys,   // Team tables T5c P4: rows on a server door read its keys
       programmeChosen: scopesLoaded ? chosen !== '' : undefined,
     }), onRecord ? '' : chosen),
-    [r, role?.permissions, role?.mentoring, role?.tables, probes, chosen, scopesLoaded, pathname, onRecord],
+    [r, role?.permissions, role?.mentoring, role?.tables, role?.page_keys, probes, chosen, scopesLoaded, pathname,
+      onRecord],
   )
   const active = activeItem(pathname)
   const activeId = active?.id

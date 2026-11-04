@@ -8,7 +8,7 @@ import { getSources, updateSource, type SourceItem } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { canAccess, effectiveRole } from '@/lib/navigation'
+import { mayOpen, opensDoorOr } from '@/lib/pageGuard'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
 import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
 import { SignInBadge, Toggle } from '@/components/sources/shared'
@@ -60,11 +60,12 @@ export default function SourcesPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
 
-  const r = effectiveRole(role)
-  // Sources management: super + admin + org_admin (owner 2026-07-19). Matches the backend gate.
-  const canManage = canAccess('/admin/sources', r)
-  // Inviting (and so adding) a source: super + org_admin only (source sign-in S2).
-  const canInvite = r === 'super' || r === 'org_admin'
+  // Sources management: super + admin + org_admin (owner 2026-07-19). T5c P4: the row's server door
+  // (`sources.edit`), read from the served `page_keys`; an older payload keeps the row's roles.
+  const canManage = mayOpen('/admin/sources', role)
+  // Inviting (and so adding) a source: super + org_admin only (source sign-in S2) — the server's
+  // `invitations` door (`source_invite.may_invite`) since T5c.
+  const canInvite = opensDoorOr(role, 'invitations', ['super', 'org_admin'])
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)

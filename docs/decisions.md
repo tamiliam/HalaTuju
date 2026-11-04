@@ -49,8 +49,21 @@ no access moving for any shape.
 - **A door that reads and writes asks the `.edit` key** (it implies `.view`); nobody holds a view without its edit
   today. Split before T5g (TD-490).
 - **One deliberate tightening:** an INACTIVE row now opens no door (T1's role half admitted an inactive `admin` /
-  `finance` / `org_admin` by label). Every caller asks about the signed-in person and sign-in already refuses an
-  inactive row (`get_admin` reads `is_active=True`), so no request sees it (matrix row `admin_inactive` unchanged).
+  `finance` / `org_admin` by label) — except an inactive SUPER, whom `effective_v2` still answers in full, so at the
+  door level it opens every door. Both are unreachable: every caller asks about the signed-in person and sign-in
+  already refuses an inactive row (`get_admin` reads `is_active=True`), so no request sees it (matrix row
+  `admin_inactive` unchanged).
+- P4a: `staff_tables.DOOR_KEYS` is the one door → key table (the web's drift test reads it alone; `DoorKeysTable` forbids inline keys); `page_keys` = `effective_v2` with inactive → (), including an inactive super, who `effective_v2` still answers in full (unreachable: sign-in refuses it).
+- **P4 (web):** the console reads the server's doors. `lib/pageDoors.ts` holds a copy of `DOOR_KEYS` (drift test
+  `teamTablesT5cDoors.test.ts` reads `staff_tables.py`) and `opensDoor(role, door)`: every key of the door in the
+  served `page_keys`, or `undefined` for a payload without them, which keeps today's role rule (as `tables` did in
+  T1). A registry row names its `door` (Organisation `org_read`; Invitations, People `team_read`; Sources; Sponsors
+  `sponsors_read`; Announcements; Surveys; Development); in-page gates ask `pageGuard.opensDoorOr(role, door,
+  oldRoles)`. Offer-set == accept-set: a row or gate moves only where its server door moved, so Team -> Mentors
+  (TD-489), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
+  landing change (`defaultRoute` passes no `page_keys`), no string, no layout. **Proof:** the 27 shapes the server
+  serves (the doors test's 32 less its 5 inactive rows, payloads taken from `admin/role/`) x 45 cells, frozen on P4a
+  before the change, identical after with and without `page_keys`; shown red with one mapping broken.
 
 **Proof:** `test_team_tables_matrix` unchanged against the frozen `team_tables_access_before.json`, no new
 `EXPECTED_CHANGES` line; `test_team_tables_t5c_doors` (parity: each door vs T1's rule, frozen, for the 20 matrix

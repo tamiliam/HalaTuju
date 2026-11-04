@@ -6,14 +6,24 @@
  * Visibility only: the endpoint is the fence.
  */
 import { canAccess, effectiveRole } from './navigation'
+import { opensDoor, type DoorName } from './pageDoors'
 import { admitsRow } from './staffPermissions'
 
-export function mayOpen(
-  href: string,
-  role: { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null;
-          mentoring?: boolean; tables?: readonly string[] | null } | null | undefined,
-): boolean {
-  return canAccess(href, effectiveRole(role), role?.permissions, role?.mentoring, role?.tables)
+type Served = { role?: string; is_super_admin?: boolean; permissions?: readonly string[] | null;
+                mentoring?: boolean; tables?: readonly string[] | null; page_keys?: readonly string[] | null }
+
+/** T5c P4: with the served `page_keys` too, so a row on a server door (`NavItem.door`) reads that door. */
+export function mayOpen(href: string, role: Served | null | undefined): boolean {
+  return canAccess(href, effectiveRole(role), role?.permissions, role?.mentoring, role?.tables, role?.page_keys)
+}
+
+/**
+ * Team tables T5c P4: an IN-PAGE gate on a server door (Announcements, Surveys, Development, the scholar
+ * Mentoring / Surveys / Growth tabs, sponsor emails, Sources' invite) — `opensDoor` with the served
+ * `page_keys`; an older payload (none) answers by the role list the page held before (`roles`).
+ */
+export function opensDoorOr(role: Served | null | undefined, door: DoorName, roles: readonly string[]): boolean {
+  return opensDoor(role, door) ?? roles.includes(effectiveRole(role))
 }
 
 /**
@@ -22,6 +32,8 @@ export function mayOpen(
  * `staff_tables.may_do_admin_work` (roles `ADMIN_WORK_ROLES`, no key: `ADMIN_WORK_KEYS` is empty). The Team
  * page itself is wider (finance and a key-seated admin read it), so the tab carries this rule of its own.
  * Visibility only: `GET admin/mentors/` and `GET admin/mentors/<id>/` are the fence.
+ * ⚠ T5c: NOT on a door. The server keeps `mentor_invite.may_read` on the union door `admin_work` (TD-489, a
+ * lead ruling is due), so this stays on its roles until that door moves.
  */
 export const MENTORS_READ_ROLES = ['super', 'org_admin', 'admin'] as const
 

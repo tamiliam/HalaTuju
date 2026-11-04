@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { isSuperRole } from '@/lib/superRole'
+import { opensDoorOr } from '@/lib/pageGuard'
 import {
   fetchSurveyCsv, getSurveyResults, remindSurvey,
   type AnswerValue, type SurveyQuestionRow, type SurveyResults as Payload, type SurveySummaryItem, type SurveyWho,
@@ -107,8 +107,7 @@ function Written({ item, t }: { item: SurveySummaryItem; t: T }) {
 export default function SurveyResults({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const r = isSuperRole(role) ? 'super' : (role?.role ?? '')
-  const allowed = MAKER_ROLES.includes(r)
+  const allowed = opensDoorOr(role, 'surveys', MAKER_ROLES)   // T5c P4: the server's door
   const [data, setData] = useState<Payload | null>(null)
   const [failed, setFailed] = useState(false)
   const [view, setView] = useState<View>('summary')

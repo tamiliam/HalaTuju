@@ -24,6 +24,7 @@ import TableFrame, { TH } from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { ChooseFromScope } from '@/components/admin/ChooseProgramme'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { opensDoorOr } from '@/lib/pageGuard'
 import { useProgrammeParam } from '@/lib/programmeScope'
 import { useGiftGate } from '@/lib/useGiftGate'
 import { formatDate } from '@/lib/formatDate'
@@ -53,7 +54,7 @@ function StaffScholarsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/scholars', effectiveRole(role), role?.permissions)
-  const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
+  const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)   // T5c P4: the server's door
   const programme = useProgrammeParam()
   const gate = useGiftGate(role)
 

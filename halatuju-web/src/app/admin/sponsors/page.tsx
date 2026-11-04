@@ -10,7 +10,7 @@ import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
-import { effectiveRole } from '@/lib/navigation'
+import { opensDoorOr } from '@/lib/pageGuard'
 import {
   DEFAULT_SORT, SPONSOR_SORT_LABEL, firstDirFor, sortSponsors,
   type SponsorSortKey,
@@ -85,7 +85,7 @@ export default function AdminSponsorsList() {
   const wanted = search?.get('panel') as Panel | null
   const [panel, setPanel] = useState<Panel>(
     wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
-  const mayEditEmails = CAN_EDIT_EMAILS.includes(effectiveRole(role))
+  const mayEditEmails = opensDoorOr(role, 'sponsor_emails', CAN_EDIT_EMAILS)   // T5c P4: the server's door
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
   const [statusF, setStatusF] = useState('')
   const [error, setError] = useState('')

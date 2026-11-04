@@ -164,6 +164,22 @@ export function pyChoiceValues(src: string, name: string, indented = true): stri
 }
 
 /**
+ * A module-level `{'name': ('a', 'b'), ...}` dict of string tuples, as name -> its strings, in source order
+ * — `staff_tables.DOOR_KEYS` (T5c P4). Comments are stripped first. Throws if a value is not a literal tuple
+ * (a name or a call would be read as nothing and pass for ever).
+ */
+export function pyDictOfSeqs(src: string, name: string): Record<string, string[]> {
+  const text = assignment(src, name, false)
+  const out: Record<string, string[]> = {}
+  const body = text.trim().replace(/^\{/, '').replace(/\}$/, '')
+  const row = /(['"])([a-z_]+)\1\s*:\s*\(([^)]*)\)\s*,?/g
+  const leftover = body.replace(row, '').trim()
+  if (leftover) throw new Error(`drift test: ${name} has an entry that is not a literal tuple: ${leftover.slice(0, 80)}`)
+  for (const m of body.matchAll(row)) out[m[2]] = literalsIn(m[3])
+  return out
+}
+
+/**
  * A `{action: (from_statuses, to_status|None)}` table — `org_requests.TRANSITIONS`, the api's own
  * "single source of truth for which status an action moves a request out of".
  * Returns `action -> the statuses it may be applied FROM`.

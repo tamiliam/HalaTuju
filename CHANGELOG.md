@@ -4,8 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Team tables T5c — pages open by keys (branch t5c, not yet live)
 
-decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no endpoint, no web change;
-no live access moved.
+decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds
+one field to `admin/role/`); no live access moved, on the server or in the console.
 
 **P1 — the organisation-read and admin-work doors (server only):**
 - **One page gate, `staff_tables.opens(admin, *v2_keys)`** (all keys held, read through `effective_v2`; an unknown key
@@ -19,7 +19,7 @@ no live access moved.
   (TD-489; the Mentors list needs a lead ruling).
 - **`effective_v2` no longer asks the doors**: the Admins table grants `ORG_READ_V2`, the `admin` label grants
   `ADMIN_WORK_V2` (same sets as before).
-- An inactive row opens no door (it could not sign in anyway).
+- An inactive row opens no door, except an inactive super (`effective_v2` answers it in full); neither can sign in.
 - Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
   by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
   `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-489, TD-490.
@@ -41,6 +41,20 @@ no live access moved.
   decides something and fails when one appears outside an allowlist (module::function, class, owner, reason). The
   scanner is itself tested (a fake gate is caught). 177 sites in 142 functions: 50 DISPLAY, 44 OVERRIDE, 48 GATE-LEFT
   (T5e 42, T5d 4, TD-491 2), GATE-UNPLANNED none. No gate converted, no new debt.
+
+**P4 — the console reads the server's doors (P4a server, P4 web):**
+- T5c P4a: `admin/role/` serves `page_keys` (the v2 keys the doors ask, never null); every door reads its keys from `staff_tables.DOOR_KEYS` via `opens_door` (pure refactor, 0 moved cells).
+- T5c P4: the console's menu rows and page guards for the P1/P2 doors open by the served `page_keys`, read through
+  `lib/pageDoors.ts` (`opensDoor`, a copy of `DOOR_KEYS` held to the server's by a drift test). Rows on a door:
+  Organisation (`org_read`), Invitations and People (`team_read`), Sources (`sources`), Sponsors (`sponsors_read`),
+  Announcements, Surveys, Development. In-page gates (`pageGuard.opensDoorOr`): the Announcements / Surveys /
+  Development screens, the scholar Mentoring / Surveys / Growth tabs and the scholars list's mentor column, sponsor
+  emails, Sources' manage and invite. A payload without `page_keys` keeps today's role rules. Not converted (the
+  server has not): Team -> Mentors (TD-489), the platform, lead-only, money, Applications and Scholars rows. No
+  landing, string or layout change. Tests: new `teamTablesT5cDoors.test.ts` (the 27 served shapes x 45 cells —
+  menus, every route, landing, Mentors tab, the in-page gates — frozen on P4a before the change, identical with and
+  without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading
+  block, red since P1 removed `ORG_READ_KEYS` / `ADMIN_WORK_*`, now pins those as the older-payload rule.
 
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
 

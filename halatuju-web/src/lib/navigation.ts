@@ -26,7 +26,7 @@
  * drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts
  */
 
-import { ORG_READ_KEYS, admitsRow, type StaffPermission } from './staffPermissions'
+import { ORG_READ_KEYS, admitsRow, type DoorName, type StaffPermission } from './staffPermissions'
 import { isSuperRole } from './superRole'
 
 /** The scope a page belongs to. Platform → Organisation → Programme is the platform hierarchy
@@ -90,6 +90,7 @@ export interface NavItem {
   /** #39 S3: a TEAM MEMBER opens this row by holding any of these keys (`admitsRow`), not by role. */
   perms?: readonly StaffPermission[]
   adminKeys?: readonly StaffPermission[]   // Team tables T1: the Admins table ALSO opens it by a key (`admitsRow`)
+  door?: DoorName   // T5c P4: the server door (`pageDoors`): served `page_keys` decide; none = `roles` / `adminKeys`
   gate: NavGate
   /** Extra path prefixes that make this item the active one (sub-pages with no entry). */
   match?: readonly string[]
@@ -175,7 +176,8 @@ export interface NavGroup {
  *
  * Role sets reproduce the page guards (payments, contracts, sources `canManage`, billing); `sponsors`
  * and `requests` have NO client guard — their sets drive menu visibility only (the backend fences).
- * Team tables T1: `adminKeys` widens a row to the Admins table by a key, never narrows it.
+ * Team tables T1: `adminKeys` widens a row to the Admins table by a key, never narrows it. T5c P4: a row
+ * with no `door` is not converted on the server yet (T5d money, T5e lead / platform) and keeps its rule.
  *
  * NO item is marked `placeholder` — `billingRates` was the last one and its page shipped on
  * 2026-09-11. See that field's own note for the rule that governs the next request for one.
@@ -204,11 +206,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'referralPartners', href: '/admin/partners', chord: 'R',
         labelKey: 'admin.nav.referralPartners',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
-      // Reserved. `billing_rates` shipped 2026-07-27 (super-only, 403 for org_admin — the margin
-      // applied to a tenant is a commercial disclosure) but has no page yet.
-      // 2026-09-11: the page landed, so the reserved slot is gone. It was the registry's only
-      // `placeholder` and it earned that status honestly — the endpoint had shipped on
-      // 2026-07-27 and only the screen was missing.
+      // `billing_rates` (2026-07-27, super-only: a tenant's margin is a commercial disclosure). Its page
+      // landed 2026-09-11, ending the registry's only `placeholder` (the endpoint had shipped first).
       { id: 'billingRates', href: '/admin/billing-rates', labelKey: 'admin.nav.billingRates',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
     ],
@@ -229,7 +228,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // permanent redirect and is matched here, so a bookmark still lights the right sidebar row.
       { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
-        gate: { mode: 'always' }, exact: true,
+        door: 'org_read', gate: { mode: 'always' }, exact: true,
         match: ['/admin/administration', '/admin/organisation/programmes'] },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
       // request #10, and what is left is the asking. The ROUTE is unchanged deliberately — every
@@ -237,7 +236,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // label and the page moved.
       { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.invitations', chord: 'T',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
-        gate: { mode: 'always' }, match: ['/admin/invite'] },
+        door: 'team_read', gate: { mode: 'always' }, match: ['/admin/invite'] },
       // Sibling of Invitations, and deliberately next to it. **Invitations asks; People is where
       // everybody who is already in lives** — reviewers and admins, one tab each, and Revoke now
       // sits here rather than on a page about asking (2026-09-09). Same four roles as Invitations.
@@ -254,16 +253,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // page is NOT this row's rule: it is `MENTORS_READ_ROLES` (the server's `mentor_invite.may_read`).
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        adminKeys: ORG_READ_KEYS, gate: { mode: 'always' }, match: ['/admin/organisation/mentors'] },
+        adminKeys: ORG_READ_KEYS, door: 'team_read', gate: { mode: 'always' }, match: ['/admin/organisation/mentors'] },
       // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
       // before the people who fund them, in the order the work actually flows.
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], door: 'sources', gate: { mode: 'always' } },
       // ⚠ MENTORS had a row here from S7a (2026-10-31) until Team tables T3 (2026-11-03): they are Team →
       // Mentors now (owner ruling 6), and the old route redirects (matched to the Team row above).
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
-        gate: { mode: 'always' }, badge: 'pendingSponsors' },
+        door: 'sponsors_read', gate: { mode: 'always' }, badge: 'pendingSponsors' },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
@@ -363,10 +362,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         perms: ['see_all', 'review'], gate: { mode: 'always' }, needsProgramme: true },
       // ⚠ ANNOUNCEMENTS (S8), SURVEYS (S9), DEVELOPMENT (S10): super / org_admin / admin, each endpoint's own rule (`may_post` / `may_make`); no `needsProgramme` — each belongs to the organisation.
       { id: 'announcements', href: '/admin/programme/announcements', labelKey: 'admin.announcements.nav',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'announcements', gate: { mode: 'always' } },
       { id: 'surveys', href: '/admin/programme/surveys', labelKey: 'admin.surveys.nav', // S9: as Announcements
-        scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'surveys', gate: { mode: 'always' } },
+      { id: 'development', href: '/admin/programme/development', labelKey: 'admin.development.nav', scope: 'programme', roles: ['super', 'org_admin', 'admin'], door: 'development', gate: { mode: 'always' } },
       // ⚠ **PAYMENTS AND SPENDING MOVED HERE FROM ORGANISATION — TD-241, owner, 2026-09-11.**
       // Money is raised, released and spent PER GIFT: `PaymentRun.programme` has said so since
       // P2b, and a run that spanned two gifts would pay one benefactor's students from
@@ -477,6 +476,7 @@ export interface NavContext {
   pathname?: string
   mentoring?: boolean   // S7d: `/admin/role/` `mentoring` (a staff member who mentors now); absent = no
   tables?: readonly string[] | null   // Team tables T1: `/admin/role/` `tables`; absent = the rows' roles
+  pageKeys?: readonly string[] | null   // T5c P4: `/admin/role/` `page_keys` (a row's `door`); absent = its roles
 }
 
 /** A context with nothing probed yet — the safe default (see `canSee`). */
@@ -508,7 +508,7 @@ export function effectiveRole(
  * loaded". Treating 'unknown' as live would flash a dark feature in during the round trip.
  */
 export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide' {
-  if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring, ctx.tables)) return 'hide'
+  if (!admitsRow(item, ctx.role, ctx.permissions, ctx.mentoring, ctx.tables, ctx.pageKeys)) return 'hide'
   // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
   // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
   if (item.needsProgramme && ctx.programmeChosen === false && hasGiftDoor(ctx.role)) return 'hide'
@@ -611,9 +611,9 @@ export function activeItem(pathname: string): NavItem | undefined {
  * An unknown route returns true: absence from the registry must never invent a new block.
  */
 export function canAccess(href: string, role: AdminRoleName, permissions?: readonly string[] | null,
-                          mentoring?: boolean, tables?: readonly string[] | null): boolean {
+                          mentoring?: boolean, tables?: readonly string[] | null, pageKeys?: readonly string[] | null): boolean {
   const item = activeItem(href)
-  return item ? admitsRow(item, role, permissions, mentoring, tables) : true
+  return item ? admitsRow(item, role, permissions, mentoring, tables, pageKeys) : true
 }
 
 /** An item paired with its already-translated label, which is all the palette needs. */

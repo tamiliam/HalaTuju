@@ -202,19 +202,19 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
     return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1])
   }
 
+  // ⚠ T5c P1 removed the server's `ORG_READ_KEYS` / `ADMIN_WORK_KEYS` / `ADMIN_WORK_ROLES` (its doors read v2
+  // keys). Since T5c P4 the web's `adminKeys` rows are the OLDER-payload rule (no `page_keys`), frozen as T1
+  // had it: `ORG_READ_KEYS = ADMIN_KEYS`, no admin-work key, Mentors readers super / org_admin / admin. The
+  // served-payload rule is `pageDoors.DOOR_KEYS`, held to the server by `teamTablesT5cDoors.test.ts`.
   it('ADMIN_KEYS and the see_all-beside-qc rule match staff_tables.py', () => {
     expect([...ADMIN_KEYS]).toEqual(tuple('ADMIN_KEYS'))
-    expect(py).toMatch(/^ORG_READ_KEYS = ADMIN_KEYS$/m)
     expect(adminKeysHeld(['see_all', 'qc', 'review'])).toEqual([])
     expect(adminKeysHeld(['review', 'see_all', 'spending'])).toEqual(['see_all', 'spending'])
   })
 
   it('only the organisation READ rows widen to the Admins table, and no write row does', () => {
-    // ADMIN_WORK_KEYS is empty (owner, 2026-11-03): Sources, Mentors, Announcements, Surveys and
-    // Development stay on their roles. A row gaining `adminKeys` must name the server gate it mirrors.
-    expect(tuple('ADMIN_WORK_KEYS')).toEqual([])
-    // T3: the Mentors tab's readers are the server's ADMIN_WORK roles (+ a super), no key.
-    expect([...MENTORS_READ_ROLES]).toEqual(['super', ...tuple('ADMIN_WORK_ROLES')])
+    // T1 (frozen): Sources, Mentors, Announcements, Surveys and Development stay on their roles.
+    expect([...MENTORS_READ_ROLES]).toEqual(['super', 'org_admin', 'admin'])
     expect(NAV_ITEMS.filter((i) => i.adminKeys).map((i) => [i.id, i.adminKeys]))
       .toEqual(['administration', 'staff', 'reviewers', 'sponsors'].map((id) => [id, ADMIN_KEYS]))
   })
