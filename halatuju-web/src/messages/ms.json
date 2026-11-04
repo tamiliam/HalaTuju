@@ -3367,6 +3367,27 @@
     "table": {
       "scrollHint": "Leret jadual ke sisi untuk melihat selebihnya."
     },
+    "overview": {
+      "allClear": "Tiada apa yang menunggu anda",
+      "nothing": "Tiada yang menunggu",
+      "dueSoon": "{count} akan tamat tempoh",
+      "oldest": "Paling lama {days} hari",
+      "unassigned": "Belum ditugaskan",
+      "overdue": "Lewat",
+      "awaitingQc": "Menunggu QC",
+      "sponsorsToVet": "Penaja untuk disemak",
+      "invitations": "Jemputan menunggu jawapan",
+      "paymentRuns": "Pusingan pembayaran",
+      "requests": "Permintaan",
+      "walletCredits": "Kredit dompet",
+      "qcAwaiting": "Menunggu QC anda",
+      "myOpen": "Kes terbuka anda",
+      "myDueSoon": "Hampir tamat tempoh",
+      "myOverdue": "Lewat",
+      "mentees": "Mentee anda",
+      "notMet": "Lama tidak bertemu",
+      "askedHelp": "Meminta bantuan"
+    },
     "orgPage": {
       "nav": "Gambaran",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",

@@ -23,7 +23,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/about` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/[...notFound]` | Must | M6 | 6 (sandbox `m8-admin-not-found`) | 0 | 0 | 0 | 0 | ✅ |  |
-| `/admin/administration` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
+| `/admin/administration` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/programmes` |
 | `/admin/auth/callback` | Must | M6 | — | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
 | `/admin/billing` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
 | `/admin/billing-rates` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | platform super-admin sets per-service rates in a wide table — rare, and done at a desk |
@@ -36,7 +36,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/my-students` | Must | M6 | 6 (sandbox `m8-my-students`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/my-students/[id]` | Must | M6 | 6 (sandbox `m8-my-student`) | 0 | 0 | 0 | 0 | ✅ |  |
-| `/admin/organisation` | Must | M6 | 6 (sandbox `m8-organisation`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/programmes` |
 | `/admin/organisation/mentors` | Can | M7 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
 | `/admin/organisation/programmes` | Must | M6 | 18 (sandbox `m8-programmes-org-admin`, sandbox `m8-programmes-reviewer`, sandbox `m8-programmes-mentor`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |

@@ -22,6 +22,7 @@ jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ token: 'to
 const mockSelect = jest.fn()
 jest.mock('@/lib/programmeScope', () => ({ useProgrammeScope: () => ({ select: mockSelect, chosen: '' }) }))
 jest.mock('@/lib/admin-api/myProgrammes')
+jest.mock('@/lib/admin-api/myPending', () => ({ getMyPending: jest.fn().mockResolvedValue({ cards: [] }) }))
 jest.mock('./GiftProgrammes', () => ({
   __esModule: true, default: ({ title }: { title?: string }) => <div data-testid="gift-grid">{title}</div>,
 }))
@@ -46,7 +47,8 @@ describe('who gets which drawing', () => {
   it.each(['org_admin', 'super'])('%s gets the full gift grid, titled as the page', async (role) => {
     mockRole = role === 'super' ? { role: 'admin', is_super_admin: true } : { role }
     render(<ProgrammesLanding />)
-    expect(screen.getByTestId('gift-grid').textContent).toBe('admin.programmes.landing.title')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('admin.orgPage.nav')
+    expect(screen.getByTestId('gift-grid')).toBeTruthy()
     expect(mockApi.getMyProgrammes).not.toHaveBeenCalled()
   })
 

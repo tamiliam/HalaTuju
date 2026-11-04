@@ -65,7 +65,7 @@ describe('(b) a code the list does not know never selects', () => {
   it('an org_admin is sent to the Programmes page; nothing is fetched', async () => {
     openAt('/admin/spending?programme=not-a-gift')
     render(page())
-    await waitFor(() => expect(urlRouter.replace).toHaveBeenCalledWith('/admin/organisation'))
+    await waitFor(() => expect(urlRouter.replace).toHaveBeenCalledWith('/admin/organisation/programmes'))
     expect(mockApi.getSpendingOverview).not.toHaveBeenCalled()
     expect(scopeChosen()).toBe('(none)')
   })

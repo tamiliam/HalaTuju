@@ -49,7 +49,7 @@ import { useGiftInUrl } from '@/lib/useGiftInUrl'
 export type GiftGate = 'wait' | 'ask' | 'open'
 
 /** Where the gifts are listed. */
-export const GIFT_DOOR = '/admin/organisation'
+export const GIFT_DOOR = '/admin/organisation/programmes'
 
 export function useGiftGate(
   role: { role?: string; is_super_admin?: boolean } | null | undefined,

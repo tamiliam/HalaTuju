@@ -76,7 +76,7 @@ const MENTOR_LANDING = '/admin/organisation/programmes'
 const MENTOR = { role: 'mentor', is_admin: true, is_super_admin: false, permissions: [] }
 
 it.each([
-  '/admin', '/admin/organisation', '/admin/organisation/mentors', '/admin/organisation/staff',
+  '/admin', '/admin/organisation/mentors', '/admin/organisation/staff',
   '/admin/programme/overview', '/admin/scholarship', '/admin/scholars/104', '/admin/guide',
 ])('sends a mentor away from %s to Programmes before the page or the shell mounts', (path) => {
   mockRole = MENTOR

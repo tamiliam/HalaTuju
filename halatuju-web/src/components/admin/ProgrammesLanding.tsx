@@ -26,6 +26,7 @@ import { PHONE_CARD_XL } from '@/lib/phoneConsole'
 import { PHONE_PILL_SM } from '@/lib/phonePill'
 import { getMyProgrammes, type MyProgramme } from '@/lib/admin-api/myProgrammes'
 import GiftProgrammes from './GiftProgrammes'
+import PendingCards from './PendingCards'
 
 /** The counts a card may carry, in reading order, with the label each one wears. */
 const COUNTS = [
@@ -46,10 +47,15 @@ export function cardHref(p: MyProgramme): string {
 export default function ProgrammesLanding() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  if (hasGiftDoor(effectiveRole(role))) {
-    return <GiftProgrammes token={token} title={t('admin.programmes.landing.title')} />
-  }
-  return <MyProgrammesCards token={token} />
+  // ⚠ T5c P5b (owner 2026-11-05): ONE page called Overview — the caller's pending cards on top, the programme
+  // cards below. The pending strip is drawn in THIS chunk (no new async chunk: the bundle median has no room).
+  return (
+    <div data-testid="overview">
+      <h1 className="text-2xl font-semibold text-ground-900">{t('admin.orgPage.nav')}</h1>
+      <PendingCards token={token} />
+      {hasGiftDoor(effectiveRole(role)) ? <GiftProgrammes token={token} /> : <MyProgrammesCards token={token} />}
+    </div>
+  )
 }
 
 function MyProgrammesCards({ token }: { token: string | null }) {
@@ -71,8 +77,8 @@ function MyProgrammesCards({ token }: { token: string | null }) {
     (p as unknown as Record<string, string | undefined>)[`name_${locale}`] || p.name_en
 
   return (
-    <section data-testid="my-programmes">
-      <h1 className="text-2xl font-semibold text-ground-900">{t('admin.programmes.landing.title')}</h1>
+    <section data-testid="my-programmes" className="mt-8">
+      <h2 className="text-lg font-semibold text-ground-900">{t('admin.programmes.landing.title')}</h2>
       {data && (
         <p className="mt-0.5 text-sm text-ground-600">
           {data.every_gift ? t('admin.programmes.subtitle') : t('admin.programmes.landing.workSub')}

@@ -94,8 +94,10 @@ describe('AppShell renders the scope sidebar per role', () => {
     const nav = sidebar()
     expect(within(nav).getByText('admin.nav.group.programme')).toBeTruthy()
     expect(within(nav).getByText('admin.nav.group.organisation')).toBeTruthy()
-    expect(within(nav).getByText('admin.nav.programmes')).toBeTruthy()
-    expect(within(nav).queryByText('admin.orgPage.nav')).toBeNull()
+    // T5c P5b: ONE organisation row, "Overview" (the old Programmes label is gone), and no Invitations / People.
+    expect(within(nav).getByText('admin.orgPage.nav')).toBeTruthy()
+    expect(within(nav).queryByText('admin.nav.programmes')).toBeNull()
+    expect(within(nav).queryByText('admin.nav.invitations')).toBeNull()
     expect(within(nav).queryByText('admin.nav.group.platform')).toBeNull()
   })
 
@@ -409,7 +411,7 @@ describe('the rail waits for a gift before offering Configuration', () => {
     expect(railHref('admin.scholarship.nav')).toBe('/admin/scholarship?programme=bp-flagship')
     expect(railHref('admin.nav.programmeOverview'))
       .toBe('/admin/programme/overview?programme=bp-flagship')
-    expect(railHref('admin.orgPage.nav')).toBe('/admin/organisation')
+    expect(railHref('admin.orgPage.nav')).toBe('/admin/organisation/programmes')
   })
 
   it('(f) with several gifts and none chosen, the rows carry nothing', async () => {

@@ -204,7 +204,7 @@ describe('several gifts and none chosen', () => {
   it('⚠ an org_admin is REDIRECTED to the Programmes page — once, with replace', async () => {
     asRole('org_admin')
     inScope()
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
     expect(mockReplace).toHaveBeenCalledTimes(1)
     expect(mockPush).not.toHaveBeenCalled()
     // The instant before it lands: the loading line and nothing else — no box either.
@@ -216,7 +216,7 @@ describe('several gifts and none chosen', () => {
   it('a super is redirected the same way', async () => {
     asRole('super')
     inScope()
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
     noMoneyOnScreen()
   })
 
@@ -327,7 +327,7 @@ describe('who is redirected and who is asked', () => {
       asRole(role)
       const view = render(<GiftScope><PaymentsLandingPage /></GiftScope>)
       if (hasGiftDoor(role)) {
-        await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+        await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
       } else {
         expect(await screen.findByTestId('choose-programme')).toBeTruthy()
         expect(mockReplace).not.toHaveBeenCalled()

@@ -27,7 +27,6 @@ import { ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
 import AdminNotFound from '@/app/admin/not-found'
 import MyStudentsPage from '@/app/admin/my-students/page'
 import MyStudentPage from '@/app/admin/my-students/[id]/page'
-import OrganisationOverviewPage from '@/app/admin/organisation/page'
 import ProgrammesPage from '@/app/admin/organisation/programmes/page'
 import AdminProfilePage from '@/app/admin/profile/page'
 import ProgrammeOverviewPage from '@/app/admin/programme/overview/page'
@@ -118,6 +117,11 @@ const ORG_ROUTES: Record<string, () => unknown> = {
   '/api/v1/admin/admins/': () => ({ admins: [staff(1, 'Pentadbir Contoh', 'org_admin'), staff(7, LONG_TAMIL, 'reviewer'),
     staff(8, 'Devi Penyemak', 'reviewer'), staff(9, 'Balan Kewangan', 'finance')] }),
   '/api/v1/admin/sponsors/pending-count/': () => ({ count: 2 }),
+  // T5c P5b: the Overview's pending cards for an organisation admin (one zero, to show the muted card).
+  '/api/v1/admin/scholarship/my-pending/': () => ({ cards: [
+    { key: 'unassigned', count: 4 }, { key: 'overdue', count: 2, due_soon: 3 }, { key: 'awaiting_qc', count: 0 },
+    { key: 'sponsors_to_vet', count: 2 }, { key: 'invitations', count: 1 }, { key: 'payment_runs', count: 1 },
+    { key: 'requests', count: 0 }] }),
   '/api/v1/admin/invitations/': () => ({ kind: 'admins', invitations: [], waiting: { admins: 1, sponsors: 3, mentors: 0, sources: 0 },
     totals: { admins: 12, sponsors: 20, mentors: 2, sources: 1 }, grantable: [] }),
   '/api/v1/admin/scholarship/programmes/': () => ({ programmes: [
@@ -283,13 +287,6 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     render: () => <Console path="/admin/my-students/1" role={MENTOR} params={{ id: '1' }}><MyStudentPage /></Console>,
   },
   {
-    slug: 'm8-organisation',
-    title: 'Admin — Organisation overview',
-    note: 'Mobile M8: the three counts as rows and the vetting callout (the gift cards left for Programmes, T5c P5).',
-    routes: ORG_ROUTES,
-    render: () => <Console path="/admin/organisation" role={ORG_ADMIN}><OrganisationOverviewPage /></Console>,
-  },
-  {
     slug: 'm8-programmes-org-admin',
     title: 'Admin — Programmes (an organisation admin)',
     note: 'T5c P5: the landing as an organisation admin — every gift as a card (one long Tamil name), New, the menu.',
@@ -300,7 +297,9 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     slug: 'm8-programmes-reviewer',
     title: 'Admin — Programmes (a reviewer)',
     note: 'T5c P5: the landing as a reviewer — only the gifts with their cases, one count each, an Archived pill.',
-    routes: { ...SCOPES, '/api/v1/admin/scholarship/my-programmes/': () => MY_PROGRAMMES_REVIEWER },
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/my-programmes/': () => MY_PROGRAMMES_REVIEWER,
+      '/api/v1/admin/scholarship/my-pending/': () => ({ cards: [
+        { key: 'my_open', count: 6 }, { key: 'my_due_soon', count: 2 }, { key: 'my_overdue', count: 1 }] }) },
     render: () => <Console path="/admin/organisation/programmes" role={REVIEWER}><ProgrammesPage /></Console>,
   },
   {

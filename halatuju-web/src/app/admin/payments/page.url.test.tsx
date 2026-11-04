@@ -31,7 +31,7 @@ jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 const FLAGSHIP = 'brightpath-flagship'
 const SABAH = 'bpb-sabah-2026'
-const DOOR = '/admin/organisation'
+const DOOR = '/admin/organisation/programmes'
 const asRole = (role: string) => { mockRole = { role, is_super_admin: role === 'super', owning_org_id: 11 } }
 
 const run = (id: number, reference: string) => ({

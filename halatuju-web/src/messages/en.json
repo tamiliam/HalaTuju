@@ -3367,6 +3367,27 @@
     "table": {
       "scrollHint": "Swipe the table sideways to see the rest."
     },
+    "overview": {
+      "allClear": "Nothing is waiting on you",
+      "nothing": "Nothing waiting",
+      "dueSoon": "{count} due soon",
+      "oldest": "Oldest {days} days",
+      "unassigned": "Unassigned",
+      "overdue": "Overdue",
+      "awaitingQc": "Awaiting QC",
+      "sponsorsToVet": "Sponsors to vet",
+      "invitations": "Invitations awaiting reply",
+      "paymentRuns": "Payment runs",
+      "requests": "Requests",
+      "walletCredits": "Wallet credits",
+      "qcAwaiting": "Awaiting your QC",
+      "myOpen": "Your open cases",
+      "myDueSoon": "Due soon",
+      "myOverdue": "Overdue",
+      "mentees": "Your mentees",
+      "notMet": "Not met recently",
+      "askedHelp": "Asked for help"
+    },
     "orgPage": {
       "nav": "Overview",
       "sub": "Your organisation — its people, its sponsors and its money.",

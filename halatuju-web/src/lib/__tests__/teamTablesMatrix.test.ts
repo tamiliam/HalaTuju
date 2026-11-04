@@ -75,7 +75,7 @@ export const SHAPES: Record<string, Payload> = {
  *  Her landing and her Guide do not move (she lands by her first hat, reviewer). */
 const REVIEWER_MENU = ['programmeOverview:show', 'applications:show', 'scholars:show', 'spending:show',
   'profile:show', 'guide:show', 'faq:show']
-const ORG_READ_ROWS = ['administration:show', 'staff:show', 'reviewers:show', 'sponsors:show']
+const ORG_READ_ROWS = ['staff:show', 'reviewers:show', 'sponsors:show']
 const ORG_READ_HREFS = ['/admin/organisation', '/admin/administration', '/admin/organisation/programmes',
   '/admin/organisation/staff', '/admin/invite', '/admin/organisation/reviewers', '/admin/sponsors']
 /** The shapes seated at Admins by KEYS, not role: each gains exactly the organisation READ rows (they lead
@@ -220,7 +220,7 @@ describe('Team tables T1: the web reads the server rule, not a copy of its own',
     // T1 (frozen): Sources, Mentors, Announcements, Surveys and Development stay on their roles.
     expect([...MENTORS_READ_ROLES]).toEqual(['super', 'org_admin', 'admin'])
     expect(NAV_ITEMS.filter((i) => i.adminKeys).map((i) => [i.id, i.adminKeys]))
-      .toEqual(['administration', 'staff', 'reviewers', 'sponsors'].map((id) => [id, ADMIN_KEYS]))
+      .toEqual(['staff', 'reviewers', 'sponsors'].map((id) => [id, ADMIN_KEYS]))
   })
 
   it('a row is never NARROWED by tables: absent, empty or foreign tables answer exactly as before', () => {

@@ -886,7 +886,7 @@ describe('several gifts and none chosen', () => {
   it('an org_admin is REDIRECTED to the Programmes page, and no figure is drawn', async () => {
     mockRole = { role: 'org_admin', owning_org_id: 11 }
     inScope()
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation'))
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes'))
     expect(mockReplace).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('spending-totals')).toBeNull()
     expect(screen.queryByTestId('choose-programme')).toBeNull()

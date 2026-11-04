@@ -20,7 +20,17 @@ const MENUS = ['menu', 'menuNoGift', 'menuNothingProbed'] as const
 /** `isPlatform(id)`: whether a menu id is a platform-group row (they come before the organisation group). */
 export function t5cP5Moves(cells: Record<string, unknown>, role: string,
                            isPlatform: (id: string) => boolean): Record<string, unknown> {
-  if (!PROGRAMMES_ROLES.includes(role)) return cells
+  // T5c P5b (owner, 2026-11-05): the old Overview row (`administration`) is folded into `programmes`, so it leaves
+  // every menu, and its two routes (now redirects) answer by the folded row: open to every partner role.
+  const folded: Record<string, unknown> = { ...cells }
+  for (const m of MENUS) folded[m] = (cells[m] as string[]).filter((cell) => cell !== 'administration:show')
+  if (PROGRAMMES_ROLES.includes(role)) {
+    for (const h of ['/admin/organisation', '/admin/administration']) {
+      if (`open ${h}` in folded) folded[`open ${h}`] = true
+    }
+  }
+  if (!PROGRAMMES_ROLES.includes(role)) return folded
+  cells = folded
   const out: Record<string, unknown> = { ...cells }
   for (const m of MENUS) {
     const ids = cells[m] as string[]

@@ -90,7 +90,7 @@ describe('visibleNav per role', () => {
     // (the server's `my-programmes` read is the fence). Nobody else gained reach.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
       'spending', 'contracts', 'programmeConfig',
@@ -112,14 +112,14 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
       'spending', 'contracts', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'staff', 'reviewers', 'sources', 'sponsors',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
@@ -133,7 +133,7 @@ describe('visibleNav per role', () => {
     // (`SECTIONS_BY_ROLE`, pinned by `test_the_key_set_per_role_is_exact`). Recorded in
     // `docs/decisions.md` and `role-matrix.md`; typed out here so it stays a deliberate act.
     finance: [
-      'programmes', 'administration', 'staff', 'reviewers', 'sponsors',
+      'programmes', 'staff', 'reviewers', 'sponsors',
       'programmeOverview', 'payments',
       'profile', 'guide', 'faq',
     ],
@@ -246,7 +246,7 @@ describe('visibleNav per role', () => {
     for (const role of ['super', 'admin', 'org_admin', 'partner', 'reviewer', 'qc', 'finance', 'source_partner'] as const) {
       expect(canAccess('/admin/my-students', role, [])).toBe(false)
     }
-    for (const href of ['/admin', '/admin/organisation', '/admin/organisation/mentors',
+    for (const href of ['/admin', '/admin/organisation/mentors',
       '/admin/programme/overview', '/admin/scholarship', '/admin/scholars', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'mentor', [])).toBe(false)
     }
@@ -339,7 +339,7 @@ describe('activeItem resolves by longest match', () => {
     }
     // Four permanent redirects, each pointing at the row it now belongs to. An old bookmark must
     // light the correct sidebar row, not merely land somewhere.
-    expect(activeItem('/admin/administration')?.id).toBe('administration')  // → the org overview
+    expect(activeItem('/admin/administration')?.id).toBe('programmes')  // → the org overview
     expect(activeItem('/admin/invite')?.id).toBe('staff')                   // → org staff
     // The shape sprint (2026-09-03). The years page existed for exactly one sprint, so a bookmark is
     // young and a stale link is likelier than usual.
@@ -351,7 +351,7 @@ describe('activeItem resolves by longest match', () => {
   it('the organisation overview is a page, not a section', () => {
     // /admin/organisation must not swallow /admin/organisation/staff, which is its SIBLING in
     // the menu rather than its child — the same boundary rule as the /admin index route.
-    expect(activeItem('/admin/organisation')?.id).toBe('administration')
+    expect(activeItem('/admin/organisation')?.id).toBe('programmes')
     expect(activeItem('/admin/organisation/staff')?.id).toBe('staff')
     // …and the new settings page is a sibling too, not something inside the overview.
     expect(activeItem('/admin/organisation/settings')?.id).toBe('orgSettings')

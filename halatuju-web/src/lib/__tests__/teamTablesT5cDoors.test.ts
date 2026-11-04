@@ -134,7 +134,7 @@ describe('Team tables T5c P4: the doors are really read', () => {
 
   it('exactly the P1/P2 rows ride a door; everything else keeps its own rule', () => {
     expect(NAV_ITEMS.filter((i) => i.door).map((i) => [i.id, i.door])).toEqual([
-      ['administration', 'org_read'], ['staff', 'team_read'], ['reviewers', 'team_read'],
+      ['staff', 'team_read'], ['reviewers', 'team_read'],
       ['sources', 'sources'], ['sponsors', 'sponsors_read'],
       ['announcements', 'announcements'], ['surveys', 'surveys'], ['development', 'development'],
     ])

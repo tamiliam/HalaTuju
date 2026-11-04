@@ -1,133 +1,46 @@
 /**
  * @jest-environment jsdom
  *
- * Organisation → Overview, rendered. New on 2026-09-09, and it exists because of one live fault
- * the owner reported: the staff tile printed **"1 invited, not yet accepted"** over somebody who
- * had accepted in June and been REVOKED afterwards, and who therefore appeared nowhere on the
- * Invitations page he was being sent to.
- *
- * The number was `all staff − active staff`, which measures who has been switched off — not who
- * has yet to reply. Nothing rendered this page in a test, so nothing could see it.
+ * T5c P5b: the old Organisation Overview and the Administration hub are redirects to the ONE Overview page,
+ * in a single hop each. The count tiles that used to live here are the per-person pending cards now.
  */
-import { render, screen, waitFor, within } from '@testing-library/react'
-import OrganisationOverviewPage from './page'
-import * as api from '@/lib/admin-api'
+import { render } from '@testing-library/react'
+import OrganisationRedirect from './page'
+import AdministrationRedirect from '../administration/page'
+import { mayOpen } from '@/lib/pageGuard'
+import { activeItem } from '@/lib/navigation'
 
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) =>
-    <a href={href}>{children}</a>,
-}))
-jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-let viewerRole: Record<string, unknown> = { role: 'org_admin', owning_org_name: 'BrightPath' }
-jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
-}))
-jest.mock('@/lib/admin-api')
-// A stand-in that would show if the Overview drew the gift cards again (it must not: T5c P5).
-jest.mock('@/components/admin/GiftProgrammes', () => ({
-  __esModule: true, default: () => <div data-testid="gifts" />,
-}))
+const mockReplace = jest.fn()
+jest.mock('next/navigation', () => ({ useRouter: () => ({ replace: mockReplace }) }))
 
-const mockApi = api as jest.Mocked<typeof api>
+beforeEach(() => mockReplace.mockClear())
 
-/** BrightPath's real shape on the day of the report: 15 active staff, and ONE revoked admin
- *  (Shanti, who accepted on 2026-06-15). Nobody at all is waiting to reply. */
-const STAFF = [
-  ...Array.from({ length: 15 }, (_, i) => ({
-    id: i + 1, name: `Person ${i + 1}`, email: `p${i + 1}@example.org`,
-    role: i < 13 ? 'reviewer' : 'admin', is_active: true, is_super_admin: false,
-  })),
-  { id: 99, name: 'Shanti Subramaniam', email: 'shanti@example.org', role: 'admin',
-    is_active: false, is_super_admin: false },
-] as unknown as api.AdminItem[]
-
-const invitations = (waiting: Record<string, number>) => ({
-  kind: 'admins', invitations: [], invitable_roles: [], programmes: [],
-  waiting, totals: waiting,
-} as unknown as api.InvitationsPayload)
-
-beforeEach(() => {
-  jest.clearAllMocks()
-  viewerRole = { role: 'org_admin', owning_org_name: 'BrightPath' }
-  mockApi.getAdmins.mockResolvedValue({ admins: STAFF })
-  mockApi.getPendingSponsorCount.mockResolvedValue({ count: 0 })
-  // The two sponsors who really are waiting — and the reason the old tile was wrong twice: it
-  // only ever looked at STAFF, so it could not have seen these at all.
-  mockApi.getInvitations.mockResolvedValue(
-    invitations({ admins: 0, reviewers: 0, source: 0, sponsors: 2 }))
-})
-
-/** A tile, found by its heading. */
-const tile = (key: string) => within(screen.getByText(key).closest('a, div') as HTMLElement)
-
-const loaded = async () => {
-  render(<OrganisationOverviewPage />)
-  await waitFor(() => expect(screen.getByText('admin.nav.invitations')).toBeTruthy())
-}
-
-describe('the gift cards', () => {
-  it('⚠ are NOT on the Overview any more — Organisation → Programmes owns them (T5c P5)', async () => {
-    await loaded()
-    expect(screen.queryByTestId('gifts')).toBeNull()
+describe('Overview redirects', () => {
+  it('/admin/organisation goes to the Overview page', () => {
+    render(<OrganisationRedirect />)
+    expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes')
+  })
+  it('/admin/administration goes there in ONE hop (not via /admin/organisation)', () => {
+    render(<AdministrationRedirect />)
+    expect(mockReplace).toHaveBeenCalledTimes(1)
+    expect(mockReplace).toHaveBeenCalledWith('/admin/organisation/programmes')
   })
 })
 
-describe('the waiting count', () => {
-  it('⚠ counts what the SERVER calls waiting, across every kind', async () => {
-    // Two sponsors are waiting and no staff are. The old arithmetic would have said 1 — the
-    // revoked admin — and missed both sponsors.
-    await loaded()
-    await waitFor(() => expect(tile('admin.nav.invitations').getByText('2')).toBeTruthy())
+describe('the folded row does not widen any other route', () => {
+  it('the old paths light the Overview row, but its children keep their own rows', () => {
+    expect(activeItem('/admin/organisation')?.id).toBe('programmes')
+    expect(activeItem('/admin/administration')?.id).toBe('programmes')
+    expect(activeItem('/admin/organisation/staff')?.id).toBe('staff')
+    expect(activeItem('/admin/organisation/settings')?.id).toBe('orgSettings')
+    expect(activeItem('/admin/organisation/reviewers')?.id).toBe('reviewers')
   })
-
-  it('⚠ says NOBODY is waiting when nobody is, even with a revoked admin on the books',
-    async () => {
-      // The exact case the owner reported, as a test. Shanti is switched off and is still in
-      // STAFF; that must not become a person to chase.
-      mockApi.getInvitations.mockResolvedValue(
-        invitations({ admins: 0, reviewers: 0, source: 0, sponsors: 0 }))
-      await loaded()
-      await waitFor(() => expect(tile('admin.nav.invitations').getByText('0')).toBeTruthy())
-    })
-
-  it('shows a dash until the answer arrives, rather than a confident zero', async () => {
-    mockApi.getInvitations.mockReturnValue(new Promise(() => {}) as never)
-    render(<OrganisationOverviewPage />)
-    await waitFor(() => expect(tile('admin.nav.invitations').getByText('—')).toBeTruthy())
-  })
-})
-
-describe('the people tile', () => {
-  it('counts the staff who are IN', async () => {
-    await loaded()
-    await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
-  })
-
-  it('⚠ says NOTHING about revoked staff, however many there are', async () => {
-    // Owner, 2026-09-09: *"Remove '1 no longer has access' — doesn't inform decision or action."*
-    // It only existed because the tile used to print that subtraction under the WRONG name; once
-    // corrected, the number turned out to be one nobody needed. Organisation → People already
-    // shows "Revoked" beside the person it means. STAFF still carries a revoked row, so this
-    // fails the moment the line comes back.
-    await loaded()
-    await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
-    expect(screen.queryByText('admin.orgPage.revokedStaff')).toBeNull()
-  })
-
-  it('⚠ points at People, where those 15 actually are', async () => {
-    // It used to link to Invitations: the count of people who are IN sent you to the page about
-    // people who are not.
-    await loaded()
-    expect(screen.getByText('admin.nav.reviewers').closest('a')!.getAttribute('href'))
-      .toBe('/admin/organisation/reviewers')
-  })
-
-  it('counts only the ACTIVE staff, so a revoked row never inflates it', async () => {
-    // Drive over the bump for the count itself: STAFF holds 16 rows and one is switched off.
-    // Reading `staff.length` would print 16 and quietly overstate the team by one.
-    mockApi.getAdmins.mockResolvedValue({ admins: STAFF.filter((a) => a.is_active) })
-    await loaded()
-    await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
+  it('a role that could not open Invitations / People / Settings still cannot', () => {
+    for (const role of ['qc', 'reviewer', 'mentor']) {
+      for (const path of ['/admin/organisation/staff', '/admin/organisation/reviewers', '/admin/organisation/settings']) {
+        expect(mayOpen(path, { role })).toBe(false)
+      }
+    }
+    expect(mayOpen('/admin/organisation/settings', { role: 'finance' })).toBe(false)
   })
 })
