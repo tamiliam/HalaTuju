@@ -58,6 +58,212 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading
   block, red since P1 removed `ORG_READ_KEYS` / `ADMIN_WORK_*`, now pins those as the older-payload rule.
 
+## Offer exact-read S6 — the owner's genuineness rulings and the chip table (branch offer-read-s1, not pushed)
+
+Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (S6, "Plan (2026-11-03)"); owner go 2026-11-03
+with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). No migration. No paid call.
+
+- **Three moves-only splits first, each its own commit, suite identical after them (9,997 passed, 3 skipped):**
+  `pathway_engine.py` 633 → 467 (the matcher → new leaf `pathway_match.py`, six names re-exported; its
+  `oversize_files` line left the budget; the superseded-documents guard extended to the new file — TD-473 lands
+  there), `genuineness/results_doc.py` 600 → 482 (the five offer families + the 20 UA names → data-only
+  `offer_signatures.py`, re-exported), `officerCockpit.ts` 1657 → 1620 (the offer chips → leaf `offerFacts.ts`).
+- **Genuineness `MODEL_VERSION` 1.25.0** (1.23.0 / 1.24.0 went to request #53 and its follow-up on main; `VERDICT_ENGINE_VERSION` 2026-11-04.1) — `genuineness/offer_rulings.py`, applied by one call after the band:
+  a public TVET offer named on the letterhead with an offer body (a course line and a date / registration line)
+  → **genuine** at any band (Q2; a body-less suspect-band TVET page keeps 1.8.0's NOT CHECKED); a TVET offer slip
+  → suspect (ruling 6); a confirmation of studies from a polytechnic / UMS / a Form-6 college → genuine
+  (`doc_seen` `confirmation_*`), another university's → suspect (ruling 4 + default); a private college's
+  suspect-band offer → not_offer_letter (rulings 2 / 7, incl. KPTM / UniKL); a portal page / e-Daftar printout
+  → never below suspect (ruling 3; an application slip stays not_offer_letter); the private-arm veto's "Sdn Bhd"
+  arm skips a ministry family's own letter (`_private_arm_offer` itself unchanged). **Corpus (287, free):** the
+  14 ruled letters move, nothing else does — `eval/offer_genuineness_check.py` dev 197 / 197, held-out 90 / 90
+  (held-out run twice: once on the first rules, once after a dev-neutral tightening for the C1 typed-fake probe;
+  both 90 / 90). New PII-free `eval/offer_genuineness_expect.json`.
+- **Gates** (`VERDICT_ENGINE_VERSION` 2026-11-03.1): submission blocks ONLY on not_offer_letter
+  (`pathway_engine.offer_fails`, rule 1) — a suspect never blocks (rule 8); the ladder counts only Name / IC
+  **mismatch** as red (`_OFFER_CHIP_RED = {'mismatch'}`) and no longer counts the Pathway chip, so a suspect
+  reads Probable, a not_offer_letter Unsure (still `offer_not_official`, the award disqualifier). The Action
+  Centre still refuses a suspect upload as the answer to an official-offer request. A confirmation letter never
+  writes a pick (realign, link / fill, autofill: `pathway_engine.is_confirmation_letter`). The
+  `offer_official_status` docstring now says what suspect / not_offer_letter mean.
+- **Chips (cockpit, `offerFacts.ts`) — the owner's table:** Name / IC green match · yellow partial / unreadable ·
+  red mismatch; Pathway green (match, or `pathway_set_by_offer`: she declared nothing and a GENUINE offer set the
+  pick — a chip-only flag, `pathway` itself unchanged) · otherwise yellow, NEVER red; Official green genuine (new) ·
+  yellow suspect · red not_offer_letter; Reporting date (new) green read · yellow not printed. The student's
+  "differs from your choice" badge is amber, not red. `DocumentsDrawer.tsx` untouched.
+- **Student words (en / ms / ta):** a suspect offer — "This doesn't look like an offer letter. If you have your
+  offer letter, please upload it as well. Nothing is blocked…"; a not_offer_letter one — "This can't be accepted
+  as an offer letter from a public institution…" (no "Nothing is blocked": it blocks). Cockpit label
+  `fact.reportingDate` reuses the house words for the reporting date.
+- **Dry run:** `offer_s4_dry_run.py --s6` (`eval/offer_s6_dry_run.py`): the deploy pass (old rules vs new on
+  STORED data, every live application) and the re-score pass (the S7 preview), with GO / STOP rules.
+- **Adversarial review fixes (7 High, 2 Medium, 4 Low; `tests/test_offer_s6_review.py`):** Q2 genuine needs an
+  institute named (never an agency alone), no private sign, and below the floor a body naming the candidate and the
+  institute; sponsor words + PENAJAAN / DIBIAYAI / PEMBIAYAAN / BIASISWA; KUPTM / UPTM private; confirmations need
+  their issuer's public mark, a student / programme line and a score floor, and no private sign; printouts are
+  recognised by portal-only furniture and never over a private sign; the Sdn Bhd exemption needs the ministry line
+  first; rules 2 / 7 fail only on positive private evidence or a private conditional; Kolej Komuniti / Matrikulasi /
+  Vokasional / ASWARA / ILKKM are public words; the TVET slip test reads the letterhead only. Doors: the officer's
+  own offer request is not auto-closed by a `tvet_*` / `confirmation_*` upload; a confirmation gets no pathway hearing
+  and `confirm_pathway` refuses it. The dry run STOPs on a new block a re-score would lift and lists
+  `blocked_on_a_stale_call`. The `offer_not_official` copy now says what fails (en / ms / ta). Re-exports are
+  explicit (`import x as x`), so a linter fix cannot drop them.
+- **Second review — structural, and learnable** (owner 2026-11-03: keep green, no hedging cap;
+  `tests/test_offer_s6_review2.py`): NFKC text; the first institution a page names is its issuer (tie-ups under a
+  private letterhead never lift); a TVET genuine needs a real letter's structure in order (reference, date,
+  candidate, title, closing; no padding); confirmations need their public institution named first and its own
+  public mark; private printouts never lift; a "Sdn Bhd" is excused only on a payment / bank / vendor line or the
+  addressee's address; "Sendirian Berhad" is a private-arm phrase; bank "Berhad" lines are not private evidence;
+  GMI is private (the programme-subsidy test, decisions.md). Every lift's reason names its ruling
+  (`[S6 ruling: <tag>]`, `offer_rulings.ruling_of`), counted by `offer_genuineness_check.py`. The dry run gains
+  `no_rescore` and `lifted_by_a_ruling` and keys re-scores by document. The `offer_not_official` text says what
+  private means (en / ms / ta).
+- **Third review** (`tests/test_offer_s6_review3.py`): the letterhead may name only the allowed bodies (no other
+  organisation noun, no partner wording); the structure test asks for a labelled name, an IC number, a course
+  and a reporting line and 12+ lines; below the floor the body names the institute again; the SAFETY RULE — a
+  closed-list public body with no private evidence that misses a rule reads suspect (NOT CHECKED in the suspect
+  band), never a fail; another organisation named first is a fail by its reason; bank / insurer / co-operative
+  lines excuse a "Berhad", a fee to a company does not; ABM public; UniKL fails only on the letterhead; UMS PPPL
+  private (owner); linear-time token share (40 000 lines < 1 s); dry-run no-rescore buckets and moves by ruling.
+- **Fourth review** (`tests/test_offer_s6_review4.py`): confirmations need 12+ lines (glued layers split on their
+  labels first) and the name / IC on lines of their own; more tie-up words; organisation nouns by stem; the
+  letterhead skips a reference / date line; TVET letters get the incidental-company excuse (a letterhead "Sdn Bhd"
+  still vetoes); spelt-out TVET is neutral only on the title line; glued "RUJ" not inside a word; street / ISO lines
+  name no organisation.
+- **Fifth review — the safety rule at one exit** (`tests/test_offer_s6_review5.py`): every ruled result passes
+  `_safety_exit` — a TVET / confirmation page whose first institution is an allowed public body and that shows no
+  positive private evidence is never `not_offer_letter` (a missed rule reads suspect); own-unit lines (faculty,
+  division, campus …) and English public names are not other organisations; the unlabelled addressee block ends
+  the letterhead; private names beside "Ruj" / the date are read; glued layers split only when really labelled;
+  company excuses refuse the letterhead's own name and campus / technology words; `offer_reading.py` (split).
+- **Correction to the fifth review's commit (f233d33c):** its message and `offer_reading.py`'s docstring said the
+  page-reading helpers "moved verbatim". That was wrong: 8 of the moved names were changed and 7 new names were
+  added inside the same move. The commit is not amended; this note and the corrected docstring record it. From
+  here on a move and a behaviour change go in separate commits.
+- **Sixth review — private letters that escaped through the safety rule** (`tests/test_offer_s6_review6.py`):
+  an unclean letterhead (an organisation other than the closed-list bodies) and the private-college reason now
+  count as positive private evidence, and a TVET letter with an unclean letterhead keeps its band; the safety
+  rule's "named first" list holds only the closed-list bodies' names (no generic ministry / department /
+  government word, so "KEMENTERIAN … / KOLEJ ABC" names KOLEJ ABC first); a public or unit word excuses a line
+  only when no organisation noun comes before it and no institution / company name after it ("KOLEJ ABC
+  (KEMENTERIAN …)", "KOLEJ ABC UNIT KEMASUKAN", "FAKULTI PERNIAGAAN, KOLEJ UNIVERSITI ABC" stay private); campus
+  words straight after a closed-list name are its campus on the letterhead test too ("IKTBN KAMPUS SEPANG"); a
+  confirmation engages the rules only from `CONFIRM_MIN` and with its title at the top (before any offer title,
+  within the page's first half / 400 characters); POLYTECHNIC (English) is a polytechnic name; a one-word company
+  name on the letterhead keeps the veto; ISLAMIC is finance only beside BANK, or beside BERHAD with no
+  organisation noun (both the line excuse and `offer_issuers._letterhead`). Dev 197/197 unchanged.
+- **Round 7 — THE NARROWING (owner option 1, `docs/decisions.md` S6 items 7 + 8; `tests/test_offer_s6_narrowing.py`):**
+  S6 now changes a call ONLY on clear proof. Every offer keeps its BASELINE, the pre-S6 call
+  (`results_doc.baseline_genuineness`: the 1.22.0 veto + band + 1.8.0 net, unchanged, and `offer_issuers` back to
+  its pre-S6 code but for `officer_must_close`); `offer_rulings.apply_rulings` changes it only by a BLOCK (a
+  private letterhead: Sdn Bhd / Berhad, GMI / UniKL / KPTM / KUPTM / UPTM / UM SATU / UMS PPPL, tie-up words — read
+  on a letterhead block that ends at the title, salutation, "Kepada" or the addressee), a LIFT (a closed-list name
+  on the letterhead, named first, a clean letterhead, the full letter shape, no private marker anywhere; JMTI and
+  CIAST join the institutes, owner ruling) or rulings 3 / 6 (printout, TVET slip → suspect). Deleted: the safety
+  exit, `tvet_unverified` / `confirmation_unverified`, `_positive_private`, `_public_first_names`, the
+  conditional-offer block, `confirmation_ua`, `tvet_letter_naming_a_company`, `_private_mara_letterhead` and the
+  S6 additions to `offer_issuers` / `_PRIVATE_ARM_PHRASES`. The round 1-6 tests that pinned a guess are re-pinned
+  to the baseline. `eval/offer_genuineness_check.py` reads each letter's baseline and lists every changed call
+  with its tag (an untagged change is a MISS): 13 corpus letters change, all tagged; the other 274 equal the
+  pre-S6 engine's output. Dev 196 / 197 — a391 (a private college's CONDITIONAL offer, no letterhead proof) keeps
+  its baseline `suspect` instead of the old `not_offer_letter`; held-out 90 / 90.
+- **Round 8 — the two overlays made stricter and simpler** (`tests/test_offer_s6_narrowing.py`, class `Round8`):
+  the LIFT's "no private marker anywhere" keeps only two excuses — a closed-list BANK's own "Berhad" line
+  (Maybank, CIMB, Bank Islam, RHB, Public Bank, BSN, AmBank, Hong Leong, Bank Rakyat, Affin, Alliance, Agrobank,
+  Muamalat, OCBC, HSBC, UOB, Standard Chartered, Al Rajhi, MBSB) and the addressee block BETWEEN the reference /
+  date and the title (never after it); a supplier, sponsor, footer, signature or a fee to a company is a marker,
+  SWASTA / IPTS never excused; S/B, SDNBHD, SDN. BHD. are company words. The BLOCK's letterhead is the lines from
+  the top to the first postcode line, stopping earlier at a reference, date, title, salutation, "Kepada",
+  candidate or patronymic-name line; sponsor lines are skipped; a street name is no tie-up; a tie-up word counts
+  only beside an institution or company. The page is folded once per call (proof and marker memoised). Corpus:
+  the same 13 tagged changes; a259's incidental-company lift holds.
+- **Round 9 — stricter again, no new guesses** (`tests/test_offer_s6_narrowing.py`, class `Round9`): a TVET lift
+  needs the INSTITUTE itself on the letterhead (an agency / ministry name alone is not enough) and an admission
+  title (PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN is money, not a place); PUSAT BERTAULIAH is a private sign; a
+  Form-6 confirmation names Form 6 (TINGKATAN ENAM / 6, FORM 6 / SIX, PRA-U) or is a KOLEJ TINGKATAN ENAM; a
+  BLOCK company / tie-up line counts only BEFORE any closed-list public name, and the block stops at a "d/a" /
+  "u.p." line; a contact line is read without its contact tokens; PPPL's "&" / English names are named private
+  bodies; a tie-up is RAKAN / KERJASAMA / PARTNER beside KOLEJ / INSTITUT / UNIVERSITI / COLLEGE / UNIVERSITY /
+  ACADEMY, and such a line anywhere stops a lift; "S/B" is a company only right after a name; the unit prefix is
+  bounded. Corpus: 10 tagged changes — a228 d3465 / d3466 (KBS letterhead, IKBN in the body) and a329 (TVETMARA
+  letterhead) lose their lift to the baseline under the institute-on-the-letterhead rule; dev 195 / 197, held-out
+  88 / 90.
+- **The agency-letterhead lift (owner ruling, decisions.md S6 item 9):** `offer_rulings._agency_lift` — one of MARA
+  / TVETMARA / KBS / JTM-KSM alone on the letterhead, its own institute in the body, an admission title (no money
+  word in the title or first body lines), the full shape, no private marker, no other organisation in the body.
+  Tag `tvet_offer`, reason `agency_letterhead: …`, `doc_seen` the closed-list key. Tests: class
+  `Round10AgencyLetterhead`. Condition 4 refined: an institution noun is another organisation only when a name
+  follows it on its line (raw case; descriptor words skipped; generic "pihak institut", "institusi/kolej" are not);
+  ILKBS / ILJTM / IPMa umbrella names count as their own agency. Corpus: a228 d3465 / d3466 and a329 lift again —
+  13 tagged changes from the baseline; dev 196 / 197 (a391), held-out 90 / 90.
+- **Round 10 (items that hold whatever the owner picks for the agency lift; class `Round10`):** money offers —
+  one list for both TVET lifts (PEMBIAYA* / PINJAMAN / BIASISWA / TAJAAN / PENAJAAN / DERMASISWA / ELAUN /
+  BANTUAN / LOAN / SPONSORSHIP / SCHOLARSHIP / FINANCING / FUNDING / ALLOWANCE / GRANT / BURSARY) read on the title
+  and the first five body lines, and no lift from a fail with a loan / financing word within two lines of an RM
+  amount; the institute must be FIRST on the letterhead (after crest / government / address lines only) for the
+  institute lift; the body's institution-noun test reads OCR 0 / 1 as O / I. The same first-on-the-letterhead
+  rule for confirmations is HELD: it drops a188 / a284 (a "BAHAGIAN …" division line above the UMS name) and a123
+  (two short lines above the Form-6 name). Corpus: 13 tagged changes, dev 196 / 197, held-out 90 / 90.
+- **M4 for confirmations (lead's ruling 2026-11-04; class `Round10M4Confirmations`):** the polytechnic / UMS /
+  Form-6 name must come first on the letterhead; above it only crest / government / address lines, the
+  institution's OWN division line (BAHAGIAN / PEJABAT / UNIT / SEKSYEN / JABATAN / PUSAT / DIVISION / OFFICE /
+  DEPARTMENT / CENTRE FOR, naming no company, private body or other institution) or a short crest / motto line
+  (at most two words, no institution noun, company or digit). a188 / a284 / a123 lift again (13 tagged changes).
+  Accepted gap TD-492: a two-word private name with no institution noun passes as a crest line.
+- **The agency lift's condition 4 made CLOSED-WORLD (owner: app 329 green; lead's rulings 2026-11-04; class
+  `Round10AgencyClosedWorld`):** new `genuineness/offer_agency.py` (the round-11 "word after the noun" test is
+  deleted). Allowed spans: the institute with its catalogued campus words (the API's TVET catalogue:
+  `apps.courses.tvet_institutions.HELD` + `data/tvet/uptvet_F1_source.json` / `uptvet_F2_source.json`), the
+  agency and its umbrella names, the spelt-out TVET sector, a field label before the institute, a label-only line,
+  bank / addressee lines; anything else that is an organisation word blocks (bare lowercase generic nouns
+  excepted); operator phrases, other agencies' full names and acronyms, glued nouns, a line-end noun with a name
+  on the next line all block; the agency first on the letterhead, name lines below it block, WAKIL / EJEN / AGEN
+  block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-493.
+- **Round 11 (1 High, 7 Medium, a Low; class `Round11`):** ONE organisation-word list (`offer_reading._ORG_WORDS`
+  + KOPERASI / SYARIKAT / CONSORTI*, read by the agency lift through `is_org_token`, a drift test); campus words
+  after an allowed name are whole CATALOGUED campus phrases (or states / KAMPUS / address words of other lines); a
+  label's bracket holds only label words or the family's acronyms; an umbrella name followed by a name blocks;
+  glued organisation stems block on the letterhead and as fragments; a lowercase generic noun blocks when a name
+  follows within three tokens (across punctuation and the line end); WAKIL / EJEN / AGEN stop every lift; a named
+  private body is block proof only before the public name or alone on its line (contact lines, logo strips and
+  street names skipped); one normaliser for every S6 check (`normalise_s6`: accents, full-width, zero-width /
+  soft hyphen, Cyrillic / Greek lookalikes; spaced letters joined). The lead's a329 rulings: up to three
+  one-token fragments above the agency, each junk or an OCR echo of an address word below; GLOBAL / TECH / SKILLS
+  … after a descriptor ("Pendidikan Global") is no organisation. All-lowercase names stay a known gap (TD-493).
+  13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- **Round 12 (2 High, 3 Medium; class `Round12`):** ONE glued-name test (`offer_text.glued_org`: an institution
+  noun at a token's start, any shared-list word at its end, the rest 3+ letters; whole words, since the list's
+  open stems would swallow "HUBUNGI" / "SCHEDULE"; allowed names written without spaces skipped) used on every
+  body token, the fragments, the agency letterhead and the institute / confirmation letterhead test; the
+  descriptor exception holds only with no name before the descriptor run and none after the weak word; echo and
+  campus words come only from the letterhead's own address (and the catalogue), echoes also from the addressee
+  block(s) — a KEPADA block or a reference / date line with the candidate line before the next title (a329's
+  echo is on its second letter's addressee address); a function word after the institute no longer hides the
+  name after it. Corpus scan: 13 glued tokens in 9 of the 287 letters (glued institution phrases), no call moves.
+- **Round 13, the last check (2 High, cheap Mediums, 1 Low; class `Round13`):** the one normaliser
+  (`offer_text.normalise_s6`) reads a word mixing letters and digits as OCR when the digits spell an organisation
+  word ("ACAD3MY", "K0LEJ", "Ko1ej" — 1 is tried as I and as L), else splits it ("AKADEMI21" -> "AKADEMI 21",
+  "Mercu2Academy" -> "Mercu 2 Academy"); a closed-list / agency name inside a glued token is taken out and the REST
+  is tested ("MARASKILLS", "IKMSKILLS", "KBSACADEMY", "ADTECMERCUCOLLEGE" block; only an empty rest or a catalogued
+  campus word passes, "UNIVERSITIMALAYSIASABAH"); SKILLS / TRAINING / TUISYEN / TUITION glue at a token's start and
+  an institution noun inside a token counts ("MERCUACADEMYKUANTAN"); the name part must be 4+ letters and no Malay
+  affix or English compound head. Common-word scan: 0 of the reviewer's 175 words flag. The owner's stop rule
+  (decisions S6 item 10) sends what is left to TD-493 / TD-494. 13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- **Round 14, the final check (class `Round14`): round 13 had started to block real public letters** — fixed
+  under the stop rule. "SkillsMalaysia" / "WorldSkills" are never glued names, and MALAYSIA, a state or a catalogued
+  campus word is never a glued name part; "akademiknya" / "academic…" never glue; a training word at a token's
+  start needs a 5+ letter name ("SkillsTest", "TrainingPlus", "Tuitionfees" are words); OCR digits are read only
+  inside a word ("K0LEJ", "Ko1ej") or as one edge digit that completes the noun ("AKADEM1"), and e-mail / web
+  addresses are read as written; a noun followed by a number ("KOLEJ 1", "PUSAT 1013", "Kampus 2 Labuan") is a room
+  / college number unless a name stands right before it or right after the number ("Akademi 21 Mercu", "Mercu
+  Academy 2", "Edu360 Kuantan"); the condition-4 number "1" stays a number. Perf: the name list is sorted once,
+  the patterns compiled once, and a field label is looked for just before the institute (the 48 KB one-line page
+  was 0.6 s). On the reviewer's real-letter probes: 33 rows better than round 12; 8 rows round 12 lifted now block,
+  each because its digits now read as letters and the plain spelling blocked in round 12 too ("Ko1ej Kediaman" =
+  "Kolej Kediaman"; "IKM1 Kuantan" on a KBS / JTM letter names a MARA institute). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
+  C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
+
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (LIVE 2026-11-04; main 307d204c; api-01249-zqp, web-01078-pgb)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
@@ -367,7 +573,6 @@ No template's wording, switch or sending changed; nobody gains or loses an edito
   with no content).
 - The T1 access matrix declares the new cell (`T4_ADDED`, the sponsor-emails list's own cell per shape). Guide (Your
   team) and FAQ ("Which emails does my team receive?") updated; the mentor letter's home now reads Team -> Emails.
-
 ## Mobile M6b — the reviewer's case page on phones — LIVE 2026-11-03 (main bff52794, web-01072-xpr)
 
 Owner-approved mock-ups and answers (decisions.md, the Mobile M6 entry). **LAYOUT ONLY:** no onClick, disabled rule,

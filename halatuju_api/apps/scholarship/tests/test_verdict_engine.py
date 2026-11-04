@@ -762,21 +762,21 @@ class TestPathway(_Base):
         d.save(update_fields=['vision_fields'])
         return d
 
-    def test_suspect_offer_is_unsure_step_plus_pathway_chip(self):
-        # Owner 2026-07-08 (#131, refining the locked #31): a non-genuine document establishes NO
-        # pathway, so the Pathway VARIABLE is red even when the programme text matches — it stacks
-        # with the step. suspect(−1) + pathway-not-established(−1) = −2 → 'recommend' (🟡 Unsure).
+    def test_suspect_offer_is_probable_the_step_alone(self):
+        # S6 (owner chip table 2026-11-02 + ruling 8): the Pathway chip is never counted red; the suspect step
+        # (−1) alone → 'review' (🔵 Probable), never a block. Was 2026-07-08's −2 → Unsure.
         self._offer('suspect')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('document_not_genuine', _codes(f['unresolved']))
 
-    def test_fake_offer_is_fail_step_plus_pathway_chip(self):
-        # The #84 arithmetic (owner 2026-07-08): fake(−2) + pathway-not-established(−1) = −3 →
-        # 🔴 Fail, with the confident 'offer_not_official' caveat (an award CONFIDENT_DISQUALIFIER).
+    def test_fake_offer_is_unsure_the_step_alone_and_still_disqualifies(self):
+        # S6 (owner chip table 2026-11-02 + ruling 8): the Pathway chip is never counted red; fake(−2) alone → 🟡 Unsure,
+        # with the confident 'offer_not_official' caveat (an award CONFIDENT_DISQUALIFIER) and the
+        # submission block (`offer_fails`, rule 1). Was 2026-07-08's −3 → Fail.
         self._offer('not_offer_letter')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'gap')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('offer_not_official', _codes(f['unresolved']))
 
     def test_genuine_official_offer_still_verifies(self):
@@ -805,21 +805,20 @@ class TestPathway(_Base):
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
 
-    def test_offer_missing_ic_field_is_red_chip_probable(self):
-        # Owner 2026-07-07: a required IDENTITY field the offer doesn't show (candidate_nric empty on
-        # an extracted offer → student_offer_check 'unreadable') is a RED IC chip, matching the cockpit
-        # (factStatus reds 'unreadable'). A lone missing IC on a genuine offer → −1 → 🔵 Probable, NOT
-        # Certain (the tile now agrees with the red IC chip the reviewer sees).
+    def test_offer_missing_ic_field_is_a_yellow_chip_not_a_band_step(self):
+        # S6 (owner chip table 2026-11-02): an IC the offer does not show ('unreadable') is a YELLOW
+        # chip — many universities print none (decisions.md 2026-11-01 rule 4) — so it is not counted:
+        # a genuine offer with a blank IC reads Certain. Was 2026-07-07's red chip → Probable.
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
                      fields=dict(self._OWN_OFFER, candidate_nric=''))
         d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
         d.save(update_fields=['vision_fields'])
-        self.assertEqual(_facts(self.app)['pathway']['status'], 'review')
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'verified')
 
     def test_offer_missing_ic_plus_pathway_mismatch_plus_suspect_is_fail_hash64(self):
-        # The #64 worked example: a suspect offer (step −1) whose candidate IC is missing (−1 red chip)
-        # AND whose place clashes with the declaration (−1 red Pathway chip) = −3 → 🔴 Fail.
-        # (After the owner re-runs the offer under 1.4.0 → fake, step −2 → −4, still Fail.)
+        # The #64 worked example. S6: a suspect offer (step −1) whose IC is missing (yellow, not counted)
+        # and whose place clashes with the declaration (yellow; the confirm query holds the base at
+        # Probable) → 🔵 Probable + the pathway_confirm query. Was −3 → Fail (2026-07-07 / 07-08).
         self.app.chosen_pathway = 'asasi'          # same family as the Foundation offer (within-type clash)
         self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
@@ -828,7 +827,7 @@ class TestPathway(_Base):
         d.vision_fields = dict(d.vision_fields, authenticity={'status': 'suspect', 'reason': 'x'})
         d.save(update_fields=['vision_fields'])
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'gap')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('pathway_confirm', _codes(f['unresolved']))
 
     def test_offer_matching_declared_is_verified_no_nag(self):
@@ -883,15 +882,15 @@ class TestPathway(_Base):
 
     def test_offer_notice_without_identity_is_no_identity_unsure(self):
         # Sharvin: a general UTM NOTICE whose body read fine (issuer/institution/programme present) but
-        # carries NO candidate name or IC. Both required identity fields are missing → 2 red chips →
-        # 🟡 Unsure (owner 2026-07-07: a placeholder without identity can't confirm the pathway). The
-        # officer is still told "no identity on it" (offer_no_identity), never "ask for a clearer copy".
+        # carries NO candidate name or IC. S6: both are yellow chips (not counted), so the base band's own
+        # under-claim holds it ('review', shown Unsure for want of a green). The officer is still told
+        # "no identity on it" (offer_no_identity), never "ask for a clearer copy".
         _add_doc(self.app, 'offer_letter', student_verdict='ok',
                  fields={'candidate_name': '', 'candidate_nric': '',
                          'institution': 'Universiti Teknologi Malaysia',
                          'programme': 'Program Asasi dan Diploma UTM'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('offer_no_identity', _codes(f['unresolved']))
         self.assertNotIn('offer_unreadable', _codes(f['unresolved']))
 
@@ -2083,11 +2082,11 @@ class TestGenuinenessLadder(_Base):
         self.assertIn('document_not_genuine', _codes(f['unresolved']))
 
     def test_fake_offer_with_summons_lifts_one_band_only(self):
-        # fake + bonus → effective step 1; the pathway chip still fires (still not official)
-        # → 1 + 1 = 🟡 Unsure (never green). The confident offer_not_official caveat stays.
+        # fake + bonus → effective step 1 → 🔵 Probable (S6: no Pathway chip stacks on it). Never green;
+        # the confident offer_not_official caveat stays, and the submission still blocks (rule 1).
         self._bonus_offer('not_offer_letter')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('offer_not_official', _codes(f['unresolved']))
 
     def test_bonus_never_offsets_identity_chips(self):
@@ -2100,7 +2099,7 @@ class TestGenuinenessLadder(_Base):
 
     def test_private_letter_gets_no_bonus(self):
         # #93 UniMAIWP: a date + label but NO public-issuer signature on the page → no bonus;
-        # fake(−2) + pathway chip(−1) = 🔴 Fail unchanged.
+        # S6: fake(−2) alone = 🟡 Unsure (was −3 Fail with the Pathway chip); it still blocks (rule 1).
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
                      fields={'reporting_date': '19 September 2026', 'reporting_date_label': 'Tarikh',
                              'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
@@ -2110,11 +2109,11 @@ class TestGenuinenessLadder(_Base):
             'status': 'not_offer_letter', 'reason': 'x', 'doc_seen': 'ua_offer',
             'present': ['Program / Kod Program']})
         d.save(update_fields=['vision_fields'])
-        self.assertEqual(_facts(self.app)['pathway']['status'], 'gap')
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'recommend')
 
-    def test_pathway_hash31_pemakluman_pathway_mismatch_is_unsure(self):
-        # The #31 worked example: a pemakluman scores 'suspect' (p~0.40, step -1); Name + IC green,
-        # but the offer names a different place than declared (1 red Pathway chip, -1) = -2 -> Unsure.
+    def test_pathway_hash31_pemakluman_pathway_mismatch_is_probable(self):
+        # The #31 worked example: a pemakluman scores 'suspect' (p~0.40, step -1); Name + IC green; the
+        # offer names a different place (S6: a YELLOW Pathway chip + the confirm query) -> Probable.
         self.app.chosen_pathway = 'stpm'           # same family as the Tingkatan Enam offer (place clash)
         self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
@@ -2123,7 +2122,7 @@ class TestGenuinenessLadder(_Base):
                              'institution': 'SMK Temerloh', 'programme': 'Tingkatan Enam'})
         self._auth(d, 'suspect')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('pathway_confirm', _codes(f['unresolved']))
 
 

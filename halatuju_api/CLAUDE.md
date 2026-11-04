@@ -217,6 +217,15 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
+### Offer letters read exactly (separate stream): S1-S5 LIVE; S6 BUILT on offer-read-s1, not pushed
+
+Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (the older stream notes: `docs/sprint-history.md`).
+S6 = genuineness `MODEL_VERSION` 1.25.0: the pre-S6 call is the BASELINE (`results_doc.baseline_genuineness`);
+`genuineness/offer_rulings.apply_rulings` changes it only by a BLOCK (letterhead private proof) or a LIFT (full proof)
+or rulings 3 / 6, each tagged `[S6 ruling: <tag>]`. A genuineness change re-runs `eval/offer_genuineness_check.py`
+(dev; held-out once; it lists every call that differs from the baseline). Before the push: the lead's
+`offer_s4_dry_run.py --s6` (GO / STOP) and an adversarial review. NEXT: S7 live re-read; S8 keep it exact.
+
 ### Mobile-native arc (separate stream): COMPLETE (M0-M8; M8 live 2026-11-04, main bea7111d, halatuju-web-01079-tv4)
 
 Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md` (rules 15-17: one box level; nothing spills out of its box; phone pills via `lib/phonePill.ts`); ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (four numbers: overflow, small fields, small targets, spills) and `npm run mobile-ledger`; a new `page.tsx` is classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; a pinned bottom bar on a student or sponsor page carries `data-page-bar`; a desktop-only route needs `lib/desktopOnly.ts` AND `mobileClass.ts` plus a reason in en/ms/ta. Manifest stays `display: 'browser'`. Per-milestone rules: `docs/sprint-history.md`. **Open mobile work:** TD-489 (mentor screens' white cards), TD-490 (chart first paint on a phone).

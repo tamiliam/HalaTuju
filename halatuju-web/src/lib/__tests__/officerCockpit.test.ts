@@ -661,63 +661,67 @@ describe('documentFacts', () => {
     expect(facts.find((f) => f.key === 'address')?.status).toBe('verified')
   })
 
-  it('offer letter: a genuine official offer keeps Pathway green and no Official flag', () => {
-    const facts = documentFacts(doc({ doc_type: 'offer_letter',
-      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
-      authenticity: { status: 'genuine', reason: '' } }))
-    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('verified')
-    expect(facts.some((f) => f.key === 'official')).toBe(false)
+  // ── Offer letter: THE OWNER'S CHIP TABLE (2026-11-02, offer exact-read S6) — green fine, yellow
+  // look, red wrong. Pathway is NEVER red; Official green / yellow / red; Name / IC unreadable is
+  // yellow; a Reporting date chip (green read, yellow not printed). Replaces the 2026-07-08 tests that
+  // painted Pathway red on any not-genuine offer. ──
+  const offer = (pc: Partial<NonNullable<AdminApplicantDocument['pathway_check']>>, status?: string) =>
+    documentFacts(doc({ doc_type: 'offer_letter', pathway_check: pathCheck(pc),
+      authenticity: status ? { status: status as 'genuine', reason: '' } : null }))
+  const chip = (facts: { key: string; status: string }[], key: string) => facts.find((f) => f.key === key)?.status
+
+  it('offer letter: a genuine matching offer is all green, with a green Official chip', () => {
+    const f = offer({ pathway: 'match', reporting_date: '20 Jul 2026' }, 'genuine')
+    expect(f.map((x) => x.key)).toEqual(['name', 'ic_no', 'pathway', 'official', 'reportingDate'])
+    expect(f.every((x) => x.status === 'verified')).toBe(true)
   })
 
-  it('offer letter: a SUSPECT offer forces Pathway red + an AMBER Official flag', () => {
-    // #31/#131 the pemakluman / interview slip: identity matches, programme tokens match, but
-    // the doc is not confidently a genuine official offer → the Pathway VARIABLE is red (it
-    // establishes no pathway — counted by the verdict's `_pathway_red_chips`), and Official is
-    // AMBER (owner 2026-07-08: two-tone — suspect = "not sure", never branded fake). Pill → check.
-    const d = doc({ doc_type: 'offer_letter',
-      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
-      authenticity: { status: 'suspect', reason: 'pemakluman' } })
-    const facts = documentFacts(d)
-    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
-    expect(facts.find((f) => f.key === 'official')?.status).toBe('partial')
-    expect(documentPill(d)).toBe('check')   // never 'verified'
+  it('offer letter: Official is yellow for suspect and red for not_offer_letter; absent when unscored', () => {
+    expect(chip(offer({}, 'suspect'), 'official')).toBe('partial')
+    expect(chip(offer({}, 'not_offer_letter'), 'official')).toBe('not')
+    expect(chip(offer({}), 'official')).toBeUndefined()
   })
 
-  it('offer letter: a suspect doc WITH the validated summons keeps Pathway green (#56/#75)', () => {
-    // The bonus lifts effective officialness: the doc provably summons registration at a public
-    // institution → Pathway shows its real content status (green when matching), matching the
-    // Certain tile. Official stays AMBER (raw genuineness — Check-2 still acts on it). NB there is
-    // deliberately NO separate reporting-date chip (owner 2026-07-08: the Intake chip carries the
-    // currency signal; the bonus is band machinery).
-    const facts = documentFacts(doc({ doc_type: 'offer_letter',
-      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match',
-                                 reporting_date: '20 Jul 2026', reporting_official: true,
-                                 intake_year_status: 'current' }),
-      authenticity: { status: 'suspect', reason: 'thin' } }))
-    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('verified')
-    expect(facts.find((f) => f.key === 'official')?.status).toBe('partial')
-    expect(facts.some((f) => f.key === 'daftar')).toBe(false)
+  it('offer letter: Pathway is NEVER red — mismatch, unknown, suspect and a fake all read yellow', () => {
+    for (const [pc, st] of [[{ pathway: 'mismatch' }, 'genuine'], [{ pathway: 'unknown' }, 'genuine'],
+                            [{ pathway: 'match' }, 'not_offer_letter'], [{ pathway: 'mismatch' }, 'not_offer_letter'],
+                            [{ pathway: 'unknown' }, 'suspect']] as const) {
+      expect(chip(offer(pc, st), 'pathway')).toBe('partial')
+    }
   })
 
-  it('offer letter: a FAKE doc stays Pathway red even with a summons (never green)', () => {
-    const facts = documentFacts(doc({ doc_type: 'offer_letter',
-      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match',
-                                 reporting_date: '8 Jun 2026', reporting_official: true }),
-      authenticity: { status: 'not_offer_letter', reason: 'x' } }))
-    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
-    expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
+  it('offer letter: Pathway is green when it matches, or a genuine offer set an empty pick (app 329)', () => {
+    expect(chip(offer({ pathway: 'match' }, 'suspect'), 'pathway')).toBe('verified')
+    expect(chip(offer({ pathway: 'unknown', pathway_set_by_offer: true }, 'genuine'), 'pathway')).toBe('verified')
+    expect(chip(offer({ pathway: 'unknown', pathway_set_by_offer: true }, 'not_offer_letter'), 'pathway')).toBe('partial')
   })
 
-  it('offer letter: a FAKE offer keeps Pathway red + a RED Official flag', () => {
-    // not_offer_letter (p<0.35 — not recognisably a proper offer, e.g. #84 the private-uni
-    // letter) → Official is RED. Pathway stays red (no pathway established).
-    const d = doc({ doc_type: 'offer_letter',
-      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
-      authenticity: { status: 'not_offer_letter', reason: 'few signatures' } })
-    const facts = documentFacts(d)
-    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
-    expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
-    expect(documentPill(d)).toBe('check')
+  it('offer letter: Name / IC unreadable are yellow (a blank IC is often correct); mismatch stays red', () => {
+    const f = offer({ name: 'unreadable', ic: 'unreadable' }, 'genuine')
+    expect([chip(f, 'name'), chip(f, 'ic_no')]).toEqual(['partial', 'partial'])
+    const g = offer({ name: 'mismatch', ic: 'mismatch' }, 'genuine')
+    expect([chip(g, 'name'), chip(g, 'ic_no')]).toEqual(['not', 'not'])
+    expect(chip(offer({ name: 'partial' }, 'genuine'), 'name')).toBe('partial')
+  })
+
+  it('offer letter: the Reporting date chip is green when read, yellow when not printed, absent before a read', () => {
+    expect(chip(offer({ reporting_date: '8 Jun 2026' }, 'genuine'), 'reportingDate')).toBe('verified')
+    expect(chip(offer({ reporting_date: '' }, 'genuine'), 'reportingDate')).toBe('partial')
+    expect(chip(offer({ name: 'pending', ic: 'pending' }), 'reportingDate')).toBeUndefined()
+  })
+
+  it('offer letter: no offer chip is ever red except Name / IC mismatch and a not_offer_letter Official', () => {
+    const f = offer({ name: 'unreadable', ic: 'match', pathway: 'mismatch', reporting_date: '' }, 'suspect')
+    expect(f.filter((x) => x.status === 'not')).toEqual([])
+    expect(documentPill(doc({ doc_type: 'offer_letter', pathway_check: pathCheck({}),
+      authenticity: { status: 'suspect', reason: '' } }))).toBe('check')
+  })
+
+  it('offer letter: every chip key has a label in en / ms / ta', () => {
+    for (const m of [enMessages, msMessages, taMessages]) {
+      const fact = (m as { admin: { scholarship: { docsDrawer: { fact: Record<string, string> } } } }).admin.scholarship.docsDrawer.fact
+      for (const k of ['name', 'ic_no', 'pathway', 'official', 'reportingDate', 'switched']) expect(fact[k]).toBeTruthy()
+    }
   })
 
   // ── IC-NUMBER chain (Item D): a wrong card in the slot, but the earner verified elsewhere ──

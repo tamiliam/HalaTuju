@@ -100,12 +100,12 @@ def _academic_red_chips(application):
     return n
 
 
-# A pathway identity chip (Name / IC) is RED when its value MISMATCHES **or** is required-but-missing
-# on an extracted offer (owner 2026-07-07: "missing-required on an offer = red"). This mirrors the
-# cockpit's own chip tone exactly — `officerCockpit.factStatus` reds 'mismatch' AND 'unreadable' (an
-# empty candidate field on an offer that WAS OCR'd), so the verdict band and the visible chips agree.
-# 'pending' (not yet extracted) is NOT red — it's a genuine unknown.
-_OFFER_CHIP_RED = {'mismatch', 'unreadable'}
+# A pathway identity chip (Name / IC) is RED only when its value MISMATCHES — another person (the owner's
+# chip table, 2026-11-02, offer exact-read S6: green fine, yellow look, red WRONG). An unreadable / blank
+# field is YELLOW: many universities print no IC at all, so a blank is often the correct read
+# (decisions.md 2026-11-01 rule 4). This supersedes 2026-07-07's "missing-required on an offer = red".
+# It mirrors the cockpit chip exactly (`offerFacts.ts`), so the verdict band and the visible chips agree.
+_OFFER_CHIP_RED = {'mismatch'}
 
 
 def _pathway_effective_step(application):
@@ -123,8 +123,15 @@ def _pathway_effective_step(application):
 
 
 def _pathway_red_chips(application):
-    """RED pathway content chips — Name, IC (wrong-person OR the offer doesn't show one) and Pathway.
-    0–3. Reads the SAME ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read.
+    """RED pathway content chips — Name and IC, each when it names ANOTHER person. 0–2. Reads the SAME
+    ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read.
+
+    ⚠ OFFER EXACT-READ S6 (owner's chip table 2026-11-02 + ruling 8 of 2026-11-01): the PATHWAY chip is
+    NEVER red and is no longer counted. A different pathway is not a fault in the letter (yellow; the
+    Check 2 ``pathway_confirm`` query asks her, which already holds the base band at Probable), and a
+    not-genuine offer is carried by the genuineness STEP alone (suspect −1, not_offer_letter −2) — so a
+    suspect reads Probable and never blocks; a not_offer_letter blocks by rule 1 (`offer_fails`). The
+    2026-07-08 text below (the stacked "pathway not established" chip) is SUPERSEDED, kept for history.
 
     The Pathway VARIABLE (owner 2026-07-08, off #131/#84 — refining the locked #31 example) asks
     "does this document establish the declared pathway?" — red when the offer names a genuinely
@@ -147,11 +154,7 @@ def _pathway_red_chips(application):
     if offer is None:
         return 0
     chk = student_offer_check(offer)
-    n = (1 if chk['name'] in _OFFER_CHIP_RED else 0) + (1 if chk['ic'] in _OFFER_CHIP_RED else 0)
-    not_official = _pathway_effective_step(application) > 0
-    if not_official or (chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None):
-        n += 1
-    return n
+    return (1 if chk['name'] in _OFFER_CHIP_RED else 0) + (1 if chk['ic'] in _OFFER_CHIP_RED else 0)
 
 
 _LADDER_CHIPS = {'identity': _identity_red_chips, 'academic': _academic_red_chips,

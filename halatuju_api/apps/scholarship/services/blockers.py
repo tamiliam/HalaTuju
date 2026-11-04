@@ -346,13 +346,15 @@ def _unmatched_str_asks(application, *, ic_asked):
 
 
 def _offer_blocks(application):
-    """Whether the offer should BLOCK submission. Blocks only when the offer is judged NOT-official
-    (``offer_official_status == 'not_genuine'``) AND the four-fact PATHWAY VERDICT is NOT "blue and
-    above". Owner 2026-07-08: we accept Probable/Certain — so a cropped-official offer the
-    reporting-date bonus / genuineness ladder legitimately lifts to Certain is allowed even though
-    ``offer_official_status`` still reads not_genuine (#56 tiled Certain yet was blocked). An offer
-    that is missing / official / UNKNOWN (not yet genuineness-scored) still never blocks — we don't
-    gate on our own gap (unchanged).
+    """Whether the offer should BLOCK submission: ONLY when it is scored ``not_offer_letter`` — a FAIL
+    for the bursary (owner ruling 1, 2026-11-01; offer exact-read S6, ``pathway_engine.offer_fails``).
+    A ``suspect`` offer NEVER blocks (ruling 8: the student is told it is not an offer letter and urged
+    to upload hers; Check 2 or a reviewer can ask for it). An offer that is missing / genuine / UNKNOWN
+    (unscored, or NOT CHECKED) never blocks — we don't gate on our own gap (unchanged).
+
+    ⚠ S6 SUPERSEDES the 2026-07-08 rule "block a not-official offer unless the pathway verdict is
+    Probable+": it blocked every suspect (the ladder stacked a red Pathway chip on its step, which read
+    Unsure), and it let a not_offer_letter through whenever the date bonus lifted its band.
 
     STPM route (owner 2026-07-20): a Form-Six student has no university-style offer letter — their
     pathway proof is school enrolment (a *Surat Pengesahan Pelajar*), which the offer-genuineness
@@ -368,17 +370,9 @@ def _offer_blocks(application):
         return False
     if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'stpm':
         return False
-    from ..pathway_engine import offer_official_status
+    from ..pathway_engine import offer_fails
     offer = latest_doc(application, 'offer_letter')
-    if offer is None or offer_official_status(offer) != 'not_genuine':
-        return False                       # missing / official / unknown → not a block
-    # A not-official offer blocks UNLESS the pathway verdict the officer sees is Probable+.
-    from ..verdict_engine import build_verdict
-    from ..verdict_narrative import _fact_band
-    for fact in build_verdict(application):
-        if fact.get('fact') == 'pathway':
-            return _fact_band(fact) not in ('Certain', 'Probable')
-    return True
+    return offer is not None and offer_fails(offer)
 
 
 # The income-CLUSTER document types — the ones the "one clean cluster is enough" rule can turn

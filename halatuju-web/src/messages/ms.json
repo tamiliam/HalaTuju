@@ -1597,7 +1597,9 @@
       "genuineness": {
         "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat.",
         "askFinal": "Ini bukan keputusan akhir anda (ia kelihatan seperti slip keputusan semester, halaman portal pelajar atau transkrip yang menunjukkan pengajian anda masih berjalan). Hanya versi akhir dikira: sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
-        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat."
+        "notResults": "Ini kelihatan seperti surat tawaran, bukan dokumen keputusan. Sila muat naik transkrip akademik akhir anda. Tiada apa-apa disekat.",
+        "offerSuspect": "Ini tidak kelihatan seperti surat tawaran. Jika anda mempunyai surat tawaran anda, sila muat naik juga. Tiada apa-apa disekat — pasukan kami mungkin bertanya kepada anda tentangnya.",
+        "offerNotOffer": "Ini tidak boleh diterima sebagai surat tawaran daripada institusi awam (contohnya, tawaran kolej swasta, atau dokumen yang bukan surat tawaran). Sila muat naik surat tawaran anda daripada universiti awam, politeknik, kolej atau institut kemahiran."
       },
       "icCheck": {
         "icNo": "No. KP",
@@ -1783,7 +1785,7 @@
         "income_proof_missing": "Muat naik dokumen STR (Sumbangan Tunai Rahmah) anda dalam langkah Dokumen.",
         "income_incomplete": "Lengkapkan bahagian Pendapatan isi rumah dalam langkah Dokumen.",
         "offer_letter_missing": "Muat naik surat tawaran anda dalam langkah Dokumen.",
-        "offer_not_official": "Muat naik surat tawaran rasmi anda — tawaran tanpa syarat daripada universiti awam — dalam langkah Dokumen. Tawaran bersyarat, tawaran universiti swasta (IPTS), atau pemakluman kemasukan tidak boleh disokong.",
+        "offer_not_official": "Muat naik surat tawaran anda daripada institusi awam dalam langkah Dokumen — universiti awam, politeknik, kolej komuniti, kolej matrikulasi atau Tingkatan Enam, atau institut kemahiran awam (seperti IKBN, IKM atau ILP). Tawaran daripada kolej atau universiti swasta (IPTS), atau dokumen yang bukan surat tawaran, tidak boleh diterima. (Swasta bermaksud program berbayar sendiri, bukan program awam bersubsidi — contohnya cawangan swasta atau saluran terbuka universiti, atau kolej swasta milik badan awam.)",
         "str_missing": "Muat naik dokumen STR anda dalam langkah Dokumen.",
         "str_stale": "STR anda adalah daripada tahun sebelumnya. Sila muat naik STR tahun ini.",
         "str_stale_year": "STR anda adalah bagi tahun {year}. Sila muat naik STR tahun ini.",
@@ -2183,8 +2185,8 @@
           "desc": "Kami hanya boleh menyokong tempat yang disahkan, jadi surat tawaran diperlukan. Sila muat naik di Dokumen."
         },
         "offer_not_official": {
-          "title": "Muat naik surat tawaran rasmi anda",
-          "desc": "Dokumen yang dimuat naik bukan tawaran rasmi muktamad — ia kelihatan seperti tawaran bersyarat, tawaran universiti swasta (IPTS), atau pemakluman kemasukan. Kami hanya boleh menyokong tempat pengajian yang disahkan dan tanpa syarat di institusi awam. Sila muat naik surat tawaran rasmi jika anda memilikinya."
+          "title": "Muat naik surat tawaran anda daripada institusi awam",
+          "desc": "Dokumen yang dimuat naik tidak boleh diterima sebagai tawaran daripada institusi awam — ia kelihatan seperti tawaran kolej atau universiti swasta (IPTS), atau ia bukan surat tawaran. Sila muat naik surat tawaran anda (atau surat pengesahan pelajar) daripada universiti awam, politeknik, kolej atau institut kemahiran. (Swasta bermaksud program berbayar sendiri, bukan program awam bersubsidi — contohnya cawangan swasta atau saluran terbuka universiti, atau kolej swasta milik badan awam.)"
         },
         "course_unspecified": {
           "title": "Apakah yang anda rancang untuk belajar?",
@@ -4715,7 +4717,7 @@
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
           "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
-          "offer_not_official": "Surat tawaran bukan tawaran rasmi universiti awam yang sah (bersyarat / swasta-IPTS / pemakluman tidak rasmi) — pelajar diminta memuat naik surat rasmi.",
+          "offer_not_official": "Dinilai bukan surat tawaran (tawaran swasta / IPTS, cawangan swasta, atau bukan tawaran langsung) — gagal; pelajar diminta surat tawaran institusi awam.",
           "offer_issuer_not_checked": "Tawaran daripada {issuer} — penerbit TVET awam yang coraknya belum kami miliki, jadi surat ini TIDAK disemak. Semak surat ini sendiri.",
           "course_unspecified": "Belum memilih kursus/bidang — pelajar telah ditanya apa yang mereka rancang untuk belajar.",
           "sibling_level_unknown": "Pecahan adik-beradik sekolah lwn pengajian tinggi belum direkod — pelajar telah diminta memecahkan jumlah itu.",
@@ -4809,7 +4811,7 @@
           "ic_missing": "Kad pengenalan (IC) mereka",
           "results_slip_missing": "Slip keputusan mereka",
           "offer_letter_missing": "Surat tawaran mereka",
-          "offer_not_official": "Surat tawaran rasmi — tawaran tanpa syarat daripada universiti awam. Tawaran bersyarat, tawaran universiti swasta (IPTS) atau notis kemasukan tidak boleh disokong.",
+          "offer_not_official": "Surat tawaran daripada institusi awam — universiti awam, politeknik, kolej komuniti, kolej matrikulasi atau Tingkatan Enam, atau institut kemahiran awam. Tawaran kolej atau universiti swasta (IPTS), atau dokumen yang bukan surat tawaran, tidak boleh diterima. (Swasta bermaksud program berbayar sendiri, bukan program awam bersubsidi — contohnya cawangan swasta atau saluran terbuka universiti, atau kolej swasta milik badan awam.)",
           "str_missing": "Dokumen STR mereka",
           "str_not_household": "STR keluarga mereka sendiri — yang ada atas nama orang lain (atau pendapatan ahli keluarga yang bekerja)",
           "str_stale": "STR tahun ini — yang ada daripada tahun sebelumnya (atau pendapatan ahli keluarga yang bekerja)",
@@ -5004,6 +5006,7 @@
           "results": "Keputusan",
           "pathway": "Laluan",
           "official": "Rasmi",
+          "reportingDate": "Tarikh lapor diri",
           "switched": "Ditukar",
           "recipient": "Penerima",
           "status": "Status",

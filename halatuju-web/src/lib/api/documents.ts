@@ -296,6 +296,10 @@ export interface PathwayCheck {
   // Offer-vs-declared reconciliation (Check-1 pathway): does the offer match the
   // college/programme the student declared at apply time?
   pathway?: 'match' | 'mismatch' | 'unknown'
+  // Offer exact-read S6: the student declared nothing and a GENUINE offer set the pick itself
+  // (`chosen_programme.source == 'offer_letter_auto'`) — the Pathway CHIP reads green; `pathway` stays
+  // 'unknown' so no tick / verdict / Check 2 query is earned from the letter agreeing with itself.
+  pathway_set_by_offer?: boolean
   // The institution dimension on its own — drives the cockpit's Pre-U Institution verified tick.
   institution_status?: 'match' | 'clash' | 'unknown'
   // The offer institution vs the SHOWN chosen_programme.institution — drives the TERTIARY

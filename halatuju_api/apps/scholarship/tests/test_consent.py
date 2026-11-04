@@ -767,16 +767,21 @@ class TestOfferValidityGate(TestCase):
                 'model_version': '1.1'}},
             vision_run_at=timezone.now())
 
-    def test_offer_gate_blocks_when_pathway_verdict_unsure(self):
-        # Owner 2026-07-08: the offer gate follows the PATHWAY VERDICT band — Unsure / Can't-verify
-        # blocks; "blue and above" (Probable/Certain) is allowed. (Was: gated on the raw
-        # offer_official_status, which the reporting-date bonus could legitimately outrun — #56.)
+    def test_offer_gate_blocks_a_fail_and_never_a_suspect(self):
+        # Offer exact-read S6 (owner rulings 1 + 8, 2026-11-01): the gate blocks ONLY a not_offer_letter
+        # offer (a fail), whatever the band; a suspect never blocks, even at Unsure. (Supersedes
+        # 2026-07-08's "block a not-official offer below Probable".)
         from unittest.mock import patch
         from apps.scholarship.services import consent_blockers
         app = self._app()
         self._offer(app, 'suspect')
         with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
                 {'fact': 'pathway', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
+            self.assertNotIn('offer_not_official', consent_blockers(app))
+        app.documents.all().delete()
+        self._offer(app, 'not_offer_letter')
+        with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                {'fact': 'pathway', 'status': 'verified', 'evidence': [], 'unresolved': []}]):
             self.assertIn('offer_not_official', consent_blockers(app))
 
     def test_stpm_route_not_blocked_by_unverifiable_offer(self):
@@ -789,7 +794,7 @@ class TestOfferValidityGate(TestCase):
         app = self._app()
         app.chosen_pathway = 'stpm'
         app.save(update_fields=['chosen_pathway'])
-        self._offer(app, 'suspect')
+        self._offer(app, 'not_offer_letter')                # S6: the one status that blocks elsewhere
         with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
                 {'fact': 'pathway', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
             self.assertNotIn('offer_not_official', consent_blockers(app))

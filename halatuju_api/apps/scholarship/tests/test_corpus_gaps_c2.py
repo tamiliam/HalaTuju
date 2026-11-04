@@ -124,7 +124,8 @@ class UiTMScoresAsAPublicUniversity(TestCase):
                 self.assertEqual(_ua(UA_OFFER_SIGNATURES, text), _ua(_UA_1_8_0, text))
 
     def test_the_c1_net_still_answers_request_47(self):
-        self.assertEqual(signature_genuineness(c1.ILKBS_OFFER, doc_type='offer_letter')['status'], NOT_CHECKED)
+        # S6 (owner Q2, 2026-11-03): a closed-list TVET offer with an offer body reads GENUINE now.
+        self.assertEqual(signature_genuineness(c1.ILKBS_OFFER, doc_type='offer_letter')['status'], 'genuine')
 
     def test_uitms_bare_tarikh_label_earns_the_reporting_bonus(self):
         from apps.scholarship.pathway_engine import offer_reporting_bonus

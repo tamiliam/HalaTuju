@@ -7779,3 +7779,55 @@ shipped R1's and T3's web). Neither sprint touched the apply page. The pattern m
 waits for one thing and asserts on another, exposed by the slower gate machine). **Fix:** read which assertion failed
 from the build log, find the async read it depends on, wait for THAT, and prove it by delaying the mock (as was done for
 `ScholarshipDocuments.test.tsx`). *(T · S)*
+### [TD-491] A scanned multi-page offer is genuineness-scored on page 1 only - medium
+
+**Raised 2026-11-03 by the offer exact-read S6 measurement.** Production scores an offer's genuineness on the OCR
+text it holds: a digital PDF's whole text layer, but for a photo or a SCANNED PDF only the Vision read of page 1
+(`vision._pdf_first_page_png`). One corpus letter (held-out) is a real public-university offer behind an e-Daftar
+registration slip on page 1: page 1 scores 0.07 (not_offer_letter), all pages 0.70 (genuine). S6 makes such a
+printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the offer page too — one Vision call per
+extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
+corpus first (owner's yes: a paid path). *(B · M)*
+
+### [TD-492] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
+
+**Raised 2026-11-04 by the S6 round-10 review (lead's ruling on M4 for confirmations).** A confirmation of studies
+lifts only when its polytechnic / UMS / Form-6 name comes first on the letterhead, after crest, government, address,
+the institution's own division lines, or a short crest / motto line of at most two words (`offer_rulings.
+_own_division_or_crest`). A private name of one or two words with no institution noun ("MERCU JAYA") passes as such a
+short line, so "MERCU JAYA / POLITEKNIK CONTOH" still lifts (probe in `tests/test_offer_s6_narrowing.py`, class
+`Round10M4Confirmations`). A known crest / motto word list would close it, but the one real corpus letter with such
+lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tightening would drop an owner-ruled
+letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
+motto. *(S6 · S)*
+
+### [TD-493] The agency-letterhead lift does not catch a private name with no organisation word - medium
+
+**Raised 2026-11-04 by the S6 round-10 review (lead's ruling 7).** The agency lift's closed-world condition 4
+(`genuineness/offer_agency.closed_world_blocker`) blocks every organisation word left on a body line once the
+institute, the agency and the labels are taken out, but a private operator named without one ("latihan industri di
+Mercu Engineering Works") reads as ordinary prose and the letter lifts. Accepted and pinned
+(`tests/test_offer_s6_narrowing.py`, `Round10AgencyClosedWorld.test_a_private_name_with_no_organisation_word_is_a_known_gap`).
+Round 11 adds a second accepted case of the same gap: a name in ALL-LOWERCASE OCR ("latihan di kolej / mercu jaya",
+"IKM Kuantan mercu jaya") is not read as a name (OCR almost never prints a letterhead name that way); pinned in
+`Round11.test_an_all_lowercase_name_is_a_known_gap`.
+Round 13 adds (accepted under the owner's stop rule, decisions S6 item 10): an OCR misread of the noun itself
+("Mercu Acaderny", "Mercu Kolei") is no organisation word, and a short brand ("Kelas tambahan Edu360") in the body
+of an institute's own letter (the institute lift) is split by the digit rule into "Edu 360"; both lift. Digits that
+spell the noun ("ACAD3MY", "K0LEJ", "Ko1ej") ARE read since round 13. Pinned in
+`Round13.test_the_accepted_gaps_after_the_stop_rule`.
+**Fix:** a capitalised-name test that knows the letter's own words (people, places, course titles) - only once the
+corpus holds enough agency letters to measure it. *(S6 · M)*
+
+### [TD-494] The agency lift's descriptor excuse can hide a company name - medium
+
+**Raised 2026-11-04 by the S6 round-13 review; left for S7 under the owner's stop rule (decisions S6 item 10).**
+Condition 4 excuses a weak suffix ("Solutions", "Technical") after a descriptor (`offer_agency._after_descriptor`)
+when no name stands right before or after it on the same line. Three shapes lift: (a) the agency or the spelt TVET
+sector stands where the name would ("MARA Technical Solutions", "Teknikal Vokasional Solutions", "Teknikal dan
+Vokasional Skills"), and the allowed span is taken out first; (b) the name sits on the PREVIOUS line ("Penyedia
+latihan : Mercu" / "Technical Solutions"); (c) a descriptor slogan with the name on the NEXT line ("Latihan Global"
+/ "Mercu Jaya"). (A next line that adds a place, "Technical Solutions Kuantan.", happens to block.) All three are
+pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus letter reads this way. **Fix:** read the
+token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
+*(S6 · S)*

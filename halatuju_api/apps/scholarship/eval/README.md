@@ -210,6 +210,24 @@ cd halatuju_api
 python -I apps/scholarship/eval/offer_parse_check.py --split dev --eval-dir <corpus>
 ```
 
+**The genuineness rulings on the corpus (S6) — free.** `offer_genuineness_check.py` scores every letter as
+production does (`genuineness.assess('offer_letter')` on `offer_replay.production_text`) and compares the status
+with the committed, PII-free `offer_genuineness_expect.json` (key → `genuine` / `suspect` / `not_offer_letter`,
+null for no text: the owner's bursary rulings of 2026-11-01 / 2026-11-03 applied to the answers). Prints OK /
+MISS per letter (key, split, family, expected, today, `doc_seen`); exit 1 on any MISS. Tune on dev, held-out once.
+A change to the rulings changes the expect file in the same commit, with the ruling cited.
+
+```bash
+python -I apps/scholarship/eval/offer_genuineness_check.py --split dev --eval-dir <corpus>
+```
+
+**The S6 production dry run (the operator runs it, read only).** `offer_s4_dry_run.py --s6`
+(`offer_s6_dry_run.py`): the deploy pass (every live application, STORED data — the Pathway band and the
+`offer_not_official` block under the old rules vs the new, each offer chip old → new) and the re-score pass
+(the corpus letters re-scored in memory at the current `MODEL_VERSION` — the S7 preview), ending in a
+`verdict: GO` / `STOP` line (its rules are in the module docstring). Same session as S4/S5: one read-only
+transaction, rolled back; writes, Storage, Gemini and the meter refused.
+
 **Today's AI reader, measured (S3) — PAID.** `offer_fresh_read.py` runs the production AI offer
 read — `vision.extract_document_fields('', 'offer_letter', image=…, content_type=…)`, the exact call
 `_run_field_extraction_impl` makes (PDF → page-1 PNG, the offer prompt and schema, the model

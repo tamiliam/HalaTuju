@@ -94,10 +94,11 @@ class NameAndIcDoNotGetWorseTest(TestCase):
         self.assertEqual(chk['ic'], 'unreadable')
         self.assertFalse(person_red('offer_letter', chk))
 
-    def test_no_ic_printed_is_unread_which_the_cockpit_shows_red_but_never_a_wrong_person(self):   # review H2
+    def test_no_ic_printed_is_unread_a_yellow_chip_never_a_wrong_person(self):   # review H2; S6
         chk = self._chk(candidate_nric='')
         self.assertEqual(chk['ic'], 'unreadable')
-        self.assertIn(chk['ic'], _OFFER_CHIP_RED)              # a blank is NOT harmless: the chip is red
+        # S6 (owner chip table 2026-11-02): unreadable is YELLOW, "look" — many letters print no IC.
+        self.assertNotIn(chk['ic'], _OFFER_CHIP_RED)
         self.assertFalse(person_red('offer_letter', chk))      # but it never blocks as a wrong person
 
     def test_a_reference_number_read_as_the_ic_is_blanked_to_unread_not_a_wrong_person(self):

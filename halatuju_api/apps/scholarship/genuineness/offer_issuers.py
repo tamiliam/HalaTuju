@@ -168,7 +168,7 @@ def not_checked_result(key: str, r: dict, model_version: str) -> dict:
             'model_version': model_version}
 
 
-def private_college_reason(ocr_text: str, r: dict) -> str:
+def private_college_reason(ocr_text: str, r: dict, public_words=None) -> str:
     """The honest reason for an offer whose LETTERHEAD names an institution but no public body — a
     private college/university (IPTS) — or '' when that is not what the page shows. A private
     MARA-owned institution (ruling C) always gets it. Read off the letterhead for the same reason
@@ -179,7 +179,8 @@ def private_college_reason(ocr_text: str, r: dict) -> str:
     if any(p in page for p in _PRIVATE_MARA):
         return text
     from .results_doc import _UA_NAMES
-    if (_fingerprinted_issuer_on_page(r.get('scores')) or any(w in head for w in _PUBLIC_WORDS)
+    public_words = public_words or _PUBLIC_WORDS      # S6: its printout ruling passes the S6 public list
+    if (_fingerprinted_issuer_on_page(r.get('scores')) or any(w in head for w in public_words)
             or any(f' {n} ' in page for n in _UA_NAMES) or any(f' {a} ' in page for a in _UA_SHORT)
             or _names_a_listed_issuer(head)):
         return ''           # a public body — even one the TVET net did not excuse — is never "private"
@@ -196,10 +197,16 @@ def officer_must_close(doc, item) -> bool:
     offer is NOT CHECKED and `item` is an OFFICER's own offer-letter request. The officer asked for
     the official offer and nobody has checked this one — so it waits for the officer, who closes it
     by hand. System and Check-2 requests are untouched, and it never blocks the student."""
-    from .bands import NOT_CHECKED, stored_status
-    return (getattr(doc, 'doc_type', '') == 'offer_letter' and getattr(item, 'source', '') == 'officer'
-            and getattr(item, 'doc_type', '') == 'offer_letter'
-            and stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED)
+    from .bands import NOT_CHECKED, stored_authenticity, stored_status
+    if not (getattr(doc, 'doc_type', '') == 'offer_letter' and getattr(item, 'source', '') == 'officer'
+            and getattr(item, 'doc_type', '') == 'offer_letter'):
+        return False
+    # S6 review H1: an offer the owner's RULINGS (not a fingerprinted family) made genuine — a public TVET
+    # offer, a confirmation of studies — is still the officer's to close: nobody fingerprinted it.
+    from .offer_rulings import CONFIRMATION_SEEN
+    seen = stored_authenticity(getattr(doc, 'vision_fields', None)).get('doc_seen', '')
+    return (stored_status(getattr(doc, 'vision_fields', None)) == NOT_CHECKED or seen in TVET_ISSUERS
+            or seen in CONFIRMATION_SEEN)
 
 
 def hold_for_officer(item) -> None:

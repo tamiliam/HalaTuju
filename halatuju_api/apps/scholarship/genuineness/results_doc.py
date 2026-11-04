@@ -21,6 +21,14 @@ import unicodedata
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
 from .epf_app_doc import epf_app_scores, screen_at_most_suspect
 from .stpm_doc import STPM_LISTS
+# The five offer-letter families + the 20 UA names moved verbatim to `offer_signatures` (offer
+# exact-read S6 split); re-exported here, so every existing import keeps working.
+from .offer_signatures import MATRIC_OFFER_SIGNATURES as MATRIC_OFFER_SIGNATURES  # explicit re-exports
+from .offer_signatures import PISMP_OFFER_SIGNATURES as PISMP_OFFER_SIGNATURES
+from .offer_signatures import POLY_OFFER_SIGNATURES as POLY_OFFER_SIGNATURES
+from .offer_signatures import STPM_OFFER_SIGNATURES as STPM_OFFER_SIGNATURES
+from .offer_signatures import UA_OFFER_SIGNATURES as UA_OFFER_SIGNATURES
+from .offer_signatures import _UA_NAMES as _UA_NAMES
 
 # Version of the deterministic document-recognition model — the signature FAMILIES + weights +
 # identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a
@@ -97,7 +105,8 @@ from .stpm_doc import STPM_LISTS
 #   1.13.0 / 1.16.0 (2026-10-28) — #374: income declarations (salary_doc 1.2.0 + 4 approval fields) / the approver read never takes a printed label. Backfill: live list.
 #   1.17.0 (2026-10-28) — TD-411: a PDF text layer that is only a scanner app's stamp is no layer (`pdf_pages.usable_text_layer`, all doc types) + the KWSP app balance screen (`EPF_APP_SIGNATURES`, at most suspect). Backfill: live re-read of the affected list. 1.17.1: letter-spaced headings around real prose keep the layer (doc 3919).
 #   1.18.0 (2026-10-29) — Bumi Sprint C: the 13 Islamic SPM subjects read by their slip names (`academic_engine._SUBJECT_BM`, e.g. "Manahij Al-'Ulum Al-Islamiah", was "Manahij"); an apostrophe is dropped, not spaced; the cert reader reads a subject's words together ("USUL AL-DIN", "AL - QURAN"); "&" = "dan"; old short names stay aliases. No family/weight change. Backfill: NONE BY DESIGN — 18 of 2,313 stored reads carry Islamic names (some the old short ones); the aliases and the code/band-tolerant slip key keep them matching without a re-read.
-MODEL_VERSION = '1.24.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse`; the S2 1.10.0 precedent). 1.20.0 (2026-10-29) M3: a polytechnic transcript read Exact (`poly_diploma_parse`). No family/weight/band change. 1.21.0 (2026-10-29) M4: the Matriculation + polytechnic transcript families (`matric_poly_doc`), higher-results slot. 1.22.0 (2026-10-29) M4b: the owner's rulings — only a FINAL transcript scores; a semester slip / the portal page / a transcript with no completion status reads not-final (no signal, the final transcript owed); a Matriculation offer letter not_matric_result. Backfill: M5 (live). 1.23.0 (2026-11-03) request #53: the approval read (`income_declaration.APPROVAL_PROMPT`) takes a rubber-stamped NAME BLOCK, bordered or not, as a stamp; text in the form's own print still is not; and asks `has_signature` (owner ruling 2026-11-03: a non-payslip informal document needs a hand signature). Backfill: live re-read of the affected list; stamped support reads lacking `has_signature` are re-read once by the hourly sweep. 1.24.0 (2026-11-03) #53 follow-up: the approval read asks the stamp as its own yes/no question (`has_stamp`, like `has_signature`) — the one-word mark had said "signature" for a signed AND stamped village form (docs 3023 / 3235 / 4185 / 4204); `has_stamp_or_signature` kept as a secondary summary. Rules unchanged. Backfill: owner-driven re-read of the affected list (no new sweep clause).
+#   1.25.0 (2026-11-04) — offer exact-read S6: the owner's bursary rulings on top of the UNCHANGED pre-S6 call (`baseline_genuineness`), only on clear proof (`offer_rulings`, round 7 the narrowing): BLOCK a private letterhead (Sdn Bhd / Berhad, GMI / UniKL / KPTM / UM SATU / UMS PPPL, tie-up words) not_offer_letter; LIFT a closed-list public TVET offer (JMTI / CIAST included) or a polytechnic / UMS / Form-6 confirmation of studies with the full letter shape and no private marker genuine, and a ministry family's letter vetoed only for an incidental 'Sdn Bhd'; a portal page / e-Daftar printout and a TVET slip suspect, not a fail. Everything else keeps its pre-S6 call. No family/weight change. Backfill: S7 (live re-score).
+MODEL_VERSION = '1.25.0'   # 1.19.0 (2026-10-29) Matric/Diploma M2: a Matriculation transcript read Exact (`matric_parse`; the S2 1.10.0 precedent). 1.20.0 (2026-10-29) M3: a polytechnic transcript read Exact (`poly_diploma_parse`). No family/weight/band change. 1.21.0 (2026-10-29) M4: the Matriculation + polytechnic transcript families (`matric_poly_doc`), higher-results slot. 1.22.0 (2026-10-29) M4b: the owner's rulings — only a FINAL transcript scores; a semester slip / the portal page / a transcript with no completion status reads not-final (no signal, the final transcript owed); a Matriculation offer letter not_matric_result. Backfill: M5 (live). 1.23.0 (2026-11-03) request #53: the approval read (`income_declaration.APPROVAL_PROMPT`) takes a rubber-stamped NAME BLOCK, bordered or not, as a stamp; text in the form's own print still is not; and asks `has_signature` (owner ruling 2026-11-03: a non-payslip informal document needs a hand signature). Backfill: live re-read of the affected list; stamped support reads lacking `has_signature` are re-read once by the hourly sweep. 1.24.0 (2026-11-03) #53 follow-up: the approval read asks the stamp as its own yes/no question (`has_stamp`, like `has_signature`) — the one-word mark had said "signature" for a signed AND stamped village form (docs 3023 / 3235 / 4185 / 4204); `has_stamp_or_signature` kept as a secondary summary. Rules unchanged. Backfill: owner-driven re-read of the affected list (no new sweep clause). 1.25.0 (2026-11-04) offer exact-read S6: the owner's rulings on the pre-S6 call (note above).
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -189,129 +198,6 @@ EPF_SIGNATURES = [
     ('kwsp.gov.my',                ['KWSP GOV MY'],                                       2, 'text'),
     ('Cetakan myEPF',              ['CETAKAN MYEPF', 'MYEPF'],                            1, 'text'),
     ('KWSP address',               ['MENARA KWSP', 'JALAN SULTAN'],                       1, 'text'),
-]
-
-# Offer letters — five standard public-issuer families, scored together, best fit wins (and names
-# the pathway). TEXT-ONLY: the issuer fingerprints are conclusive and the crest is generic. Since
-# 1.4.0 an offer matching no family is banded by its best score (there is no holistic deferral any
-# more); since 1.8.0 a known public TVET issuer reads NOT CHECKED instead (`offer_issuers`).
-
-# STPM / Tingkatan Enam — MOE, Sektor Operasi Sekolah (the school varies, the issuer is constant).
-# Owner-specified set (2026-06-17): the Jata Negara crest + the issuer line + the letter's standard
-# body sections (Bidang / Pusat Tingkatan Enam / Tarikh Lapor Diri / Dokumen) + two near-unique
-# boilerplate sentences. Deliberately NOT the signatory name or HQ address — those change with
-# personnel / relocation, whereas these structural signatures are durable. The text signatures
-# alone clear 0.70 on every genuine corpus letter, so the crest (a generic government marker, not
-# STPM-specific) is bonus-only — its absence never sinks a real letter.
-STPM_OFFER_SIGNATURES = [
-    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
-    ('Sektor Operasi Sekolah',     ['SEKTOR OPERASI SEKOLAH'],                  3, 'text'),
-    ('Tawaran ke Tingkatan Enam',  ['TAWARAN KEMASUKAN KE TINGKATAN ENAM',
-                                     'TINGKATAN ENAM'],                          2, 'text'),
-    ('Pusat Tingkatan Enam',       ['PUSAT TINGKATAN ENAM'],                    2, 'text'),
-    ('Tarikh Lapor Diri',          ['TARIKH LAPOR DIRI'],                       1, 'text'),
-    ('Dokumen diperlukan',         ['DOKUMEN DIPERLUKAN', 'DOKUMEN YANG DIPERLUKAN'], 1, 'text'),
-    ('Keputusan muktamad (T.Enam)', ['KEPUTUSAN INI ADALAH MUKTAMAD BERDASARKAN '
-                                      'SYARAT KEMASUKAN KE TINGKATAN ENAM'],     2, 'text'),
-    ('Tawaran terbatal (murid)',   ['TERBATAL SERTA MERTA JIKA MURID'],         1, 'text'),
-    ('Bidang',                     ['BIDANG'],                                  1, 'text'),
-]
-
-# Matriculation — Bahagian Matrikulasi KPM (the most uniform of the three; online-generated).
-# Owner-specified set (2026-06-17): crest + issuer + body sections (Jurusan / Kolej / Tarikh
-# Kemasukan) + two near-unique boilerplate sentences. Every text signature is matric-exclusive
-# except the generic 'KOLEJ' (also in "Kolej Komuniti" / college names) → weight 1.
-MATRIC_OFFER_SIGNATURES = [
-    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
-    ('Bahagian Matrikulasi',       ['BAHAGIAN MATRIKULASI'],                    3, 'text'),
-    ('Tawaran Program Matrikulasi KPM', ['TAWARAN KEMASUKAN PROGRAM MATRIKULASI '
-                                         'KEMENTERIAN PENDIDIKAN'],             2, 'text'),
-    ('Jurusan',                    ['JURUSAN'],                                 2, 'text'),
-    ('Tarikh Kemasukan ke kolej',  ['TARIKH KEMASUKAN KE KOLEJ'],               1, 'text'),
-    ('Mendaftar pada tarikh kolej', ['PERLU MENDAFTAR PADA TARIKH YANG DITETAPKAN '
-                                      'OLEH PIHAK KOLEJ'],                       2, 'text'),
-    ('Tawaran terbatal (saudara)', ['TERBATAL SERTA MERTA JIKA SAUDARA'],       1, 'text'),
-    ('Kolej',                      ['KOLEJ'],                                   1, 'text'),
-]
-
-# Polytechnic — JPPKK, Kementerian Pendidikan Tinggi (from ambilan.mypolycc.edu.my).
-# Owner-specified set (2026-06-17): TWO visual marks (Jata Negara crest + the round blue JPPKK
-# seal by the signatory) + issuer + ministry + title + body sections (Program / Institusi /
-# Tarikh dan Masa Daftar) + two near-unique boilerplate clauses. 'PROGRAM'/'INSTITUSI' are
-# generic → weight 1. Text signatures alone clear 0.70, so the two visuals are bonus.
-POLY_OFFER_SIGNATURES = [
-    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
-    ('JPPKK round seal',           ['__seal__'],                               2, 'visual'),
-    ('Jabatan Pend. Politeknik & KK', ['JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI'], 3, 'text'),
-    ('Kementerian Pendidikan Tinggi', ['KEMENTERIAN PENDIDIKAN TINGGI'],        2, 'text'),
-    ('Surat Tawaran Pengajian',     ['SURAT TAWARAN PENGAJIAN'],                2, 'text'),
-    ('Tarikh dan Masa Daftar',      ['TARIKH DAN MASA DAFTAR'],                 1, 'text'),
-    ('Tawaran muktamad/terbatal',   ['MUKTAMAD DAN TERBATAL SEKIRANYA ANDA TIDAK '
-                                     'MENDAFTAR DI INSTITUSI'],                  2, 'text'),
-    ('Tertakluk kesahihan maklumat', ['TERTAKLUK KEPADA KESAHIHAN MAKLUMAT DALAM '
-                                      'BORANG PERMOHONAN'],                      2, 'text'),
-    ('Program',                     ['PROGRAM'],                                1, 'text'),
-    ('Institusi',                   ['INSTITUSI'],                              1, 'text'),
-]
-
-# PISMP — Institut Pendidikan Guru (IPG), KPM. Single central issuer. Owner-specified set
-# (2026-06-17): issuer + the PISMP offer title + the registration/placement body fields + the
-# three offer-defining clauses (Perjanjian Pendidikan Guru / cancellation / finality). Those
-# clauses are what separate a genuine OFFER from a PISMP *announcement* (a43, which carries the
-# identity strings but none of the offer-specific signatures → scores suspect). Calibrated on
-# n=1 genuine offer (a80) — weights conservative, flagged for re-tuning when more arrive.
-PISMP_OFFER_SIGNATURES = [
-    ('Institut Pendidikan Guru',    ['INSTITUT PENDIDIKAN GURU'],               3, 'text'),
-    ('Tawaran IJSM Perguruan (PISMP)', ['TAWARAN MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN',
-                                        'IJAZAH SARJANA MUDA PERGURUAN'],        3, 'text'),
-    ('Kementerian Pendidikan Malaysia', ['KEMENTERIAN PENDIDIKAN MALAYSIA'],     1, 'text'),
-    ('Bidang Pengkhususan',         ['BIDANG PENGKHUSUSAN'],                     1, 'text'),
-    ('Aliran Sekolah',              ['ALIRAN SEKOLAH'],                          1, 'text'),
-    ('Tarikh Pendaftaran',          ['TARIKH PENDAFTARAN'],                      1, 'text'),
-    ('Tempat Pengajian',            ['TEMPAT PENGAJIAN'],                        1, 'text'),
-    ('Perjanjian Pendidikan Guru',  ['PERJANJIAN PENDIDIKAN GURU'],             2, 'text'),
-    ('Tawaran terbatal sendirinya', ['TERBATAL DENGAN SENDIRINYA JIKA'],         2, 'text'),
-    ('Penetapan bidang muktamad',   ['PENETAPAN BIDANG DAN TEMPAT PENGAJIAN ADALAH MUKTAMAD'], 2, 'text'),
-]
-
-# Asasi / UA-Diploma / Degree — ONE generic family for the FIXED 20 public universities (UA; web
-# src/data/publicUniversities.ts == courses UNIV-001..020). Every UA offer names the university, so the
-# NAME (any of the 20) is the forge-resistant ANCHOR, covering all 20 with no per-uni code; office /
-# finality / offer-line wordings are UNION-matched across institutions. TEXT-ONLY. A university NOT in
-# this list (private / IPTS, e.g. Swinburne) is banded by score with a "private college" reason (1.8.0).
-# Validated out-of-sample 2026-06-20.
-_UA_NAMES = [
-    'UNIVERSITI MALAYA', 'UNIVERSITI SAINS MALAYSIA', 'UNIVERSITI KEBANGSAAN MALAYSIA',
-    'UNIVERSITI PUTRA MALAYSIA', 'UNIVERSITI TEKNOLOGI MALAYSIA', 'UNIVERSITI TEKNOLOGI MARA',
-    'UNIVERSITI ISLAM ANTARABANGSA MALAYSIA', 'UNIVERSITI UTARA MALAYSIA',
-    'UNIVERSITI MALAYSIA SARAWAK', 'UNIVERSITI MALAYSIA SABAH', 'UNIVERSITI PENDIDIKAN SULTAN IDRIS',
-    'UNIVERSITI SAINS ISLAM MALAYSIA', 'UNIVERSITI TEKNIKAL MALAYSIA MELAKA',
-    'UNIVERSITI MALAYSIA PAHANG', 'UNIVERSITI MALAYSIA PERLIS', 'UNIVERSITI TUN HUSSEIN ONN MALAYSIA',
-    'UNIVERSITI MALAYSIA TERENGGANU', 'UNIVERSITI MALAYSIA KELANTAN',
-    'UNIVERSITI PERTAHANAN NASIONAL MALAYSIA', 'UNIVERSITI SULTAN ZAINAL ABIDIN',
-]
-# UA-name + offer-line are present in EVERY genuine UA offer (and dominate the score so a doc
-# that merely *mentions* a university without an admission offer can't reach genuine); the
-# office / clause / program / date wordings vary by institution → union-matched, weight 1 each.
-UA_OFFER_SIGNATURES = [
-    # 1.8.2: UiTM's own clauses name it on a letterhead-less PDF text layer — never its offer line (copied).
-    ('public university (UA) name', list(_UA_NAMES) + ['PELAJAR UITM SETELAH MEMBUAT PENDAFTARAN',
-                                                       'UITM BERHAK MENUKARKAN CALON'], 3, 'text'),
-    # ONLY the official offer line: "Tawaran Kemasukan", or UiTM's own (1.8.1 — it never prints that
-    # header). A "Pemakluman Kemasukan" (admission NOTIFICATION, the UM SATU pre-offer #31) must not
-    # match → floors at suspect. NB never 'SURAT TAWARAN' (a pemakluman mentions "surat tawaran rasmi"),
-    # and UiTM's line keeps "PROGRAM DI UITM": bare "ditawarkan tempat untuk mengikuti" is on a31 too.
-    ('offer/admission line',        ['TAWARAN KEMASUKAN',
-                                     'ANDA DITAWARKAN TEMPAT UNTUK MENGIKUTI PROGRAM DI UITM'], 3, 'text'),
-    ('academic office',             ['PEJABAT PENGURUSAN AKADEMIK', 'PUSAT PENGURUSAN AKADEMIK',
-                                     'BAHAGIAN HAL EHWAL AKADEMIK', 'PEJABAT PENDAFTAR',
-                                     'PUSAT PEMASARAN DAN KEMASUKAN', 'BAHAGIAN PENGAMBILAN PELAJAR'], 1, 'text'),
-    ('finality / no-change clause', ['PERTUKARAN PROGRAM ADALAH TIDAK DIBENARKAN',
-                                     'SEBARANG PERTUKARAN', 'TIDAK DIBENARKAN MENUKAR PROGRAM',
-                                     'TAWARAN AKAN DITARIK BALIK', 'ADALAH MUKTAMAD'], 1, 'text'),
-    ('Program / Kod Program',       ['PROGRAM PENGAJIAN', 'PROGRAM KOD'],          1, 'text'),
-    ('registration date',           ['TARIKH PENDAFTARAN', 'TARIKH MENDAFTAR', 'TARIKH LAPOR DIRI',
-                                     'HADIR MENDAFTAR PADA TARIKH'],               1, 'text'),
 ]
 
 # STR (Sumbangan Tunai Rahmah) — THREE genuine approval artefacts (owner-specified 2026-06-27), each its
@@ -487,6 +373,8 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 # 'SATU' is Malay for "one" and sits on ordinary letters ("Semester Satu").
 _PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD',
                         'SALURAN TERBUKA', 'SALURAN SATU')
+# (S6, 1.25.0: unchanged — the pre-S6 veto IS the baseline; UMS PPPL / "Sendirian Berhad" on the letterhead
+# are the S6 BLOCK overlay's, `offer_rulings`.)
 
 
 def _private_arm_offer(ocr_text: str) -> bool:
@@ -507,6 +395,17 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     'birth_certificate' for the BC). Pure + deterministic given the inputs; never raises."""
     r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type,
                          has_seal=has_seal)
+    out = baseline_genuineness(ocr_text, r, doc_type)
+    if doc_type == 'offer_letter':
+        # 1.25.0 (S6): the owner's rulings change the BASELINE call only on clear proof (`offer_rulings`).
+        from .offer_rulings import apply_rulings
+        return apply_rulings(ocr_text, r, out, MODEL_VERSION)
+    return out
+
+
+def baseline_genuineness(ocr_text: str, r: dict, doc_type: str = None) -> dict:
+    """The genuineness call exactly as before offer exact-read S6 (1.22.0's path) from the scores `r`: the
+    private-arm veto, the band, and (offers) the 1.8.0 unfingerprinted-issuer net. S6 keeps it as the default."""
     n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
 
     # PRIVATE / continuing-education ARM veto (MODEL_VERSION 1.6.0): a private / IPTS option is

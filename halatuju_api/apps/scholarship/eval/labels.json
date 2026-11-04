@@ -59,8 +59,8 @@
       "case": "request #47",
       "doc_type": "offer_letter",
       "local": false,
-      "checks": {"signature_status": "unchecked"},
-      "note": "A Kementerian Belia dan Sukan (IKBN, under ILKBS) offer letter that read 'suspect' at p=0.40 against the nearest university pattern, which raised the official-document request (corpus-gaps C1). Since MODEL_VERSION 1.8.0 a known public TVET issuer named on the letterhead reads NOT CHECKED: no genuineness step, no block, no request; the reviewer checks it by eye. Synthetic twin: tests/test_corpus_gaps_c1.py. Capture it (fetch_corpus.py / capture_ocr.py, owner's call) and switch the flag."
+      "checks": {"signature_status": "genuine"},
+      "note": "A Kementerian Belia dan Sukan (IKBN, under ILKBS) offer letter that read 'suspect' at p=0.40 against the nearest university pattern, which raised the official-document request (corpus-gaps C1). Since MODEL_VERSION 1.8.0 a known public TVET issuer named on the letterhead reads NOT CHECKED: no genuineness step, no block, no request; the reviewer checks it by eye. Since 1.25.0 (offer exact-read S6, owner Q2 2026-11-03) such a letter with an offer body reads GENUINE. Synthetic twin: tests/test_corpus_gaps_c1.py. Capture it (fetch_corpus.py / capture_ocr.py, owner's call) and switch the flag."
     }
   }
 }

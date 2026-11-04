@@ -69,6 +69,125 @@ no access moving for any shape.
 `EXPECTED_CHANGES` line; `test_team_tables_t5c_doors` (parity: each door vs T1's rule, frozen, for the 20 matrix
 shapes + 12 extras — qc alone, reviewer + see_all, gift-limited admin / finance / Admins-by-key, empty sets, a super
 on a team label, inactive rows), shown red with one mapping broken on purpose.
+## Offer letters S6: a pre-U letter on a degree application is a Pathway mismatch (yellow); public TVET offers score genuine; which confirmation letters count — 2026-11-03 (owner go on the S6 plan)
+
+**Context.** The offer exact-read S6 plan (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S6
+"Plan (2026-11-03)") measured today's genuineness against the owner's rulings of 2026-11-01 and the chip table of
+2026-11-02, and put two questions and one default to the owner.
+
+**Decisions (owner, "go, with your recommendations").**
+1. **A matriculation / STPM / Form-6 letter on a degree (tertiary) application reads Pathway `mismatch`** — under
+   the chip table that is a YELLOW Pathway chip and the Check 2 `pathway_confirm` query to the student; never red,
+   no band loss. The matcher's level check itself is TD-473 (Cockpit's), built in `pathway_match.py` after the S6
+   split; S6 only guarantees that `mismatch` is yellow + the query and never a red chip or a band step.
+2. **Public TVET offers (IKBN / IKTBN / ILKBS, IKM / KKTM / Kolej MARA / Kolej Profesional MARA, ILP / ADTEC /
+   JTM — the closed `offer_issuers.TVET_ISSUERS` list) score GENUINE** (Official green) when the institute is named
+   on the LETTERHEAD, the page carries offer wording, and there is no private / sponsor marker (the 2026-10-26 C1
+   rules 2-6 kept). The 1.8.0 "NOT CHECKED" outcome is replaced for these letters. Accepted cost: a well-typed fake
+   naming an institute reads green until a reviewer looks (too few letters per institute to fingerprint).
+3. **Default accepted — confirmation-of-studies letters** (ruling 4 of 2026-11-01): only UMS, the polytechnics and
+   Form-6 colleges count as "no private wing" — such a confirmation is an acceptable alternative to an offer
+   (genuine). Any other university's confirmation reads `suspect` (a person checks it is the government
+   programme). A confirmation letter never writes a course pick.
+
+4. **Ruling-lifted letters stay GREEN — no hedging cap (owner, 2026-11-03, after the S6 review asked).**
+   Verbatim: *"Let us be guided by data. The corpus is sparse now but will fill. Let the model predict; if it is
+   wrong, it serves as a lesson. If we allow the model to hedge now, the issue will never be resolved; the
+   exception would become the rule."* So a TVET offer or a confirmation of studies that meets its rule reads
+   genuine, and the rules are made STRUCTURAL (what a real letter is made of — the first institution named, a
+   reference / date / candidate / title / closing in a letter's order, no padding; where a company name sits),
+   not word lists. Every lift is LEARNABLE: its stored `reason` starts with `[S6 ruling: <tag>]`
+   (`offer_rulings.ruling_of`: `tvet_offer`, `tvet_slip`, `confirmation`, `confirmation_ua`, `private_offer`,
+   `printout`) and a lifted genuine keeps its own `doc_seen` (`tvet_*`, `confirmation_*`). Surfaced: the stored reason
+   and `doc_seen` travel to the cockpit on the document's `authenticity` (serializer); `eval/offer_genuineness_check.py` counts letters per ruling and
+   names the ruling of every miss; the S6 dry run lists every re-score a ruling lifted. A reviewer's override or a
+   later corpus answer against a tagged letter is the lesson — S8 mines them.
+5. **What "private" means (owner, 2026-11-03): GMI and UniKL are PRIVATE.** The test is not who OWNS the
+   institution but whether the PROGRAMME is treated like an IPTA programme and is heavily (government)
+   subsidised. That is why UM's Saluran Terbuka ("SATU", self-funded) channel is private although UM is an IPTA.
+   GMI (German-Malaysian Institute) joins the MARA-owned private list beside UniKL / KPTM / KUPTM / UPTM; UM SATU
+   keeps failing (`results_doc._private_arm_offer`). The student's `offer_not_official` text says the same.
+6. **UMS's PPPL is PRIVATE (owner, 2026-11-03, the same subsidy test).** UMS's self-funded "Pusat Pendidikan
+   Profesional dan Lanjutan" (PPPL; also written "Pusat Pendidikan Lanjutan") is a private wing, like UTM SPACE:
+   a PPPL confirmation or offer reads `not_offer_letter` (since item 7: when PPPL is named on the letterhead
+   block — the S6 BLOCK overlay, `offer_reading._PRIVATE_BODIES`).
+7. **S6 changes a call ONLY on clear proof (owner, 2026-11-03, "option 1", after review round 7).** Every offer
+   keeps its BASELINE — the call the pre-S6 engine gives (`results_doc.baseline_genuineness`, the 1.22.0 path,
+   unchanged) — unless one of these fires (`offer_rulings.ruled_offer`):
+   - **BLOCK** → `not_offer_letter` (`private_offer`) only on positive private proof on the LETTERHEAD BLOCK (it ends
+     at the title, the salutation, "Kepada" or the addressee below the date): "Sdn Bhd" / "Berhad", a named private
+     body (GMI, UniKL, KPTM / KUPTM / UPTM, UM SATU, UMS PPPL) or explicit tie-up words. No other route newly blocks.
+   - **LIFT** → `genuine` only when ALL hold: a closed-list public name on the letterhead (exact, after folding),
+     the first institution named is a closed-list one, a letterhead naming no other organisation, the full letter
+     shape, and no private marker anywhere on the page (`tvet_offer` / `confirmation`; and `incidental_company` — a
+     ministry family's own letter scoring genuine that the pre-S6 veto blocked only for a supplier / bank /
+     addressee "Sdn Bhd").
+   - Rulings 3 and 6 still soften a fail on their own proof (`printout`, `tvet_slip` → `suspect`).
+   - Round 8 (stricter, simpler): the letterhead block is the top lines up to the issuer's first postcode line
+     (earlier stops at Ruj / date / title / salutation / Kepada / candidate / name line); "no private marker"
+     excuses only a closed-list bank's own "Berhad" line and the addressee block above the title.
+   - Round 9: a TVET lift needs the INSTITUTE itself on the letterhead (an agency / ministry name alone keeps the
+     baseline) and an admission title (not PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN); a Form-6 confirmation names
+     Form 6; a BLOCK company / tie-up line counts only before any closed-list public name.
+   The middle logic that guessed in unclear cases is deleted: the round-5 safety exit, the `tvet_unverified` /
+   `confirmation_unverified` fallbacks, "an unclean letterhead is private evidence", the conditional-offer block, and
+   the other university's confirmation → `suspect` of item 3 (it keeps its baseline now). No new cap to suspect.
+   Accepted cost: a private letter with no letterhead proof keeps its baseline (one corpus letter, a conditional
+   offer from a private college, reads `suspect` as it did before S6).
+8. **JMTI and CIAST are government (JTM) institutes (owner, 2026-11-03).** "JMTI" / "Japan-Malaysia Technical
+   Institute" and "CIAST" / "Pusat Latihan Pengajar dan Kemahiran Lanjutan" join the LIFT's closed list of public
+   TVET institutes (`offer_reading._INSTITUTES`, key `tvet_jtm`), under the same rules (the letterhead, the full
+   offer shape, no private marker). The pre-S6 1.8.0 net (`offer_issuers.TVET_ISSUERS`) is the baseline's and
+   stays as it was. Probes: `tests/test_offer_s6_narrowing.py`.
+9. **ONE narrow agency-letterhead lift (owner, 2026-11-03, after review round 9).** A TVET offer on an AGENCY's own
+   letterhead lifts (tag `tvet_offer`, the reason starts `agency_letterhead:`) only when ALL hold
+   (`offer_rulings._agency_lift`):
+   1. the letterhead names ONE of MARA / Majlis Amanah Rakyat, TVETMARA / Bahagian Pendidikan dan Latihan Teknikal
+      Vokasional MARA, Kementerian Belia dan Sukan (KBS), Jabatan Tenaga Manusia (JTM) / Kementerian Sumber
+      Manusia, and no other organisation or public body. JPK (it accredits private centres) and any other ministry
+      are NOT on the list;
+   2. a closed-list public TVET institute is named in the body and its parent is that agency (IKM / KKTM / Kolej
+      MARA <- MARA / TVETMARA; IKBN / IKTBN <- KBS; ILP / ADTEC / JMTI / CIAST <- JTM / KSM); a mismatch = no lift;
+   3. the title is an admission offer; PEMBIAYAAN / PINJAMAN / BIASISWA / TAJAAN / ELAUN / BANTUAN in the title or
+      the first body lines = no lift;
+   4. the full offer shape and no private marker anywhere (the strict round-8 / 9 rule, no new excuse); no other
+      organisation NAMED in the body but the institute and the agency (a closed-list bank line and the addressee
+      block excepted). Refined the same day (the coordinator's own condition, within the ruling): an institution
+      noun names an organisation only when a NAME follows it on its line, read in the raw OCR case — a capitalised
+      / all-caps token that is no function word and no other institution noun, after the noun's descriptor words
+      (Pengajian / Latihan / Kemahiran …); "pihak institut berhak", "di institusi/kolej" are generic. The agency's
+      umbrella names count as the agency, for that agency only: ILKBS / Institusi Latihan Kemahiran Belia dan
+      Sukan (KBS), ILJTM / Institusi Latihan Jabatan Tenaga Manusia (JTM), IPMa / Institusi Pendidikan MARA /
+      TVETMARA (MARA).
+      **Superseded 2026-11-04 (owner: app 329 must be green; the lead's rulings): condition 4 is CLOSED-WORLD**
+      (`genuineness/offer_agency.py`). After the allowed spans are taken out of a body line — the institute's names
+      with its CATALOGUED campus words (`apps.courses.tvet_institutions.HELD` + the UP_TVET catalogue snapshots in
+      `data/tvet/`, by family), the agency and its umbrella names, the spelt-out TVET sector, a field label before
+      the institute, a label-only line, a bank line, the addressee block — ANY organisation word left (institution
+      nouns, English company / end-nouns, another agency's acronym or full name) = no lift; only a LOWERCASE bare
+      noun before a function word or punctuation is generic. An operator phrase ("dikendalikan oleh", "in
+      collaboration with", "rakan strategik" …) anywhere = no lift; a glued "KolejMercu" is split; a line-end noun
+      reads the next line's first word. The agency stands first on the letterhead (crest / government / junk lines,
+      up to three one-token fragments, a KEPADA block above it; address / contact / division / agency lines below
+      it to the first postcode); WAKIL / EJEN / AGEN = no lift. Known gap: a private name with no organisation word
+      (TD-493).
+   `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
+   `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
+   `Round10AgencyLetterhead`.
+10. **The review stops here; S6 ships (owner, 2026-11-04, after review round 13).** Round 13's fixes (digits read
+    inside a word, a closed-list name inside a glued token tested on what is left, the training words, the affix
+    guard) get ONE last check of those fixes only, then S6 ships. Any NEW evasion found after that goes to the
+    technical-debt list for S7 — unless it blocks a REAL public letter, which is fixed at once. Known accepted gaps:
+    TD-491 (page-1 scoring), TD-492 (crest line), TD-493 (no organisation word / lowercase names, OCR misreads
+    such as "Acaderny"), TD-494 (descriptor wording holes).
+
+**What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
+07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
+itself (rule 1). Name / IC `unreadable` is yellow, not red (supersedes S4's "a blank IC is red" pin). `MODEL_VERSION`
+1.25.0 (1.23.0 / 1.24.0 went to request #53 and its follow-up); `VERDICT_ENGINE_VERSION` 2026-11-04.1. Stored statuses move only when a letter is re-scored (S7).
+
+**Revisit if:** the bursary funds private colleges; a TVET institute's letters reach ≥3 per issuer (fingerprint
+them); or another university's confirmation letters are shown to carry no private-wing intake.
 
 ## Mobile M8: pills on a phone are `rounded-md` with less side padding, through ONE shared style, on the most-seen pills only — 2026-11-04 (owner option A)
 
