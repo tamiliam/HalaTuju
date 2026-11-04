@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds
 one field to `admin/role/`); no live access moved, on the server or in the console.
 
+**Review:** fresh reviews PASS; adversarial review SHIP, no blocker (13,884 server shapes and 4,770 web payloads, 0 mismatches). Fixes: the role guard now reads `getattr(x, 'role', ...)`; lead-tier gates reclassified (`AdminAssignReviewerView.post` to T5e; record / cancel admin credit to T5d; letters `_senior` and `is_review_target` to T5e).
+
 **P1 — the organisation-read and admin-work doors (server only):**
 - **One page gate, `staff_tables.opens(admin, *v2_keys)`** (all keys held, read through `effective_v2`; an unknown key
   raises). `staff_tables.admits` and its role / key lists are gone.

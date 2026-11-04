@@ -29,7 +29,8 @@ export function opensDoorOr(role: Served | null | undefined, door: DoorName, rol
 /**
  * Team tables T3 (2026-11-03): who sees Team → **Mentors** and a mentor's detail page — exactly who read the
  * old Mentors page (its registry row's roles): the server's `mentor_invite.may_read`, which is
- * `staff_tables.may_do_admin_work` (roles `ADMIN_WORK_ROLES`, no key: `ADMIN_WORK_KEYS` is empty). The Team
+ * `staff_tables.may_do_admin_work` (the union door `admin_work`, still answered by role label here via
+ * `MENTORS_READ_ROLES`; no key yet). The Team
  * page itself is wider (finance and a key-seated admin read it), so the tab carries this rule of its own.
  * Visibility only: `GET admin/mentors/` and `GET admin/mentors/<id>/` are the fence.
  * ⚠ T5c: NOT on a door. The server keeps `mentor_invite.may_read` on the union door `admin_work` (TD-489, a

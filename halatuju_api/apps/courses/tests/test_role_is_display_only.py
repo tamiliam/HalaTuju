@@ -29,6 +29,9 @@ CLASSES = {'DISPLAY', 'OVERRIDE', 'GATE-LEFT', 'GATE-UNPLANNED'}
 
 
 def _is_role(node):
+    if (isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'getattr' and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Constant) and node.args[1].value == 'role'):
+        return True  # getattr(x, 'role', default) is a role read too
     return ((isinstance(node, ast.Attribute) and node.attr == 'role')
             or (isinstance(node, ast.Name) and node.id == 'role'))
 
@@ -177,6 +180,12 @@ ALLOWLIST = {
         'money: fallback approvers are org admins by label (payments fallback rule)'),
     'scholarship/programme_overview.py::may_customise': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
+    'scholarship/reviewer_onboarding.py::reviewer_profile_complete': ('DISPLAY', 'account kind',
+        'first-login landing: the label says which kind of account this is, not what it may do'),
+    'scholarship/scheduling.py::propose_slots': ('OVERRIDE', 'owner override',
+        'super bypass of the assigned-reviewer rule (getattr role == super): a super holds every key'),
+    'scholarship/services/assignment.py::is_review_target': ('GATE-LEFT', 'T5e',
+        'who may receive a case: R1_SUPER_TARGET_ROLES by label; T5e moves assignment targets to keys with may_assign_to'),
     'scholarship/services/assignment.py::may_assign_to': ('GATE-LEFT', 'T5e',
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/source_invite.py::_reactivate': ('DISPLAY', 'account kind',
@@ -187,6 +196,10 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/source_invite.py::sign_in_states': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
+    'scholarship/sponsorship.py::cancel_admin_credit': ('GATE-LEFT', 'T5d',
+        'money: cancelling a credit is gated by the label (getattr role)'),
+    'scholarship/sponsorship.py::record_admin_credit': ('GATE-LEFT', 'T5d',
+        'money: recording a credit is gated by the label (getattr role)'),
     'scholarship/sponsorship.py::sign_admin_credit': ('GATE-LEFT', 'T5d',
         'money: credit signing by label (admin / finance / org_admin)'),
     'scholarship/staff_lifecycle.py::_other_active_finance': ('GATE-LEFT', 'T5d',
@@ -291,6 +304,8 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/views_admin/invoices.py::_InvoiceBase._caller': ('GATE-LEFT', 'T5e',
         'R3: invoices stay for T5e'),
+    'scholarship/views_admin/letters.py::_LettersBase._senior': ('GATE-LEFT', 'T5e',
+        'lead powers: only org_admin issues senior letters, by label; T5e moves lead powers to keys'),
     'scholarship/views_admin/lifecycle.py::AdminAssignableAdminsView.get': ('DISPLAY', 'account kind',
         'the LISTED set; who may be picked is the served may_assign_to flag'),
     'scholarship/views_admin/lifecycle.py::AdminCloseApplicationView.post': ('GATE-LEFT', 'T5e',
@@ -367,8 +382,8 @@ ALLOWLIST = {
         'lead-tier (org_admin or super) action gated by the label; T5e moves lead powers to keys'),
     'scholarship/views_admin/theme.py::AdminOrganisationThemeView._organisation_for': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
-    'scholarship/views_admin/verdict.py::AdminAssignReviewerView.post': ('OVERRIDE', 'owner override',
-        'super-only action (has_role super): a super holds every key; the override stays'),
+    'scholarship/views_admin/verdict.py::AdminAssignReviewerView.post': ('GATE-LEFT', 'T5e',
+        'lead-tier gate: has_role super OR org_admin by label (not super-only); T5e moves lead powers to keys'),
     'scholarship/views_admin/verdict.py::AdminCancelReopenView.post': ('OVERRIDE', 'owner override',
         'super-only action (has_role super): a super holds every key; the override stays'),
     'scholarship/views_admin/verdict.py::AdminReopenDecisionView.post': ('OVERRIDE', 'owner override',
