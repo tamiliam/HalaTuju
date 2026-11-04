@@ -7645,6 +7645,31 @@ Super-only door, so no separation breach, but a declined case lands at sponsor-p
 reopened-from status on `DecisionReopen` and invert from it, or have `submit-decline` / `verify-accept` close (or
 refuse on) an open reopen; a regression test of the probe above. *(A · S)*
 
+### [TD-487] A decline at `/reject/` before AWAITING QC has no second check - medium (owner's call)
+
+**Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed; proved by a scratch request test, then deleted).**
+TD-481 closed `/reject/ {category: 'interview'}` at `interviewed` only (the owner's ruling). At `shortlisted`,
+`profile_complete` and `interviewing` the door still declines at once under `_require_app_write` — the assignee or
+any `qc` holder in the organisation, including one who worked the case. So the 2026-07-19 rule that QC is the second
+pair of eyes on BOTH outcomes holds only once a verdict reaches AWAITING QC. Sharpest case: an unrelated QC uses
+`qc-decision` reopen ("ask for the payslip") -> `interviewing`; the assignee then calls `/reject/` -> 200 `rejected`,
+on a case whose recorded verdict was still `accept`, with no new verdict and no QC; `close_reopen_with_change` counts
+it as a correction. A super can do the same in two steps (`reopen-decision` on `interviewed` -> `interviewing`, then
+`/reject/`), leaving no QC decision record. API only: the cockpit never sends the `interview` bucket
+(`DecisionCard.tsx` sends only `contractual`). **Fix (needs the owner):** refuse the `interview` bucket at
+`/reject/` altogether (a reviewer's decline always goes record-verdict -> submit-decline -> QC), or keep it for the
+pre-interview statuses only and refuse it on a case with an open reopen; regression tests of the probe. *(A · S)*
+
+### [TD-488] An organisation admin can close a case AWAITING QC, past the QC gate - low (owner's call)
+
+**Raised 2026-11-04 by the TD-481 adversarial review (NOT fixed).** `POST .../close/ {closure_reason: 'stalled'}`
+(`views_admin/lifecycle.py` ~155, `closure.close_application` ~228) is open to a super or the organisation admin
+from any in-play status since TD-352, `interviewed` included. It is a closure, not a selection decision, but it is a
+terminal negative ending ("closed by our team") reached with no QC and no separation check, even by an admin who
+worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team tables T5b") left it out. **Fix (needs the
+owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
+there. *(A · S)*
+
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 
 **Raised 2026-11-03 by Requests list R1.** R1 built ONE Previous / Next for a list's detail pages:

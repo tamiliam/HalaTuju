@@ -21,7 +21,9 @@ Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, n
   from `interviewing`; `test_decision_reopen.test_reject_after_reopen_counts_correction_and_stays_unpublished` walks
   reopen -> re-record decline -> QC confirm (its assertions unchanged).
 - New debt: TD-486 (a super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC
-  decision — found by this sprint's inventory of QC-outcome doors). Closed: TD-481.
+  decision — found by this sprint's inventory of QC-outcome doors); from the adversarial review (SHIP, no blocker),
+  TD-487 (a `/reject/` decline before AWAITING QC, incl. after a QC reopen, has no second check — owner's call) and
+  TD-488 (an organisation admin can close an awaiting-QC case — owner's call). Closed: TD-481.
 
 ## Team tables T5b — QC self-sufficient + widened self-QC guard (LIVE 2026-11-04; main f44f0a8b; api-01248-ggf, web-01076-gr4; incl. review round 1)
 

@@ -233,7 +233,12 @@ recorder, the verify-accepter, and anyone whose activity list records review wor
 kind of review work belongs in that module** (+ `test_qc_self_sufficient.py`). Open: TD-481, TD-483, TD-484, TD-485. Review round 1: verb `interview_drafted` (migration 0202, choices only) is
 written by `AdminInterviewView.post` when a draft's credit moves to the saver, and is a guard verb. Live access unchanged.
 
-**NEXT = TD-481** (the reviewer's Decline at AWAITING QC goes through the QC gate; own small sprint, adversarial review), **then T5c**.
+**TD-481 (2026-11-04):** `AdminRejectView` refuses `{category: 'interview'}` on an `interviewed` (AWAITING QC) case
+for everyone, super included — 400 `awaiting_qc`; it is declined only at `qc-decision`. The rule sits at the door, NOT
+in `admin_reject` / `INTERVIEW_REJECT_FROM` (the QC decision declines through them). Open from it: TD-486 (super's
+cancel-reopen), TD-487 and TD-488 (owner's calls). Test: `test_td481_awaiting_qc_decline.py`.
+
+**NEXT = T5c** (owner to rule on TD-487 / TD-488 when convenient).
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 

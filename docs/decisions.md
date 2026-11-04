@@ -13,8 +13,10 @@ reason or a `qc_decision` activity row, and uses the organisation's QC hold). Ra
 `bad_status` and `_require_qc`'s `not_awaiting_qc`; nothing in this family uses 409). The super loses nothing: the QC
 decision admits a super, exempt from separation. The reviewer's road stays record-verdict -> submit-decline -> QC
 confirm (owner 2026-07-19). A super who reopens a recommended case (-> `interviewed`) re-records a decline verdict,
-then confirms it at the QC decision. A case QC reopened (-> `interviewing`) is the reviewer's again, and `/reject/`
-still declines it. `contractual` and the other `interview` statuses are unchanged.
+then confirms it at the QC decision. **Lead's scoping, not the owner's ruling:** the owner ruled on the awaiting-QC
+case only, so a case QC reopened (-> `interviewing`) is the reviewer's again and `/reject/` still declines it, as do
+the other `interview` statuses; `contractual` is unchanged. The adversarial review asked whether that is wanted
+(TD-487: a decline at those statuses has no second check); the owner decides there.
 
 **Why at the view, not in `admin_reject`:** the QC decision itself calls `admin_reject(app, admin, 'interview', ...)`
 from `interviewed` (accept of a decline verdict). Removing `interviewed` from `INTERVIEW_REJECT_FROM` would break the
