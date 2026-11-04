@@ -354,6 +354,9 @@ V2_DOOR_MODULES = {
     'scholarship/source_invite.py',          # invitations.edit (may_invite)
     'scholarship/views_admin/sponsor_terms.py',   # sponsors.edit
     'scholarship/views_admin/org_emails.py',      # sponsors.edit (sponsor emails)
+    # T5c P2
+    'scholarship/views_admin/sources.py',    # sources.edit (Sources, Partner emails, witness override)
+    'scholarship/views_admin/credits.py',    # sponsors.view (the ledger read; money writes stay, T5d)
 }
 
 

@@ -28,13 +28,19 @@ no access moving for any shape.
   | sponsor emails (`_SponsorEmailsBase.may_open`) | `sponsors.edit` | same |
   | `staff_tables.may_do_admin_work` (union) | `ADMIN_WORK_V2` | same |
   | `mentor_invite.may_invite`, `source_invite.may_invite` | `invitations.edit` (lead-only) | super, org_admin |
+  | **P2:** Sources, Partner emails, witness override (`_SourcesBase.may_open`) | `sources.edit` | super, org_admin, admin |
+  | **P2:** credit ledger read, GET `credits/` (`_CreditsBase.may_read`) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
 
 - **R1** each admin-work page opens by its own catalogue key, reproducing the `admin` preset exactly; finance holds
   `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-489):** the Mentors list
   (`mentor_invite.may_read`) — its catalogue key `team.view` is also held by finance and Admins-by-key, so it would
   open to them: **lead ruling needed**; it stays on the union door. Sources, the roster `admin/admins/`, Team -> Emails
   -> Admin emails and the credit screens stay on the union doors too (their files are outside P1).
-- **R2** the graduation-messages list key is not in P1 (P2 owns `graduation.py`). **R3** requests, billing, contracts,
+- **P2 (same day):** Sources and the credit ledger read moved (table above). The credit doors that write money
+  (record, sign, cancel) stay on `may_read_org` for T5d. Sources keeps ONE gate for read and write, so `.edit`.
+- **R2** the graduation-messages list: **not converted in P2** — it admits super + the `reviewer` / `admin` labels and
+  refuses the org admin, who holds every key, so no single key reproduces it (closest: the `review` hat, 7 shapes
+  move). Lead ruling needed (TD-491). **R3** requests, billing, contracts,
   invoices stay for T5e. **R4** no dependency change (`with_implied_views` / `HAT_IMPLIES` as today; T5d decides).
   **R5** no landing, web or migration change. **R6** `NotYetAGate` is replaced by `V2Importers`: only
   `courses/staff_tables.py` may import v2, and `V2_DOOR_MODULES` lists every module that asks `staff_tables.opens(`

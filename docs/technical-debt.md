@@ -7670,21 +7670,38 @@ worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team table
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
 
-### [TD-489] Six pages still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on one)
+### [TD-489] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 
-**Raised 2026-11-04 by Team tables T5c P1 (branch t5c).** P1 put the v2 keys behind every door its modules own
-(decisions.md "Team tables T5c"), but these callers still ask a union door — now v2-backed and all-of
-(`staff_tables.may_do_admin_work` = every `ADMIN_WORK_V2` key; `may_read_org` = every `ORG_READ_V2` key), so
-nobody's access moved: **Sources** + the witness override (`views_admin/sources.py` `_sources_admin`, also the
-partner emails via `_SourcesBase`), the **team roster** `admin/admins/` (`courses/views_staff.py` ~421), **Team ->
-Emails -> Admin emails** (`org_emails.AdminTeamAdminEmailsView.may_open`, kept in lockstep with the partner
-emails), the **credit screens** (`views_admin/credits.py` `_credits_admin`, `may_read_org`), and the **Mentors list**
-(`mentor_invite.may_read`). **The Mentors list needs a lead ruling:** the catalogue files it under `team.view`
-(ruling 2), which finance and a person at Admins by a key also hold, so `team.view` would OPEN it to them (today
-admin-work only). Either accept that widening (it matches ruling 2) or give it a key finance does not hold. The
-roster has the same question (`team.view` today = People, which finance reads). **Fix:** sources -> `sources.edit`,
-credits -> `sponsors.view`, roster / Mentors list / Admin emails -> as ruled, each with a line in
-`test_team_tables_t5c_doors` and `V2_DOOR_MODULES`. *(A · M)*
+**Raised 2026-11-04 by Team tables T5c P1 (branch t5c); P2 converted two of them the same day.** P1 put the v2 keys
+behind every door its modules own (decisions.md "Team tables T5c"), but some callers still ask a union door — now
+v2-backed and all-of (`staff_tables.may_do_admin_work` = every `ADMIN_WORK_V2` key; `may_read_org` = every
+`ORG_READ_V2` key), so nobody's access moved.
+
+**Done in P2:** Sources + Partner emails + the witness override (`views_admin/sources.py`
+`_SourcesBase.may_open` -> `sources.edit`; all three ride `_sources_admin`), and the credit LEDGER read (GET
+`credits/`, `_CreditsBase.may_read` -> `sponsors.view`).
+
+**Still on a union door:** the **team roster** `admin/admins/` (`courses/views_staff.py` ~421), **Team -> Emails ->
+Admin emails** (`org_emails.AdminTeamAdminEmailsView.may_open`; its docstring still says "in lockstep with the
+partner emails (`_SourcesBase`)" — the partner emails now ask `sources.edit`, same holders, so the lockstep holds
+but the sentence is stale; fix with the door), the **Mentors list** (`mentor_invite.may_read`), and the three credit
+doors that **write money** — record (POST `credits/`), sign, cancel (`_credits_admin`, `may_read_org`) — which are
+T5d's (money). **The Mentors list needs a lead ruling:** the catalogue files it under `team.view` (ruling 2), which
+finance and a person at Admins by a key also hold, so `team.view` would OPEN it to them (today admin-work only).
+Either accept that widening (it matches ruling 2) or give it a key finance does not hold. The roster has the same
+question (`team.view` today = People, which finance reads). **Fix:** roster / Mentors list / Admin emails -> as
+ruled; credit writes -> T5d; each with a line in `test_team_tables_t5c_doors` and `V2_DOOR_MODULES`. *(A · M)*
+
+### [TD-491] The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
+
+**Raised 2026-11-04 by Team tables T5c P2 (lead ruling R2).** `AdminGraduationMessageListView`
+(`views_admin/graduation.py` ~31) admits `is_super or role in ('reviewer', 'admin')` — NOT the org admin, not
+finance, not qc. No page is known to call it. Every catalogue key opens the org admin (the lead tier holds every
+key, `lead_v2`), so NO single key reproduces today's holders. Measured over the parity test's 32 shapes: the closest
+is the `review` hat (7 active shapes move: the five `admin` shapes lose it; `finance_custom` and `org_admin_reviews`
+gain it); every Engagement key moves 10 (all org-admin shapes gain; every reviewer shape loses); `students.view`
+moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
+`_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
 
 ### [TD-490] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 

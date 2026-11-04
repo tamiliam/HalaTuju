@@ -24,6 +24,18 @@ no live access moved.
   by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
   `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-489, TD-490.
 
+**P2 — Sources, partner emails and the credit ledger (server only):**
+- **Sources door on `sources.edit`** (`_SourcesBase.may_open`): Sources (list, the retired POST, PATCH), Partner
+  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-490).
+- **Credit ledger read on `sponsors.view`** (`_CreditsBase.may_read`, GET `credits/`). Record, sign and cancel move
+  money and stay on `may_read_org` until T5d.
+- **Not converted:** the graduation-messages list (lead ruling R2): no key reproduces its holders, because the org
+  admin holds every key and is refused today (TD-491, closest the `review` hat, 7 shapes move). Admin emails, the
+  roster and the Mentors list are outside P2's files (TD-489).
+- Tests: the parity test grows to 17 doors x 32 shapes, plus "credit writes stay on the union door" and "every source
+  surface rides the one Sources door"; `V2_DOOR_MODULES` gains `sources.py` and `credits.py`. The access matrix runs
+  unchanged. New debt: TD-491.
+
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.

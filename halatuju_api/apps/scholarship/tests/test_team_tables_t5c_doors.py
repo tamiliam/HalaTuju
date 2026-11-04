@@ -1,8 +1,10 @@
-"""Team tables T5c (P1) — THE PARITY TEST: each page door converted to v2 keys (`staff_tables.opens`)
+"""Team tables T5c (P1, P2) — THE PARITY TEST: each page door converted to v2 keys (`staff_tables.opens`)
 answers exactly what its T1 rule answered, for every live shape the access matrix uses plus extras.
 
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T5c); decisions.md "Team tables T5c" (lead rulings
-R1-R6 and the door -> key table). The HTTP proof is the access matrix (`test_team_tables_matrix`), run
+R1-R6 and the door -> key table). P2 adds the Sources door (`_SourcesBase.may_open`, which Sources,
+Partner emails and the witness override all ride) and the credit ledger READ (`_CreditsBase.may_read`); the
+three credit doors that write money stay on the union door until T5d (asserted below). The HTTP proof is the access matrix (`test_team_tables_matrix`), run
 UNCHANGED against its frozen fixture; this file proves each door FUNCTION, so a conversion that happens
 to be unreachable by the matrix's probes still cannot move.
 
@@ -27,7 +29,9 @@ from apps.scholarship import (announcements, development, mentor_invite, mentori
 from apps.scholarship.models import Mentor
 from apps.scholarship.tests.factories import make_admin, make_org, make_programme
 from apps.scholarship.tests.test_team_tables_matrix import SHAPES as MATRIX_SHAPES
+from apps.scholarship.views_admin.credits import _CreditsBase
 from apps.scholarship.views_admin.org_emails import AdminTeamAdminEmailsView, _SponsorEmailsBase
+from apps.scholarship.views_admin.sources import _SourcesBase
 from apps.scholarship.views_admin.sponsor_terms import _SponsorTermsBase
 
 #: The matrix's shapes, plus the extras the lead asked for (qc alone, reviewer + see_all, a gift-limited
@@ -101,14 +105,18 @@ def _doors(app):
         'sponsor_terms': (_SponsorTermsBase.may_author, old_admin_work, ('sponsors.edit',)),
         'sponsor_emails': (_SponsorEmailsBase.may_open, old_admin_work, ('sponsors.edit',)),
         'team_admin_emails': (AdminTeamAdminEmailsView.may_open, old_admin_work, v2.ADMIN_WORK_V2),
+        # P2 — T1's `_SourcesBase` asked `may_do_admin_work`; the credit screens asked `may_read_org`.
+        'sources': (_SourcesBase.may_open, old_admin_work, ('sources.edit',)),
+        'credits.may_read': (_CreditsBase.may_read, old_read_org, ('sponsors.view',)),
     }
 
 
 #: The doors whose key is the ADMIN WORK set (R1): the `admin` preset opens each, finance none.
 ADMIN_WORK_DOORS = ('staff_tables.may_do_admin_work', 'announcements.may_post', 'surveys.may_make',
                     'development.may_make', 'mentoring.may_act', 'mentoring.may_assign',
-                    'mentor_invite.may_read', 'sponsor_terms', 'sponsor_emails', 'team_admin_emails')
-READ_DOORS = ('staff_tables.may_read_org', 'surface_gates.may_read_sponsors', 'surface_gates.may_read_team')
+                    'mentor_invite.may_read', 'sponsor_terms', 'sponsor_emails', 'team_admin_emails', 'sources')
+READ_DOORS = ('staff_tables.may_read_org', 'surface_gates.may_read_sponsors', 'surface_gates.may_read_team',
+              'credits.may_read')
 LEAD_DOORS = ('mentor_invite.may_invite', 'source_invite.may_invite')
 
 
@@ -231,3 +239,32 @@ class DoorParity(TestCase):
         self.assertTrue(mentoring.may_assign(self.people['admin'], _App(owning_organisation_id=self.org.id)))
         self.assertFalse(mentoring.may_assign(self.people['admin'], other_file))
         self.assertTrue(mentoring.may_assign(self.people['super'], other_file))
+
+    def test_the_credit_doors_that_write_money_stay_on_the_union_door(self):
+        # P2: only the ledger READ moved to `sponsors.view`; record / sign / cancel are T5d's (money).
+        base = _CreditsBase()
+        with mock.patch.object(_CreditsBase, 'get_admin', return_value=self.people['finance']),                 mock.patch('apps.courses.staff_tables.may_read_org', return_value=False) as union:
+            admin, err = base._credits_admin(None)
+            self.assertIsNone(admin)
+            self.assertEqual(err.status_code, 403)
+            self.assertEqual(union.call_count, 1)
+            admin, err = base._credits_reader(None)
+            self.assertIsNone(err)
+            self.assertEqual(admin, self.people['finance'])
+            self.assertEqual(union.call_count, 1)    # the read never asked the union door
+
+    def test_every_source_surface_rides_the_one_sources_door(self):
+        from apps.scholarship.views_admin.lifecycle import AdminApplicationWitnessView
+        from apps.scholarship.views_admin.org_emails import AdminPartnerEmailDetailView, AdminPartnerEmailsView
+        from apps.scholarship.views_admin.sources import AdminSourceDetailView, AdminSourcesView
+        for view in (AdminSourcesView, AdminSourceDetailView, AdminPartnerEmailsView,
+                     AdminPartnerEmailDetailView, AdminApplicationWitnessView):
+            with self.subTest(view=view.__name__):
+                self.assertTrue(issubclass(view, _SourcesBase))
+                with mock.patch.object(view, 'get_admin', return_value=self.people['finance']):
+                    admin, err = view()._sources_admin(None)
+                self.assertIsNone(admin)
+                self.assertEqual(err.status_code, 403)
+                with mock.patch.object(view, 'get_admin', return_value=self.people['admin']):
+                    admin, err = view()._sources_admin(None)
+                self.assertIsNone(err)
