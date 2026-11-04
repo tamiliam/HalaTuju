@@ -42,6 +42,7 @@ _One line per sprint, added at its close (`sprint-close.md` step 10): `- YYYY-MM
 - 2026-11-04 Team tables T5b — 2a41c5e6, 730a7216
 - 2026-11-04 TD-481 (an awaiting-QC case is declined only through the QC gate; owner ruling; adversarial review SHIP; no migration) — 62a74f07
 - 2026-11-03 Mobile-native Sprint M7b (the DesktopOnly panel replaces the six desktop-only pages below md, by CSS, mounted once in AppShell from lib/desktopOnly.ts held equal to mobileClass; one way back; the why as the reason in en/ms/ta; Team -> Mentors, the source and mentor rosters as rows, staff-access actions not hidden; LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2) — 782738d9 47c82f0b 586bf355
+- 2026-11-04 Mobile-native Sprint M8 (close-out: last tap targets, every Must screen measured, spills number (rule 16), readable chart text, shared phone pills (rule 17); LIVE 2026-11-04, main bea7111d, halatuju-web-01077-mt9 then 01079-tv4) — 7343cbf2 e43f314e 71f31550 98f9896b 41763484 ed48f28d fcc36014 bea7111d
 
 _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here, four moved from Pending) are named in that review, and line by line in git at `6e1d66db`)_
 

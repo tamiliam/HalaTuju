@@ -138,8 +138,7 @@ editor (inline under "Wording" in the emails cards, no route) read-only on a pho
 Maintenance (Team tables T4/T5): Team, Invitations, Mentors, PermissionEditor and the person page, GiftProgrammes,
 the Sponsors credits, Overview.
 
-**M8 — Close-out** (low)
-Full re-measure (all routes × 360/390 × 3 languages); decide manifest `display: 'standalone'` only once every screen has its own way back and sign-in links are proven inside the installed app (M0 ships `'browser'`); owner real-iPhone walkthrough with a short checklist, all floors at 0, ledger 100 % green, retrospective, memory + `projects.json` updated.
+**M8 — Close-out** (low) — DONE, live 2026-11-04 (main bea7111d, web-01077-mt9 then web-01079-tv4; retrospective `docs/retrospectives/retrospective-2026-11-04-mobile-m8.md`). THE MOBILE-NATIVE ARC IS COMPLETE. The last small tap targets; every Must screen measured (ledger 102 routes, 69 measured, 69 green; sign-in hand-offs covered by the owner's iPhone walkthrough, done 2026-11-04); full run 762 cells at 0 on all four numbers; the new `spills` number (rule 16); shared phone pills (rule 17, `lib/phonePill.ts`); manifest stays `display: 'browser'` (owner). Left open: TD-489 (mentor screens' white cards), TD-490 (chart first paint on a phone).
 
 ## Owner decisions still open (asked at the sprint that needs them)
 - **TD-311 (M1):** shrink the Home heading on phones for all languages (recommended) or Tamil only.

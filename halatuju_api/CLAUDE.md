@@ -217,9 +217,9 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
-### Mobile-native arc (separate stream): M0-M7b DONE (M7b live 2026-11-03, main fa8dd439, halatuju-web-01075-4d2), NEXT = M8
+### Mobile-native arc (separate stream): COMPLETE (M0-M8; M8 live 2026-11-04, main bea7111d, halatuju-web-01079-tv4)
 
-Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md`; ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green and `npm run mobile-ledger`; a new `page.tsx` must be classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; every pinned bottom bar on a student or sponsor page carries `data-page-bar`. The per-milestone rules (M1-M7a) are in `docs/sprint-history.md`. **M7b:** `AppShell` draws `components/DesktopOnly.tsx` for the `desktop` routes (`lib/desktopOnly.ts`, held equal to `mobileClass.ts`; a new desktop-only route needs both lists and a reason in en/ms/ta) and hides the page below md BY CSS; the Team / Invitations / Mentors tables are rows on a phone (staff-access actions NOT hidden, Maintenance call).
+Roadmap `docs/plans/2026-10-31-mobile-native-roadmap.md`; rules `docs/mobile-standard.md` (rules 15-17: one box level; nothing spills out of its box; phone pills via `lib/phonePill.ts`); ledger `docs/mobile-ledger.md`. Every UI change: `npm run mobile-check` green (four numbers: overflow, small fields, small targets, spills) and `npm run mobile-ledger`; a new `page.tsx` is classified in `src/lib/mobileClass.ts`; every overlay is `src/components/Sheet.tsx`; a pinned bottom bar on a student or sponsor page carries `data-page-bar`; a desktop-only route needs `lib/desktopOnly.ts` AND `mobileClass.ts` plus a reason in en/ms/ta. Manifest stays `display: 'browser'`. Per-milestone rules: `docs/sprint-history.md`. **Open mobile work:** TD-489 (mentor screens' white cards), TD-490 (chart first paint on a phone).
 
 ### STATE AT 2026-11-04 — TEAM TABLES T5b LIVE (main f44f0a8b, api-01248-ggf, web-01076-gr4; migration 0202 choices only, no endpoint, no web change)
 

@@ -112,7 +112,7 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
   still leaves A refused (closes TD-482, raised the same sprint). Shown on My activity in en / ms / ta. The T5b
   decision now lists what "reviewed" does not count (document checks, gap suggestions, fact edits, a query).
 
-## Mobile M8 — the last small tap targets (phase A, branch mobile-m8, not yet live)
+## Mobile M8 — close-out: the last tap targets, every screen measured, spills, pills (LIVE 2026-11-04; web only; halatuju-web-01077-mt9 build 81acb25b, then follow-up halatuju-web-01079-tv4 build dbcd3417, main bea7111d)
 
 - **44 px on a phone, nothing changed from md** (every fix is a `max-md:` class). `/settings`: the language and
   theme selects (36 px tall) are `max-md:min-h-11`, still class for class alike. `/admin/programme`: "+ New intake
@@ -180,6 +180,10 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
 - **Guard:** rule 17 in `docs/mobile-standard.md`; a rule-17 block in `mobileStandard.test.ts` (the constants are
   `max-md:` only; each converted file keeps its exact count of uses). mobile-check on every surface that mounts a
   changed file (132 cells): 0 on all four numbers. TD-489: the mentor screens still draw white cards (owner: later).
+- **Close-out (arc complete).** Full mobile-check: 762 cells, 0 on all four numbers; ledger 102 routes, 69 measured, 69
+  green. Manifest stays `display: 'browser'` (owner); sign-in hand-offs are covered by the owner's iPhone walkthrough
+  (`docs/mobile-iphone-checklist.md`, done 2026-11-04). Jest 6,392 / 412 suites. Two web deploys, no API change. New
+  debt: TD-490 (the chart's first paint on a phone is the desktop box).
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 
