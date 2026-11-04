@@ -23,6 +23,8 @@ logger = logging.getLogger('apps.scholarship.services')
 # Statuses from which an admin may decline a *reviewed* application (bucket 3,
 # 'interview'): anyone who cleared the engine and reached the post-shortlist funnel
 # but is not yet accepted. Poor documentation is grounds — no formal interview needed.
+# ⚠ 'interviewed' (AWAITING QC) stays HERE because the QC decision declines through this
+# function from it; the reviewer's `/reject/` door refuses it (TD-481, `AdminRejectView`).
 INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
 
 # Statuses an ORG ADMIN may drop an applicant from (bucket 'incomplete', org_admin_reject).
@@ -187,7 +189,11 @@ def admin_reject(application, admin, category, cooloff=None, *, activity=True):
     elif category == 'contractual':
         # 'contractual' is a genuinely post-award decline — from the funded states (active/
         # maintenance). 'recommended' stays permitted for back-compat, but the normal way to
-        # decline a recommended case is now reopen → 'interviewed' → 'interview'.
+        # decline a recommended case is a super's reopen (→ 'interviewed', AWAITING QC again),
+        # then the QC decision, which declines it as 'interview' through this function. Since
+        # TD-481 (2026-11-04) the reviewer's `/reject/` door refuses 'interview' at
+        # 'interviewed' (`AdminRejectView`, code awaiting_qc): an awaiting-QC case is declined
+        # only through the QC gate.
         #
         # ⚠ 'awarded' IS DELIBERATELY ABSENT — owner ruling, 2026-07-30: "They cannot be rejected
         # directly. It should only happen after a proper withdrawal of the award." The asymmetry

@@ -220,16 +220,32 @@ class TestDecisionReopen(TestCase):
         self.assertTrue(self.sp.anon_published)                   # republished at QC-Accept
 
     def test_reject_after_reopen_counts_correction_and_stays_unpublished(self):
+        # RE-POINTED by TD-481 (2026-11-04): the decline used to go straight through `/reject/` at
+        # 'interviewed', which is the hole — a case AWAITING QC is declined only through the QC gate.
+        # The road now: reopen (→ 'interviewed') → re-record a DECLINE verdict (closes the reopen as
+        # a correction) → QC decision 'accept' upholds the decline (a super passes the QC gate).
+        # Every assertion below is as before; only the road changed.
+        InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now(),
+                                        findings=answered_findings(self.app))   # TD-253 decision gate
         self._auth(SUPER)
         self.client.post(self._reopen_url(), {'reason': 'should be declined'}, format='json')
-        # Reopen moved the accepted case back to 'interviewed', so the decline is bucketed
-        # as 'interview' (reviewed-but-not-selected), not 'contractual'.
+        # Reopen moved the accepted case back to 'interviewed' (AWAITING QC): `/reject/` refuses it.
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{self.app.id}/reject/',
             {'category': 'interview'}, format='json')
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual((r.status_code, r.json()['code']), (400, 'awaiting_qc'))
+        r = self.client.post(self._record_url(), {
+            'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
+                                'pathway': 'pass', 'overall': 'decline'},
+            'reason': 'private college'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+            {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content[:300])
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertEqual(self.app.status, 'rejected')
+        self.assertEqual(self.app.rejection_category, 'interview')   # reviewed-but-not-selected
         self.assertIsNone(self.app.decision_reopened_at)
         self.assertFalse(self.sp.anon_published)                  # a decline never republishes
         row = DecisionReopen.objects.get(application=self.app)

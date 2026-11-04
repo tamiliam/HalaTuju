@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
+
+Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
+
+- **The reviewer's Decline door refuses a case awaiting QC** (`views_admin/applications.py`, `AdminRejectView`):
+  `POST .../reject/ {category: 'interview'}` on an `interviewed` case now answers 400 `awaiting_qc` ("This case is
+  awaiting QC. It is declined through the QC decision, not here.") for everyone — the assignee, a `qc` holder, the
+  organisation admin and a super. Nothing is written. It used to decline the case directly, past `_require_qc`, the
+  separation guard and the QC record.
+- **The QC decision is the way** (`qc-decision`: accept a decline verdict, or reject a recommend). A super passes it
+  (exempt from separation), so a super loses nothing. A super who reopens a recommended case (it returns to awaiting
+  QC) re-records a decline verdict, then confirms it at the QC decision.
+- **Unchanged:** `services.decline.admin_reject` and `INTERVIEW_REJECT_FROM` (the QC decision declines through them);
+  `/reject/` from shortlisted / profile_complete / interviewing (including a case QC reopened); `contractual`. The
+  cockpit never offered the `interview` bucket, so no web change (a stale comment in `DecisionCard.tsx` corrected).
+- Tests: new `test_td481_awaiting_qc_decline.py`; `test_reject_buckets.test_reviewer_interview_reject` now declines
+  from `interviewing`; `test_decision_reopen.test_reject_after_reopen_counts_correction_and_stays_unpublished` walks
+  reopen -> re-record decline -> QC confirm (its assertions unchanged).
+- New debt: TD-486 (a super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC
+  decision — found by this sprint's inventory of QC-outcome doors). Closed: TD-481.
+
 ## Team tables T5b — QC self-sufficient + widened self-QC guard (LIVE 2026-11-04; main f44f0a8b; api-01248-ggf, web-01076-gr4; incl. review round 1)
 
 Roadmap T5 (owner "approve all": "QC implicitly sees ALL students and may decide on any except those they reviewed /

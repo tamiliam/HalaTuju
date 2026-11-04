@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## TD-481: the reviewer's Decline refuses a case awaiting QC — 2026-11-04 (owner ruling)
+
+**Context:** `AdminRejectView` (`POST .../reject/ {category: 'interview'}`) is gated by `_require_app_write`, which
+admits the assignee and every `qc` holder (they write org-wide), and `admin_reject` allows the `interview` bucket FROM
+`interviewed` (AWAITING QC). So either could decline an awaiting-QC case directly: a QC outcome with no `_require_qc`,
+no stage check, no separation guard (`qc_separation.refusal`) and no QC record (the QC door writes a DecisionReopen
+reason or a `qc_decision` activity row, and uses the organisation's QC hold). Raised by the T5b inventory (below).
+
+**Decision (owner, 2026-11-04):** an awaiting-QC case is declined only through the QC gate. The door refuses
+`interview` at `interviewed` for EVERYONE, super included — 400 `awaiting_qc` (400, like the neighbouring
+`bad_status` and `_require_qc`'s `not_awaiting_qc`; nothing in this family uses 409). The super loses nothing: the QC
+decision admits a super, exempt from separation. The reviewer's road stays record-verdict -> submit-decline -> QC
+confirm (owner 2026-07-19). A super who reopens a recommended case (-> `interviewed`) re-records a decline verdict,
+then confirms it at the QC decision. A case QC reopened (-> `interviewing`) is the reviewer's again, and `/reject/`
+still declines it. `contractual` and the other `interview` statuses are unchanged.
+
+**Why at the view, not in `admin_reject`:** the QC decision itself calls `admin_reject(app, admin, 'interview', ...)`
+from `interviewed` (accept of a decline verdict). Removing `interviewed` from `INTERVIEW_REJECT_FROM` would break the
+QC gate the rule points to, and `test_reject_status_sets` pins that set. The door is where the caller's role is known,
+so the rule lives there; `admin_reject`'s contract is unchanged.
+
+**Consequences:** the cockpit never offered the `interview` bucket (`DecisionCard` sends only `contractual`), so no
+web change. Tests: `test_td481_awaiting_qc_decline.py`.
+
 ## Team tables T5b: `qc` IMPLIES `see_all`; the QC decision refuses anyone who worked the case — 2026-11-03 (owner "approve all", T5.0; builder rulings for the lead)
 
 **Context:** the owner's T5 model: "QC implicitly sees ALL students and may decide on any except those they reviewed /

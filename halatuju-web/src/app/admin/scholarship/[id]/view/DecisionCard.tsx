@@ -228,9 +228,11 @@ export function DecisionCard({
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
         {isQcAccepted(stageStatus(app, 'recommended_at')) && !decisionReopened ? (
-          /* Committed acceptance → read-only summary. A post-accept decline goes through
-             Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
-             decline is reserved for a genuinely post-award (sponsored) case. */
+          /* Committed acceptance → read-only summary. A post-accept decline goes through a
+             super's Reopen (→ interviewed, AWAITING QC) and then the QC decision (TD-481: the
+             server's /reject/ refuses 'interview' at interviewed, code awaiting_qc; this card
+             never offers that bucket); the direct 'contractual' decline is reserved for a
+             genuinely post-award (sponsored) case. */
           <div className="space-y-2 border-t pt-3">
             <p className="flex items-start gap-1.5 text-sm text-positive-700">
               <span aria-hidden>✓</span>

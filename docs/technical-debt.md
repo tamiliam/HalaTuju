@@ -7554,7 +7554,16 @@ scholar file and the cockpit's no-file control, with a "use a computer" note (de
 `PHONE_QUERY` and the payments' `max-md:hidden`), so a phone held sideways (wider than `md`) gets the PDF iframe and
 the payment controls; the server authorises by role, never by device, so this is a layout choice, not a safety gap.
 
-### [TD-481] A case AWAITING QC can be declined through the reviewer's Decline door, past the QC gate - medium
+### ~~[TD-481] A case AWAITING QC can be declined through the reviewer's Decline door, past the QC gate - medium~~ CLOSED 2026-11-04
+
+**CLOSED 2026-11-04 by its own small sprint (branch `maint-td481`; owner ruling 2026-11-04):** `AdminRejectView`
+refuses `category: 'interview'` on an `interviewed` case for EVERYONE, super included — 400 `awaiting_qc`, nothing
+written. The rule sits at the door, not in `admin_reject` / `INTERVIEW_REJECT_FROM` (the QC decision declines through
+them from `interviewed`). A super loses nothing: `_require_qc` admits them, exempt from separation. The cockpit never
+offered that bucket (`DecisionCard.tsx` calls `doReject` only with `'contractual'`), so no web change.
+`test_td481_awaiting_qc_decline.TheDoorRefuses.test_everyone_is_refused_and_nothing_moves` (assignee, unrelated QC,
+org admin, super; decline and recommend verdicts — proved red without the guard), plus the QC-gate and
+everything-else-unchanged classes beside it.
 
 **Raised 2026-11-03 by Team tables T5b** (the QC-door inventory; predates T5b, NOT changed — live behaviour).
 `AdminRejectView` (`POST .../<pk>/reject/ {category: 'interview'}`, `views_admin/applications.py`) is gated by
@@ -7619,6 +7628,22 @@ write drops that evidence silently. And for cases worked before the live activit
 / `verified_by`, the assignment history and the session's interviewer alone. **Fix (if it bites):** write the
 guard's evidence in the action's own transaction where it must hold (a small authors list on the session; a
 verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)*
+
+### [TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
+
+**Raised 2026-11-04 by the TD-481 sprint's inventory (NOT fixed; proved by a scratch request test, then deleted).**
+`reopen.cancel_reopen` infers where a reopen came from by the CURRENT status (`reopen.py`, the "Mirror of reopen"
+block: `interviewed -> recommended`, `interviewing -> interviewed`). But a case QC reopened (`interviewed ->
+interviewing`, reopen open) can return to `interviewed` WITHOUT the reopen closing: `submit-decline`
+(`views_admin/verdict.py`, `AdminSubmitDeclineView`) and `verify-accept` (`views_admin/applications.py`,
+`AdminVerifyAcceptView`) both accept `interviewing` and neither closes the reopen (only a re-recorded verdict or a
+`/reject/` does). A super's `cancel-reopen` then reads `interviewed` as "came from recommended" and sets
+`recommended`. Proved: awaiting-QC decline -> QC reopen -> reviewer submit-decline -> super cancel-reopen = status
+`recommended` with `officer_verdict.overall == 'decline'`, no `recommended_by`, no QC record. The accept road skips QC
+accept's reporting-date stop and red-fact floor the same way (the birth-state checks in `cancel_reopen` do run).
+Super-only door, so no separation breach, but a declined case lands at sponsor-pool status. **Fix:** record the
+reopened-from status on `DecisionReopen` and invert from it, or have `submit-decline` / `verify-accept` close (or
+refuse on) an open reopen; a regression test of the probe above. *(A · S)*
 
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 

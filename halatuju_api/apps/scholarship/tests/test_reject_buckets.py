@@ -173,7 +173,10 @@ class TestAdminRejectEndpoint(TestCase):
         return f'/api/v1/admin/scholarship/applications/{app.id}/reject/'
 
     def test_reviewer_interview_reject(self):
-        app = self._app('interviewed')
+        # RE-POINTED by TD-481 (2026-11-04): this declined from 'interviewed' (AWAITING QC), which
+        # is the hole — a case awaiting QC is declined only through the QC gate now (400
+        # awaiting_qc; test_td481_awaiting_qc_decline.py). The reviewer's own stage still declines.
+        app = self._app('interviewing')
         self._auth(REVIEWER)
         r = self.client.post(self._url(app), {'category': 'interview'}, format='json')
         self.assertEqual(r.status_code, 200)

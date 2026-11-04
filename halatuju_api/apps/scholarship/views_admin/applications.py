@@ -351,7 +351,8 @@ class AdminVerifyAcceptView(_AdminBase):
 class AdminRejectView(_AdminBase):
     """POST .../<pk>/reject/ {category} — post-shortlist admin rejection (buckets 3 & 4).
     'interview'  = reviewed but not selected (allowed from shortlisted/profile_complete/
-                   interviewing/interviewed) → extra-thankful email.
+                   interviewing) → extra-thankful email. NOT from 'interviewed' (AWAITING QC):
+                   400 awaiting_qc, for everyone, super included (TD-481, below).
     'contractual' = failed post-award steps (allowed from 'recommended'/'sponsored') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
@@ -359,6 +360,21 @@ class AdminRejectView(_AdminBase):
         if err:
             return err
         category = request.data.get('category')
+        # ⚠ TD-481 (owner ruling 2026-11-04): A CASE AWAITING QC IS DECLINED ONLY THROUGH THE QC
+        # GATE. `_require_app_write` admits the assignee and every `qc` holder (they write org-wide),
+        # so this door used to let either decline an 'interviewed' case directly — a QC outcome with
+        # no `_require_qc`, no separation guard (`qc_separation.refusal`) and no QC record. The
+        # reviewer's road is record-verdict → submit-decline → QC confirm (owner 2026-07-19); the QC
+        # decides at `qc-decision` (accept a decline verdict, or reject). A super is refused here too
+        # and loses nothing: `_require_qc` admits a super, exempt from separation.
+        # The rule sits at THIS door, not in `admin_reject` / `INTERVIEW_REJECT_FROM`: the QC
+        # decision itself calls `admin_reject(app, admin, 'interview', ...)` from 'interviewed'.
+        if category == 'interview' and app.status == 'interviewed':
+            return Response(
+                {'error': 'This case is awaiting QC. It is declined through the QC decision, '
+                          'not here.',
+                 'code': 'awaiting_qc'},
+                status=status.HTTP_400_BAD_REQUEST)
         try:
             admin_reject(app, admin, category)
         except ValueError as e:

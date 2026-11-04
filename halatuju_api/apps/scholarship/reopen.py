@@ -127,7 +127,10 @@ def reopen_decision(app, *, by_admin, reason, activity=True):
         #   recommended  → interviewed   (super revisits a QC-cleared case → back to AWAITING QC)
         #   interviewed  → interviewing  (QC 'reopen' sends the awaiting-QC case back to the reviewer)
         # A subsequent decline is still bucketed as 'interview' (both interviewed & interviewing are
-        # in INTERVIEW_REJECT_FROM). A 'sponsored' (funded) case is post-award and stays put.
+        # in INTERVIEW_REJECT_FROM). ⚠ TD-481: at 'interviewed' (AWAITING QC) that decline is the QC
+        # decision's (`qc-decision`); the reviewer's `/reject/` door refuses it (awaiting_qc). At
+        # 'interviewing' the case is the reviewer's again and `/reject/` still declines it.
+        # A 'sponsored' (funded) case is post-award and stays put.
         if app.status == 'recommended':
             app.status = 'interviewed'
             fields.append('status')
