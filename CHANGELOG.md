@@ -24,11 +24,11 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
 - An inactive row opens no door, except an inactive super (`effective_v2` answers it in full); neither can sign in.
 - Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
   by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
-  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-492, TD-490.
+  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-492, TD-493.
 
 **P2 — Sources, partner emails and the credit ledger (server only):**
 - **Sources door on `sources.edit`** (`_SourcesBase.may_open`): Sources (list, the retired POST, PATCH), Partner
-  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-490).
+  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-493).
 - **Credit ledger read on `sponsors.view`** (`_CreditsBase.may_read`, GET `credits/`). Record, sign and cancel move
   money and stay on `may_read_org` until T5d.
 - **Not converted:** the graduation-messages list (lead ruling R2): no key reproduces its holders, because the org

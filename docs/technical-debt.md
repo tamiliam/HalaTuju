@@ -7703,7 +7703,7 @@ gain it); every Engagement key moves 10 (all org-admin shapes gain; every review
 moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
 `_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
 
-### [TD-490] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+### [TD-493] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 
 **Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
 sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key

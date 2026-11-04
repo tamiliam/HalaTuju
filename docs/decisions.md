@@ -47,7 +47,7 @@ no access moving for any shape.
   — it grows door by door, so an unplanned import or door fails.
 - **P3 inventory (same day):** every staff role-label read in `apps/` (comparisons, `role=` / `role__in=` filters, `has_role`) is classified and pinned by `test_role_is_display_only.py`: 183 sites in 148 functions (the review made the scanner read `getattr(x, 'role', ...)` too, which added 6 sites). **DISPLAY 51** (account kind, table membership, recipient routing, the T5a catalogue's preset source), **OVERRIDE 44** (super-only and org-scope fences, the lead tier's definition), **GATE-LEFT 53** (T5e lead powers and R3 surfaces 45, T5d money 6, TD-491 2; the review reclassified `AdminAssignReviewerView.post`, which admits org_admin, from OVERRIDE to T5e), **GATE-UNPLANNED none**. The one adjacency to watch: `_require_reviewer` (graduation moderation) is owned only through TD-491's note. A new label gate fails the guard; conversions stay with their sprints.
 - **A door that reads and writes asks the `.edit` key** (it implies `.view`); nobody holds a view without its edit
-  today. Split before T5g (TD-490).
+  today. Split before T5g (TD-493).
 - **One deliberate tightening:** an INACTIVE row now opens no door (T1's role half admitted an inactive `admin` /
   `finance` / `org_admin` by label) — except an inactive SUPER, whom `effective_v2` still answers in full, so at the
   door level it opens every door. Both are unreachable: every caller asks about the signed-in person and sign-in
