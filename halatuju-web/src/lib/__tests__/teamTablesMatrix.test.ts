@@ -21,6 +21,7 @@ import {
 import { defaultChapterSlug, manualPerms, manualRole, visibleChapters } from '@/content/manual'
 import { ADMIN_KEYS, adminKeysHeld } from '@/lib/staffPermissions'
 import { MENTORS_READ_ROLES, mayReadMentors } from '@/lib/pageGuard'
+import { t5cP5Moves } from '@/test/t5cP5Moves'
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessBefore.json')
 const MIXED_FIXTURE = path.join(__dirname, 'fixtures', 'teamTablesAccessMixedBefore.json')
@@ -96,6 +97,8 @@ function expectedChanges(before: Record<string, Record<string, unknown>>) {
 /** `canAccess` with the served `tables` (T1's fifth argument; the code before T1 ignored it). */
 const open = canAccess as (...args: unknown[]) => boolean
 
+const isPlatform = (id: string) => NAV_ITEMS.find((i) => i.id === id)?.scope === 'platform'
+
 const LIVE: Record<'requests' | 'billing', ProbeState> = { requests: 'live', billing: 'live' }
 
 function measure(p: Payload): Record<string, unknown> {
@@ -156,7 +159,8 @@ describe('Team tables T1: the console access matrix', () => {
       expect([cell, before[shape][cell]]).toEqual([cell, was])
       expected[cell] = now
     }
-    expect(measured[shape]).toEqual(t3Moves(expected))
+    // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
+    expect(measured[shape]).toEqual(t5cP5Moves(t3Moves(expected), effectiveRole(SHAPES[shape]), isPlatform))
   })
 })
 

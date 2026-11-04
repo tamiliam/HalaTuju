@@ -8,7 +8,7 @@ Baseline last updated **2026-11-04** · public pages measured from `http://local
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**69 measured** (public page or sandbox surface), **69 fully green.**
+**70 measured** (public page or sandbox surface), **70 fully green.**
 
 How to read a row: the four numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
@@ -38,7 +38,7 @@ surface mounts it — the sprint named is the one that fixes it and adds that su
 | `/admin/my-students/[id]` | Must | M6 | 6 (sandbox `m8-my-student`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation` | Must | M6 | 6 (sandbox `m8-organisation`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/mentors` | Can | M7 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
-| `/admin/organisation/programmes` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
+| `/admin/organisation/programmes` | Must | M6 | 18 (sandbox `m8-programmes-org-admin`, sandbox `m8-programmes-reviewer`, sandbox `m8-programmes-mentor`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
 | `/admin/organisation/reviewers/[id]` | Can | M7 | 6 (sandbox `m8-reviewer-detail`) | 0 | 0 | 0 | 0 | ✅ |  |
 | `/admin/organisation/reviewers/admins/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |

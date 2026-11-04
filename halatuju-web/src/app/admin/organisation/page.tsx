@@ -11,7 +11,6 @@ import { mayOpen } from '@/lib/pageGuard'
 import { programmeStaff } from '@/lib/adminStaff'
 import { Icon } from '@/components/admin/icons'
 import { PageHeader, useStaffAdmin } from '@/components/admin/StaffAdmin'
-import GiftProgrammes from '@/components/admin/GiftProgrammes'
 
 /**
  * Organisation → Overview. What this tenant is, and what is waiting on someone.
@@ -21,14 +20,12 @@ import GiftProgrammes from '@/components/admin/GiftProgrammes'
  * What an overview owes the reader is the state of the place — so this shows counts it can
  * derive from calls the console already makes, and says plainly what needs attention.
  *
- * ⚠ THE GIFT PROGRAMMES LIVE HERE (owner, 2026-09-03), which is that same sentence taken
- * seriously: the gifts an organisation runs are the most direct answer to "what is this place",
- * and they had a sidebar row of their own listing exactly one thing. `/admin/organisation/
- * programmes` is now a permanent redirect and the registry matches it here.
+ * ⚠ THE GIFT PROGRAMMES LEFT AGAIN (T5c P5, owner 2026-11-04). From 2026-09-03 the gift cards were a section
+ * of this page; now Organisation → Programmes is a page of its own and everyone's landing
+ * (`ProgrammesLanding.tsx`), so the cards live there and this page keeps the counts.
  *
  * No new endpoint for the counts: staff comes from the admins list, sponsors from the pending-
- * vetting count, invitations from the same call the Invitations page makes, and the gifts section
- * calls the programmes endpoint it always did. Anything richer (committed funds, programme totals)
+ * vetting count, invitations from the same call the Invitations page makes. Anything richer (committed funds, programme totals)
  * needs a summary endpoint that does not exist, and inventing a figure on a financial surface is
  * worse than omitting it.
  *
@@ -42,7 +39,6 @@ export default function OrganisationOverviewPage() {
   const { t } = useT()
   const r = effectiveRole(role)
   const mayView = mayOpen('/admin/organisation', role)   // T1: with the served tables
-  const maySeeGifts = r === 'super' || r === 'org_admin'
 
   const { admins } = useStaffAdmin(token)
   const [pendingSponsors, setPendingSponsors] = useState(0)
@@ -140,11 +136,6 @@ export default function OrganisationOverviewPage() {
           </Link>
         </div>
       )}
-
-      {/* Mirrors the programmes endpoint's own gate (`_ProgrammeScopedBase`: super + org_admin).
-          ⚠ VISIBILITY ONLY — the fence is the endpoint, and a plain admin or finance who reaches
-          it still gets a 403. Drawing the section for them would show a heading above an error. */}
-      {maySeeGifts && <GiftProgrammes token={token} />}
     </div>
   )
 }

@@ -3423,7 +3423,8 @@
       },
       "invitations": "Jemputan",
       "orgSettings": "Tetapan",
-      "myStudents": "Pelajar saya"
+      "myStudents": "Pelajar saya",
+      "programmes": "Program"
     },
     "reviewers": {
       "title": "Penilai",
@@ -7457,7 +7458,17 @@
       "open": "Buka {name}",
       "moreFor": "Lagi untuk {name}",
       "takingApplicationsFor": "Menerima permohonan untuk {year}",
-      "notTakingApplications": "Tidak menerima permohonan"
+      "notTakingApplications": "Tidak menerima permohonan",
+      "landing": {
+        "title": "Program",
+        "workSub": "Hanya program yang mempunyai kerja anda dipaparkan.",
+        "cases": "Kes yang diserahkan kepada anda",
+        "scholars": "Penerima biasiswa yang anda bimbing",
+        "emptyTitle": "Belum ada apa-apa yang diserahkan kepada anda",
+        "emptyBody": "Program akan dipaparkan di sini sebaik sahaja kes diserahkan kepada anda, atau penerima biasiswa diberikan kepada anda untuk dibimbing. Pentadbir program anda yang melakukannya.",
+        "emptyFoot": "Ada soalan? Hubungi pentadbir program anda.",
+        "noAccess": "Program bukan sebahagian daripada akaun anda."
+      }
     },
     "years": {
       "subtitle": "Satu pusingan pengambilan setahun.",

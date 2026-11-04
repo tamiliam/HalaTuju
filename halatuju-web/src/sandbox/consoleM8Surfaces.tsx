@@ -4,7 +4,7 @@
  * Mobile M8 phase B2, mounted for mobile-check and the owner's phone review: the last console "Must" screens a
  * stranger cannot open — the console's 404, a mentor's My students and one student, the Organisation overview, the
  * common Profile (a reviewer and an organisation admin), the Programme Overview (a reviewer and an organisation
- * admin) and the set-a-password page an invite or reset e-mail lands on. Each is the REAL page, inside the REAL
+ * admin), Organisation → Programmes (T5c P5: an organisation admin, a reviewer, a mentor) and the set-a-password page an invite or reset e-mail lands on. Each is the REAL page, inside the REAL
  * console shell where it has one, with invented fixtures and long Tamil names.
  *
  * ⚠ IDENTITY IS SYNTHETIC: an `AdminAuthContext` value — never `AdminAuthProvider`, never a sign-in — as in
@@ -28,6 +28,7 @@ import AdminNotFound from '@/app/admin/not-found'
 import MyStudentsPage from '@/app/admin/my-students/page'
 import MyStudentPage from '@/app/admin/my-students/[id]/page'
 import OrganisationOverviewPage from '@/app/admin/organisation/page'
+import ProgrammesPage from '@/app/admin/organisation/programmes/page'
 import AdminProfilePage from '@/app/admin/profile/page'
 import ProgrammeOverviewPage from '@/app/admin/programme/overview/page'
 import ReviewerDetailPage from '@/app/admin/organisation/reviewers/[id]/page'
@@ -125,6 +126,23 @@ const ORG_ROUTES: Record<string, () => unknown> = {
       { applications: 0, awarded: 0, open_year: null, delete_blocked_by: null, delete_blocked_count: 0, intake_years: 0 }),
   ] }),
 }
+
+// ── Organisation → Programmes for a reviewer and a mentor (T5c P5): only the programmes with their work ──────
+
+const mine = (id: number, code: string, name: string, extra: Record<string, unknown> = {}) => ({
+  id, code, name_en: name, name_ms: name, name_ta: name, is_active: true, lifecycle: 'active', archived: false,
+  opens: 'overview', ...extra,
+})
+const LONG_GIFT = 'உயர்கல்வி உதவித்தொகை — தமிழ்ப் பள்ளி மாணவர்களுக்கான சிறப்புத் திட்டம்'
+const MY_PROGRAMMES_REVIEWER = { every_gift: false, programmes: [
+  mine(1, 'contoh-2026', 'Biasiswa Contoh 2026', { cases: 12 }),
+  mine(2, 'contoh-tamil', LONG_GIFT, { cases: 3 }),
+  mine(3, 'contoh-2024', 'Biasiswa Contoh 2024', { cases: 0, archived: true, lifecycle: 'archived', is_active: false }),
+] }
+const MY_PROGRAMMES_MENTOR = { every_gift: false, programmes: [
+  mine(1, 'contoh-2026', 'Biasiswa Contoh 2026', { scholars: 4, opens: 'my_students' }),
+  mine(2, 'contoh-tamil', LONG_GIFT, { scholars: 1, opens: 'my_students' }),
+] }
 
 // ── The common Profile ──────────────────────────────────────────────────────────────────────────
 
@@ -267,9 +285,30 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
   {
     slug: 'm8-organisation',
     title: 'Admin — Organisation overview',
-    note: 'Mobile M8: the three counts as rows, the vetting callout and the gift programmes (one long Tamil name).',
+    note: 'Mobile M8: the three counts as rows and the vetting callout (the gift cards left for Programmes, T5c P5).',
     routes: ORG_ROUTES,
     render: () => <Console path="/admin/organisation" role={ORG_ADMIN}><OrganisationOverviewPage /></Console>,
+  },
+  {
+    slug: 'm8-programmes-org-admin',
+    title: 'Admin — Programmes (an organisation admin)',
+    note: 'T5c P5: the landing as an organisation admin — every gift as a card (one long Tamil name), New, the menu.',
+    routes: ORG_ROUTES,
+    render: () => <Console path="/admin/organisation/programmes" role={ORG_ADMIN}><ProgrammesPage /></Console>,
+  },
+  {
+    slug: 'm8-programmes-reviewer',
+    title: 'Admin — Programmes (a reviewer)',
+    note: 'T5c P5: the landing as a reviewer — only the gifts with their cases, one count each, an Archived pill.',
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/my-programmes/': () => MY_PROGRAMMES_REVIEWER },
+    render: () => <Console path="/admin/organisation/programmes" role={REVIEWER}><ProgrammesPage /></Console>,
+  },
+  {
+    slug: 'm8-programmes-mentor',
+    title: 'Admin — Programmes (a mentor)',
+    note: 'T5c P5: the landing as a mentor — the gifts with their scholars; each card opens My students for that gift.',
+    routes: { ...SCOPES, '/api/v1/admin/scholarship/my-programmes/': () => MY_PROGRAMMES_MENTOR },
+    render: () => <Console path="/admin/organisation/programmes" role={MENTOR}><ProgrammesPage /></Console>,
   },
   {
     slug: 'm8-profile-reviewer',

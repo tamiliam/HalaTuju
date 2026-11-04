@@ -164,6 +164,8 @@ describe('the card is the door', () => {
     mockApi.createAdminProgramme.mockResolvedValue(programme({ code: 'new-gift' }))
     await show(programme())
     fireEvent.click(screen.getByText(/admin.programmes.new/))
+    // The dialogs are their own chunk (LazyGiftProgrammeDialog), so they arrive a tick later.
+    await screen.findByLabelText('admin.programmes.field.name')
     fireEvent.change(document.getElementById('p-name')!, { target: { value: 'New Gift' } })
     fireEvent.change(document.getElementById('p-code')!, { target: { value: 'New-Gift' } })
     fireEvent.click(screen.getByText('admin.programmes.create'))
@@ -305,7 +307,7 @@ describe('deleting a gift', () => {
     openMore()
     fireEvent.click(deleteItem())
     // The count is interpolated, so the mocked `t` prints it after the pipe.
-    expect(screen.getByTestId('delete-years-note').textContent)
+    expect((await screen.findByTestId('delete-years-note')).textContent)
       .toBe('admin.programmes.deleteYears|3')
   })
 
@@ -313,6 +315,7 @@ describe('deleting a gift', () => {
     await show(programme({ intake_years: 0 }))
     openMore()
     fireEvent.click(deleteItem())
+    await screen.findByTestId('delete-confirm')     // the dialog has arrived, so its silence is real
     // A sentence about zero years is noise on the one dialog that must be read carefully.
     expect(screen.queryByTestId('delete-years-note')).toBeNull()
   })
@@ -323,7 +326,7 @@ describe('deleting a gift', () => {
     openMore()
     fireEvent.click(deleteItem())
 
-    const confirm = screen.getByTestId('delete-confirm') as HTMLButtonElement
+    const confirm = await screen.findByTestId('delete-confirm') as HTMLButtonElement
     expect(confirm.disabled).toBe(true)          // nothing typed
     const box = document.getElementById('p-confirm') as HTMLInputElement
     fireEvent.change(box, { target: { value: 'test3' } })

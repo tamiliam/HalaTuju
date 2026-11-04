@@ -75,8 +75,9 @@ export interface MyMeetingBody {
 
 const BASE = '/api/v1/admin/mentor/students/'
 
-export async function getMyStudents(options?: ApiOptions) {
-  return adminFetch<MyStudents>(BASE, options)
+/** T5c P5: `programme` (a gift id, from a Programmes card) narrows the list to that gift; the server filters. */
+export async function getMyStudents(options?: ApiOptions, programme?: number) {
+  return adminFetch<MyStudents>(programme ? `${BASE}?programme=${programme}` : BASE, options)
 }
 
 /** 404 when this is not (or no longer) one of the caller's current students. */

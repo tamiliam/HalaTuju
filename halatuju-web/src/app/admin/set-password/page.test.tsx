@@ -50,8 +50,10 @@ beforeEach(() => {
 
 it.each([
   [{ role: 'source_partner', source_name: 'MUETMyWay' }, '/admin/programme/overview'],
-  [{ role: 'org_admin' }, '/admin/organisation'],
-  [{ role: 'finance' }, '/admin/organisation'],
+  // T5c P5 (2026-11-04): everyone on the partner login lands on Organisation → Programmes.
+  [{ role: 'org_admin' }, '/admin/organisation/programmes'],
+  [{ role: 'finance' }, '/admin/organisation/programmes'],
+  [{ role: 'mentor' }, '/admin/organisation/programmes'],
   [{ role: 'reviewer', reviewer_profile_complete: false }, '/admin/profile'],
   [{ role: 'super', is_super_admin: true }, '/admin'],
 ])('lands %j on %s', async (role, where) => {

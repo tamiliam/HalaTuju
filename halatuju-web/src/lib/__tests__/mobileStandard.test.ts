@@ -343,7 +343,9 @@ const RULE15_SWEPT_PARTS = ['src/components/PathwayCards.tsx', 'src/components/F
   'src/components/admin/ScholarGrowth.tsx', 'src/components/admin/ScholarControls.tsx',
   'src/app/admin/students/[id]/page.tsx', 'src/app/admin/payments/[id]/page.tsx',
   'src/app/admin/requests/[id]/page.tsx', 'src/components/OrgRequestAttachments.tsx',
-  'src/components/admin/RequestsList.tsx']
+  'src/components/admin/RequestsList.tsx',
+  // T5c P5: Organisation → Programmes, the landing for everyone on the partner login.
+  'src/app/admin/organisation/programmes/page.tsx', 'src/components/admin/ProgrammesLanding.tsx']
 /** Class constants that only ever dress a CONTROL (a choice button), so the card check passes them — by name. */
 const CONTROL_CONSTS: Record<string, string[]> = {
   'src/app/onboarding/exam-type/page.tsx': ['const CHOICE'],   // the three results-route choice BUTTONS

@@ -24,7 +24,7 @@ jest.mock('@/lib/admin-auth-context', () => ({
   useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
 }))
 jest.mock('@/lib/admin-api')
-// The gifts section calls its own endpoint and is not what this file is about.
+// A stand-in that would show if the Overview drew the gift cards again (it must not: T5c P5).
 jest.mock('@/components/admin/GiftProgrammes', () => ({
   __esModule: true, default: () => <div data-testid="gifts" />,
 }))
@@ -65,6 +65,13 @@ const loaded = async () => {
   render(<OrganisationOverviewPage />)
   await waitFor(() => expect(screen.getByText('admin.nav.invitations')).toBeTruthy())
 }
+
+describe('the gift cards', () => {
+  it('⚠ are NOT on the Overview any more — Organisation → Programmes owns them (T5c P5)', async () => {
+    await loaded()
+    expect(screen.queryByTestId('gifts')).toBeNull()
+  })
+})
 
 describe('the waiting count', () => {
   it('⚠ counts what the SERVER calls waiting, across every kind', async () => {

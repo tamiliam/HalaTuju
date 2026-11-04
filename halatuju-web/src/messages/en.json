@@ -3423,7 +3423,8 @@
       },
       "invitations": "Invitations",
       "orgSettings": "Settings",
-      "myStudents": "My students"
+      "myStudents": "My students",
+      "programmes": "Programmes"
     },
     "reviewers": {
       "title": "Reviewers",
@@ -7457,7 +7458,17 @@
       "open": "Open {name}",
       "moreFor": "More for {name}",
       "takingApplicationsFor": "Taking applications for {year}",
-      "notTakingApplications": "Not taking applications"
+      "notTakingApplications": "Not taking applications",
+      "landing": {
+        "title": "Programmes",
+        "workSub": "Showing only the programmes where you have work.",
+        "cases": "Cases assigned to you",
+        "scholars": "Scholars you mentor",
+        "emptyTitle": "Nothing assigned to you yet",
+        "emptyBody": "You will see a programme here once cases are assigned to you, or scholars are given to you to mentor. Your programme administrator does this.",
+        "emptyFoot": "Questions? Contact your programme administrator.",
+        "noAccess": "Programmes are not part of your account."
+      }
     },
     "years": {
       "subtitle": "One intake round per year.",

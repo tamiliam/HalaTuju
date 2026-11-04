@@ -1,13 +1,13 @@
 'use client'
 
-// The gifts this organisation runs — a SECTION of Organisation → Overview (owner, 2026-09-03).
+// The gifts this organisation runs — the card grid of Organisation → Programmes for the roles that may step
+// INTO a gift (super, org_admin: `hasGiftDoor`).
 //
-// ⚠ IT WAS A MENU ROW OF ITS OWN AND IS NOT ANY MORE. Creating a gift is an organisation-level
-// act, so the page was in the right SCOPE; it was in the wrong PLACE. The gifts an organisation
-// runs are what that organisation IS, which is precisely what an overview owes its reader — and a
-// whole sidebar entry for a list of one read as a feature rather than a fact. The old route
-// `/admin/organisation/programmes` redirects here and the registry matches it, so a bookmark still
-// lights the Overview row.
+// ⚠ T5c P5 (owner, 2026-11-04): PROGRAMMES IS A PAGE AND A MENU ROW AGAIN, and everyone's front door. From
+// 2026-09-03 this grid was a section of Organisation → Overview and `/admin/organisation/programmes` redirected
+// there; now that route is the landing (`ProgrammesLanding.tsx`), which draws this grid for the gift-door roles
+// and the narrowed `my-programmes` cards for everyone else. The write dialogs are their own chunk
+// (`LazyGiftProgrammeDialog.tsx`), fetched on the first press.
 //
 // ⚠ THE FENCE IS THE ENDPOINT. This renders what the server chose to return, and a cross-org id is
 // a 404 there. Nothing here decides who may see what.
@@ -18,14 +18,12 @@ import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { withGift } from '@/lib/giftHref'
 import InfoBox from '@/components/InfoBox'
-import Sheet from '@/components/Sheet'
 import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
+import LazyGiftProgrammeDialog from './LazyGiftProgrammeDialog'
 import {
   getAdminProgrammes, createAdminProgramme, updateAdminProgramme, deleteAdminProgramme,
   type AdminProgramme,
 } from '@/lib/admin-api'
-
-const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
 /*
  * ⚠ `redundantWithCard` WAS DELETED ON 2026-09-08, AND ITS RULING SURVIVES THE DELETION.
@@ -101,7 +99,11 @@ function LifecycleBadge({ programme: p, busy, onChange }: {
   )
 }
 
-export default function GiftProgrammes({ token }: { token: string | null }) {
+/** Which write dialog is open, holding the RECORD (not an id) so the dialog can name what it changes. */
+type Dialog = { kind: 'delete' | 'rename'; programme: AdminProgramme } | { kind: 'create' } | null
+
+/** `title`: the page's own heading (the Programmes landing draws it as the page's h1). */
+export default function GiftProgrammes({ token, title }: { token: string | null; title?: string }) {
   const { t } = useT()
   const router = useRouter()
   const { chosen, select, reload } = useProgrammeScope()
@@ -110,17 +112,8 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [code, setCode] = useState('')
-  const [nameEn, setNameEn] = useState('')
-  // The gift whose deletion is being confirmed, and the code typed to confirm it. Null = no
-  // dialog. Held as the RECORD, not an id, so the dialog can name what is about to go.
-  const [deleting, setDeleting] = useState<AdminProgramme | null>(null)
-  const [confirmText, setConfirmText] = useState('')
-  // The gift whose code is being changed, and the code being typed. Held as the RECORD so the
-  // dialog can show the link that is about to change.
-  const [renaming, setRenaming] = useState<AdminProgramme | null>(null)
-  const [newCode, setNewCode] = useState('')
+  // The open write dialog (null = none); the text typed into it lives in the dialog itself.
+  const [dialog, setDialog] = useState<Dialog>(null)
   // Which gift's link was just copied, so the confirmation names one card rather than all of them.
   const [copied, setCopied] = useState('')
 
@@ -184,12 +177,11 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
    *  ⚠ IT POINTS, IT DOES NOT DO. Nothing is created for them on arrival — landing somebody on a
    *  screen is a suggestion; filling it in would be a guess about their gift (PF-1's rule).
    */
-  const create = async () => {
-    const wanted = code.trim().toLowerCase()
+  const create = async (wanted: string, nameEn: string) => {
     const ok = await run(() => createAdminProgramme(
-      { code: wanted, name_en: nameEn.trim() }, { token: token! }))
+      { code: wanted, name_en: nameEn }, { token: token! }))
     if (ok) {
-      setOpen(false); setCode(''); setNameEn('')
+      setDialog(null)
       // ⚠ REFRESH THE SHELL'S LIST **BEFORE** SELECTING, AND AWAIT IT. The scopes are fetched once
       // per console session, so a gift created just now is not in that list yet — and
       // `programmeScope` refuses to resolve a code it does not recognise. Selecting first left the
@@ -269,28 +261,37 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
    * "which gift?" screen from 2026-09-07. Re-selecting unconditionally would be worse: it would
    * silently move the reader into a gift they were not in.
    */
-  const rename = async (p: AdminProgramme) => {
-    const wanted = newCode.trim().toLowerCase()
+  const rename = async (p: AdminProgramme, wanted: string) => {
     const wasChosen = chosen === p.code
     const ok = await run(() => updateAdminProgramme(p.id, { code: wanted }, { token: token! }))
     if (ok) {
-      setRenaming(null); setNewCode('')
+      setDialog(null)
       await reload()
       if (wasChosen) select(wanted)
     }
   }
 
-  const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
-    + ' focus:border-brand-shape focus:ring-2 focus:ring-brand-shape outline-none'
+  /** The typed phrase, as the dialog normalised it; the server compares it again. */
+  const remove = async (p: AdminProgramme, phrase: string) => {
+    const ok = await run(() => deleteAdminProgramme(p.id, phrase, { token: token! }))
+    if (ok) {
+      setDialog(null)
+      // The shell's own list must forget it too, or the breadcrumb keeps offering a
+      // gift that no longer exists.
+      await reload()
+    }
+  }
 
   return (
-    <section className="mt-8" data-testid="gift-programmes">
+    <section className={title ? '' : 'mt-8'} data-testid="gift-programmes">
       <div className="flex items-start justify-between gap-4 max-md:flex-col max-md:gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-ground-900">{t('admin.programmes.title')}</h2>
+          {title
+            ? <h1 className="text-2xl font-semibold text-ground-900">{title}</h1>
+            : <h2 className="text-lg font-semibold text-ground-900">{t('admin.programmes.title')}</h2>}
           <p className="mt-0.5 text-sm text-ground-600">{t('admin.programmes.subtitle')}</p>
         </div>
-        <button type="button" onClick={() => { setCode(''); setNameEn(''); setError(''); setOpen(true) }}
+        <button type="button" onClick={() => { setError(''); setDialog({ kind: 'create' }) }}
           className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11 max-md:w-full">
           + {t('admin.programmes.new')}
         </button>
@@ -379,9 +380,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                     <MenuItem onClick={() => void copyApplyLink(p)}>
                       {t('admin.programmes.copyLink')}
                     </MenuItem>
-                    <MenuItem onClick={() => {
-                      setError(''); setNewCode(p.code); setRenaming(p)
-                    }}>
+                    <MenuItem onClick={() => { setError(''); setDialog({ kind: 'rename', programme: p }) }}>
                       {t('admin.programmes.changeCode')}
                     </MenuItem>
                     <MenuItem onClick={() => enterGift(p, '/admin/programme')}>
@@ -399,7 +398,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                       disabled={busy || p.delete_blocked_by !== null}
                       reason={p.delete_blocked_by
                         ? t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`) : undefined}
-                      onClick={() => { setError(''); setConfirmText(''); setDeleting(p) }}>
+                      onClick={() => { setError(''); setDialog({ kind: 'delete', programme: p }) }}>
                       {t('admin.programmes.delete')}
                     </MenuItem>
                   </Menu>
@@ -442,142 +441,18 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
 
       <p className="mt-4 text-xs text-ground-500">{t('admin.programmes.durableNote')}</p>
 
-      {/* ⚠ THE TYPED CODE IS THE POINT. A second "are you sure?" is answered by the same reflex
-          that pressed the first button; typing the gift's own code cannot be. The SERVER checks it
-          too — this dialog explains the guard, it is not the guard. */}
-      {deleting && (
-        <Sheet open onClose={() => setDeleting(null)} busy={busy} tone="critical"
-          title={t('admin.programmes.deleteTitle', { name: deleting.name_en })}
-          footer={<>
-            <button type="button" onClick={() => setDeleting(null)} disabled={busy}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-              {t('common.cancel')}
-            </button>
-            <button type="button" data-testid="delete-confirm"
-              // Whitespace-collapsed + lower-cased to match the server's own comparison exactly,
-              // so this button is never asleep on a difference the server would have accepted.
-              disabled={busy || confirmText.trim().replace(/\s+/g, ' ').toLowerCase()
-                !== `delete ${deleting.code}`.toLowerCase()}
-              onClick={async () => {
-                const ok = await run(() => deleteAdminProgramme(
-                  deleting.id, confirmText.trim().replace(/\s+/g, ' ').toLowerCase(),
-                  { token: token! }))
-                if (ok) {
-                  setDeleting(null); setConfirmText('')
-                  // The shell's own list must forget it too, or the breadcrumb keeps offering a
-                  // gift that no longer exists.
-                  await reload()
-                }
-              }}
-              className="rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
-              {t('admin.programmes.deleteCta')}
-            </button>
-          </>}>
-            <p className="text-sm text-ground-700">{t('admin.programmes.deleteBody')}</p>
-            {/* ⚠ SAY THAT THE YEARS GO, AND SAY HOW MANY. The years are the one thing being
-                removed that the person cannot see from this dialog, and since 2026-09-07 they no
-                longer block the delete — so silence here would mean somebody presses Delete on a
-                gift and quietly loses three years of rules they had set up. Shown only when there
-                is at least one; a gift with none needs no sentence about none. */}
-            {deleting.intake_years > 0 && (
-              <p className="mt-2 text-sm text-ground-700" data-testid="delete-years-note">
-                {t('admin.programmes.deleteYears', { count: String(deleting.intake_years) })}
-              </p>
-            )}
-            <div className="mt-3">
-              <InfoBox kind="warning">{t('admin.programmes.deleteKeeps')}</InfoBox>
-            </div>
-
-            {/* ⚠ THE PHRASE CARRIES THE VERB — `delete <code>`, not the bare code (owner,
-                2026-09-07). The code is printed on the card AND in this very label, so typing it
-                alone is closer to copying what is on screen than to stating an intention. */}
-            <label htmlFor="p-confirm" className="mt-4 block text-sm font-medium text-ground-700">
-              {t('admin.programmes.deleteConfirmLabel', { phrase: `delete ${deleting.code}` })}
-            </label>
-            <input id="p-confirm" value={confirmText} autoComplete="off"
-              onChange={(e) => setConfirmText(e.target.value)}
-              className={`mt-1 ${inputCls}`} />
-        </Sheet>
+      {/* The write dialogs (delete, change code, create), fetched as their own chunk on the first press. */}
+      {dialog?.kind === 'delete' && (
+        <LazyGiftProgrammeDialog kind="delete" programme={dialog.programme} busy={busy} error={error}
+          onClose={() => setDialog(null)} onConfirm={(phrase) => void remove(dialog.programme, phrase)} />
       )}
-
-      {/* ⚠ THE LINK IS SHOWN WHERE THE CODE IS SET (owner's choice, 2026-09-08). A code changed
-          without seeing the link it drives is a change made blind — this is the one screen where
-          the two facts have to sit together. */}
-      {renaming && (
-        <Sheet open onClose={() => setRenaming(null)} busy={busy}
-          title={t('admin.programmes.renameTitle', { name: renaming.name_en })}
-          footer={<>
-            <button type="button" onClick={() => setRenaming(null)} disabled={busy}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-              {t('common.cancel')}
-            </button>
-            <button type="button" data-testid="rename-confirm"
-              // Asleep on an unchanged code as well as a malformed one: the server treats the
-              // same code as a no-op, so offering the press would promise a change that is not
-              // one.
-              disabled={busy || !CODE_OK.test(newCode.trim().toLowerCase())
-                || newCode.trim().toLowerCase() === renaming.code}
-              onClick={() => void rename(renaming)}
-              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-              {t('admin.programmes.renameCta')}
-            </button>
-          </>}>
-            <p className="text-sm font-medium text-ground-700">
-              {t('admin.programmes.applyLinkLabel')}
-            </p>
-            <p data-testid="rename-apply-url"
-              className="mt-1 break-all rounded-lg bg-ground-50 px-3 py-2 font-mono text-xs text-ground-700">
-              {renaming.apply_url}
-            </p>
-
-            <label htmlFor="p-newcode" className="mt-4 block text-sm font-medium text-ground-700">
-              {t('admin.programmes.field.newCode')}
-            </label>
-            <input id="p-newcode" value={newCode} autoComplete="off"
-              onChange={(e) => setNewCode(e.target.value)} className={`mt-1 ${inputCls}`} />
-            <p className="mt-1 text-xs text-ground-500">{t('admin.programmes.field.codeHint')}</p>
-
-            {/* ⚠ SAY THAT THE OLD CODE KEEPS WORKING. Without this sentence the honest reader
-                assumes every poster already printed is about to stop working, and does not rename
-                a code they should. It is also true: the server writes the old code as an alias. */}
-            <div className="mt-4">
-              <InfoBox kind="info">{t('admin.programmes.renameKeeps')}</InfoBox>
-            </div>
-            {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
-        </Sheet>
+      {dialog?.kind === 'rename' && (
+        <LazyGiftProgrammeDialog kind="rename" programme={dialog.programme} busy={busy} error={error}
+          onClose={() => setDialog(null)} onConfirm={(wanted) => void rename(dialog.programme, wanted)} />
       )}
-
-      {open && (
-        <Sheet open onClose={() => setOpen(false)} busy={busy} title={t('admin.programmes.new')}
-          footer={<>
-            <button type="button" onClick={() => setOpen(false)} disabled={busy}
-              className="text-sm font-medium text-ground-500 hover:text-ground-700">
-              {t('common.cancel')}
-            </button>
-            <button type="button" onClick={create}
-              disabled={busy || !nameEn.trim() || !CODE_OK.test(code.trim().toLowerCase())}
-              className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-              {t('admin.programmes.create')}
-            </button>
-          </>}>
-            <label htmlFor="p-name" className="block text-sm font-medium text-ground-700">
-              {t('admin.programmes.field.name')}
-            </label>
-            <input id="p-name" value={nameEn} onChange={(e) => setNameEn(e.target.value)}
-              className={`mt-1 ${inputCls}`} />
-
-            <label htmlFor="p-code" className="mt-4 block text-sm font-medium text-ground-700">
-              {t('admin.programmes.field.code')}
-            </label>
-            <input id="p-code" value={code} onChange={(e) => setCode(e.target.value)}
-              className={`mt-1 ${inputCls}`} />
-            <p className="mt-1 text-xs text-ground-500">{t('admin.programmes.field.codeHint')}</p>
-
-            <div className="mt-4">
-              <InfoBox kind="warning">{t('admin.programmes.codeWarning')}</InfoBox>
-            </div>
-            {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
-        </Sheet>
+      {dialog?.kind === 'create' && (
+        <LazyGiftProgrammeDialog kind="create" busy={busy} error={error}
+          onClose={() => setDialog(null)} onConfirm={(wanted, nameEn) => void create(wanted, nameEn)} />
       )}
     </section>
   )

@@ -87,12 +87,15 @@ describe('AppShell renders the scope sidebar per role', () => {
     }
   })
 
-  it('gives a reviewer the programme scope only — no organisation, no platform', () => {
+  // T5c P5 (2026-11-04): a reviewer gains ONE organisation row, Programmes (its landing), and nothing else there.
+  it('gives a reviewer the programme scope and only Programmes under organisation — no platform', () => {
     asRole('reviewer')
     render(<AppShell>content</AppShell>)
     const nav = sidebar()
     expect(within(nav).getByText('admin.nav.group.programme')).toBeTruthy()
-    expect(within(nav).queryByText('admin.nav.group.organisation')).toBeNull()
+    expect(within(nav).getByText('admin.nav.group.organisation')).toBeTruthy()
+    expect(within(nav).getByText('admin.nav.programmes')).toBeTruthy()
+    expect(within(nav).queryByText('admin.orgPage.nav')).toBeNull()
     expect(within(nav).queryByText('admin.nav.group.platform')).toBeNull()
   })
 

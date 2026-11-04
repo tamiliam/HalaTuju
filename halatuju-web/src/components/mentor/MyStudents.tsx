@@ -11,6 +11,12 @@ import { PRIMARY, ResultChip, SECONDARY, helpWords, telHref } from './mentorBits
 
 const K = 'admin.myStudents'
 
+/** The gift id a Programmes card put in the URL, or undefined (absent or not a whole number: the full list). */
+export function programmeInUrl(search = typeof window === 'undefined' ? '' : window.location.search): number | undefined {
+  const raw = new URLSearchParams(search).get('programme')?.trim() ?? ''
+  return /^\d+$/.test(raw) && Number(raw) > 0 ? Number(raw) : undefined
+}
+
 /**
  * My students — a MENTOR's landing page (student maintenance S7c; the approved MentorStudents and
  * MentorPhone boards). One card per CURRENT student: name, programme and institution, the latest result
@@ -25,9 +31,11 @@ export default function MyStudents() {
   const [logging, setLogging] = useState<MyStudentCard | null>(null)
   const [banner, setBanner] = useState('')
 
+  // T5c P5: a Programmes card links here as `?programme=<gift id>`; the server narrows the list to that gift.
+  // Read from the URL itself (no `useSearchParams`, which would need a Suspense boundary on this route).
   const load = useCallback(() => {
     if (!token) return
-    getMyStudents({ token }).then((d) => { setData(d); setFailed(false) }).catch(() => setFailed(true))
+    getMyStudents({ token }, programmeInUrl()).then((d) => { setData(d); setFailed(false) }).catch(() => setFailed(true))
   }, [token])
   useEffect(() => { load() }, [load])
 

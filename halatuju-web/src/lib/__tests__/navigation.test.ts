@@ -84,9 +84,13 @@ describe('visibleNav per role', () => {
     // org_admin and admin (all three POST — `announcements.may_post`). Nobody else gained reach.
     // ⚠ S9 (2026-11-02): `surveys` is NEW after Announcements, for the same three (`surveys.may_make`).
     // ⚠ S10 (2026-11-02): `development` is NEW after Surveys, for the same three (`development.may_make`).
+    // ⚠⚠ T5c P5 (owner, 2026-11-04): `programmes` IS BACK, as the FIRST organisation row, for every partner-login
+    // role — super, org_admin, admin, finance, qc, reviewer and mentor. It is everyone's landing; a reviewer and
+    // a mentor see it as their ONE organisation row, and the page lists only the programmes where they have work
+    // (the server's `my-programmes` read is the fence). Nobody else gained reach.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
       'spending', 'contracts', 'programmeConfig',
@@ -108,14 +112,14 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'billing', 'orgSettings',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments',
       'spending', 'contracts', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'programmes', 'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'programmeOverview', 'applications', 'scholars', 'announcements', 'surveys', 'development', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
@@ -129,14 +133,14 @@ describe('visibleNav per role', () => {
     // (`SECTIONS_BY_ROLE`, pinned by `test_the_key_set_per_role_is_exact`). Recorded in
     // `docs/decisions.md` and `role-matrix.md`; typed out here so it stays a deliberate act.
     finance: [
-      'administration', 'staff', 'reviewers', 'sponsors',
+      'programmes', 'administration', 'staff', 'reviewers', 'sponsors',
       'programmeOverview', 'payments',
       'profile', 'guide', 'faq',
     ],
     // Maintenance S2 (2026-10-29): `scholars` carries exactly the Applications roles and keys —
     // a scholar file is a view of an application the reader can already open (server: same rule).
-    qc: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
-    reviewer: ['programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
+    qc: ['programmes', 'programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
+    reviewer: ['programmes', 'programmeOverview', 'applications', 'scholars', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
     // Source sign-in (2026-10-30): the three Programme rows reviewers use — their pages render the
     // source console (`components/source/*`, `admin/source/` only) — and Profile. NO Guide / FAQ:
@@ -144,7 +148,7 @@ describe('visibleNav per role', () => {
     source_partner: ['programmeOverview', 'applications', 'scholars', 'profile'],
     // Student maintenance S7a (2026-10-31): a mentor has their Profile (the MentorProfile board); S7c
     // adds My students, their landing. Nothing else. NO Guide / FAQ: both are written for staff.
-    mentor: ['myStudents', 'profile'],
+    mentor: ['programmes', 'myStudents', 'profile'],
   }
 
   it('covers every role the backend defines', () => {
@@ -206,9 +210,10 @@ describe('visibleNav per role', () => {
     expect(stale).toEqual([])
   })
 
-  it('a reviewer reaches neither the organisation nor the platform scope', () => {
-    const scopes = visibleNav(ctx('reviewer')).map((g) => g.scope)
-    expect(scopes).toEqual(['programme', 'utility'])
+  it('a reviewer reaches no platform row, and only Programmes in the organisation scope (T5c P5)', () => {
+    const groups = visibleNav(ctx('reviewer'))
+    expect(groups.map((g) => g.scope)).toEqual(['organisation', 'programme', 'utility'])
+    expect(groups.find((g) => g.scope === 'organisation')!.items.map((i) => i.id)).toEqual(['programmes'])
   })
 
   it('a source user is its own role, never folded into reviewer, and lands on its Overview', () => {
@@ -226,12 +231,14 @@ describe('visibleNav per role', () => {
     }
   })
 
-  it('a mentor is its own role, never folded into reviewer, and lands on My students (S7c)', () => {
+  it('a mentor is its own role, never folded into reviewer, and lands on Programmes (T5c P5)', () => {
     expect(effectiveRole({ role: 'mentor' })).toBe('mentor')
-    // S7c: My students is the landing. A mentor is never held on Profile (the hold is reviewer-only;
-    // the server's `reviewer_profile_complete` is true for every non-reviewer).
-    expect(defaultRoute({ role: 'mentor', permissions: [] })).toBe('/admin/my-students')
-    expect(defaultRoute({ role: 'mentor' }, false)).toBe('/admin/my-students')
+    // T5c P5: Programmes is the landing (S7c had My students; a mentor's card now opens My students narrowed
+    // to that gift). A mentor is never held on Profile (the hold is reviewer-only; the server's
+    // `reviewer_profile_complete` is true for every non-reviewer).
+    expect(defaultRoute({ role: 'mentor', permissions: [] })).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'mentor' }, false)).toBe('/admin/organisation/programmes')
+    expect(canAccess('/admin/organisation/programmes', 'mentor', [])).toBe(true)
     expect(canAccess('/admin/profile', 'mentor', [])).toBe(true)
     expect(canAccess('/admin/my-students', 'mentor', [])).toBe(true)
     expect(canAccess('/admin/my-students/104', 'mentor', [])).toBe(true)
@@ -243,7 +250,7 @@ describe('visibleNav per role', () => {
       '/admin/programme/overview', '/admin/scholarship', '/admin/scholars', '/admin/guide', '/admin/faq']) {
       expect(canAccess(href, 'mentor', [])).toBe(false)
     }
-    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['mentoring', 'utility'])
+    expect(visibleNav(ctx('mentor')).map((g) => g.scope)).toEqual(['organisation', 'mentoring', 'utility'])
   })
 
   it('S7d: a staff member who mentors now gains My students and keeps their own menu and landing', () => {
@@ -334,9 +341,10 @@ describe('activeItem resolves by longest match', () => {
     // light the correct sidebar row, not merely land somewhere.
     expect(activeItem('/admin/administration')?.id).toBe('administration')  // → the org overview
     expect(activeItem('/admin/invite')?.id).toBe('staff')                   // → org staff
-    // The shape sprint (2026-09-03). Both pages existed for exactly one sprint, so a bookmark is
+    // The shape sprint (2026-09-03). The years page existed for exactly one sprint, so a bookmark is
     // young and a stale link is likelier than usual.
-    expect(activeItem('/admin/organisation/programmes')?.id).toBe('administration')
+    // T5c P5 (2026-11-04): Programmes is a page and a row of its own again, so it lights ITSELF.
+    expect(activeItem('/admin/organisation/programmes')?.id).toBe('programmes')
     expect(activeItem('/admin/programme/years')?.id).toBe('programmeConfig')
   })
 
@@ -549,7 +557,8 @@ describe('visibleNav groups', () => {
   })
 
   it('drops a scope a role cannot reach rather than showing an empty heading', () => {
-    expect(visibleNav(ctx('reviewer')).map((g) => g.scope)).toEqual(['programme', 'utility'])
+    expect(visibleNav(ctx('reviewer')).map((g) => g.scope)).toEqual(['organisation', 'programme', 'utility'])
+    expect(visibleNav(ctx('source_partner')).map((g) => g.scope)).toEqual(['programme', 'utility'])
     expect(visibleNav(ctx('partner')).map((g) => g.scope)).toEqual(['platform', 'utility'])
   })
 
@@ -797,9 +806,11 @@ describe('defaultRoute', () => {
   // list — because the Overview's reviewer shape IS their own queue: their open cases, what is due
   // soon, what is overdue, and how long students have waited. Landing on a list of every applicant
   // in the gift was one click further from their own work, not nearer it.
-  it('sends a reviewer and the legacy viewer to their own overview', () => {
-    expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/programme/overview')
-    expect(defaultRoute({ role: 'viewer' })).toBe('/admin/programme/overview')
+  // ⚠⚠ AND MOVED AGAIN ON 2026-11-04 (T5c P5): everyone on the partner login lands on Organisation → Programmes,
+  // which lists the programmes where the reviewer has work; each card opens that gift's Overview (their queue).
+  it('sends a reviewer and the legacy viewer to Programmes', () => {
+    expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'viewer' })).toBe('/admin/organisation/programmes')
   })
   /*
    * ⚠⚠ THE WHOLE TABLE, LITERAL ON PURPOSE — it replaces "everyone else goes to /admin".
@@ -816,12 +827,14 @@ describe('defaultRoute', () => {
   it('lands every role on the first page it may actually open', () => {
     expect(defaultRoute({ role: 'super' })).toBe('/admin')            // platform dashboard
     expect(defaultRoute({ role: 'partner' })).toBe('/admin')          // ditto — a referral rep
-    expect(defaultRoute({ role: 'org_admin' })).toBe('/admin/organisation')
-    expect(defaultRoute({ role: 'admin' })).toBe('/admin/organisation')
-    expect(defaultRoute({ role: 'finance' })).toBe('/admin/organisation')
-    // ⚠ A QC has no organisation row at all, so its first reachable page is the Programme group's
-    // first row — which is now the Overview, and whose QC shape is exactly their own queue.
-    expect(defaultRoute({ role: 'qc' })).toBe('/admin/programme/overview')
+    // T5c P5: Programmes is the first organisation row and every partner-login role may open it.
+    expect(defaultRoute({ role: 'org_admin' })).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'admin' })).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'finance' })).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'qc' })).toBe('/admin/organisation/programmes')
+    expect(defaultRoute({ role: 'mentor' })).toBe('/admin/organisation/programmes')
+    // A source user is not on the partner login and has no organisation row: its own Overview.
+    expect(defaultRoute({ role: 'source_partner' })).toBe('/admin/programme/overview')
   })
 
   it('never lands anyone on a page the registry says they may not open', () => {
@@ -840,7 +853,7 @@ describe('defaultRoute', () => {
     for (const r of ROLE_NAMES) expect(bad).not.toContain(defaultRoute({ role: r }))
   })
   it('never traps on an OLD payload that omits the completeness flag', () => {
-    expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/programme/overview')
+    expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/organisation/programmes')
   })
 })
 
@@ -971,13 +984,13 @@ describe('programmeGroupFolded', () => {
   // ⚠ THE TWO EXEMPTIONS, AND THE REASON EACH IS NOT A COURTESY.
   it('a reviewer and a QC ALWAYS keep it — it is their only row, folded they have no sidebar', () => {
     for (const role of ['reviewer', 'qc'] as const) {
-      expect(groupsAt(role, '/admin/profile')).toEqual(['programme', 'utility'])
+      expect(groupsAt(role, '/admin/profile')).toEqual(['organisation', 'programme', 'utility'])
       expect(groupsAt(role, '/admin/scholarship')).toContain('programme')
     }
   })
 
   it('a plain admin and finance ALWAYS keep it — the Programmes page shows them no gift to click', () => {
-    // The gift cards on /admin/organisation mirror the programmes endpoint's gate (super +
+    // The gift cards on /admin/organisation/programmes mirror the programmes endpoint's gate (super +
     // org_admin), so these two roles have no door INTO a gift. Folding would strand them.
     for (const role of ['admin', 'finance'] as const) {
       expect(groupsAt(role, '/admin/organisation')).toContain('programme')

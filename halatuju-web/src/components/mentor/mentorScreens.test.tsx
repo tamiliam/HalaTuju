@@ -11,7 +11,7 @@
  *    from a day-first box, the concern sent only when switched on.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import MyStudents from './MyStudents'
+import MyStudents, { programmeInUrl } from './MyStudents'
 import MyStudentFile from './MyStudentFile'
 import * as api from '@/lib/admin-api'
 import * as desk from '@/lib/admin-api/mentorDesk'
@@ -110,6 +110,36 @@ describe('My students', () => {
     fireEvent.click(save)
     expect(await within(sheet).findByText('admin.scholars.mentoring.error.future_date')).toBeTruthy()
     expect(mockApi.logMyMeeting.mock.calls[0][1].concern).toBe(false)
+  })
+})
+
+// T5c P5: a mentor's Programmes card opens `/admin/my-students?programme=<id>`, narrowed to that gift.
+describe('My students, narrowed to one programme', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'))
+
+  it('reads a positive whole-number programme id from the URL, and nothing else', () => {
+    expect(programmeInUrl('?programme=12')).toBe(12)
+    expect(programmeInUrl('?programme= 12 ')).toBe(12)
+    expect(programmeInUrl('')).toBeUndefined()
+    expect(programmeInUrl('?programme=0')).toBeUndefined()
+    expect(programmeInUrl('?programme=-3')).toBeUndefined()
+    expect(programmeInUrl('?programme=b40')).toBeUndefined()
+    expect(programmeInUrl('?programme=1.5')).toBeUndefined()
+  })
+
+  it('asks the server for that programme only', async () => {
+    window.history.replaceState(null, '', '/admin/my-students?programme=12')
+    mockApi.getMyStudents.mockResolvedValue({ organisation: 'BrightPath', students: [CARD] })
+    render(<MyStudents />)
+    await screen.findByTestId('my-student-104')
+    expect(mockApi.getMyStudents).toHaveBeenCalledWith({ token: 'tok' }, 12)
+  })
+
+  it('asks for every student when the URL names no programme', async () => {
+    mockApi.getMyStudents.mockResolvedValue({ organisation: 'BrightPath', students: [CARD] })
+    render(<MyStudents />)
+    await screen.findByTestId('my-student-104')
+    expect(mockApi.getMyStudents).toHaveBeenCalledWith({ token: 'tok' }, undefined)
   })
 })
 

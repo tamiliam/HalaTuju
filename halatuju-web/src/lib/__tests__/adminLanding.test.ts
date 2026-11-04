@@ -14,28 +14,32 @@ const full: ReviewerProfile = {
 }
 
 describe('adminLanding', () => {
+  // ⚠⚠ T5c P5 (owner, 2026-11-04): EVERYONE ON THE PARTNER LOGIN LANDS ON ORGANISATION → PROGRAMMES — admin,
+  // reviewer, mentor alike. It is the first row of the organisation group and every partner-login role may
+  // open it, so `defaultRoute` reaches it first. Kept: a super on the platform dashboard, a source user on its
+  // Overview, and the incomplete reviewer held on Profile.
   // ⚠ `admin` MOVED, AND THAT IS THE POINT OF THE 2026-09-08 CHANGE. `/admin` is the PLATFORM
   // dashboard (super + partner); an `admin` never belonged there and was bounced off it to a page
   // chosen for somebody else. It now lands on its organisation's own Overview. `defaultRoute` in
   // navigation.test.ts pins the whole table; this file only proves the delegation is real.
   it('sends a super to the platform dashboard, an admin to their organisation', () => {
     expect(adminLanding({ role: 'super' })).toBe('/admin')
-    expect(adminLanding({ role: 'admin' })).toBe('/admin/organisation')
+    expect(adminLanding({ role: 'admin' })).toBe('/admin/organisation/programmes')
   })
   // ⚠ MOVED 2026-09-15, AND IT IS WANTED. The Programme Overview's reviewer shape IS their own
   // queue — open cases, due soon, overdue, and how long students have waited — so it is nearer
   // their work than a list of every applicant in the gift. `defaultRoute` in navigation.test.ts
   // pins the whole table; this file only proves the delegation is real.
-  it('sends a viewer + a complete reviewer to their own overview', () => {
-    expect(adminLanding({ role: 'viewer' })).toBe('/admin/programme/overview')
+  it('sends a viewer + a complete reviewer to Programmes (T5c P5)', () => {
+    expect(adminLanding({ role: 'viewer' })).toBe('/admin/organisation/programmes')
     expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: true }))
-      .toBe('/admin/programme/overview')
+      .toBe('/admin/organisation/programmes')
   })
   it('holds an incomplete reviewer on the profile page', () => {
     expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: false })).toBe('/admin/profile')
   })
   it('never traps on an OLD payload that omits the flag (undefined ≠ false)', () => {
-    expect(adminLanding({ role: 'reviewer' })).toBe('/admin/programme/overview')
+    expect(adminLanding({ role: 'reviewer' })).toBe('/admin/organisation/programmes')
   })
   // Source sign-in (2026-10-30): a source user lands on its own Overview — never on a reviewer's
   // landing by fallback, and never held on Profile (the reviewer onboarding gate is not theirs).
@@ -50,10 +54,10 @@ describe('adminLanding', () => {
   // Student maintenance S7a (2026-10-31) gave a mentor Profile; S7c gives My students, and it lands
   // there — never through the reviewer hold, which is not theirs (no hold for an incomplete mentor
   // profile exists today, so none is invented).
-  it('sends a mentor to My students, and never holds it as a reviewer', () => {
-    expect(adminLanding({ role: 'mentor' })).toBe('/admin/my-students')
-    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: true })).toBe('/admin/my-students')
-    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: false })).toBe('/admin/my-students')
+  it('sends a mentor to Programmes (T5c P5), and never holds it as a reviewer', () => {
+    expect(adminLanding({ role: 'mentor' })).toBe('/admin/organisation/programmes')
+    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: true })).toBe('/admin/organisation/programmes')
+    expect(adminLanding({ role: 'mentor', reviewer_profile_complete: false })).toBe('/admin/organisation/programmes')
     expect(mustCompleteProfile({ role: 'mentor', reviewer_profile_complete: false }, '/admin/scholarship'))
       .toBe(false)
   })

@@ -71,22 +71,23 @@ it('leaves staff alone', () => {
 })
 
 // Student maintenance S7a (2026-10-31): a MENTOR is held the same way — its pages are My students
-// (S7c, its landing) and Profile.
+// (S7c), Profile and, since T5c P5 (2026-11-04), Organisation → Programmes, which is now its landing.
+const MENTOR_LANDING = '/admin/organisation/programmes'
 const MENTOR = { role: 'mentor', is_admin: true, is_super_admin: false, permissions: [] }
 
 it.each([
   '/admin', '/admin/organisation', '/admin/organisation/mentors', '/admin/organisation/staff',
   '/admin/programme/overview', '/admin/scholarship', '/admin/scholars/104', '/admin/guide',
-])('sends a mentor away from %s to My students before the page or the shell mounts', (path) => {
+])('sends a mentor away from %s to Programmes before the page or the shell mounts', (path) => {
   mockRole = MENTOR
   mockPath = path
   render(<AdminLayout><StaffPage /></AdminLayout>)
-  expect(replace).toHaveBeenCalledWith('/admin/my-students')
+  expect(replace).toHaveBeenCalledWith(MENTOR_LANDING)
   expect(screen.queryByTestId('shell')).toBeNull()
   expect(mockApi.getInvitations).not.toHaveBeenCalled()
 })
 
-it.each(['/admin/profile', '/admin/my-students', '/admin/my-students/104'])('lets a mentor open %s', (path) => {
+it.each(['/admin/profile', '/admin/my-students', '/admin/my-students/104', MENTOR_LANDING])('lets a mentor open %s', (path) => {
   mockRole = MENTOR
   mockPath = path
   render(<AdminLayout><p>own page</p></AdminLayout>)

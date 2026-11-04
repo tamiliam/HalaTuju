@@ -157,7 +157,9 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   },
   '/admin/organisation': { cls: 'must', sprint: 'M6', surfaces: ['m8-organisation'] },
   '/admin/administration': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
-  '/admin/organisation/programmes': { cls: 'must', sprint: 'M6', redirect: '/admin/organisation' },
+  // T5c P5 (2026-11-04): a page again — everyone's landing on the partner login (it was a redirect to Overview).
+  '/admin/organisation/programmes': { cls: 'must', sprint: 'M6',
+    surfaces: ['m8-programmes-org-admin', 'm8-programmes-reviewer', 'm8-programmes-mentor'] },
   // The catch-all only throws `notFound()`; what it draws is `app/admin/not-found.tsx`, mounted by the surface.
   '/admin/[...notFound]': { cls: 'must', sprint: 'M6', surfaces: ['m8-admin-not-found'] },
   // Student maintenance S7c: a MENTOR's own pages — used on a phone (the approved MentorPhone board).

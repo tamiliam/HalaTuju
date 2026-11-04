@@ -103,20 +103,24 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     scope: 'organisation',
     headingKey: 'admin.nav.group.organisation',
     items: [
+      // ⚠ T5c P5 (owner, 2026-11-04): PROGRAMMES IS EVERYONE'S FRONT DOOR on partner login, and so the FIRST
+      // row of this group — `defaultRoute` lands each of these roles here (super still lands on Platform,
+      // which comes first). It undoes the 2026-09-03 fold of the gifts into the Overview: a reviewer and a
+      // mentor now see this ONE organisation row, listing only the programmes where they have work (the
+      // server's `my-programmes` read is the fence; this row is visibility only). No `door` yet: its v2 key
+      // is server work (T5c P5 S1b), and until it is served the row answers by its roles.
+      { id: 'programmes', href: '/admin/organisation/programmes', labelKey: 'admin.nav.programmes',
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor'],
+        gate: { mode: 'always' } },
       // The security fence: staff, sponsors, billing (contracts moved to Programme, TD-229).
       // The old Administration hub is now this overview. `match` keeps the retired hub route
       // (a permanent redirect) highlighting here, so an old bookmark still lights the right row.
       // `exact` because /admin/organisation is a page, not a section — /admin/organisation/staff
       // is its sibling in the menu, not its child.
-      //
-      // ⚠ `/admin/organisation/programmes` REDIRECTS HERE (2026-09-03). The gifts an organisation
-      // runs are what the organisation IS, so they belong on its overview rather than in a row of
-      // their own — and the row was a whole menu entry for a list of one. The old route stays as a
-      // permanent redirect and is matched here, so a bookmark still lights the right sidebar row.
       { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'], adminKeys: ORG_READ_KEYS,
         door: 'org_read', gate: { mode: 'always' }, exact: true,
-        match: ['/admin/administration', '/admin/organisation/programmes'] },
+        match: ['/admin/administration'] },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
       // request #10, and what is left is the asking. The ROUTE is unchanged deliberately — every
       // bookmark, the `/admin/invite` redirect and the highlight rules keep working; only the

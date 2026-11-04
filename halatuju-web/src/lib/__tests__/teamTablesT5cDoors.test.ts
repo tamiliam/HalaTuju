@@ -26,6 +26,7 @@ import { NAV_ITEMS, NO_PROBES, defaultRoute, effectiveRole, visibleNav, type Pro
 import { DOOR_KEYS, opensDoor, type DoorName } from '@/lib/pageDoors'
 import { mayOpen, mayReadMentors, opensDoorOr } from '@/lib/pageGuard'
 import { pyDictOfSeqs, readApi } from '@/test/apiSource'
+import { t5cP5Moves } from '@/test/t5cP5Moves'
 
 const PAYLOADS = path.join(__dirname, 'fixtures', 't5cServedPayloads.json')
 const BEFORE = path.join(__dirname, 'fixtures', 't5cDoorsMenusBefore.json')
@@ -53,6 +54,8 @@ const PAGE_GATES: Record<string, readonly string[]> = {
   'sources': ADMIN_WORK_ROLES,            // sources page canManage (its row's roles)
   'invitations': LEAD_ROLES,              // sources page canInvite
 }
+
+const isPlatform = (id: string) => NAV_ITEMS.find((i) => i.id === id)?.scope === 'platform'
 
 const LIVE: Record<'requests' | 'billing', ProbeState> = { requests: 'live', billing: 'live' }
 
@@ -96,13 +99,16 @@ describe('Team tables T5c P4: no menu, route or page gate moved', () => {
     expect(Object.keys(SHAPES)).toHaveLength(27)     // the doors test's 32, less its 5 inactive rows
   })
 
+  // T5c P5's declared move (Programmes is a row and the landing again) — see `test/t5cP5Moves.ts`.
+  const after = (shape: string) => t5cP5Moves(before[shape], effectiveRole(SHAPES[shape]), isPlatform)
+
   it.each(Object.keys(SHAPES))('%s, served today (with page_keys): identical to before', (shape) => {
-    expect(measure(SHAPES[shape], doorGate)).toEqual(before[shape])
+    expect(measure(SHAPES[shape], doorGate)).toEqual(after(shape))
   })
 
   it.each(Object.keys(SHAPES))('%s, an older payload (no page_keys): identical to before', (shape) => {
     const { page_keys: _dropped, ...older } = SHAPES[shape]
-    expect(measure(older, doorGate)).toEqual(before[shape])
+    expect(measure(older, doorGate)).toEqual(after(shape))
   })
 })
 
