@@ -7628,6 +7628,10 @@ write drops that evidence silently. And for cases worked before the live activit
 / `verified_by`, the assignment history and the session's interviewer alone. **Fix (if it bites):** write the
 guard's evidence in the action's own transaction where it must hold (a small authors list on the session; a
 verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)*
+**Extended 2026-11-04 (Mobile M8 close-out code review, triaged by the T5c lead):** the "ever assigned" rule reads
+`AssignmentEvent` rows only, so an assignment made before those rows began (pre-F7) or by a direct `assigned_to`
+write leaves no trace; and a draft author re-pointed by `repair_interview_credit`, or one who drafted before T5b's
+`interview_drafted` verb, leaves no activity row. Same fix family.
 
 ### [TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
 
@@ -7711,6 +7715,16 @@ sponsor terms and the sponsor emails each have ONE door that both reads and writ
 T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
 **Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
 *(A · S)*
+
+### [TD-494] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
+
+**Raised 2026-11-04 by the Mobile M8 close-out code review (triaged by the T5c lead; T5b behaviour, NOT fixed).**
+Since T5b the server says `qc` IMPLIES `see_all` (`staff_permissions.IMPLIES`; the save door accepts `['qc']` and
+answers `see_all + qc`). `PermissionEditor.tsx` (~175) still blocks the QC switch without `see_all`, and turning
+`see_all` off strips `qc`; its header comment still says DEPENDS_ON. Stricter than the server, so nobody gains
+access; but the editor and the server describe the rule differently. **Fix (with T5g's Permissions tab):** show `qc`
+as implying `see_all` (`see_all` ticked and locked while `qc` is on), and correct the comment. Owner question raised
+with it: may a `finance` person also hold `qc` (they would then read every case)? *(W · S)*
 
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
