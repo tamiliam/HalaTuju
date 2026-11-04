@@ -7670,7 +7670,7 @@ worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team table
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
 
-### [TD-489] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
+### [TD-492] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 
 **Raised 2026-11-04 by Team tables T5c P1 (branch t5c); P2 converted two of them the same day.** P1 put the v2 keys
 behind every door its modules own (decisions.md "Team tables T5c"), but some callers still ask a union door — now
@@ -7711,6 +7711,17 @@ sponsor terms and the sponsor emails each have ONE door that both reads and writ
 T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
 **Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
 *(A · S)*
+
+### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
+
+**Raised 2026-11-04 by Mobile M8 follow-up part 2 (NOT fixed).** A mentor's own pages, `/admin/my-students` and
+`/admin/my-students/[id]` (`components/mentor/MyStudents.tsx`, `MyStudentFile.tsx`), still draw their cards as white
+boxes on a phone, against rule 15 (one box level; sections on phones, `docs/mobile-standard.md`). They follow the
+owner-approved MentorPhone board (Student maintenance S7c), which predates rule 15, so they were left out of
+`RULE15_SWEPT` on purpose; the owner chose (2026-11-04) to leave them for later. mobile-check holds them at 0 on all
+four numbers, so nothing is broken — they only look boxier than the rest of the console. **Fix:** move their cards
+onto `PHONE_SECTION` / `PHONE_CARD_XL` (and their pills onto `lib/phonePill.ts`), add both files to the rule-15 and
+rule-17 lists in `mobileStandard.test.ts`, and update the MentorPhone board to match. *(M · S)*
 
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 

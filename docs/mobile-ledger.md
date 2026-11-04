@@ -4,142 +4,143 @@
 > `halatuju-web/src/lib/mobileClass.ts`; numbers in `halatuju-web/mobile-check/baseline.json`.
 > The rules are in [mobile-standard.md](mobile-standard.md).
 
-Baseline last updated **2026-11-03** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
+Baseline last updated **2026-11-04** · public pages measured from `http://localhost:3100` (this branch, live API data) ·
 sandbox surfaces from `http://localhost:3100` · widths 360 and 390 px · English, Malay and Tamil.
 
 **102 routes:** 66 Must · 30 Can · 6 Desktop-only.
-**68 measured** (public page or sandbox surface), **68 fully green.**
+**69 measured** (public page or sandbox surface), **69 fully green.**
 
-How to read a row: the three numbers are the WORST over every measured cell (width × language, and
+How to read a row: the four numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
-controls under 44 × 44 px. ✅ means all three are 0. "Not yet measurable" means the check cannot
+controls under 44 × 44 px, and spills (text or a drawn box passing out of the box that holds it). ✅ means
+all four are 0. "Not yet measurable" means the check cannot
 reach the screen yet: it never signs in, so a signed-in screen is measured only once a sandbox
 surface mounts it — the sprint named is the one that fixes it and adds that surface.
 
-| Route | Class | Sprint | Cells measured | Overflow px | Small fields | Small targets | Status | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `/` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/about` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/admin` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/[...notFound]` | Must | M6 | 6 (sandbox `m8-admin-not-found`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/administration` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
-| `/admin/auth/callback` | Must | M6 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
-| `/admin/billing` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
-| `/admin/billing-rates` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | platform super-admin sets per-service rates in a wide table — rare, and done at a desk |
-| `/admin/contracts` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only`) | 0 | 0 | 0 | ✅ | contract template versions — authored and compared at a desk, never on a phone |
-| `/admin/contracts/[id]` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only-editor`) | 0 | 0 | 0 | ✅ | the clause editor: long legal text in three languages, edited side by side |
-| `/admin/course-data` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | an internal coverage panel for the course catalogue, used by the platform team only |
-| `/admin/faq` | Must | M6 | 6 (sandbox `admin-shell-faq`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/guide` | Must | M6 | 6 (sandbox `admin-shell-guide`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/invite` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/staff` |
-| `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/admin/my-students` | Must | M6 | 6 (sandbox `m8-my-students`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/my-students/[id]` | Must | M6 | 6 (sandbox `m8-my-student`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/organisation` | Must | M6 | 6 (sandbox `m8-organisation`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/organisation/mentors` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
-| `/admin/organisation/programmes` | Must | M6 | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
-| `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisation/reviewers/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisation/reviewers/admins/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisation/reviewers/mentors/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisation/settings` | Can | M7 | 6 (sandbox `m7-org-settings`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/organisation/staff` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/organisations` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/partners` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/payments` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/payments/[id]` | Can | M7 | 6 (sandbox `m7-payment-run`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/profile` | Must | M6 | 12 (sandbox `m8-profile-reviewer`, sandbox `m8-profile-org-admin`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/programme/announcements` | Can | M7 | 6 (sandbox `m7-announcements`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/programme/development` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/programme/overview` | Must | M6 | 12 (sandbox `m8-overview-reviewer`, sandbox `m8-overview-org-admin`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/programme/surveys` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/programme/surveys/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/programme/years` | Can | M7 | — | — | — | — | n/a (redirect only) | redirects to `/admin/programme` |
-| `/admin/requests` | Can | M7 | 6 (sandbox `m7-requests`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/requests/[id]` | Can | M7 | 6 (sandbox `m7-request`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholars` | Can | M7 | 6 (sandbox `m7-scholars`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholars/[id]` | Can | M7 | 6 (sandbox `m7-scholar-file`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/set-password` | Must | M6 | 6 (sandbox `m8-set-password`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/sources` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/spending` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/sponsors` | Can | M7 | 6 (sandbox `m7-sponsor-terms`) | 0 | 0 | 0 | ✅ |  |
-| `/admin/sponsors/[id]` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/sponsors/terms/[id]` | Desktop-only | M7 | — | — | — | — | not yet measurable — desktop-only panel due M7 | authoring a sponsor’s terms document — long-form editing, not a phone task |
-| `/admin/students` | Can | M7 | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
-| `/admin/students/[id]` | Can | M7 | 6 (sandbox `m7-student`) | 0 | 0 | 0 | ✅ |  |
-| `/auth/callback` | Must | M2 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
-| `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/course/[id]` | Must | M3 | 12 (public page, `/course/stpm-sains`) | 0 | 0 | 0 | ✅ |  |
-| `/dashboard` | Must | M2 | 6 (sandbox `dashboard`) | 0 | 0 | 0 | ✅ |  |
-| `/get-started` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/login` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/` |
-| `/onboarding/exam-type` | Must | M2 | 6 (sandbox `onboarding-exam-type`) | 0 | 0 | 0 | ✅ |  |
-| `/onboarding/grades` | Must | M2 | 6 (sandbox `onboarding-grades`) | 0 | 0 | 0 | ✅ |  |
-| `/onboarding/higher-grades` | Must | M2 | 6 (sandbox `onboarding-higher-grades`) | 0 | 0 | 0 | ✅ |  |
-| `/onboarding/ic` | Must | M2 | — | — | — | — | n/a (redirect only) | redirects to `/dashboard` |
-| `/onboarding/profile` | Must | M2 | 6 (sandbox `onboarding-profile`) | 0 | 0 | 0 | ✅ |  |
-| `/onboarding/stpm-grades` | Must | M2 | 6 (sandbox `onboarding-stpm-grades`) | 0 | 0 | 0 | ✅ |  |
-| `/pathway/matric` | Must | M3 | 6 (sandbox `pathway-matric`) | 0 | 0 | 0 | ✅ |  |
-| `/pathway/stpm` | Must | M3 | 6 (sandbox `pathway-stpm`) | 0 | 0 | 0 | ✅ |  |
-| `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/profile` | Must | M2 | 6 (sandbox `profile`) | 0 | 0 | 0 | ✅ |  |
-| `/quiz` | Must | M3 | 6 (sandbox `quiz`) | 0 | 0 | 0 | ✅ |  |
-| `/r/[code]` | Must | M2 | — | — | — | — | n/a (redirect only) | redirects to `/` |
-| `/report/[id]` | Must | M3 | 6 (sandbox `report`) | 0 | 0 | 0 | ✅ |  |
-| `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/award` | Must | M4 | 36 (sandbox `award-sign-adult`, sandbox `award-sign-minor`, sandbox `award-plain-minor`, sandbox `award-quiz`, sandbox `award-quiz-question`, sandbox `award-signed`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/bursary` | Must | M4 | 42 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`, sandbox `bursary-funds`, sandbox `bursary-contract`, sandbox `bursary-letters`, sandbox `bursary-mentoring`) | 0 | 0 | 0 | ✅ |  |
-| `/scholarship/in-programme` | Must | M4 | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
-| `/scholarship/onboarding` | Must | M4 | 18 (sandbox `scholarship-onboarding-welcome`, sandbox `scholarship-onboarding-questions`, sandbox `scholarship-onboarding-done`) | 0 | 0 | 0 | ✅ |  |
-| `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | ✅ |  |
-| `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor` | Must | M5 | 24 (public page, sandbox `sponsor-landing`, sandbox `sponsor-giving`, sandbox `sponsor-terms-quiz`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/[...notFound]` | Must | M5 | 6 (sandbox `sponsor-not-found`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/account` | Must | M5 | 6 (sandbox `sponsor-account`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/auth/callback` | Must | M5 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
-| `/sponsor/auth/confirm` | Must | M5 | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
-| `/sponsor/auth/reset` | Must | M5 | 6 (sandbox `sponsor-reset`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/login` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/my-students/[id]` | Must | M5 | 6 (sandbox `sponsor-my-student`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/pool/[id]` | Must | M5 | — | — | — | — | n/a (redirect only) | redirects to `/sponsor/students/[id]` |
-| `/sponsor/register` | Must | M5 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/students` | Must | M5 | 18 (sandbox `sponsor-browse`, sandbox `sponsor-students`, sandbox `sponsor-filters`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/students/[id]` | Must | M5 | 12 (sandbox `sponsor-pool-student`, sandbox `sponsor-fund-confirm`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/terms` | Must | M5 | 6 (sandbox `sponsor-terms-read`) | 0 | 0 | 0 | ✅ |  |
-| `/sponsor/trust` | Must | M5 | 6 (sandbox `sponsor-trust`) | 0 | 0 | 0 | ✅ |  |
-| `/stpm/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/stpm/quiz` | Must | M3 | 12 (sandbox `stpm-quiz`, sandbox `stpm-quiz-list`) | 0 | 0 | 0 | ✅ |  |
-| `/stpm/search` | Must | M3 | 6 (public page) | 0 | 0 | 0 | ✅ | redirects to `/search?qualification=STPM` |
-| `/terms` | Must | M2 | 6 (public page) | 0 | 0 | 0 | ✅ |  |
-| `/verify-email` | Must | M2 | 12 (sandbox `verify-email-done`, sandbox `verify-email-failed`) | 0 | 0 | 0 | ✅ |  |
+| Route | Class | Sprint | Cells measured | Overflow px | Small fields | Small targets | Spills | Status | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| `/` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/about` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/[...notFound]` | Must | M6 | 6 (sandbox `m8-admin-not-found`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/administration` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
+| `/admin/auth/callback` | Must | M6 | — | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/admin/billing` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | month-end usage and invoices for an organisation — wide figures checked against records |
+| `/admin/billing-rates` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | platform super-admin sets per-service rates in a wide table — rare, and done at a desk |
+| `/admin/contracts` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only`) | 0 | 0 | 0 | 0 | ✅ | contract template versions — authored and compared at a desk, never on a phone |
+| `/admin/contracts/[id]` | Desktop-only | M7 | 6 (sandbox `m7b-desktop-only-editor`) | 0 | 0 | 0 | 0 | ✅ | the clause editor: long legal text in three languages, edited side by side |
+| `/admin/course-data` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | an internal coverage panel for the course catalogue, used by the platform team only |
+| `/admin/faq` | Must | M6 | 6 (sandbox `admin-shell-faq`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/guide` | Must | M6 | 6 (sandbox `admin-shell-guide`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/invite` | Can | M7 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/staff` |
+| `/admin/login` | Must | M6 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/my-students` | Must | M6 | 6 (sandbox `m8-my-students`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/my-students/[id]` | Must | M6 | 6 (sandbox `m8-my-student`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation` | Must | M6 | 6 (sandbox `m8-organisation`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation/mentors` | Can | M7 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation/reviewers` |
+| `/admin/organisation/programmes` | Must | M6 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/organisation` |
+| `/admin/organisation/reviewers` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/reviewers/[id]` | Can | M7 | 6 (sandbox `m8-reviewer-detail`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation/reviewers/admins/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/reviewers/mentors/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisation/settings` | Can | M7 | 6 (sandbox `m7-org-settings`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/organisation/staff` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/organisations` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/partners` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/payments` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/payments/[id]` | Can | M7 | 6 (sandbox `m7-payment-run`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/profile` | Must | M6 | 12 (sandbox `m8-profile-reviewer`, sandbox `m8-profile-org-admin`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/programme` | Can | M7 | 18 (sandbox `programme-config`, sandbox `programme-config-lean`, sandbox `programme-config-two-gifts`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/programme/announcements` | Can | M7 | 6 (sandbox `m7-announcements`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/programme/development` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/development/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/overview` | Must | M6 | 12 (sandbox `m8-overview-reviewer`, sandbox `m8-overview-org-admin`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/programme/surveys` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/surveys/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/programme/years` | Can | M7 | — | — | — | — | — | n/a (redirect only) | redirects to `/admin/programme` |
+| `/admin/requests` | Can | M7 | 6 (sandbox `m7-requests`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/requests/[id]` | Can | M7 | 6 (sandbox `m7-request`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholars` | Can | M7 | 6 (sandbox `m7-scholars`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholars/[id]` | Can | M7 | 6 (sandbox `m7-scholar-file`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholarship` | Must | M6 | 18 (sandbox `admin-shell-list`, sandbox `admin-shell-menu`, sandbox `admin-list-filters`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/scholarship/[id]` | Must | M6 | 30 (sandbox `officer-cockpit`, sandbox `cockpit-case`, sandbox `cockpit-viewer-image`, sandbox `cockpit-viewer-pdf`, sandbox `cockpit-payments`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/set-password` | Must | M6 | 6 (sandbox `m8-set-password`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/sources` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/spending` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/sponsors` | Can | M7 | 6 (sandbox `m7-sponsor-terms`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/admin/sponsors/[id]` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/sponsors/terms/[id]` | Desktop-only | M7 | — | — | — | — | — | not yet measurable — desktop-only panel due M7 | authoring a sponsor’s terms document — long-form editing, not a phone task |
+| `/admin/students` | Can | M7 | — | — | — | — | — | not yet measurable — signed-in, no sandbox surface yet (M7) |  |
+| `/admin/students/[id]` | Can | M7 | 6 (sandbox `m7-student`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/auth/callback` | Must | M2 | — | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/contact` | Must | M1 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/cookies` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/course/[id]` | Must | M3 | 12 (public page, `/course/stpm-sains`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/dashboard` | Must | M2 | 6 (sandbox `dashboard`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/get-started` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/login` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ | redirects to `/` |
+| `/onboarding/exam-type` | Must | M2 | 6 (sandbox `onboarding-exam-type`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/onboarding/grades` | Must | M2 | 6 (sandbox `onboarding-grades`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/onboarding/higher-grades` | Must | M2 | 6 (sandbox `onboarding-higher-grades`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/onboarding/ic` | Must | M2 | — | — | — | — | — | n/a (redirect only) | redirects to `/dashboard` |
+| `/onboarding/profile` | Must | M2 | 6 (sandbox `onboarding-profile`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/onboarding/stpm-grades` | Must | M2 | 6 (sandbox `onboarding-stpm-grades`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/pathway/matric` | Must | M3 | 6 (sandbox `pathway-matric`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/pathway/stpm` | Must | M3 | 6 (sandbox `pathway-stpm`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/privacy` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/profile` | Must | M2 | 6 (sandbox `profile`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/quiz` | Must | M3 | 6 (sandbox `quiz`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/r/[code]` | Must | M2 | — | — | — | — | — | n/a (redirect only) | redirects to `/` |
+| `/report/[id]` | Must | M3 | 6 (sandbox `report`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/saved` | Must | M3 | 12 (sandbox `saved-list`, sandbox `saved-compare`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship` | Must | M4 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/application` | Must | M4 | 36 (sandbox `documents`, sandbox `documents-lean`, sandbox `application-steps`, sandbox `application-steps-lean`, sandbox `action-centre`, sandbox `action-centre-clear`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/apply` | Must | M4 | 24 (public page, sandbox `apply-results`, sandbox `apply-results-stpm`, sandbox `apply-results-form-six`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/award` | Must | M4 | 36 (sandbox `award-sign-adult`, sandbox `award-sign-minor`, sandbox `award-plain-minor`, sandbox `award-quiz`, sandbox `award-quiz-question`, sandbox `award-signed`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/bursary` | Must | M4 | 42 (sandbox `bursary-overview`, sandbox `bursary-news`, sandbox `bursary-surveys`, sandbox `bursary-funds`, sandbox `bursary-contract`, sandbox `bursary-letters`, sandbox `bursary-mentoring`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/scholarship/in-programme` | Must | M4 | — | — | — | — | — | n/a (redirect only) | redirects to `/scholarship/bursary` |
+| `/scholarship/onboarding` | Must | M4 | 18 (sandbox `scholarship-onboarding-welcome`, sandbox `scholarship-onboarding-questions`, sandbox `scholarship-onboarding-done`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/search` | Must | M3 | 12 (public page, sandbox `search-filters`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/settings` | Must | M2 | 6 (sandbox `settings`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor` | Must | M5 | 24 (public page, sandbox `sponsor-landing`, sandbox `sponsor-giving`, sandbox `sponsor-terms-quiz`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/[...notFound]` | Must | M5 | 6 (sandbox `sponsor-not-found`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/account` | Must | M5 | 6 (sandbox `sponsor-account`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/auth/callback` | Must | M5 | — | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/sponsor/auth/confirm` | Must | M5 | — | — | — | — | — | n/a (sign-in hand-off — covered by the owner’s iPhone walkthrough) |  |
+| `/sponsor/auth/reset` | Must | M5 | 6 (sandbox `sponsor-reset`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/login` | Must | M5 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/my-students/[id]` | Must | M5 | 6 (sandbox `sponsor-my-student`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/pool/[id]` | Must | M5 | — | — | — | — | — | n/a (redirect only) | redirects to `/sponsor/students/[id]` |
+| `/sponsor/register` | Must | M5 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/students` | Must | M5 | 18 (sandbox `sponsor-browse`, sandbox `sponsor-students`, sandbox `sponsor-filters`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/students/[id]` | Must | M5 | 12 (sandbox `sponsor-pool-student`, sandbox `sponsor-fund-confirm`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/terms` | Must | M5 | 6 (sandbox `sponsor-terms-read`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/sponsor/trust` | Must | M5 | 6 (sandbox `sponsor-trust`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/stpm/[id]` | Must | M3 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/stpm/quiz` | Must | M3 | 12 (sandbox `stpm-quiz`, sandbox `stpm-quiz-list`) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/stpm/search` | Must | M3 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ | redirects to `/search?qualification=STPM` |
+| `/terms` | Must | M2 | 6 (public page) | 0 | 0 | 0 | 0 | ✅ |  |
+| `/verify-email` | Must | M2 | 12 (sandbox `verify-email-done`, sandbox `verify-email-failed`) | 0 | 0 | 0 | 0 | ✅ |  |
 
 ## Sandbox surfaces not tied to one route
 
 Component galleries — measured, but no single route is "them".
 
-| Surface | Cells | Overflow px | Small fields | Small targets | Status |
-|---|---|---|---|---|---|
-| `apply-draft-restored` | 6 | 0 | 0 | 0 | ✅ |
-| `category-colours` | 6 | 0 | 0 | 0 | ✅ |
-| `course-guide` | 6 | 0 | 0 | 0 | ✅ |
-| `documents-remove` | 6 | 0 | 0 | 0 | ✅ |
-| `header-signed-in-menu` | 6 | 0 | 0 | 0 | ✅ |
-| `header-signed-in-menu-bursary` | 6 | 0 | 0 | 0 | ✅ |
-| `header-signed-out` | 6 | 0 | 0 | 0 | ✅ |
-| `header-signed-out-menu` | 6 | 0 | 0 | 0 | ✅ |
-| `onboarding-stepper` | 6 | 0 | 0 | 0 | ✅ |
-| `pieces` | 6 | 0 | 0 | 0 | ✅ |
-| `sheet-locked-confirm` | 6 | 0 | 0 | 0 | ✅ |
-| `sheet-long-form` | 6 | 0 | 0 | 0 | ✅ |
-| `sheet-short` | 6 | 0 | 0 | 0 | ✅ |
-| `stpm-grade-rows` | 6 | 0 | 0 | 0 | ✅ |
-| `tab-bar-signed-in` | 6 | 0 | 0 | 0 | ✅ |
-| `tab-bar-signed-out` | 6 | 0 | 0 | 0 | ✅ |
+| Surface | Cells | Overflow px | Small fields | Small targets | Spills | Status |
+|---|---|---|---|---|---|---|
+| `apply-draft-restored` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `category-colours` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `course-guide` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `documents-remove` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `header-signed-in-menu` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `header-signed-in-menu-bursary` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `header-signed-out` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `header-signed-out-menu` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `onboarding-stepper` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `pieces` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `sheet-locked-confirm` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `sheet-long-form` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `sheet-short` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `stpm-grade-rows` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `tab-bar-signed-in` | 6 | 0 | 0 | 0 | 0 | ✅ |
+| `tab-bar-signed-out` | 6 | 0 | 0 | 0 | 0 | ✅ |

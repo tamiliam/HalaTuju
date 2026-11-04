@@ -24,10 +24,26 @@
  * the numbers.
  */
 
+import { usePhoneWidth } from '@/lib/phoneWidth'
 import {
-  barLayout, columnX, donutArcs, lineLayout, plotLeft, sliceClasses,
-  type ChartBox, type Tick, WIDE_BOX, DONUT_RADIUS,
+  barLayout, columnX, donutArcs, lineLayout, plotLeft, sliceClasses, thinTicks,
+  type ChartBox, type Tick, WIDE_BOX, DONUT_RADIUS, PHONE_AXIS_BOX, PHONE_BOX, PHONE_TICKS_MAX,
 } from '@/lib/programmeOverview'
+
+/**
+ * Mobile M8: the box and the text size a chart draws with. ⚠ A viewBox SCALES ITS TEXT: a 9-unit label in a
+ * 740-wide box on a 264 px phone card is 3 px. So on a phone (below md, `usePhoneWidth`) every chart swaps to a
+ * phone box about as wide as the card and 11.5-unit text — 11–14 px on screen — with at most `PHONE_TICKS_MAX`
+ * month names. The caller's box and the 8/9-unit text are the desktop's, unchanged; the first paint is the
+ * desktop picture (no matchMedia on the server) and a phone swaps after mount.
+ * ⚠ Both size classes are COMPLETE LITERALS — Tailwind reads source text.
+ */
+export const PHONE_CHART_TEXT = 'text-[11.5px]'
+function useChartBox(box: ChartBox, axis: boolean): { box: ChartBox; tick: string; axisText: string; phone: boolean } {
+  const phone = usePhoneWidth()
+  if (!phone) return { box, tick: 'text-[9px]', axisText: 'text-[8px]', phone }
+  return { box: axis ? PHONE_AXIS_BOX : PHONE_BOX, tick: PHONE_CHART_TEXT, axisText: PHONE_CHART_TEXT, phone }
+}
 
 /** One line of the text beneath a chart — the name of a column and what it was. */
 export interface ChartFigure { label: string; value: string }
@@ -63,15 +79,15 @@ function Figures({ testId, figures }: { testId: string; figures: readonly ChartF
 }
 
 /** The first and last column, named under the axis. The rest are in the figures list. */
-function EndLabels({ columns, box }: { columns: readonly string[]; box: ChartBox }) {
+function EndLabels({ columns, box, text }: { columns: readonly string[]; box: ChartBox; text: string }) {
   if (columns.length === 0) return null
   const last = columns[columns.length - 1]
   return (
     <>
-      <text x={plotLeft(box)} y={box.height - 6} className="fill-ground-400 text-[9px]">{columns[0]}</text>
+      <text x={plotLeft(box)} y={box.height - 6} className={`fill-ground-400 ${text}`}>{columns[0]}</text>
       {columns.length > 1 && (
         <text x={box.width - box.side} y={box.height - 6} textAnchor="end"
-          className="fill-ground-400 text-[9px]">{last}</text>
+          className={`fill-ground-400 ${text}`}>{last}</text>
       )}
     </>
   )
@@ -84,12 +100,14 @@ function EndLabels({ columns, box }: { columns: readonly string[]; box: ChartBox
  * axis would collide at the first column. `columnX` puts a tick under the centre of a bar and
  * under a line's point alike, so the two chart shapes agree about where a month starts.
  */
-function Ticks({ ticks, count, box }: { ticks: readonly Tick[]; count: number; box: ChartBox }) {
+function Ticks({ ticks, count, box, text }: {
+  ticks: readonly Tick[]; count: number; box: ChartBox; text: string
+}) {
   return (
     <g data-testid="chart-ticks">
       {ticks.map((tick) => (
         <text key={tick.index} x={columnX(tick.index, count, box)} y={box.height - 6}
-          textAnchor="middle" className="fill-ground-400 text-[9px]">{tick.label}</text>
+          textAnchor="middle" className={`fill-ground-400 ${text}`}>{tick.label}</text>
       ))}
     </g>
   )
@@ -105,8 +123,8 @@ function Ticks({ ticks, count, box }: { ticks: readonly Tick[]; count: number; b
  * rounding the fixed `viewBox` gives no room to explain. The figures beneath still carry every
  * number a person would quote.
  */
-function YAxisLabels({ axis, box, top, bottom }: {
-  axis: YAxis; box: ChartBox; top: number; bottom: number
+function YAxisLabels({ axis, box, top, bottom, text }: {
+  axis: YAxis; box: ChartBox; top: number; bottom: number; text: string
 }) {
   const x = plotLeft(box) - 4
   const baseline = box.height - box.bottom
@@ -117,17 +135,17 @@ function YAxisLabels({ axis, box, top, bottom }: {
         className="stroke-ground-100" strokeWidth="1" />
       <line x1={plotLeft(box)} y1={midY} x2={box.width - box.side} y2={midY}
         className="stroke-ground-100" strokeWidth="1" />
-      <text x={x} y={box.top + 3} textAnchor="end" className="fill-ground-400 text-[8px]">
+      <text x={x} y={box.top + 3} textAnchor="end" className={`fill-ground-400 ${text}`}>
         {axis.format(top)}
       </text>
-      <text x={x} y={midY + 3} textAnchor="end" className="fill-ground-400 text-[8px]">
+      <text x={x} y={midY + 3} textAnchor="end" className={`fill-ground-400 ${text}`}>
         {axis.format((top + bottom) / 2)}
       </text>
-      <text x={x} y={baseline} textAnchor="end" className="fill-ground-400 text-[8px]">
+      <text x={x} y={baseline} textAnchor="end" className={`fill-ground-400 ${text}`}>
         {axis.format(bottom)}
       </text>
       <text x={9} y={midY} textAnchor="middle" transform={`rotate(-90 9 ${midY})`}
-        className="fill-ground-500 text-[8px]">
+        className={`fill-ground-500 ${text}`}>
         {axis.label}
       </text>
     </g>
@@ -145,7 +163,7 @@ function YAxisLabels({ axis, box, top, bottom }: {
  * still crosses the line it should.)
  */
 export function BarChart({
-  series, columns, figures = [], line, label, testId, box = WIDE_BOX, ticks, yAxis,
+  series, columns, figures = [], line, label, testId, box: givenBox = WIDE_BOX, ticks, yAxis,
 }: {
   series: readonly BarSeries[]
   columns: readonly string[]
@@ -158,13 +176,15 @@ export function BarChart({
   ticks?: readonly Tick[]
   yAxis?: YAxis
 }) {
+  const { box, tick, axisText, phone } = useChartBox(givenBox, !!yAxis)
+  const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
   const { bars, baseline, max } = barLayout(series.map((s) => s.values), box)
   const path = line ? lineLayout(line.values, box) : null
   return (
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} />}
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} text={axisText} />}
         <line x1={plotLeft(box)} y1={baseline} x2={box.width - box.side} y2={baseline}
           className="stroke-ground-200" strokeWidth="1" />
         {/* ⚠ A BAR CARRIES ITS OWN VALUE AS A `<title>` (owner, 2026-09-18: hover, not a list
@@ -190,9 +210,9 @@ export function BarChart({
             <title>{line.titles![i] ?? ''}</title>
           </circle>
         ))}
-        {ticks
-          ? <Ticks ticks={ticks} count={columns.length} box={box} />
-          : <EndLabels columns={columns} box={box} />}
+        {shown
+          ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} />
+          : <EndLabels columns={columns} box={box} text={tick} />}
       </svg>
       <Figures testId={testId} figures={figures} />
     </div>
@@ -206,7 +226,7 @@ export function BarChart({
  * renders nothing at all, which reads as "no data" rather than "one week so far".
  */
 export function LineChart({
-  values, columns, figures = [], label, testId, className = 'stroke-brand-shape', box = WIDE_BOX,
+  values, columns, figures = [], label, testId, className = 'stroke-brand-shape', box: givenBox = WIDE_BOX,
   ticks, yAxis, pointTitles,
 }: {
   values: readonly number[]
@@ -222,13 +242,15 @@ export function LineChart({
   /** One per point: what the browser shows when the mouse rests on it. */
   pointTitles?: readonly string[]
 }) {
+  const { box, tick, axisText, phone } = useChartBox(givenBox, !!yAxis)
+  const shown = ticks && phone ? thinTicks(ticks, PHONE_TICKS_MAX) : ticks
   const { points, zeroY, min, max } = lineLayout(values, box)
   const latest = points.length > 0 ? points[points.length - 1] : null
   return (
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
-        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} />}
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} text={axisText} />}
         <line x1={plotLeft(box)} y1={box.height - box.bottom} x2={box.width - box.side}
           y2={box.height - box.bottom} className="stroke-ground-200" strokeWidth="1" />
         {/* ⚠ Drawn ONLY when something is actually negative — otherwise the zero line and the
@@ -252,9 +274,9 @@ export function LineChart({
             <title>{pointTitles[i] ?? ''}</title>
           </circle>
         ))}
-        {ticks
-          ? <Ticks ticks={ticks} count={columns.length} box={box} />
-          : <EndLabels columns={columns} box={box} />}
+        {shown
+          ? <Ticks ticks={shown} count={columns.length} box={box} text={tick} />
+          : <EndLabels columns={columns} box={box} text={tick} />}
       </svg>
       <Figures testId={testId} figures={figures} />
     </div>

@@ -329,11 +329,11 @@ export default function IntakeYearTab() {
 
   return (
     <div>
-      <div className="mt-6 flex items-start justify-between gap-4">
+      <div className="mt-6 flex items-start justify-between gap-4 max-md:flex-col max-md:items-stretch max-md:gap-3">
         <p className="text-sm text-ground-600">{t('admin.years.subtitle')}</p>
         {programme && (
           <button type="button" onClick={() => { setError(''); setOpen(true) }}
-            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11">
+            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover max-md:min-h-11 max-md:w-full">
             + {t('admin.years.new')}
           </button>
         )}

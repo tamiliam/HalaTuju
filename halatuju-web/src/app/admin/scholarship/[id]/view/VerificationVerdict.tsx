@@ -75,7 +75,7 @@ export function VerificationVerdict({ app, t, caseSummary }: {
                   )}
                 </div>
                 {/* The estimative-probability band (Kent scale) the colour stands for. */}
-                <p className={`text-xs md:text-[10px] font-semibold uppercase tracking-wide ${labelColour}`}>
+                <p className={`text-xs md:text-[10px] font-semibold uppercase tracking-wide max-md:break-words ${labelColour}`}>
                   {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tone]}`)}
                 </p>
                 {!isGreen && (

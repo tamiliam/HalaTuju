@@ -206,10 +206,12 @@ export default function RequestsList({ token, org, isSuper, reloadKey, onDark }:
           {rows.map((r) => (
             <Link key={r.id} href={`/admin/requests/${r.id}`} data-request-row={r.id}
               className="block md:bg-ground-0 md:rounded-xl md:border hover:border-info-300 hover:bg-info-50/40 transition-colors py-3 md:p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+              {/* Mobile M8: below md the status goes UNDER the row — beside it, a long Malay or Tamil status (222 px)
+                  left the title 70 px and words spilled out of it; and long words wrap anywhere. */}
+              <div className="flex items-start justify-between gap-3 max-md:flex-col max-md:gap-1.5">
+                <div className="min-w-0 max-md:max-w-full [overflow-wrap:anywhere]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-ground-900 break-words">{r.title}</span>
+                    <span className="min-w-0 font-medium text-ground-900 break-words">{r.title}</span>
                     {/* The FINAL classification — what the organisation is charged on. Served. */}
                     <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(r.kind))}</span>
                     {r.filed_kind && (
@@ -228,7 +230,7 @@ export default function RequestsList({ token, org, isSuper, reloadKey, onDark }:
                     {t('admin.requests.list.submittedBy', { name: r.submitted_by_name })} · {formatDate(r.created_at)}
                   </div>
                 </div>
-                <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(r.status)}`}>
+                <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold max-md:max-w-full ${statusTone(r.status)}`}>
                   {t(statusLabelKey(r.status))}
                 </span>
               </div>

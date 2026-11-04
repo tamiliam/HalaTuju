@@ -60,6 +60,17 @@ export const SMALL_AXIS_BOX: ChartBox = { width: 240, height: 120, top: 10, bott
 export const WIDE_AXIS_BOX: ChartBox = { width: 360, height: 130, top: 10, bottom: 20, side: 8, left: 40 }
 export const FULL_AXIS_BOX: ChartBox = { width: 740, height: 160, top: 10, bottom: 24, side: 12, left: 64 }
 
+/**
+ * Mobile M8: THE PHONE'S BOXES — about one viewBox unit per CSS pixel of a phone card (264 px in the sandbox
+ * frame at 360, 326 px on the real page at 390), so `PHONE_CHART_TEXT` (11.5 units) draws 11–14 px. The
+ * desktop boxes above are 240–740 wide: on a 264 px card they printed axis text at 2.8–9.8 px (owner's
+ * iPhone, 2026-11-04). The left margin fits a rotated title and a tick like `RM120,000`.
+ */
+export const PHONE_BOX: ChartBox = { width: 272, height: 150, top: 10, bottom: 22, side: 8 }
+export const PHONE_AXIS_BOX: ChartBox = { width: 272, height: 170, top: 12, bottom: 22, side: 8, left: 76 }
+/** At most this many month names under a phone chart — `Sep` in 11.5 px is ~22 px, Tamil more. */
+export const PHONE_TICKS_MAX = 4
+
 /** `12800` → `'RM12,800'`: a ROUNDED axis tick, never a figure a person quotes (those come from
  *  the server as strings, through `rm`). Same grouping regex as `rm`, so the two agree. */
 export function rmAxis(v: number): string {

@@ -8,6 +8,7 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import JourneyLine from '@/components/sponsor/JourneyLine'
 import { PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'
+import { PHONE_PILL_SM } from '@/lib/phonePill'
 import { formatRM } from '@/lib/sponsorTrust'
 import { portfolioBadgeTone } from '@/lib/poolCard'
 import type { SponsorPoolCard } from '@/lib/api'
@@ -79,7 +80,7 @@ export default function MyGivingPage() {
                   </p>
                 </div>
               </div>
-              <span className="inline-flex min-h-11 items-center text-sm font-semibold text-positive-700 bg-positive-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
+              <span className="inline-flex min-h-11 items-center text-sm font-semibold text-positive-700 bg-positive-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0 max-md:whitespace-normal max-md:shrink">
                 {t('sponsorPortal.trust.assured.cta')} →
               </span>
             </div>
@@ -105,9 +106,11 @@ export default function MyGivingPage() {
       {impact && (
         <section className={`${PHONE_SECTION_NO_GAP} md:max-w-md`}>
           <h2 className="font-semibold text-ground-900">{t('sponsorPortal.impact.givingTitle')}</h2>
-          <div className="flex items-center gap-5 mt-4">
-            <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center" style={{ background: donut }}>
-              <div className="bg-ground-0 w-16 h-16 rounded-full grid place-items-center text-center">
+          <div className="flex items-center gap-5 mt-4 max-md:gap-4">
+            {/* Mobile M8: below md the ring is 128 px and its hole 88 px — the 64 px hole could not hold the Tamil
+                "கிடைக்கிறது" or a four-figure sum (they spilled out of the circle). */}
+            <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center max-md:w-32 max-md:h-32" style={{ background: donut }}>
+              <div className="bg-ground-0 w-16 h-16 rounded-full grid place-items-center text-center max-md:w-[5.5rem] max-md:h-[5.5rem]">
                 <span className="text-xs leading-tight text-ground-500">
                   {t('sponsorPortal.impact.available')}<br /><b className="text-ground-900 text-sm">RM {available.toLocaleString()}</b>
                 </span>
@@ -160,7 +163,7 @@ export default function MyGivingPage() {
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-sm font-semibold text-ground-900">{st.ref}</span>
                     {offered
-                      ? <span className="text-xs rounded-full bg-ground-200 text-ground-600 px-2 py-0.5 whitespace-nowrap">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
+                      ? <span className={`text-xs rounded-full bg-ground-200 text-ground-600 px-2 py-0.5 whitespace-nowrap ${PHONE_PILL_SM}`}>⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
                       : <PortfolioBadge status={st.portfolio_status} t={t} />}
                   </div>
                   {/* Full course + institution (was the bare field slug). */}
@@ -230,9 +233,9 @@ function Stat({ label, value, sub, valueClass = 'text-ground-900' }: { label: st
 
 function LegendRow({ color, label, amount }: { color: string; label: string; amount: number }) {
   return (
-    <li className="flex items-center justify-between">
-      <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />{label}</span>
-      <b>RM {amount.toLocaleString()}</b>
+    <li className="flex items-center justify-between max-md:gap-2">
+      <span className="flex min-w-0 items-center gap-2 [overflow-wrap:anywhere]"><span className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ background: color }} />{label}</span>
+      <b className="shrink-0">RM {amount.toLocaleString()}</b>
     </li>
   )
 }
@@ -251,7 +254,7 @@ function Fact({ k, v }: { k: string; v: string }) {
 function PortfolioBadge({ status, t }: { status: SponsorPoolCard['portfolio_status']; t: (k: string) => string }) {
   if (!status) return null
   return (
-    <span className={`inline-block px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${portfolioBadgeTone(status)}`}>
+    <span className={`inline-block px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${portfolioBadgeTone(status)} ${PHONE_PILL_SM}`}>
       {t(`sponsorPortal.myStudents.status.${status}`)}
     </span>
   )

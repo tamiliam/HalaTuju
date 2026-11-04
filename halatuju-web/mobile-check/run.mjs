@@ -42,13 +42,13 @@ const results = fs.existsSync(RESULTS)
     .map((f) => JSON.parse(fs.readFileSync(path.join(RESULTS, f), 'utf8')))
   : []
 const baseline = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : { cells: {} }
-const NUMBERS = ['overflow', 'smallInputs', 'smallTargets']
+const NUMBERS = ['overflow', 'smallInputs', 'smallTargets', 'spills']
 
 const better = []
 for (const r of results) {
   const old = baseline.cells[r.key]
   if (!old) continue
-  const moved = NUMBERS.filter((n) => r[n] < old[n]).map((n) => `${n} ${old[n]} → ${r[n]}`)
+  const moved = NUMBERS.filter((n) => old[n] !== undefined && r[n] < old[n]).map((n) => `${n} ${old[n]} → ${r[n]}`)
   if (moved.length) better.push(`  ${r.key}: ${moved.join(', ')}`)
 }
 console.log(`\nmobile-check: ${results.length} cell(s) measured.`)
@@ -61,10 +61,11 @@ if (update) {
     const old = cells[r.key]
     const now = Object.fromEntries(NUMBERS.map((n) => [n, r[n]]))
     if (!old || allowWorse) {
-      if (old && NUMBERS.some((n) => now[n] > old[n])) raised++
+      if (old && NUMBERS.some((n) => old[n] !== undefined && now[n] > old[n])) raised++
       cells[r.key] = now
     } else {
-      cells[r.key] = Object.fromEntries(NUMBERS.map((n) => [n, Math.min(old[n], now[n])]))
+      // A cell written before a number existed (`spills`, Mobile M8) takes this run's value for it.
+      cells[r.key] = Object.fromEntries(NUMBERS.map((n) => [n, old[n] === undefined ? now[n] : Math.min(old[n], now[n])]))
     }
   }
   const sorted = Object.fromEntries(Object.keys(cells).sort().map((k) => [k, cells[k]]))
@@ -76,7 +77,8 @@ if (update) {
   fs.writeFileSync(BASELINE, `${JSON.stringify({
     _how_this_works: 'The mobile-check ratchet (Mobile M0). One cell per page × width × language: '
       + 'overflow = sideways scroll in CSS px, smallInputs = text fields under 16 px, smallTargets = '
-      + 'controls under 44 × 44 px. A run fails when a cell gets worse. `npm run mobile-check -- '
+      + 'controls under 44 × 44 px, spills = text or drawn boxes passing out of the box that holds them. '
+      + 'A run fails when a cell gets worse. `npm run mobile-check -- '
       + '--update` rewrites this file and only ever LOWERS numbers (MOBILE_ALLOW_WORSE=1 is the '
       + 'documented exception — see mobile-check/run.mjs). Never edit by hand.',
     measured,

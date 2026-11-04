@@ -171,11 +171,13 @@ export const cellKey = (id: string, width: number, locale: Locale) => `${id} @${
 export const fileSafe = (key: string) => key.replace(/^\/ /, 'home ')
   .replace(/[^\w@.-]+/g, '_').replace(/^_+|_+$/g, '')
 
-/** The three numbers the ratchet holds, per cell. */
+/** The four numbers the ratchet holds, per cell. `spills` arrived in the Mobile M8 follow-up: a baseline
+ *  cell written before it has none, and is then held to zero spills (see `worseThan`). */
 export interface Numbers {
   overflow: number
   smallInputs: number
   smallTargets: number
+  spills?: number
 }
 
 export interface Baseline {
@@ -196,14 +198,18 @@ export function readBaseline(): Baseline {
 export const OVERFLOW_SLACK_PX = 8
 
 /** Why a cell is worse than its baseline, or [] if it is not. A cell with no baseline is held
- *  to zero sideways scroll and zero small fields; its tap targets are recorded, not judged. */
+ *  to zero sideways scroll, zero small fields and zero spills; its tap targets are recorded, not judged.
+ *  A baseline cell with no `spills` yet (written before the metric) is held to zero spills too. */
 export function worseThan(now: Numbers, base: Numbers | undefined): string[] {
   const out: string[] = []
+  const spills = now.spills ?? 0
   if (!base) {
     if (now.overflow > 0) out.push(`new cell scrolls sideways by ${now.overflow}px (must be 0)`)
     if (now.smallInputs > 0) out.push(`new cell has ${now.smallInputs} text field(s) under 16px (must be 0)`)
+    if (spills > 0) out.push(`new cell has ${spills} spill(s) out of their box (must be 0)`)
     return out
   }
+  if (spills > (base.spills ?? 0)) out.push(`spills out of their box ${base.spills ?? 0} → ${spills}`)
   if (base.overflow === 0 && now.overflow > 0) out.push(`now scrolls sideways by ${now.overflow}px (baseline 0)`)
   if (base.overflow > 0 && now.overflow > base.overflow + OVERFLOW_SLACK_PX) {
     out.push(`sideways scroll grew ${base.overflow}px → ${now.overflow}px`)

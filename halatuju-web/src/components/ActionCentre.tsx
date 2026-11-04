@@ -50,7 +50,7 @@ import PostAwardTask from '@/components/scholarship/LazyPostAwardTask'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/LazyIncomeRouteSwitch'   // TD-352: a minority's panel, on demand
 import { setOnboardingReturn } from '@/lib/scholarship'
-import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'
+import type { DocumentLimits } from '@/lib/api'; import { PHONE_SECTION } from '@/lib/phoneSection'; import { PHONE_PILL_SM } from '@/lib/phonePill'
 
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
@@ -270,7 +270,7 @@ function ActionCard({
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-semibold text-ground-500 line-through decoration-caution-300 whitespace-pre-line">{title}</h3>
-              <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
+              <span className={`shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800 ${PHONE_PILL_SM}`}>
                 {t('scholarship.actionCentre.setAside')}
               </span>
             </div>
@@ -296,7 +296,7 @@ function ActionCard({
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-semibold text-ground-500 line-through decoration-positive-300 whitespace-pre-line">{title}</h3>
-              <span className="shrink-0 rounded-full bg-positive-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-positive-800">
+              <span className={`shrink-0 rounded-full bg-positive-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-positive-800 ${PHONE_PILL_SM}`}>
                 {t('scholarship.actionCentre.done')}
               </span>
             </div>
@@ -322,7 +322,7 @@ function ActionCard({
             <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
               <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
-              <span className="max-w-full rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800">
+              <span className={`max-w-full rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800 ${PHONE_PILL_SM}`}>
                 {t('scholarship.actionCentre.officerHold.chip')}
               </span>
             </div>
@@ -343,7 +343,7 @@ function ActionCard({
           <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-semibold text-ground-900 whitespace-pre-line">{title}</h3>
-            <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
+            <span className={`shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800 ${PHONE_PILL_SM}`}>
               {t('scholarship.actionCentre.toDo')}
             </span>
           </div>

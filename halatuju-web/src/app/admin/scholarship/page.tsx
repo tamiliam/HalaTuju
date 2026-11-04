@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { PHONE_PILL, PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
 import TableFrame from '@/components/admin/TableFrame'
@@ -303,7 +304,7 @@ function StaffScholarshipList() {
         )}
         {canAssign && (
           <button type="button" aria-pressed={parentCallF} onClick={() => { setParentCallF((v) => !v); setPage(1) }}
-            className={`rounded-full border px-3 py-2 text-sm ${parentCallF ? 'border-caution-400 bg-caution-50 text-caution-800' : 'border-ground-300 text-ground-700'}`}>
+            className={`rounded-full border px-3 py-2 text-sm ${PHONE_PILL} ${parentCallF ? 'border-caution-400 bg-caution-50 text-caution-800' : 'border-ground-300 text-ground-700'}`}>
             {t('admin.scholarship.call.needs')}
           </button>
         )}
@@ -387,13 +388,13 @@ function StaffScholarshipList() {
                   <span className="min-w-0 grow basis-40 break-words text-[15px] font-semibold">
                     {a.name || '—'}
                   </span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)}`}>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
                     {t(statusLabelKey(s))}
                   </span>
                 </span>
 
                 <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
-                  <span className={`rounded-full px-2 py-0.5 font-semibold ${bucketBadge(a.bucket)}`}>
+                  <span className={`rounded-full px-2 py-0.5 font-semibold ${bucketBadge(a.bucket)} ${PHONE_PILL_SM}`}>
                     {a.bucket || '—'}
                   </span>
                   <span className="text-ground-600">{isThirdRoute(a.qualification) ? t(`admin.scholarship.qualificationLabel.${a.qualification}`) : a.qualification?.toUpperCase()}</span>

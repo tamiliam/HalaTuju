@@ -30,6 +30,7 @@ import MyStudentPage from '@/app/admin/my-students/[id]/page'
 import OrganisationOverviewPage from '@/app/admin/organisation/page'
 import AdminProfilePage from '@/app/admin/profile/page'
 import ProgrammeOverviewPage from '@/app/admin/programme/overview/page'
+import ReviewerDetailPage from '@/app/admin/organisation/reviewers/[id]/page'
 import AdminSetPasswordPage from '@/app/admin/set-password/page'
 
 /** Same shape as `SURFACES` takes (written out: importing it back would close an import loop). */
@@ -225,6 +226,21 @@ function InviteSession({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+// ── One reviewer (Mobile M8 follow-up: the four figures ran 70 px past the card at 360) ─────────────────
+const REVIEWER_DETAIL = {
+  id: 7, name: LONG_TAMIL, email: 'penyemak7@contoh.invalid', role: 'reviewer', languages: ['ta', 'ms', 'en'],
+  open_now: 4, awaiting_review: 12, interviewing: 3, completed: 148, turnaround_days: 12.5, paused: false, paused_at: null,
+  is_active: true, last_seen_at: '2026-11-02T09:00:00Z', programme_id: null, programme_name: '',
+  programmes: [{ id: 1, code: 'contoh-2026', name: 'Biasiswa Contoh 2026', is_active: true },
+    { id: 2, code: 'contoh-stpm', name: 'Bantuan STPM Contoh', is_active: false }],
+  recommended: 96, declined: 31, rejected_after_review: 9, awaiting_qc: 12,
+  created_at: '2026-01-10T00:00:00Z', qualification: 'degree', university: 'Universiti Malaya', graduation_year: 2004,
+  field_of_study: 'Pendidikan', phone: '123456789', share_phone_with_students: true, other_language: '',
+  reopens: [{ id: 1, application_id: 412, reason: 'தவறான ஆவணம் பதிவேற்றப்பட்டது; மாணவர் புதிய சான்றிதழை அனுப்பினார்.',
+    reopened_by: 'Pentadbir Contoh', at: '2026-10-14T08:00:00Z' }],
+  pausable: true,
+}
+
 export const CONSOLE_MUST_SURFACES: Surface[] = [
   {
     slug: 'm8-admin-not-found',
@@ -283,6 +299,16 @@ export const CONSOLE_MUST_SURFACES: Surface[] = [
     note: 'Mobile M8: every panel — attention, money, the funnel, both series, QC — and Customise.',
     routes: { ...SCOPES, '/api/v1/admin/scholarship/programme-overview/': () => OVERVIEW_ORG_ADMIN },
     render: () => <Console path="/admin/programme/overview" role={ORG_ADMIN}><ProgrammeOverviewPage /></Console>,
+  },
+  {
+    slug: 'm8-reviewer-detail',
+    title: 'Admin — one reviewer',
+    note: 'Mobile M8 follow-up: the record of one reviewer, as an organisation admin sees it (a long Tamil name) — the four '
+      + 'figures two by two on a phone, the outcomes, about them and a reopened decision.',
+    routes: { ...SCOPES, '/api/v1/admin/reviewers/7/': () => REVIEWER_DETAIL },
+    render: () => (
+      <Console path="/admin/organisation/reviewers/7" role={ORG_ADMIN} params={{ id: '7' }}><ReviewerDetailPage /></Console>
+    ),
   },
   {
     slug: 'm8-set-password',

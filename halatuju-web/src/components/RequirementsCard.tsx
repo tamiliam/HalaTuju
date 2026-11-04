@@ -5,6 +5,7 @@ import { useT } from '@/lib/i18n'
 import { getSubjectName } from '@/lib/subjects'
 import { institutionTypeChip } from '@/lib/courseBadges'
 import { PHONE_INNER_BOX } from '@/lib/phoneSection'
+import { PHONE_PILL_SM } from '@/lib/phonePill'
 
 /** Rule 15 (Mobile M4b): a plain section on a phone, the card from `md` — its own padding sits on
  *  the header and body rows inside (so not `PHONE_SECTION`, whose `md:p-5` would double it). */
@@ -204,7 +205,7 @@ export default function RequirementsCard({
           {t('courseDetail.requirements')}
         </h2>
         {sourceInfo && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${institutionTypeChip(chipType)}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${institutionTypeChip(chipType)} ${PHONE_PILL_SM}`}>
             {sourceInfo.label}
           </span>
         )}
@@ -385,7 +386,7 @@ function GroupBody({ group, locale, number }: { group: OrGroup; locale: string; 
       ) : (
         <div className={`flex flex-wrap gap-1.5 ${number !== undefined ? 'ml-[34px]' : ''}`}>
           {subjects.map((subj) => (
-            <span key={subj} className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700">
+            <span key={subj} className={`px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700 ${PHONE_PILL_SM}`}>
               {getSubjectName(subj, locale)}
             </span>
           ))}
@@ -537,7 +538,7 @@ function PismpSection({
                   {rule.subjects.map((subj) => (
                     <span
                       key={subj}
-                      className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700"
+                      className={`px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700 ${PHONE_PILL_SM}`}
                     >
                       {getSubjectName(subj, locale)}
                     </span>
@@ -566,7 +567,7 @@ function PismpSection({
                   {/* The medium-of-instruction chip: one category, so one swatch. `border` is
                       dropped rather than given a fourth role — the surface already separates it
                       from the card, and a role nothing else needs is a role that will rot. */}
-                  <span className="px-2.5 py-1 bg-category-4-surface rounded-full text-xs font-medium text-category-4-ink">
+                  <span className={`px-2.5 py-1 bg-category-4-surface rounded-full text-xs font-medium text-category-4-ink ${PHONE_PILL_SM}`}>
                     {name}
                   </span>
                   {i < langNames.length - 1 && (

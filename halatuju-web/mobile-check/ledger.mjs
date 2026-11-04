@@ -25,9 +25,14 @@ const cellsOf = (id) => Object.entries(cells).filter(([k]) => k.slice(0, k.lastI
 
 function worst(entries) {
   const pick = (n) => Math.max(0, ...entries.map(([, c]) => c[n]))
-  return { overflow: pick('overflow'), smallInputs: pick('smallInputs'), smallTargets: pick('smallTargets') }
+  return {
+    overflow: pick('overflow'), smallInputs: pick('smallInputs'), smallTargets: pick('smallTargets'),
+    // A cell written before the spill metric (Mobile M8 follow-up) has none: shown as unmeasured, never as 0.
+    spills: entries.some(([, c]) => c.spills === undefined) ? null : pick('spills'),
+  }
 }
-const clean = (w) => w.overflow === 0 && w.smallInputs === 0 && w.smallTargets === 0
+const clean = (w) => w.overflow === 0 && w.smallInputs === 0 && w.smallTargets === 0 && w.spills === 0
+const spillCell = (w) => (w.spills === null ? '—' : `${w.spills}`)
 const CLASS_LABEL = { must: 'Must', can: 'Can', desktop: 'Desktop-only' }
 
 const rows = []
@@ -44,13 +49,13 @@ for (const [route, e] of Object.entries(MOBILE_CLASS).sort(([a], [b]) => a.local
     if (cellsOf(`sandbox:${s}`).length) { sources.push(`sandbox \`${s}\``); measured.push(...cellsOf(`sandbox:${s}`)) }
   }
   let status
-  let numbers = ['—', '—', '—']
+  let numbers = ['—', '—', '—', '—']
   const notes = []
   if (e.redirect) notes.push(`redirects to \`${e.redirect}\``)
   if (e.cls === 'desktop') notes.push(e.why)
   if (measured.length) {
     const w = worst(measured)
-    numbers = [`${w.overflow}`, `${w.smallInputs}`, `${w.smallTargets}`]
+    numbers = [`${w.overflow}`, `${w.smallInputs}`, `${w.smallTargets}`, spillCell(w)]
     status = clean(w) ? '✅' : '❌'
     tally.measured++
     if (clean(w)) tally.green++
@@ -73,7 +78,7 @@ const loose = [...new Set(Object.keys(cells).filter((k) => k.startsWith('sandbox
   .map((k) => k.slice('sandbox:'.length, k.lastIndexOf(' @'))))].filter((s) => !tied.has(s)).sort()
 const looseRows = loose.map((s) => {
   const w = worst(cellsOf(`sandbox:${s}`))
-  return `| \`${s}\` | ${cellsOf(`sandbox:${s}`).length} | ${w.overflow} | ${w.smallInputs} | ${w.smallTargets} | ${clean(w) ? '✅' : '❌'} |`
+  return `| \`${s}\` | ${cellsOf(`sandbox:${s}`).length} | ${w.overflow} | ${w.smallInputs} | ${w.smallTargets} | ${spillCell(w)} | ${clean(w) ? '✅' : '❌'} |`
 })
 
 const m = baseline.measured ?? {}
@@ -90,23 +95,24 @@ sandbox surfaces from \`${m.sandbox ?? '—'}\` · widths 360 and 390 px · Engl
 **${total} routes:** ${tally.must} Must · ${tally.can} Can · ${tally.desktop} Desktop-only.
 **${tally.measured} measured** (public page or sandbox surface), **${tally.green} fully green.**
 
-How to read a row: the three numbers are the WORST over every measured cell (width × language, and
+How to read a row: the four numbers are the WORST over every measured cell (width × language, and
 every sandbox surface that mounts the screen) — sideways scroll in CSS px, text fields under 16 px,
-controls under 44 × 44 px. ✅ means all three are 0. "Not yet measurable" means the check cannot
+controls under 44 × 44 px, and spills (text or a drawn box passing out of the box that holds it). ✅ means
+all four are 0. "Not yet measurable" means the check cannot
 reach the screen yet: it never signs in, so a signed-in screen is measured only once a sandbox
 surface mounts it — the sprint named is the one that fixes it and adds that surface.
 
-| Route | Class | Sprint | Cells measured | Overflow px | Small fields | Small targets | Status | Notes |
-|---|---|---|---|---|---|---|---|---|
+| Route | Class | Sprint | Cells measured | Overflow px | Small fields | Small targets | Spills | Status | Notes |
+|---|---|---|---|---|---|---|---|---|---|
 ${rows.join('\n')}
 
 ## Sandbox surfaces not tied to one route
 
 Component galleries — measured, but no single route is "them".
 
-| Surface | Cells | Overflow px | Small fields | Small targets | Status |
-|---|---|---|---|---|---|
-${looseRows.join('\n') || '| — | | | | | |'}
+| Surface | Cells | Overflow px | Small fields | Small targets | Spills | Status |
+|---|---|---|---|---|---|---|
+${looseRows.join('\n') || '| — | | | | | | |'}
 `
 fs.writeFileSync(OUT, md)
 console.log(`mobile-ledger: wrote ${path.relative(process.cwd(), OUT)} — ${total} routes, ${tally.measured} measured, ${tally.green} green.`)

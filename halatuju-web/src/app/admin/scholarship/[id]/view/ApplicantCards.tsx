@@ -181,7 +181,7 @@ export function ApplicantCards({
                       Verified email only: shown once the student verifies it, else the verified
                       Google login email. */}
                   <Field label={t('admin.scholarship.email')} value={app.verified_email
-                    ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center">{app.verified_email}</a>
+                    ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline max-md:min-h-11 max-md:min-w-11 max-md:inline-flex max-md:items-center max-md:justify-center max-md:max-w-full max-md:[overflow-wrap:anywhere]">{app.verified_email}</a>
                     : null} />
                   <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} verifiedLabel={vtip('address')} /></div>
                 </dl>

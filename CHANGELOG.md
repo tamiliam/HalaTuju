@@ -18,13 +18,13 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   `sponsors.edit`; mentor and source invitations `invitations.edit`.
 - **The union doors** `may_read_org` / `may_do_admin_work` now ask every key of `ORG_READ_V2` / `ADMIN_WORK_V2`;
   still used by Sources, the team roster, the Mentors list, Team -> Emails -> Admin emails and the credit screens
-  (TD-489; the Mentors list needs a lead ruling).
+  (TD-492; the Mentors list needs a lead ruling).
 - **`effective_v2` no longer asks the doors**: the Admins table grants `ORG_READ_V2`, the `admin` label grants
   `ADMIN_WORK_V2` (same sets as before).
 - An inactive row opens no door, except an inactive super (`effective_v2` answers it in full); neither can sign in.
 - Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
   by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
-  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-489, TD-490.
+  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-492, TD-490.
 
 **P2 — Sources, partner emails and the credit ledger (server only):**
 - **Sources door on `sources.edit`** (`_SourcesBase.may_open`): Sources (list, the retired POST, PATCH), Partner
@@ -33,7 +33,7 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   money and stay on `may_read_org` until T5d.
 - **Not converted:** the graduation-messages list (lead ruling R2): no key reproduces its holders, because the org
   admin holds every key and is refused today (TD-491, closest the `review` hat, 7 shapes move). Admin emails, the
-  roster and the Mentors list are outside P2's files (TD-489).
+  roster and the Mentors list are outside P2's files (TD-492).
 - Tests: the parity test grows to 17 doors x 32 shapes, plus "credit writes stay on the union door" and "every source
   surface rides the one Sources door"; `V2_DOOR_MODULES` gains `sources.py` and `credits.py`. The access matrix runs
   unchanged. New debt: TD-491.
@@ -52,7 +52,7 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   Announcements, Surveys, Development. In-page gates (`pageGuard.opensDoorOr`): the Announcements / Surveys /
   Development screens, the scholar Mentoring / Surveys / Growth tabs and the scholars list's mentor column, sponsor
   emails, Sources' manage and invite. A payload without `page_keys` keeps today's role rules. Not converted (the
-  server has not): Team -> Mentors (TD-489), the platform, lead-only, money, Applications and Scholars rows. No
+  server has not): Team -> Mentors (TD-492), the platform, lead-only, money, Applications and Scholars rows. No
   landing, string or layout change. Tests: new `teamTablesT5cDoors.test.ts` (the 27 served shapes x 45 cells —
   menus, every route, landing, Mentors tab, the in-page gates — frozen on P4a before the change, identical with and
   without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading
@@ -148,6 +148,38 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
 - **Rule 15:** the award comprehension quiz (`AwardComprehensionQuiz.tsx`) and `/verify-email` drew a white card on a
   phone; the quiz takes `PHONE_SECTION_NO_GAP`, verify e-mail sits on the gutter with its card `md:`-only. Both are on
   the rule-15 guard list.
+- **Follow-up 1 — nothing spills out of its box (owner's iPhone walkthrough, 2026-11-04).** mobile-check measures a
+  FOURTH number per cell, `spills` (`measure.ts`; rule 16 of `mobile-standard.md`; decisions.md 2026-11-04): text or a
+  drawn box (border, fill, shadow) more than 1.5 px past the side of any block box above it, up to the first box
+  that scrolls or clips. Fixed, absolutely placed and negative-margin items (full-bleed sections, InfoTip / Toggle hit
+  areas), side-scrollers, clipping boxes, SVG and invisible wrappers are not judged; a spilling box counts once with
+  its words. Held in `baseline.json` like the other three (a cell from before it is held to zero), a Spills column in
+  the ledger, a rule-16 block in `mobileStandard.test.ts`.
+- **Fixed for phones (`max-md:` / below `sm`, desktop unchanged):** the Programme Overview charts draw in a phone box
+  (`PHONE_AXIS_BOX`, 272 units) with 11.5-unit text — axis labels 11–14 px instead of 2.8–9.8 px — and at most four
+  month names (`Charts.tsx` `useChartBox`); the money tiles' figure is 16 px and may wrap, the money chart's three
+  totals are rows, the chart grids are `grid-cols-1` (an auto track grew to its widest Tamil card); the reviewer
+  page's four figures are two by two, its gift chooser full width and its three text links 44 px (new surface `m8-reviewer-detail`, the real page,
+  a long Tamil name); the sponsor trust figures are rows; the sponsor home donut's hole is 88 px, its legend and
+  "Trust & transparency" link wrap; the Requests list and a request put the status under the row and wrap long
+  words. Also found by the new number and fixed in the same idiom: the case page's applicant e-mail, verdict band
+  ("Berkemungkinan") and profile-language row (Tamil); the Scholars summary tiles; Configuration's "+ New intake
+  year" row (Malay). Sandbox fixtures now use real codes (a request's urgency and comment author, a verdict item)
+  instead of ones that printed raw keys.
+- **Guards:** `Charts.phone.test.tsx` (the phone box, text size and ticks; from md the old box and sizes), the reviewer
+  page's two-by-two grid, rule 16 in `mobileStandard.test.ts`.
+- **Follow-up 2 — pills on a phone (owner's iPhone walkthrough, option A; decisions.md 2026-11-04).** The pills
+  people see most are `rounded-md` (6 px) below `md` with one step less side padding, through ONE shared style,
+  `src/lib/phonePill.ts` (`PHONE_PILL_XS` / `_SM` / `PHONE_PILL` / `_LG`, all `max-md:`); from md nothing changes, tap
+  targets keep 44 px, text sizes stay. Converted (29 pills in 12 files): the phone filter sheet's chips and the
+  applied-filter chip (search), `PanelTabs` tabs and count badges, the Action Centre's four status badges, the
+  requirement / tag chips (`RequirementsCard`, `CourseCard`'s fit reasons), the case list's status and bucket badges
+  and "needs a call" filter, the cockpit header's status, rejection, qualification, birth-state and referral badges,
+  the Team list status, and the sponsor student badges (My Giving, one funded student, the pool cards). Avatars, dots,
+  round icon buttons, progress bars, toggles and the donut are untouched. ~8 px saved per pill (4 px on `px-2` ones).
+- **Guard:** rule 17 in `docs/mobile-standard.md`; a rule-17 block in `mobileStandard.test.ts` (the constants are
+  `max-md:` only; each converted file keeps its exact count of uses). mobile-check on every surface that mounts a
+  changed file (132 cells): 0 on all four numbers. TD-489: the mentor screens still draw white cards (owner: later).
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 

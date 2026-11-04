@@ -63,10 +63,11 @@ function Block({ title, children, note }: {
   )
 }
 
-/** One of the three summary figures in the header strip. Right-aligned so the numbers line up. */
+/** One of the summary figures in the header strip. Right-aligned so the numbers line up — from md; on a
+ *  phone they are two by two and read from the left. */
 function Figure({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="text-right">
+    <div className="text-right max-md:min-w-0 max-md:text-left max-md:[overflow-wrap:anywhere]">
       <div className={`text-xl sm:text-2xl font-semibold tabular-nums leading-tight ${
         tone ?? 'text-ground-900'}`}>
         {value}
@@ -158,7 +159,7 @@ export default function AdminReviewerDetailPage() {
   return (
     <div className="space-y-3.5">
       <Link href="/admin/organisation/reviewers"
-        className="text-sm text-primary-600 hover:text-primary-800">
+        className="text-sm text-primary-600 hover:text-primary-800 max-md:inline-flex max-md:min-h-11 max-md:items-center">
         ← {t('admin.reviewers.detail.back')}
       </Link>
 
@@ -203,7 +204,7 @@ export default function AdminReviewerDetailPage() {
                   // revoke — rides on the control itself. The label already scopes it ("Pause NEW
                   // cases"); this says what it leaves alone.
                   title={t(`admin.reviewers.detail.pauseNote${detail.paused ? 'Paused' : 'Active'}`)}
-                  className="font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50">
+                  className="font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50 max-md:inline-flex max-md:min-h-11 max-md:items-center">
                   {t(`admin.reviewers.detail.${detail.paused ? 'unpause' : 'pause'}`)}
                 </button>
               </>)}
@@ -239,7 +240,7 @@ export default function AdminReviewerDetailPage() {
                 <span>{t('admin.reviewers.detail.giftLabel')}</span>
                 {mayGift ? (
                   <select
-                    className="border rounded-lg px-2 py-1 text-sm"
+                    className="border rounded-lg px-2 py-1 text-sm max-md:min-h-11 max-md:w-full max-md:min-w-0"
                     value={detail.programme_id ?? ''}
                     disabled={busy}
                     onChange={async (e) => {
@@ -279,7 +280,10 @@ export default function AdminReviewerDetailPage() {
             )}
             {giftError && <p className="text-sm text-critical-600 mt-1.5">{giftError}</p>}
           </div>
-          <div className="flex gap-6 sm:gap-8">
+          {/* Mobile M8: four figures in one row ran 70 px past the card at 360 (owner's iPhone). Below md
+              they are two by two across the card; from md the row is unchanged. */}
+          <div className="flex gap-6 md:gap-8 max-md:grid max-md:w-full max-md:grid-cols-2 max-md:gap-y-3"
+            data-testid="reviewer-figures">
             {/* Request #51: the list's two halves, not their sum. */}
             <Figure label={t('admin.reviewers.colAwaiting')} value={String(detail.awaiting_review)} />
             <Figure label={t('admin.reviewers.colInterviewing')} value={String(detail.interviewing)} />
@@ -408,7 +412,7 @@ export default function AdminReviewerDetailPage() {
               <li key={r.id} className="px-4 sm:px-5 py-3.5">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <Link href={`/admin/scholarship/${r.application_id}`}
-                    className="text-sm font-medium text-primary-600 hover:text-primary-800">
+                    className="text-sm font-medium text-primary-600 hover:text-primary-800 max-md:inline-flex max-md:min-h-11 max-md:items-center">
                     {t('admin.reviewers.detail.application', { id: String(r.application_id) })}
                   </Link>
                   <span className="text-xs text-ground-500">

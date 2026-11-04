@@ -189,7 +189,7 @@ export const MOBILE_CLASS: Record<string, RouteEntry> = {
   '/admin/organisation/mentors': { cls: 'can', sprint: 'M7', redirect: '/admin/organisation/reviewers' },   // T3: Team -> Mentors
   '/admin/organisation/settings': { cls: 'can', sprint: 'M7', surfaces: ['m7-org-settings'] },
   '/admin/organisation/reviewers': { cls: 'can', sprint: 'M7' },
-  '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7' },
+  '/admin/organisation/reviewers/[id]': { cls: 'can', sprint: 'M7', surfaces: ['m8-reviewer-detail'] },
   '/admin/organisation/reviewers/admins/[id]': { cls: 'can', sprint: 'M7' },
   '/admin/organisation/reviewers/mentors/[id]': { cls: 'can', sprint: 'M7' },   // T3: the mentor detail page
   '/admin/programme': {

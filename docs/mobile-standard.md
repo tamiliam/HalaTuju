@@ -29,7 +29,8 @@ Three kinds of check, from cheapest to most human:
   down**; a new offender fails the build. Reads source text, so it is best effort — its limits are
   written in `src/test/mobileScan.ts`.
 - **mobile-check** — `npm run mobile-check`, a real phone-sized browser on every public page and
-  every sandbox surface, at 360 and 390 px, in all three languages. Fails if any page gets worse than
+  every sandbox surface, at 360 and 390 px, in all three languages, measuring four numbers per cell (sideways
+  scroll, small fields, small targets, spills — rules 1, 2, 3 and 16). Fails if any page gets worse than
   `mobile-check/baseline.json`. Run locally before pushing UI work (not in Cloud Build — build minutes).
 - **Review** — a person looks: the owner's phone screenshots each sprint, and the code review.
 
@@ -322,6 +323,37 @@ Three kinds of check, from cheapest to most human:
   Requests list) is divided, not boxed, and a test finds a row by a hook (`data-payment-card`), never by its look; a
   coloured callout (the danger zone) keeps its box but not the white ground. Swept in M7a: the scholar file and its
   tabs, student detail, the payment run, request detail and the Requests list (light).
+
+### 16. Nothing spills out of its box
+- **Why:** owner's iPhone walkthrough, 2026-11-04: the page did not scroll sideways, yet "RM40,000.00" ran past its
+  card, a Tamil caption out of a 64 px circle and a fourth figure 70 px past the edge. Rule 1 cannot see it — the
+  page is the right width; the box inside it is not.
+- **Checked by:** mobile-check, its fourth number (`spills`, `mobile-check/measure.ts`): every text run and every
+  DRAWN box (a border, a fill or a shadow) that reaches more than 1.5 px past the side of any block box above it,
+  up to the first box that scrolls or clips sideways. Not judged: anything fixed, anything inside a side-scroller
+  or a clipping box (a framed table, `truncate`), anything absolutely placed or pulled out by a negative margin (a
+  full-bleed section, the 44 px hit area round an InfoTip or a Toggle), SVG, and invisible wrappers. Words inside a
+  box that itself spills count once. Each cell is held to its baseline like the other three; every cell is 0.
+- **Copy this:** a figure row that cannot fit three or four across on a phone becomes two by two or rows, label left
+  and figure right (`reviewers/[id]/page.tsx`'s figures, the Overview's money totals, the sponsor trust figures); a
+  big figure in a narrow tile is `max-md:text-base` and may wrap (`[overflow-wrap:anywhere]`, `OverviewSections.tsx`'s
+  `Tile`); a chip beside a long status goes UNDER the row below `md` (`RequestsList.tsx`); a flex item that holds a
+  long word needs `min-w-0` AND `[overflow-wrap:anywhere]` — `break-words` alone does not shrink a flex item. Charts:
+  a viewBox scales its text with it, so a phone gets its own box (`PHONE_AXIS_BOX`, about one unit per CSS px) and
+  11.5-unit text (`Charts.tsx`, `useChartBox`), with at most four month names.
+
+### 17. Pills on a phone use the shared pill style
+- **Why:** owner's iPhone walkthrough, 2026-11-04: fully rounded pills looked too round on a phone and their wide
+  side padding wasted width. Owner chose option A: the pills people see most, through ONE shared style, phone only.
+- **Checked by:** static guard (`mobileStandard.test.ts`, "rule 17"): the converted sites keep their exact count of
+  `PHONE_PILL*` uses, and every constant is `max-md:` only.
+- **Copy this:** a text-label pill adds the constant from `src/lib/phonePill.ts` that matches its own desktop side
+  padding — `PHONE_PILL_XS` (`px-1.5`), `PHONE_PILL_SM` (`px-2`/`px-2.5`), `PHONE_PILL` (`px-3`), `PHONE_PILL_LG`
+  (`px-4`) — AFTER its own classes: below `md` it is `rounded-md` (6 px) with less side padding; from `md` nothing
+  changes. A tap target keeps its 44 px; text sizes stay. Never on avatars, dots, round icon buttons, progress bars,
+  toggles, the donut or anything truly circular. Swept so far: the search filter chips and applied-filter chip,
+  `PanelTabs`, the Action Centre badges, the requirement and course tags, the case list, the cockpit header, the
+  Team list status and the sponsor student badges.
 
 ## Tamil type
 

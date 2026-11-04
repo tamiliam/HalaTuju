@@ -32,7 +32,7 @@ no access moving for any shape.
   | **P2:** credit ledger read, GET `credits/` (`_CreditsBase.may_read`) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
 
 - **R1** each admin-work page opens by its own catalogue key, reproducing the `admin` preset exactly; finance holds
-  `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-489):** the Mentors list
+  `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-492):** the Mentors list
   (`mentor_invite.may_read`) — its catalogue key `team.view` is also held by finance and Admins-by-key, so it would
   open to them: **lead ruling needed**; it stays on the union door. Sources, the roster `admin/admins/`, Team -> Emails
   -> Admin emails and the credit screens stay on the union doors too (their files are outside P1).
@@ -60,7 +60,7 @@ no access moving for any shape.
   T1). A registry row names its `door` (Organisation `org_read`; Invitations, People `team_read`; Sources; Sponsors
   `sponsors_read`; Announcements; Surveys; Development); in-page gates ask `pageGuard.opensDoorOr(role, door,
   oldRoles)`. Offer-set == accept-set: a row or gate moves only where its server door moved, so Team -> Mentors
-  (TD-489), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
+  (TD-492), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
   landing change (`defaultRoute` passes no `page_keys`), no string, no layout. **Proof:** the 27 shapes the server
   serves (the doors test's 32 less its 5 inactive rows, payloads taken from `admin/role/`) x 45 cells, frozen on P4a
   before the change, identical after with and without `page_keys`; shown red with one mapping broken.
@@ -69,6 +69,26 @@ no access moving for any shape.
 `EXPECTED_CHANGES` line; `test_team_tables_t5c_doors` (parity: each door vs T1's rule, frozen, for the 20 matrix
 shapes + 12 extras — qc alone, reviewer + see_all, gift-limited admin / finance / Admins-by-key, empty sets, a super
 on a team label, inactive rows), shown red with one mapping broken on purpose.
+
+## Mobile M8: pills on a phone are `rounded-md` with less side padding, through ONE shared style, on the most-seen pills only — 2026-11-04 (owner option A)
+
+**Context:** on the owner's iPhone walkthrough the fully rounded pills (`rounded-full`) looked too round on a phone
+and their side padding wasted width. There are ~252 `rounded-full` strings in the web source; many are truly round
+(avatars, dots, icon buttons, progress bars, toggles, the donut) and must stay so.
+
+**Decision (owner, 2026-11-04): option A.** Only the pills people see most change, and only below `md`, through one
+shared definition: `src/lib/phonePill.ts` (`PHONE_PILL_XS` / `_SM` / `PHONE_PILL` / `_LG`, picked by the pill's own
+desktop side padding) — `max-md:rounded-md` (6 px) and one step less side padding, added after the pill's own classes.
+From `md` nothing changes; tap targets keep 44 px; text sizes stay. Converted: the search filter chips and
+applied-filter chip, `PanelTabs` (tabs and count badges), the Action Centre badges, the requirement and course tags,
+the case list's status and bucket badges and its "needs a call" filter, the cockpit header badges, the Team list
+status and the sponsor student badges. Rule 17 in `docs/mobile-standard.md`; the guard in `mobileStandard.test.ts`
+holds each converted file to its exact count of uses.
+
+**Consequences:** about 8 px narrower per `px-2.5`/`px-3`/`px-4` pill and 4 px per `px-2`/`px-1.5` one, on a phone.
+The remaining `rounded-full` pills (cockpit panels, documents drawer, sponsor account, the Trust page, mentor screens
+and others) are left as they are until a sweep adds them to the rule-17 list. The mentor screens' white cards are
+TD-489 (owner: later).
 
 ## TD-481: the reviewer's Decline refuses a case awaiting QC — 2026-11-04 (owner ruling)
 
@@ -18547,3 +18567,17 @@ bundle budget gains room.
 **Alternatives considered:** (A) `'standalone'` now — rejected: no proof the sign-in links return into the app.
 (B) surfaces for every route, Can screens too — rejected: twice the work; the Must screens are all measured.
 **Revisit if:** sign-in moves to a code typed in the app (no email link), or iOS opens links in installed web apps.
+
+## 2026-11-04 — Mobile M8 follow-up: mobile-check measures a fourth number, spills (lead ruling on the owner's iPhone findings)
+**Decision:** the owner's iPhone walkthrough found text spilling out of its boxes on pages that did not scroll
+sideways, which rule 1 cannot see. mobile-check now counts `spills` per cell (`measure.ts`; rule 16 of
+`mobile-standard.md`): every text run and every drawn box (border, fill or shadow) more than 1.5 px past the side of
+any block box above it, up to the first box that scrolls or clips. Fixed, absolutely placed and negative-margin items
+(full-bleed sections, the InfoTip / Toggle hit areas), side-scrollers, clipping boxes, SVG and invisible wrappers are
+not judged; a box that spills counts once with its words. It is held in `baseline.json` like the other three and has
+its own ledger column. Tuned on the scan: it registers all six findings and none of the known non-issues.
+**Alternatives considered:** (A) `scrollWidth > clientWidth` per element — rejected: hundreds of hits from
+InfoTip hit areas and framed tables, no signal. (B) text against its nearest bordered or filled box only — rejected:
+missed a chip running out of a narrow, unboxed column (the request page's header).
+**Revisit if:** a real spill is missed (a transformed or clipped case), or the metric flags an intentional overflow
+that needs an exclusion — add the exclusion to `measure.ts` and this entry, never a per-page exception.

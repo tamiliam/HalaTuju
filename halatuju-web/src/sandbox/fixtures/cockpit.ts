@@ -151,7 +151,7 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
       evidence: [{ code: 'str_approved', params: {} }],
       unresolved: [{ code: 'payslip_stale', params: { months: 5 } }],
     },
-    { fact: 'pathway', status: 'gap', evidence: [], unresolved: [{ code: 'no_offer_letter_yet', params: {} }] },
+    { fact: 'pathway', status: 'gap', evidence: [], unresolved: [{ code: 'offer_letter_missing', params: {} }] },
   ],
   submission_review: {
     ledger: [

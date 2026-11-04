@@ -9,6 +9,7 @@ import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { fieldImageUrl } from '@/lib/fieldImage'
 import { FundingBar } from '@/components/FundingBar'
 import { countdown, rmWhole } from '@/lib/poolCard'
+import { PHONE_PILL_SM } from '@/lib/phonePill'
 import SponsorFilterSheet, { type SponsorFacet } from '@/components/sponsor/SponsorFilterSheet'
 import type { SponsorPoolCard } from '@/lib/api'
 
@@ -149,11 +150,11 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={fieldImageUrl(s.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-ground-0/90 px-2 py-0.5 text-xs font-semibold text-positive-700 shadow-sm">
+        <span className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-ground-0/90 px-2 py-0.5 text-xs font-semibold text-positive-700 shadow-sm ${PHONE_PILL_SM}`}>
           🛡️ {t('sponsorPool.verified')}
         </span>
         {s.enrolment_verified && (
-          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-fill/90 px-2 py-0.5 text-xs font-semibold text-brand-fill-ink shadow-sm">
+          <span className={`absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-fill/90 px-2 py-0.5 text-xs font-semibold text-brand-fill-ink shadow-sm ${PHONE_PILL_SM}`}>
             ✓ {t('sponsorPool.enrolmentVerified')}
           </span>
         )}

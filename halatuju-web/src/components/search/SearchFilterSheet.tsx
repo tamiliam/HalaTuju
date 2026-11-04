@@ -4,6 +4,7 @@ import { useRef, useState, type RefObject } from 'react'
 import clsx from 'clsx'
 import Sheet from '@/components/Sheet'
 import { useT } from '@/lib/i18n'
+import { PHONE_PILL_LG } from '@/lib/phonePill'
 
 /**
  * THE COURSE SEARCH FILTERS ON A PHONE (Mobile M3) — the shared `Sheet` holding one group of chips
@@ -107,6 +108,7 @@ function FacetChips({ group, firstRef }: { group: FacetGroup; firstRef?: RefObje
               onClick={() => group.onChange(on ? '' : o.value)}
               className={clsx(
                 'inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border px-4 py-2 text-left text-sm font-medium break-words',
+                PHONE_PILL_LG,
                 on
                   ? 'border-brand-shape bg-primary-50 text-primary-700'
                   : 'border-ground-300 bg-ground-0 text-ground-700 hover:bg-ground-50',
