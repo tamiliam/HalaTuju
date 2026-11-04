@@ -8,7 +8,7 @@ pack: the lead's T5 investigation, sections A (page inventory) and F (catalogue 
 ⚠ A GATE FOR THE ORGANISATION / ADMIN-WORK PAGE DOORS SINCE T5c (P1): `staff_tables.opens` reads
 `effective_v2` (decisions.md "Team tables T5c", the door -> key table). ONLY `staff_tables` imports
 this module (`test_permission_catalogue_v2.V2Importers`, an allowlist); a door module asks
-`staff_tables.opens(admin, '<page>.<tier>')`. The rest (review / QC / payments / spending / the
+`staff_tables.opens_door(admin, '<door>')`, whose keys are `staff_tables.DOOR_KEYS` (T5c P4a). The rest (review / QC / payments / spending / the
 lead-only pages) still opens through `staff_permissions.resolve` / `has_perm` and role checks; T5d-T5f
 convert them; T5g opens the editor (and `asked_set`) to v2 keys. Until then a stored `permissions` list
 holds TODAY's keys only: the save door (`staff_permissions_admin.asked_set`) refuses a v2 key as
@@ -121,16 +121,15 @@ ALIASES = {
 #: The organisation READ pages (Organisation, Invitations, Team, Sponsors + credits ledger). A team
 #: member at the ADMINS table (`staff_tables.in_admins`: the `admin` / `finance` label, or an admin key
 #: — T1) holds them (`TABLE_GRANTS`); `staff_tables.may_read_org` opens on all of them (T5c).
-ORG_READ_V2 = ('invitations.view', 'team.view', 'sponsors.view')
+#: T5c P4a: the one spelling is `staff_tables.DOOR_KEYS` (the door -> key table); read from there.
+ORG_READ_V2 = staff_tables.DOOR_KEYS['org_read']
 
 #: The organisation WORK pages, never finance: Sources and the witness override, Mentors read and the
 #: roster, Announcements, Surveys, Development, sponsor terms and sponsor / partner emails, and on a
 #: scholar the mentoring tab (`mentoring.py`), scholar growth (`development.py`) and scholar surveys
 #: (`surveys.py`). The `admin` LABEL holds them (`LABEL_GRANTS`; T1's `ADMIN_WORK_ROLES` was
 #: org_admin / admin, and the lead tier holds every key); `staff_tables.may_do_admin_work` opens on all.
-ADMIN_WORK_V2 = ('team.view', 'sources.view', 'sources.edit', 'sponsors.view', 'sponsors.edit',
-                 'announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
-                 'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit')
+ADMIN_WORK_V2 = staff_tables.DOOR_KEYS['admin_work']
 
 #: What a TABLE seat grants (T1 derivation, `staff_tables`). Only the Admins table grants page keys.
 TABLE_GRANTS = {staff_tables.ADMINS: ORG_READ_V2}

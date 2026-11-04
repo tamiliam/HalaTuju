@@ -185,7 +185,7 @@ class _SourcesBase(_AdminBase):
 
     @staticmethod
     def may_open(admin):
-        return staff_tables.opens(admin, 'sources.edit')
+        return staff_tables.opens_door(admin, 'sources')
 
     def _sources_admin(self, request):
         admin = self.get_admin(request)

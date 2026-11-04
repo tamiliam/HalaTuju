@@ -108,7 +108,7 @@ def may_act(caller):
     their own key (lead ruling T5a: `team.view` must never cover this tab). The ORGANISATION fence is
     the view's."""
     from apps.courses import staff_tables
-    return staff_tables.opens(caller, 'mentoring.edit')
+    return staff_tables.opens_door(caller, 'mentoring')
 
 
 def _same_org(caller, application):

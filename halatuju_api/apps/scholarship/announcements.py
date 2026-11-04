@@ -56,7 +56,7 @@ def may_post(admin):
     # `.view`; this one door both reads and writes, so it asks the writing key). Holders as T1: super,
     # org_admin, the `admin` label. Everybody else is refused.
     from apps.courses import staff_tables
-    return staff_tables.opens(admin, 'announcements.edit')
+    return staff_tables.opens_door(admin, 'announcements')
 
 
 # ── What is live, and to whom ─────────────────────────────────────────────────────────────────────

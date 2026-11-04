@@ -80,7 +80,7 @@ def may_make(admin):
     # Who may make one (owner, 2026-11-02). Team tables T5c: the v2 key `surveys.edit` (it implies
     # `.view`; this one door both reads and writes). Holders as T1: super, org_admin, the `admin` label.
     from apps.courses import staff_tables
-    return staff_tables.opens(admin, 'surveys.edit')
+    return staff_tables.opens_door(admin, 'surveys')
 
 
 # ── Status, audience, who sees one ────────────────────────────────────────────────────────────────

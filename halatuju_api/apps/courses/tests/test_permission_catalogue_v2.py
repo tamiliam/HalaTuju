@@ -15,9 +15,12 @@ WHAT IS HERE
 - `NotYetWritable` — a v2 key cannot be saved and is dropped on read.
 - `V2Importers` (T5c, replacing T5a's `NotYetAGate`, lead ruling R6) — only `staff_tables` imports the
   v2 module, and only the allowlisted door modules decide by v2 keys (`staff_tables.opens`).
+- `DoorKeysTable` (T5c P4a) — every door asks `staff_tables.opens_door(<who>, '<door>')`; its keys live
+  only in `staff_tables.DOOR_KEYS`, the table the web's menu drift test reads.
 """
 import json
 import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -26,6 +29,7 @@ from django.test import TestCase, override_settings
 
 from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
+from apps.courses import staff_tables as st
 from apps.courses.models import PartnerAdmin
 from apps.scholarship.tests.factories import make_admin, make_org
 
@@ -377,6 +381,75 @@ class V2Importers(TestCase):
         self.assertEqual(users, V2_IMPORTERS, 'a door asks staff_tables.opens, never v2 directly')
 
     def test_only_the_converted_doors_decide_by_v2_keys(self):
-        doors = {rel for rel, src in _app_sources() if 'staff_tables.opens(' in src}
+        doors = {rel for rel, src in _app_sources()
+                 if 'staff_tables.opens(' in src or 'staff_tables.opens_door(' in src}
         self.assertEqual(doors, V2_DOOR_MODULES, 'a new v2 door needs its parity test and a line here')
         self.assertTrue(os.path.isdir(Path(__file__).resolve().parents[2]))
+
+
+#: A door call with its door named as a literal: `staff_tables.opens_door(<who>, '<door>')`.
+_DOOR_CALL = re.compile(r"staff_tables\.opens_door\(\s*\w+\s*,\s*'(\w+)'\s*\)")
+
+#: The DOOR_KEYS entries asked inside `staff_tables` itself (the two union gates), not by a door module.
+_UNION_DOORS = {'org_read': 'may_read_org', 'admin_work': 'may_do_admin_work'}
+
+
+class DoorKeysTable(TestCase):
+    """T5c P4a: `staff_tables.DOOR_KEYS` is the WHOLE door -> key table. Every door names its door, never
+    its keys, so the web's menu drift test can read DOOR_KEYS alone and the menu (`page_keys`) cannot
+    drift from the server's doors."""
+
+    def test_no_door_names_its_keys_inline(self):
+        for rel, src in _app_sources():
+            with self.subTest(module=rel):
+                self.assertNotIn('staff_tables.opens(', src, 'ask staff_tables.opens_door, keys in DOOR_KEYS')
+
+    def test_every_door_call_names_a_door_of_the_table_as_a_literal(self):
+        used = set()
+        for rel, src in _app_sources():
+            if rel not in V2_DOOR_MODULES:
+                continue
+            names = _DOOR_CALL.findall(src)
+            with self.subTest(module=rel):
+                self.assertTrue(names)
+                self.assertEqual(len(names), src.count('staff_tables.opens_door('), 'a door name must be literal')
+                self.assertEqual(set(names) - set(st.DOOR_KEYS), set())
+            used.update(names)
+        self.assertEqual(set(st.DOOR_KEYS) - used, set(_UNION_DOORS), 'a DOOR_KEYS entry nobody asks')
+        src = Path(st.__file__).read_text(encoding='utf-8')
+        for door, gate in _UNION_DOORS.items():
+            self.assertIn(f"opens_door(admin, '{door}')", src, gate)
+
+    def test_every_door_asks_real_v2_keys_in_catalogue_order(self):
+        for door, keys in st.DOOR_KEYS.items():
+            with self.subTest(door=door):
+                self.assertTrue(keys)
+                self.assertIsInstance(keys, tuple)
+                self.assertEqual(v2.v2_order(keys), keys)
+
+    def test_the_union_sets_are_read_from_the_table(self):
+        self.assertIs(v2.ORG_READ_V2, st.DOOR_KEYS['org_read'])
+        self.assertIs(v2.ADMIN_WORK_V2, st.DOOR_KEYS['admin_work'])
+        self.assertEqual(v2.TABLE_GRANTS[st.ADMINS], st.DOOR_KEYS['org_read'])
+        self.assertEqual(v2.LABEL_GRANTS['admin'], st.DOOR_KEYS['admin_work'])
+
+    def test_the_table_is_the_p1_p2_door_table(self):
+        # decisions.md "Team tables T5c", the door -> key table, written out by hand.
+        self.assertEqual(st.DOOR_KEYS, {
+            'org_read': ('invitations.view', 'team.view', 'sponsors.view'),
+            'admin_work': ('team.view', 'sources.view', 'sources.edit', 'sponsors.view', 'sponsors.edit',
+                           'announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
+                           'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit'),
+            'sponsors_read': ('sponsors.view',), 'team_read': ('invitations.view', 'team.view'),
+            'announcements': ('announcements.edit',), 'surveys': ('surveys.edit',),
+            'development': ('development.edit',), 'mentoring': ('mentoring.edit',),
+            'invitations': ('invitations.edit',), 'sponsor_terms': ('sponsors.edit',),
+            'sponsor_emails': ('sponsors.edit',), 'sources': ('sources.edit',),
+            'credits_read': ('sponsors.view',),
+        })
+
+    def test_an_unknown_door_raises(self):
+        boss = make_admin('org_admin', owning_org=make_org())
+        with self.assertRaises(KeyError):
+            st.opens_door(boss, 'announcement')
+        self.assertTrue(st.opens_door(boss, 'announcements'))

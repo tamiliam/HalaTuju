@@ -40,7 +40,7 @@ class _CreditsBase(_AdminBase):
 
     @staticmethod
     def may_read(admin):
-        return staff_tables.opens(admin, 'sponsors.view')
+        return staff_tables.opens_door(admin, 'credits_read')
 
     def _credits_gate(self, request, door):
         admin = self.get_admin(request)

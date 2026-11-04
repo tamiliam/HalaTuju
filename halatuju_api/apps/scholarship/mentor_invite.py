@@ -85,7 +85,7 @@ def may_invite(caller):
     """The v2 key `invitations.edit` (Team tables T5c; lead-only, no preset grants it): a super, or an
     organisation admin. Never an admin, finance, reviewer, QC, source or mentor."""
     from apps.courses import staff_tables
-    return staff_tables.opens(caller, 'invitations.edit')
+    return staff_tables.opens_door(caller, 'invitations')
 
 
 def may_read(caller):

@@ -27,6 +27,8 @@ THE DERIVATION (decisions.md 2026-11-03, "Team tables T1"):
 Team tables T5c (P1): the page gate is `opens(admin, *v2_keys)` — v2 page keys, read through
 `staff_permissions_v2.effective_v2`. The T1 `admits` (role list, widened by an admin key) is gone; the
 v2 set is DERIVED from the same tables and labels, so no access moved (`test_team_tables_t5c_doors`).
+T5c P4a: every door asks `opens_door(admin, '<door>')`, its keys in `DOOR_KEYS`; `page_keys` is what
+`admin/role/` serves for the menu.
 
 ⚠ THIS IS A LEAF, like `staff_permissions`: it imports nothing from `apps.scholarship`.
 """
@@ -111,6 +113,49 @@ def opens(admin, *keys):
     return all(k in held for k in wanted)
 
 
+# ── T5c P4a: every converted door's keys, in ONE table. ───────────────────────────────────────────────
+#: door name -> the v2 keys it asks (every one held), in `V2_KEYS` order. EVERY door calls
+#: `opens_door(admin, '<door>')` — no door names its keys inline — so this dict is the whole door ->
+#: key table (decisions.md "Team tables T5c") and the web's drift test reads it alone. `org_read` /
+#: `admin_work` are the two union sets (`may_read_org`, `may_do_admin_work`); the v2 module's
+#: `ORG_READ_V2` / `ADMIN_WORK_V2` (and so `TABLE_GRANTS` / `LABEL_GRANTS`) are read FROM here.
+#: Keys are checked against the catalogue by `test_permission_catalogue_v2` (this leaf cannot import v2
+#: at load time: v2 imports it).
+DOOR_KEYS = {
+    'org_read':       ('invitations.view', 'team.view', 'sponsors.view'),
+    'admin_work':     ('team.view', 'sources.view', 'sources.edit', 'sponsors.view', 'sponsors.edit',
+                       'announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
+                       'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit'),
+    'sponsors_read':  ('sponsors.view',),                       # surface_gates.may_read_sponsors
+    'team_read':      ('invitations.view', 'team.view'),        # surface_gates.may_read_team
+    'announcements':  ('announcements.edit',),                  # announcements.may_post
+    'surveys':        ('surveys.edit',),                        # surveys.may_make
+    'development':    ('development.edit',),                    # development.may_make
+    'mentoring':      ('mentoring.edit',),                      # mentoring.may_act (so may_assign)
+    'invitations':    ('invitations.edit',),                    # mentor_invite / source_invite.may_invite
+    'sponsor_terms':  ('sponsors.edit',),                       # _SponsorTermsBase.may_author
+    'sponsor_emails': ('sponsors.edit',),                       # _SponsorEmailsBase.may_open
+    'sources':        ('sources.edit',),                        # _SourcesBase.may_open (P2)
+    'credits_read':   ('sponsors.view',),                       # _CreditsBase.may_read (P2)
+}
+
+
+def opens_door(admin, door):
+    """`opens(admin, *DOOR_KEYS[door])`. ⚠ An unknown door name RAISES (KeyError), never stays shut."""
+    return opens(admin, *DOOR_KEYS[door])
+
+
+def page_keys(admin):
+    """The v2 keys the menu reads (`admin/role/` serves them as `page_keys`): `effective_v2(admin)` in
+    `V2_KEYS` order — the very set `opens` asks, so a menu entry shows exactly when its door opens. Each
+    `.edit` / `.check` / ... comes with its page's `.view` (`effective_v2` adds the implied views). None
+    or an inactive row -> () (sign-in refuses an inactive row; a menu must not list a key for one)."""
+    from . import staff_permissions_v2 as v2
+    if admin is None or not getattr(admin, 'is_active', True):
+        return ()
+    return tuple(v2.effective_v2(admin))
+
+
 # ── The two UNION gates (T1), now read from v2 keys (T5c P1). ─────────────────────────────────────────
 # Each opens only for someone holding EVERY key of its page set — today exactly the people the T1 role
 # rule opened (org_admin / admin / finance or the Admins table by a key; org_admin / admin). The pages
@@ -123,15 +168,13 @@ def opens(admin, *keys):
 
 def may_read_org(admin):
     """The organisation READ pages (Organisation, Invitations, People, Sponsors + credits ledger):
-    `staff_permissions_v2.ORG_READ_V2`, every one held."""
-    from . import staff_permissions_v2 as v2
-    return opens(admin, *v2.ORG_READ_V2)
+    `DOOR_KEYS['org_read']` (= `staff_permissions_v2.ORG_READ_V2`), every one held."""
+    return opens_door(admin, 'org_read')
 
 
 def may_do_admin_work(admin):
-    """The organisation WORK pages, never finance: `staff_permissions_v2.ADMIN_WORK_V2`, every one held."""
-    from . import staff_permissions_v2 as v2
-    return opens(admin, *v2.ADMIN_WORK_V2)
+    """The organisation WORK pages, never finance: `DOOR_KEYS['admin_work']` (= `ADMIN_WORK_V2`)."""
+    return opens_door(admin, 'admin_work')
 
 
 # ── Team tables T2: what an invitation STARTS a person at (owner ruling 4). ──────────────────────────

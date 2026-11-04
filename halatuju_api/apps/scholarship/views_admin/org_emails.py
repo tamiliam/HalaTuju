@@ -220,7 +220,7 @@ class _SponsorEmailsBase(_AdminBase):
     """
     @staticmethod
     def may_open(admin):
-        return staff_tables.opens(admin, 'sponsors.edit')
+        return staff_tables.opens_door(admin, 'sponsor_emails')
 
     def _emails_admin(self, request):
         admin = self.get_admin(request)
