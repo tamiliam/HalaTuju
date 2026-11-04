@@ -58,7 +58,7 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading
   block, red since P1 removed `ORG_READ_KEYS` / `ADMIN_WORK_*`, now pins those as the older-payload rule.
 
-## Offer exact-read S6 — the owner's genuineness rulings and the chip table (branch offer-read-s1, not pushed)
+## Offer exact-read S6 — the owner's genuineness rulings and the chip table (LIVE 2026-11-04; main a1d1dca7; api halatuju-api-01250-ldm, web build e8e351d9)
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (S6, "Plan (2026-11-03)"); owner go 2026-11-03
 with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). No migration. No paid call.
@@ -263,6 +263,10 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   "Kolej Kediaman"; "IKM1 Kuantan" on a KBS / JTM letter names a MARA institute). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
+- **Shipped 2026-11-04** after 14 review rounds, on the owner's go. Gates on the pushed head a1d1dca7: 10,362
+  pytest / 3 skipped (`apps/scholarship`, `-n auto`) · 6,399 jest / 412 suites · `next build` ok · first-load-JS
+  budget ok (median 144.06 kB of 145 kB). Stored genuineness statuses did not move: S7 re-reads and re-scores.
+  Close: retrospective in the roadmap (S6), TD-495.
 
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (LIVE 2026-11-04; main 307d204c; api-01249-zqp, web-01078-pgb)
 
