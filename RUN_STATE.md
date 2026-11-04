@@ -103,6 +103,13 @@ Lead rulings:
   16 tests; budgets 11/9/10 constant. Risks: wallet_credits finance-only though admins also sign; super pooled
   payment_runs one lookup per org; mentor cards one query per mentee (TD-500 family). NEXT: Opus adversarial review
   + full gates in parallel.
+- Opus review: SHIP after M1 (mentor label said "recently") - FIXED eedc20f4 (en/ms/ta "Not yet met"). Lows for the
+  audit / owner: admins+org admins get no wallet_credits card (finance only); finance sees sponsors_to_vet but read-only;
+  Admin-General sees org-wide awaiting_qc; invitations card needs org_read (page needs team_read); multi-gift
+  payment_runs round trip; mentor/super pooled paths have no query budget (no N+1 found).
+- Gates GREEN: pytest 12422 passed / 3 skipped; npm gates 417 suites / 6519 tests; bundle median 144.148 (room 0.9);
+  mobile 775 passed (was 781; m8-organisation surface removed). Label fix eedc20f4 landed after the gates (strings
+  only). NEXT: owner yes -> push t5c:main (gh switch), watch both builds, owner phone check, then v3.1.0.
 
 ## Stops waiting on the owner
 - **P5 phone check and deploy approval** (asked before each deploy; P5 changes reviewer and mentor access).
