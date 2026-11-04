@@ -61,13 +61,14 @@ STATE_AND_CAMPUS = frozenset({'KAMPUS', 'CAWANGAN', 'CAMPUS', 'BRANCH', 'JOHOR',
                               'SARAWAK', 'SELANGOR', 'TERENGGANU', 'KUALA', 'LUMPUR', 'LABUAN', 'PUTRAJAYA', 'WILAYAH',
                               'PERSEKUTUAN', 'WP'})
 #: A field label that introduces the institute ("Pusat Pengajian : IKBN Miri", "Tempat (IKBN/IKTBN) : ...").
-_LABEL_BEFORE = re.compile(r'(?i)(?:PUSAT\s+PENGAJIAN|PUSAT\s+LATIHAN|TEMPAT|LOKASI|INSTITUSI)\s*(?:\([^)]*\))?'
-                           r'\s*[:\-]?\s*\(?\s*$')     # ... or the bracket opening on the institute itself
+_LABEL_BEFORE = re.compile(r'(?i)(?:PUSAT\s+PENGAJIAN|PUSAT\s+LATIHAN|PUSAT|TEMPAT|LOKASI|INSTITUSI)'
+                           r'\s*(?:\([^)]*\))?\s*[:\-]?\s*\(?\s*$')     # ... or the bracket opening on the institute
 _AGENT_WORDS = re.compile(r' (?:WAKIL|EJEN|AGEN)(?= )')
 _ADDRESS_WORDS = re.compile(r' (?:WISMA|MENARA|JALAN|BANGUNAN)(?= )')
 #: (6) The letterhead lines below the agency: address / contact / web / division lines only.
 _MORE_ADDRESS = re.compile(r' (?:WISMA|MENARA|ARAS|TINGKAT|BLOK|BANGUNAN|KOMPLEKS|PRESINT|PERSIARAN|PUSAT '
-                           r'PENTADBIRAN|KERAJAAN PERSEKUTUAN|LEVEL|FLOOR|KAWASAN|PERINDUSTRIAN|INDUSTRIAL|SEKSYEN)(?= )')
+                           r'PENTADBIRAN|KERAJAAN PERSEKUTUAN|LEVEL|FLOOR|KAWASAN|PERINDUSTRIAN|INDUSTRIAL|'
+                           r'SEKSYEN)(?= )')
 #: What a reference / date line leaves on the letterhead ("Tarikh :" before its date): a label, no name.
 _REF_DATE_LABELS = frozenset({'TARIKH', 'RUJ', 'RUJUKAN', 'KAMI', 'TUAN', 'DATE', 'REF', 'NO', 'OUR', 'YOUR', 'FAIL'})
 _DIVISION_START = re.compile(r'^ (?:BAHAGIAN|UNIT|PEJABAT|IBU PEJABAT)(?= )')

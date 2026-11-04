@@ -35,9 +35,7 @@ class H1TheTypedFake(SimpleTestCase):
         # its own institute (IKM under MARA) in the body, an admission title, the full shape.
         # Closed world (e): the campus after the institute must be a catalogued one ("CONTOH" is not; "KUANTAN" is).
         self.assertNotEqual(_status(LOW_SCORE_IKM), 'genuine')
-        # (a bare "Pusat :" label is not one of the lead's labels; "Tempat :" is)
-        kuantan = LOW_SCORE_IKM.replace('Pusat : INSTITUT KEMAHIRAN MARA CONTOH',
-                                        'Tempat : INSTITUT KEMAHIRAN MARA KUANTAN')
+        kuantan = LOW_SCORE_IKM.replace('INSTITUT KEMAHIRAN MARA CONTOH', 'INSTITUT KEMAHIRAN MARA KUANTAN')
         out = signature_genuineness(kuantan, doc_type='offer_letter')
         self.assertEqual((out['status'], out['type']), ('genuine', 'tvet_mara'))
         self.assertIn('agency_letterhead', out['reason'])

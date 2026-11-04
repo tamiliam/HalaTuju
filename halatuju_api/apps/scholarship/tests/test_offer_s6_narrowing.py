@@ -787,6 +787,9 @@ class Round10AgencyClosedWorld(SimpleTestCase):
 
     def test_a_label_followed_by_anything_else_still_counts(self):
         self.assertFalse(self._lifted(_ag(_K, venue='IKBN Pekan', extra='Pusat Latihan Mercu Jaya\n')))
+        self.assertFalse(self._lifted(_ag(_K, venue='IKBN Pekan', extra='Pusat : Mercu Skills\n')))
+        # a bare "Pusat :" before the allowed institute IS a label (the lead's ruling 1)
+        self.assertTrue(self._lifted(_ag(_K, venue='IKBN Pekan', extra='Pusat : IKBN Pekan\n')))
 
     def test_the_campus_words_come_from_the_catalogue(self):
         from apps.scholarship.genuineness.offer_agency import catalogue_places
