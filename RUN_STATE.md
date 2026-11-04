@@ -111,7 +111,12 @@ Lead rulings:
   + TD-500. Then: re-review S2c, full gates (Haiku), phone check, deploy ask.
 - S2c DONE (2e0e6b98); origin/main (TD-473) merged 7633b618; fresh review PASS (2 lows, cosmetic). FULL GATES GREEN
   2026-11-04: pytest 12402 passed / 3 skipped (stale-classifications OK under -n auto); npm run gates pass (jest
-  415/6487); bundle median 144.706 (room 0.3); mobile-check 781 passed. NEXT: owner phone check + deploy yes, then push.
+  415/6487); bundle median 144.706 (room 0.3); mobile-check 781 passed.
+- T5c P5 LIVE 2026-11-04 (owner "yes"; main 1c21ecaf; api halatuju-api-01253-gcr, web halatuju-web-01082-t9w; both
+  builds SUCCESS). Sprint CLOSED (t5c 31f06292 local, not pushed: changelog, retro, decisions, TD-501, Next Sprint;
+  memory cec86c4 + workspace da4d5fc pushed). wat_lint 0 FAIL (warns: 13 small changes await Consolidation Review ->
+  fold into the audit; code-health reading skipped -> audit takes it). WAITING: owner phone check. NEXT: v3.1.0 tag
+  (release.md) after the phone check OK; the docs commit rides with the release (ask before that push).
 - Updated phone-check summary (S2 review): + mentors tapping a programme see just those students; + reviewer
   "not found" also by intake year; + programme cards (New, Change code, Delete) moved off Organisation Overview onto
   Programmes, Overview keeps its counts; super still opens on the platform page.
