@@ -1202,7 +1202,97 @@ class Round13(SimpleTestCase):
             'TD-493 Edu360 on the institute lift': _a11(_IKBN11, venue='IKBN Pekan', extra='Kelas tambahan Edu360.\n'),
             'TD-494 agency before descriptor': _a11(_M, extra='Latihan amali di MARA Technical Solutions.\n'),
             'TD-494 TVET spelt + descriptor': _a11(_M, extra='Latihan di Teknikal Vokasional Solutions.\n'),
+            'TD-494 name on the line before': _a11(_M, extra='Penyedia latihan : Mercu\nTechnical Solutions\n'),
+            'TD-494 descriptor slogan, name below': _a11(_M, extra='Latihan Global\nMercu Jaya\n'),
+            'TD-494 TVET spelt + Skills': _a11(_M, extra='Latihan amali di Teknikal dan Vokasional Skills.\n'),
         }
         for name, text in gaps.items():
             with self.subTest(name):
                 self.assertEqual(self._ruling(text), 'tvet_offer')
+
+
+# ── Review round 14 (2026-11-04, the final check): real public letters round 13 had started to block ──
+_POLY14 = 'POLITEKNIK SULTAN HAJI AHMAD SHAH\nKEMENTERIAN PENDIDIKAN TINGGI'
+_LETTERS14 = {
+    'IKM': lambda extra='', addr='Jalan Raja Laut, 50609 Kuala Lumpur': _a11(_M, extra=extra, addr=addr),
+    'KKTM': lambda extra='', addr='Jalan Raja Laut, 50609 Kuala Lumpur': _a11(
+        _M, venue='Kolej Kemahiran Tinggi MARA Kuantan', extra=extra, addr=addr),
+    'IKBN': lambda extra='', addr='Jalan Raja Laut, 50609 Kuala Lumpur': _a11(_K, venue='IKBN Pekan', extra=extra,
+                                                                              addr=addr),
+    'ILP': lambda extra='', addr='Jalan Raja Laut, 50609 Kuala Lumpur': _a11(_J, venue='ILP Kuala Lumpur', extra=extra,
+                                                                             addr=addr),
+    'ADTEC': lambda extra='', addr='Jalan Raja Laut, 50609 Kuala Lumpur': _a11(_J, venue='ADTEC Shah Alam',
+                                                                               extra=extra, addr=addr),
+    'UMS': lambda extra='', addr='Jalan Contoh, 88400 Kota Kinabalu': _c13('UNIVERSITI MALAYSIA SABAH', extra=extra,
+                                                                          addr=addr + '\n'),
+    'POLY': lambda extra='', addr='Jalan Contoh, 88400 Kota Kinabalu': _c13(_POLY14, extra=extra, addr=addr + '\n'),
+}
+#: Ordinary lines on real public letters; each must lift exactly as it did before round 13.
+_REAL_LINES14 = ('Persijilan SkillsMalaysia (SKM) Tahap 3 akan dianugerahkan.', 'Persijilan SKILLSMALAYSIA.',
+                 'Pertandingan WorldSkills Malaysia 2026.', 'Pelajar akan dinilai berdasarkan prestasi akademiknya.',
+                 'Bilik PUSAT1013 di Aras 1.', 'Kod Kursus : POLITEKNIK1301', 'Penginapan di KOLEJ1.',
+                 'Penginapan di Kolej 1 atau Kolej 13.', 'Lokasi: KAMPUS3 / Kampus2 Labuan.',
+                 'Penilaian kemahiran (SkillsTest 2) pada minggu ke-3.', 'Tuitionfees and charges as in Lampiran 1.',
+                 'Program TrainingPlus.', 'Sila daftar di portal Edu360.', 'Hashtag: #IKBNPekan2026 #KBS1Malaysia')
+
+
+class Round14(SimpleTestCase):
+    def _ruling(self, text):
+        return ruling_of(signature_genuineness(text, doc_type='offer_letter'))
+
+    def test_real_lines_still_lift_on_every_public_letter(self):
+        for kind, build in _LETTERS14.items():
+            for line in _REAL_LINES14:
+                if kind in ('IKM', 'KKTM') and 'KBS1' in line:
+                    continue                                    # another agency (KBS) on a MARA letter
+                with self.subTest(kind=kind, line=line):
+                    self.assertIn(self._ruling(build(extra=line + '\n')), LIFTS)
+
+    def test_a_skillsmalaysia_line_on_the_letterhead_still_lifts(self):
+        for kind in ('UMS', 'POLY'):
+            with self.subTest(kind):
+                self.assertIn(self._ruling(_LETTERS14[kind](addr='SkillsMalaysia\nJalan Contoh, 88400 Kota Kinabalu')),
+                              LIFTS)
+        self.assertIn(self._ruling(_a11(_IKBN11, venue='IKBN Pekan',
+                                        addr='SkillsMalaysia\nJalan Raja Laut, 50609 Kuala Lumpur')), LIFTS)
+
+    def test_e_mail_and_web_addresses_are_read_as_written(self):
+        """On the letterhead's contact line, as on real letters."""
+        for tel in ('kolej1@contoh.edu.my', 'www.kolej1.edu.my', 'akademi1@contoh.my', 'sekolah1@moe.gov.my'):
+            for kind, addr in (('IKM', 'Jalan Raja Laut, 50609 Kuala Lumpur'),
+                               ('UMS', 'Jalan Contoh, 88400 Kota Kinabalu'), ('POLY', 'Jalan Contoh, 88400 Kota Kinabalu')):
+                with self.subTest(kind=kind, tel=tel):
+                    self.assertIn(self._ruling(_LETTERS14[kind](addr=f'{addr}\nTel : 09-4221234 E-mel : {tel}')),
+                                  LIFTS)
+
+    def test_a_numbered_noun_with_a_name_still_blocks(self):
+        for line in ('Latihan amali di Akademi21 Mercu.', 'Latihan amali di Edu360 Kuantan.',
+                     'Latihan di Mercu Academy2.', 'Tempat latihan : KOLEJ21 KUANTAN', 'Latihan di Kolej 3 Mercu.'):
+            with self.subTest(line):
+                self.assertNotIn(self._ruling(_a11(_M, extra=line + '\n')), LIFTS)
+
+    def test_the_normaliser_maps_only_inner_or_completing_digits(self):
+        from apps.scholarship.genuineness.offer_text import normalise_s6
+        self.assertEqual(normalise_s6('PUSAT1013 POLITEKNIK1301 KOLEJ1 AKADEM1 Ko1ej K0LEJ kolej1@contoh.edu.my '
+                                      'www.kolej1.edu.my'),
+                         'PUSAT 1013 POLITEKNIK 1301 KOLEJ 1 AKADEMI Kolej KOLEJ kolej1@contoh.edu.my '
+                         'www.kolej1.edu.my')
+
+    def test_real_words_are_never_glued(self):
+        from apps.scholarship.genuineness.offer_text import glued_org
+        for w in ('SKILLSMALAYSIA', 'WORLDSKILLS', 'SKILLSDEVELOPMENT', 'AKADEMIKNYA', 'ACADEMICALLY', 'SKILLSTEST', 'TRAININGPLUS',
+                  'TUITIONFEES', 'KOLEJPAHANG', 'SEKOLAHMALAYSIA'):
+            with self.subTest(w):
+                self.assertFalse(glued_org(w))
+        for w in ('SKILLSPRIMA', 'TRAININGMERCU', 'MERCUACADEMY'):
+            with self.subTest(w):
+                self.assertTrue(glued_org(w))
+
+    def test_a_long_mixed_token_page_is_quick(self):
+        import time
+        rows = ('Lot21 Tingkat3 BlokA1 SHP03 DKM1 KKTM2 RM150 3Ogos2026 Makmal1 Sesi2 IKM13 KK3 SPM2025 MQA01 A10013\n'
+                'Kod EE101 ME301 CS1013 PT3 GRED3 TAHAP3 PUSAT1013 KOLEJ1 Ko1ej ACAD3MY Bengkel2 Studio3\n') * 260
+        for text in (_a11(_M, extra=rows), _a11(_M, extra=rows.replace('\n', ' ') + '\n')):
+            t0 = time.perf_counter()
+            signature_genuineness(text, doc_type='offer_letter')
+            self.assertLess(time.perf_counter() - t0, 3.0)

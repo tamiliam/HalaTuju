@@ -269,7 +269,8 @@ def _tokens(raw):
     split off ("KolejMercu", "KOLEJMERCU")."""
     out = []
     for word, start, end in _letters_joined(raw or ''):
-        word = word.replace('0', 'O').replace('1', 'I')
+        if not word.isdigit():                         # round 14: a number stays a number ("IKM 1 Kuantan")
+            word = word.replace('0', 'O').replace('1', 'I')
         up = word.upper()
         noun = next((n for n in _GLUE_NOUNS if up.startswith(n) and len(up) > len(n)), '')
         rest = word[len(noun):]
@@ -345,13 +346,15 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
         covered = [False] * len(toks)
         _cover(up, _TVET_SPELT, covered)                       # the sector's name, spelt out
         for start, end in _cover(up, _INSTITUTE_KEY[key], covered):
-            label = _LABEL_BEFORE.search(raw[:toks[start][1]]) if start else None
+            off = max(0, toks[start][1] - 200)                    # round 14 (perf): a label sits just before
+            label = _LABEL_BEFORE.search(raw[off:toks[start][1]]) if start else None
             if label:                                             # its field label ("Pusat Pengajian : IKBN …")
                 br = re.search(r'\(([^)]*)\)', label.group(0))
                 bad = br and not _bracket_ok(br.group(1), key)
-                b0, b1 = (label.start() + br.start(), label.start() + br.end()) if br else (0, 0)
+                l0 = off + label.start()
+                b0, b1 = (l0 + br.start(), l0 + br.end()) if br else (0, 0)
                 for k in range(start):
-                    if toks[k][1] >= label.start() and not (bad and b0 <= toks[k][1] < b1):
+                    if toks[k][1] >= l0 and not (bad and b0 <= toks[k][1] < b1):
                         covered[k] = True                         # round 11 (M1): an odd bracket stays tested
             k = _campus_end(up, end, covered, key, places)
             while k < len(toks) and not covered[k] and up[k] in _FUNCTION_WORDS:
@@ -377,6 +380,8 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                            and up[j + 1] not in _FUNCTION_WORDS)
             if w in WEAK_SUFFIXES and not named_after and _after_descriptor(up, j, toks, covered):
                 continue                                          # "& Pendidikan Global" (a slogan), never a name
+            if _numbered(j, toks, up, covered, places) and not _named_before(j, toks, up, covered, raw, places):
+                continue                                          # round 14: "KOLEJ 1", "PUSAT 1013", "Kampus 2"
             if toks[j][0].islower() and is_org_word(w):          # (c) a bare generic noun, lowercase
                 # round 11 (M4): only when no name follows within three tokens, across punctuation / the line end
                 ahead = [(t, covered[x]) for x, t in enumerate(toks) if x > j][:3]
@@ -386,6 +391,40 @@ def closed_world_blocker(lines, raws, head_n, key) -> str:
                     continue
             return f'organisation word: {w}'
     return ''
+
+
+def _numbered(j, toks, up, covered, places) -> bool:
+    """Round 14 (Low): a noun followed by a NUMBER is a room / block / college number ("Kolej 13", "PUSAT 1013",
+    "PUSAT 1013 di Aras 1"), unless a capitalised word that is no function word stands right after the number
+    ("Akademi 21 Mercu", "Edu360 Kuantan"); only a campus word may take a place there ("Kampus 2 Labuan")."""
+    if not (j + 1 < len(toks) and not covered[j + 1] and up[j + 1].isdigit()):
+        return False
+    x = j + 2
+    if not (x < len(toks) and not covered[x] and toks[x][0][:1].isupper() and up[x] not in _FUNCTION_WORDS
+            and up[x] != 'MALAYSIA'):                             # "#KBS1Malaysia", the 1Malaysia slogan
+        return True
+    return up[j] in STATE_AND_CAMPUS and (up[x] in places or up[x] in _any_place())
+
+
+#: Round 14: the words a room / block number stands after ("Bilik PUSAT 1013").
+_ROOM_WORDS = frozenset({'BILIK', 'BLOK', 'ARAS', 'TINGKAT', 'DEWAN', 'MAKMAL', 'BENGKEL', 'STUDIO', 'KOD', 'NO',
+                         'ROOM', 'BLOCK', 'LEVEL', 'HALL', 'LAB', 'CODE'})
+
+
+def _named_before(j, toks, up, covered, raw, places) -> bool:
+    """A capitalised NAME stands right before the noun, nothing between ("Mercu Academy 2")."""
+    x = j - 1
+    if x < 0 or covered[x] or raw[toks[x][2]:toks[j][1]].strip():
+        return False
+    w = up[x]
+    return bool(toks[x][0][:1].isupper() and w not in _FUNCTION_WORDS and not is_org_word(w)
+                and w not in LABEL_WORDS and w not in _ROOM_WORDS and w not in places and w not in _any_place())
+
+
+@functools.lru_cache(maxsize=1)
+def _any_place():
+    """Every catalogued campus place word of any family, the states and campus words, and MALAYSIA."""
+    return frozenset(STATE_AND_CAMPUS | {'MALAYSIA'}).union(*catalogue_places().values())
 
 
 #: The lead's ruling (a329): words that name an organisation only after a NAME, never after a descriptor.

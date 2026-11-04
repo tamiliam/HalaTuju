@@ -19,24 +19,45 @@ def normalise_s6(text) -> str:
     text = unicodedata.normalize('NFKC', text or '').translate(_INVISIBLE).translate(_LOOKALIKE)
     text = ''.join(ch for ch in unicodedata.normalize('NFKD', text) if not unicodedata.combining(ch))
     text = unicodedata.normalize('NFKC', text)
-    return _MIXED.sub(_read_mixed, text)
+    parts = _ADDRESS.split(text)
+    return ''.join(p if i % 2 else _MIXED.sub(_read_mixed, p) for i, p in enumerate(parts))
 
 
+#: An e-mail / web address: read as written ("kolej1@contoh.edu.my", "www.kolej1.edu.my").
+_ADDRESS = re.compile(r'(\S+@\S+|(?:https?://|www\.)\S+)', re.I)
 #: A word with both letters and digits.
 _MIXED = re.compile(r'[^\W_]*(?:[^\W\d_]\d|\d[^\W\d_])[^\W_]*')
 _OCR_DIGITS = ({'0': 'O', '1': 'I', '3': 'E'}, {'0': 'O', '1': 'L', '3': 'E'})
+#: Round 14 (Low): only a digit run with letters on BOTH sides is an OCR letter ("K0LEJ", "Ko1ej", "ACAD3MY");
+#: a leading / trailing number is a number ("PUSAT1013", "KOLEJ1").
+_INNER_DIGITS = re.compile(r'(?<=[^\W\d_])[013]+(?=[^\W\d_])')
+#: One OCR digit at a word's edge with 4+ letters, read only when that alone completes an organisation word.
+_EDGE_DIGIT = re.compile(r'([013]?)([^\W\d_]{4,})([013]?)')
+_LETTER_DIGIT = re.compile(r'(?<=[^\W\d_])(?=\d)|(?<=\d)(?=[^\W\d_])')
 
 
 def _read_mixed(m) -> str:
-    """One mixed word: an OCR spelling of an organisation word (whole, or glued to a name), else split."""
+    """One mixed word: inner OCR digits read as letters when that spells an organisation word (whole, or glued to a
+    name); then letters and digits split."""
     from .offer_reading import is_org_token
     word = m.group(0)
     for table in _OCR_DIGITS:
-        read = ''.join(table[ch].lower() if ch in table and i and word[i - 1].islower() else table.get(ch, ch)
-                       for i, ch in enumerate(word))
-        if read.isalpha() and (is_org_token(read.upper()) or glued_org(read)):
-            return read
-    return re.sub(r'(?<=[^\W\d_])(?=\d)|(?<=\d)(?=[^\W\d_])', ' ', word)
+        def letter(d, table=table):
+            run, before = d.group(0), word[d.start() - 1]
+            return ''.join(table[ch].lower() if before.islower() else table[ch] for ch in run)
+        read = _INNER_DIGITS.sub(letter, word)
+        if read != word and any(t.isalpha() and (is_org_token(t.upper()) or glued_org(t))
+                                for t in _LETTER_DIGIT.sub(' ', read).split()):
+            return _LETTER_DIGIT.sub(' ', read)
+        edge = _EDGE_DIGIT.fullmatch(word)              # "AKADEM1": one edge digit that completes the noun
+        if edge and not is_org_token(edge.group(2).upper()):
+            lead, letters, tail = edge.groups()
+            head, end = table.get(lead, ''), table.get(tail, '')
+            read = ((head.lower() if letters[0].islower() else head) + letters
+                    + (end.lower() if letters[-1].islower() else end))
+            if is_org_token(read.upper()):
+                return read
+    return _LETTER_DIGIT.sub(' ', word)
 
 
 #: Round 11 (M6): the acronyms a logo strip lists ("IKM KKTM KPM GMI").
@@ -89,13 +110,26 @@ _COMPOUND_HEADS = frozenset({'HIGH', 'LOW', 'LIFE', 'SOFT', 'WORK', 'MULTI', 'UP
 _NOT_GLUED_WORDS = frozenset({'INSTITUTIONAL', 'SCHOOLING', 'PRESCHOOL', 'WITHHOLDING', 'DISSOLUTION',
                               'SCHOOLTEACHER', 'SCHOOLBAG', 'SCHOOLHOUSE', 'SCHOOLWIDE', 'COLLEGEWIDE',
                               'UNIVERSITYWIDE', 'KINDERGARTEN', 'ANTARABANGSA', 'INSTITUTIONALISE', 'INSTITUSIONAL',
-                              'MISADVENTURE', 'MISADVENTURES', 'CONSTRAINING'})
+                              'MISADVENTURE', 'MISADVENTURES', 'CONSTRAINING',
+                              # Round 14 (High): the national skills certification brand, on most TVET letters.
+                              'SKILLSMALAYSIA', 'WORLDSKILLS', 'WORLDSKILLSMALAYSIA',
+                              'SKILLSDEVELOPMENT'})                   # the Skills Development Fund (PTPK)
+#: Round 14 (Medium): "akademiknya", "ACADEMICALLY" — the adjective, never a glued name.
+_NOT_GLUED_PREFIXES = ('AKADEMIK', 'ACADEMIC')
+#: Round 14: after a training word at the start the name is 5+ letters ("SKILLSPRIMA"; "SKILLSTEST", "TRAININGPLUS",
+#: "TUITIONFEES" are ordinary words).
+_TRAINING_START = frozenset({'SKILLS', 'TRAINING', 'TUISYEN', 'TUITION', 'EDU'})
+_START_RE = re.compile(rf'(?:{_START_WORDS})')
+_END_RE = re.compile(rf'(?:{_GLUE_WORDS})$')
+_INSIDE_RE = re.compile(rf'(?:{_INSIDE_WORDS})')
 
 
 def _names_part(part, noun='') -> bool:
     """A glued token's other part is a NAME: four or more letters, not made only of Malay affixes ("ANNYA"), no
-    compound head, not the noun again ("SEKOLAHSEKOLAH")."""
-    return (len(part) >= 4 and not _affixes_only(part) and part not in _COMPOUND_HEADS and part != noun)
+    compound head, not the noun again ("SEKOLAHSEKOLAH"), and (round 14) no place: MALAYSIA, a state or a
+    catalogued campus word ("SKILLSMALAYSIA", "KOLEJPAHANG")."""
+    return (len(part) >= 4 and not _affixes_only(part) and part not in _COMPOUND_HEADS and part != noun
+            and part != 'MALAYSIA' and part not in _campus_words())
 
 
 def _affixes_only(part) -> bool:
@@ -117,9 +151,10 @@ def glued_org(word, allowed=()) -> bool:
     or a catalogued campus word, is left ("UNIVERSITIMALAYSIASABAH")."""
     word = (word or '').upper()
     from .offer_reading import is_org_token
-    if len(word) < 6 or not word.isalpha() or word in _NOT_GLUED_WORDS or is_org_token(word):
+    if (len(word) < 6 or not word.isalpha() or word in _NOT_GLUED_WORDS or word.startswith(_NOT_GLUED_PREFIXES)
+            or is_org_token(word)):
         return False
-    for name in sorted(set(_joined(allowed) + _joined_public()), key=len, reverse=True):
+    for name in _names_longest_first(tuple(sorted(set(allowed)))):
         if name in word:
             rest = word.replace(name, '')
             if not rest or rest in _campus_words():
@@ -132,13 +167,14 @@ def _glued(word, loose=False) -> bool:
     """An organisation word at the start / end / inside of `word` with a NAME part (`loose`: any 2+ letters)."""
     def ok(part, noun):
         return len(part) >= 2 if loose else _names_part(part, noun)
-    m = re.match(rf'(?:{_START_WORDS})', word)
-    if m and m.end() < len(word) and ok(word[m.end():], m.group(0)):
+    m = _START_RE.match(word)
+    if (m and m.end() < len(word) and ok(word[m.end():], m.group(0))
+            and (loose or m.group(0) not in _TRAINING_START or len(word) - m.end() >= 5)):
         return True
-    m = re.search(rf'(?:{_GLUE_WORDS})$', word)
+    m = _END_RE.search(word)
     if m and m.start() > 0 and ok(word[:m.start()], m.group(0)):
         return True
-    for m in re.finditer(rf'(?:{_INSIDE_WORDS})', word):
+    for m in _INSIDE_RE.finditer(word):
         if m.start() > 0 and m.end() < len(word) and (ok(word[:m.start()], m.group(0)) or ok(word[m.end():],
                                                                                               m.group(0))):
             return True
@@ -147,6 +183,12 @@ def _glued(word, loose=False) -> bool:
 
 def _joined(names):
     return tuple(''.join(n.split()) for n in names if len(''.join(n.split())) >= 3)
+
+
+@functools.lru_cache(maxsize=64)
+def _names_longest_first(allowed):
+    """Round 14 (perf): the allowed + public names without spaces, longest first — sorted once per allowed set."""
+    return tuple(sorted(set(_joined(allowed) + _joined_public()), key=len, reverse=True))
 
 
 @functools.lru_cache(maxsize=1)

@@ -193,6 +193,18 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   an institution noun inside a token counts ("MERCUACADEMYKUANTAN"); the name part must be 4+ letters and no Malay
   affix or English compound head. Common-word scan: 0 of the reviewer's 175 words flag. The owner's stop rule
   (decisions S6 item 10) sends what is left to TD-493 / TD-494. 13 tagged changes; dev 196 / 197, held-out 90 / 90.
+- **Round 14, the final check (class `Round14`): round 13 had started to block real public letters** — fixed
+  under the stop rule. "SkillsMalaysia" / "WorldSkills" are never glued names, and MALAYSIA, a state or a catalogued
+  campus word is never a glued name part; "akademiknya" / "academic…" never glue; a training word at a token's
+  start needs a 5+ letter name ("SkillsTest", "TrainingPlus", "Tuitionfees" are words); OCR digits are read only
+  inside a word ("K0LEJ", "Ko1ej") or as one edge digit that completes the noun ("AKADEM1"), and e-mail / web
+  addresses are read as written; a noun followed by a number ("KOLEJ 1", "PUSAT 1013", "Kampus 2 Labuan") is a room
+  / college number unless a name stands right before it or right after the number ("Akademi 21 Mercu", "Mercu
+  Academy 2", "Edu360 Kuantan"); the condition-4 number "1" stays a number. Perf: the name list is sorted once,
+  the patterns compiled once, and a field label is looked for just before the institute (the 48 KB one-line page
+  was 0.6 s). On the reviewer's real-letter probes: 33 rows better than round 12; 8 rows round 12 lifted now block,
+  each because its digits now read as letters and the plain spelling blocked in round 12 too ("Ko1ej Kediaman" =
+  "Kolej Kediaman"; "IKM1 Kuantan" on a KBS / JTM letter names a MARA institute). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

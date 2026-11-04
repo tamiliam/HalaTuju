@@ -7767,10 +7767,11 @@ corpus holds enough agency letters to measure it. *(S6 · M)*
 
 **Raised 2026-11-04 by the S6 round-13 review; left for S7 under the owner's stop rule (decisions S6 item 10).**
 Condition 4 excuses a weak suffix ("Solutions", "Technical") after a descriptor (`offer_agency._after_descriptor`)
-when no name stands right before or after it on the same line. Two shapes slip through: (a) the agency or the spelt
-TVET sector stands where the name would ("MARA Technical Solutions", "Teknikal Vokasional Solutions"), and the
-allowed span is taken out first; (b) the name sits on the PREVIOUS line ("... di Mercu" / "Technical Solutions
-Kuantan"); shape (b) is blocked today by other checks but not by the descriptor rule itself. Shape (a) lifts, pinned in
-`Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus letter reads this way. **Fix:** read the
+when no name stands right before or after it on the same line. Three shapes lift: (a) the agency or the spelt TVET
+sector stands where the name would ("MARA Technical Solutions", "Teknikal Vokasional Solutions", "Teknikal dan
+Vokasional Skills"), and the allowed span is taken out first; (b) the name sits on the PREVIOUS line ("Penyedia
+latihan : Mercu" / "Technical Solutions"); (c) a descriptor slogan with the name on the NEXT line ("Latihan Global"
+/ "Mercu Jaya"). (A next line that adds a place, "Technical Solutions Kuantan.", happens to block.) All three are
+pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus letter reads this way. **Fix:** read the
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*

@@ -833,6 +833,9 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
 - **Round 13 (2026-11-04): the last check — fixed, stricter only** (digits inside a word, closed-list names inside
   glued tokens, the training words, the affix guard). Then the owner's stop rule (decisions S6 item 10): S6 ships;
   new evasions go to TD for S7 unless they block a real public letter. Left: TD-493, TD-494. 13 tagged changes.
+- **Round 14 (2026-11-04): the final check found round 13 blocking real public letters** (SkillsMalaysia,
+  "akademiknya", room / college numbers, e-mail addresses) — fixed under the stop rule; real-letter probes match or
+  beat round 12 (8 read their digits like the plain spelling). 13 tagged changes. S6 stops here.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
