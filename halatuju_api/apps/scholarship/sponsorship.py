@@ -295,20 +295,6 @@ def set_programme_membership(sponsor, programme, status, vetted_by=''):
     return membership
 
 
-def _collected_signer_emails(credit):
-    """Every email that has already signed this credit, casefolded — the basis of the
-    three-distinct-signers rule. Keyed on EMAIL, never on the displayed name: prod has two
-    active admins sharing the name "Ve. Elanjelian", so a name key would be wrong in both
-    directions (see the 0125 migration docstring). Mirrors
-    ``payments._collected_signer_emails``."""
-    return {
-        (e or '').strip().casefold()
-        for e in (credit.recorded_by_email, credit.finance_checked_by_email,
-                  credit.confirmed_by_email)
-        if (e or '').strip()
-    }
-
-
 @transaction.atomic
 def sign_admin_credit(credit, admin, typed_name):
     """The maker→[finance]→approver sign-off for a wallet credit.
@@ -337,22 +323,21 @@ def sign_admin_credit(credit, admin, typed_name):
     ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
     appointing a finance admin ARMS the check for a credit already mid-chain, and revoking
     the last one degrades it back to two steps. ⚠ The finance-ROLE rule is
-    ``payments.credit_check_required`` since #39 S2 (runs moved to permissions). Returns the credit.
+    ``payments.credit_check_required`` since #39 S2 (runs moved to permissions). WHO may sign
+    which step is `credit_steps.step_refusal` since T5c P5b (the Overview counts with it). Returns the credit.
     """
-    from . import payments, staff_activity
-    if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
-                             Donation.STATUS_FINANCE_CHECKED):
+    from . import credit_steps, payments, staff_activity
+    if credit.status not in credit_steps.SIGNING:
         raise CreditError('bad_state')
     if not payments._name_matches(admin, typed_name):
         raise CreditError('name_mismatch')
-    is_super = bool(getattr(admin, 'is_super', False))
-    email = (admin.email or '').strip().casefold()
     now = timezone.now()
     needs_finance = payments.credit_check_required(_credit_org(credit))   # #39 S2: today's role rule
+    refusal = credit_steps.step_refusal(credit, admin, needs_finance)
+    if refusal:
+        raise CreditError(refusal)
 
     if credit.status == Donation.STATUS_DRAFT:
-        if not (is_super or admin.role == 'admin'):
-            raise CreditError('wrong_role')
         credit.recorded_by = (admin.name or '').strip()[:200]
         credit.recorded_by_email = (admin.email or '')[:254]
         credit.recorded_at = now
@@ -363,12 +348,6 @@ def sign_admin_credit(credit, admin, typed_name):
         return credit
 
     if credit.status == Donation.STATUS_ADMIN_SIGNED and needs_finance:
-        if not (is_super or admin.role == 'finance'):
-            if admin.role == 'org_admin':
-                raise CreditError('finance_check_required')
-            raise CreditError('wrong_role')
-        if email in _collected_signer_emails(credit):
-            raise CreditError('same_signer')
         credit.finance_checked_by = (admin.name or '').strip()[:200]
         credit.finance_checked_by_email = (admin.email or '')[:254]
         credit.finance_checked_at = now
@@ -379,10 +358,6 @@ def sign_admin_credit(credit, admin, typed_name):
         return credit
 
     # admin_signed (finance dormant) or finance_checked → the approver countersigns.
-    if not (is_super or admin.role == 'org_admin'):
-        raise CreditError('wrong_role')
-    if email in _collected_signer_emails(credit):
-        raise CreditError('same_signer')
     credit.confirmed_by = (admin.name or '').strip()[:200]
     credit.confirmed_by_email = (admin.email or '')[:254]
     credit.confirmed_at = now

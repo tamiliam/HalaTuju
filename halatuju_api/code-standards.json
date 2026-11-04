@@ -289,6 +289,54 @@
       "ledger": "query_budgets",
       "key": "api/v1/admin/scholarship/my-programmes/::GET::mentor-5-students",
       "value": 10
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The Overview's pending cards as an org admin with one case of each kind: the application, sponsor, invitation, payment-run and request counts, each one grouped read.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::org-admin-1-case",
+      "value": 11
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The same as an org admin with four of each: EQUAL to the one-case reading (no per-case or per-run read).",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::org-admin-4-cases",
+      "value": 11
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The pending cards as finance with one payment run and one wallet credit waiting: the chain's holders once per organisation.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::finance-1-run",
+      "value": 9
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The same as finance with four runs and four credits: EQUAL to the one-run reading.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::finance-4-runs",
+      "value": 9
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The pending cards as a QC checker with one case at QC: the queue plus the separation guard in bulk (qc_separation.barred_ids, five reads).",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::qc-1-case",
+      "value": 10
+    },
+    {
+      "on": "2026-11-05",
+      "by": "Team tables T5c P5b S1",
+      "why": "The same as a QC checker with four cases at QC, two of them barred: EQUAL to the one-case reading.",
+      "ledger": "query_budgets",
+      "key": "api/v1/admin/scholarship/my-pending/::GET::qc-4-cases",
+      "value": 10
     }
   ],
   "_history": [

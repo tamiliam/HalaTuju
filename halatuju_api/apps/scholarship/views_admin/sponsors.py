@@ -115,10 +115,10 @@ class AdminSponsorPendingCountView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        from .. import surface_gates
+        from .. import my_pending, surface_gates
         if not surface_gates.may_read_sponsors(admin):   # T1: the list's own gate, in lockstep
             return self._deny_role()
-        return Response({'count': Sponsor.objects.filter(status='pending').count()})
+        return Response({'count': my_pending.pending_sponsor_count()})   # the Overview card's rule too
 
 
 #: TD-371: why the IC lock is held, by what holds it — the code is the same for both.

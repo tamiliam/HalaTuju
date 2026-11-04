@@ -872,6 +872,72 @@ class TestTheProgrammesLandingQueryBudget(TestCase):
         self.assertEqual(resolve('/' + LANDING_ROUTE).route, LANDING_ROUTE)
 
 
+#: Team tables T5c P5b S1 (2026-11-05): the Overview's pending cards (`my_pending.pending_for`). Every
+#: count is a grouped or bulk read (the QC separation through `qc_separation.barred_ids`, the payment
+#: chain's holders once per organisation), so each pair's two readings are EQUAL.
+PENDING_ROUTE = 'api/v1/admin/scholarship/my-pending/'
+PENDING_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{PENDING_ROUTE}::GET::org-admin-1-case', f'{PENDING_ROUTE}::GET::org-admin-4-cases',
+    f'{PENDING_ROUTE}::GET::finance-1-run', f'{PENDING_ROUTE}::GET::finance-4-runs',
+    f'{PENDING_ROUTE}::GET::qc-1-case', f'{PENDING_ROUTE}::GET::qc-4-cases')}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheOverviewPendingCardsQueryBudget(TestCase):
+    """The pending cards, counted — a per-case, per-run or per-credit read fails the larger reading."""
+
+    def _reading(self, key):
+        from datetime import date
+        from decimal import Decimal
+        from django.utils import timezone
+        from apps.scholarship.models import AssignmentEvent, Donation, PaymentRun, Sponsor
+        fixture = key.split('::')[2]
+        n = int(fixture.split('-')[-2])
+        org = make_org()
+        gift = make_programme(organisation=org)
+        cohort = make_cohort(programme=gift)
+        colleague = make_admin('reviewer', owning_org=org)
+        qc = make_admin('qc', owning_org=org)
+        finance = make_admin('finance', owning_org=org, first_seen_at=timezone.now())
+        sponsor = Sponsor.objects.create(supabase_user_id=f'qb-{fixture}', name='S', email=f'{fixture}@example.test',
+                                         phone='0123456789', source='friend', consent_at=timezone.now(),
+                                         status='approved')
+        for i in range(n):
+            make_application('submitted', cohort=cohort)
+            app = make_application('awaiting_qc', outcome='recommend', cohort=cohort, reviewer=colleague)
+            if i % 2:
+                AssignmentEvent.objects.create(application=app, to_admin=qc)        # one barred in two
+            PaymentRun.objects.create(organisation=org, programme=gift, payment_date=date(2026, 7, 1),
+                                      period_month=date(2026, 7, 1), status='admin_signed', reference=f'qb-{fixture}-{i}',
+                                      admin_signed_email='maker@example.test')
+            Donation.objects.create(sponsor=sponsor, amount=Decimal('10'), programme=gift,
+                                    status=Donation.STATUS_ADMIN_SIGNED, recorded_by_email='maker@example.test')
+        who = {'org': make_admin('org_admin', owning_org=org), 'finance': finance, 'qc': qc}[fixture.split('-')[0]]
+        client, url = authed_client(who), f'/{PENDING_ROUTE}'
+        self.assertEqual(client.get(url).status_code, 200)               # warm-up
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        self.assertTrue(response.json()['cards'])
+        return len(captured.captured_queries)
+
+    def test_each_reading_stays_inside_its_budget(self):
+        for key, limit in PENDING_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(now, limit, f'{key} now costs {now} queries; budget {limit}. '
+                                     '⚠ DO NOT RAISE IT — a per-case, per-run or per-credit read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'PENDING_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in PENDING_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], LOWER_IT + '\n' + '\n'.join(loose))
+
+    def test_the_budgeted_route_still_resolves(self):
+        self.assertEqual(resolve('/' + PENDING_ROUTE).route, PENDING_ROUTE)
+
+
 class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
     """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
     file measures that the record lacks reads None above; this names it. And the reverse: an
@@ -890,6 +956,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **STAFF_LIST_BUDGETS,
         **SCHOLARS_BUDGETS,
         **LANDING_BUDGETS,
+        **PENDING_BUDGETS,
     }
 
     def test_every_measured_key_has_a_budget(self):

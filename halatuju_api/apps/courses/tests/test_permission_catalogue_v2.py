@@ -276,13 +276,11 @@ def _doors():
 
 
 def _lands(a):
-    """The landing read's own admit rule (`AdminMyProgrammesView.get`), asked of a person."""
-    from apps.courses import staff_tables
-    from apps.scholarship import mentor_desk
+    """The landing's own admit rule (`my_programmes.lands`, asked by both `AdminMyProgrammesView.get` and
+    `AdminMyPendingView.get`), asked of a person."""
     from apps.scholarship.views_admin import _AdminBase
-    from apps.scholarship.views_admin.my_programmes import sees_every_gift
-    return (sees_every_gift(a, _AdminBase()._b40_scope(a)) or staff_tables.in_reviewers(a)
-            or mentor_desk.mentor_of(a) is not None)
+    from apps.scholarship.views_admin.my_programmes import lands
+    return lands(a, _AdminBase()._b40_scope(a))
 
 
 #: A door open today that NO v2 key covers, with why. The graduation-messages list opens by role
@@ -387,6 +385,35 @@ class LandingContent(TestCase):
             if person.is_active and st.in_reviewers(person):
                 with self.subTest(shape=shape):
                     self.assertTrue({'review', 'qc'} & set(v2.effective_v2(person)))
+
+    def test_the_pending_cards_open_exactly_on_v2_keys(self):
+        """T5c P5b S1: the Overview's pending cards (`my_pending.pending_for`) are where access lives on
+        the merged page, so each card is pinned to its v2 set. Non-vacuous: every rule both opens and
+        refuses at least one live shape."""
+        from apps.scholarship import my_pending
+        from apps.scholarship.views_admin import _AdminBase
+        # The two hat cards need the hat AND a seat at the Reviewers table (an org admin's implied `qc`
+        # reads the Overview's `awaiting_qc` instead, never a checker's queue).
+        rules = {
+            'sponsors_to_vet': lambda held, p: 'sponsors.view' in held,
+            'invitations': lambda held, p: set(_ORG_READ) <= held,
+            'payment_runs': lambda held, p: 'payments.view' in held,
+            'my_open': lambda held, p: 'review' in held and st.in_reviewers(p),
+            'qc_awaiting': lambda held, p: 'qc' in held and st.in_reviewers(p),
+            'unassigned': lambda held, p: 'students.view' in held and set(_ORG_READ) <= held,
+        }
+        seen = {key: set() for key in rules}
+        for shape, person in self.people.items():
+            if not person.is_active or not _lands(person):
+                continue
+            held = set(v2.effective_v2(person))
+            keys = {c['key'] for c in my_pending.pending_for(person, b40_scope=_AdminBase()._b40_scope(person))}
+            for key, rule in rules.items():
+                with self.subTest(shape=shape, card=key):
+                    self.assertEqual(key in keys, rule(held, person), f'{shape} {key} {sorted(held)}')
+                    seen[key].add(key in keys)
+        for key, both in seen.items():
+            self.assertEqual(both, {True, False}, f'{key}: the rule is vacuous over the live shapes')
 
 
 class NotYetWritable(TestCase):

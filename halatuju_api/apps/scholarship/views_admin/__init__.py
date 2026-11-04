@@ -163,6 +163,7 @@ from .mentor_students import (   # S7c: a mentor's own students
     AdminMentorStudentsView,
 )
 from .my_programmes import AdminMyProgrammesView   # T5c P5: the Programmes landing
+from .my_pending import AdminMyPendingView         # T5c P5b: the Overview's pending cards
 from .reviewers import (
     _REVIEWER_OPEN_STATUSES, _REVIEWER_PROGRESSED_STATUSES, _REVIEW_FLUENCY, _ReviewersBase,
     _median_days, _reviewer_dict, _reviewer_languages, _reviewer_workloads,

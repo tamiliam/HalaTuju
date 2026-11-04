@@ -79,3 +79,34 @@ def refusal(admin, app):
                                     verb__in=REVIEW_VERBS).exists():
         return SELF_REVIEW
     return None
+
+
+def barred_ids(admin, apps):
+    """The ids among ``apps`` (a queryset of applications) that `refusal` would refuse ``admin`` — the
+    SAME conditions, asked in bulk (T5c P5b S1: the Overview's ``qc_awaiting`` card leaves out the cases
+    this person may not decide). Five queries whatever the number of cases; `test_my_pending` holds it
+    to `refusal` case by case. ⚠ A new condition in `refusal` belongs here too."""
+    from .models import AssignmentEvent, InterviewSession, InterviewSlot, StaffActivity
+    if admin is None:
+        return set(apps.values_list('pk', flat=True))
+    if admin.is_super:
+        return set()
+    barred = set()
+    ids = set()
+    for pk, assigned_id, decided_by, verified_by in apps.values_list(
+            'pk', 'assigned_to_id', 'verdict_decided_by', 'verified_by'):
+        ids.add(pk)
+        if assigned_id == admin.id or _same_email(decided_by, admin) or _same_email(verified_by, admin):
+            barred.add(pk)
+    rest = ids - barred
+    if not rest:
+        return barred
+    barred |= set(AssignmentEvent.objects.filter(application_id__in=rest).filter(
+        Q(to_admin=admin) | Q(from_admin=admin)).values_list('application_id', flat=True))
+    barred |= set(InterviewSession.objects.filter(application_id__in=rest, interviewer=admin)
+                  .values_list('application_id', flat=True))
+    barred |= set(InterviewSlot.objects.filter(application_id__in=rest, reviewer=admin)
+                  .values_list('application_id', flat=True))
+    barred |= set(StaffActivity.objects.filter(actor=admin, subject_type='application', subject_id__in=rest,
+                                               verb__in=REVIEW_VERBS).values_list('subject_id', flat=True))
+    return barred

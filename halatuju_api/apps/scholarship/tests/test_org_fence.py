@@ -367,6 +367,10 @@ class TestFenceCoverageCompleteness(TestCase):
         # (`owning_organisation_id`-fenced) and their own current mentoring (`mentor_desk.current_assignments`,
         # the mentor's organisation). Another tenant's gift is never listed (`test_my_programmes.py`).
         'AdminMyProgrammesView': 'programmes-landing-org-fenced',
+        # T5c P5b S1: the Overview's pending cards — every count fenced in `my_pending` (super: the pooled
+        # platform; else the caller's own organisation; sponsors are platform accounts, as on the badge).
+        # Nothing of a second organisation leaks (`test_my_pending.py`).
+        'AdminMyPendingView': 'programmes-landing-org-fenced',
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
         # Reaches its gift through the SAME `_programme_or_404`, so another tenant's gift is 404
         # before a single token is spent.

@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
+
+**One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at
+`/admin/organisation/programmes`, with ONE navigation row. It keeps the landing's no-v2-key exception
+(`halatuju_api/CLAUDE.md`); the `org_read` door now guards individual cards, not the page.
+
+**Per-person pending cards:** on top of the page, `GET admin/scholarship/my-pending/` (`my_pending.pending_for`) serves
+the work waiting for THIS person, as the union of their roles: admins `unassigned`, `overdue` (+ `due_soon`) and
+`awaiting_qc` (Applications scope 'all' only), `sponsors_to_vet`, `invitations` (org_read), `payment_runs` (the step
+is theirs, `next_step_for`), `requests` (super / org_admin); finance `payment_runs`, `wallet_credits`,
+`sponsors_to_vet`, `invitations` and no application keys; QC `qc_awaiting` (+ `oldest_days`) minus the cases
+`qc_separation` bars; a reviewer `my_open`, `my_due_soon`, `my_overdue`; a mentor `mentees`, `not_met`, `asked_help`.
+A super with no organisation reads pooled numbers. Every count is read through the service that already owns its
+rule (parity tests in `test_my_pending.py`). `wallet_credits` is counted by `credit_steps.step_refusal`, the rule
+`sponsorship.sign_admin_credit` now asks too, so the card and the signature cannot disagree.
+
+**A card the caller may not see is ABSENT, never sent as zero.** A zero card the caller MAY see is muted on the web,
+and when every card is zero the page shows one all-clear line instead.
+
+**Mentor "not yet met" only:** `not_met` counts current mentees with no meeting at all; there is no "not met
+recently" threshold.
+
+**People tile dropped:** the page has no People / team-size tile.
+
+Alternatives rejected: a separate pending page (two places to look); zero-valued cards for keys the caller may not
+read (it would leak what the caller cannot see and clutter every narrow role's page).
+
 ## T5c P5: owner rulings of 2026-11-04 (QC card, always-open page, invite gift)
 
 **QC card (owner "a"):** QC gets the admin card with counts on the Programmes landing (its Applications scope is already

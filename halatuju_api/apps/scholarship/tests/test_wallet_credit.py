@@ -448,7 +448,11 @@ class TestTheTwoChainsStayOneDesign(TestCase):
     def test_the_credit_chain_uses_the_same_guard_codes(self):
         """Same failures, same names — an operator reading two screens must not have to
         learn two vocabularies for one control."""
-        source = inspect.getsource(svc.sign_admin_credit)
+        # T5c P5b S1: the step rule moved to `credit_steps.step_refusal` (the Overview card asks it too);
+        # `sign_admin_credit` raises whatever it answers, so the two read as one function here.
+        from apps.scholarship import credit_steps
+        source = inspect.getsource(svc.sign_admin_credit) + inspect.getsource(credit_steps.step_refusal)
+        self.assertIn('credit_steps.step_refusal(', inspect.getsource(svc.sign_admin_credit))
         for code in ('bad_state', 'name_mismatch', 'wrong_role', 'same_signer',
                      'finance_check_required'):
             self.assertIn(f"'{code}'", source)

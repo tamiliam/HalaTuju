@@ -82,10 +82,9 @@ from .views_admin import (
     AdminSponsorshipListView,
     AdminApplicationRefereeView,
     AdminAssignableAdminsView,
-    AdminScopeListView,
-    AdminProgrammeConfigurationView,
+    AdminScopeListView, AdminProgrammeConfigurationView,
     AdminProgrammeListView, AdminProgrammeDetailView, AdminApplyCopyDraftView, AdminMyProgrammesView,
-    AdminIntakeYearListView, AdminIntakeYearDetailView,
+    AdminMyPendingView, AdminIntakeYearListView, AdminIntakeYearDetailView,
     AdminIntakeYearFinishView,
     AdminOrganisationThemeView,
     AdminOrganisationThemePublishView,
@@ -516,6 +515,7 @@ urlpatterns = [
     # organisation, cross-tenant => 404 not 403, org_admin + super only.
     path('admin/scholarship/programmes/', AdminProgrammeListView.as_view()),
     path('admin/scholarship/my-programmes/', AdminMyProgrammesView.as_view()),   # T5c P5: the Programmes landing
+    path('admin/scholarship/my-pending/', AdminMyPendingView.as_view()),         # T5c P5b: its pending cards
     path('admin/scholarship/programmes/<int:pk>/', AdminProgrammeDetailView.as_view()),
     # Drafts this gift's ms/ta apply-page copy from its own English. DRAFTS ONLY — the save is
     # still the PATCH above, pressed by a person.

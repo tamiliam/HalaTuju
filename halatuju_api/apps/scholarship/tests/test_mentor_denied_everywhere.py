@@ -41,6 +41,8 @@ ALLOWED = {
     ('api/v1/admin/mentor/students/', 'get'),
     # T5c P5: the Programmes landing — the gifts of the mentor's OWN current students (none here, so empty).
     ('api/v1/admin/scholarship/my-programmes/', 'get'),
+    # T5c P5b S1: the Overview's pending cards — the mentor's OWN mentee counts (`my_pending._mentor_cards`).
+    ('api/v1/admin/scholarship/my-pending/', 'get'),
 }
 
 #: (route, method) pairs a mentor's call REACHES, which serve no data. With the sweep's empty body:

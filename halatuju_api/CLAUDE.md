@@ -278,10 +278,14 @@ Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permi
 gate behind `staff_tables.opens` — see the T5c paragraph above; the rest still opens through `resolve` / `has_perm`
 and role checks), and `asked_set` refuses a v2 key. **A NEW PAGE must still be gated
 the old way AND get a v2 key** in `CATALOGUE_V2` plus a door in `test_permission_catalogue_v2._doors` (the coverage
-test asks the real gate per live shape). **One exception (owner, 2026-11-04):** a page that EVERY staff and mentor
-login on the partner side may open, whose content the server read narrows per person (the T5c P5 Programmes
-landing), takes no v2 key; its door test must still assert, non-vacuously, that every staff + mentor shape opens it
-and partner / source / inactive shapes are refused.
+test asks the real gate per live shape). **One exception (owner, 2026-11-04; merged 2026-11-05):** a page that
+EVERY staff and mentor login on the partner side may open, whose content the server read narrows per person, takes
+no v2 key. Today that is the merged **Overview** at `/admin/organisation/programmes` (T5c P5b): its programme cards
+(`my-programmes`) and its per-person pending cards (`my-pending`, `my_pending.pending_for`) share ONE door,
+`my_programmes.lands`. The `org_read` door no longer guards the page; it guards individual CARDS (a card the caller
+may not see is ABSENT, never zero). Its door test must still assert, non-vacuously, that every staff + mentor shape
+opens it and partner / source / inactive shapes are refused, and each card is pinned to its v2 set
+(`LandingContent.test_the_pending_cards_open_exactly_on_v2_keys`).
 
 ## Known Issues & Future Work
 

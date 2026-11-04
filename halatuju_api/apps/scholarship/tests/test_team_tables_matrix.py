@@ -171,6 +171,16 @@ def t5c_p5_added_cells(shape, before):
     return {T5C_P5_ADDED: before[T5C_P5_SAME_REFUSAL_AS] if shape in T5C_P5_REFUSED else 200}
 
 
+#: Team tables T5c P5b S1 (2026-11-05): the Overview's pending cards (`AdminMyPendingView`). A NEW route
+#: sharing the landing's door (`my_programmes.lands`), so its cell is the landing's own: 200 for every
+#: staff shape and a live mentor, the landing's refusal for the rest.
+T5C_P5B_ADDED = 'GET api/v1/admin/scholarship/my-pending/'
+
+
+def t5c_p5b_added_cells(shape, before):
+    return {T5C_P5B_ADDED: t5c_p5_added_cells(shape, before)[T5C_P5_ADDED]}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -323,7 +333,7 @@ def _shape_test(shape):
             return
         before = _before()[shape]
         expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
-                    **t5c_p5_added_cells(shape, before)}
+                    **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -344,7 +354,7 @@ def _expected_row(shape):
     """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
     before = _before()[shape]
     row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
-           **t5c_p5_added_cells(shape, before)}
+           **t5c_p5_added_cells(shape, before), **t5c_p5b_added_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row

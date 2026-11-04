@@ -50,6 +50,13 @@ def sees_every_gift(admin, b40_scope):
     return b40_scope == 'all' or staff_tables.in_admins(admin)
 
 
+def lands(admin, b40_scope):
+    """Who opens the Overview landing at all — this read and its pending cards (`my_pending`, T5c P5b):
+    a person who sees every gift, sits at the Reviewers table, or mentors now. Nobody else (403)."""
+    return (sees_every_gift(admin, b40_scope) or staff_tables.in_reviewers(admin)
+            or mentor_desk.mentor_of(admin) is not None)
+
+
 def _fenced_programmes(admin, organisation_id=None):
     """Every gift inside the caller's fence (inactive ones included, as on the gift cards).
     `organisation_id` fences to that organisation instead (a mentor's own, `current_assignments`)."""
@@ -165,7 +172,7 @@ class AdminMyProgrammesView(_AdminBase):
         every = sees_every_gift(admin, scope)
         reviews = staff_tables.in_reviewers(admin)
         mentor = mentor_desk.mentor_of(admin)
-        if not (every or reviews or mentor is not None):
+        if not lands(admin, scope):
             return self._deny_role()
         cases = cases_by_gift(admin) if reviews else None
         scholars = scholars_by_gift(admin) if mentor is not None else None

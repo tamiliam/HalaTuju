@@ -200,8 +200,11 @@ ALLOWLIST = {
         'money: cancelling a credit is gated by the label (getattr role)'),
     'scholarship/sponsorship.py::record_admin_credit': ('GATE-LEFT', 'T5d',
         'money: recording a credit is gated by the label (getattr role)'),
-    'scholarship/sponsorship.py::sign_admin_credit': ('GATE-LEFT', 'T5d',
-        'money: credit signing by label (admin / finance / org_admin)'),
+    'scholarship/credit_steps.py::step_refusal': ('GATE-LEFT', 'T5d',
+        'money: credit signing by label (admin / finance / org_admin); moved out of '
+        'sponsorship.sign_admin_credit at T5c P5b so the Overview counts with the same rule'),
+    'scholarship/credit_steps.py::checks_credits': ('GATE-LEFT', 'T5d',
+        'money: the Overview wallet_credits card follows the finance CHECKER seat, a label today'),
     'scholarship/staff_lifecycle.py::_other_active_finance': ('GATE-LEFT', 'T5d',
         'money: the last-Finance guard counts by label'),
     'scholarship/staff_lifecycle.py::change_role': ('DISPLAY', 'T5a tables',

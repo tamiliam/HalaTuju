@@ -450,6 +450,8 @@ class TestTheMentorMethodsAreTheListedOnes(TestCase):
         'AdminMentorStudentModuleFileView': ('get',),
         # Team tables T5c P5 — the Programmes landing: the gifts of the mentor's own current students.
         'AdminMyProgrammesView': ('get',),
+        # Team tables T5c P5b S1 — the Overview's pending cards: the mentor's own mentee counts.
+        'AdminMyPendingView': ('get',),
     }
 
     def test_the_closed_list(self):
