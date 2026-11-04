@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T5c part 5 — the Programmes landing (in progress, branch t5c)
+
+Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Not live.
+
+**S1 — server:**
+- **New `GET admin/scholarship/my-programmes/`** (`views_admin/my_programmes.py`, `AdminMyProgrammesView`) →
+  `{every_gift, programmes: [{id, code, name_en/ms/ta, is_active, lifecycle, archived, opens, ...}]}`, by code.
+  - Admins table, or an Applications scope of 'all' (super, org admin, admin, finance, QC, a key-seated team
+    member): every gift of their organisation. `intake_years` / `applications` / `awarded` only with scope
+    'all' (finance gets the list without them).
+  - Otherwise only the gifts with work: `cases` (assigned to the caller, open or done, org-fenced) and
+    `scholars` (current mentoring, `mentor_desk.current_assignments`); a reviewer who mentors sees the
+    union. An archived gift is listed only with work in it. `opens` is `overview` or `my_students`.
+  - A mentor login may GET it (`mentor_methods`); a referral partner and a stopped mentor with no staff seat
+    are 403; a source user and an inactive row are refused at sign-in.
+- **Programme Overview 404:** a caller who does not see every gift gets 404 on `?programme=<code>` of a
+  gift where no case is assigned to them (`my_programmes.may_open_overview`). Unnamed Overview unchanged.
+- Tests: `test_my_programmes.py` (15). The access matrix declares the new cell per shape
+  (`t5c_p5_added_cells`); the mentor sweep, the closed `mentor_methods` list and the org-fence classification
+  name the new view. No existing cell moved.
+
 ## Team tables T5c part 1 — pages open by keys (LIVE 2026-11-04; main ac68a361; api-01251-l9v, web-01081-957)
 
 decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds

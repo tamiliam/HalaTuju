@@ -84,7 +84,7 @@ from .views_admin import (
     AdminAssignableAdminsView,
     AdminScopeListView,
     AdminProgrammeConfigurationView,
-    AdminProgrammeListView, AdminProgrammeDetailView, AdminApplyCopyDraftView,
+    AdminProgrammeListView, AdminProgrammeDetailView, AdminApplyCopyDraftView, AdminMyProgrammesView,
     AdminIntakeYearListView, AdminIntakeYearDetailView,
     AdminIntakeYearFinishView,
     AdminOrganisationThemeView,
@@ -515,11 +515,11 @@ urlpatterns = [
     # Gift programmes and their intake years (Sabah S2b). Org-fenced on the programme's own
     # organisation, cross-tenant => 404 not 403, org_admin + super only.
     path('admin/scholarship/programmes/', AdminProgrammeListView.as_view()),
+    path('admin/scholarship/my-programmes/', AdminMyProgrammesView.as_view()),   # T5c P5: the Programmes landing
     path('admin/scholarship/programmes/<int:pk>/', AdminProgrammeDetailView.as_view()),
     # Drafts this gift's ms/ta apply-page copy from its own English. DRAFTS ONLY — the save is
     # still the PATCH above, pressed by a person.
-    path('admin/scholarship/programmes/<int:pk>/apply-copy/draft/',
-         AdminApplyCopyDraftView.as_view()),
+    path('admin/scholarship/programmes/<int:pk>/apply-copy/draft/', AdminApplyCopyDraftView.as_view()),
     path('admin/scholarship/programmes/<int:pk>/years/', AdminIntakeYearListView.as_view()),
     path('admin/scholarship/intake-years/<int:pk>/', AdminIntakeYearDetailView.as_view()),
     # ⚠ ITS OWN ROUTE because it is TERMINAL and takes a typed confirmation — see

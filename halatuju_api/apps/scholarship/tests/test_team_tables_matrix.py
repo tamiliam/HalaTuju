@@ -155,6 +155,22 @@ def t4_added_cells(before):
     return {T4_ADDED: before[T4_SAME_AS]}
 
 
+#: Team tables T5c P5 (2026-11-04): the Programmes LANDING (`AdminMyProgrammesView`). A NEW route, so a NEW
+#: cell per shape. Owner ruling: everyone on partner login lands on Organisation -> Programmes, so every staff
+#: shape reads it (200: the full list for an admin, only the gifts with work for a reviewer or mentor — none
+#: here, so an empty list), and so does a MENTOR login (`mentor_methods = ('get',)`: the gifts of its own
+#: students). The referral partner, the source user and the inactive rows get the refusal they get on the
+#: Overview (403 / 401 at sign-in). The Overview's own new 404 needs `?programme=`, which no probe sends, so
+#: no existing cell moves.
+T5C_P5_ADDED = 'GET api/v1/admin/scholarship/my-programmes/'
+T5C_P5_REFUSED = ('partner', 'source_partner', 'admin_inactive', 'mentor_inactive')
+T5C_P5_SAME_REFUSAL_AS = 'GET api/v1/admin/scholarship/programme-overview/'
+
+
+def t5c_p5_added_cells(shape, before):
+    return {T5C_P5_ADDED: before[T5C_P5_SAME_REFUSAL_AS] if shape in T5C_P5_REFUSED else 200}
+
+
 def admin_routes():
     """`[(route, view_class)]` for every `api/v1/admin/…` URL, in resolver order."""
     out = []
@@ -306,7 +322,8 @@ def _shape_test(shape):
             OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + '\n')
             return
         before = _before()[shape]
-        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before)}
+        expected = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
+                    **t5c_p5_added_cells(shape, before)}
         for probe, (was, now) in EXPECTED_CHANGES.get(shape, {}).items():
             self.assertEqual(before[probe], was, f'{shape} {probe}: the declared BEFORE is wrong')
             expected[probe] = now
@@ -326,7 +343,8 @@ for _shape in SHAPES:
 def _expected_row(shape):
     """A shape's BEFORE row plus the cells T2-T4 added, as `_shape_test` expects it."""
     before = _before()[shape]
-    row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before)}
+    row = {**before, **t2_added_cells(shape), **t3_added_cells(before), **t4_added_cells(before),
+           **t5c_p5_added_cells(shape, before)}
     for probe, (_was, now) in EXPECTED_CHANGES.get(shape, {}).items():
         row[probe] = now
     return row

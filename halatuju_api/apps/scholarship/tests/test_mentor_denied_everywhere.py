@@ -39,6 +39,8 @@ ALLOWED = {
     # S7c: the mentor's own students — the list (this mentor has none, so it is empty). The per-student
     # page and the log are opted in too, and answer 404 here: the sweep's id is no student of theirs.
     ('api/v1/admin/mentor/students/', 'get'),
+    # T5c P5: the Programmes landing — the gifts of the mentor's OWN current students (none here, so empty).
+    ('api/v1/admin/scholarship/my-programmes/', 'get'),
 }
 
 #: (route, method) pairs a mentor's call REACHES, which serve no data. With the sweep's empty body:

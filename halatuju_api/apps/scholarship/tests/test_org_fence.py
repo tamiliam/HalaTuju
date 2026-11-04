@@ -362,6 +362,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # `test_the_key_set_per_role_is_exact` pins it; `partner` (no sections at all) is 403.
         'AdminProgrammeOverviewView': 'programme-overview-org-fenced+role-shaped',
         'AdminProgrammeListView': 'sabah-s2b-programmes-fenced',
+        # T5c P5 (2026-11-04) — the Programmes landing. The gifts come from the caller's own organisation
+        # (super: all; no organisation: none); a narrowed caller's from their OWN assigned cases
+        # (`owning_organisation_id`-fenced) and their own current mentoring (`mentor_desk.current_assignments`,
+        # the mentor's organisation). Another tenant's gift is never listed (`test_my_programmes.py`).
+        'AdminMyProgrammesView': 'programmes-landing-org-fenced',
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
         # Reaches its gift through the SAME `_programme_or_404`, so another tenant's gift is 404
         # before a single token is spent.
