@@ -121,6 +121,14 @@ Lead rulings:
 - P5c web DONE 38144e07 (bundle 144.147; qc_awaiting / invitations / sponsors_to_vet unfiltered - no filter on those
   pages). P5c server DONE 7ce8de9c (queries_sla.ready_to_assign / assignable_now, per-org query_answer_days, parity
   test; review_sla.in_band; attention(organisation=); 260 targeted pass; SQLite only). Review + gates running.
+- P5c review (Sonnet): SHIP + 2 medium. M1 my_open card counts AWAITING_VERDICT but ?assigned=me lists all the
+  reviewer's cases -> add band=open (awaiting verdict) and link ?assigned=me&band=open, with a parity test. M2 card
+  links carry no ?programme= -> verify whether my-pending counts are gift-scoped; add only if they are. Lows: in_band
+  id list (fine at size), double EXISTS annotate. Fix AFTER the running gates finish (mobile-check uses the tree).
+- P5c gates: pytest 12432 PASS, mobile 775 PASS, bundle 144.149 OK; jest 2 FAIL (title= on chip button; page.tsx 657).
+- P5c follow-up 2b618fc8: band=open for my_open + parity test; M2 parity already holds (cards are all-gifts counts,
+  no change); title= dropped; ApplicationUrlFilters.tsx extracted (page.tsx 599). Full pytest 12433 PASS; jest 6525
+  with 1 fail (eslint-disable reason) fixed, affected suites 507 PASS; bundle 144.147. NEXT: owner deploy yes.
 
 ## Stops waiting on the owner
 - **P5 phone check and deploy approval** (asked before each deploy; P5 changes reviewer and mentor access).
