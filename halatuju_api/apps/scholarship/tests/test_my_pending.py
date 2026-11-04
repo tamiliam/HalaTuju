@@ -78,8 +78,9 @@ class MyPending(TestCase):
         make_application('assigned', cohort=c1, reviewer=cls.reviewer,
                          assigned_at=now - datetime.timedelta(days=sla + 1))                 # overdue
         make_application('assigned', cohort=c1, reviewer=cls.colleague)                      # not the reviewer's
-        make_application('submitted', cohort=c1)
-        make_application('submitted', cohort=c1)
+        make_application('profile_complete', cohort=c1)                                      # unassigned + ready
+        make_application('profile_complete', cohort=c1)
+        make_application('submitted', cohort=c1)                                             # not yet ready: not counted
 
         cls.qc = make_admin('qc', owning_org=cls.org)
         cls.waiting = [make_application('awaiting_qc', outcome='recommend', cohort=c1, reviewer=cls.colleague)
@@ -116,7 +117,7 @@ class MyPending(TestCase):
 
         # The other organisation: its own cases, money rows, invitation and request — none may leak.
         cls.other_admin = make_admin('org_admin', owning_org=cls.other)
-        make_application('submitted', cohort=cb)
+        make_application('profile_complete', cohort=cb)
         make_application('awaiting_qc', outcome='decline', cohort=cb, reviewer=make_admin('reviewer', owning_org=cls.other))
         _org_data(cls, cls.other, gb, cb, 'b')
         OrgRequest.objects.create(organisation=cls.other, submitted_by=cls.other_admin, kind='feature', title='T',

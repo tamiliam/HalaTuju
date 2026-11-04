@@ -120,3 +120,46 @@ def is_ready_for_assignment(application, now=None):
         return True
     now = now or timezone.now()
     return now >= application.profile_completed_at + timedelta(days=query_sla_days(application))
+
+
+def ready_to_assign(queryset, now=None, organisation=None):
+    """The queryset form of ``is_ready_for_assignment`` — ONE rule, two spellings (2026-11-05).
+
+    Keeps the rows that are READY: ``profile_completed_at`` set AND (no open student task OR
+    ``now >= profile_completed_at + the organisation's query_answer_days``). The grace is
+    PER ORGANISATION, so a queryset pooling several organisations (a super's) reads each row's
+    own number: the organisations that changed it (one ``org_config.custom_values`` read), and
+    the platform default for everybody else, an organisation-less row included.
+    ``test_ready_to_assign`` pins this against the per-row function.
+
+    ``organisation``: pass it ONLY when the queryset is already fenced to that one organisation
+    (every caller below the org fence): its own grace is then read from the object in hand, with no
+    query for the map. A pooled (super) queryset passes nothing and reads the map."""
+    from datetime import timedelta
+
+    from django.db.models import Q
+
+    from apps.courses import org_config
+    now = now or timezone.now()
+    if OPEN_STUDENT_TASKS_ANNOTATION not in queryset.query.annotations:
+        queryset = with_open_student_tasks(queryset)
+    if organisation is None:
+        custom = org_config.custom_values('query_answer_days')
+    else:
+        v = org_config.stored(organisation, 'query_answer_days')
+        custom = {} if v is None else {organisation.id: v}
+    past = Q()
+    for org_id, days in custom.items():
+        past |= Q(owning_organisation_id=org_id, profile_completed_at__lte=now - timedelta(days=days))
+    past |= (~Q(owning_organisation_id__in=list(custom))
+             & Q(profile_completed_at__lte=now - timedelta(days=org_config.default('query_answer_days'))))
+    return queryset.filter(profile_completed_at__isnull=False).filter(
+        Q(**{OPEN_STUDENT_TASKS_ANNOTATION: False}) | past)
+
+
+def assignable_now(queryset, now=None, organisation=None):
+    """The cases that can be assigned NOW — the Overview's "Unassigned" card (owner, 2026-11-05,
+    option A): Awaiting review, nobody holds it, no verdict, and READY by ``ready_to_assign``.
+    The card's count and the Applications list's ``?ready=1`` both read this."""
+    return ready_to_assign(queryset.filter(
+        status='profile_complete', assigned_to__isnull=True, verdict_decided_at__isnull=True), now, organisation)

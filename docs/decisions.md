@@ -18754,3 +18754,22 @@ InfoTip hit areas and framed tables, no signal. (B) text against its nearest bor
 missed a chip running out of a narrow, unboxed column (the request page's header).
 **Revisit if:** a real spill is missed (a transformed or clipped case), or the metric flags an intentional overflow
 that needs an exclusion — add the exclusion to `measure.ts` and this entry, never a per-page exception.
+
+## 2026-11-05 — Overview "Unassigned" = ready to assign (owner, option A); card links use ?ready / ?band
+
+**Decision:** the Overview's Unassigned card (the pending card and the programme overview's own tile, one
+function: `programme_overview.attention`) counts only the cases that can be assigned NOW: status
+`profile_complete` (Awaiting review), no reviewer, no verdict, and READY by the existing rule
+`is_ready_for_assignment` (profile completed AND (no open student task OR the organisation's
+`query_answer_days`, default 5, have passed)). The rule and the Assign button are unchanged. The queryset form is
+`queries_sla.ready_to_assign` / `assignable_now` (per-organisation grace, one map read for a pooled super; a
+fenced caller passes its organisation and costs no query); a parity test pins it to the per-row function. The
+old count (every unassigned, undecided, non-terminal case) read 240 and was not work anyone could start.
+The Applications list takes `?ready=1` (exactly the Unassigned card's cases) and `?band=overdue|due_soon`
+(exactly the Overdue / Due-soon cards' cases, `review_sla.in_band`, same clocks as the Overview); with
+`?assigned=me` the band lists equal a reviewer's my_overdue / my_due_soon. They narrow inside the org fence and
+the caller's visibility; any other value is ignored, like `?parent_call`.
+**Alternatives considered:** (B) a separate "waiting on student" figure beside it, and (C) a new readiness rule
+— not chosen; the owner reused the existing rule.
+**Revisit if:** the owner wants the interviewing stage counted, or the grace rule changes (change it in
+`is_ready_for_assignment` and `ready_to_assign` together; the parity test fails if they part).

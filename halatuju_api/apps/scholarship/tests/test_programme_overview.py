@@ -136,7 +136,9 @@ class _Base(TestCase):
                               assigned_at=now - datetime.timedelta(days=1))
         cls.r_other = cls._app('r4', status='interviewing', assigned_to=cls.rev2,
                                assigned_at=now - datetime.timedelta(days=11))
-        cls.unassigned = cls._app('u1', status='submitted')
+        cls.unassigned = cls._app('u1', status='profile_complete',
+                                  profile_completed_at=now - datetime.timedelta(days=1))
+        cls._app('u2', status='submitted')       # not Awaiting review yet: not in `unassigned`
 
         # ── the QC queue and two cases this QC decided ──────────────────────────────────
         cls.q_waiting = cls._app('q1', status='interviewed', assigned_to=cls.rev,

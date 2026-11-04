@@ -44,9 +44,10 @@ def _org(admin):
     return spend_report.ALL_ORGS if admin.is_super else admin.owning_organisation
 
 
-def _application_cards(cards, scope, now, clocks):
+def _application_cards(cards, scope, now, clocks, org):
+    from . import spend_report
     from .programme_overview import attention
-    a = attention(scope, now=now, clocks=clocks)
+    a = attention(scope, now=now, clocks=clocks, organisation=None if org is spend_report.ALL_ORGS else org)
     cards['unassigned'] = {'count': a['unassigned']}
     cards['overdue'] = {'count': a['overdue'], 'due_soon': a['due_soon']}
     cards['awaiting_qc'] = {'count': a['awaiting_qc']}
@@ -133,7 +134,7 @@ def pending_for(admin, *, b40_scope, now=None):
         scope = application_scope(org)
         clocks = review_clocks(None if org is spend_report.ALL_ORGS else org)
         if staff_tables.in_admins(admin) and b40_scope == 'all':
-            _application_cards(cards, scope, now, clocks)
+            _application_cards(cards, scope, now, clocks, org)
         if reviews and admin.has_perm('review'):
             _review_cards(cards, scope, admin, now, clocks, org)
         if reviews and admin.has_perm('qc'):

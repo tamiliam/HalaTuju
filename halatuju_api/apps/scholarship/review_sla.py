@@ -98,3 +98,14 @@ def review_band(assigned_at, org=None, *, now=None, clocks=None):
     if due - timedelta(days=clocks[1]) <= now:
         return 'due_soon'
     return 'open'
+
+
+def in_band(queryset, band, *, now, clocks):
+    """The cases of `queryset` whose verdict clock is in `band` (`'overdue'` or `'due_soon'`).
+
+    ⚠ THE SAME POPULATION AND THE SAME `review_band` AS `programme_overview.attention` / `mine`,
+    so an Overview card's count equals the list it opens. Banded in Python (the clocks are
+    per-organisation settings), returned as an id filter on the caller's own queryset."""
+    rows = queryset.filter(AWAITING_VERDICT).order_by().values_list('pk', 'assigned_at')
+    ids = [pk for pk, at in rows if review_band(at, now=now, clocks=clocks) == band]
+    return queryset.filter(pk__in=ids)

@@ -323,24 +323,24 @@ def money(scope):
     }
 
 
-def attention(scope, *, now, clocks):
+def attention(scope, *, now, clocks, organisation=None):
     """What needs a human: the nudge population, banded by the SWEEP'S OWN boundaries.
 
     ⚠ `due_soon` and `overdue` are SUBSETS of `with_reviewer`, not a partition of it. The strip
     reads "2 with a reviewer, 1 due soon, 0 overdue"; making them exclusive would mean a case
     stopped being with its reviewer the moment it got late.
 
-    ⚠ `unassigned` is the one band OUTSIDE the nudge population, because by definition nobody has
-    been nudged: no reviewer, no verdict, not terminal. It is the work that has not started.
+    ⚠ `unassigned` is OUTSIDE the nudge population: Awaiting review, no reviewer, no verdict AND
+    READY to assign (`queries_sla.assignable_now`, owner 2026-11-05): a case still waiting on its
+    student is not work anybody can start.
 
     ⚠ `awaiting_qc` is `status == 'interviewed'` — the reviewer has submitted, so its verdict
     clock has stopped and it is NOT double-counted in `with_reviewer`.
     """
-    from .review_sla import AWAITING_VERDICT, TERMINAL, review_band
+    from .review_sla import AWAITING_VERDICT, review_band
+    from .services.queries_sla import assignable_now
 
-    unassigned = scope.filter(
-        assigned_to__isnull=True, verdict_decided_at__isnull=True
-    ).exclude(status__in=TERMINAL).count()
+    unassigned = assignable_now(scope, now, organisation).count()
     with_reviewer = due_soon = overdue = 0
     for assigned_at in scope.filter(AWAITING_VERDICT).values_list('assigned_at', flat=True):
         with_reviewer += 1
@@ -791,7 +791,7 @@ def build(admin, org, programme, *, cohort=None, now=None):
             'spent': _money_str(m['spent']),
         }
     if 'attention' in sections:
-        payload['attention'] = attention(scope, now=now, clocks=clocks)
+        payload['attention'] = attention(scope, now=now, clocks=clocks, organisation=None if org is spend_report.ALL_ORGS else org)
     if 'applications_series' in sections:
         payload['applications_series'] = {
             'applications_per_week': applications_per_week(scope, today=today),
