@@ -112,6 +112,18 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
   instead of ones that printed raw keys.
 - **Guards:** `Charts.phone.test.tsx` (the phone box, text size and ticks; from md the old box and sizes), the reviewer
   page's two-by-two grid, rule 16 in `mobileStandard.test.ts`.
+- **Follow-up 2 — pills on a phone (owner's iPhone walkthrough, option A; decisions.md 2026-11-04).** The pills
+  people see most are `rounded-md` (6 px) below `md` with one step less side padding, through ONE shared style,
+  `src/lib/phonePill.ts` (`PHONE_PILL_XS` / `_SM` / `PHONE_PILL` / `_LG`, all `max-md:`); from md nothing changes, tap
+  targets keep 44 px, text sizes stay. Converted (29 pills in 12 files): the phone filter sheet's chips and the
+  applied-filter chip (search), `PanelTabs` tabs and count badges, the Action Centre's four status badges, the
+  requirement / tag chips (`RequirementsCard`, `CourseCard`'s fit reasons), the case list's status and bucket badges
+  and "needs a call" filter, the cockpit header's status, rejection, qualification, birth-state and referral badges,
+  the Team list status, and the sponsor student badges (My Giving, one funded student, the pool cards). Avatars, dots,
+  round icon buttons, progress bars, toggles and the donut are untouched. ~8 px saved per pill (4 px on `px-2` ones).
+- **Guard:** rule 17 in `docs/mobile-standard.md`; a rule-17 block in `mobileStandard.test.ts` (the constants are
+  `max-md:` only; each converted file keeps its exact count of uses). mobile-check on every surface that mounts a
+  changed file (132 cells): 0 on all four numbers. TD-489: the mentor screens still draw white cards (owner: later).
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 

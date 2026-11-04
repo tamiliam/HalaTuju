@@ -342,6 +342,19 @@ Three kinds of check, from cheapest to most human:
   a viewBox scales its text with it, so a phone gets its own box (`PHONE_AXIS_BOX`, about one unit per CSS px) and
   11.5-unit text (`Charts.tsx`, `useChartBox`), with at most four month names.
 
+### 17. Pills on a phone use the shared pill style
+- **Why:** owner's iPhone walkthrough, 2026-11-04: fully rounded pills looked too round on a phone and their wide
+  side padding wasted width. Owner chose option A: the pills people see most, through ONE shared style, phone only.
+- **Checked by:** static guard (`mobileStandard.test.ts`, "rule 17"): the converted sites keep their exact count of
+  `PHONE_PILL*` uses, and every constant is `max-md:` only.
+- **Copy this:** a text-label pill adds the constant from `src/lib/phonePill.ts` that matches its own desktop side
+  padding — `PHONE_PILL_XS` (`px-1.5`), `PHONE_PILL_SM` (`px-2`/`px-2.5`), `PHONE_PILL` (`px-3`), `PHONE_PILL_LG`
+  (`px-4`) — AFTER its own classes: below `md` it is `rounded-md` (6 px) with less side padding; from `md` nothing
+  changes. A tap target keeps its 44 px; text sizes stay. Never on avatars, dots, round icon buttons, progress bars,
+  toggles, the donut or anything truly circular. Swept so far: the search filter chips and applied-filter chip,
+  `PanelTabs`, the Action Centre badges, the requirement and course tags, the case list, the cockpit header, the
+  Team list status and the sponsor student badges.
+
 ## Tamil type
 
 Tamil paints in **Mukta Malar** (owner, 2026-10-31; live from Mobile M1a), copied byte for byte from

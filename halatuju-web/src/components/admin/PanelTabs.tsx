@@ -2,6 +2,7 @@
 
 import { useT } from '@/lib/i18n'
 import { usePhoneWidth } from '@/lib/phoneWidth'
+import { PHONE_PILL_LG, PHONE_PILL_XS } from '@/lib/phonePill'
 
 export interface PanelTab<K extends string> {
   key: K
@@ -74,20 +75,20 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
             aria-disabled={tab.disabled || undefined}
             disabled={tab.disabled}
             onClick={() => !tab.disabled && onSelect(tab.key)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors max-md:inline-flex max-md:min-h-11 max-md:items-center ${
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors max-md:inline-flex max-md:min-h-11 max-md:items-center ${PHONE_PILL_LG} ${
               tab.disabled
                 ? 'cursor-not-allowed border-ground-200 bg-ground-50 text-ground-400'
                 : on ? 'border-info-600 bg-brand-fill text-brand-fill-ink'
                      : 'border-ground-200 bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
             {t(tab.labelKey)}
             {tab.count !== undefined && (
-              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${PHONE_PILL_XS} ${
                 on ? 'bg-ground-0/25 text-brand-fill-ink' : 'bg-ground-100 text-ground-500'}`}>
                 {tab.count}
               </span>
             )}
             {tab.disabled && (
-              <span className="ml-1.5 rounded-full bg-ground-200 px-1.5 py-0.5 text-[10px] text-ground-500">
+              <span className={`ml-1.5 rounded-full bg-ground-200 px-1.5 py-0.5 text-[10px] text-ground-500 ${PHONE_PILL_XS}`}>
                 {t('admin.soon')}
               </span>
             )}

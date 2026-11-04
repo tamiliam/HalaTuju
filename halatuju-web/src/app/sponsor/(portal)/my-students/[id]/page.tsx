@@ -10,6 +10,7 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { getMyStudentDetail, type SponsorMyStudentDetail } from '@/lib/api'
 import { conceptFieldImageUrl } from '@/lib/fieldImage'
 import { portfolioBadgeTone, rmWhole } from '@/lib/poolCard'
+import { PHONE_PILL } from '@/lib/phonePill'
 import SpendingCard from '@/components/sponsor/SpendingCard'
 import JourneyLine from '@/components/sponsor/JourneyLine'
 
@@ -84,9 +85,9 @@ export default function MyStudentDetailPage() {
 
           <div className="mt-3 flex flex-wrap gap-2 items-center">
             {offered
-              ? <span className="rounded-full bg-ground-200 text-ground-600 px-3 py-1 text-xs font-semibold whitespace-nowrap">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
+              ? <span className={`rounded-full bg-ground-200 text-ground-600 px-3 py-1 text-xs font-semibold whitespace-nowrap ${PHONE_PILL}`}>⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
               : status && (
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${portfolioBadgeTone(status)}`}>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${portfolioBadgeTone(status)} ${PHONE_PILL}`}>
                   {t(`sponsorPortal.myStudents.status.${status}`)}
                 </span>
               )}

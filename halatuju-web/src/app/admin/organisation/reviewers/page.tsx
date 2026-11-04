@@ -24,6 +24,7 @@ import TeamEmails, { TeamTerms } from '@/components/admin/TeamEmails'
 import { formatDate } from '@/lib/formatDate'
 import { roleBadgeClass } from '@/lib/roleBadge'
 import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
@@ -334,7 +335,7 @@ export default function AdminReviewersList() {
                       {r.phone && <div className="text-xs text-ground-600" data-testid={`team-phone-${r.id}`}><span className="sr-only">{t('admin.reviewer.phone')}: </span>{r.phone}</div>}
                     </div>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${PHONE_PILL_SM} ${
                     STAFF_STATUS_TONE[staffStatusKey(r)]}`}>
                     {t(`admin.reviewers.status.${staffStatusKey(r)}`)}
                   </span>

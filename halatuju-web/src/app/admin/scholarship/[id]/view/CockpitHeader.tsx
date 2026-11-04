@@ -18,6 +18,7 @@ import { headerTimeline } from '@/lib/officerCockpit'
 import { stageStatus } from '@/lib/closeOffer'
 import { formatDate } from '@/lib/formatDate'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
+import { PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 
 import type { T, Vtip } from './shared'
 
@@ -71,7 +72,7 @@ export function CockpitHeader({
           {(() => {
             const s = displayStatus(app)
             return (
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(s)}`}>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(s)} ${PHONE_PILL_SM}`}>
                 {t(statusLabelKey(s))}
               </span>
             )
@@ -87,7 +88,7 @@ export function CockpitHeader({
             </button>
           )}
           {app.status === 'rejected' && app.rejection_category && (
-            <span className="rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700">
+            <span className={`rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
               {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
             </span>
           )}
@@ -95,7 +96,7 @@ export function CockpitHeader({
             <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700">{app.bucket}</span>
           )}
           {app.qualification && (
-            <span className="rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500">{isThirdRoute(app.qualification) ? t(`admin.scholarship.qualificationLabel.${app.qualification}`) : app.qualification.toUpperCase()}</span>
+            <span className={`rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500 ${PHONE_PILL_SM}`}>{isThirdRoute(app.qualification) ? t(`admin.scholarship.qualificationLabel.${app.qualification}`) : app.qualification.toUpperCase()}</span>
           )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ground-500">
@@ -104,14 +105,14 @@ export function CockpitHeader({
               CURRENT IC fails the intake's CURRENT rule it becomes the served warning instead. */}
           {app.birth_state?.meets_rule === false ? (
             <span data-testid="birth-state"
-              className="rounded-full bg-critical-100 px-2 py-0.5 font-semibold text-critical-700">
+              className={`rounded-full bg-critical-100 px-2 py-0.5 font-semibold text-critical-700 ${PHONE_PILL_SM}`}>
               {app.birth_state.warning}
             </span>
           ) : app.birth_state?.label && <span data-testid="birth-state">{app.birth_state.label}</span>}
           {refTag && (
             <span
               title={referralLabel(app.referral_source, t, refNames)}
-              className="rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600"
+              className={`rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600 ${PHONE_PILL_SM}`}
             >
               {refTag}
             </span>

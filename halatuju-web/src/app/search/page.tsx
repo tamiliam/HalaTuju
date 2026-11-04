@@ -20,6 +20,7 @@ import { isThirdRoute } from '@/lib/qualification'
 import { isBumiputera } from '@/lib/bumiputera'
 import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 import { PHONE_GUTTER, PHONE_SECTION_NO_GAP } from '@/lib/phoneSection'   // rule 15 (Mobile M4b)
+import { PHONE_PILL } from '@/lib/phonePill'   // rule 17 (Mobile M8)
 
 export default function SearchPage() {
   return (
@@ -374,7 +375,7 @@ function SearchPageInner() {
                     aria-label={t('discovery.removeFilter', { name: p.label })}
                     className="inline-flex min-h-11 max-w-full items-center"
                   >
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-brand-shape bg-primary-50 py-1 pl-3 pr-2 text-sm font-medium text-primary-700">
+                    <span className={`inline-flex max-w-full items-center gap-1 rounded-full border border-brand-shape bg-primary-50 py-1 pl-3 pr-2 text-sm font-medium text-primary-700 ${PHONE_PILL}`}>
                       <span className="min-w-0 truncate">{p.label}</span>
                       <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />

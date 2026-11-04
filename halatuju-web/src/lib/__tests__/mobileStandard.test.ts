@@ -1295,3 +1295,46 @@ describe('rule 16 — mobile-check holds spills like the other three numbers', (
       .toMatch(/### 16\. Nothing spills out of its box/)
   })
 })
+
+// ── Rule 17 (owner, 2026-11-04, option A): pills on a phone use the shared pill style ────────────────
+/**
+ * The pills people see most are `rounded-md` with less side padding below md, through ONE home,
+ * `src/lib/phonePill.ts`. Each converted file keeps EXACTLY its count of `PHONE_PILL*` uses: one dropped (a
+ * pill back to a fully round phone end) fails, and so does one added without being listed here.
+ */
+const PILL_SITES: Record<string, number> = {
+  'src/components/search/SearchFilterSheet.tsx': 1, 'src/app/search/page.tsx': 1,
+  'src/components/admin/PanelTabs.tsx': 3, 'src/components/ActionCentre.tsx': 4,
+  'src/components/RequirementsCard.tsx': 4, 'src/components/CourseCard.tsx': 1,
+  'src/app/admin/scholarship/page.tsx': 3, 'src/app/admin/scholarship/[id]/view/CockpitHeader.tsx': 5,
+  'src/app/admin/organisation/reviewers/page.tsx': 1, 'src/app/sponsor/(portal)/page.tsx': 2,
+  'src/app/sponsor/(portal)/my-students/[id]/page.tsx': 2, 'src/app/sponsor/(portal)/students/page.tsx': 2,
+}
+describe('rule 17 — pills on a phone use the shared pill style', () => {
+  const lib = readWeb('src/lib/phonePill.ts', 'the one home of rule 17')
+  test('every pill constant is max-md: only, rounded-md, with its own side padding', () => {
+    const consts = Array.from(lib.matchAll(/export const (PHONE_PILL\w*) = '([^']+)'/g))
+    expect(consts.map((m) => m[1]).sort()).toEqual(['PHONE_PILL', 'PHONE_PILL_LG', 'PHONE_PILL_SM', 'PHONE_PILL_XS'])
+    for (const [, name, cls] of consts) {
+      const t = cls.split(' ')
+      expect(`${name}: ${t.filter((c) => !c.startsWith('max-md:')).join(' ')}`).toBe(`${name}: `)
+      expect(t).toContain('max-md:rounded-md')
+      expect(t.filter((c) => /^max-md:px-/.test(c)).length).toBe(1)
+    }
+    // Kept out of phoneSection.ts (every student page imports it) and phoneConsole.ts (the console's own).
+    expect(readWeb('src/lib/phoneSection.ts', 'the one home of rule 15')).not.toMatch(/PHONE_PILL/)
+  })
+  test('the converted sites keep their exact count of PHONE_PILL uses', () => {
+    for (const [rel, n] of Object.entries(PILL_SITES)) {
+      const src = readWeb(rel, 'a pill site of rule 17')
+      expect(src).toContain("from '@/lib/phonePill'")
+      const uses = src.split('\n').filter((l) => !/^\s*(import|\/\/|\*)/.test(l))
+        .join('\n').match(/\bPHONE_PILL(?:_XS|_SM|_LG)?\b/g) ?? []
+      expect(`${rel}: ${uses.length}`).toBe(`${rel}: ${n}`)
+    }
+  })
+  test('the standard names the rule', () => {
+    expect(fs.readFileSync(path.join(WEB_ROOT, '..', 'docs', 'mobile-standard.md'), 'utf8'))
+      .toMatch(/### 17\. Pills on a phone use the shared pill style/)
+  })
+})

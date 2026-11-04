@@ -5,6 +5,7 @@ import type { EligibleCourse, RankedCourse } from '@/lib/api'
 import { TYPE_LABELS, institutionTypeChip, LEVEL_CHIP } from '@/lib/courseBadges'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useT } from '@/lib/i18n'
+import { PHONE_PILL_SM } from '@/lib/phonePill'
 
 /** Build the detail page URL for a course. */
 function getCourseHref(courseId: string, sourceType?: string, qualification?: string): string {
@@ -158,7 +159,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
             {course.fit_reasons.slice(0, 2).map((reason, i) => (
               <span
                 key={i}
-                className="inline-block px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full"
+                className={`inline-block px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full ${PHONE_PILL_SM}`}
               >
                 {reason}
               </span>

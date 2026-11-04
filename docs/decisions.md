@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## Mobile M8: pills on a phone are `rounded-md` with less side padding, through ONE shared style, on the most-seen pills only — 2026-11-04 (owner option A)
+
+**Context:** on the owner's iPhone walkthrough the fully rounded pills (`rounded-full`) looked too round on a phone
+and their side padding wasted width. There are ~252 `rounded-full` strings in the web source; many are truly round
+(avatars, dots, icon buttons, progress bars, toggles, the donut) and must stay so.
+
+**Decision (owner, 2026-11-04): option A.** Only the pills people see most change, and only below `md`, through one
+shared definition: `src/lib/phonePill.ts` (`PHONE_PILL_XS` / `_SM` / `PHONE_PILL` / `_LG`, picked by the pill's own
+desktop side padding) — `max-md:rounded-md` (6 px) and one step less side padding, added after the pill's own classes.
+From `md` nothing changes; tap targets keep 44 px; text sizes stay. Converted: the search filter chips and
+applied-filter chip, `PanelTabs` (tabs and count badges), the Action Centre badges, the requirement and course tags,
+the case list's status and bucket badges and its "needs a call" filter, the cockpit header badges, the Team list
+status and the sponsor student badges. Rule 17 in `docs/mobile-standard.md`; the guard in `mobileStandard.test.ts`
+holds each converted file to its exact count of uses.
+
+**Consequences:** about 8 px narrower per `px-2.5`/`px-3`/`px-4` pill and 4 px per `px-2`/`px-1.5` one, on a phone.
+The remaining `rounded-full` pills (cockpit panels, documents drawer, sponsor account, the Trust page, mentor screens
+and others) are left as they are until a sweep adds them to the rule-17 list. The mentor screens' white cards are
+TD-489 (owner: later).
+
 ## TD-481: the reviewer's Decline refuses a case awaiting QC — 2026-11-04 (owner ruling)
 
 **Context:** `AdminRejectView` (`POST .../reject/ {category: 'interview'}`) is gated by `_require_app_write`, which
