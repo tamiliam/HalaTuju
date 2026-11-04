@@ -23,6 +23,23 @@ Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Not live.
   (`t5c_p5_added_cells`); the mentor sweep, the closed `mentor_methods` list and the org-fence classification
   name the new view. No existing cell moved.
 
+**S1b — server follow-ups (00c12611):** the Overview `?intake=` side door is closed; the landing read now uses grouped
+queries within a fixed query budget; the mentor list takes `?programme=<id>` (no match or another organisation's = an
+empty 200, a non-number = 404); the landing has no v2 key (see decisions.md).
+
+**S2 — web (f9d99859, 8576762e):** `navigation.ts` registry types moved to `navigationTypes.ts` (moves only). Then
+Organisation > Programmes is everyone's landing: cards per programme (admins and finance: all; reviewers and mentors:
+only where they have work), the gift cards leave the Overview, super still lands on Platform.
+
+**S2b — bundle weight (0bafbb84):** seven groups of sibling lazy wrappers share one named chunk each (ad, sp, sd, mi,
+bt), which shrinks the runtime chunk map; no budget changed.
+
+**S2c — review fixes:** the lazy-load source guards allow only a two-letter `webpackChunkName` comment and refuse any
+other `webpack*` hint (they had accepted any comment); the landing's matrix door was an empty key list that tested
+nothing, replaced by a real who-opens-it test; stale comments in `navigation.ts` / `adminLanding.ts` reworded; an
+archived programme's card opens that programme's Overview; TD-500 recorded.
+
+
 ## Team tables T5c part 1 — pages open by keys (LIVE 2026-11-04; main ac68a361; api-01251-l9v, web-01081-957)
 
 decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds

@@ -96,7 +96,10 @@ function MyProgrammesCards({ token }: { token: string | null }) {
           {data.programmes.map((p) => (
             <li key={p.id}>
               <Link href={cardHref(p)} data-testid={`my-programme-${p.code}`}
-                onClick={p.opens === 'overview' ? () => select(p.code) : undefined}
+                onClick={p.opens === 'overview'
+                  // An ARCHIVED gift is not in the scopes list (active only): the card vouches for it.
+                  ? () => (p.archived ? select(p.code, { code: p.code, name: nameOf(p), isActive: false }) : select(p.code))
+                  : undefined}
                 className={`block ${PHONE_CARD_XL} transition-colors md:shadow-sm md:hover:border-primary-300`}>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-base font-semibold text-ground-900">{nameOf(p)}</h2>

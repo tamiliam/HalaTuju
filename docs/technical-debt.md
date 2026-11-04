@@ -7726,6 +7726,16 @@ access; but the editor and the server describe the rule differently. **Fix (with
 as implying `see_all` (`see_all` ticked and locked while `qc` is on), and correct the comment. Owner question raised
 with it: may a `finance` person also hold `qc` (they would then read every case)? *(W · S)*
 
+### [TD-500] Mentor My students list makes one alias query per mentee - low
+
+**Raised 2026-11-04 by Team tables T5c P5 S1b (NOT fixed).** `admin/mentor/students/` (the mentor's My students
+list, also behind the Programmes card's `?programme=` filter) calls `mentoring.is_the_student` once per mentee, and
+that check reads the mentee's alias, so the list costs one extra query per student. It is the identity-sensitive
+self-mentoring guard (a mentor must never see, or be, their own student), so it was deliberately not batched in a
+sprint about landing pages. A mentor carries a handful of mentees, so it is cheap today. **Fix:** read the aliases
+of all the caller's mentees in one query and keep `is_the_student` as the single rule, with the existing
+self-mentoring tests as the guard. *(A · S)*
+
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
 **Raised 2026-11-04 by Mobile M8 follow-up part 2 (NOT fixed).** A mentor's own pages, `/admin/my-students` and

@@ -75,12 +75,13 @@ describe('the saving is the import line', () => {
   // guard follows the code there AND keeps watching the page (lessons.md: when code moves, extend the guard).
   it.each([
     ['src/app/scholarship/apply/page.tsx', "from '@/components/scholarship/LazySchoolSelect'"],
-    ['src/components/scholarship/LazySchoolSelect.tsx', "'@/components/SchoolSelect')"],
+    ['src/components/scholarship/LazySchoolSelect.tsx', "import(/* webpackChunkName: 'sp' */ '@/components/SchoolSelect')"],
     ['src/app/profile/page.tsx', "from '@/components/SchoolSelect'"],
     ['src/app/onboarding/profile/page.tsx', "from '@/components/SchoolSelect'"],
   ])('%s does not import the list statically', (route, reachesTheField) => {
     const page = readWeb(route, 'a route (or the wrapper) that draws the school field')
     expect(page).toContain(reachesTheField)
+    expect(page).not.toMatch(/webpack(Mode|Prefetch|Preload|Exports)/)
     expect(page).not.toMatch(/from\s+'@\/data\/secondary-schools'/)
   })
 

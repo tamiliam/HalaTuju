@@ -32,6 +32,7 @@ it('the Action Centre imports the LAZY switch and never the real one', () => {
   expect(centre).toContain("from '@/components/LazyIncomeRouteSwitch'")
   expect(centre).not.toMatch(/from\s+'@\/components\/IncomeRouteSwitch'/)
   const lazy = readWeb('src/components/LazyIncomeRouteSwitch.tsx', 'the lazy boundary itself')
-  expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'\.\/IncomeRouteSwitch'\)/)
+  expect(lazy).toMatch(/import\((\/\* webpackChunkName: '[a-z]{2}' \*\/ )?'\.\/IncomeRouteSwitch'\)/)
+  expect(lazy).not.toMatch(/webpack(Mode|Prefetch|Preload|Exports)/)
   expect(lazy).not.toMatch(/from\s+'next\/dynamic'/)
 })

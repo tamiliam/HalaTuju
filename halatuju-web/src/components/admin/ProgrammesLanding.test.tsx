@@ -115,6 +115,13 @@ describe('the card', () => {
     expect(mockSelect).toHaveBeenCalledWith('b40')
   })
 
+  it('an ARCHIVED card vouches for its gift (the scopes list holds active gifts only)', async () => {
+    serve([prog({ id: 8, code: 'old', archived: true, lifecycle: 'archived', is_active: false, cases: 1 })])
+    render(<ProgrammesLanding />)
+    fireEvent.click(await screen.findByTestId('my-programme-old'))
+    expect(mockSelect).toHaveBeenCalledWith('old', { code: 'old', name: 'B40 Gift', isActive: false })
+  })
+
   it('wears a grey Archived pill only when the programme is archived', async () => {
     serve([prog({ cases: 1 }), prog({ id: 8, code: 'old', archived: true, lifecycle: 'archived', cases: 1 })])
     render(<ProgrammesLanding />)

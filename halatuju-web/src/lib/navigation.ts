@@ -38,9 +38,9 @@ export { SIDEBAR_SCOPES, type NavScope, type ProbeKey, type BadgeKey, type Probe
  *  ⚠ `source_partner` (source sign-in, 2026-10-30) is named here so `effectiveRole` never folds
  *  a source user into 'reviewer'. Its rows: Overview / Applications / Scholars (the pages render
  *  `components/source/*`, which call `admin/source/` only) and Profile; it lands on Overview.
- *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its rows are My students (S7c, its
- *  landing — `defaultRoute`) and Profile, and the layout sends it back from any other page
- *  (`outsiderMustLeave`).
+ *  ⚠ `mentor` (student maintenance S7a, 2026-10-31) likewise: its rows are Programmes (T5c P5: every partner
+ *  login lands there, `defaultRoute`), My students (S7c) and Profile, and the layout sends it back from any
+ *  other page (`outsiderMustLeave`).
  *  drift-test: halatuju-web/src/lib/__tests__/adminRoleDrift.test.ts */
 export type AdminRoleName =
   | 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance' | 'source_partner'
@@ -107,8 +107,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // row of this group — `defaultRoute` lands each of these roles here (super still lands on Platform,
       // which comes first). It undoes the 2026-09-03 fold of the gifts into the Overview: a reviewer and a
       // mentor now see this ONE organisation row, listing only the programmes where they have work (the
-      // server's `my-programmes` read is the fence; this row is visibility only). No `door` yet: its v2 key
-      // is server work (T5c P5 S1b), and until it is served the row answers by its roles.
+      // server's `my-programmes` read is the fence; this row is visibility only). No `door` and no v2 key, by
+      // lead ruling (2026-11-04, decisions.md): the page is withheld from nobody on the partner side.
       { id: 'programmes', href: '/admin/organisation/programmes', labelKey: 'admin.nav.programmes',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer', 'mentor'],
         gate: { mode: 'always' } },
@@ -295,10 +295,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   },
   {
     // ⚠ A MENTOR's OWN GROUP (student maintenance S7c, 2026-11-01). A mentor is not staff: its rows
-    // are My students and Profile, and nothing else (`outsiderMustLeave` sends it back from any other
+    // are Programmes, My students and Profile, and nothing else (`outsiderMustLeave` sends it back from any other
     // page). The server is the fence — `admin/mentor/students/` serves the caller's CURRENT students
-    // only and refuses every other role. Listed AFTER Programme so a mentor lands here
-    // (`defaultRoute`: the first row they may open) and no staff role ever sees it.
+    // only and refuses every other role. A mentor lands on Programmes (T5c P5, the first row they may open);
+    // this group is reached from the programme card or the menu, and no staff role ever sees it.
     scope: 'mentoring',
     headingKey: 'admin.nav.group.mentoring',
     items: [

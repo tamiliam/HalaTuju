@@ -68,7 +68,8 @@ describe('the saving is the import line', () => {
   it('the lazy module owns a LITERAL import() of the cards — a variable specifier emits no chunk', () => {
     const lazy = readWeb('src/components/scholarship/LazyPostAwardTask.tsx',
       'the lazy boundary itself')
-    expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'@\/components\/scholarship\/PostAwardTasks'\)/)
+    expect(lazy).toMatch(/import\((\/\* webpackChunkName: '[a-z]{2}' \*\/ )?'@\/components\/scholarship\/PostAwardTasks'\)/)
+    expect(lazy).not.toMatch(/webpack(Mode|Prefetch|Preload|Exports)/)
     expect(lazy).not.toMatch(/from\s+'next\/dynamic'/)
     expect(lazy).not.toMatch(/from\s+'@\/components\/scholarship\/PostAwardTasks'/)
   })

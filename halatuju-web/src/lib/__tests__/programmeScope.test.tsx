@@ -165,3 +165,40 @@ describe('a draft is not a second gift', () => {
     expect(live()).toBe('sabah|false|')
   })
 })
+
+describe('an ARCHIVED gift opened from a Programmes card (T5c P5 S2c)', () => {
+  // The scopes list holds ACTIVE gifts only, so a reviewer's card for an archived gift used to resolve to
+  // nothing and open the general Overview. The card vouches for the gift; nothing else gets in.
+  const OLD = { code: 'old-2024', name: 'Old Bursary', isActive: false }
+
+  function ArchProbe() {
+    const { chosen, select } = useProgrammeScope()
+    return (
+      <div>
+        <span data-testid="chosen">{chosen || '(none)'}</span>
+        <button data-testid="vouch" onClick={() => select('old-2024', OLD)}>vouch</button>
+        <button data-testid="plain" onClick={() => select('old-2024')}>plain</button>
+        <button data-testid="other" onClick={() => select('bp')}>other</button>
+      </div>
+    )
+  }
+  const chosenNow = () => screen.getByTestId('chosen').textContent
+
+  it('a plain pick of an unlisted archived code is still refused', () => {
+    render(<ProgrammeScopeProvider choices={TWO}><ArchProbe /></ProgrammeScopeProvider>)
+    act(() => { screen.getByTestId('plain').click() })
+    expect(chosenNow()).toBe('(none)')
+  })
+
+  it('a vouched archived gift resolves, survives the page re-selecting it, and leaves with the next pick', () => {
+    render(<ProgrammeScopeProvider choices={TWO}><ArchProbe /></ProgrammeScopeProvider>)
+    act(() => { screen.getByTestId('vouch').click() })
+    expect(chosenNow()).toBe('old-2024')
+    act(() => { screen.getByTestId('plain').click() })     // useGiftInUrl re-selects the URL's code on mount
+    expect(chosenNow()).toBe('old-2024')
+    act(() => { screen.getByTestId('other').click() })
+    expect(chosenNow()).toBe('bp')
+    act(() => { screen.getByTestId('plain').click() })     // no longer vouched: refused again
+    expect(chosenNow()).toBe('(none)')
+  })
+})

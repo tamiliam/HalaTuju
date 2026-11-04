@@ -90,7 +90,8 @@ describe('the saving is the import line', () => {
   it('the lazy module owns a LITERAL import() and takes only a type from the real one', () => {
     const lazy = readWeb('src/components/scholarship/LazyApplicationAwardPanels.tsx',
       'the lazy boundary itself')
-    expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'\.\/ApplicationAwardPanels'\)/)
+    expect(lazy).toMatch(/import\((\/\* webpackChunkName: '[a-z]{2}' \*\/ )?'\.\/ApplicationAwardPanels'\)/)
+    expect(lazy).not.toMatch(/webpack(Mode|Prefetch|Preload|Exports)/)
     expect(lazy).toMatch(/import type \{ AwardPanelsProps \} from '\.\/ApplicationAwardPanels'/)
     expect(lazy).not.toMatch(/^import (?!type)[^\n]*'\.\/ApplicationAwardPanels'/m)
     expect(lazy).not.toMatch(/from\s+'next\/dynamic'/)

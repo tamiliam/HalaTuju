@@ -60,7 +60,9 @@ export interface ProgrammeScope {
   /** The shell's scopes fetch REJECTED (network or non-2xx). Separates a failed list from a
    *  genuinely empty one, so a page says "could not be loaded" only when it was not (review F4). */
   failed: boolean
-  select: (code: string) => void
+  /** Pick a gift. `listed` is for a gift the scopes list does not hold (an ARCHIVED one, opened from a
+   *  Programmes card whose list is the server's own read): it is recognised only while it stays picked. */
+  select: (code: string, listed?: ProgrammeChoice) => void
   /**
    * Re-fetch the list of gifts this caller may open.
    *

@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## T5c P5: Programmes landing has no v2 key — 2026-11-04 (lead ruling)
+
+**Context:** Organisation > Programmes is the landing of every partner login (owner ruling). The S1b plan gave it a
+v2 key and a door; the build found nobody on the partner side is refused it, so a key (which exists to be withheld)
+would gate nothing.
+
+**Decision:** the page is always open to every staff and mentor login on the partner side; a referral partner, a
+source user, a stopped mentor and an inactive login are refused (sign-in or the read's own 403). What it LISTS is
+narrowed by the server read (`views_admin/my_programmes.py`); `LandingContent` pins that narrowing to the v2 keys.
+The catalogue gets no new key. The matrix no longer carries a vacuous empty-key door for it: a real test asserts who
+opens it and who is refused.
+
+**Consequence:** if a later sprint wants to withhold the landing from someone, that is a new ruling and a new key.
+
 ## Team tables T5c: pages open by v2 keys — P1, the org-read and admin-work doors (server only) — 2026-11-04 (lead rulings R1-R6 for the run)
 
 **Context:** roadmap T5c ("pages open by keys"). After T5a/T5b the v2 vocabulary (`staff_permissions_v2`) was a

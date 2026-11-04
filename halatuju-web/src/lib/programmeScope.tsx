@@ -66,7 +66,7 @@ export {
  * did before this existed.
  */
 export function ProgrammeScopeProvider(
-  { choices, children, onReload, settled = true, failed = false }: {
+  { choices: shellChoices, children, onReload, settled = true, failed = false }: {
     choices: readonly ProgrammeChoice[]
     children: ReactNode
     /** Ask the shell to re-fetch the scopes. Optional so a harness can mount without one. */
@@ -78,6 +78,17 @@ export function ProgrammeScopeProvider(
   },
 ) {
   const [picked, setPicked] = useState('')
+  // An archived gift opened from a Programmes card: the scopes list holds ACTIVE gifts only, so the card
+  // (the server's own read) vouches for it. It is recognised only while it is the pick.
+  const [listed, setListed] = useState<ProgrammeChoice | null>(null)
+  const choices = useMemo<readonly ProgrammeChoice[]>(
+    () => (listed && picked === listed.code && !shellChoices.some((c) => c.code === listed.code)
+      ? [...shellChoices, listed] : shellChoices),
+    [shellChoices, listed, picked])
+  const select = useCallback((code: string, vouched?: ProgrammeChoice) => {
+    setListed((was) => vouched ?? (was?.code === code ? was : null))   // the page's own re-select keeps it
+    setPicked(code)
+  }, [])
   const [pinGift, setPinState] = useState<PinnedGift | null>(null)
   const pin = pinGift?.code ?? ''
   const reload = useCallback(async () => { await onReload?.() }, [onReload])
@@ -121,14 +132,14 @@ export function ProgrammeScopeProvider(
       unrecognised: want !== '' && !known && choices.length > 0,
       unconfirmed: want !== '' && !known && choices.length === 0,
       failed,
-      select: setPicked,
+      select,
       reload,
       pinned: pin !== '',
       pinnedName: pinGift?.name ?? '',
       setPin,
       settled,
     }
-  }, [choices, picked, pin, pinGift, reload, setPin, settled, failed])
+  }, [choices, picked, pin, pinGift, reload, select, setPin, settled, failed])
 
   return <ProgrammeScopeCtx.Provider value={value}>{children}</ProgrammeScopeCtx.Provider>
 }

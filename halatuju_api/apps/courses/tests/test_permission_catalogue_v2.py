@@ -26,6 +26,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from apps.courses import staff_permissions as sp
 from apps.courses import staff_permissions_v2 as v2
@@ -268,12 +269,9 @@ def _doors():
         'lead_powers': (sp.is_lead_tier, ('programmes.edit', 'students.edit', 'students.approve',
                                           'sponsors.approve', 'billing.edit', 'invitations.edit',
                                           'settings.edit')),
-        # T5c P5: Organisation -> Programmes, the LANDING of every partner login (owner ruling). It
-        # needs NO v2 key by design: a key is withheld from somebody, and this page is withheld from
-        # nobody on staff (the catalogue already treats the gift cards as the "always" page, so
-        # `programmes.edit` implies no view). Its CONTENT is narrowed by the server read
-        # (`views_admin/my_programmes.py`); `LandingContent` pins that narrowing to v2 keys.
-        'programmes_landing': (_lands, ()),
+        # The Programmes landing is NOT a door here: it needs no v2 key (lead ruling 2026-11-04, decisions.md
+        # 'T5c P5: Programmes landing has no v2 key'), and a door with an empty key list is always "held", so it
+        # would test nothing. `LandingContent.test_the_landing_opens_for_...` asserts it for real.
     }
 
 
@@ -347,6 +345,24 @@ class LandingContent(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.people = {shape: _make(spec, make_org()) for shape, spec in SHAPES.items()}
+
+    def test_the_landing_opens_for_every_staff_and_mentor_login_and_refuses_the_rest(self):
+        # Non-vacuous: both sides are non-empty. (An inactive login is refused at sign-in, before the read.)
+        opened, refused = [], []
+        for shape, person in self.people.items():
+            if person.is_active:
+                (opened if _lands(person) else refused).append(shape)
+        self.assertEqual(set(refused), {'partner'})
+        self.assertEqual(set(opened), {s for s, p in self.people.items() if p.is_active} - {'partner'})
+        org = make_org()
+        live_mentor = make_admin('mentor', owning_org=org)
+        stopped = make_admin('mentor', owning_org=org)
+        stopped.mentor.deactivated_at = timezone.now()
+        stopped.mentor.save()
+        stopped.refresh_from_db()
+        self.assertTrue(_lands(live_mentor))                                   # a mentor lands too
+        self.assertFalse(_lands(stopped))                                      # a stopped one does not
+        self.assertFalse(_lands(make_admin('source_partner', owning_org=org)))  # a source user never
 
     def test_every_active_staff_shape_lands_and_a_partner_does_not(self):
         for shape, person in self.people.items():
