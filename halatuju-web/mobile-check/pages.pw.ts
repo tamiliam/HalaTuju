@@ -209,12 +209,13 @@ for (const target of targets) {
             .toBeLessThanOrEqual(1)
           expect(bars.coveredByBar, `${key}: the page ends under the tab bar — ${bars.covered}`).toBe(0)
 
-          const now = { overflow: m.overflow, smallInputs: m.smallInputs, smallTargets: m.smallTargets }
+          const now = { overflow: m.overflow, smallInputs: m.smallInputs, smallTargets: m.smallTargets, spills: m.spills }
           const worse = worseThan(now, BASELINE.cells[key])
           const detail = [
             m.widest ? `widest: ${m.widest}` : '',
             ...m.smallInputExamples.map((e) => `small field: ${e}`),
             ...m.smallTargetExamples.map((e) => `small target: ${e}`),
+            ...m.spillExamples.map((e) => `spill: ${e}`),
           ].filter(Boolean).join('\n  ')
           expect(worse, `${key} (${m.url}) is worse than the baseline:\n  ${worse.join('\n  ')}\n  ${detail}`)
             .toEqual([])

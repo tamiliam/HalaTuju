@@ -18477,3 +18477,17 @@ bundle budget gains room.
 **Alternatives considered:** (A) `'standalone'` now — rejected: no proof the sign-in links return into the app.
 (B) surfaces for every route, Can screens too — rejected: twice the work; the Must screens are all measured.
 **Revisit if:** sign-in moves to a code typed in the app (no email link), or iOS opens links in installed web apps.
+
+## 2026-11-04 — Mobile M8 follow-up: mobile-check measures a fourth number, spills (lead ruling on the owner's iPhone findings)
+**Decision:** the owner's iPhone walkthrough found text spilling out of its boxes on pages that did not scroll
+sideways, which rule 1 cannot see. mobile-check now counts `spills` per cell (`measure.ts`; rule 16 of
+`mobile-standard.md`): every text run and every drawn box (border, fill or shadow) more than 1.5 px past the side of
+any block box above it, up to the first box that scrolls or clips. Fixed, absolutely placed and negative-margin items
+(full-bleed sections, the InfoTip / Toggle hit areas), side-scrollers, clipping boxes, SVG and invisible wrappers are
+not judged; a box that spills counts once with its words. It is held in `baseline.json` like the other three and has
+its own ledger column. Tuned on the scan: it registers all six findings and none of the known non-issues.
+**Alternatives considered:** (A) `scrollWidth > clientWidth` per element — rejected: hundreds of hits from
+InfoTip hit areas and framed tables, no signal. (B) text against its nearest bordered or filled box only — rejected:
+missed a chip running out of a narrow, unboxed column (the request page's header).
+**Revisit if:** a real spill is missed (a transformed or clipped case), or the metric flags an intentional overflow
+that needs an exclusion — add the exclusion to `measure.ts` and this entry, never a per-page exception.

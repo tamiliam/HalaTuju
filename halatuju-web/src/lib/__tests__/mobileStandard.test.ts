@@ -29,7 +29,7 @@ import {
   type Offender, type Scanned,
 } from '@/test/mobileScan'
 import { MOBILE_CLASS, routeOfPage } from '@/lib/mobileClass'
-import { sandboxSlugs } from '../../../mobile-check/targets'
+import { sandboxSlugs, worseThan } from '../../../mobile-check/targets'
 
 // ── The corpus ────────────────────────────────────────────────────────────────────────────────
 /** 627 `.ts`/`.tsx` files under src/ on 2026-10-31; a MINIMUM, so new files stay green. */
@@ -1273,5 +1273,25 @@ describe('the reader sees what the review said it missed', () => {
     expect(VH_STYLE.test('calc(100vh - 4rem)')).toBe(true)
     expect(VH_STYLE.test('100vh')).toBe(true)
     expect(VH_STYLE.test('calc(100dvh - 4rem)')).toBe(false)
+  })
+})
+
+// ── Rule 16 (Mobile M8 follow-up): spills are the ratchet's fourth number ────────────────────────────
+describe('rule 16 — mobile-check holds spills like the other three numbers', () => {
+  const base = { overflow: 0, smallInputs: 0, smallTargets: 3, spills: 0 }
+  test('a spill where the baseline had none fails; the same count passes', () => {
+    expect(worseThan({ ...base, spills: 1 }, base)).toEqual(['spills out of their box 0 → 1'])
+    expect(worseThan(base, base)).toEqual([])
+  })
+  test('a cell measured for the first time, or a baseline cell from before the metric, is held to zero', () => {
+    expect(worseThan({ ...base, spills: 2 }, undefined)).toContain('new cell has 2 spill(s) out of their box (must be 0)')
+    const old = { overflow: 0, smallInputs: 0, smallTargets: 3 }
+    expect(worseThan({ ...base, spills: 1 }, old)).toEqual(['spills out of their box 0 → 1'])
+    expect(worseThan(base, old)).toEqual([])
+  })
+  test('the measurement and the standard both name it', () => {
+    expect(readWeb('mobile-check/measure.ts', 'rule 16 is measured there')).toMatch(/spills: spills\.length/)
+    expect(fs.readFileSync(path.join(WEB_ROOT, '..', 'docs', 'mobile-standard.md'), 'utf8'))
+      .toMatch(/### 16\. Nothing spills out of its box/)
   })
 })
