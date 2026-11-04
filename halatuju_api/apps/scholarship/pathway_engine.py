@@ -318,7 +318,8 @@ def student_offer_check(doc) -> dict:
     pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution,
                                   declared_track=decl_track, offer_stream=stream,
                                   institution_agreement=inst_agreement,
-                                  programme_agreement=prog_agreement)
+                                  programme_agreement=prog_agreement,
+                                  declared_type=_declared_type)          # TD-473: the level first
     # S6 (owner's chip table, 2026-11-02): she declared NOTHING and a GENUINE offer set the pick itself
     # (`offer_letter_auto`) — the Pathway CHIP reads green. A chip-only flag: `pathway` stays as it is,
     # so no tick, verdict or Check 2 query is earned from the letter agreeing with itself (request #9).

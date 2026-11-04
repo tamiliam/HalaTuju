@@ -31,6 +31,7 @@ def _legacy_pathway(chk, app):
         chk['programme'], chk['institution'],
         declared_track=(getattr(app, 'pre_u_track', '') or ''),
         offer_stream=chk.get('stream', ''),
+        declared_type=(getattr(app, 'chosen_pathway', '') or ''),   # TD-473 is not request #9's change
     )
 
 
