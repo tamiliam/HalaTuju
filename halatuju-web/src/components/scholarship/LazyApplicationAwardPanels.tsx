@@ -22,7 +22,7 @@ import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import type { AwardPanelsProps } from './ApplicationAwardPanels'
 
-type Panels = typeof import('./ApplicationAwardPanels')['default']
+type Panels = typeof import(/* webpackChunkName: 'sd' */ './ApplicationAwardPanels')['default']
 
 /** Would either panel draw? (The award panel needs an offer the flag shows; the agreement panel a
  *  signed PDF.) Asked BEFORE the chunk is fetched. */
@@ -39,7 +39,7 @@ export default function LazyApplicationAwardPanels(props: AwardPanelsProps) {
   useEffect(() => {
     if (!shows) return
     let live = true
-    import('./ApplicationAwardPanels')
+    import(/* webpackChunkName: 'sd' */ './ApplicationAwardPanels')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

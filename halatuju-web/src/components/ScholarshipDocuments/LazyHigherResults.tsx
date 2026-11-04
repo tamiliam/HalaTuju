@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react'
 
 import type { AcademicCheck, ApplicantDocument, HigherCheck } from '@/lib/api'
 
-type Mod = typeof import('./HigherResults')
+type Mod = typeof import(/* webpackChunkName: 'sd' */ './HigherResults')
 
 let cached: Mod | null = null
 
@@ -23,7 +23,7 @@ function useHigherModule(): Mod | null {
   useEffect(() => {
     if (cached) return
     let live = true
-    import('./HigherResults')
+    import(/* webpackChunkName: 'sd' */ './HigherResults')
       .then((m) => { cached = m; if (live) setMod(m) })
       .catch(() => { /* a failed chunk draws nothing; the card still uploads */ })
     return () => { live = false }

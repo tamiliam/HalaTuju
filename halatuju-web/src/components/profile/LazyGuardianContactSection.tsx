@@ -18,7 +18,7 @@ export default function LazyGuardianContactSection() {
   const [Section, setSection] = useState<ComponentType | null>(null)
   useEffect(() => {
     let live = true
-    import('./GuardianContactSection')
+    import(/* webpackChunkName: 'mi' */ './GuardianContactSection')
       .then(m => { if (live) setSection(() => m.default) })
       .catch(() => { /* supplementary — draw nothing */ })
     return () => { live = false }

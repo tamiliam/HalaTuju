@@ -18,7 +18,7 @@ export default function LazyCourseInterestsSection(props: Props) {
   const [Section, setSection] = useState<ComponentType<Props> | null>(null)
   useEffect(() => {
     let live = true
-    import('./CourseInterestsSection')
+    import(/* webpackChunkName: 'mi' */ './CourseInterestsSection')
       .then(m => { if (live) setSection(() => m.default) })
       .catch(() => { /* supplementary — draw nothing */ })
     return () => { live = false }

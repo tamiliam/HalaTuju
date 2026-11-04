@@ -26,7 +26,7 @@ import type { ResolutionItem } from '@/lib/api'
 
 type Common = { item: ResolutionItem; token: string | null; onResolved: () => void }
 type Props = ({ kind: 'bank' } & Common) | ({ kind: 'vircle'; contactPhone: string } & Common)
-type Tasks = typeof import('@/components/scholarship/PostAwardTasks')
+type Tasks = typeof import(/* webpackChunkName: 'sd' */ '@/components/scholarship/PostAwardTasks')
 
 export default function LazyPostAwardTask(props: Props) {
   const { t } = useT()
@@ -35,7 +35,7 @@ export default function LazyPostAwardTask(props: Props) {
 
   useEffect(() => {
     let live = true
-    import('@/components/scholarship/PostAwardTasks')
+    import(/* webpackChunkName: 'sd' */ '@/components/scholarship/PostAwardTasks')
       .then(m => { if (live) setTasks(m) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

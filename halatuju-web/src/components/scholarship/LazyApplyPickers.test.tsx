@@ -58,10 +58,10 @@ describe('the saving is the import line', () => {
 
   it('each lazy module owns a LITERAL import() — a variable specifier emits no chunk', () => {
     const aliran = readWeb('src/components/scholarship/LazyAliranPicker.tsx', 'the lazy boundary')
-    expect(aliran).toContain("import('@/components/AliranPicker')")
+    expect(aliran).toMatch(/import\((\/\*[^*]*\*\/\s*)?'@\/components\/AliranPicker'\)/)
     expect(aliran).not.toMatch(/from\s+'@\/components\/AliranPicker'/)
     const matric = readWeb('src/components/scholarship/LazyMatricCollegePicker.tsx', 'the lazy boundary')
-    expect(matric).toContain("import('@/data/matric-colleges')")
+    expect(matric).toMatch(/import\((\/\*[^*]*\*\/\s*)?'@\/data\/matric\-colleges'\)/)
     expect(matric).not.toMatch(/from\s+'@\/data\/matric-colleges'/)
   })
 })

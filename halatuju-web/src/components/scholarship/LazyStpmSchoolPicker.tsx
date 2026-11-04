@@ -37,7 +37,7 @@ export default function LazyStpmSchoolPicker({ stream, value, onChange, placehol
 
   useEffect(() => {
     let live = true
-    import('@/data/stpm-schools')
+    import(/* webpackChunkName: 'sp' */ '@/data/stpm-schools')
       .then(m => { if (live) setSchools(m) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

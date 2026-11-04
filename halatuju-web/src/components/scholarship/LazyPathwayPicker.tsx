@@ -25,7 +25,7 @@ export default function LazyPathwayPicker(props: Props) {
 
   useEffect(() => {
     let live = true
-    import('@/components/PathwayPicker')
+    import(/* webpackChunkName: 'sp' */ '@/components/PathwayPicker')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

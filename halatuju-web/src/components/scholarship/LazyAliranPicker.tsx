@@ -34,7 +34,7 @@ export default function LazyAliranPicker(props: {
 
   useEffect(() => {
     let live = true
-    import('@/components/AliranPicker')
+    import(/* webpackChunkName: 'sp' */ '@/components/AliranPicker')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

@@ -185,7 +185,7 @@ function ActionCard({
   // doc_type, run its scan, re-fetch the tickets. A clean scan resolves the task server-side (this card
   // unmounts); a mismatch keeps it open and surfaces Gopal's advice for a clean re-upload.
   const onFile = async (file: File) => {
-    const refusal = await import('@/lib/uploadCheck').then((m) => m.refusalFor(file, limits), () => null)
+    const refusal = await import(/* webpackChunkName: 'mi' */ '@/lib/uploadCheck').then((m) => m.refusalFor(file, limits), () => null)
     if (!token || refusal) { setError(refusal ? t(refusal.key, refusal.params) : null); return }
     setBusy(true); setError(null)
     try {

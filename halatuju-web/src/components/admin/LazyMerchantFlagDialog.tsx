@@ -24,7 +24,7 @@ export default function LazyMerchantFlagDialog(props: MerchantFlagDialogProps) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('./MerchantFlagDialog')
+    import(/* webpackChunkName: 'ad' */ './MerchantFlagDialog')
       .then((m) => { if (live) setDialog(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

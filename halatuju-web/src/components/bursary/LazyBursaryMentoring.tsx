@@ -17,7 +17,7 @@ export default function LazyBursaryMentoring(props: Props) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('@/components/bursary/BursaryMentoring')
+    import(/* webpackChunkName: 'bt' */ '@/components/bursary/BursaryMentoring')
       .then((m) => { if (live) setTab(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

@@ -328,7 +328,7 @@ describe('the chooser is loaded on demand (bundle)', () => {
     expect(page).toContain("from '@/components/scholarship/LazyGiftChooser'")
     expect(page).not.toMatch(/from\s+'@\/components\/scholarship\/GiftChooser'/)
     const lazy = readWeb('src/components/scholarship/LazyGiftChooser.tsx', 'the lazy boundary')
-    expect(lazy).toContain("import('./GiftChooser')")
+    expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'\.\/GiftChooser'\)/)
     expect(lazy).not.toMatch(/from\s+'\.\/GiftChooser'/)
   })
 })

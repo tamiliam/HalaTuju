@@ -59,7 +59,7 @@ describe('the saving is the import line', () => {
 
   it('the lazy module owns a LITERAL import() of the data — a variable specifier emits no chunk', () => {
     const lazy = readWeb('src/components/scholarship/LazyStpmSchoolPicker.tsx', 'the lazy boundary')
-    expect(lazy).toContain("import('@/data/stpm-schools')")
+    expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'@\/data\/stpm\-schools'\)/)
     expect(lazy).not.toMatch(/from\s+'next\/dynamic'/)
     expect(lazy).not.toMatch(/from\s+'@\/data\/stpm-schools'/)
   })

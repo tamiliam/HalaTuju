@@ -16,7 +16,7 @@ export default function LazyBursaryNews(props: Props) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('@/components/bursary/BursaryNews')
+    import(/* webpackChunkName: 'bt' */ '@/components/bursary/BursaryNews')
       .then((m) => { if (live) setTab(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

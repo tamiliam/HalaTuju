@@ -17,7 +17,7 @@
 import { useEffect, useState, type ComponentProps, type ComponentType } from 'react'
 import { useT } from '@/lib/i18n'
 
-type Docs = typeof import('@/components/ScholarshipDocuments')['default']
+type Docs = typeof import(/* webpackChunkName: 'sd' */ '@/components/ScholarshipDocuments')['default']
 type Props = ComponentProps<Docs>
 
 export default function LazyScholarshipDocuments(props: Props) {
@@ -27,7 +27,7 @@ export default function LazyScholarshipDocuments(props: Props) {
 
   useEffect(() => {
     let live = true
-    import('@/components/ScholarshipDocuments')
+    import(/* webpackChunkName: 'sd' */ '@/components/ScholarshipDocuments')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

@@ -21,7 +21,7 @@ export default function LazySchoolSelect({ value, onChange }: { value: string; o
   const [Loaded, setLoaded] = useState<Select | null>(null)
   useEffect(() => {
     let live = true
-    import('@/components/SchoolSelect').then((m) => { if (live) setLoaded(() => m.default) }).catch(() => {})
+    import(/* webpackChunkName: 'sp' */ '@/components/SchoolSelect').then((m) => { if (live) setLoaded(() => m.default) }).catch(() => {})
     return () => { live = false }
   }, [])
   if (Loaded) return <Loaded value={value} onChange={onChange} />

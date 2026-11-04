@@ -31,7 +31,7 @@ export default function LazyGiftChooser(props: {
 
   useEffect(() => {
     let live = true
-    import('./GiftChooser')
+    import(/* webpackChunkName: 'sp' */ './GiftChooser')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

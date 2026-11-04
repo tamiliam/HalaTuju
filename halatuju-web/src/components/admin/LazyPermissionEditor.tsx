@@ -22,7 +22,7 @@ export default function LazyPermissionEditor(props: PermissionEditorProps) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('./PermissionEditor')
+    import(/* webpackChunkName: 'ad' */ './PermissionEditor')
       .then((m) => { if (live) setEditor(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

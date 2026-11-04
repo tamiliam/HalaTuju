@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 
-type Bubble = typeof import('./InfoTipBubble').default
+type Bubble = typeof import(/* webpackChunkName: 'mi' */ './InfoTipBubble').default
 
 /**
  * A friendly `i` help bubble. Tap/click opens a small popover that works on both mobile and
@@ -36,7 +36,7 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
   useEffect(() => {
     if (!open || Bubble) return
     let live = true
-    import('./InfoTipBubble').then((m) => { if (live) setBubble(() => m.default) }).catch(() => {})
+    import(/* webpackChunkName: 'mi' */ './InfoTipBubble').then((m) => { if (live) setBubble(() => m.default) }).catch(() => {})
     return () => { live = false }
   }, [open, Bubble])
 

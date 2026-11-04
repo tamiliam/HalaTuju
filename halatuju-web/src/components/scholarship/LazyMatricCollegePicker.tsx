@@ -33,7 +33,7 @@ export default function LazyMatricCollegePicker({ track, value, onChange, placeh
 
   useEffect(() => {
     let live = true
-    import('@/data/matric-colleges')
+    import(/* webpackChunkName: 'sp' */ '@/data/matric-colleges')
       .then(m => { if (live) setColleges(m) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

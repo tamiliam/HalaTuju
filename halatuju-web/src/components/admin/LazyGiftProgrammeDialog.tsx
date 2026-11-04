@@ -23,7 +23,7 @@ export default function LazyGiftProgrammeDialog(props: GiftProgrammeDialogProps)
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let live = true
-    import('./GiftProgrammeDialog')
+    import(/* webpackChunkName: 'ad' */ './GiftProgrammeDialog')
       .then((m) => { if (live) setDialog(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

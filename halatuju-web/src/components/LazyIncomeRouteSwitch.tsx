@@ -18,7 +18,7 @@ import { useEffect, useState, type ComponentProps } from 'react'
 
 import { useT } from '@/lib/i18n'
 
-type Switch = typeof import('./IncomeRouteSwitch')['default']
+type Switch = typeof import(/* webpackChunkName: 'mi' */ './IncomeRouteSwitch')['default']
 
 export default function LazyIncomeRouteSwitch(props: ComponentProps<Switch>) {
   const { t } = useT()
@@ -27,7 +27,7 @@ export default function LazyIncomeRouteSwitch(props: ComponentProps<Switch>) {
 
   useEffect(() => {
     let live = true
-    import('./IncomeRouteSwitch')
+    import(/* webpackChunkName: 'mi' */ './IncomeRouteSwitch')
       .then((m) => { if (live) setLoaded(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }

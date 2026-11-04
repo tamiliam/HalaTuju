@@ -47,7 +47,7 @@ describe('the saving is the import line', () => {
   it('the lazy module owns a LITERAL import() of the real panel — a variable specifier emits no chunk', () => {
     const lazy = readWeb('src/components/scholarship/LazyInterviewBookingPanel.tsx',
       'the lazy boundary itself')
-    expect(lazy).toContain("import('@/components/scholarship/InterviewBookingPanel')")
+    expect(lazy).toMatch(/import\((\/\*[^*]*\*\/\s*)?'@\/components\/scholarship\/InterviewBookingPanel'\)/)
     expect(lazy).not.toMatch(/from\s+'next\/dynamic'/)
   })
 })

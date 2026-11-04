@@ -32,7 +32,7 @@ export default function LazyInterviewBookingPanel(props: PanelProps) {
 
   useEffect(() => {
     let live = true
-    import('@/components/scholarship/InterviewBookingPanel')
+    import(/* webpackChunkName: 'sp' */ '@/components/scholarship/InterviewBookingPanel')
       .then(m => { if (live) setPanel(() => m.default) })
       .catch(() => { if (live) setFailed(true) })
     return () => { live = false }
