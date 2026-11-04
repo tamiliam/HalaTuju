@@ -540,11 +540,13 @@ class Round10AgencyLetterhead(SimpleTestCase):
     # follows it on its line, read in the raw case; the agency's umbrella names count as the agency.
     def test_generic_institution_words_are_no_organisation(self):
         for extra in ('Pihak pengurusan institut berhak menarik balik tawaran ini.\n',
-                      'Sila bawa dokumen asal semasa hari pendaftaran di institusi/kolej.\n',
-                      'PIHAK INSTITUT BERHAK MENARIK BALIK TAWARAN INI.\n'):
+                      'Sila bawa dokumen asal semasa hari pendaftaran di institusi/kolej.\n'):
             with self.subTest(extra=extra):
                 out = self._out(_agency('MAJLIS AMANAH RAKYAT', extra=extra))
                 self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
+        # Closed world (lead's ruling 2026-11-04, c): only a LOWERCASE bare noun is generic; upper / title case counts.
+        out = self._out(_agency('MAJLIS AMANAH RAKYAT', extra='PIHAK INSTITUT BERHAK MENARIK BALIK TAWARAN INI.\n'))
+        self.assertNotIn(ruling_of(out), LIFTS)
         out = self._out(_agency('KEMENTERIAN BELIA DAN SUKAN', venue='IKBN Pekan',
                                 extra='Pusat Pengajian IKBN Pekan\n'))
         self.assertEqual((out['status'], ruling_of(out)), ('genuine', 'tvet_offer'))
@@ -654,3 +656,147 @@ class Round10M4Confirmations(SimpleTestCase):
         motto line; a known-motto list would drop a123, a real Form-6 confirmation."""
         self.assertEqual(self._kind('MERCU JAYA\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI'),
                          'confirmation_polytechnic')
+
+
+# ── Round 10, the agency lift's CLOSED-WORLD condition 4 (owner 2026-11-04: app 329 green; the lead's rulings) ──
+_M = 'MAJLIS AMANAH RAKYAT'
+_K = 'KEMENTERIAN BELIA DAN SUKAN'
+
+
+def _ag(head, **kw):
+    kw.setdefault('venue', 'Institut Kemahiran MARA Kuantan')
+    return _agency(head, **kw)
+
+
+#: The r10 probes of the agency lift that must stay out (invented text).
+ROUND10_AGENCY_NEVER_LIFTED = {
+    'lowercase kolej mercu jaya': _ag(_M, extra='Latihan amali di kolej mercu jaya.\n'),
+    'Kolej mercu (lowercase name)': _ag(_M, extra='Latihan amali di Kolej mercu.\n'),
+    'akademi mercu': _ag(_M, extra='Pengendali : akademi mercu\n'),
+    'Mercu Skills Academy (name before the noun)': _ag(_M, extra='Pengendali kursus : Mercu Skills Academy\n'),
+    'Mercu Training Centre': _ag(_M, extra='Pengendali kursus : Mercu Training Centre\n'),
+    'Mercu Jaya Enterprise': _ag(_M, extra='Pengendali kursus : Mercu Jaya Enterprise\n'),
+    'Mercu Jaya PLT': _ag(_M, extra='Pengendali kursus : Mercu Jaya PLT\n'),
+    'Mercu Holdings': _ag(_M, extra='Rakan latihan : Mercu Holdings\n'),
+    'Kolej Kemahiran IKM-Mercu': _ag(_M, extra='Lokasi : Kolej Kemahiran IKM-Mercu\n'),
+    'Institut Kemahiran MARA Mercu Jaya': _ag(_M, extra='Lokasi : Institut Kemahiran MARA Mercu Jaya\n'),
+    'Kolej IKM Mercu': _ag(_M, extra='Lokasi : Kolej IKM Mercu\n'),
+    'Pusat Latihan IKM Mercu': _ag(_M, extra='Lokasi : Pusat Latihan IKM Mercu\n'),
+    'Kolej Kemahiran Tinggi MARA Mercu': _ag(_M, extra='Lokasi : Kolej Kemahiran Tinggi MARA Mercu\n'),
+    'KOLEJ MARA MERCU': _ag(_M, extra='Lokasi : KOLEJ MARA MERCU\n'),
+    'Kolej kemahiran Mercu': _ag(_M, extra='Lokasi : Kolej kemahiran Mercu\n'),
+    'Kolej Pengajian Mercu': _ag(_M, extra='Lokasi : Kolej Pengajian Mercu\n'),
+    'IKM venue operated by Mercu Jaya': _ag(_M, venue='IKM Kuantan (dikendalikan oleh Mercu Jaya)'),
+    'Mercu College @ IKM': _ag(_M, venue='Mercu College @ IKM Kuantan'),
+    'IKM Kuantan, Mercu College': _ag(_M, venue='IKM Kuantan, Mercu College'),
+    'a table row naming Kolej Mercu': _ag(_M, extra='Institusi | Program | Tempoh\nIKM Kuantan | Sijil | 2 tahun\n'
+                                                    'Kolej Mercu | Diploma | 3 tahun\n'),
+    'a split table cell': _ag(_M, extra='Institusi\nKolej\nMercu Jaya\n'),
+    'a noun at the line end, its name on the next line': _ag(_M, extra='Latihan amali di Kolej\nMercu Jaya Kuantan.\n'),
+    'MARA head, KBS in the body': _ag(_M, extra='Dengan kerjasama KBS.\n'),
+    'MARA head, the JTM full name in the body': _ag(_M, extra='Diiktiraf oleh Jabatan Tenaga Manusia.\n'),
+    'KBS head, MARA in the body': _ag(_K, venue='IKBN Pekan', extra='Tajaan oleh MARA.\n'),
+    'MARA head, another Majlis': _ag(_M, extra='Majlis Latihan Mercu.\n'),
+    'OCR KoLeJ MeRcU': _ag(_M, extra='Latihan amali di KoLeJ MeRcU.\n'),
+    'OCR kOLEJ MERCU': _ag(_M, extra='Latihan amali di kOLEJ MERCU.\n'),
+    'OCR K0LEJ MERCU': _ag(_M, extra='Latihan amali di K0LEJ MERCU.\n'),
+    'Kolej-Mercu': _ag(_M, extra='Latihan amali di Kolej-Mercu.\n'),
+    'KolejMercu glued': _ag(_M, extra='Latihan amali di KolejMercu.\n'),
+    'KOLEJMERCU glued': _ag(_M, extra='Latihan amali di KOLEJMERCU.\n'),
+    'Kolej "Mercu"': _ag(_M, extra='Latihan amali di Kolej "Mercu".\n'),
+    'Kolej (Mercu)': _ag(_M, extra='Latihan amali di Kolej (Mercu).\n'),
+    'Kolej 1Mercu': _ag(_M, extra='Latihan amali di Kolej 1Mercu.\n'),
+    'Kolej Yang Mercu': _ag(_M, extra='Latihan amali di Kolej Yang Mercu.\n'),
+    'Kolej Di Mercu Jaya': _ag(_M, extra='Latihan di Kolej Di Mercu Jaya.\n'),
+    'kolej swasta': _ag(_M, extra='Latihan di kolej swasta.\n'),
+    'University Of Mercu': _ag(_M, extra='Pengajian lanjut di University Of Mercu.\n'),
+    'letterhead: MARA + MERCU JAYA': _ag('MAJLIS AMANAH RAKYAT\nMERCU JAYA'),
+    'letterhead: MARA + MERCU EDU': _ag('MAJLIS AMANAH RAKYAT\nMERCU EDU'),
+    'letterhead: MARA + MERCU JAYA S/B': _ag('MAJLIS AMANAH RAKYAT\nMERCU JAYA S/B'),
+    'letterhead: MERCU JAYA / WAKIL MARA': _ag('MERCU JAYA\nWAKIL MAJLIS AMANAH RAKYAT'),
+    'letterhead: MERCU JAYA (EJEN MARA)': _ag('MERCU JAYA (EJEN MARA)'),
+    'letterhead: Mercu academy above MARA': _ag('Mercu academy\nMAJLIS AMANAH RAKYAT'),
+    'letterhead: MARA inside an address': _ag('MERCU JAYA\nWisma MARA, Jalan Raja Laut'),
+    'letterhead: KBS + KSM': _ag('KEMENTERIAN BELIA DAN SUKAN\nKEMENTERIAN SUMBER MANUSIA', venue='IKBN Pekan'),
+    'IPMA umbrella, KPTM in the body': _ag('INSTITUSI PENDIDIKAN MARA', extra='Kampus : KPTM Kuantan\n'),
+    'Kolej Poly-Tech MARA in the body': _ag(_M, extra='Kampus : Kolej Poly-Tech MARA Kuantan\n'),
+    'Kolej Profesional MARA Mercu': _ag(_M, extra='Kampus : Kolej Profesional MARA Mercu\n'),
+    'unikl mfi lowercase': _ag(_M, extra='Penempatan : unikl mfi\n'),
+    'German-Malaysian Institute': _ag(_M, extra='Penempatan : German-Malaysian Institute\n'),
+    'GMI in a table': _ag(_M, extra='Tempat | GMI Bangi\n'),
+    'IPTS status': _ag(_M, extra='Status : IPTS\n'),
+    'mercu sdn bhd lowercase': _ag(_M, extra='Yuran kepada mercu sdn bhd\n'),
+    'Pihak Institut Mercu': _ag(_M, extra='Pihak Institut Mercu berhak.\n'),
+    'Kolej universiti mercu': _ag(_M, extra='Rakan pelaksana: Kolej universiti mercu\n'),
+    'KOLEJ UNIVERSITI MERCU': _ag(_M, extra='Program usahasama: KOLEJ UNIVERSITI MERCU\n'),
+    'Mercu Institute of Technology': _ag(_M, extra='Program dikendalikan di Mercu Institute of Technology.\n'),
+    'Mercu Polytechnic': _ag(_M, extra='Lokasi kelas: Mercu Polytechnic\n'),
+    'Politeknik Mercu': _ag(_M, extra='Lokasi kelas: Politeknik Mercu\n'),
+    'Mercu Learning Hub': _ag(_M, extra='Lokasi kelas: Mercu Learning Hub\n'),
+    'Mercu Edu Group': _ag(_M, extra='Lokasi kelas: Mercu Edu Group\n'),
+    'the title names Kolej Mercu': _ag(_M, title='SURAT TAWARAN KEMASUKAN KE KOLEJ MERCU'),
+    'the title names Mercu College': _ag(_M, title='SURAT TAWARAN KEMASUKAN KE MERCU COLLEGE'),
+    'a closing signature Mercu Skills Academy': _ag(_M).replace('PENGARAH\n', 'PENGARAH\nMercu Skills Academy\n'),
+    'a closing signature Kolej Mercu': _ag(_M).replace('PENGARAH\n', 'PENGARAH\nKolej Mercu\n'),
+    'Kolej Swasta Mercu': _ag(_M, extra='Penempatan di Kolej Swasta Mercu\n'),
+    'institusi swasta': _ag(_M, extra='Penempatan di institusi swasta terpilih\n'),
+    'IPTS Mercu': _ag(_M, extra='Penempatan : IPTS Mercu\n'),
+    'Kolej Komuniti in the body': _ag(_M, extra='Penempatan : Kolej Komuniti Kuantan\n'),
+    'ILKBS umbrella in a MARA letter': _ag(_M, extra='Rujuk ILKBS\n'),
+    'KBS head, Kolej MARA in the body': _ag(_K, venue='IKBN Pekan', extra='Pindah dari Kolej MARA Kuantan\n'),
+    'JTM head, pusat latihan mercu': _ag('JABATAN TENAGA MANUSIA', venue='ADTEC Kulim',
+                                         extra='Latihan industri: pusat latihan mercu\n'),
+    'JTM head, JPK and a Pusat Bertauliah': _ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
+                                                extra='Diiktiraf oleh Jabatan Pembangunan Kemahiran (JPK) melalui '
+                                                      'Pusat Bertauliah Mercu.\n'),
+    'JTM head, JPK full name only': _ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
+                                        extra='Sijil dikeluarkan oleh Jabatan Pembangunan Kemahiran.\n'),
+}
+
+
+class Round10AgencyClosedWorld(SimpleTestCase):
+    def _lifted(self, text):
+        return ruling_of(signature_genuineness(text, doc_type='offer_letter')) in LIFTS
+
+    def test_the_clean_controls_lift(self):
+        for head, venue in ((_M, 'Institut Kemahiran MARA Kuantan'), (_K, 'IKBN Miri'), (_K, 'IKBN Pekan'),
+                            ('JABATAN TENAGA MANUSIA', 'ILP Kuantan')):
+            with self.subTest(head=head, venue=venue):
+                self.assertTrue(self._lifted(_ag(head, venue=venue)))
+
+    def test_every_r10_agency_probe_stays_out(self):
+        for name, text in ROUND10_AGENCY_NEVER_LIFTED.items():
+            with self.subTest(name):
+                self.assertFalse(self._lifted(text))
+
+    def test_the_allowed_spans(self):
+        """Lead's rulings 2026-11-04: a label column line, a label before the institute, the spelt-out sector name,
+        lowercase generic nouns, one-token fragments and a KEPADA block above the agency."""
+        for head, extra in ((_K, 'c) Tempat/Pusat\nTempoh : 2 tahun\n'),
+                            (_K, 'Pusat Pengajian (IKBN/IKTBN) : IKBN Pekan\n'),
+                            (_K, 'Program Technical and Vocational Education and Training (TVET)\n'),
+                            (_K, 'Semasa hari pendaftaran di institusi/kolej.\n')):
+            with self.subTest(extra=extra):
+                self.assertTrue(self._lifted(_ag(head, venue='IKBN Pekan', extra=extra)))
+        for head in ('123\nTAMAN\n9\nKEPADA\n' + _K, 'BIRU\n' + _K):
+            with self.subTest(head=head):
+                self.assertTrue(self._lifted(_ag(head, venue='IKBN Pekan')))
+        for head in ('MERCU JAYA EDU\n' + _K, 'ALPHA\nBETA\nGAMMA\nDELTA\n' + _K):     # four one-token lines > 3
+            with self.subTest(head=head):
+                self.assertFalse(self._lifted(_ag(head, venue='IKBN Pekan')))
+
+    def test_a_label_followed_by_anything_else_still_counts(self):
+        self.assertFalse(self._lifted(_ag(_K, venue='IKBN Pekan', extra='Pusat Latihan Mercu Jaya\n')))
+
+    def test_the_campus_words_come_from_the_catalogue(self):
+        from apps.scholarship.genuineness.offer_agency import catalogue_places
+        places = catalogue_places()
+        self.assertIn('MIRI', places['tvet_belia_sukan'])
+        self.assertIn('KUANTAN', places['tvet_mara'])
+        self.assertNotIn('MERCU', places['tvet_mara'])
+        self.assertFalse(self._lifted(_ag(_M, venue='IKM Mercu')))
+
+    def test_a_private_name_with_no_organisation_word_is_a_known_gap(self):
+        """TD-483 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
+        self.assertTrue(self._lifted(_ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
+                                         extra='Latihan industri di Mercu Engineering Works.\n')))

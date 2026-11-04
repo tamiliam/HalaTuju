@@ -90,6 +90,18 @@
       umbrella names count as the agency, for that agency only: ILKBS / Institusi Latihan Kemahiran Belia dan
       Sukan (KBS), ILJTM / Institusi Latihan Jabatan Tenaga Manusia (JTM), IPMa / Institusi Pendidikan MARA /
       TVETMARA (MARA).
+      **Superseded 2026-11-04 (owner: app 329 must be green; the lead's rulings): condition 4 is CLOSED-WORLD**
+      (`genuineness/offer_agency.py`). After the allowed spans are taken out of a body line — the institute's names
+      with its CATALOGUED campus words (`apps.courses.tvet_institutions.HELD` + the UP_TVET catalogue snapshots in
+      `data/tvet/`, by family), the agency and its umbrella names, the spelt-out TVET sector, a field label before
+      the institute, a label-only line, a bank line, the addressee block — ANY organisation word left (institution
+      nouns, English company / end-nouns, another agency's acronym or full name) = no lift; only a LOWERCASE bare
+      noun before a function word or punctuation is generic. An operator phrase ("dikendalikan oleh", "in
+      collaboration with", "rakan strategik" …) anywhere = no lift; a glued "KolejMercu" is split; a line-end noun
+      reads the next line's first word. The agency stands first on the letterhead (crest / government / junk lines,
+      up to three one-token fragments, a KEPADA block above it; address / contact / division / agency lines below
+      it to the first postcode); WAKIL / EJEN / AGEN = no lift. Known gap: a private name with no organisation word
+      (TD-483).
    `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
    `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
    `Round10AgencyLetterhead`.

@@ -7744,3 +7744,13 @@ short line, so "MERCU JAYA / POLITEKNIK CONTOH" still lifts (probe in `tests/tes
 lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tightening would drop an owner-ruled
 letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
 motto. *(S6 · S)*
+
+### [TD-483] The agency-letterhead lift does not catch a private name with no organisation word - medium
+
+**Raised 2026-11-04 by the S6 round-10 review (lead's ruling 7).** The agency lift's closed-world condition 4
+(`genuineness/offer_agency.closed_world_blocker`) blocks every organisation word left on a body line once the
+institute, the agency and the labels are taken out, but a private operator named without one ("latihan industri di
+Mercu Engineering Works") reads as ordinary prose and the letter lifts. Accepted and pinned
+(`tests/test_offer_s6_narrowing.py`, `Round10AgencyClosedWorld.test_a_private_name_with_no_organisation_word_is_a_known_gap`).
+**Fix:** a capitalised-name test that knows the letter's own words (people, places, course titles) - only once the
+corpus holds enough agency letters to measure it. *(S6 · M)*
