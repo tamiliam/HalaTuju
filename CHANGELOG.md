@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
+## TD-481 — an awaiting-QC case is declined only through the QC gate (LIVE 2026-11-04; main 307d204c; api-01249-zqp, web-01078-pgb)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
 
