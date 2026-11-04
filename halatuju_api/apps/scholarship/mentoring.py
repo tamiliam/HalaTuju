@@ -102,10 +102,13 @@ class MentoringError(Exception):
 
 # ── who may act ──────────────────────────────────────────────────────────────────────────────
 def may_act(caller):
-    """The roles that act on (and read) a scholar's Mentoring tab: super, org_admin, admin — the
-    Mentors roster's readers (`mentor_invite.may_read`). The ORGANISATION fence is the view's."""
-    from .mentor_invite import may_read
-    return may_read(caller)
+    """Who acts on (and reads) a scholar's Mentoring tab: the v2 key `mentoring.edit` (Team tables T5c;
+    it implies `.view` — this one door both reads and acts). Holders as before: super, org_admin, the
+    `admin` label — the same people as the Mentors roster's readers (`mentor_invite.may_read`), now by
+    their own key (lead ruling T5a: `team.view` must never cover this tab). The ORGANISATION fence is
+    the view's."""
+    from apps.courses import staff_tables
+    return staff_tables.opens_door(caller, 'mentoring')
 
 
 def _same_org(caller, application):

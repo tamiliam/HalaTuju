@@ -100,6 +100,7 @@ _(cleared at the 2026-10-28 review; the 41 sprint lines it read (37 logged here,
 
 - 2026-11-02 Offer matcher: a shorter course never wins by a subset of a longer letter name (#337, found by the S4 dry run; adversarial review; no migration) — 00397b75
 - 2026-11-03 Team tables T4 (Team -> Emails in three sections: read-only admin list from one backend registry, reviewer card moved, mentor invitation two doors; Terms three "Soon" sections; lead ruling option B; live) — d94af772
+- 2026-11-04 Offer letters read exactly Sprint 6 (the owner's genuineness rulings on a frozen baseline; agency-letterhead lift; 14 review rounds; owner stop rule; no migration; live a1d1dca7) — 50af00f0 4a32be43 b5c99503 a1ba5549 415ede3c 629e925f 66aceea5 4b1addb7 3571a9f7 b55b310a 5d75f2de 76b4d9b0 def2edea aa24e2ae df1c8d89 7d98ee8c 7a0bb146 85e578c8 9e67fb13 3ae266c2 dc2a2b28 8930acc7 632f54a7 7a25a6d6 52ff382f 56330c54 43be2123 2f613369 a1d1dca7
 
 ## Reviews
 

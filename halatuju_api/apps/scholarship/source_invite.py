@@ -47,8 +47,10 @@ def _refused(error):
 
 # ── who may act, and on what ─────────────────────────────────────────────────────
 def may_invite(caller):
-    """A super, or an organisation admin. Never an admin, finance, reviewer, QC or source user."""
-    return caller is not None and (caller.is_super or caller.role == 'org_admin')
+    """The v2 key `invitations.edit` (Team tables T5c; lead-only, no preset grants it): a super, or an
+    organisation admin. Never an admin, finance, reviewer, QC or source user."""
+    from apps.courses import staff_tables
+    return staff_tables.opens_door(caller, 'invitations')
 
 
 def manageable(caller, target):

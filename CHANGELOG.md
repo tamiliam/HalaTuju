@@ -19,7 +19,63 @@ Owner ruling `docs/decisions.md` 2026-11-03 rule 1. No migration. No paid call.
   superseded ones (apps 187, 276).
 - Tests: `test_td473_pre_u_letter_level.py`.
 
-## Offer exact-read S6 — the owner's genuineness rulings and the chip table (branch offer-read-s1, not pushed)
+## Team tables T5c — pages open by keys (branch t5c, not yet live)
+
+decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no new endpoint (P4a adds
+one field to `admin/role/`); no live access moved, on the server or in the console.
+
+**Review:** fresh reviews PASS; adversarial review SHIP, no blocker (13,884 server shapes and 4,770 web payloads, 0 mismatches). Fixes: the role guard now reads `getattr(x, 'role', ...)`; lead-tier gates reclassified (`AdminAssignReviewerView.post` to T5e; record / cancel admin credit to T5d; letters `_senior` and `is_review_target` to T5e).
+
+**P1 — the organisation-read and admin-work doors (server only):**
+- **One page gate, `staff_tables.opens(admin, *v2_keys)`** (all keys held, read through `effective_v2`; an unknown key
+  raises). `staff_tables.admits` and its role / key lists are gone.
+- **Doors on their own key:** Sponsors read `sponsors.view`; People / Reviewers / Invitations `team.view` +
+  `invitations.view`; Announcements `announcements.edit`; Surveys `surveys.edit`; Development `development.edit`;
+  the scholar Mentoring tab (`mentoring.may_act` / `may_assign`) `mentoring.edit`; sponsor terms and sponsor emails
+  `sponsors.edit`; mentor and source invitations `invitations.edit`.
+- **The union doors** `may_read_org` / `may_do_admin_work` now ask every key of `ORG_READ_V2` / `ADMIN_WORK_V2`;
+  still used by Sources, the team roster, the Mentors list, Team -> Emails -> Admin emails and the credit screens
+  (TD-497; the Mentors list needs a lead ruling).
+- **`effective_v2` no longer asks the doors**: the Admins table grants `ORG_READ_V2`, the `admin` label grants
+  `ADMIN_WORK_V2` (same sets as before).
+- An inactive row opens no door, except an inactive super (`effective_v2` answers it in full); neither can sign in.
+- Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
+  by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
+  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-497, TD-498.
+
+**P2 — Sources, partner emails and the credit ledger (server only):**
+- **Sources door on `sources.edit`** (`_SourcesBase.may_open`): Sources (list, the retired POST, PATCH), Partner
+  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-498).
+- **Credit ledger read on `sponsors.view`** (`_CreditsBase.may_read`, GET `credits/`). Record, sign and cancel move
+  money and stay on `may_read_org` until T5d.
+- **Not converted:** the graduation-messages list (lead ruling R2): no key reproduces its holders, because the org
+  admin holds every key and is refused today (TD-496, closest the `review` hat, 7 shapes move). Admin emails, the
+  roster and the Mentors list are outside P2's files (TD-497).
+- Tests: the parity test grows to 17 doors x 32 shapes, plus "credit writes stay on the union door" and "every source
+  surface rides the one Sources door"; `V2_DOOR_MODULES` gains `sources.py` and `credits.py`. The access matrix runs
+  unchanged. New debt: TD-496.
+
+**P3 — the role-label inventory and its guard (tests and docs only):**
+- New `test_role_is_display_only.py`: scans `apps/` (not tests, not migrations) for every staff role-label read that
+  decides something and fails when one appears outside an allowlist (module::function, class, owner, reason). The
+  scanner is itself tested (a fake gate is caught). 177 sites in 142 functions: 50 DISPLAY, 44 OVERRIDE, 48 GATE-LEFT
+  (T5e 42, T5d 4, TD-496 2), GATE-UNPLANNED none. No gate converted, no new debt.
+
+**P4 — the console reads the server's doors (P4a server, P4 web):**
+- T5c P4a: `admin/role/` serves `page_keys` (the v2 keys the doors ask, never null); every door reads its keys from `staff_tables.DOOR_KEYS` via `opens_door` (pure refactor, 0 moved cells).
+- T5c P4: the console's menu rows and page guards for the P1/P2 doors open by the served `page_keys`, read through
+  `lib/pageDoors.ts` (`opensDoor`, a copy of `DOOR_KEYS` held to the server's by a drift test). Rows on a door:
+  Organisation (`org_read`), Invitations and People (`team_read`), Sources (`sources`), Sponsors (`sponsors_read`),
+  Announcements, Surveys, Development. In-page gates (`pageGuard.opensDoorOr`): the Announcements / Surveys /
+  Development screens, the scholar Mentoring / Surveys / Growth tabs and the scholars list's mentor column, sponsor
+  emails, Sources' manage and invite. A payload without `page_keys` keeps today's role rules. Not converted (the
+  server has not): Team -> Mentors (TD-497), the platform, lead-only, money, Applications and Scholars rows. No
+  landing, string or layout change. Tests: new `teamTablesT5cDoors.test.ts` (the 27 served shapes x 45 cells —
+  menus, every route, landing, Mentors tab, the in-page gates — frozen on P4a before the change, identical with and
+  without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading
+  block, red since P1 removed `ORG_READ_KEYS` / `ADMIN_WORK_*`, now pins those as the older-payload rule.
+
+## Offer exact-read S6 — the owner's genuineness rulings and the chip table (LIVE 2026-11-04; main a1d1dca7; api halatuju-api-01250-ldm, web build e8e351d9)
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (S6, "Plan (2026-11-03)"); owner go 2026-11-03
 with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). No migration. No paid call.
@@ -224,10 +280,12 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   "Kolej Kediaman"; "IKM1 Kuantan" on a KBS / JTM letter names a MARA institute). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
+- **Shipped 2026-11-04** after 14 review rounds, on the owner's go. Gates on the pushed head a1d1dca7: 10,362
+  pytest / 3 skipped (`apps/scholarship`, `-n auto`) · 6,399 jest / 412 suites · `next build` ok · first-load-JS
+  budget ok (median 144.06 kB of 145 kB). Stored genuineness statuses did not move: S7 re-reads and re-scores.
+  Close: retrospective in the roadmap (S6), TD-495.
 
-## Team tables T5a — permission catalogue v2 + aliases (not yet live)
-
-## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
+## TD-481 — an awaiting-QC case is declined only through the QC gate (LIVE 2026-11-04; main 307d204c; api-01249-zqp, web-01078-pgb)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
 

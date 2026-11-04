@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/adminAuthCore'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
-import { isSuperRole } from '@/lib/superRole'
+import { opensDoorOr } from '@/lib/pageGuard'
 import {
   fetchModuleCsv, getModuleProgress, remindModule, reviewTask, taskFileLink,
   type ModuleProgress, type ProgressBucket, type ProgressRow,
@@ -73,8 +73,7 @@ function Review({ moduleId, row, token, t, onSaved }: {
 export default function ModuleProgressView({ id, programme }: { id: number; programme?: string }) {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const r = isSuperRole(role) ? 'super' : (role?.role ?? '')
-  const allowed = MAKER_ROLES.includes(r)
+  const allowed = opensDoorOr(role, 'development', MAKER_ROLES)   // T5c P4: the server's door
   const [data, setData] = useState<ModuleProgress | null>(null)
   const [failed, setFailed] = useState(false)
   const [tab, setTab] = useState<ProgressBucket>('to_review')

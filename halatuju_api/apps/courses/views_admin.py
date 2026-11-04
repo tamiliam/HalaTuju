@@ -343,6 +343,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             # Team tables T1: the tables this person sits in (`staff_tables.tables`, derived, never
             # stored) — the menu, the page guards, the landing and the Guide read them.
             'tables': list(staff_tables.tables(admin)),
+            # Team tables T5c P4a: the v2 keys the page doors ask (`staff_tables.page_keys`, never
+            # null), so the menu shows an entry exactly when its door (`DOOR_KEYS`) opens.
+            'page_keys': list(staff_tables.page_keys(admin)),
         })
 
 

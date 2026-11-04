@@ -82,13 +82,20 @@ Invited = namedtuple('Invited', 'error mentor account invitation google already_
 
 # ── who may act, and on what ─────────────────────────────────────────────────────
 def may_invite(caller):
-    """A super, or an organisation admin. Never an admin, finance, reviewer, QC, source or mentor."""
-    return caller is not None and (caller.is_super or caller.role == 'org_admin')
+    """The v2 key `invitations.edit` (Team tables T5c; lead-only, no preset grants it): a super, or an
+    organisation admin. Never an admin, finance, reviewer, QC, source or mentor."""
+    from apps.courses import staff_tables
+    return staff_tables.opens_door(caller, 'invitations')
 
 
 def may_read(caller):
-    """Who may open the Mentors page: a super, an organisation admin, an admin (read-only)."""
-    from apps.courses import staff_tables   # T1: or the Admins table by an admin-work key
+    """Who may open the Mentors page: a super, an organisation admin, an admin (read-only).
+
+    ⚠ NOT on its own key yet (Team tables T5c P1): the catalogue puts the Mentors list under `team.view`
+    (ruling 2), which finance and a person at Admins by a key also hold — that would OPEN this page to
+    them. So it stays on the admin-work union door (all of `ADMIN_WORK_V2`, same holders as T1) until
+    the lead rules (decisions.md "Team tables T5c")."""
+    from apps.courses import staff_tables
     return staff_tables.may_do_admin_work(caller)
 
 

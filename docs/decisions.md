@@ -1,5 +1,74 @@
 # Architectural Decisions — HalaTuju
 
+## Team tables T5c: pages open by v2 keys — P1, the org-read and admin-work doors (server only) — 2026-11-04 (lead rulings R1-R6 for the run)
+
+**Context:** roadmap T5c ("pages open by keys"). After T5a/T5b the v2 vocabulary (`staff_permissions_v2`) was a
+read only; every organisation and admin-work page still opened by a ROLE LABEL (`staff_tables.admits`: a role
+list, widened to the Admins table by an old admin key). P1 makes the v2 keys the live gate for those doors, with
+no access moving for any shape.
+
+**Decision:**
+- **One gate, `staff_tables.opens(admin, *keys)`**: true when `effective_v2(admin)` holds EVERY key named (all-of,
+  never any-of); an unknown key raises. `staff_tables.admits` and `ORG_READ_ROLES` / `ORG_READ_KEYS` /
+  `ADMIN_WORK_ROLES` / `ADMIN_WORK_KEYS` are gone. `effective_v2` no longer asks the doors (it would loop): it
+  reads what the doors were built from — the Admins table grants `ORG_READ_V2` (`TABLE_GRANTS`), the `admin` label
+  grants `ADMIN_WORK_V2` (`LABEL_GRANTS`), the lead tier and a super hold every key. Same sets as T5a's golden table.
+- **The door -> key table:**
+
+  | Door | v2 key(s) (all held) | Holders (unchanged) |
+  |---|---|---|
+  | `surface_gates.may_read_sponsors` (Sponsors list / detail, sponsorships) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
+  | `surface_gates.may_read_team` (People / Reviewers / Invitations) | `team.view` + `invitations.view` | same |
+  | `staff_tables.may_read_org` (union; credit screens still call it) | `ORG_READ_V2` | same |
+  | `announcements.may_post` | `announcements.edit` | super, org_admin, admin |
+  | `surveys.may_make` (+ scholar surveys tab) | `surveys.edit` | same |
+  | `development.may_make` (+ scholar growth tab) | `development.edit` | same |
+  | `mentoring.may_act` (so `may_assign`) | `mentoring.edit` | same |
+  | sponsor terms (`_SponsorTermsBase.may_author`) | `sponsors.edit` | same |
+  | sponsor emails (`_SponsorEmailsBase.may_open`) | `sponsors.edit` | same |
+  | `staff_tables.may_do_admin_work` (union) | `ADMIN_WORK_V2` | same |
+  | `mentor_invite.may_invite`, `source_invite.may_invite` | `invitations.edit` (lead-only) | super, org_admin |
+  | **P2:** Sources, Partner emails, witness override (`_SourcesBase.may_open`) | `sources.edit` | super, org_admin, admin |
+  | **P2:** credit ledger read, GET `credits/` (`_CreditsBase.may_read`) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
+
+- **R1** each admin-work page opens by its own catalogue key, reproducing the `admin` preset exactly; finance holds
+  `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-497):** the Mentors list
+  (`mentor_invite.may_read`) — its catalogue key `team.view` is also held by finance and Admins-by-key, so it would
+  open to them: **lead ruling needed**; it stays on the union door. Sources, the roster `admin/admins/`, Team -> Emails
+  -> Admin emails and the credit screens stay on the union doors too (their files are outside P1).
+- **P2 (same day):** Sources and the credit ledger read moved (table above). The credit doors that write money
+  (record, sign, cancel) stay on `may_read_org` for T5d. Sources keeps ONE gate for read and write, so `.edit`.
+- **R2** the graduation-messages list: **not converted in P2** — it admits super + the `reviewer` / `admin` labels and
+  refuses the org admin, who holds every key, so no single key reproduces it (closest: the `review` hat, 7 shapes
+  move). Lead ruling needed (TD-496). **R3** requests, billing, contracts,
+  invoices stay for T5e. **R4** no dependency change (`with_implied_views` / `HAT_IMPLIES` as today; T5d decides).
+  **R5** no landing, web or migration change. **R6** `NotYetAGate` is replaced by `V2Importers`: only
+  `courses/staff_tables.py` may import v2, and `V2_DOOR_MODULES` lists every module that asks `staff_tables.opens(`
+  — it grows door by door, so an unplanned import or door fails.
+- **P3 inventory (same day):** every staff role-label read in `apps/` (comparisons, `role=` / `role__in=` filters, `has_role`) is classified and pinned by `test_role_is_display_only.py`: 183 sites in 148 functions (the review made the scanner read `getattr(x, 'role', ...)` too, which added 6 sites). **DISPLAY 51** (account kind, table membership, recipient routing, the T5a catalogue's preset source), **OVERRIDE 44** (super-only and org-scope fences, the lead tier's definition), **GATE-LEFT 53** (T5e lead powers and R3 surfaces 45, T5d money 6, TD-496 2; the review reclassified `AdminAssignReviewerView.post`, which admits org_admin, from OVERRIDE to T5e), **GATE-UNPLANNED none**. The one adjacency to watch: `_require_reviewer` (graduation moderation) is owned only through TD-496's note. A new label gate fails the guard; conversions stay with their sprints.
+- **A door that reads and writes asks the `.edit` key** (it implies `.view`); nobody holds a view without its edit
+  today. Split before T5g (TD-498).
+- **One deliberate tightening:** an INACTIVE row now opens no door (T1's role half admitted an inactive `admin` /
+  `finance` / `org_admin` by label) — except an inactive SUPER, whom `effective_v2` still answers in full, so at the
+  door level it opens every door. Both are unreachable: every caller asks about the signed-in person and sign-in
+  already refuses an inactive row (`get_admin` reads `is_active=True`), so no request sees it (matrix row
+  `admin_inactive` unchanged).
+- P4a: `staff_tables.DOOR_KEYS` is the one door → key table (the web's drift test reads it alone; `DoorKeysTable` forbids inline keys); `page_keys` = `effective_v2` with inactive → (), including an inactive super, who `effective_v2` still answers in full (unreachable: sign-in refuses it).
+- **P4 (web):** the console reads the server's doors. `lib/pageDoors.ts` holds a copy of `DOOR_KEYS` (drift test
+  `teamTablesT5cDoors.test.ts` reads `staff_tables.py`) and `opensDoor(role, door)`: every key of the door in the
+  served `page_keys`, or `undefined` for a payload without them, which keeps today's role rule (as `tables` did in
+  T1). A registry row names its `door` (Organisation `org_read`; Invitations, People `team_read`; Sources; Sponsors
+  `sponsors_read`; Announcements; Surveys; Development); in-page gates ask `pageGuard.opensDoorOr(role, door,
+  oldRoles)`. Offer-set == accept-set: a row or gate moves only where its server door moved, so Team -> Mentors
+  (TD-497), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
+  landing change (`defaultRoute` passes no `page_keys`), no string, no layout. **Proof:** the 27 shapes the server
+  serves (the doors test's 32 less its 5 inactive rows, payloads taken from `admin/role/`) x 45 cells, frozen on P4a
+  before the change, identical after with and without `page_keys`; shown red with one mapping broken.
+
+**Proof:** `test_team_tables_matrix` unchanged against the frozen `team_tables_access_before.json`, no new
+`EXPECTED_CHANGES` line; `test_team_tables_t5c_doors` (parity: each door vs T1's rule, frozen, for the 20 matrix
+shapes + 12 extras — qc alone, reviewer + see_all, gift-limited admin / finance / Admins-by-key, empty sets, a super
+on a team label, inactive rows), shown red with one mapping broken on purpose.
 ## Offer letters S6: a pre-U letter on a degree application is a Pathway mismatch (yellow); public TVET offers score genuine; which confirmation letters count — 2026-11-03 (owner go on the S6 plan)
 
 **Context.** The offer exact-read S6 plan (`docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md`, S6

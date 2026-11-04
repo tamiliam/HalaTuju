@@ -71,10 +71,10 @@ class DevelopmentError(Exception):
 
 def may_make(admin):
     """THE gate for every staff module door. A super, an organisation admin, an admin."""
-    # Who may make one (owner, 2026-11-02): ONE home since Team tables T1 — `staff_tables.ADMIN_WORK_ROLES`
-    # (org_admin, admin), or the Admins table by an admin-work key. Everybody else is refused.
+    # Who may make one (owner, 2026-11-02). Team tables T5c: the v2 key `development.edit` (it implies
+    # `.view`; this one door both reads and writes). Holders as T1: super, org_admin, the `admin` label.
     from apps.courses import staff_tables
-    return staff_tables.may_do_admin_work(admin)
+    return staff_tables.opens_door(admin, 'development')
 
 
 def today():

@@ -1,0 +1,730 @@
+{
+ "super": {
+  "role": "super",
+  "is_super_admin": true,
+  "permissions": [
+   "review",
+   "see_all",
+   "qc",
+   "spending",
+   "payments_prepare",
+   "payments_check",
+   "payments_approve",
+   "manage_team"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "invitations.edit",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "sponsors.check",
+   "sponsors.approve",
+   "billing.view",
+   "billing.edit",
+   "requests.view",
+   "requests.edit",
+   "requests.approve",
+   "settings.edit",
+   "students.view",
+   "students.edit",
+   "students.approve",
+   "contracts.view",
+   "contracts.edit",
+   "programmes.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "payments.check",
+   "payments.approve",
+   "spending.view",
+   "spending.edit",
+   "review",
+   "qc"
+  ]
+ },
+ "org_admin": {
+  "role": "org_admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "qc",
+   "spending",
+   "manage_team"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "invitations.edit",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "sponsors.check",
+   "sponsors.approve",
+   "billing.view",
+   "billing.edit",
+   "requests.view",
+   "requests.edit",
+   "requests.approve",
+   "settings.edit",
+   "students.view",
+   "students.edit",
+   "students.approve",
+   "contracts.view",
+   "contracts.edit",
+   "programmes.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "payments.check",
+   "payments.approve",
+   "spending.view",
+   "spending.edit",
+   "qc"
+  ]
+ },
+ "org_admin_mentor": {
+  "role": "org_admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "qc",
+   "spending",
+   "manage_team"
+  ],
+  "mentoring": true,
+  "tables": [
+   "admins",
+   "mentors"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "invitations.edit",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "sponsors.check",
+   "sponsors.approve",
+   "billing.view",
+   "billing.edit",
+   "requests.view",
+   "requests.edit",
+   "requests.approve",
+   "settings.edit",
+   "students.view",
+   "students.edit",
+   "students.approve",
+   "contracts.view",
+   "contracts.edit",
+   "programmes.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "payments.check",
+   "payments.approve",
+   "spending.view",
+   "spending.edit",
+   "qc"
+  ]
+ },
+ "admin": {
+  "role": "admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "spending",
+   "payments_prepare"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "students.view",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "spending.view",
+   "spending.edit"
+  ]
+ },
+ "admin_see_all_spending": {
+  "role": "admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "spending"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "students.view",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "spending.view",
+   "spending.edit"
+  ]
+ },
+ "finance": {
+  "role": "finance",
+  "is_super_admin": false,
+  "permissions": [
+   "payments_approve"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "sponsors.check",
+   "payments.view",
+   "payments.approve"
+  ]
+ },
+ "qc": {
+  "role": "qc",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "qc"
+  ],
+  "mentoring": false,
+  "tables": [
+   "reviewers"
+  ],
+  "page_keys": [
+   "students.view",
+   "qc"
+  ]
+ },
+ "reviewer": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review"
+  ],
+  "mentoring": false,
+  "tables": [
+   "reviewers"
+  ],
+  "page_keys": [
+   "review"
+  ]
+ },
+ "reviewer_admin_keys": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "see_all",
+   "spending"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "students.view",
+   "spending.view",
+   "spending.edit",
+   "review"
+  ]
+ },
+ "reviewer_admin_keys_other_org": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "see_all",
+   "spending"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "students.view",
+   "spending.view",
+   "spending.edit",
+   "review"
+  ]
+ },
+ "mentor": {
+  "role": "mentor",
+  "is_super_admin": false,
+  "permissions": [],
+  "mentoring": true,
+  "tables": [
+   "mentors"
+  ],
+  "page_keys": []
+ },
+ "partner": {
+  "role": "partner",
+  "is_super_admin": false,
+  "permissions": [],
+  "mentoring": false,
+  "tables": [],
+  "page_keys": []
+ },
+ "source_partner": {
+  "role": "source_partner",
+  "is_super_admin": false,
+  "permissions": [],
+  "mentoring": false,
+  "tables": [],
+  "page_keys": []
+ },
+ "qc_spending": {
+  "role": "qc",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "qc",
+   "spending"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "students.view",
+   "spending.view",
+   "spending.edit",
+   "qc"
+  ]
+ },
+ "reviewer_payments_check": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "payments_check"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "payments.view",
+   "payments.check",
+   "review"
+  ]
+ },
+ "finance_custom": {
+  "role": "finance",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "payments_approve"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "sponsors.check",
+   "payments.view",
+   "payments.approve",
+   "review"
+  ]
+ },
+ "reviewer_mentor": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review"
+  ],
+  "mentoring": true,
+  "tables": [
+   "reviewers",
+   "mentors"
+  ],
+  "page_keys": [
+   "review"
+  ]
+ },
+ "admin_mentor": {
+  "role": "admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "spending",
+   "payments_prepare"
+  ],
+  "mentoring": true,
+  "tables": [
+   "admins",
+   "mentors"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "students.view",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "spending.view",
+   "spending.edit"
+  ]
+ },
+ "qc_alone": {
+  "role": "qc",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "qc"
+  ],
+  "mentoring": false,
+  "tables": [
+   "reviewers"
+  ],
+  "page_keys": [
+   "students.view",
+   "qc"
+  ]
+ },
+ "reviewer_see_all": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "see_all"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "students.view",
+   "review"
+  ]
+ },
+ "admin_gift_limited": {
+  "role": "admin",
+  "is_super_admin": false,
+  "permissions": [
+   "see_all",
+   "spending",
+   "payments_prepare"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "students.view",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "spending.view",
+   "spending.edit"
+  ]
+ },
+ "finance_gift_limited": {
+  "role": "finance",
+  "is_super_admin": false,
+  "permissions": [
+   "payments_approve"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "sponsors.check",
+   "payments.view",
+   "payments.approve"
+  ]
+ },
+ "reviewer_gift_limited_admin_keys": {
+  "role": "reviewer",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "see_all",
+   "spending"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "students.view",
+   "spending.view",
+   "spending.edit",
+   "review"
+  ]
+ },
+ "admin_empty_set": {
+  "role": "admin",
+  "is_super_admin": false,
+  "permissions": [],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit"
+  ]
+ },
+ "finance_empty_set": {
+  "role": "finance",
+  "is_super_admin": false,
+  "permissions": [],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "team.view",
+   "sponsors.view",
+   "sponsors.check"
+  ]
+ },
+ "org_admin_reviews": {
+  "role": "org_admin",
+  "is_super_admin": false,
+  "permissions": [
+   "review",
+   "see_all",
+   "qc",
+   "spending",
+   "manage_team"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins",
+   "reviewers"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "invitations.edit",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "sponsors.check",
+   "sponsors.approve",
+   "billing.view",
+   "billing.edit",
+   "requests.view",
+   "requests.edit",
+   "requests.approve",
+   "settings.edit",
+   "students.view",
+   "students.edit",
+   "students.approve",
+   "contracts.view",
+   "contracts.edit",
+   "programmes.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "payments.check",
+   "payments.approve",
+   "spending.view",
+   "spending.edit",
+   "review",
+   "qc"
+  ]
+ },
+ "reviewer_super": {
+  "role": "super",
+  "is_super_admin": true,
+  "permissions": [
+   "review",
+   "see_all",
+   "qc",
+   "spending",
+   "payments_prepare",
+   "payments_check",
+   "payments_approve",
+   "manage_team"
+  ],
+  "mentoring": false,
+  "tables": [
+   "admins"
+  ],
+  "page_keys": [
+   "invitations.view",
+   "invitations.edit",
+   "team.view",
+   "sources.view",
+   "sources.edit",
+   "sponsors.view",
+   "sponsors.edit",
+   "sponsors.check",
+   "sponsors.approve",
+   "billing.view",
+   "billing.edit",
+   "requests.view",
+   "requests.edit",
+   "requests.approve",
+   "settings.edit",
+   "students.view",
+   "students.edit",
+   "students.approve",
+   "contracts.view",
+   "contracts.edit",
+   "programmes.edit",
+   "announcements.view",
+   "announcements.edit",
+   "surveys.view",
+   "surveys.edit",
+   "development.view",
+   "development.edit",
+   "mentoring.view",
+   "mentoring.edit",
+   "payments.view",
+   "payments.prepare",
+   "payments.check",
+   "payments.approve",
+   "spending.view",
+   "spending.edit",
+   "review",
+   "qc"
+  ]
+ }
+}

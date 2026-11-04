@@ -32,14 +32,31 @@ class _CreditsBase(_AdminBase):
     # gate is deliberately broad and `sponsorship.sign_admin_credit` refuses the wrong step.
     # Team tables T1: `staff_tables.may_read_org` — super / org_admin / admin / finance, or the Admins table
     # by an admin key (a READ: recording, signing and voiding stay on the role, in `sponsorship`).
+    #
+    # Team tables T5c (P2): the READ screen (the ledger, GET) asks the v2 key `sponsors.view` (`may_read`;
+    # same holders, parity test `test_team_tables_t5c_doors`). The three WRITE doors — record (POST
+    # credits/), sign, cancel — move money and stay on the union door `may_read_org` until T5d (money),
+    # TD-497.
 
-    def _credits_admin(self, request):
+    @staticmethod
+    def may_read(admin):
+        return staff_tables.opens_door(admin, 'credits_read')
+
+    def _credits_gate(self, request, door):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not staff_tables.may_read_org(admin):
+        if not door(admin):
             return None, self._deny_role()
         return admin, None
+
+    def _credits_reader(self, request):
+        """The ledger read (GET). Never used by a door that writes."""
+        return self._credits_gate(request, _CreditsBase.may_read)
+
+    def _credits_admin(self, request):
+        """The money-writing doors (record, sign, cancel): T1's union door, untouched until T5d."""
+        return self._credits_gate(request, staff_tables.may_read_org)
 
     def _credit_qs(self, admin):
         """Every credit visible to this admin — fenced by the programme's organisation."""
@@ -84,7 +101,7 @@ class AdminWalletCreditListCreateView(_CreditsBase):
     a typed name (the same separation payments keeps between create_run and sign)."""
 
     def get(self, request):
-        admin, err = self._credits_admin(request)
+        admin, err = self._credits_reader(request)
         if err:
             return err
         qs = self._credit_qs(admin)

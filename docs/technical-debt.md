@@ -7634,6 +7634,10 @@ write drops that evidence silently. And for cases worked before the live activit
 / `verified_by`, the assignment history and the session's interviewer alone. **Fix (if it bites):** write the
 guard's evidence in the action's own transaction where it must hold (a small authors list on the session; a
 verdict-history row), or alert on the D9 warning for the review verbs. *(A · S)*
+**Extended 2026-11-04 (Mobile M8 close-out code review, triaged by the T5c lead):** the "ever assigned" rule reads
+`AssignmentEvent` rows only, so an assignment made before those rows began (pre-F7) or by a direct `assigned_to`
+write leaves no trace; and a draft author re-pointed by `repair_interview_credit`, or one who drafted before T5b's
+`interview_drafted` verb, leaves no activity row. Same fix family.
 
 ### [TD-486] A super's Cancel reopen can move a case QC sent back straight to `recommended`, past the QC decision - medium
 
@@ -7675,6 +7679,58 @@ terminal negative ending ("closed by our team") reached with no QC and no separa
 worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team tables T5b") left it out. **Fix (needs the
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
+
+### [TD-497] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
+
+**Raised 2026-11-04 by Team tables T5c P1 (branch t5c); P2 converted two of them the same day.** P1 put the v2 keys
+behind every door its modules own (decisions.md "Team tables T5c"), but some callers still ask a union door — now
+v2-backed and all-of (`staff_tables.may_do_admin_work` = every `ADMIN_WORK_V2` key; `may_read_org` = every
+`ORG_READ_V2` key), so nobody's access moved.
+
+**Done in P2:** Sources + Partner emails + the witness override (`views_admin/sources.py`
+`_SourcesBase.may_open` -> `sources.edit`; all three ride `_sources_admin`), and the credit LEDGER read (GET
+`credits/`, `_CreditsBase.may_read` -> `sponsors.view`).
+
+**Still on a union door:** the **team roster** `admin/admins/` (`courses/views_staff.py` ~421), **Team -> Emails ->
+Admin emails** (`org_emails.AdminTeamAdminEmailsView.may_open`; its docstring still says "in lockstep with the
+partner emails (`_SourcesBase`)" — the partner emails now ask `sources.edit`, same holders, so the lockstep holds
+but the sentence is stale; fix with the door), the **Mentors list** (`mentor_invite.may_read`), and the three credit
+doors that **write money** — record (POST `credits/`), sign, cancel (`_credits_admin`, `may_read_org`) — which are
+T5d's (money). **The Mentors list needs a lead ruling:** the catalogue files it under `team.view` (ruling 2), which
+finance and a person at Admins by a key also hold, so `team.view` would OPEN it to them (today admin-work only).
+Either accept that widening (it matches ruling 2) or give it a key finance does not hold. The roster has the same
+question (`team.view` today = People, which finance reads). **Fix:** roster / Mentors list / Admin emails -> as
+ruled; credit writes -> T5d; each with a line in `test_team_tables_t5c_doors` and `V2_DOOR_MODULES`. *(A · M)*
+
+### [TD-496] The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
+
+**Raised 2026-11-04 by Team tables T5c P2 (lead ruling R2).** `AdminGraduationMessageListView`
+(`views_admin/graduation.py` ~31) admits `is_super or role in ('reviewer', 'admin')` — NOT the org admin, not
+finance, not qc. No page is known to call it. Every catalogue key opens the org admin (the lead tier holds every
+key, `lead_v2`), so NO single key reproduces today's holders. Measured over the parity test's 32 shapes: the closest
+is the `review` hat (7 active shapes move: the five `admin` shapes lose it; `finance_custom` and `org_admin_reviews`
+gain it); every Engagement key moves 10 (all org-admin shapes gain; every reviewer shape loses); `students.view`
+moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
+`_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
+
+### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+
+**Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
+sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key
+(`<page>.edit`, which implies `.view`). Today nobody holds a `.view` without its `.edit`, so nothing is lost; once
+T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
+**Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
+*(A · S)*
+
+### [TD-499] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
+
+**Raised 2026-11-04 by the Mobile M8 close-out code review (triaged by the T5c lead; T5b behaviour, NOT fixed).**
+Since T5b the server says `qc` IMPLIES `see_all` (`staff_permissions.IMPLIES`; the save door accepts `['qc']` and
+answers `see_all + qc`). `PermissionEditor.tsx` (~175) still blocks the QC switch without `see_all`, and turning
+`see_all` off strips `qc`; its header comment still says DEPENDS_ON. Stricter than the server, so nobody gains
+access; but the editor and the server describe the rule differently. **Fix (with T5g's Permissions tab):** show `qc`
+as implying `see_all` (`see_all` ticked and locked while `qc` is on), and correct the comment. Owner question raised
+with it: may a `finance` person also hold `qc` (they would then read every case)? *(W · S)*
 
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
@@ -7781,3 +7837,14 @@ latihan : Mercu" / "Technical Solutions"); (c) a descriptor slogan with the name
 pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus letter reads this way. **Fix:** read the
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*
+
+### [TD-495] "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
+
+**Raised 2026-11-04 at the S6 close (round-14 real-letter probes).** The agency-letterhead lift's closed-world
+condition 4 (`genuineness/offer_agency.closed_world_blocker`) reads "Kolej Kediaman" (a residential college, also
+OCR'd "Ko1ej Kediaman") as a second organisation, and "IKM1 Kuantan" (now read "IKM 1 Kuantan") on a KBS / JTM
+letter as another agency's institute; either line stops the lift. Safe: the letter keeps its BASELINE (pre-S6)
+call, never a new fail. Round 12 blocked the plain spellings the same way; round 14 only made the OCR spellings
+read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
+and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
+Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.

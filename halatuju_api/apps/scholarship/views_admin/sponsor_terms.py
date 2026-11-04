@@ -89,12 +89,17 @@ class _SponsorTermsBase(_AdminBase):
     """Gate for the sponsor-terms panel — identical to the sponsor-emails gate, and for the same
     reason: authoring what every donor is bound by is an editorial power, not a reading one.
     Finance reads the sponsor list because money is its business; it does not write the terms.
+    Team tables T5c: the v2 key `sponsors.edit` (finance holds `sponsors.view` / `.check`, never `.edit`).
     """
+    @staticmethod
+    def may_author(admin):
+        return staff_tables.opens_door(admin, 'sponsor_terms')
+
     def _terms_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
+        if not self.may_author(admin):
             return None, self._deny_role()
         return admin, None
 

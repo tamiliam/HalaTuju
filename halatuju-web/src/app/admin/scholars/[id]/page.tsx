@@ -37,6 +37,8 @@ import { MENTORING_ROLES, STANDING_TONE, SUBSTATE_TONE } from '@/lib/scholars'
 import { getScholarFile, type ScholarFile } from '@/lib/admin-api'
 import { lazySource } from '@/components/source/LazySource'
 import { MAKER_ROLES as SURVEY_ROLES } from '@/components/surveys/shared'
+import { MAKER_ROLES as GROWTH_ROLES } from '@/components/development/shared'
+import { opensDoorOr } from '@/lib/pageGuard'
 
 const SourceScholar = lazySource(() => import('@/components/source/SourceScholar').then((m) => m.default))
 // S7b: the Mentoring tab is its own chunk, fetched the first time somebody opens it.
@@ -123,10 +125,12 @@ function StaffScholarFile() {
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   if (!file) return <RecordState loading={loading} />
-  const seesMentors = MENTORING_ROLES.includes(effectiveRole(role))
-  const seesSurveys = SURVEY_ROLES.includes(effectiveRole(role))
+  // T5c P4: each tab on its server door (an older payload keeps the role lists).
+  const seesMentors = opensDoorOr(role, 'mentoring', MENTORING_ROLES)
+  const seesSurveys = opensDoorOr(role, 'surveys', SURVEY_ROLES)
+  const seesGrowth = opensDoorOr(role, 'development', GROWTH_ROLES)
   const tabs = TABS.filter((x) => (x.key !== 'mentoring' || seesMentors)
-    && ((x.key !== 'surveys' && x.key !== 'growth') || seesSurveys))
+    && (x.key !== 'surveys' || seesSurveys) && (x.key !== 'growth' || seesGrowth))
   const help = file.asked_for_help
   const helpWhat = help ? [help.university && t('admin.scholars.mentoring.help.university'),
     help.scholarship && t('admin.scholars.mentoring.help.scholarship')].filter(Boolean)
@@ -338,7 +342,7 @@ function StaffScholarFile() {
       )}
       {tab === 'mentoring' && seesMentors && <div className="max-w-4xl"><ScholarMentoring id={file.id} token={token} /></div>}
       {tab === 'surveys' && seesSurveys && <div className="max-w-3xl"><ScholarSurveys id={file.id} token={token} /></div>}
-      {tab === 'growth' && seesSurveys && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token} /></div>}
+      {tab === 'growth' && seesGrowth && <div className="max-w-3xl"><ScholarGrowth id={file.id} token={token} /></div>}
       {tab === 'activity' && <div className="max-w-3xl"><ScholarActivity key={reloads} id={file.id} token={token} readOnly={!file.in_maintenance} /></div>}
     </div>
   )

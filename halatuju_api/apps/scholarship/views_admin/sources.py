@@ -174,14 +174,24 @@ def _source_application_counts():
 
 
 class _SourcesBase(_AdminBase):
-    """Gate for the Sources + witness-assignment endpoints: super, admin, or org_admin
-    (owner 2026-07-19 — the Admin role manages sources too). qc/reviewer/partner → 403.
-    `has_role(admin, 'admin')` already passes super; org_admin is added explicitly."""
+    """Gate for the Sources, partner-email and witness-assignment endpoints: super, admin, or
+    org_admin (owner 2026-07-19 — the Admin role manages sources too). qc/reviewer/partner → 403.
+
+    Team tables T5c (P2): the door asks the v2 key `sources.edit` (`may_open`). One gate reads AND
+    writes here (list + PATCH share it), so it asks `.edit`, which implies `.view` (P1's convention,
+    TD-498 splits it). Same holders as T1's `may_do_admin_work`: super, org_admin, the `admin` label;
+    finance and Admins-by-key refused (parity test `test_team_tables_t5c_doors`). Every subclass rides
+    this one door: Sources, Partner emails (`org_emails.py`) and the witness override (`lifecycle.py`)."""
+
+    @staticmethod
+    def may_open(admin):
+        return staff_tables.opens_door(admin, 'sources')
+
     def _sources_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
+        if not _SourcesBase.may_open(admin):   # named, so no subclass's own `may_open` can replace it
             return None, self._deny_role()
         return admin, None
 

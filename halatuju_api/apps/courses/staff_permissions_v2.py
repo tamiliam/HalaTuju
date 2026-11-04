@@ -5,13 +5,14 @@ hold today?".
 Roadmap `docs/plans/2026-11-01-team-tables-roadmap.md` (T5, owner "approve all", rulings 1-8); evidence
 pack: the lead's T5 investigation, sections A (page inventory) and F (catalogue + live shapes).
 
-⚠ NOT A GATE YET. NOTHING in the code calls `effective_v2` (or anything here) to decide access in T5a:
-every page still opens through `staff_permissions.resolve` / `has_perm`, `staff_tables.may_*` and the
-role checks it opened through before. T5b-T5f convert the gates one group at a time; T5g opens the
-editor (and `asked_set`) to v2 keys. Until then a stored `permissions` list holds TODAY's keys only: the
-save door (`staff_permissions_admin.asked_set`) refuses a v2 key as `unknown_permission`, and
-`staff_permissions.clean` drops one on read. A NEW PAGE must still be gated the old way AND get a v2 key
-here.
+⚠ A GATE FOR THE ORGANISATION / ADMIN-WORK PAGE DOORS SINCE T5c (P1): `staff_tables.opens` reads
+`effective_v2` (decisions.md "Team tables T5c", the door -> key table). ONLY `staff_tables` imports
+this module (`test_permission_catalogue_v2.V2Importers`, an allowlist); a door module asks
+`staff_tables.opens_door(admin, '<door>')`, whose keys are `staff_tables.DOOR_KEYS` (T5c P4a). The rest (review / QC / payments / spending / the
+lead-only pages) still opens through `staff_permissions.resolve` / `has_perm` and role checks; T5d-T5f
+convert them; T5g opens the editor (and `asked_set`) to v2 keys. Until then a stored `permissions` list
+holds TODAY's keys only: the save door (`staff_permissions_admin.asked_set`) refuses a v2 key as
+`unknown_permission`, and `staff_permissions.clean` drops one on read.
 
 ⚠ THIS IS A LEAF, like `staff_permissions` and `staff_tables`: it imports nothing from `apps.scholarship`.
 The role-label grants below that live in scholarship code (the wallet-credit chain) are restated as
@@ -117,23 +118,27 @@ ALIASES = {
     'manage_team':      (),
 }
 
-#: What `staff_tables.may_read_org` opens today (Organisation, Invitations, Team, Sponsors + credits
-#: ledger): super / org_admin / admin / finance, or the Admins table by any admin key (T1).
-ORG_READ_V2 = ('invitations.view', 'team.view', 'sponsors.view')
+#: The organisation READ pages (Organisation, Invitations, Team, Sponsors + credits ledger). A team
+#: member at the ADMINS table (`staff_tables.in_admins`: the `admin` / `finance` label, or an admin key
+#: — T1) holds them (`TABLE_GRANTS`); `staff_tables.may_read_org` opens on all of them (T5c).
+#: T5c P4a: the one spelling is `staff_tables.DOOR_KEYS` (the door -> key table); read from there.
+ORG_READ_V2 = staff_tables.DOOR_KEYS['org_read']
 
-#: What `staff_tables.may_do_admin_work` opens today (role admin / org_admin): Sources and the witness
-#: override, Mentors read and the roster, Announcements, Surveys, Development, sponsor terms and
-#: sponsor / partner emails, and on a scholar the mentoring tab (`mentoring.py`), scholar growth
-#: (`development.py`) and scholar surveys (`surveys.py`).
-ADMIN_WORK_V2 = ('team.view', 'sources.view', 'sources.edit', 'sponsors.view', 'sponsors.edit',
-                 'announcements.view', 'announcements.edit', 'surveys.view', 'surveys.edit',
-                 'development.view', 'development.edit', 'mentoring.view', 'mentoring.edit')
+#: The organisation WORK pages, never finance: Sources and the witness override, Mentors read and the
+#: roster, Announcements, Surveys, Development, sponsor terms and sponsor / partner emails, and on a
+#: scholar the mentoring tab (`mentoring.py`), scholar growth (`development.py`) and scholar surveys
+#: (`surveys.py`). The `admin` LABEL holds them (`LABEL_GRANTS`; T1's `ADMIN_WORK_ROLES` was
+#: org_admin / admin, and the lead tier holds every key); `staff_tables.may_do_admin_work` opens on all.
+ADMIN_WORK_V2 = staff_tables.DOOR_KEYS['admin_work']
 
-#: What a ROLE LABEL still grants by itself today, in scholarship code this leaf cannot import:
-#: `admin` records, maker-signs and voids a wallet credit (`sponsorship.py:119,354,409`);
-#: `finance` signs the credit's middle check (`sponsorship.py:366`, TD-475).
+#: What a TABLE seat grants (T1 derivation, `staff_tables`). Only the Admins table grants page keys.
+TABLE_GRANTS = {staff_tables.ADMINS: ORG_READ_V2}
+
+#: What a ROLE LABEL still grants by itself today. `admin`: the admin-work pages (above), and it records,
+#: maker-signs and voids a wallet credit (`sponsorship.py:119,354,409`) — scholarship code this leaf
+#: cannot import; `finance` signs the credit's middle check (`sponsorship.py:366`, TD-475).
 LABEL_GRANTS = {
-    'admin': ('sponsors.view', 'sponsors.edit'),
+    'admin': (*ADMIN_WORK_V2,),
     'finance': ('sponsors.view', 'sponsors.check'),
 }
 
@@ -177,8 +182,8 @@ def lead_v2(admin):
 
 
 def effective_v2(admin):
-    """The v2 keys `admin` EFFECTIVELY holds today: their resolved old keys through `ALIASES`, plus what
-    their role LABEL and their T1 table still open (`ORG_READ_V2`, `ADMIN_WORK_V2`, `LABEL_GRANTS`).
+    """The v2 keys `admin` EFFECTIVELY holds: their resolved old keys through `ALIASES`, plus what their
+    T1 table and their role LABEL open (`TABLE_GRANTS`, `LABEL_GRANTS`).
 
       super            -> every v2 key (as `resolve` answers every old key)
       org_admin        -> `lead_v2`
@@ -186,8 +191,9 @@ def effective_v2(admin):
       team member      -> as above
       anyone else      -> nothing (a referral partner, a source user, a mentor login)
 
-    ⚠ PURE READ, NOT A GATE (T5a): nothing decides access from it. It does NOT drop a key whose
-    ruling-7 dependency is missing (`dependency_gaps` reports that), because it describes today."""
+    ⚠ A GATE SINCE T5c (P1): `staff_tables.opens` reads it for the page doors. So it must NEVER ask a
+    door (`staff_tables.may_*`) — it reads the tables and labels those doors were built from. It does NOT
+    drop a key whose ruling-7 dependency is missing (`dependency_gaps` reports that; T5d decides)."""
     if admin is None:
         return ()
     if admin.is_super:
@@ -199,9 +205,7 @@ def effective_v2(admin):
     if admin.role not in sp.TEAM_ROLES:
         return ()
     held = set(through_aliases(sp.resolve(admin)))
-    if staff_tables.may_read_org(admin):
-        held.update(ORG_READ_V2)
-    if staff_tables.may_do_admin_work(admin):
-        held.update(ADMIN_WORK_V2)
+    if staff_tables.in_admins(admin):     # the one table that grants page keys (no mentor query)
+        held.update(TABLE_GRANTS[staff_tables.ADMINS])
     held.update(LABEL_GRANTS.get(admin.role, ()))
     return with_implied_views(held)

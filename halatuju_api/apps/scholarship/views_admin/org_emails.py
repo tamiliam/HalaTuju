@@ -216,12 +216,17 @@ class _SponsorEmailsBase(_AdminBase):
     wrong: deciding what every donor hears is an editorial power, not a reading one. So this
     mirrors the Sources gate instead — super, org_admin, admin. Finance reads sponsors because
     money is its business; the wording of a welcome email is not.
+    Team tables T5c: the v2 key `sponsors.edit` (finance holds `sponsors.view` / `.check`, never `.edit`).
     """
+    @staticmethod
+    def may_open(admin):
+        return staff_tables.opens_door(admin, 'sponsor_emails')
+
     def _emails_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not staff_tables.may_do_admin_work(admin):   # T1: the old roles, or the Admins table by a key
+        if not self.may_open(admin):
             return None, self._deny_role()
         return admin, None
 
@@ -324,7 +329,14 @@ class AdminTeamAdminEmailsView(_SponsorEmailsBase):
     organisation data and no address — the same rows for every tenant — so there is nothing to fence; it is
     gated to the people who read the reviewer templates beside it (`staff_tables.may_do_admin_work`, the
     partner-emails gate), never wider.
+
+    Team tables T5c P1: so it does NOT take the sponsor-email key above — it stays on the admin-work union
+    door, in lockstep with the partner emails (`_SourcesBase`), until those move to their own key.
     """
+    @staticmethod
+    def may_open(admin):
+        return staff_tables.may_do_admin_work(admin)
+
     def get(self, request):
         admin, err = self._emails_admin(request)
         if err:

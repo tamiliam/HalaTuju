@@ -16,6 +16,9 @@
  * Sprint 1 serves and types them. Sprint 3: the Applications, Payments and Spending menu rows and
  * page guards (`admitsRow`, read by `navigation.ts`), and the cockpit's QC / write switches, read them.
  */
+import { opensDoor, type DoorName } from './pageDoors'
+
+export type { DoorName }
 
 export const STAFF_PERMISSIONS = [
   'review',
@@ -52,16 +55,25 @@ export const TEAM_ROLES = ['admin', 'finance', 'qc', 'reviewer'] as const
  *
  * S7d (2026-11-01): a row marked `staffMentors` also admits a STAFF member who mentors now
  * (`mentoring`, the served `/admin/role/` `mentoring`) — My students joins their own menu.
+ *
+ * Team tables T5c (P4): a row naming a `door` opens exactly when that server door opens — the served
+ * `page_keys` hold every key of `DOOR_KEYS[door]` (`pageDoors.opensDoor`). With no `page_keys` (an older
+ * payload, or a caller that passes none) the row's `roles` / `adminKeys` answer, exactly as before.
  */
 export function admitsRow(
   row: { roles: readonly string[]; perms?: readonly StaffPermission[]; staffMentors?: boolean;
-         adminKeys?: readonly StaffPermission[] },
+         adminKeys?: readonly StaffPermission[]; door?: DoorName },
   role: string,
   permissions?: readonly string[] | null,
   mentoring?: boolean,
   tables?: readonly string[] | null,
+  pageKeys?: readonly string[] | null,
 ): boolean {
   if (row.staffMentors && mentoring === true) return true
+  if (row.door) {
+    const opens = opensDoor({ page_keys: pageKeys }, row.door)
+    if (opens !== undefined) return opens
+  }
   if (row.perms && permissions && (TEAM_ROLES as readonly string[]).includes(role)) {
     return row.perms.some((k) => permissions.includes(k))
   }
@@ -91,5 +103,7 @@ export const ADMIN_KEYS: readonly StaffPermission[] =
   ['see_all', 'spending', 'payments_prepare', 'payments_check', 'payments_approve', 'manage_team']
 
 /** Team tables T1: the organisation pages an Admin READS (Organisation, Invitations, People, Sponsors) —
- *  any admin key opens them for a person at the Admins table (`staff_tables.ORG_READ_KEYS`). */
+ *  any admin key opens them for a person at the Admins table (T1's `staff_tables.ORG_READ_KEYS`). Since
+ *  T5c P4 those rows open by their `door`; this is the OLDER-payload rule (no `page_keys`), frozen as T1
+ *  had it (the server's copy went in T5c P1). */
 export const ORG_READ_KEYS: readonly StaffPermission[] = ADMIN_KEYS

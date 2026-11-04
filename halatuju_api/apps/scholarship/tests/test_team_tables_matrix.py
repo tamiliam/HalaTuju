@@ -253,11 +253,14 @@ class AccessMatrix(TestCase):
         (not role) seat them at the Admins table gains exactly the organisation READ cells, and nobody
         else moves; no shape gains an admin-WORK page (ADMIN_WORK_KEYS is empty, ruling B)."""
         from apps.courses import staff_tables as st
+        # T5c P1: T1's role lists are restated here (the gate now reads v2 keys, `staff_tables.opens`), and an
+        # INACTIVE row opens no door (sign-in refuses it first, so no cell moves — the fixture proves it).
+        org_read_roles, admin_work_roles = ('org_admin', 'admin', 'finance'), ('org_admin', 'admin')
         for shape, person in self.people.items():
-            by_role = person.is_super or person.role in st.ORG_READ_ROLES
+            by_role = person.is_super or person.role in org_read_roles
             gains_read = st.may_read_org(person) and not by_role
             self.assertEqual(st.may_do_admin_work(person),
-                             person.is_super or person.role in st.ADMIN_WORK_ROLES, shape)
+                             person.is_super or (person.is_active and person.role in admin_work_roles), shape)
             declared = set(EXPECTED_CHANGES.get(shape, {}))
             self.assertEqual(declared, set(_ROHINI_GAINS) if gains_read else set(), shape)
         # …and the mixed shapes sit where the derivation says.

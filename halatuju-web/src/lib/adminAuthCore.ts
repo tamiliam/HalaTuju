@@ -48,6 +48,10 @@ export interface AdminRole {
    *  stored) — 'admins' / 'reviewers' / 'mentors'. The menu, the page guards (`mayOpen`), the landing
    *  and the Guide read it; absent on a payload from before T1, which then reads exactly as before. */
   tables?: string[]
+  /** Team tables T5c P4a: the v2 keys the server's page doors ask (`staff_tables.page_keys`, never null when
+   *  served; `[]` for a person with no page). The menu rows and page guards on a server door read it
+   *  (`pageDoors.opensDoor`); absent on a payload from before P4a, which then reads its role rules. */
+  page_keys?: string[]
 }
 
 export interface AdminAuthContextValue {
