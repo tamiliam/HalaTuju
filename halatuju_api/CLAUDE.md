@@ -267,7 +267,10 @@ Roadmap T5; decisions.md 2026-11-03 "Team tables T5a". `apps/courses/staff_permi
 gate behind `staff_tables.opens` — see the T5c paragraph above; the rest still opens through `resolve` / `has_perm`
 and role checks), and `asked_set` refuses a v2 key. **A NEW PAGE must still be gated
 the old way AND get a v2 key** in `CATALOGUE_V2` plus a door in `test_permission_catalogue_v2._doors` (the coverage
-test asks the real gate per live shape).
+test asks the real gate per live shape). **One exception (owner, 2026-11-04):** a page that EVERY staff and mentor
+login on the partner side may open, whose content the server read narrows per person (the T5c P5 Programmes
+landing), takes no v2 key; its door test must still assert, non-vacuously, that every staff + mentor shape opens it
+and partner / source / inactive shapes are refused.
 
 ## Known Issues & Future Work
 

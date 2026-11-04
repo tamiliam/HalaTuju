@@ -8,8 +8,8 @@ approve the Stitch design), release v3.1.0, then run the full audit from your pl
   completeness, redundancy, speed, security — then its fix sprints, most important first (TD-465 money bug on top).
 - No new features during the audit (freeze, like the September code-health arc). No T5d, no offer S7.
 - Every deploy is asked first. A push deploys, so nothing is pushed to main without the owner's yes.
-- The audit needs a new workflow (`Settings/_workflows/project-audit.md`, proposed 2026-11-04). A workflow edit is on
-  the stop list: write it only after the owner's yes.
+- The audit follows `Settings/_workflows/project-audit.md` (owner: "yes to project-audit.md", 2026-11-04; written
+  and pushed, workspace b292ac9). Audit commit = the v3.1.0 tag.
 - A new lead session resumes from this file alone.
 - First grant (done): "continue as a run: T5c on your own. Ask me before each deploy."
 
@@ -72,6 +72,47 @@ Lead rulings:
 - **TD-499: finance + QC pairing question** (owner's call).
 
 ## Open risks
+- BEFORE THE FIRST PUSH: Cockpit session pushed TD-473 (479b3d1e) to main on 2026-11-04. Check its build is GREEN,
+  then merge origin/main into t5c and re-run gates. Session python-da has no HalaTuju work (confirmed 2026-11-04).
+- This run claims TD-500..TD-519.
+
+## P5 progress
+- S1 server BUILT 2026-11-04 (8c798203, not pushed): `GET admin/scholarship/my-programmes/`
+  (`views_admin/my_programmes.py`); Overview `?programme=` 404 for a non-every-gift caller with no case there;
+  new matrix list `t5c_p5_added_cells` (not EXPECTED_CHANGES). Builder interpretation to confirm: QC treated as
+  admin-shaped (full list + counts; its scope is already 'all'). Opus adversarial review: SHIP (no leak; 3 lows).
+  QC card RULED by owner 2026-11-04 ("a"): QC gets the admin card with counts, as built. Record in decisions.md.
+- In progress (parallel, same worktree, api-only vs web-only paths): S1b server (Opus: ?intake= side door, grouped
+  queries + query budget, mentor ?programme= filter, v2 key + door) and S2 web (Opus: landing page, nav split,
+  i18n, mobile gates). Neither edits CHANGELOG/RUN_STATE; the close agent writes CHANGELOG for S1b + S2.
+- S1b DONE 2026-11-04 (00c12611): ?intake= door closed; grouped queries + 4 `_admitted` budgets; mentor filter
+  `admin/mentor/students/?programme=<int>` (no match / other org = 200 empty; non-int = 404); NO v2 key for the
+  landing (every staff login opens it) — door `programmes_landing` with no key + LandingContent tests. Needs review.
+  RISK: `test_org_fence.py::test_no_stale_classifications` fails under `-n auto` (view discovery by subclass; file
+  not touched) — check at full gates; if it fails, fix in this sprint (never skip). TD-500 to record (close agent):
+  mentor list one alias query per mentee (`mentoring.is_the_student`, identity-sensitive).
+- S2 web BUILT 2026-11-04 (f9d99859 nav split moves-only; 8576762e landing): gates pass (jest 414/6477, mobile 70/70
+  green, new cells 0/0/0/0) EXCEPT bundle-budget: median 144.893 vs 145 (room 0.107 < 0.25 required) and
+  /scholarship/application 205.918 vs 206 (room 0.082; growth not from S2). Builder hit 154k -> S2b fresh builder
+  trims weight. Tell owner: Overview page no longer shows the gift cards (moved to Programmes); super still lands
+  on /admin. `.worktrees/t5c/halatuju-web/.env.local` copied from main (gitignored) — delete with the worktree.
+- S2b DONE 2026-11-04 (0bafbb84): bundle median 144.705 (room 0.295); /scholarship/application passes near-line;
+  cause = runtime chunk map (+2 lazy chunks); fix = folded lazy imports into named chunks ad/sp/sd/mi/bt; 7 test
+  guards changed to accept the chunk-name comment (reviewer to confirm not loosened). npm run gates pass.
+  Throwaway baseline worktree removed (junction first).
+- Review of 00c12611..0bafbb84: FAIL (medium: 7+1 lazy-load test guards loosened by 0bafbb84; no leak). Lows: vacuous
+  door for the landing (OWNER RULED "a" 2026-11-04: always-open page, no v2 key; exception written into
+  halatuju_api/CLAUDE.md by the lead, uncommitted — commit with S2c), stale comments, archived reviewer card may open the general overview. S2c (Sonnet) fixing all + CHANGELOG
+  + TD-500. Then: re-review S2c, full gates (Haiku), phone check, deploy ask.
+- Updated phone-check summary (S2 review): + mentors tapping a programme see just those students; + reviewer
+  "not found" also by intake year; + programme cards (New, Change code, Delete) moved off Organisation Overview onto
+  Programmes, Overview keeps its counts; super still opens on the platform page.
+- Owner phone-check summary (from the S1 review): everyone opens on one Programmes page; admins, finance and QC see
+  every programme of their org (finance no numbers); reviewers only programmes with a case of theirs (open or done);
+  mentors only programmes of current mentees; a reviewer opening another programme's overview gets "not found";
+  partners, sources, stopped mentors, switched-off staff still kept out; no other org, no other page changed.
+- S2 must also add: `?programme=` filter on `admin/mentor/students/` (mentor card link); a v2 key in CATALOGUE_V2
+  + a door in `_doors` for the landing page.
 - T5c changes permissions. The owner's phone check comes before it goes live.
 - Debt numbers: parallel sessions have collided on TD numbers. Claim the TD range in the first announce message.
 
