@@ -18,31 +18,31 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   `sponsors.edit`; mentor and source invitations `invitations.edit`.
 - **The union doors** `may_read_org` / `may_do_admin_work` now ask every key of `ORG_READ_V2` / `ADMIN_WORK_V2`;
   still used by Sources, the team roster, the Mentors list, Team -> Emails -> Admin emails and the credit screens
-  (TD-492; the Mentors list needs a lead ruling).
+  (TD-496; the Mentors list needs a lead ruling).
 - **`effective_v2` no longer asks the doors**: the Admins table grants `ORG_READ_V2`, the `admin` label grants
   `ADMIN_WORK_V2` (same sets as before).
 - An inactive row opens no door, except an inactive super (`effective_v2` answers it in full); neither can sign in.
 - Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
   by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
-  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-492, TD-493.
+  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-496, TD-497.
 
 **P2 — Sources, partner emails and the credit ledger (server only):**
 - **Sources door on `sources.edit`** (`_SourcesBase.may_open`): Sources (list, the retired POST, PATCH), Partner
-  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-493).
+  emails and the application witness override all ride it. One gate reads and writes, so it asks `.edit` (TD-497).
 - **Credit ledger read on `sponsors.view`** (`_CreditsBase.may_read`, GET `credits/`). Record, sign and cancel move
   money and stay on `may_read_org` until T5d.
 - **Not converted:** the graduation-messages list (lead ruling R2): no key reproduces its holders, because the org
-  admin holds every key and is refused today (TD-491, closest the `review` hat, 7 shapes move). Admin emails, the
-  roster and the Mentors list are outside P2's files (TD-492).
+  admin holds every key and is refused today (TD-495, closest the `review` hat, 7 shapes move). Admin emails, the
+  roster and the Mentors list are outside P2's files (TD-496).
 - Tests: the parity test grows to 17 doors x 32 shapes, plus "credit writes stay on the union door" and "every source
   surface rides the one Sources door"; `V2_DOOR_MODULES` gains `sources.py` and `credits.py`. The access matrix runs
-  unchanged. New debt: TD-491.
+  unchanged. New debt: TD-495.
 
 **P3 — the role-label inventory and its guard (tests and docs only):**
 - New `test_role_is_display_only.py`: scans `apps/` (not tests, not migrations) for every staff role-label read that
   decides something and fails when one appears outside an allowlist (module::function, class, owner, reason). The
   scanner is itself tested (a fake gate is caught). 177 sites in 142 functions: 50 DISPLAY, 44 OVERRIDE, 48 GATE-LEFT
-  (T5e 42, T5d 4, TD-491 2), GATE-UNPLANNED none. No gate converted, no new debt.
+  (T5e 42, T5d 4, TD-495 2), GATE-UNPLANNED none. No gate converted, no new debt.
 
 **P4 — the console reads the server's doors (P4a server, P4 web):**
 - T5c P4a: `admin/role/` serves `page_keys` (the v2 keys the doors ask, never null); every door reads its keys from `staff_tables.DOOR_KEYS` via `opens_door` (pure refactor, 0 moved cells).
@@ -52,7 +52,7 @@ one field to `admin/role/`); no live access moved, on the server or in the conso
   Announcements, Surveys, Development. In-page gates (`pageGuard.opensDoorOr`): the Announcements / Surveys /
   Development screens, the scholar Mentoring / Surveys / Growth tabs and the scholars list's mentor column, sponsor
   emails, Sources' manage and invite. A payload without `page_keys` keeps today's role rules. Not converted (the
-  server has not): Team -> Mentors (TD-492), the platform, lead-only, money, Applications and Scholars rows. No
+  server has not): Team -> Mentors (TD-496), the platform, lead-only, money, Applications and Scholars rows. No
   landing, string or layout change. Tests: new `teamTablesT5cDoors.test.ts` (the 27 served shapes x 45 cells —
   menus, every route, landing, Mentors tab, the in-page gates — frozen on P4a before the change, identical with and
   without `page_keys`; shown red with one mapping broken; the drift test); `teamTablesMatrix`'s T1 server-reading

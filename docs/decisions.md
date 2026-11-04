@@ -32,7 +32,7 @@ no access moving for any shape.
   | **P2:** credit ledger read, GET `credits/` (`_CreditsBase.may_read`) | `sponsors.view` | super, org_admin, admin, finance, Admins-by-key |
 
 - **R1** each admin-work page opens by its own catalogue key, reproducing the `admin` preset exactly; finance holds
-  `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-492):** the Mentors list
+  `sponsors.view` / `.check`, never an admin-work key. **Not converted (TD-496):** the Mentors list
   (`mentor_invite.may_read`) — its catalogue key `team.view` is also held by finance and Admins-by-key, so it would
   open to them: **lead ruling needed**; it stays on the union door. Sources, the roster `admin/admins/`, Team -> Emails
   -> Admin emails and the credit screens stay on the union doors too (their files are outside P1).
@@ -40,14 +40,14 @@ no access moving for any shape.
   (record, sign, cancel) stay on `may_read_org` for T5d. Sources keeps ONE gate for read and write, so `.edit`.
 - **R2** the graduation-messages list: **not converted in P2** — it admits super + the `reviewer` / `admin` labels and
   refuses the org admin, who holds every key, so no single key reproduces it (closest: the `review` hat, 7 shapes
-  move). Lead ruling needed (TD-491). **R3** requests, billing, contracts,
+  move). Lead ruling needed (TD-495). **R3** requests, billing, contracts,
   invoices stay for T5e. **R4** no dependency change (`with_implied_views` / `HAT_IMPLIES` as today; T5d decides).
   **R5** no landing, web or migration change. **R6** `NotYetAGate` is replaced by `V2Importers`: only
   `courses/staff_tables.py` may import v2, and `V2_DOOR_MODULES` lists every module that asks `staff_tables.opens(`
   — it grows door by door, so an unplanned import or door fails.
-- **P3 inventory (same day):** every staff role-label read in `apps/` (comparisons, `role=` / `role__in=` filters, `has_role`) is classified and pinned by `test_role_is_display_only.py`: 183 sites in 148 functions (the review made the scanner read `getattr(x, 'role', ...)` too, which added 6 sites). **DISPLAY 51** (account kind, table membership, recipient routing, the T5a catalogue's preset source), **OVERRIDE 44** (super-only and org-scope fences, the lead tier's definition), **GATE-LEFT 53** (T5e lead powers and R3 surfaces 45, T5d money 6, TD-491 2; the review reclassified `AdminAssignReviewerView.post`, which admits org_admin, from OVERRIDE to T5e), **GATE-UNPLANNED none**. The one adjacency to watch: `_require_reviewer` (graduation moderation) is owned only through TD-491's note. A new label gate fails the guard; conversions stay with their sprints.
+- **P3 inventory (same day):** every staff role-label read in `apps/` (comparisons, `role=` / `role__in=` filters, `has_role`) is classified and pinned by `test_role_is_display_only.py`: 183 sites in 148 functions (the review made the scanner read `getattr(x, 'role', ...)` too, which added 6 sites). **DISPLAY 51** (account kind, table membership, recipient routing, the T5a catalogue's preset source), **OVERRIDE 44** (super-only and org-scope fences, the lead tier's definition), **GATE-LEFT 53** (T5e lead powers and R3 surfaces 45, T5d money 6, TD-495 2; the review reclassified `AdminAssignReviewerView.post`, which admits org_admin, from OVERRIDE to T5e), **GATE-UNPLANNED none**. The one adjacency to watch: `_require_reviewer` (graduation moderation) is owned only through TD-495's note. A new label gate fails the guard; conversions stay with their sprints.
 - **A door that reads and writes asks the `.edit` key** (it implies `.view`); nobody holds a view without its edit
-  today. Split before T5g (TD-493).
+  today. Split before T5g (TD-497).
 - **One deliberate tightening:** an INACTIVE row now opens no door (T1's role half admitted an inactive `admin` /
   `finance` / `org_admin` by label) — except an inactive SUPER, whom `effective_v2` still answers in full, so at the
   door level it opens every door. Both are unreachable: every caller asks about the signed-in person and sign-in
@@ -60,7 +60,7 @@ no access moving for any shape.
   T1). A registry row names its `door` (Organisation `org_read`; Invitations, People `team_read`; Sources; Sponsors
   `sponsors_read`; Announcements; Surveys; Development); in-page gates ask `pageGuard.opensDoorOr(role, door,
   oldRoles)`. Offer-set == accept-set: a row or gate moves only where its server door moved, so Team -> Mentors
-  (TD-492), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
+  (TD-496), the platform and lead-only pages (T5e), money (T5d), Applications and Scholars keep their rules. No
   landing change (`defaultRoute` passes no `page_keys`), no string, no layout. **Proof:** the 27 shapes the server
   serves (the doors test's 32 less its 5 inactive rows, payloads taken from `admin/role/`) x 45 cells, frozen on P4a
   before the change, identical after with and without `page_keys`; shown red with one mapping broken.

@@ -19,7 +19,7 @@ Owner, 2026-11-04: "Yes, push TD-481. Then continue as a run: T5c on your own. A
 ## Stops waiting on the owner
 - **Programmes landing (P5): approve the Stitch draft.**
 - **TD-487 and TD-488 rulings** (from the TD-481 adversarial review).
-- **Mentors list key ruling** (TD-492; TD-489 on main is now the mentor-screen cards).
+- **Mentors list key ruling** (TD-496; TD-489 on main is now the mentor-screen cards).
 
 ## Open risks
 - T5c changes permissions. The owner's phone check comes before it goes live.
