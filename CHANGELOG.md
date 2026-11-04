@@ -92,6 +92,26 @@ interviewed / were assigned"); decisions.md "Team tables T5b". Round 1 added mig
 - **Rule 15:** the award comprehension quiz (`AwardComprehensionQuiz.tsx`) and `/verify-email` drew a white card on a
   phone; the quiz takes `PHONE_SECTION_NO_GAP`, verify e-mail sits on the gutter with its card `md:`-only. Both are on
   the rule-15 guard list.
+- **Follow-up 1 — nothing spills out of its box (owner's iPhone walkthrough, 2026-11-04).** mobile-check measures a
+  FOURTH number per cell, `spills` (`measure.ts`; rule 16 of `mobile-standard.md`; decisions.md 2026-11-04): text or a
+  drawn box (border, fill, shadow) more than 1.5 px past the side of any block box above it, up to the first box
+  that scrolls or clips. Fixed, absolutely placed and negative-margin items (full-bleed sections, InfoTip / Toggle hit
+  areas), side-scrollers, clipping boxes, SVG and invisible wrappers are not judged; a spilling box counts once with
+  its words. Held in `baseline.json` like the other three (a cell from before it is held to zero), a Spills column in
+  the ledger, a rule-16 block in `mobileStandard.test.ts`.
+- **Fixed for phones (`max-md:` / below `sm`, desktop unchanged):** the Programme Overview charts draw in a phone box
+  (`PHONE_AXIS_BOX`, 272 units) with 11.5-unit text — axis labels 11–14 px instead of 2.8–9.8 px — and at most four
+  month names (`Charts.tsx` `useChartBox`); the money tiles' figure is 16 px and may wrap, the money chart's three
+  totals are rows, the chart grids are `grid-cols-1` (an auto track grew to its widest Tamil card); the reviewer
+  page's four figures are two by two, its gift chooser full width and its three text links 44 px (new surface `m8-reviewer-detail`, the real page,
+  a long Tamil name); the sponsor trust figures are rows; the sponsor home donut's hole is 88 px, its legend and
+  "Trust & transparency" link wrap; the Requests list and a request put the status under the row and wrap long
+  words. Also found by the new number and fixed in the same idiom: the case page's applicant e-mail, verdict band
+  ("Berkemungkinan") and profile-language row (Tamil); the Scholars summary tiles; Configuration's "+ New intake
+  year" row (Malay). Sandbox fixtures now use real codes (a request's urgency and comment author, a verdict item)
+  instead of ones that printed raw keys.
+- **Guards:** `Charts.phone.test.tsx` (the phone box, text size and ticks; from md the old box and sizes), the reviewer
+  page's two-by-two grid, rule 16 in `mobileStandard.test.ts`.
 
 ## Mobile M7b — desktop-only pages say so on a phone; the Team tables as rows (LIVE 2026-11-03, main fa8dd439, halatuju-web-01075-4d2)
 
