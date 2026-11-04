@@ -469,7 +469,7 @@ export async function getScholarshipApplications(
     assigned?: string
     /** Overview card links: only students ready to assign / in the overdue or due-soon band. */
     ready?: boolean
-    band?: 'overdue' | 'due_soon'
+    band?: 'overdue' | 'due_soon' | 'open'
     q?: string
     page?: number
     pageSize?: number

@@ -54,6 +54,12 @@ describe('the address bar feeds the list request', () => {
     expect(screen.getByTestId('chip-band').textContent).toContain('admin.scholarship.chip.overdue')
   })
 
+  it('my open card: assigned=me and band=open', async () => {
+    show('/admin/scholarship?assigned=me&band=open')
+    expect(await firstRequest()).toMatchObject({ assigned: 'me', band: 'open' })
+    expect(screen.getByTestId('chip-band').textContent).toContain('admin.scholarship.chip.open')
+  })
+
   it('due soon chip text; unknown values are ignored', async () => {
     show('/admin/scholarship?band=due_soon&status=bogus&assigned=x;drop')
     const f = await firstRequest()

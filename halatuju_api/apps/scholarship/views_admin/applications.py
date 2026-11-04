@@ -126,13 +126,13 @@ class AdminApplicationListView(_AdminBase):
             from ..parent_call import needing_call_profile_ids
             qs = qs.filter(profile_id__in=needing_call_profile_ids(qs))
         # Overview cards (owner 2026-11-05): `?ready=1` = the "Unassigned" card's cases (Awaiting review,
-        # unassigned, undecided, READY: `queries_sla.assignable_now`); `?band=overdue|due_soon` = the
-        # Overdue / Due-soon cards' cases (`review_sla.in_band`, with the clocks the Overview reads).
+        # unassigned, undecided, READY: `queries_sla.assignable_now`); `?band=overdue|due_soon|open` = the
+        # Overdue / Due-soon / My-open cards' cases (`review_sla.in_band`, with the clocks the Overview reads).
         # Both narrow INSIDE the fence and visibility above; any other value is ignored.
         if request.GET.get('ready') == '1':
             from ..services.queries_sla import assignable_now
             qs = assignable_now(qs)
-        if request.GET.get('band') in ('overdue', 'due_soon'):
+        if request.GET.get('band') in ('overdue', 'due_soon', 'open'):
             from .. import review_sla
             sla_org = None if admin.is_super else admin.owning_organisation
             if sla_org is None and programme is not None:

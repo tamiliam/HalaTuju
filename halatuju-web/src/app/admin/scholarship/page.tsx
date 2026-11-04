@@ -10,6 +10,7 @@ import { useT } from '@/lib/i18n'
 import { PHONE_PILL, PHONE_PILL_SM } from '@/lib/phonePill'   // pills on a phone (Mobile M8)
 import { useProgrammeScope } from '@/lib/programmeScope'
 import { useGiftInUrl } from '@/lib/useGiftInUrl'
+import { ApplicationUrlChips, useApplicationUrlFilters } from '@/components/admin/ApplicationUrlFilters'
 import TableFrame from '@/components/admin/TableFrame'
 import CaseListPhoneTools, { type CaseSortKey } from '@/components/admin/CaseListPhoneTools'
 import { bucketBadge, orderReviewersFor, SPECIFIC_CALL_LANGS, type Reviewer } from '@/lib/assignOptions'
@@ -47,18 +48,9 @@ function StaffScholarshipList() {
   const effRole = effectiveRole(role)
   const isSuper = effRole === 'super'
   /*
-   * ⚠ THIS PAGE HAD NO CLIENT GUARD AT ALL, AND A REAL ROLE WAS BEING SENT HERE (2026-09-08).
-   * The registry omits `finance` from `applications` deliberately — its `_b40_scope` is 'none', so
-   * every call it makes here can only 403 — yet the old landing rule pushed finance to `/admin`,
-   * which bounced it straight to this page. A finance user's first screen was a list built for
-   * somebody else, failing quietly.
-   *
-   * `defaultRoute` now lands finance on the Overview instead, which is the actual fix. This is the
-   * second line of it: the registry already states who may open this page, so the page should say
-   * the same thing rather than trusting whoever routed here. Cheap, and it means a future routing
-   * mistake surfaces as a plain refusal instead of an empty table.
-   *
-   * ⚠ NOT A FENCE — see `navigation.ts`. The endpoint refuses on its own and is unchanged.
+   * ⚠ A SECOND LINE, NOT A FENCE (2026-09-08). A real role (`finance`, `_b40_scope` 'none') was once routed
+   * here and failed quietly; `defaultRoute` is the actual fix, and the registry already says who may open
+   * this page, so the page says it too. The endpoint refuses on its own — see `navigation.ts`.
    */
   const mayView = canAccess('/admin/scholarship', effRole, role?.permissions)
   // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
@@ -98,11 +90,8 @@ function StaffScholarshipList() {
   const [assignedF, setAssignedF] = useState('')
   // Request #26 (owner ruling B): only the students whose parent phone needs a call — super/org_admin.
   const [parentCallF, setParentCallF] = useState(false)
-  // The Overview's pending cards link here with ?status=&assigned=&ready=1&band= (owner 2026-11-05).
-  // `ready` / `band` have no control of their own, so they show as a removable chip.
-  const [readyF, setReadyF] = useState(false)
-  const [bandF, setBandF] = useState<'' | 'overdue' | 'due_soon'>('')
-  const [urlFiltersRead, setUrlFiltersRead] = useState(false)
+  // The Overview's pending cards link here with ?status=&assigned=&ready=1&band= (ApplicationUrlFilters).
+  const { readyF, setReadyF, bandF, setBandF, urlFiltersRead } = useApplicationUrlFilters(statusF, setStatusF, assignedF, setAssignedF)
   const [search, setSearch] = useState('')
   const [q, setQ] = useState('') // debounced value actually sent to the API
   const [error, setError] = useState('')
@@ -131,35 +120,6 @@ function StaffScholarshipList() {
   // same reason every filter resets the page. Not folded into `changeFilter`: the gift comes from
   // the shell's breadcrumb, not from a control on this page.
   useEffect(() => { setPage(1) }, [chosen])
-
-  // Read the four filters from the address bar ONCE, on mount — in the same effect flush as the gift
-  // read, so the first list request already carries them. Afterwards the controls own the state and
-  // the address bar follows (below).
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search)
-    const st = p.get('status')
-    if (st && (APPLICATION_STATUSES as readonly string[]).includes(st)) setStatusF(st)
-    const as = p.get('assigned')
-    if (as && (as === 'me' || as === 'none' || /^\d+$/.test(as))) setAssignedF(as)
-    if (p.get('ready') === '1') setReadyF(true)
-    const b = p.get('band')
-    if (b === 'overdue' || b === 'due_soon') setBandF(b)
-    setUrlFiltersRead(true)
-  }, [])
-
-  // The address bar follows a hand change of these filters (replace, no history entry); defaults are left out.
-  useEffect(() => {
-    if (!urlFiltersRead) return
-    const p = new URLSearchParams(window.location.search)
-    const want: Record<string, string> = { status: statusF, assigned: assignedF, ready: readyF ? '1' : '', band: bandF }
-    let changed = false
-    for (const [k, v] of Object.entries(want)) {
-      if ((p.get(k) ?? '') !== v) { changed = true; if (v) p.set(k, v); else p.delete(k) }
-    }
-    if (!changed) return
-    const qs = p.toString()
-    window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : ''))
-  }, [urlFiltersRead, statusF, assignedF, readyF, bandF])
 
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
@@ -360,14 +320,8 @@ function StaffScholarshipList() {
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
 
-      {(readyF || bandF) && (
-        <div className="mb-3 flex flex-wrap gap-2" data-testid="url-filter-chips">
-          {readyF && <FilterChip label={t('admin.scholarship.chip.ready')} remove={t('admin.scholarship.chip.remove')}
-            onRemove={() => { setReadyF(false); setPage(1) }} testId="chip-ready" />}
-          {bandF && <FilterChip label={t(bandF === 'overdue' ? 'admin.scholarship.chip.overdue' : 'admin.scholarship.chip.dueSoon')}
-            remove={t('admin.scholarship.chip.remove')} onRemove={() => { setBandF(''); setPage(1) }} testId="chip-band" />}
-        </div>
-      )}
+      <ApplicationUrlChips readyF={readyF} bandF={bandF} onClearReady={() => { setReadyF(false); setPage(1) }}
+        onClearBand={() => { setBandF(''); setPage(1) }} />
 
       {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
 
@@ -641,17 +595,5 @@ function StaffScholarshipList() {
         </>
       )}
     </div>
-  )
-}
-
-/** A removable label for a filter that has no control of its own (ready / band). */
-function FilterChip({ label, remove, onRemove, testId }:
-  { label: string; remove: string; onRemove: () => void; testId: string }) {
-  return (
-    <span data-testid={testId} className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-800">
-      {label}
-      <button type="button" aria-label={remove} title={remove} onClick={onRemove}
-        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-100">×</button>
-    </span>
   )
 }

@@ -4115,6 +4115,7 @@
         "ready": "Ready to assign",
         "overdue": "Overdue",
         "dueSoon": "Due soon",
+        "open": "Open",
         "remove": "Remove this filter",
         "me": "Assigned to me"
       },

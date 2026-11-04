@@ -161,6 +161,16 @@ class OverviewCardLists(TestCase):
         self.assertEqual((c_over, c_soon), (card['my_overdue']['count'], card['my_due_soon']['count']))
         self.assertEqual((ids_over, ids_soon), ({self.over.pk}, {self.soon.pk}))
 
+    def test_the_my_open_card_equals_the_open_list(self):
+        # a decided case of the reviewer's must NOT be in the list the card opens
+        done = make_application('assigned', cohort=self.ca, reviewer=self.rev)
+        ScholarshipApplication.objects.filter(pk=done.pk).update(verdict_decided_at=timezone.now())
+        card = self._cards(self.rev)
+        count, ids = self._list(self.rev, '?assigned=me&band=open')
+        self.assertEqual(count, card['my_open']['count'])
+        self.assertEqual(ids, {self.over.pk, self.soon.pk, self.open_.pk})
+        self.assertNotIn(done.pk, ids)
+
     # ── the fence ─────────────────────────────────────────────────────────────────────────────────────
     def test_a_reviewer_cannot_widen_visibility_through_the_new_parameters(self):
         mine = {a.pk for a in ScholarshipApplication.objects.filter(assigned_to=self.rev)}
@@ -178,6 +188,6 @@ class OverviewCardLists(TestCase):
 
     def test_other_values_are_ignored(self):
         plain = self._list(self.org_admin, '')[1]
-        for qs in ('?ready=0', '?ready=yes', '?band=open', '?band=zzz'):
+        for qs in ('?ready=0', '?ready=yes', '?band=zzz'):
             with self.subTest(qs=qs):
                 self.assertEqual(self._list(self.org_admin, qs)[1], plain)

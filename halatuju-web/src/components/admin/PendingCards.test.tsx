@@ -60,7 +60,7 @@ describe('per-role views', () => {
     expect(screen.getByTestId('pending-count-my_due_soon').className).toContain('text-caution-700')
     expect(screen.getByTestId('pending-count-my_overdue').className).toContain('text-critical-600')
     expect(screen.getByTestId('pending-count-my_open').className).not.toContain('caution')
-    expect(href('my_open')).toBe('/admin/scholarship?assigned=me')
+    expect(href('my_open')).toBe('/admin/scholarship?assigned=me&band=open')
     expect(href('my_due_soon')).toBe('/admin/scholarship?assigned=me&band=due_soon')
     expect(href('my_overdue')).toBe('/admin/scholarship?assigned=me&band=overdue')
   })
