@@ -1,5 +1,18 @@
 # Architectural Decisions — HalaTuju
 
+## T5c P5: owner rulings of 2026-11-04 (QC card, always-open page, invite gift)
+
+**QC card (owner "a"):** QC gets the admin card with counts on the Programmes landing (its Applications scope is already
+'all'), as built.
+
+**Always-open page (owner "a"):** a page that every staff and mentor login on the partner side may open, whose content
+the server narrows per person, needs no v2 key (see the next entry; exception written into `halatuju_api/CLAUDE.md`).
+Its door test must still assert, non-vacuously, who opens it and who is refused.
+
+**Invite gift (owner "b"):** invites take no gift today and NULL gift means every gift (TD-501). Fix AFTER v3.1.0 as
+the FIRST fix sprint: the reviewer invite must choose one gift or every gift; admins and mentors unchanged. Alternative
+rejected: fix now (would add a permission change to a release already waiting on a phone check).
+
 ## T5c P5: Programmes landing has no v2 key — 2026-11-04 (lead ruling)
 
 **Context:** Organisation > Programmes is the landing of every partner login (owner ruling). The S1b plan gave it a

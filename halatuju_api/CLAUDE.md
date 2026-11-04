@@ -202,6 +202,17 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 
 Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `docs/sprint-history.md` ("Moved from halatuju_api/CLAUDE.md Next Sprint, 2026-11-03").
 
+### STATE AT 2026-11-04 — T5c PART 5 (PROGRAMMES LANDING) LIVE (main 1c21ecaf, api-01253-gcr, web-01082-t9w; no migration)
+
+- Everyone on the partner login lands on Organisation > Programmes. Read: `GET admin/scholarship/my-programmes/`
+  (`views_admin/my_programmes.py`): admins, finance and QC see every gift of their organisation; a reviewer only gifts
+  with a case assigned to them (open or done); a mentor only gifts of current mentees (card opens My students,
+  `admin/mentor/students/?programme=<id>`). The page has no v2 key (owner exception above). Open: TD-500, TD-501.
+- **NEXT, in order:** (1) owner's phone check of P5 (reviewer + mentor views); (2) release v3.1.0
+  (`Settings/_workflows/release.md`); (3) TD-501 fix sprint (reviewer invite chooses one gift or every gift; Opus build,
+  adversarial review, owner phone check); (4) full audit on the v3.1.0 tag (`Settings/_workflows/project-audit.md`).
+  **FREEZE: no T5d, no offer S7** until the audit's fix sprints are done.
+
 ### STATE AT 2026-11-03 — REQUESTS LIST R1 LIVE (api-01242-ntg, web-01070-c44; no migration)
 
 - `/admin/requests` is a PAGED, server-filtered list: tabs Needs action · In progress · Closed · All (they PARTITION
@@ -251,9 +262,9 @@ for everyone, super included — 400 `awaiting_qc`; it is declined only at `qc-d
 in `admin_reject` / `INTERVIEW_REJECT_FROM` (the QC decision declines through them). Open from it: TD-486 (super's
 cancel-reopen), TD-487 and TD-488 (owner's calls). Test: `test_td481_awaiting_qc_decline.py`.
 
-**NEXT = T5c** (owner to rule on TD-487 / TD-488 when convenient).
+T5c is LIVE (see the top block). TD-487 / TD-488 still await the owner.
 
-**T5c P1 (branch t5c, not yet live):** the organisation-read and admin-work doors open by v2 keys through ONE gate,
+**T5c P1 (live 2026-11-04):** the organisation-read and admin-work doors open by v2 keys through ONE gate,
 `staff_tables.opens(admin, *keys)` (all held, via `effective_v2`; door -> key table in decisions.md "Team tables
 T5c"). **A new or converted door** asks `staff_tables.opens` (never imports v2: only `staff_tables` may,
 `V2Importers`), joins `V2_DOOR_MODULES`, and gets a parity line in `test_team_tables_t5c_doors`. Sources, the roster,

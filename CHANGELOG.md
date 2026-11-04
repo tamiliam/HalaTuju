@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Team tables T5c part 5 — the Programmes landing (in progress, branch t5c)
+## Team tables T5c part 5 — the Programmes landing (LIVE 2026-11-04; main 1c21ecaf; api-01253-gcr, web-01082-t9w; revisions S1b/S2b/S2c)
 
-Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Not live.
+Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Live; owner phone check pending.
 
 **S1 — server:**
 - **New `GET admin/scholarship/my-programmes/`** (`views_admin/my_programmes.py`, `AdminMyProgrammesView`) →

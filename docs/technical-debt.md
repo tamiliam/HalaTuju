@@ -7742,6 +7742,17 @@ sprint about landing pages. A mentor carries a handful of mentees, so it is chea
 of all the caller's mentees in one query and keep `is_the_student` as the single rule, with the existing
 self-mentoring tests as the guard. *(A · S)*
 
+### [TD-501] Staff invites take no gift; NULL gift means every gift - medium (owner ruled: first fix after v3.1.0)
+
+**Raised 2026-11-04 by the owner during T5c P5 (NOT fixed).** No staff invite takes a gift. `AdminInviteView`
+(`halatuju_api/apps/courses/views_staff.py:195-234`) reads no programme, and `staff_reinvite.py:292` sets the programme
+to None. `PartnerAdmin.programme` is a nullable FK where NULL means every gift (`models_staff.py:114-134`). A reviewer's
+gift only narrows the cases they are OFFERED; it is not a fence (`scholarship/views_admin/reviewers.py:98-103`). The
+gift can be set later by `POST admin/reviewers/<pk>/programme/`, which has no web caller. Mentors have no gift (it
+comes from their mentees). **Owner ruling 2026-11-04 ("b"):** fix AFTER v3.1.0 as the FIRST fix sprint, before the
+other audit fixes. **Fix:** the reviewer invite must choose "one gift" or "every gift"; admins and mentors unchanged.
+It is a permission change: Opus build, adversarial review, owner phone check before it goes live. *(A · M)*
+
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
 **Raised 2026-11-04 by Mobile M8 follow-up part 2 (NOT fixed).** A mentor's own pages, `/admin/my-students` and
