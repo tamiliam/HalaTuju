@@ -3369,9 +3369,6 @@
     },
     "overview": {
       "allClear": "Tiada apa yang menunggu anda",
-      "nothing": "Tiada yang menunggu",
-      "dueSoon": "{count} akan tamat tempoh",
-      "oldest": "Paling lama {days} hari",
       "unassigned": "Belum ditugaskan",
       "overdue": "Lewat",
       "awaitingQc": "Menunggu QC",
@@ -4114,6 +4111,13 @@
       "titleAll": "Semua pemohon",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
+      "chip": {
+        "ready": "Sedia untuk ditugaskan",
+        "overdue": "Lewat tempoh",
+        "dueSoon": "Hampir tamat tempoh",
+        "remove": "Buang penapis ini",
+        "me": "Ditugaskan kepada saya"
+      },
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
       "allStatuses": "Semua status",
       "allBuckets": "Semua kategori",

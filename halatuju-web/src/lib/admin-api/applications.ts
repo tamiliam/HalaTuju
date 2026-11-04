@@ -467,6 +467,9 @@ export async function getScholarshipApplications(
     bucket?: string
     source?: string
     assigned?: string
+    /** Overview card links: only students ready to assign / in the overdue or due-soon band. */
+    ready?: boolean
+    band?: 'overdue' | 'due_soon'
     q?: string
     page?: number
     pageSize?: number
@@ -489,6 +492,8 @@ export async function getScholarshipApplications(
   if (filters.bucket) q.set('bucket', filters.bucket)
   if (filters.source) q.set('source', filters.source)
   if (filters.assigned) q.set('assigned', filters.assigned)
+  if (filters.ready) q.set('ready', '1')
+  if (filters.band) q.set('band', filters.band)
   if (filters.q) q.set('q', filters.q)
   if (filters.sort) { q.set('sort', filters.sort); q.set('dir', filters.dir || 'asc') }
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))

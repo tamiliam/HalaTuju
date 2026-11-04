@@ -98,6 +98,11 @@ function StaffScholarshipList() {
   const [assignedF, setAssignedF] = useState('')
   // Request #26 (owner ruling B): only the students whose parent phone needs a call — super/org_admin.
   const [parentCallF, setParentCallF] = useState(false)
+  // The Overview's pending cards link here with ?status=&assigned=&ready=1&band= (owner 2026-11-05).
+  // `ready` / `band` have no control of their own, so they show as a removable chip.
+  const [readyF, setReadyF] = useState(false)
+  const [bandF, setBandF] = useState<'' | 'overdue' | 'due_soon'>('')
+  const [urlFiltersRead, setUrlFiltersRead] = useState(false)
   const [search, setSearch] = useState('')
   const [q, setQ] = useState('') // debounced value actually sent to the API
   const [error, setError] = useState('')
@@ -127,6 +132,35 @@ function StaffScholarshipList() {
   // the shell's breadcrumb, not from a control on this page.
   useEffect(() => { setPage(1) }, [chosen])
 
+  // Read the four filters from the address bar ONCE, on mount — in the same effect flush as the gift
+  // read, so the first list request already carries them. Afterwards the controls own the state and
+  // the address bar follows (below).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const st = p.get('status')
+    if (st && (APPLICATION_STATUSES as readonly string[]).includes(st)) setStatusF(st)
+    const as = p.get('assigned')
+    if (as && (as === 'me' || as === 'none' || /^\d+$/.test(as))) setAssignedF(as)
+    if (p.get('ready') === '1') setReadyF(true)
+    const b = p.get('band')
+    if (b === 'overdue' || b === 'due_soon') setBandF(b)
+    setUrlFiltersRead(true)
+  }, [])
+
+  // The address bar follows a hand change of these filters (replace, no history entry); defaults are left out.
+  useEffect(() => {
+    if (!urlFiltersRead) return
+    const p = new URLSearchParams(window.location.search)
+    const want: Record<string, string> = { status: statusF, assigned: assignedF, ready: readyF ? '1' : '', band: bandF }
+    let changed = false
+    for (const [k, v] of Object.entries(want)) {
+      if ((p.get(k) ?? '') !== v) { changed = true; if (v) p.set(k, v); else p.delete(k) }
+    }
+    if (!changed) return
+    const qs = p.toString()
+    window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : ''))
+  }, [urlFiltersRead, statusF, assignedF, readyF, bandF])
+
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
     const id = setTimeout(() => {
@@ -137,7 +171,7 @@ function StaffScholarshipList() {
   }, [search])
 
   useEffect(() => {
-    if (!token || !mayView || !urlRead) return
+    if (!token || !mayView || !urlRead || !urlFiltersRead) return
     // Only this effect's newest read may land (TD-298): a slow reply for the gift — or filter — you
     // left must not overwrite the list you are now looking at.
     let current = true
@@ -148,6 +182,8 @@ function StaffScholarshipList() {
         status: statusF || undefined,
         source: source || undefined,
         assigned: assignedF || undefined,
+        ready: readyF || undefined,
+        band: bandF || undefined,
         parentCall: parentCallF ? 'needed' : undefined,
         q: q || undefined,
         page,
@@ -166,7 +202,7 @@ function StaffScholarshipList() {
       .finally(() => { if (current) setLoading(false) })
     return () => { current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, parentCallF, q, page, pageSize, sort, sortDir])
+  }, [token, urlRead, chosen, bucket, statusF, source, assignedF, readyF, bandF, urlFiltersRead, parentCallF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 
@@ -284,6 +320,7 @@ function StaffScholarshipList() {
           <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} aria-label={t('admin.scholarship.allAssignees')} className="border rounded-lg px-3 py-2 text-sm">
             <option value="">{t('admin.scholarship.allAssignees')}</option>
             <option value="none">{t('admin.scholarship.unassigned')}</option>
+            {assignedF === 'me' && <option value="me">{t('admin.scholarship.chip.me')}</option>}
             {reviewers.length > 0 && (
               <optgroup label={t('admin.scholarship.byReviewer')}>
                 {reviewers.map((rv) => <option key={rv.id} value={rv.id}>{rv.name}</option>)}
@@ -310,7 +347,7 @@ function StaffScholarshipList() {
         )}
     </>
   )
-  const activeFilters = [source, bucket, statusF, assignedF].filter(Boolean).length + (parentCallF ? 1 : 0)
+  const activeFilters = [source, bucket, statusF, assignedF, bandF].filter(Boolean).length + (parentCallF ? 1 : 0) + (readyF ? 1 : 0)
 
   return (
     <div>
@@ -322,6 +359,15 @@ function StaffScholarshipList() {
       <p className="text-sm text-ground-500 mt-1 mb-4">
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
+
+      {(readyF || bandF) && (
+        <div className="mb-3 flex flex-wrap gap-2" data-testid="url-filter-chips">
+          {readyF && <FilterChip label={t('admin.scholarship.chip.ready')} remove={t('admin.scholarship.chip.remove')}
+            onRemove={() => { setReadyF(false); setPage(1) }} testId="chip-ready" />}
+          {bandF && <FilterChip label={t(bandF === 'overdue' ? 'admin.scholarship.chip.overdue' : 'admin.scholarship.chip.dueSoon')}
+            remove={t('admin.scholarship.chip.remove')} onRemove={() => { setBandF(''); setPage(1) }} testId="chip-band" />}
+        </div>
+      )}
 
       {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
 
@@ -595,5 +641,17 @@ function StaffScholarshipList() {
         </>
       )}
     </div>
+  )
+}
+
+/** A removable label for a filter that has no control of its own (ready / band). */
+function FilterChip({ label, remove, onRemove, testId }:
+  { label: string; remove: string; onRemove: () => void; testId: string }) {
+  return (
+    <span data-testid={testId} className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-800">
+      {label}
+      <button type="button" aria-label={remove} title={remove} onClick={onRemove}
+        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-100">×</button>
+    </span>
   )
 }

@@ -26,14 +26,14 @@ describe('per-role views', () => {
       { key: 'requests', count: 3 }])
     render(<PendingCards token="t" />)
     await screen.findByTestId('pending-unassigned')
-    expect(href('unassigned')).toBe('/admin/scholarship')
-    expect(href('overdue')).toBe('/admin/scholarship')
-    expect(href('awaiting_qc')).toBe('/admin/scholarship')
+    expect(href('unassigned')).toBe('/admin/scholarship?status=profile_complete&assigned=none&ready=1')
+    expect(href('overdue')).toBe('/admin/scholarship?band=overdue')
+    expect(href('awaiting_qc')).toBe('/admin/scholarship?status=interviewed')
     expect(href('sponsors_to_vet')).toBe('/admin/sponsors')
     expect(href('invitations')).toBe('/admin/organisation/staff')
     expect(href('payment_runs')).toBe('/admin/payments')
-    expect(href('requests')).toBe('/admin/requests')
-    expect(screen.getByTestId('pending-overdue').textContent).toContain('admin.overview.dueSoon|3')
+    expect(href('requests')).toBe('/admin/requests?tab=action')
+    expect(screen.getByTestId('pending-overdue').textContent).toBe('admin.overview.overdue2')   // no subline
   })
 
   it('finance: runs, wallet credits, vetting, invitations; no scholarship cards', async () => {
@@ -45,12 +45,12 @@ describe('per-role views', () => {
     expect(screen.queryByTestId('pending-unassigned')).toBeNull()
   })
 
-  it('qc: awaiting with the oldest age', async () => {
+  it('qc: awaiting, no age subline', async () => {
     serve([{ key: 'qc_awaiting', count: 7, oldest_days: 12 }])
     render(<PendingCards token="t" />)
     const c = await screen.findByTestId('pending-qc_awaiting')
     expect(c.getAttribute('href')).toBe('/admin/programme/overview')
-    expect(c.textContent).toContain('admin.overview.oldest|12')
+    expect(c.textContent).toBe('admin.overview.qcAwaiting7')
   })
 
   it('reviewer: due soon amber, overdue red', async () => {
@@ -60,6 +60,9 @@ describe('per-role views', () => {
     expect(screen.getByTestId('pending-count-my_due_soon').className).toContain('text-caution-700')
     expect(screen.getByTestId('pending-count-my_overdue').className).toContain('text-critical-600')
     expect(screen.getByTestId('pending-count-my_open').className).not.toContain('caution')
+    expect(href('my_open')).toBe('/admin/scholarship?assigned=me')
+    expect(href('my_due_soon')).toBe('/admin/scholarship?assigned=me&band=due_soon')
+    expect(href('my_overdue')).toBe('/admin/scholarship?assigned=me&band=overdue')
   })
 
   it('mentor: cards open My students, and there is no "not met" card unless served', async () => {
@@ -81,12 +84,12 @@ describe('the rules', () => {
     expect(screen.queryByTestId('pending-bogus')).toBeNull()
   })
 
-  it('a zero card stays, muted, saying Nothing waiting; others are not muted and there is no all-clear line', async () => {
+  it('a zero card stays, muted, with no subline; others are not muted and there is no all-clear line', async () => {
     serve([{ key: 'unassigned', count: 0 }, { key: 'overdue', count: 2 }])
     render(<PendingCards token="t" />)
     const z = await screen.findByTestId('pending-unassigned')
     expect(z.getAttribute('data-zero')).toBe('true')
-    expect(z.textContent).toContain('admin.overview.nothing')
+    expect(z.textContent).toBe('admin.overview.unassigned0')
     expect(screen.getByTestId('pending-overdue').getAttribute('data-zero')).toBe('false')
     expect(screen.queryByTestId('pending-all-clear')).toBeNull()
   })

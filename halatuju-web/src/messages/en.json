@@ -3369,9 +3369,6 @@
     },
     "overview": {
       "allClear": "Nothing is waiting on you",
-      "nothing": "Nothing waiting",
-      "dueSoon": "{count} due soon",
-      "oldest": "Oldest {days} days",
       "unassigned": "Unassigned",
       "overdue": "Overdue",
       "awaitingQc": "Awaiting QC",
@@ -4114,6 +4111,13 @@
       "titleAll": "All applicants",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
+      "chip": {
+        "ready": "Ready to assign",
+        "overdue": "Overdue",
+        "dueSoon": "Due soon",
+        "remove": "Remove this filter",
+        "me": "Assigned to me"
+      },
       "showingRange": "Showing {start}–{end} of {total} applications",
       "allStatuses": "All statuses",
       "allBuckets": "All buckets",

@@ -3,7 +3,7 @@
 // The Overview's per-person pending cards (T5c P5b, owner 2026-11-05). Drawn inside `ProgrammesLanding`'s chunk.
 //
 // ⚠ ONLY THE KEYS THE SERVER SENT ARE DRAWN: a card the caller may not see is ABSENT, never a zero.
-// ⚠ A SERVED ZERO STAYS, MUTED, saying "Nothing waiting"; when EVERY card is zero one calm line says so above them.
+// ⚠ A SERVED ZERO STAYS, MUTED (no sublines under any number, owner 2026-11-05); when EVERY card is zero one calm line says so above them.
 // Visibility only: each card is a link to a page that checks the caller again.
 
 import { useEffect, useState } from 'react'
@@ -15,19 +15,19 @@ type Tone = 'caution' | 'critical'
 
 /** Where each card opens, its label, and (for the reviewer's two) its tone. `small`: the quieter second row. */
 const META: Record<PendingKey, { href: string; label: string; small?: boolean; tone?: Tone }> = {
-  unassigned: { href: '/admin/scholarship', label: 'admin.overview.unassigned' },
-  overdue: { href: '/admin/scholarship', label: 'admin.overview.overdue' },
-  awaiting_qc: { href: '/admin/scholarship', label: 'admin.overview.awaitingQc' },
+  unassigned: { href: '/admin/scholarship?status=profile_complete&assigned=none&ready=1', label: 'admin.overview.unassigned' },
+  overdue: { href: '/admin/scholarship?band=overdue', label: 'admin.overview.overdue' },
+  awaiting_qc: { href: '/admin/scholarship?status=interviewed', label: 'admin.overview.awaitingQc' },
   sponsors_to_vet: { href: '/admin/sponsors', label: 'admin.overview.sponsorsToVet' },
   invitations: { href: '/admin/organisation/staff', label: 'admin.overview.invitations', small: true },
   payment_runs: { href: '/admin/payments', label: 'admin.overview.paymentRuns', small: true },
-  requests: { href: '/admin/requests', label: 'admin.overview.requests', small: true },
+  requests: { href: '/admin/requests?tab=action', label: 'admin.overview.requests', small: true },
   // No page of its own for wallet credits: sponsors are where a credit is recorded and confirmed.
   wallet_credits: { href: '/admin/sponsors', label: 'admin.overview.walletCredits' },
   qc_awaiting: { href: '/admin/programme/overview', label: 'admin.overview.qcAwaiting' },
-  my_open: { href: '/admin/scholarship', label: 'admin.overview.myOpen' },
-  my_due_soon: { href: '/admin/scholarship', label: 'admin.overview.myDueSoon', tone: 'caution' },
-  my_overdue: { href: '/admin/scholarship', label: 'admin.overview.myOverdue', tone: 'critical' },
+  my_open: { href: '/admin/scholarship?assigned=me', label: 'admin.overview.myOpen' },
+  my_due_soon: { href: '/admin/scholarship?assigned=me&band=due_soon', label: 'admin.overview.myDueSoon', tone: 'caution' },
+  my_overdue: { href: '/admin/scholarship?assigned=me&band=overdue', label: 'admin.overview.myOverdue', tone: 'critical' },
   mentees: { href: '/admin/my-students', label: 'admin.overview.mentees' },
   not_met: { href: '/admin/my-students', label: 'admin.overview.notMet' },
   asked_help: { href: '/admin/my-students', label: 'admin.overview.askedHelp' },
@@ -73,12 +73,6 @@ function PendingTile({ card }: { card: PendingCard }) {
   const zero = card.count === 0
   const numTone = zero ? 'text-ground-400'
     : m.tone === 'critical' ? 'text-critical-600' : m.tone === 'caution' ? 'text-caution-700' : 'text-ground-900'
-  const sub: string[] = []
-  if (zero) sub.push(t('admin.overview.nothing'))
-  else {
-    if (typeof card.due_soon === 'number' && card.due_soon > 0) sub.push(t('admin.overview.dueSoon', { count: String(card.due_soon) }))
-    if (typeof card.oldest_days === 'number') sub.push(t('admin.overview.oldest', { days: String(card.oldest_days) }))
-  }
   return (
     <li>
       <Link href={m.href} data-testid={`pending-${card.key}`} data-zero={zero ? 'true' : 'false'}
@@ -88,7 +82,6 @@ function PendingTile({ card }: { card: PendingCard }) {
         <span className="text-xs font-semibold uppercase tracking-wider text-ground-500">{t(m.label)}</span>
         <span className="text-right sm:mt-1 sm:block sm:text-left">
           <span data-testid={`pending-count-${card.key}`} className={`text-2xl font-semibold tabular-nums ${numTone}`}>{card.count}</span>
-          {sub.length > 0 && <span className="ml-2 text-xs text-ground-500 sm:ml-0 sm:block">{sub.join(' · ')}</span>}
         </span>
       </Link>
     </li>
