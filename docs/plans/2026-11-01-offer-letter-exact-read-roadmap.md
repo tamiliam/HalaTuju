@@ -627,7 +627,7 @@ fixed-format letters only, so its lock number is small; dev must carry the evide
 other layouts (a 2027 template) — conservative None remains the default. (f) Labelling 71 letters costs
 ~2-3 h of agent time and ~20 min of the owner's.
 
-### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional) — BUILT 2026-11-03 on offer-read-s1 (not pushed)
+### S6 — Genuineness fixes, only if the answers prove a wrong call (medium, ~6 h; conditional) — LIVE 2026-11-04 (main a1d1dca7, api-01250-ldm, web build e8e351d9)
 - **Built (owner go 2026-11-03, Q1 / Q2 / the confirmation default — decisions.md):** three moves-only splits
   (`pathway_match.py`, `offer_signatures.py`, `offerFacts.ts`); `offer_rulings.py` + `MODEL_VERSION` 1.23.0 —
   `offer_genuineness_check.py` dev 197 / 197, held-out 90 / 90; the gate blocks only not_offer_letter; the ladder
@@ -1124,7 +1124,39 @@ Defaults taken unless you say otherwise: only UMS, polytechnics and Form-6 colle
 for a confirmation letter (any other university's confirmation → suspect); an interview slip stays suspect and
 a UPU application slip stays not_offer_letter.
 
+**S6 retrospective (closed 2026-11-04).**
+- **What was built:** the pre-S6 call is the BASELINE; `apply_rulings` changes it only by a BLOCK (private proof on
+  the letterhead), a closed-list LIFT (`tvet_offer` incl. the agency-letterhead lift, `confirmation`,
+  `incidental_company`) or a softening (`printout`, `tvet_slip`), every changed call tagged `[S6 ruling: <tag>]`;
+  one organisation list, one normaliser (`offer_text.normalise_s6`); the owner's chip table and student notes.
+  `MODEL_VERSION` 1.25.0, `VERDICT_ENGINE_VERSION` 2026-11-04.1. No migration, no paid call.
+- **What went well:**
+  - *Baseline + narrow overlays.* After round 7 (owner option 1) every change is a small, named overlay on a frozen
+    baseline, so a review round could only move tagged calls; the corpus stayed at 13 tagged changes from round 8
+    to round 14, and an untagged change counts as a MISS in `offer_genuineness_check.py`.
+  - *Traceable tags.* `[S6 ruling: <tag>]` made every changed call countable and explainable to the owner.
+  - *The owner's stop rule* (decisions S6 item 10) ended the loop: one last check, then new tricks go to TD unless
+    they block a real public letter — and round 14 used it exactly for that (SkillsMalaysia, "akademiknya").
+- **What went wrong:**
+  - *The agency-letterhead lift swung for many rounds (9 → 14).* Symptom: each round the reviewer found a new
+    name shape (glued, lowercase, digits, descriptors) and each fix either let one through or blocked a real
+    word (round 13's digit rule blocked "SkillsMalaysia" and room numbers on real letters). Root cause: condition
+    4 was built as OPEN word-list detection ("any organisation word left") and only then attacked; nobody had
+    listed the attacker's shapes or the real words it must pass before building it. Fix: before building a
+    detection rule, write the attacker list AND the real-letter list as tests first and prove the rule against
+    both (`docs/lessons.md`); round 14's real-letter probes are that list, kept as `Round14` tests.
+  - *No stop rule up front.* Symptom: 14 review rounds on one sprint. Root cause: the review had no agreed end, so
+    every new evasion looked like a blocker. Fix: agree the stop rule (what blocks a ship, what goes to TD) at the
+    sprint plan, not after round 13 (`docs/lessons.md`).
+- **Design decisions:** decisions.md S6 items 1–10 (option 1, closed lists, JMTI / CIAST, the agency lift, the stop
+  rule).
+- **Numbers:** 14 review rounds; corpus dev 196 / 197, held-out 90 / 90, 13 calls differ from the baseline, all
+  tagged; gates on the pushed head: 10,362 pytest / 3 skipped (`apps/scholarship`, `-n auto`) · 6,399 jest / 412
+  suites · budget ok (median 144.06 kB of 145 kB). Open: TD-491..495.
+
 ### S7 — Live re-read of the letters whose read changes (ops, ~3 h; paid)
+- **Named for S7 at the S6 close:** a live re-read of the 13 S6-changed letters plus the S5 list, and a genuineness
+  re-score of apps 52, 135, 306 and 329 (owner yes to the paid re-read).
 - **Goal:** live records carry the improved reads.
 - **Scope:** list the live offers whose read would change (from S4–S6 on the corpus) and what offer_sync / link /
   institution sync would then do (planners' report mode); re-read through the service with the flags (rule 4);

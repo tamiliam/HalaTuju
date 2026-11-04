@@ -7775,3 +7775,14 @@ latihan : Mercu" / "Technical Solutions"); (c) a descriptor slogan with the name
 pinned in `Round13.test_the_accepted_gaps_after_the_stop_rule`. No real corpus letter reads this way. **Fix:** read the
 token before the descriptor run BEFORE taking out allowed spans, and look one line up for a name; re-measure a329.
 *(S6 · S)*
+
+### [TD-495] "Kolej Kediaman" / an IKM1-style line naming another agency's institute stops the agency lift - low
+
+**Raised 2026-11-04 at the S6 close (round-14 real-letter probes).** The agency-letterhead lift's closed-world
+condition 4 (`genuineness/offer_agency.closed_world_blocker`) reads "Kolej Kediaman" (a residential college, also
+OCR'd "Ko1ej Kediaman") as a second organisation, and "IKM1 Kuantan" (now read "IKM 1 Kuantan") on a KBS / JTM
+letter as another agency's institute; either line stops the lift. Safe: the letter keeps its BASELINE (pre-S6)
+call, never a new fail. Round 12 blocked the plain spellings the same way; round 14 only made the OCR spellings
+read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
+and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
+Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.

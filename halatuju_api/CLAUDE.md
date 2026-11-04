@@ -217,14 +217,18 @@ Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `do
 - Detail Previous / Next walks the list PAGE you came from (`lib/listNav.ts`, sessionStorage). TD-477: the
   Applications cockpit adopts the same hook after Mobile M6b.
 
-### Offer letters read exactly (separate stream): S1-S5 LIVE; S6 BUILT on offer-read-s1, not pushed
+### Offer letters read exactly (separate stream): S1-S6 LIVE (S6 2026-11-04, main a1d1dca7, api-01250-ldm, web e8e351d9)
 
 Roadmap `docs/plans/2026-11-01-offer-letter-exact-read-roadmap.md` (the older stream notes: `docs/sprint-history.md`).
-S6 = genuineness `MODEL_VERSION` 1.25.0: the pre-S6 call is the BASELINE (`results_doc.baseline_genuineness`);
-`genuineness/offer_rulings.apply_rulings` changes it only by a BLOCK (letterhead private proof) or a LIFT (full proof)
-or rulings 3 / 6, each tagged `[S6 ruling: <tag>]`. A genuineness change re-runs `eval/offer_genuineness_check.py`
-(dev; held-out once; it lists every call that differs from the baseline). Before the push: the lead's
-`offer_s4_dry_run.py --s6` (GO / STOP) and an adversarial review. NEXT: S7 live re-read; S8 keep it exact.
+S6 = genuineness `MODEL_VERSION` 1.25.0 / `VERDICT_ENGINE_VERSION` 2026-11-04.1: the pre-S6 call is the BASELINE
+(`results_doc.baseline_genuineness`); `genuineness/offer_rulings.apply_rulings` changes it only by a BLOCK
+(letterhead private proof), a LIFT (full proof: `tvet_offer` incl. the agency-letterhead lift in
+`offer_agency.py`, `confirmation`, `incidental_company`) or a softening (`printout`, `tvet_slip`), each tagged
+`[S6 ruling: <tag>]`; every S6 word test reads `offer_text.normalise_s6`. A genuineness change re-runs
+`eval/offer_genuineness_check.py` (dev; held-out once; 13 calls differ from the baseline today). **New evasions
+go to TD for S7 unless they block a real public letter** (decisions S6 item 10). Stored statuses have NOT moved.
+- **NEXT = S7 (paid; owner yes):** a live re-read of the 13 S6-changed letters plus the S5 list, and a
+  genuineness re-score of apps 52, 135, 306 and 329. **Then S8:** the keep-exact gate. Open: TD-491..495.
 
 ### Mobile-native arc (separate stream): COMPLETE (M0-M8; M8 live 2026-11-04, main bea7111d, halatuju-web-01079-tv4)
 
