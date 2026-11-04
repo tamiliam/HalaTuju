@@ -92,27 +92,33 @@ class Tables(TestCase):
 
 
 class PageGate(TestCase):
-    """`admits`: today's role rule, OR the Admins table by a key — never instead."""
+    """The union doors (`may_read_org`, `may_do_admin_work`) — v2 keys since T5c P1 (`opens`), answering
+    exactly what T1's role rule (widened to the Admins table by a key) answered."""
 
     @classmethod
     def setUpTestData(cls):
         cls.org = make_org()
 
-    def test_the_gate_never_refuses_what_the_role_rule_admits(self):
-        # Every role × every custom set: whoever today's role list admits is still admitted.
+    def test_the_gate_answers_the_t1_role_rule_for_every_custom_set(self):
+        # Every role × every custom set (unsaved rows: a pure read): T1's rule, restated, still answers.
         for role in ('admin', 'finance', 'qc', 'reviewer', 'org_admin'):
             for keys in _subsets(('review', 'see_all', 'qc', 'spending', 'payments_approve')):
-                a = PartnerAdmin(role=role, permissions=list(keys), is_active=True)   # unsaved: a pure read
-                for roles in (st.ORG_READ_ROLES, st.ADMIN_WORK_ROLES):
-                    if role in roles:
-                        self.assertTrue(st.admits(a, roles=roles, admin_keys_any=st.ADMIN_KEYS), (role, keys))
-                        self.assertTrue(st.admits(a, roles=roles), (role, keys))
+                a = PartnerAdmin(role=role, permissions=list(keys), is_active=True)
+                read = role in ('org_admin', 'admin', 'finance') or st.in_admins(a)
+                work = role in ('org_admin', 'admin')
+                self.assertEqual((st.may_read_org(a), st.may_do_admin_work(a)), (read, work), (role, keys))
+
+    def test_an_unknown_key_raises_and_no_key_opens_nothing(self):
+        boss = make_admin('org_admin', owning_org=self.org)
+        with self.assertRaises(KeyError):
+            st.opens(boss, 'announcements.post')
+        self.assertFalse(st.opens(boss))
+        self.assertFalse(st.opens(None, 'team.view'))
 
     def test_the_key_half_admits_only_the_admins_table(self):
         rohini = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'spending'])
         self.assertTrue(st.may_read_org(rohini))
-        # T1 (conservative): the admin WORK pages write, and no admin key opens them yet.
-        self.assertEqual(st.ADMIN_WORK_KEYS, ())
+        # T1 (conservative), kept by T5c: the admin WORK pages write, and no admin key opens them.
         self.assertFalse(st.may_do_admin_work(rohini))
         # The qc preset holds see_all but is not at the Admins table: it gains nothing.
         qc = make_admin('qc', owning_org=self.org)
@@ -135,20 +141,22 @@ class PageGate(TestCase):
 
     def test_an_action_key_alone_opens_no_admin_work(self):
         # payments_approve / spending are ACTIONS: they open the organisation READ pages (Finance does
-        # today), never the admin-work pages (announcements, sources, …): `ADMIN_WORK_KEYS` is EMPTY
-        # (owner ruling B, 2026-11-03), so no key opens those — only the org_admin / admin roles do.
+        # today), never the admin-work pages (announcements, sources, …) (owner ruling B, 2026-11-03):
+        # no old key aliases to an admin-work v2 key — only the org_admin / admin labels hold them.
         for keys in (['review', 'payments_approve'], ['review', 'spending'], ['review', 'payments_prepare']):
             a = make_admin('reviewer', owning_org=self.org, permissions=keys)
             self.assertTrue(st.may_read_org(a), keys)
             self.assertFalse(st.may_do_admin_work(a), keys)
 
-    def test_a_future_key_opens_a_page_by_being_named(self):
+    def test_a_page_opens_by_its_own_key(self):
         rohini = make_admin('reviewer', owning_org=self.org, permissions=['review', 'see_all', 'spending'])
-        self.assertFalse(st.admits(rohini, roles=('org_admin',)))                         # lead-only
-        self.assertTrue(st.admits(rohini, roles=('org_admin',), admin_keys_any=('spending',)))
+        self.assertTrue(st.opens(rohini, 'sponsors.view'))           # the Admins table's read pages
+        self.assertFalse(st.opens(rohini, 'sponsors.edit'))          # never a write
+        self.assertFalse(st.opens(rohini, 'invitations.edit'))       # lead-only
+        self.assertFalse(st.opens(rohini, 'sponsors.view', 'sponsors.edit'))   # all-of, never any-of
 
     def test_lead_only_gates_are_untouched(self):
-        """Lead-only pages never call `admits` with keys: a person with every team key is still refused."""
+        """Lead-only pages are not on keys yet (T5e): a person with every team key is still refused."""
         from apps.scholarship import surface_gates
         everything = make_admin('admin', owning_org=self.org,
                                 permissions=[k for k in sp.CATALOGUE if k not in sp.LEAD_TIER_ONLY])

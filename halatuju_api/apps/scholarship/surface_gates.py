@@ -14,16 +14,18 @@ from apps.courses import staff_tables
 
 
 def may_read_sponsors(admin):
-    """The Sponsors list (`AdminSponsorListView`): super / org_admin / Admin-General / finance —
-    finance READ-ONLY (role matrix 2026-07-23); qc and reviewer are refused. Team tables T1: also a
-    person at the ADMINS table by an admin key (`staff_tables.may_read_org`)."""
-    return staff_tables.may_read_org(admin)
+    """The Sponsors list (`AdminSponsorListView`), the sponsor detail and the sponsorships list: the v2
+    key `sponsors.view` (Team tables T5c). Its holders are T1's: super / org_admin / Admin-General /
+    finance — finance READ-ONLY (role matrix 2026-07-23) — and a person at the ADMINS table by an admin
+    key; qc and reviewer are refused."""
+    return staff_tables.opens(admin, 'sponsors.view')
 
 
 def may_read_team(admin):
-    """The organisation's People / Reviewers / Invitations screens (`_ReviewersBase._side`). Team tables
-    T1: also a person at the ADMINS table by an admin key (`staff_tables.may_read_org`)."""
-    return staff_tables.may_read_org(admin)
+    """The organisation's People / Reviewers / Invitations screens (`_ReviewersBase._side`): the v2 keys
+    `team.view` AND `invitations.view` (Team tables T5c — one door serves both pages, so it asks both).
+    Holders as T1: super / org_admin / admin / finance, or the ADMINS table by an admin key."""
+    return staff_tables.opens(admin, 'team.view', 'invitations.view')
 
 
 def billing_live():

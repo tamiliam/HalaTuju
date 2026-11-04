@@ -12,8 +12,9 @@ WHAT IS HERE
   answers exactly today's tuple for each shape.
 - `Coverage`    — each shape x each of TODAY's doors, asked of the REAL gate function: a door that opens
   today must be covered by v2 keys in the shape's set. One door is declared unmapped (`UNMAPPED`).
-- `NotYetWritable` / `NotYetAGate` — a v2 key cannot be saved, is dropped on read, and nothing outside
-  the tests imports the v2 module.
+- `NotYetWritable` — a v2 key cannot be saved and is dropped on read.
+- `V2Importers` (T5c, replacing T5a's `NotYetAGate`, lead ruling R6) — only `staff_tables` imports the
+  v2 module, and only the allowlisted door modules decide by v2 keys (`staff_tables.opens`).
 """
 import json
 import os
@@ -336,16 +337,43 @@ class NotYetWritable(TestCase):
         self.assertEqual(set(v2.effective_v2(a)), {'review'})
 
 
-class NotYetAGate(TestCase):
+#: Team tables T5c (lead ruling R6, replacing T5a's `NotYetAGate`): the ONLY module outside the tests that
+#: may import the v2 module. Every door asks `staff_tables.opens`, never v2 directly.
+V2_IMPORTERS = {'courses/staff_tables.py'}
 
-    def test_nothing_outside_the_tests_imports_the_v2_module(self):
-        apps_root = Path(__file__).resolve().parents[2]
-        users = []
-        for path in apps_root.rglob('*.py'):
-            rel = path.relative_to(apps_root).as_posix()
-            if '/tests/' in f'/{rel}' or rel == 'courses/staff_permissions_v2.py':
-                continue
-            if 'staff_permissions_v2' in path.read_text(encoding='utf-8', errors='replace'):
-                users.append(rel)
-        self.assertEqual(users, [], 'T5a: v2 is not a gate yet; T5b-T5f convert the gates')
-        self.assertTrue(os.path.isdir(apps_root))
+#: The modules whose doors decide by v2 keys (`staff_tables.opens(`). It GROWS DOOR BY DOOR: a new door
+#: is added here in the same commit as its parity test (`test_team_tables_t5c_doors`), so an unplanned
+#: conversion fails. T5c P1 (decisions.md "Team tables T5c", the door -> key table).
+V2_DOOR_MODULES = {
+    'scholarship/surface_gates.py',          # sponsors.view; team.view + invitations.view
+    'scholarship/announcements.py',          # announcements.edit
+    'scholarship/surveys.py',                # surveys.edit
+    'scholarship/development.py',            # development.edit
+    'scholarship/mentoring.py',              # mentoring.edit (may_act, so may_assign)
+    'scholarship/mentor_invite.py',          # invitations.edit (may_invite)
+    'scholarship/source_invite.py',          # invitations.edit (may_invite)
+    'scholarship/views_admin/sponsor_terms.py',   # sponsors.edit
+    'scholarship/views_admin/org_emails.py',      # sponsors.edit (sponsor emails)
+}
+
+
+def _app_sources():
+    apps_root = Path(__file__).resolve().parents[2]
+    for path in apps_root.rglob('*.py'):
+        rel = path.relative_to(apps_root).as_posix()
+        if '/tests/' in f'/{rel}' or rel == 'courses/staff_permissions_v2.py':
+            continue
+        yield rel, path.read_text(encoding='utf-8', errors='replace')
+
+
+class V2Importers(TestCase):
+    """R6: v2 became a gate door by door. An import or a door outside these allowlists fails."""
+
+    def test_only_staff_tables_imports_the_v2_module(self):
+        users = {rel for rel, src in _app_sources() if 'staff_permissions_v2' in src}
+        self.assertEqual(users, V2_IMPORTERS, 'a door asks staff_tables.opens, never v2 directly')
+
+    def test_only_the_converted_doors_decide_by_v2_keys(self):
+        doors = {rel for rel, src in _app_sources() if 'staff_tables.opens(' in src}
+        self.assertEqual(doors, V2_DOOR_MODULES, 'a new v2 door needs its parity test and a line here')
+        self.assertTrue(os.path.isdir(Path(__file__).resolve().parents[2]))

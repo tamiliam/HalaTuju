@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Team tables T5c — pages open by keys (branch t5c, not yet live)
+
+decisions.md "Team tables T5c" (lead rulings R1-R6, the door -> key table). No migration, no endpoint, no web change;
+no live access moved.
+
+**P1 — the organisation-read and admin-work doors (server only):**
+- **One page gate, `staff_tables.opens(admin, *v2_keys)`** (all keys held, read through `effective_v2`; an unknown key
+  raises). `staff_tables.admits` and its role / key lists are gone.
+- **Doors on their own key:** Sponsors read `sponsors.view`; People / Reviewers / Invitations `team.view` +
+  `invitations.view`; Announcements `announcements.edit`; Surveys `surveys.edit`; Development `development.edit`;
+  the scholar Mentoring tab (`mentoring.may_act` / `may_assign`) `mentoring.edit`; sponsor terms and sponsor emails
+  `sponsors.edit`; mentor and source invitations `invitations.edit`.
+- **The union doors** `may_read_org` / `may_do_admin_work` now ask every key of `ORG_READ_V2` / `ADMIN_WORK_V2`;
+  still used by Sources, the team roster, the Mentors list, Team -> Emails -> Admin emails and the credit screens
+  (TD-489; the Mentors list needs a lead ruling).
+- **`effective_v2` no longer asks the doors**: the Admins table grants `ORG_READ_V2`, the `admin` label grants
+  `ADMIN_WORK_V2` (same sets as before).
+- An inactive row opens no door (it could not sign in anyway).
+- Tests: new `test_team_tables_t5c_doors.py` (15 doors x 32 shapes against T1's rules, frozen); `NotYetAGate` replaced
+  by `V2Importers` (an allowlist of v2 importers and of v2 door modules); `test_staff_tables.PageGate` rewritten for
+  `opens`. The access matrix runs unchanged against its frozen fixture. New debt: TD-489, TD-490.
+
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.

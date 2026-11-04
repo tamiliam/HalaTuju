@@ -52,10 +52,11 @@ class AnnouncementError(Exception):
 
 def may_post(admin):
     """THE gate for every staff announcement door. A super, an organisation admin, an admin."""
-    # Who may post (owner, 2026-11-01): ONE home since Team tables T1 — `staff_tables.ADMIN_WORK_ROLES`
-    # (org_admin, admin), or the Admins table by an admin-work key. Everybody else is refused.
+    # Who may post (owner, 2026-11-01). Team tables T5c: the v2 key `announcements.edit` (it implies
+    # `.view`; this one door both reads and writes, so it asks the writing key). Holders as T1: super,
+    # org_admin, the `admin` label. Everybody else is refused.
     from apps.courses import staff_tables
-    return staff_tables.may_do_admin_work(admin)
+    return staff_tables.opens(admin, 'announcements.edit')
 
 
 # ── What is live, and to whom ─────────────────────────────────────────────────────────────────────

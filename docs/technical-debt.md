@@ -7670,6 +7670,31 @@ worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team table
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
 
+### [TD-489] Six pages still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on one)
+
+**Raised 2026-11-04 by Team tables T5c P1 (branch t5c).** P1 put the v2 keys behind every door its modules own
+(decisions.md "Team tables T5c"), but these callers still ask a union door — now v2-backed and all-of
+(`staff_tables.may_do_admin_work` = every `ADMIN_WORK_V2` key; `may_read_org` = every `ORG_READ_V2` key), so
+nobody's access moved: **Sources** + the witness override (`views_admin/sources.py` `_sources_admin`, also the
+partner emails via `_SourcesBase`), the **team roster** `admin/admins/` (`courses/views_staff.py` ~421), **Team ->
+Emails -> Admin emails** (`org_emails.AdminTeamAdminEmailsView.may_open`, kept in lockstep with the partner
+emails), the **credit screens** (`views_admin/credits.py` `_credits_admin`, `may_read_org`), and the **Mentors list**
+(`mentor_invite.may_read`). **The Mentors list needs a lead ruling:** the catalogue files it under `team.view`
+(ruling 2), which finance and a person at Admins by a key also hold, so `team.view` would OPEN it to them (today
+admin-work only). Either accept that widening (it matches ruling 2) or give it a key finance does not hold. The
+roster has the same question (`team.view` today = People, which finance reads). **Fix:** sources -> `sources.edit`,
+credits -> `sponsors.view`, roster / Mentors list / Admin emails -> as ruled, each with a line in
+`test_team_tables_t5c_doors` and `V2_DOOR_MODULES`. *(A · M)*
+
+### [TD-490] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+
+**Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
+sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key
+(`<page>.edit`, which implies `.view`). Today nobody holds a `.view` without its `.edit`, so nothing is lost; once
+T5g lets the org admin tick `announcements.view` alone, that person would be refused the page they may read.
+**Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
+*(A · S)*
+
 ### [TD-477] The Applications cockpit to adopt the shared Previous / Next hook after Mobile M6b - low
 
 **Raised 2026-11-03 by Requests list R1.** R1 built ONE Previous / Next for a list's detail pages:

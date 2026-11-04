@@ -24,6 +24,10 @@ THE DERIVATION (decisions.md 2026-11-03, "Team tables T1"):
   Nobody else: a referral `partner`, a `source_partner`, a sponsor, a revoked (inactive) row and an
   unknown role sit in NO table.
 
+Team tables T5c (P1): the page gate is `opens(admin, *v2_keys)` — v2 page keys, read through
+`staff_permissions_v2.effective_v2`. The T1 `admits` (role list, widened by an admin key) is gone; the
+v2 set is DERIVED from the same tables and labels, so no access moved (`test_team_tables_t5c_doors`).
+
 ⚠ THIS IS A LEAF, like `staff_permissions`: it imports nothing from `apps.scholarship`.
 """
 from . import staff_permissions as sp
@@ -87,53 +91,47 @@ def tables(admin):
                  if rule(admin))
 
 
-def admits(admin, *, roles, admin_keys_any=()):
-    """THE PAGE GATE for admin work: may `admin` open a page whose rule is `roles` (the preset labels
-    that open it today) and, for somebody at the Admins table, `admin_keys_any` (holding ANY opens it)?
+def opens(admin, *keys):
+    """THE PAGE GATE since Team tables T5c (P1): does `admin` hold EVERY v2 page key in `keys`
+    (`staff_permissions_v2.effective_v2`, which reads the stored keys through the aliases, the Admins
+    table and the role label — no migration)? A super holds every key. An inactive row holds none (the
+    sign-in already refuses it: `views_admin.get_admin` reads `is_active=True`). The org fence stays the
+    caller's (`_org_scoped` / `_org_allows`), untouched.
 
-    ⚠ ALWAYS A UNION WITH TODAY'S ROLE RULE, so nobody can lose a page they have; and the key half
-    admits ONLY a person at the Admins table, through keys they already hold. A super passes, as
-    `has_role` passes a super. The org fence is the caller's (`_org_scoped` / `_org_allows`), untouched.
-
-    A future admin key (`team_view`, `requests`, …) opens a page by being added to that page's
-    `admin_keys_any` — and to the catalogue — never by another rewrite."""
-    if admin is None:
+    ⚠ An unknown key RAISES (`v2_order`): a misspelt door must fail loudly, never stay shut quietly.
+    Each door names its OWN page key (decisions.md "Team tables T5c", the door -> key table); the
+    parity test `test_team_tables_t5c_doors` proves every door answers what its T1 role rule answered."""
+    # Imported here, not at the top: `staff_permissions_v2` imports this module (a leaf pair, no cycle
+    # at import time). Neither imports anything from `apps.scholarship`.
+    from . import staff_permissions_v2 as v2
+    wanted = v2.v2_order(keys)
+    if admin is None or not wanted:
         return False
-    if admin.is_super or admin.role in roles:
-        return True
-    if not admin_keys_any or not in_admins(admin):
-        return False
-    held = admin_keys(admin)
-    return any(k in held for k in admin_keys_any)
+    held = set(v2.effective_v2(admin))
+    return all(k in held for k in wanted)
 
 
-# ── The page gates (T1). Each is today's role rule, widened ONLY to the Admins table by a key. ────────
-
-#: The organisation pages an Admin READS: Organisation, Invitations, People, Sponsors (+ the sponsor
-#: detail, the sponsorships list, the wallet-credit screens). Today super / org_admin / admin / finance;
-#: any admin key opens them for a person at the Admins table — which reproduces both presets.
-ORG_READ_ROLES = ('org_admin', 'admin', 'finance')
-ORG_READ_KEYS = ADMIN_KEYS
+# ── The two UNION gates (T1), now read from v2 keys (T5c P1). ─────────────────────────────────────────
+# Each opens only for someone holding EVERY key of its page set — today exactly the people the T1 role
+# rule opened (org_admin / admin / finance or the Admins table by a key; org_admin / admin). The pages
+# that have their own door (`surface_gates`, `announcements`, `surveys`, `development`, `mentoring`, the
+# sponsor terms and sponsor emails) no longer come through here; the callers still here (Sources, the
+# team roster `admin/admins/`, the Mentors list, Team -> Emails -> Admin emails, the credit screens) move
+# to their own keys in a later phase. ⚠ All-of, never any-of: holding ONE page key must never open a
+# union of pages.
 
 
 def may_read_org(admin):
-    return admits(admin, roles=ORG_READ_ROLES, admin_keys_any=ORG_READ_KEYS)
-
-
-#: The organisation work an Admin DOES, never finance: Sources (manage) and the witness override, the
-#: Mentors page (read), the team roster (`admin/admins/`), Announcements, Surveys, Development, the sponsor
-#: terms and the sponsor / partner emails. Today super / org_admin / admin.
-#: ⚠ `ADMIN_WORK_KEYS` IS EMPTY ON PURPOSE (T1, conservative reading — decisions.md 2026-11-03): these
-#: pages WRITE, and the only admin key that separates the `admin` preset from `finance` is `see_all`, a
-#: READ key. Opening writes on a read key would make "see everything" mean "post, edit and assign", so a
-#: person seated at the Admins table by keys does not reach them yet. A future key (e.g. `announcements`,
-#: `sources`) opens them by being named here — `('see_all',)` would reproduce the presets exactly too.
-ADMIN_WORK_ROLES = ('org_admin', 'admin')   # THE one home (announcements / surveys / development read it)
-ADMIN_WORK_KEYS = ()
+    """The organisation READ pages (Organisation, Invitations, People, Sponsors + credits ledger):
+    `staff_permissions_v2.ORG_READ_V2`, every one held."""
+    from . import staff_permissions_v2 as v2
+    return opens(admin, *v2.ORG_READ_V2)
 
 
 def may_do_admin_work(admin):
-    return admits(admin, roles=ADMIN_WORK_ROLES, admin_keys_any=ADMIN_WORK_KEYS)
+    """The organisation WORK pages, never finance: `staff_permissions_v2.ADMIN_WORK_V2`, every one held."""
+    from . import staff_permissions_v2 as v2
+    return opens(admin, *v2.ADMIN_WORK_V2)
 
 
 # ── Team tables T2: what an invitation STARTS a person at (owner ruling 4). ──────────────────────────
