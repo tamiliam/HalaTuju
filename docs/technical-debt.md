@@ -7674,7 +7674,7 @@ worked the case. The T5b inventory of QC-outcome doors (decisions.md "Team table
 owner):** refuse a close at `interviewed` (QC decides first), or run `qc_separation.refusal` for a non-super closer
 there. *(A · S)*
 
-### [TD-496] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
+### [TD-497] Four doors still open through the admin-work / org-read UNION doors, not their own v2 key - medium (lead's call on two)
 
 **Raised 2026-11-04 by Team tables T5c P1 (branch t5c); P2 converted two of them the same day.** P1 put the v2 keys
 behind every door its modules own (decisions.md "Team tables T5c"), but some callers still ask a union door — now
@@ -7696,7 +7696,7 @@ Either accept that widening (it matches ruling 2) or give it a key finance does 
 question (`team.view` today = People, which finance reads). **Fix:** roster / Mentors list / Admin emails -> as
 ruled; credit writes -> T5d; each with a line in `test_team_tables_t5c_doors` and `V2_DOOR_MODULES`. *(A · M)*
 
-### [TD-495] The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
+### [TD-496] The graduation-messages list opens by role label; no v2 key reproduces its holders - low (lead ruling)
 
 **Raised 2026-11-04 by Team tables T5c P2 (lead ruling R2).** `AdminGraduationMessageListView`
 (`views_admin/graduation.py` ~31) admits `is_super or role in ('reviewer', 'admin')` — NOT the org admin, not
@@ -7707,7 +7707,7 @@ gain it); every Engagement key moves 10 (all org-admin shapes gain; every review
 moves 10. Not converted. **Fix (lead's call):** either accept a move (e.g. `review`, matching the moderation door
 `_require_reviewer` beside it), or retire the list if no page calls it. *(A · S)*
 
-### [TD-497] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
+### [TD-498] Each converted Engagement / sponsor door asks the `.edit` key for reading too - low (before T5g)
 
 **Raised 2026-11-04 by Team tables T5c P1.** Announcements, Surveys, Development, the scholar Mentoring tab, the
 sponsor terms and the sponsor emails each have ONE door that both reads and writes, so P1 asks the writing key
@@ -7716,7 +7716,7 @@ T5g lets the org admin tick `announcements.view` alone, that person would be ref
 **Fix (before T5g):** split each door's GET onto `<page>.view` and its writes onto `<page>.edit`, with parity tests.
 *(A · S)*
 
-### [TD-498] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
+### [TD-499] The web permission editor still enforces the retired `qc` → `see_all` dependency - low (before T5g)
 
 **Raised 2026-11-04 by the Mobile M8 close-out code review (triaged by the T5c lead; T5b behaviour, NOT fixed).**
 Since T5b the server says `qc` IMPLIES `see_all` (`staff_permissions.IMPLIES`; the save door accepts `['qc']` and

@@ -33,7 +33,7 @@ export function opensDoorOr(role: Served | null | undefined, door: DoorName, rol
  * `MENTORS_READ_ROLES`; no key yet). The Team
  * page itself is wider (finance and a key-seated admin read it), so the tab carries this rule of its own.
  * Visibility only: `GET admin/mentors/` and `GET admin/mentors/<id>/` are the fence.
- * ⚠ T5c: NOT on a door. The server keeps `mentor_invite.may_read` on the union door `admin_work` (TD-496, a
+ * ⚠ T5c: NOT on a door. The server keeps `mentor_invite.may_read` on the union door `admin_work` (TD-497, a
  * lead ruling is due), so this stays on its roles until that door moves.
  */
 export const MENTORS_READ_ROLES = ['super', 'org_admin', 'admin'] as const

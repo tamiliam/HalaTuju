@@ -253,7 +253,7 @@ cancel-reopen), TD-487 and TD-488 (owner's calls). Test: `test_td481_awaiting_qc
 `staff_tables.opens(admin, *keys)` (all held, via `effective_v2`; door -> key table in decisions.md "Team tables
 T5c"). **A new or converted door** asks `staff_tables.opens` (never imports v2: only `staff_tables` may,
 `V2Importers`), joins `V2_DOOR_MODULES`, and gets a parity line in `test_team_tables_t5c_doors`. Sources, the roster,
-the Mentors list, Admin emails and credits are still on the union doors (TD-496).
+the Mentors list, Admin emails and credits are still on the union doors (TD-497).
 
 ### ⚠ STATE AT 2026-11-03 — TEAM TABLES T5a LIVE (main 55de0610, api-01245-mrb; no migration, no endpoint, no web change)
 

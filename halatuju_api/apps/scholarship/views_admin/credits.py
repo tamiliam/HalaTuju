@@ -36,7 +36,7 @@ class _CreditsBase(_AdminBase):
     # Team tables T5c (P2): the READ screen (the ledger, GET) asks the v2 key `sponsors.view` (`may_read`;
     # same holders, parity test `test_team_tables_t5c_doors`). The three WRITE doors — record (POST
     # credits/), sign, cancel — move money and stay on the union door `may_read_org` until T5d (money),
-    # TD-496.
+    # TD-497.
 
     @staticmethod
     def may_read(admin):

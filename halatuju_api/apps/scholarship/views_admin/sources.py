@@ -179,7 +179,7 @@ class _SourcesBase(_AdminBase):
 
     Team tables T5c (P2): the door asks the v2 key `sources.edit` (`may_open`). One gate reads AND
     writes here (list + PATCH share it), so it asks `.edit`, which implies `.view` (P1's convention,
-    TD-497 splits it). Same holders as T1's `may_do_admin_work`: super, org_admin, the `admin` label;
+    TD-498 splits it). Same holders as T1's `may_do_admin_work`: super, org_admin, the `admin` label;
     finance and Admins-by-key refused (parity test `test_team_tables_t5c_doors`). Every subclass rides
     this one door: Sources, Partner emails (`org_emails.py`) and the witness override (`lifecycle.py`)."""
 
