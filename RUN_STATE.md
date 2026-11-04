@@ -70,6 +70,11 @@ Lead rulings:
 - **TD-497: Mentors list key ruling.**
 - **TD-496: graduation list** (owner's call).
 - **TD-499: finance + QC pairing question** (owner's call).
+- **Invite gift tag (owner raised 2026-11-04):** no invite takes a gift; NULL gift = "every gift"; the reviewer gift
+  only narrows offered cases, not a fence (`reviewers.py:98-103`); mentors have no gift (from mentees); the gift is set
+  later via `POST admin/reviewers/<pk>/programme/`, which has no web caller. OWNER RULED "b" 2026-11-04: fix AFTER
+  v3.1.0 as the FIRST fix sprint (before other audit fixes): reviewer invite must choose "one gift" or "every gift";
+  admins + mentors unchanged; permission change -> Opus build, adversarial review, owner phone check. TD-501.
 
 ## Open risks
 - BEFORE THE FIRST PUSH: Cockpit session pushed TD-473 (479b3d1e) to main on 2026-11-04. Check its build is GREEN,
@@ -104,6 +109,9 @@ Lead rulings:
   door for the landing (OWNER RULED "a" 2026-11-04: always-open page, no v2 key; exception written into
   halatuju_api/CLAUDE.md by the lead, uncommitted — commit with S2c), stale comments, archived reviewer card may open the general overview. S2c (Sonnet) fixing all + CHANGELOG
   + TD-500. Then: re-review S2c, full gates (Haiku), phone check, deploy ask.
+- S2c DONE (2e0e6b98); origin/main (TD-473) merged 7633b618; fresh review PASS (2 lows, cosmetic). FULL GATES GREEN
+  2026-11-04: pytest 12402 passed / 3 skipped (stale-classifications OK under -n auto); npm run gates pass (jest
+  415/6487); bundle median 144.706 (room 0.3); mobile-check 781 passed. NEXT: owner phone check + deploy yes, then push.
 - Updated phone-check summary (S2 review): + mentors tapping a programme see just those students; + reviewer
   "not found" also by intake year; + programme cards (New, Change code, Delete) moved off Organisation Overview onto
   Programmes, Overview keeps its counts; super still opens on the platform page.
