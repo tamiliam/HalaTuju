@@ -101,7 +101,7 @@
       reads the next line's first word. The agency stands first on the letterhead (crest / government / junk lines,
       up to three one-token fragments, a KEPADA block above it; address / contact / division / agency lines below
       it to the first postcode); WAKIL / EJEN / AGEN = no lift. Known gap: a private name with no organisation word
-      (TD-483).
+      (TD-491).
    `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
    `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
    `Round10AgencyLetterhead`.

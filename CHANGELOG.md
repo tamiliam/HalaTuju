@@ -153,7 +153,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   institution's OWN division line (BAHAGIAN / PEJABAT / UNIT / SEKSYEN / JABATAN / PUSAT / DIVISION / OFFICE /
   DEPARTMENT / CENTRE FOR, naming no company, private body or other institution) or a short crest / motto line
   (at most two words, no institution noun, company or digit). a188 / a284 / a123 lift again (13 tagged changes).
-  Accepted gap TD-482: a two-word private name with no institution noun passes as a crest line.
+  Accepted gap TD-490: a two-word private name with no institution noun passes as a crest line.
 - **The agency lift's condition 4 made CLOSED-WORLD (owner: app 329 green; lead's rulings 2026-11-04; class
   `Round10AgencyClosedWorld`):** new `genuineness/offer_agency.py` (the round-11 "word after the noun" test is
   deleted). Allowed spans: the institute with its catalogued campus words (the API's TVET catalogue:
@@ -162,7 +162,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   bank / addressee lines; anything else that is an organisation word blocks (bare lowercase generic nouns
   excepted); operator phrases, other agencies' full names and acronyms, glued nouns, a line-end noun with a name
   on the next line all block; the agency first on the letterhead, name lines below it block, WAKIL / EJEN / AGEN
-  block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-483.
+  block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-491.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

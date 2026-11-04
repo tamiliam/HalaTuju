@@ -652,7 +652,7 @@ class Round10M4Confirmations(SimpleTestCase):
                 self.assertEqual(self._kind(head), '')
 
     def test_a_two_word_private_name_still_passes_as_a_short_line(self):
-        """TD-482 (Medium, accepted): a one- or two-word private name with no institution noun reads as a crest /
+        """TD-490 (Medium, accepted): a one- or two-word private name with no institution noun reads as a crest /
         motto line; a known-motto list would drop a123, a real Form-6 confirmation."""
         self.assertEqual(self._kind('MERCU JAYA\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI'),
                          'confirmation_polytechnic')
@@ -797,6 +797,6 @@ class Round10AgencyClosedWorld(SimpleTestCase):
         self.assertFalse(self._lifted(_ag(_M, venue='IKM Mercu')))
 
     def test_a_private_name_with_no_organisation_word_is_a_known_gap(self):
-        """TD-483 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
+        """TD-491 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
         self.assertTrue(self._lifted(_ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
                                          extra='Latihan industri di Mercu Engineering Works.\n')))

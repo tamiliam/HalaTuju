@@ -7723,7 +7723,7 @@ shipped R1's and T3's web). Neither sprint touched the apply page. The pattern m
 waits for one thing and asserts on another, exposed by the slower gate machine). **Fix:** read which assertion failed
 from the build log, find the async read it depends on, wait for THAT, and prove it by delaying the mock (as was done for
 `ScholarshipDocuments.test.tsx`). *(T · S)*
-### [TD-481] A scanned multi-page offer is genuineness-scored on page 1 only - medium
+### [TD-489] A scanned multi-page offer is genuineness-scored on page 1 only - medium
 
 **Raised 2026-11-03 by the offer exact-read S6 measurement.** Production scores an offer's genuineness on the OCR
 text it holds: a digital PDF's whole text layer, but for a photo or a SCANNED PDF only the Vision read of page 1
@@ -7733,7 +7733,7 @@ printout `suspect` (ruling 3: never a fail), not genuine. **Fix:** score the off
 extra page (~US$0.0015), so only when page 1 does not band genuine and the file has more pages; measure on the
 corpus first (owner's yes: a paid path). *(B · M)*
 
-### [TD-482] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
+### [TD-490] A confirmation letterhead may carry a two-word non-institution line above a closed-list name - medium
 
 **Raised 2026-11-04 by the S6 round-10 review (lead's ruling on M4 for confirmations).** A confirmation of studies
 lifts only when its polytechnic / UMS / Form-6 name comes first on the letterhead, after crest, government, address,
@@ -7745,7 +7745,7 @@ lines (a123, a Form-6 confirmation) uses words outside any list we hold, so tigh
 letter. **Fix:** collect the crest / motto lines of real confirmations as the corpus grows, then accept only a listed
 motto. *(S6 · S)*
 
-### [TD-483] The agency-letterhead lift does not catch a private name with no organisation word - medium
+### [TD-491] The agency-letterhead lift does not catch a private name with no organisation word - medium
 
 **Raised 2026-11-04 by the S6 round-10 review (lead's ruling 7).** The agency lift's closed-world condition 4
 (`genuineness/offer_agency.closed_world_blocker`) blocks every organisation word left on a body line once the

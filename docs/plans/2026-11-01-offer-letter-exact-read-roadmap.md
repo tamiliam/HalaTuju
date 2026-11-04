@@ -633,7 +633,7 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   `offer_genuineness_check.py` dev 197 / 197, held-out 90 / 90; the gate blocks only not_offer_letter; the ladder
   counts only Name / IC mismatch (`VERDICT_ENGINE_VERSION` 2026-11-03.1); chips to the owner's table; student
   notes en / ms / ta; confirmation letters never write a pick; `offer_s4_dry_run.py --s6` for the lead (GO /
-  STOP). TD-481 (page-1-only scoring). See CHANGELOG. Stored statuses move only at S7's re-score.
+  STOP). TD-489 (page-1-only scoring). See CHANGELOG. Stored statuses move only at S7's re-score.
 - **Adversarial review (2026-11-03): 7 High, 2 Medium, 4 Low — all fixed in new commits, each with a synthetic
   regression (`tests/test_offer_s6_review.py`).** Dev stays 197 / 197 with exactly the 14 ruled moves.
   - Q2's genuine is narrower: an INSTITUTE (IKBN / IKTBN / IKM / KKTM / Kolej MARA / Kolej Profesional MARA / ILP /
@@ -816,12 +816,12 @@ other layouts (a 2027 template) — conservative None remains the default. (f) L
   2026-11-04):** yes — its own division line (no company / private body / other institution on it) or a short
   crest / motto line (≤ 2 words, no institution noun / company / digit). Built (`_own_division_or_crest`); the three
   lift again. The r10 "MERCU (no noun) above poly" probe still lifts — a known-motto list would drop a123 — so it is
-  TD-482 (Medium).
+  TD-490 (Medium).
 - **Owner ruling 2026-11-04: app 329 must be green — LIFT B stays, condition 4 made CLOSED-WORLD** (lead's rulings
   1-7; `genuineness/offer_agency.py`). Campus words from the API's TVET catalogue (HELD + the UP_TVET snapshots,
   by family: 66 JTM / 52 KBS / 284 MARA words). MEASURED: a228 d3465 / d3466 and a329 lift, the clean MARA / KBS
   / JTM controls lift, every r10 agency probe stays out except "Mercu Engineering Works" (no organisation word;
-  TD-483, pinned). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
+  TD-491, pinned). 13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - **Owner rulings 2026-11-01 (from the S2 offer check) - what the genuineness status MEANS:**
   1. `not_offer_letter` = a FAIL for the bursary. `suspect` = we are not sure (a person decides).
   2. An offer from a private college (IPTS), or from a public university's private wing (e.g. UTM SPACE), is
