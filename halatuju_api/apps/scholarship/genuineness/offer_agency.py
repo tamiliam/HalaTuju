@@ -19,7 +19,7 @@ ALLOWED spans are taken out, holds NO organisation word at all — wherever it s
 The campus words come from the API's own TVET catalogue — `apps.courses.tvet_institutions.HELD` and the UP_TVET
 catalogue snapshots `data/tvet/uptvet_F1_source.json` / `uptvet_F2_source.json` (Bumi coverage F1 / F2), by
 provider family (`apps.courses.tvet_families.family_of`) — plus the states and KAMPUS / CAWANGAN. Pure.
-KNOWN GAP (TD-491): a private name with NO organisation word ("Mercu Engineering Works") is not caught.
+KNOWN GAP (TD-493): a private name with NO organisation word ("Mercu Engineering Works") is not caught.
 """
 import functools
 import json

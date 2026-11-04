@@ -652,7 +652,7 @@ class Round10M4Confirmations(SimpleTestCase):
                 self.assertEqual(self._kind(head), '')
 
     def test_a_two_word_private_name_still_passes_as_a_short_line(self):
-        """TD-490 (Medium, accepted): a one- or two-word private name with no institution noun reads as a crest /
+        """TD-492 (Medium, accepted): a one- or two-word private name with no institution noun reads as a crest /
         motto line; a known-motto list would drop a123, a real Form-6 confirmation."""
         self.assertEqual(self._kind('MERCU JAYA\nPOLITEKNIK CONTOH\nKEMENTERIAN PENDIDIKAN TINGGI'),
                          'confirmation_polytechnic')
@@ -671,7 +671,7 @@ def _ag(head, **kw):
 #: The r10 probes of the agency lift that must stay out (invented text).
 ROUND10_AGENCY_NEVER_LIFTED = {
     'Kolej mercu (lowercase name)': _ag(_M, extra='Latihan amali di Kolej mercu.\n'),
-    # ("akademi mercu" and "pusat latihan mercu", all-lowercase names: the TD-491 gap, pinned in Round11)
+    # ("akademi mercu" and "pusat latihan mercu", all-lowercase names: the TD-493 gap, pinned in Round11)
     'Mercu Skills Academy (name before the noun)': _ag(_M, extra='Pengendali kursus : Mercu Skills Academy\n'),
     'Mercu Training Centre': _ag(_M, extra='Pengendali kursus : Mercu Training Centre\n'),
     'Mercu Jaya Enterprise': _ag(_M, extra='Pengendali kursus : Mercu Jaya Enterprise\n'),
@@ -798,7 +798,7 @@ class Round10AgencyClosedWorld(SimpleTestCase):
         self.assertFalse(self._lifted(_ag(_M, venue='IKM Mercu')))
 
     def test_a_private_name_with_no_organisation_word_is_a_known_gap(self):
-        """TD-491 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
+        """TD-493 (Medium, accepted): "Mercu Engineering Works" names no organisation word."""
         self.assertTrue(self._lifted(_ag('JABATAN TENAGA MANUSIA', venue='ILP Kuantan',
                                          extra='Latihan industri di Mercu Engineering Works.\n')))
 
@@ -925,7 +925,7 @@ class Round11(SimpleTestCase):
         self.assertEqual(normalise_s6('Kolèj Ｋｏｌｅｊ Kоlej Ko­lej Ko​lej'), 'Kolej Kolej Kolej Kolej Kolej')
 
     def test_an_all_lowercase_name_is_a_known_gap(self):
-        """TD-491 (accepted): a name in all-lowercase OCR is not read as a name."""
+        """TD-493 (accepted): a name in all-lowercase OCR is not read as a name."""
         self.assertTrue(self._lifted(_a11(_M, extra='latihan di kolej\nmercu jaya\n')))
         self.assertTrue(self._lifted(_a11(_M, venue='IKM Kuantan mercu jaya')))
         self.assertTrue(self._lifted(_a11(_M, extra='Pengendali : akademi mercu\n')))
@@ -1064,3 +1064,145 @@ class Round12(SimpleTestCase):
                      _a11(_M, extra='latihan di kolej sila hubungi pihak Mercu Jaya.\n')):
             with self.subTest(text=text.splitlines()[0]):
                 self.assertIn(ruling_of(self._out(text)), LIFTS)
+
+
+# ── Review round 13 (2026-11-04, the last check before the ship): digits, names inside glued tokens, affixes ──
+def _b13(s, head=_M, **kw):
+    return _a11(head, extra=s + '\n', **kw)
+
+
+ROUND13_NEVER_LIFTED = {
+    'IKMMercuAcademy': _b13('Latihan amali di IKMMercuAcademy.'),
+    'IKMMERCUACADEMY': _b13('Latihan amali di IKMMERCUACADEMY.'),
+    'MaraMercuAcademy': _b13('Latihan amali di MaraMercuAcademy.'),
+    'MercuAcademyIKM': _b13('Latihan amali di MercuAcademyIKM.'),
+    'SamaraAcademy': _b13('Latihan amali di SamaraAcademy.'),
+    'AMARACOLLEGE': _b13('Latihan amali di AMARACOLLEGE.'),
+    'Mercu-Academy': _b13('Latihan amali di Mercu-Academy.'),
+    'Mercu.Academy': _b13('Latihan amali di Mercu.Academy.'),
+    'Mercu/Academy': _b13('Latihan amali di Mercu/Academy.'),
+    'Mercu_Academy': _b13('Latihan amali di Mercu_Academy.'),
+    'Mercu2Academy': _b13('Latihan amali di Mercu2Academy.'),
+    'MercuAcademy2u': _b13('Latihan amali di MercuAcademy2u.'),
+    'Academy360': _b13('Latihan amali di Academy360 Kuantan.'),
+    'Akademi21 Mercu': _b13('Latihan amali di Akademi21 Mercu.'),
+    'Skills360': _b13('Latihan amali di Skills360 Kuantan.'),
+    'Edu360': _b13('Latihan amali di Edu360 Kuantan.'),
+    'EduPrima': _b13('Latihan amali di EduPrima Kuantan.'),
+    'SkillsPrima': _b13('Latihan amali di SkillsPrima Kuantan.'),
+    'TrainingMercu': _b13('Latihan amali di TrainingMercu Kuantan.'),
+    'TuisyenMercu': _b13('Latihan amali di TuisyenMercu Kuantan.'),
+    'MercuAcademyKuantan': _b13('Latihan amali di MercuAcademyKuantan.'),
+    'MERCUACADEMYSB': _b13('Latihan amali di MERCUACADEMYSB.'),
+    'MercuAcademy(M)': _b13('Latihan amali di MercuAcademy(M).'),
+    'K0LEJMERCU': _b13('Latihan amali di K0LEJMERCU.'),
+    'Mercu3Academy': _b13('Latihan amali di Mercu3Academy.'),
+    'MercuAcad3my': _b13('Latihan amali di MercuAcad3my.'),
+    'Mercu Acad3my': _b13('Latihan amali di Mercu Acad3my.'),
+    'Mercu Ko1ej': _b13('Latihan amali di Mercu Ko1ej.'),
+    'Mercu Akad3mi': _b13('Latihan amali di Mercu Akad3mi.'),
+    'letterhead MercuAcademy': _a11('MercuAcademy\n' + _M, addr=_TM),
+    'letterhead Mercu2Academy': _a11('Mercu2Academy\n' + _M, addr=_TM),
+    'letterhead MERCU-ACADEMY': _a11('MERCU-ACADEMY\n' + _M, addr=_TM),
+    'letterhead IKMMERCUACADEMY': _a11('IKMMERCUACADEMY\n' + _M, addr=_TM),
+    'letterhead MERCU1ACADEMY': _a11('MERCU1ACADEMY\n' + _M, addr=_TM),
+    'KBS: IKBNMercuAcademy': _a11(_K, venue='IKBN Pekan', extra='Latihan di IKBNMercuAcademy.\n'),
+    'JTM: ADTECMercuCollege': _a11(_J, venue='ADTEC Kulim', extra='Latihan di ADTECMercuCollege.\n'),
+    'MaraSkills': _b13('Latihan amali di MaraSkills Kuantan.'),
+    'MaraEdu': _b13('Latihan amali di MaraEdu Kuantan.'),
+    'IKMSkills': _b13('Latihan amali di IKMSkills Kuantan.'),
+    'KBS: KBSAcademy': _a11(_K, venue='IKBN Pekan', extra='Latihan amali di KBSAcademy Pekan.\n'),
+    'PermataMaraCollege': _b13('Latihan amali di PermataMaraCollege.'),
+    'MARASKILLS caps': _b13('Latihan amali di MARASKILLS KUANTAN.'),
+    'letterhead MaraSkills': _a11('MaraSkills\n' + _M),
+    'MaraSkills Academy': _b13('Latihan amali di MaraSkills Academy.'),
+    'letterhead SKILLS360': _a11('SKILLS360\n' + _M),
+    'Edu360 fees': _b13('Yuran dibayar kepada Edu360 Kuantan.'),
+    'Akademi21 classes': _b13('Kelas tambahan di Akademi21 Kuantan.'),
+    'KOLEJ21': _b13('Tempat latihan : KOLEJ21 KUANTAN'),
+    'Mercu Academy2': _b13('Latihan di Mercu Academy2.'),
+    'institute lift: AKADEMI21 on line 2': _a11(_IKBN11 + '\nAKADEMI21', venue='IKBN Pekan'),
+    'institute lift: SKILLS360 on line 2': _a11(_IKBN11 + '\nSKILLS360', venue='IKBN Pekan'),
+    'institute lift: MERCU ACAD3MY': _a11(_IKBN11 + '\nMERCU ACAD3MY', venue='IKBN Pekan'),
+    'institute lift: MERCUACADEMY2U': _a11(_IKBN11 + '\nMERCUACADEMY2U', venue='IKBN Pekan'),
+    'institute lift: SAMARAACADEMY': _a11(_IKBN11 + '\nSAMARAACADEMY', venue='IKBN Pekan'),
+    'institute lift: IKBNSKILLS': _a11(_IKBN11 + '\nIKBNSKILLS', venue='IKBN Pekan'),
+}
+
+
+def _c13(head, extra='', addr='Jalan Contoh, 88400 Kota Kinabalu\n'):
+    return (f'{head}\n{addr}Tel : 088-000000\nRujukan : UMS/600-1/2\nTarikh : 1 Jun 2026\n'
+            'KEPADA SESIAPA YANG BERKENAAN\nPENGESAHAN PELAJAR\nDengan ini disahkan bahawa:\nNama : Ali bin Abu\n'
+            'No. Kad Pengenalan : 080808-10-5566\nProgram : Ijazah Sarjana Muda Contoh\nSemester : 3\n'
+            f'Sesi : 2026/2027\n{extra}Sekian, terima kasih.\nYang benar,\nPENGARAH\n')
+
+
+#: Real public pages carrying real words the glued test must never read as a name.
+ROUND13_PUBLIC_STILL_LIFT = {
+    'UMS confirmation': _c13('UNIVERSITI MALAYSIA SABAH'),
+    'UMS, a Terpusat line': _c13('UNIVERSITI MALAYSIA SABAH\nSistem Kemasukan Terpusat'),
+    'UMS, an Institutional motto': _c13('UNIVERSITI MALAYSIA SABAH\nInstitutional Excellence Since 1994'),
+    'UMS, terpusat in the body': _c13('UNIVERSITI MALAYSIA SABAH', extra='Pendaftaran secara terpusat.\n'),
+    'MARA offer, berpusat': _b13('Pendaftaran pelajar dibuat secara berpusat di dewan utama.'),
+    'MARA offer, prasekolah': _b13('Sila bawa sijil prasekolah dan sekolah rendah.'),
+    'KBS offer, prauniversiti': _a11(_K, venue='IKBN Pekan', extra='Calon lepasan prauniversiti dialu-alukan.\n'),
+    'UMS, Bahagian Kemasukan Terpusat': _c13('UNIVERSITI MALAYSIA SABAH\nBahagian Kemasukan Terpusat'),
+    'UMS, Jalan Intrakampus': _c13('UNIVERSITI MALAYSIA SABAH', addr='Jalan Intrakampus, 88400 Kota Kinabalu\n'),
+}
+
+
+class Round13(SimpleTestCase):
+    def _ruling(self, text):
+        return ruling_of(signature_genuineness(text, doc_type='offer_letter'))
+
+    def test_every_r13_probe_stays_out(self):
+        for name, text in ROUND13_NEVER_LIFTED.items():
+            with self.subTest(name):
+                self.assertNotIn(self._ruling(text), LIFTS)
+
+    def test_real_words_on_public_pages_still_lift(self):
+        for name, text in ROUND13_PUBLIC_STILL_LIFT.items():
+            with self.subTest(name):
+                self.assertIn(self._ruling(text), LIFTS)
+
+    def test_the_normaliser_reads_digits(self):
+        from apps.scholarship.genuineness.offer_text import normalise_s6
+        self.assertEqual(normalise_s6('AKADEMI21 Mercu2Academy K0LEJ Ko1ej ACAD3MY 080808-10-5566'),
+                         'AKADEMI 21 Mercu 2 Academy KOLEJ Kolej ACADEMY 080808-10-5566')
+
+    def test_the_common_word_list_never_flags(self):
+        """The reviewer's 175 common words (Malay affixes, English compounds) read as no glued name."""
+        from apps.scholarship.genuineness.offer_text import glued_org
+        words = ('BERPUSAT TERPUSAT BERSEKOLAH PERSEKOLAHAN SCHOOLING PRESCHOOL HOMESCHOOL INSTITUTIONAL '
+                 'INSTITUSIONAL UNIVERSITINYA MAKTABNYA YAYASANNYA SYARIKATNYA DISSOLUTION BIOTECH FINTECH INFOTECH '
+                 'HITECH EDTECH AGROTECH SHAREHOLDING MULTISKILLS SOFTSKILLS UPSKILLING RETRAINING SELFSERVICE '
+                 'EPICENTRE MISADVENTURE SUBGROUP UNLIMITED ELEARNING COEDUCATION BERKOLEJ BERINSTITUSI SEKOLAHKAN '
+                 'PERSYARIKATAN BERKAMPUS INTRAKAMPUS ANTARABANGSA SCHOOLTEACHER COLLEGEWIDE HIGHSCHOOL '
+                 'PRIMARYSCHOOL SUMMERSCHOOL KINDERGARTEN WORKSKILLS LIFESKILLS MEGACORP HIGHTECH NANOTECH '
+                 'ANTARAKOLEJ PRAUNIVERSITI PRASEKOLAH PASCAUNIVERSITI SEKOLAHSEKOLAH DATACENTRE CALLCENTRE '
+                 'KEYHOLDINGS LANDHOLDING BERMAKTAB KOMUNITIKOLEJ ROMANTECH PERSEKOLAHANNYA KELASTUISYEN HUBUNGI '
+                 'HUBUNGAN INCLUDE TECHNICAL SCHEDULE WITHHOLDING CONSTRAINING SECONDARYSCHOOL TEACHERTRAINING')
+        self.assertEqual([w for w in words.split() if glued_org(w)], [])
+
+    def test_a_closed_list_name_inside_a_token_is_tested_on_the_rest(self):
+        from apps.scholarship.genuineness.offer_text import glued_org
+        for w in ('MARASKILLS', 'IKMSKILLS', 'SAMARAACADEMY', 'KBSACADEMY', 'ADTECMERCUCOLLEGE'):
+            with self.subTest(w):
+                self.assertTrue(glued_org(w))
+        self.assertFalse(glued_org('UNIVERSITIMALAYSIASABAH'))
+
+    def test_the_accepted_gaps_after_the_stop_rule(self):
+        """Owner's stop rule (decisions S6 item 10): these still lift and are on the TD list for S7 —
+        TD-493 (an OCR-misread noun, a lowercase name, a short brand on the institute's own letter) and TD-494
+        (a descriptor phrase that hides a company: "Technical Solutions", "Teknikal Vokasional Solutions")."""
+        gaps = {
+            'TD-493 Acaderny': _a11(_M, extra='Latihan amali di Mercu Acaderny.\n'),
+            'TD-493 Kolei': _a11(_M, extra='Latihan amali di Mercu Kolei.\n'),
+            'TD-493 lowercase name': _a11(_M, extra='latihan di mercu Technical Solutions.\n'),
+            'TD-493 Edu360 on the institute lift': _a11(_IKBN11, venue='IKBN Pekan', extra='Kelas tambahan Edu360.\n'),
+            'TD-494 agency before descriptor': _a11(_M, extra='Latihan amali di MARA Technical Solutions.\n'),
+            'TD-494 TVET spelt + descriptor': _a11(_M, extra='Latihan di Teknikal Vokasional Solutions.\n'),
+        }
+        for name, text in gaps.items():
+            with self.subTest(name):
+                self.assertEqual(self._ruling(text), 'tvet_offer')

@@ -153,7 +153,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   institution's OWN division line (BAHAGIAN / PEJABAT / UNIT / SEKSYEN / JABATAN / PUSAT / DIVISION / OFFICE /
   DEPARTMENT / CENTRE FOR, naming no company, private body or other institution) or a short crest / motto line
   (at most two words, no institution noun, company or digit). a188 / a284 / a123 lift again (13 tagged changes).
-  Accepted gap TD-490: a two-word private name with no institution noun passes as a crest line.
+  Accepted gap TD-492: a two-word private name with no institution noun passes as a crest line.
 - **The agency lift's condition 4 made CLOSED-WORLD (owner: app 329 green; lead's rulings 2026-11-04; class
   `Round10AgencyClosedWorld`):** new `genuineness/offer_agency.py` (the round-11 "word after the noun" test is
   deleted). Allowed spans: the institute with its catalogued campus words (the API's TVET catalogue:
@@ -162,7 +162,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   bank / addressee lines; anything else that is an organisation word blocks (bare lowercase generic nouns
   excepted); operator phrases, other agencies' full names and acronyms, glued nouns, a line-end noun with a name
   on the next line all block; the agency first on the letterhead, name lines below it block, WAKIL / EJEN / AGEN
-  block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-491.
+  block. a228 d3465 / d3466 and a329 lift; every r10 agency probe stays out but one, pinned as TD-493.
 - **Round 11 (1 High, 7 Medium, a Low; class `Round11`):** ONE organisation-word list (`offer_reading._ORG_WORDS`
   + KOPERASI / SYARIKAT / CONSORTI*, read by the agency lift through `is_org_token`, a drift test); campus words
   after an allowed name are whole CATALOGUED campus phrases (or states / KAMPUS / address words of other lines); a
@@ -173,7 +173,7 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   street names skipped); one normaliser for every S6 check (`normalise_s6`: accents, full-width, zero-width /
   soft hyphen, Cyrillic / Greek lookalikes; spaced letters joined). The lead's a329 rulings: up to three
   one-token fragments above the agency, each junk or an OCR echo of an address word below; GLOBAL / TECH / SKILLS
-  … after a descriptor ("Pendidikan Global") is no organisation. All-lowercase names stay a known gap (TD-491).
+  … after a descriptor ("Pendidikan Global") is no organisation. All-lowercase names stay a known gap (TD-493).
   13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - **Round 12 (2 High, 3 Medium; class `Round12`):** ONE glued-name test (`offer_text.glued_org`: an institution
   noun at a token's start, any shared-list word at its end, the rest 3+ letters; whole words, since the list's
@@ -184,6 +184,15 @@ with Q1 / Q2 and the confirmation default (`docs/decisions.md`, the S6 entry). N
   block(s) — a KEPADA block or a reference / date line with the candidate line before the next title (a329's
   echo is on its second letter's addressee address); a function word after the institute no longer hides the
   name after it. Corpus scan: 13 glued tokens in 9 of the 287 letters (glued institution phrases), no call moves.
+- **Round 13, the last check (2 High, cheap Mediums, 1 Low; class `Round13`):** the one normaliser
+  (`offer_text.normalise_s6`) reads a word mixing letters and digits as OCR when the digits spell an organisation
+  word ("ACAD3MY", "K0LEJ", "Ko1ej" — 1 is tried as I and as L), else splits it ("AKADEMI21" -> "AKADEMI 21",
+  "Mercu2Academy" -> "Mercu 2 Academy"); a closed-list / agency name inside a glued token is taken out and the REST
+  is tested ("MARASKILLS", "IKMSKILLS", "KBSACADEMY", "ADTECMERCUCOLLEGE" block; only an empty rest or a catalogued
+  campus word passes, "UNIVERSITIMALAYSIASABAH"); SKILLS / TRAINING / TUISYEN / TUITION glue at a token's start and
+  an institution noun inside a token counts ("MERCUACADEMYKUANTAN"); the name part must be 4+ letters and no Malay
+  affix or English compound head. Common-word scan: 0 of the reviewer's 175 words flag. The owner's stop rule
+  (decisions S6 item 10) sends what is left to TD-493 / TD-494. 13 tagged changes; dev 196 / 197, held-out 90 / 90.
 - Tests: `test_offer_rulings.py`, `test_offer_s6_doors.py`, `test_offer_s6_dry_run.py` (synthetic twins); the
   C1 / C2 / verdict / consent / private-arm / reader-door tests re-pinned to the rulings, each citing them.
 

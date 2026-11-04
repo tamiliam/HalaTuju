@@ -101,10 +101,16 @@
       reads the next line's first word. The agency stands first on the letterhead (crest / government / junk lines,
       up to three one-token fragments, a KEPADA block above it; address / contact / division / agency lines below
       it to the first postcode); WAKIL / EJEN / AGEN = no lift. Known gap: a private name with no organisation word
-      (TD-491).
+      (TD-493).
    `doc_seen` stays the closed-list key (`tvet_*`), which the officer-close rule, the issuer label and the web's
    `doc_seen` labels read; the sub-tag is in the reason. Probes: `tests/test_offer_s6_narrowing.py`, class
    `Round10AgencyLetterhead`.
+10. **The review stops here; S6 ships (owner, 2026-11-04, after review round 13).** Round 13's fixes (digits read
+    inside a word, a closed-list name inside a glued token tested on what is left, the training words, the affix
+    guard) get ONE last check of those fixes only, then S6 ships. Any NEW evasion found after that goes to the
+    technical-debt list for S7 — unless it blocks a REAL public letter, which is fixed at once. Known accepted gaps:
+    TD-491 (page-1 scoring), TD-492 (crest line), TD-493 (no organisation word / lowercase names, OCR misreads
+    such as "Acaderny"), TD-494 (descriptor wording holes).
 
 **What follows (S6).** `suspect` is never a blocker and its Pathway chip is never red (rule 8; the 2026-07-07 /
 07-08 ladder arithmetic "suspect −1 + Pathway −1 = Unsure" is SUPERSEDED); `not_offer_letter` blocks submission by
