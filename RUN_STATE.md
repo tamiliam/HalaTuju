@@ -64,6 +64,46 @@ Lead rulings:
 - Fresh review after each phase. Opus adversarial review on S1 and S2.
 - Owner's phone check (P5 DOES change access for reviewers and mentors), then deploy approval.
 
+## P5b — ONE page (owner ruling 2026-11-04, after the live phone check found two "Programmes" rows)
+- Live defect: old Overview row kept its label "Programmes" (`admin.orgPage.nav`); the new landing row is also
+  "Programmes". Local hotfix d8b5be0c (relabel to Overview + duplicate-label test) is NOT pushed — superseded by P5b.
+- Owner: "Earlier, both the overview section (top) and programmes section (bottom) were on the same page. It was
+  useful... We could call it overview. Except the stat cards should be different for different users. And, they
+  should be focused on the work that is pending, if any, for the respective users. There should not be two menu
+  items, whatever you call them."
+- So: ONE menu row "Overview", ONE page: per-role stat cards on top (pending work for THAT person), programme cards
+  below (the P5 per-person list). The other route redirects. Stitch first (new per-role cards), owner approves, then
+  build (Opus server for any new per-person counts), review, gates, phone check, deploy ask. Release waits for P5b.
+- Planner (Opus) plan, 2026-11-04: keep route /admin/organisation/programmes, row label "Overview" (key
+  admin.orgPage.nav, chord V, match also /admin/organisation + /admin/administration); delete the administration row;
+  /admin/organisation -> redirect; fix GIFT_DOOR (useGiftGate.ts:52, live bug: points at the old page). New server read
+  `GET admin/scholarship/my-pending/` (new apps/scholarship/my_pending.py) from attention() / mine() / qc_queue() /
+  next_step_for / mentor_desk / sponsors pending / invitations.open_only; a card the caller may not see is ABSENT;
+  org_read door guards cards, not the page. Cards: admin = unassigned, overdue (+due soon), awaiting QC, sponsors to
+  vet (+ small: invitations, payment runs, requests); finance = payment runs for your step, wallet credits to sign
+  (NEW: pull step check out of sign_admin_credit), sponsors, invitations (no application numbers); QC = awaiting your
+  check (NEW: drop qc_separation-barred), oldest days; reviewer = open, due soon, overdue; mentor = current mentees,
+  not yet met, asked for help. Stat strip INSIDE ProgrammesLanding's lazy chunk (no new chunk). S1 server Opus, S2 web,
+  S3 gates. d8b5be0c folds into S2. Owner Qs (defaults): zero cards stay muted + one all-clear line; mentor gets only
+  "not yet met" (no invented threshold); drop the People tile.
+- Stitch timed out (5 edits, nothing landed). Design mock as an artifact instead (memory stitch_mcp_workflow: an
+  approved artifact mock meets the rule): https://claude.ai/artifact/3SW6oWsmgzZeozYEGeW4Wm (5 tabs + Q1-Q3).
+  OWNER "approved" 2026-11-05 (defaults taken for Q1-Q3: muted 0 + all-clear line; mentor "not yet met" only; People
+  tile dropped). S1 server (Opus) + S2 web (Sonnet) run in parallel on a fixed contract; then review, S3 gates.
+  Contract: GET /api/v1/admin/scholarship/my-pending/ -> {"cards":[{"key","count", optional "due_soon",
+  "oldest_days"}]}; keys admin: unassigned, overdue(+due_soon), awaiting_qc, sponsors_to_vet, invitations,
+  payment_runs, requests; finance: payment_runs, wallet_credits, sponsors_to_vet, invitations; qc: qc_awaiting
+  (+oldest_days); reviewer: my_open, my_due_soon, my_overdue; mentor: mentees, not_met, asked_help. Absent = may not see.
+- S2 web DONE (9f13e12e): one "Overview" row (chord V); old Overview + Administration rows gone, both routes
+  redirect; GIFT_DOOR fixed; pending strip in the existing lazy chunk; bundle median 144.145 (room 0.9); jest ~5160
+  targeted pass. To check: wallet_credits links to /admin/sponsors (no credits page — builder's guess); mentor sandbox
+  surface has no pending mock; old Overview page content + tests deleted.
+- S1 server DONE (7bf77b8e; builder hit 160k): my-pending route; shared door my_programmes.lands; new
+  credit_steps.step_refusal (sign_admin_credit + card share it); qc_separation.barred_ids; pending_sponsor_count();
+  16 tests; budgets 11/9/10 constant. Risks: wallet_credits finance-only though admins also sign; super pooled
+  payment_runs one lookup per org; mentor cards one query per mentee (TD-500 family). NEXT: Opus adversarial review
+  + full gates in parallel.
+
 ## Stops waiting on the owner
 - **P5 phone check and deploy approval** (asked before each deploy; P5 changes reviewer and mentor access).
 - **TD-487 and TD-488 rulings** (from the TD-481 adversarial review).
@@ -75,6 +115,12 @@ Lead rulings:
   later via `POST admin/reviewers/<pk>/programme/`, which has no web caller. OWNER RULED "b" 2026-11-04: fix AFTER
   v3.1.0 as the FIRST fix sprint (before other audit fixes): reviewer invite must choose "one gift" or "every gift";
   admins + mentors unchanged; permission change -> Opus build, adversarial review, owner phone check. TD-501.
+
+- **Login sandbox (owner raised 2026-11-04):** "we need to set up a sandbox properly, in future". Today: the design
+  sandbox `/sandbox` (2026-07-28, flag NEXT_PUBLIC_SANDBOX, invented data, no logins) is complete for its purpose; there
+  is NO way to sign in as a reviewer / mentor / finance / QC to check a change (TD-194: console cannot run locally).
+  Lead proposed: a test organisation on live with invented students and one test login per role, kept out of stats,
+  emails and billing. Feed into the audit (completeness lens) and the fix roadmap; needs the owner's word (freeze).
 
 ## Open risks
 - BEFORE THE FIRST PUSH: Cockpit session pushed TD-473 (479b3d1e) to main on 2026-11-04. Check its build is GREEN,
