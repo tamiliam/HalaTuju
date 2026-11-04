@@ -1,11 +1,17 @@
 # RUN_STATE — HalaTuju autonomous run
 
 ## Grant
-Owner, 2026-11-04: "continue as a run: T5c on your own. Ask me before each deploy."
+Owner, 2026-11-04 (second grant, given to lead session "Release"; extends the first): "finish T5c (part 5 after I
+approve the Stitch design), release v3.1.0, then run the full audit from your plan as a run. Ask me before each deploy."
 
-- Scope: T5c (team tables, permissions) only.
+- Scope, in order: (1) T5c P5; (2) release v3.1.0 (tag + release notes); (3) the full audit — code health,
+  completeness, redundancy, speed, security — then its fix sprints, most important first (TD-465 money bug on top).
+- No new features during the audit (freeze, like the September code-health arc). No T5d, no offer S7.
 - Every deploy is asked first. A push deploys, so nothing is pushed to main without the owner's yes.
+- The audit needs a new workflow (`Settings/_workflows/project-audit.md`, proposed 2026-11-04). A workflow edit is on
+  the stop list: write it only after the owner's yes.
 - A new lead session resumes from this file alone.
+- First grant (done): "continue as a run: T5c on your own. Ask me before each deploy."
 
 ## Done
 - TD-481 live (main 307d204c; api halatuju-api-01249-zqp, web halatuju-web-01078-pgb).
