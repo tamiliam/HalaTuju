@@ -45,6 +45,7 @@ no access moving for any shape.
   **R5** no landing, web or migration change. **R6** `NotYetAGate` is replaced by `V2Importers`: only
   `courses/staff_tables.py` may import v2, and `V2_DOOR_MODULES` lists every module that asks `staff_tables.opens(`
   — it grows door by door, so an unplanned import or door fails.
+- **P3 inventory (same day):** every staff role-label read in `apps/` (comparisons, `role=` / `role__in=` filters, `has_role`) is classified and pinned by `test_role_is_display_only.py`: 177 sites in 142 functions. **DISPLAY 50** (account kind, table membership, recipient routing, the T5a catalogue's preset source), **OVERRIDE 44** (super-only and org-scope fences, the lead tier's definition), **GATE-LEFT 48** (T5e lead powers and R3 surfaces 42, T5d money 4, TD-491 2), **GATE-UNPLANNED none**. The one adjacency to watch: `_require_reviewer` (graduation moderation) is owned only through TD-491's note. A new label gate fails the guard; conversions stay with their sprints.
 - **A door that reads and writes asks the `.edit` key** (it implies `.view`); nobody holds a view without its edit
   today. Split before T5g (TD-490).
 - **One deliberate tightening:** an INACTIVE row now opens no door (T1's role half admitted an inactive `admin` /

@@ -36,6 +36,12 @@ no live access moved.
   surface rides the one Sources door"; `V2_DOOR_MODULES` gains `sources.py` and `credits.py`. The access matrix runs
   unchanged. New debt: TD-491.
 
+**P3 — the role-label inventory and its guard (tests and docs only):**
+- New `test_role_is_display_only.py`: scans `apps/` (not tests, not migrations) for every staff role-label read that
+  decides something and fails when one appears outside an allowlist (module::function, class, owner, reason). The
+  scanner is itself tested (a fake gate is caught). 177 sites in 142 functions: 50 DISPLAY, 44 OVERRIDE, 48 GATE-LEFT
+  (T5e 42, T5d 4, TD-491 2), GATE-UNPLANNED none. No gate converted, no new debt.
+
 ## TD-481 — an awaiting-QC case is declined only through the QC gate (branch maint-td481, not yet live)
 
 Owner ruling 2026-11-04; decisions.md "TD-481". No migration, no new endpoint, no web behaviour change.
