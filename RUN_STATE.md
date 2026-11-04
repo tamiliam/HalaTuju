@@ -110,6 +110,17 @@ Lead rulings:
 - Gates GREEN: pytest 12422 passed / 3 skipped; npm gates 417 suites / 6519 tests; bundle median 144.148 (room 0.9);
   mobile 775 passed (was 781; m8-organisation surface removed). Label fix eedc20f4 landed after the gates (strings
   only). NEXT: owner yes -> push t5c:main (gh switch), watch both builds, owner phone check, then v3.1.0.
+- P5b LIVE 2026-11-05 (main f2efa6b0; api halatuju-api-01254-9vx, web halatuju-web-01083-smc; both builds SUCCESS).
+  NEXT: owner phone check -> P5b CHANGELOG + short close -> v3.1.0 release.
+- Owner phone check 2026-11-05: three asks. (1) Remove sublines (due soon, Nothing waiting). (2) Unassigned = only
+  ready to assign: profile_complete + unassigned + is_ready_for_assignment (owner OPTION A = reuse the Assign rule).
+  The programme overview tile changes too. (3) Cards link to filtered action pages: ?ready=1, ?band=overdue|due_soon
+  on the applications list; payment_runs/wallet_credits/mentor cards unchanged (to the audit list).
+  P5c builders (Sonnet): server (ready helper + parity test, attention(), ?ready ?band) + web (sublines, URL filters
+  on /admin/scholarship with chip, hrefs). Then Sonnet review, full gates, deploy ask.
+- P5c web DONE 38144e07 (bundle 144.147; qc_awaiting / invitations / sponsors_to_vet unfiltered - no filter on those
+  pages). P5c server DONE 7ce8de9c (queries_sla.ready_to_assign / assignable_now, per-org query_answer_days, parity
+  test; review_sla.in_band; attention(organisation=); 260 targeted pass; SQLite only). Review + gates running.
 
 ## Stops waiting on the owner
 - **P5 phone check and deploy approval** (asked before each deploy; P5 changes reviewer and mentor access).
