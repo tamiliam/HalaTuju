@@ -42,7 +42,7 @@ from .. import mentor_desk
 from ..closure import ever_awarded_q
 from ..models import Programme, ScholarshipApplication, ScholarshipCohort
 from .base import _AdminBase
-from .gifts import programme_lifecycle, programme_student_queryset
+from .gifts import programme_lifecycle
 
 
 def sees_every_gift(admin, b40_scope):
@@ -70,9 +70,7 @@ def _assigned(admin):
     return qs if admin.is_super else qs.filter(owning_organisation_id=admin.owning_organisation_id)
 
 
-def _gifts_of(programme_id, cohort_programme_id):
-    # A file belongs to a gift through its column OR its cohort (`programme_student_queryset`).
-    return {programme_id, cohort_programme_id} - {None}
+_gifts_of = mentor_desk.gifts_of_file
 
 
 def cases_by_gift(admin):
@@ -84,31 +82,70 @@ def cases_by_gift(admin):
 
 
 def scholars_by_gift(admin):
+    """Current mentees per gift. The cohort's gift rides on the assignments' own query
+    (`current_assignments` selects `application__cohort`), so a mentee costs no query of its own."""
     counts = {}
     for a in mentor_desk.current_assignments(admin):
-        app = a.application
-        cohort_gift = (ScholarshipCohort.objects.filter(pk=app.cohort_id)
-                       .values_list('programme_id', flat=True).first() if app.cohort_id else None)
-        for gift in _gifts_of(app.programme_id, cohort_gift):
+        for gift in mentor_desk.gifts_of(a.application):
             counts[gift] = counts.get(gift, 0) + 1
     return counts
 
 
-def has_review_work(admin, programme):
+def has_review_work(admin, programme_id):
     """Does the caller hold any case of this gift assigned to them, open or done?"""
-    return _assigned(admin).filter(Q(programme=programme) | Q(cohort__programme=programme)).exists()
+    return _assigned(admin).filter(Q(programme_id=programme_id) | Q(cohort__programme_id=programme_id)).exists()
 
 
-def may_open_overview(admin, b40_scope, programme):
-    """The Overview's 404 rule: a narrowed caller opens a named gift's Overview only where they have work."""
-    return programme is None or sees_every_gift(admin, b40_scope) or has_review_work(admin, programme)
+def may_open_overview(admin, b40_scope, programme, cohort=None):
+    """The Overview's 404 rule: a narrowed caller opens a named gift's Overview only where they have work.
+
+    S1b (review item 1): a named ROUND with no gift named is judged by the round's own gift — the
+    `?intake=` door must not open a gift the `?programme=` door refuses. A round that belongs to no gift
+    opens only where a case of THAT round is assigned to the caller. Nothing named: the pooled Overview,
+    shaped by role (`SECTIONS_BY_ROLE`), as before."""
+    if sees_every_gift(admin, b40_scope):
+        return True
+    if programme is not None:
+        return has_review_work(admin, programme.pk)
+    if cohort is None:
+        return True
+    if cohort.programme_id is not None:
+        return has_review_work(admin, cohort.programme_id)
+    return _assigned(admin).filter(cohort=cohort).exists()
 
 
-def _counts(p):
-    students = programme_student_queryset(p)
-    return {'intake_years': ScholarshipCohort.objects.filter(programme=p).count(),
-            'applications': students.count(),
-            'awarded': students.filter(ever_awarded_q()).count()}
+def _counts_by_gift(programme_ids):
+    """`{gift id: {intake_years, applications, awarded}}` for every gift in `programme_ids`, in TWO
+    queries whatever the number of gifts (S1b review item 2; it was three per gift). Same answers as
+    `programme_student_queryset(p)` (column OR cohort, each file once per gift) and `ever_awarded_q`."""
+    from django.db.models import BooleanField, Count, ExpressionWrapper
+    counts = {pid: {'intake_years': 0, 'applications': 0, 'awarded': 0} for pid in programme_ids}
+    if not counts:
+        return counts
+    for pid, n in (ScholarshipCohort.objects.filter(programme_id__in=counts).values('programme_id')
+                   .annotate(n=Count('id')).values_list('programme_id', 'n')):
+        counts[pid]['intake_years'] = n
+    # org-fence: every id came from `_fenced_programmes`, so the join cannot widen past the caller's fence.
+    files = (ScholarshipApplication.objects
+             .filter(Q(programme_id__in=counts) | Q(cohort__programme_id__in=counts))
+             .annotate(_won=ExpressionWrapper(ever_awarded_q(), output_field=BooleanField()))
+             .values_list('pk', 'programme_id', 'cohort__programme_id', '_won').distinct())
+    for _pk, pid, cpid, won in files:
+        for gift in _gifts_of(pid, cpid) & counts.keys():
+            counts[gift]['applications'] += 1
+            counts[gift]['awarded'] += 1 if won else 0
+    return counts
+
+
+def _gifts_with_files(programme_ids):
+    """The gifts in `programme_ids` that ever took a student — one query (finance's lifecycle)."""
+    held = set()
+    # org-fence: every id came from `_fenced_programmes`, so the join cannot widen past the caller's fence.
+    for pid, cpid in (ScholarshipApplication.objects
+                      .filter(Q(programme_id__in=programme_ids) | Q(cohort__programme_id__in=programme_ids))
+                      .values_list('programme_id', 'cohort__programme_id').distinct()):
+        held |= _gifts_of(pid, cpid)
+    return held & set(programme_ids)
 
 
 class AdminMyProgrammesView(_AdminBase):
@@ -139,15 +176,22 @@ class AdminMyProgrammesView(_AdminBase):
             programmes = list(_fenced_programmes(admin).filter(pk__in=case_ids))
             if mentor_ids:
                 programmes += list(_fenced_programmes(admin, mentor.organisation_id).filter(pk__in=mentor_ids))
-        rows = [self._row(p, scope, every, cases, scholars) for p in sorted(programmes, key=lambda p: p.code)]
+        ids = [p.pk for p in programmes]
+        counts = _counts_by_gift(ids) if scope == 'all' else None
+        if not every:
+            with_files = set(ids)            # work in every listed gift, so somebody applied: no query
+        elif counts is not None:
+            with_files = {i for i in ids if counts[i]['applications']}
+        else:
+            with_files = _gifts_with_files(ids)
+        rows = [self._row(p, counts, with_files, every, cases, scholars)
+                for p in sorted(programmes, key=lambda p: p.code)]
         return Response({'every_gift': every, 'programmes': rows}, status=status.HTTP_200_OK)
 
     @staticmethod
-    def _row(p, scope, every, cases, scholars):
-        counts = _counts(p) if scope == 'all' else None
-        has_students = (counts['applications'] > 0 if counts is not None
-                        else True if not every else programme_student_queryset(p).exists())
-        lifecycle = programme_lifecycle(p, has_students)
+    def _row(p, counts, with_files, every, cases, scholars):
+        counts = counts[p.pk] if counts is not None else None
+        lifecycle = programme_lifecycle(p, p.pk in with_files)
         row = {'id': p.id, 'code': p.code, 'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,
                'is_active': p.is_active, 'lifecycle': lifecycle, 'archived': lifecycle == 'archived'}
         if counts is not None:

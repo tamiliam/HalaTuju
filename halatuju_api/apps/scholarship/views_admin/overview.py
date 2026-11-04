@@ -63,15 +63,16 @@ class AdminProgrammeOverviewView(_AdminBase):
         programme, gift_err = self._gift_narrowing(request, admin)
         if gift_err:
             return gift_err
-        # T5c P5 (lead ruling): a caller who does not see every gift opens a NAMED gift's Overview only
-        # where a case is assigned to them (open or done); anywhere else it is 404, as for another
-        # tenant's gift. The landing lists exactly these gifts (`my_programmes`, the rule's one home).
-        from .my_programmes import may_open_overview
-        if not may_open_overview(admin, self._b40_scope(admin), programme):
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         cohort, intake_err = self._intake_narrowing(request, admin, programme)
         if intake_err:
             return intake_err
+        # T5c P5 (lead ruling): a caller who does not see every gift opens a NAMED gift's Overview only
+        # where a case is assigned to them (open or done); anywhere else it is 404, as for another
+        # tenant's gift. A named round with no gift is judged by the round's own gift (S1b). The landing
+        # lists exactly these gifts (`my_programmes`, the rule's one home).
+        from .my_programmes import may_open_overview
+        if not may_open_overview(admin, self._b40_scope(admin), programme, cohort):
+            return Response({'error': 'not_found', 'code': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         if admin.is_super:
             org = spend_report.ALL_ORGS
         else:

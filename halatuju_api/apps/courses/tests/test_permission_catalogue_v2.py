@@ -268,7 +268,23 @@ def _doors():
         'lead_powers': (sp.is_lead_tier, ('programmes.edit', 'students.edit', 'students.approve',
                                           'sponsors.approve', 'billing.edit', 'invitations.edit',
                                           'settings.edit')),
+        # T5c P5: Organisation -> Programmes, the LANDING of every partner login (owner ruling). It
+        # needs NO v2 key by design: a key is withheld from somebody, and this page is withheld from
+        # nobody on staff (the catalogue already treats the gift cards as the "always" page, so
+        # `programmes.edit` implies no view). Its CONTENT is narrowed by the server read
+        # (`views_admin/my_programmes.py`); `LandingContent` pins that narrowing to v2 keys.
+        'programmes_landing': (_lands, ()),
     }
+
+
+def _lands(a):
+    """The landing read's own admit rule (`AdminMyProgrammesView.get`), asked of a person."""
+    from apps.courses import staff_tables
+    from apps.scholarship import mentor_desk
+    from apps.scholarship.views_admin import _AdminBase
+    from apps.scholarship.views_admin.my_programmes import sees_every_gift
+    return (sees_every_gift(a, _AdminBase()._b40_scope(a)) or staff_tables.in_reviewers(a)
+            or mentor_desk.mentor_of(a) is not None)
 
 
 #: A door open today that NO v2 key covers, with why. The graduation-messages list opens by role
@@ -320,6 +336,41 @@ class Coverage(TestCase):
         shapes, _ = UNMAPPED['graduation_list']
         self.assertEqual(shapes, {s for s, p in self.people.items() if p.is_active and not p.is_super
                                   and p.role in ('reviewer', 'admin')})
+
+
+class LandingContent(TestCase):
+    """T5c P5: the Programmes landing opens for every staff shape (`programmes_landing`, no key); what it
+    LISTS is where access lives, so it is pinned here to the v2 sets. Every gift (the full list, with
+    counts for an Applications scope of 'all') opens exactly for a holder of `students.view` or of the
+    whole organisation-read set; the "Cases assigned to you" count only for a Reviewer-table hat."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.people = {shape: _make(spec, make_org()) for shape, spec in SHAPES.items()}
+
+    def test_every_active_staff_shape_lands_and_a_partner_does_not(self):
+        for shape, person in self.people.items():
+            if not person.is_active:
+                continue
+            with self.subTest(shape=shape):
+                self.assertEqual(_lands(person), shape != 'partner')
+
+    def test_the_full_list_opens_exactly_on_v2_read_keys(self):
+        from apps.scholarship.views_admin import _AdminBase
+        from apps.scholarship.views_admin.my_programmes import sees_every_gift
+        for shape, person in self.people.items():
+            if not person.is_active:
+                continue
+            held = set(v2.effective_v2(person))
+            with self.subTest(shape=shape):
+                self.assertEqual(sees_every_gift(person, _AdminBase()._b40_scope(person)),
+                                 'students.view' in held or set(_ORG_READ) <= held)
+
+    def test_the_cases_count_needs_a_reviewer_hat(self):
+        for shape, person in self.people.items():
+            if person.is_active and st.in_reviewers(person):
+                with self.subTest(shape=shape):
+                    self.assertTrue({'review', 'qc'} & set(v2.effective_v2(person)))
 
 
 class NotYetWritable(TestCase):

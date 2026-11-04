@@ -817,6 +817,61 @@ class TestTheScholarsListQueryBudget(TestCase):
         self.assertEqual(resolve('/' + SCHOLARS_ROUTE).route, SCHOLARS_ROUTE)
 
 
+#: Team tables T5c P5 S1b (2026-11-04): the Programmes LANDING (`views_admin/my_programmes.py`). An
+#: org admin's card counts are grouped queries, so its two readings are EQUAL: a gift costs nothing extra.
+#: A mentor's gifts ride on the assignments' query; the mentor pair still differs by ONE query per mentee,
+#: the self-mentoring guard's alias read (`mentoring.is_the_student`, older than the landing).
+LANDING_ROUTE = 'api/v1/admin/scholarship/my-programmes/'
+LANDING_BUDGETS = {key: RECORD.get(key) for key in (
+    f'{LANDING_ROUTE}::GET::1-gift', f'{LANDING_ROUTE}::GET::4-gifts',
+    f'{LANDING_ROUTE}::GET::mentor-2-students', f'{LANDING_ROUTE}::GET::mentor-5-students')}
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheProgrammesLandingQueryBudget(TestCase):
+    """The landing, counted — a per-gift or per-mentee read fails the larger reading."""
+
+    def _reading(self, key):
+        import datetime
+        from django.utils import timezone
+        from apps.scholarship.models import MentorAssignment
+        fixture = key.split('::')[2]
+        n = int(fixture.split('-')[-2])
+        org = make_org()
+        gifts = [make_programme(organisation=org) for _ in range(1 if 'mentor' in fixture else n)]
+        mentor = make_admin('mentor', owning_org=org)
+        for i in range(n if 'mentor' in fixture else len(gifts)):
+            cohort = make_cohort(programme=gifts[i % len(gifts)])
+            make_application('submitted', cohort=cohort)
+            app = make_application('maintenance', cohort=cohort,
+                                   active_at=timezone.now() - datetime.timedelta(days=60))
+            MentorAssignment.objects.create(application=app, mentor=mentor.mentor)
+        who = mentor if 'mentor' in fixture else make_admin('org_admin', owning_org=org)
+        client, url = authed_client(who), f'/{LANDING_ROUTE}'
+        self.assertEqual(client.get(url).status_code, 200)               # warm-up
+        with CaptureQueriesContext(connection) as captured:
+            response = client.get(url)
+        self.assertEqual(response.status_code, 200, response.content[:200])
+        self.assertEqual(len(response.json()['programmes']), len(gifts))
+        return len(captured.captured_queries)
+
+    def test_each_reading_stays_inside_its_budget(self):
+        for key, limit in LANDING_BUDGETS.items():
+            with self.subTest(key=key):
+                now = self._reading(key)
+                self.assertLessEqual(now, limit, f'{key} now costs {now} queries; budget {limit}. '
+                                     '⚠ DO NOT RAISE IT — a per-gift or per-mentee read is back.')
+
+    def test_a_budget_that_now_sits_above_the_code_is_lowered(self):
+        loose = [f'LANDING_BUDGETS["{k}"]: budget {limit}, code {m} — LOWER it to {m}'
+                 for k, limit in LANDING_BUDGETS.items() for m in (self._reading(k),)
+                 if limit - SHRINK_SLACK > m]
+        self.assertEqual(loose, [], LOWER_IT + '\n' + '\n'.join(loose))
+
+    def test_the_budgeted_route_still_resolves(self):
+        self.assertEqual(resolve('/' + LANDING_ROUTE).route, LANDING_ROUTE)
+
+
 class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
     """TD-286 (2026-10-04): the numbers live in `code-standards.json` and nowhere here. A key this
     file measures that the record lacks reads None above; this names it. And the reverse: an
@@ -834,6 +889,7 @@ class TestEveryBudgetThisFileReadsIsInTheRecord(TestCase):
         **REQUESTS_BUDGETS,
         **STAFF_LIST_BUDGETS,
         **SCHOLARS_BUDGETS,
+        **LANDING_BUDGETS,
     }
 
     def test_every_measured_key_has_a_budget(self):

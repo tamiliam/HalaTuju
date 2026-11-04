@@ -41,14 +41,22 @@ class _MentorBase(_AdminBase):
 
 
 class AdminMentorStudentsView(_MentorBase):
-    """GET — My students."""
+    """GET — My students. Optional `?programme=<gift id>` (T5c P5 S1b, the Programmes landing's mentor
+    card): only the current students of that gift. It NARROWS the caller's own list and never widens it:
+    a gift holding none of them (another organisation's or an unknown id included) is an empty list,
+    one answer that confirms no gift; a value that is not a whole number is 404, as `?intake=` is."""
     mentor_methods = ('get',)
 
     def get(self, request):
         login, err = self._mentor(request)
         if err:
             return err
-        return Response(mentor_desk.list_payload(login))
+        raw = (request.query_params.get('programme') or '').strip()
+        if not raw:
+            return Response(mentor_desk.list_payload(login))
+        if not (raw.isascii() and raw.isdigit()):
+            return self._not_found()
+        return Response(mentor_desk.list_payload(login, programme_id=int(raw)))
 
 
 class AdminMentorStudentView(_MentorBase):

@@ -58,10 +58,24 @@ def current_assignments(login):
     # org-fence: the mentor's OWN organisation's files only, in maintenance (the predicate's one home).
     live = ScholarshipApplication.objects.filter(maintenance_scope.in_maintenance_q(),
                                                  owning_organisation_id=mentor.organisation_id)
+    # `application__cohort`: the cohort's gift (`gifts_of`) rides on this query (T5c P5 S1b).
     rows = (MentorAssignment.objects.filter(mentor=mentor, ended_at__isnull=True, application__in=live)
-            .select_related('application__profile', 'application__owning_organisation', 'mentor')
+            .select_related('application__profile', 'application__owning_organisation',
+                            'application__cohort', 'mentor')
             .order_by('started_at', 'id'))
     return [a for a in rows if not mentoring.is_the_student(login, a.application)]
+
+
+def gifts_of_file(programme_id, cohort_programme_id):
+    """The gifts a file belongs to: its own column OR its cohort's (`gifts.programme_student_queryset`'s
+    rule, spelled for rows already in hand)."""
+    return {programme_id, cohort_programme_id} - {None}
+
+
+def gifts_of(app):
+    """`gifts_of_file` for an application whose cohort is loaded (`current_assignments` selects it)."""
+    cohort = app.cohort if app.cohort_id else None
+    return gifts_of_file(app.programme_id, cohort.programme_id if cohort is not None else None)
 
 
 def assignment_for(login, application_id):
@@ -103,9 +117,15 @@ def _meeting_counts(assignment_ids):
     return counts, last
 
 
-def list_payload(login):
-    """My students: one card per current student (allowlist — see the module docstring)."""
+def list_payload(login, programme_id=None):
+    """My students: one card per current student (allowlist — see the module docstring).
+
+    `programme_id` (T5c P5 S1b, the landing's mentor card): only the current students of THAT gift
+    (`gifts_of`). It narrows the caller's own list and never widens it, so a gift holding none of their
+    students — another organisation's or an unknown id included — is simply an empty list."""
     rows = current_assignments(login)
+    if programme_id is not None:
+        rows = [a for a in rows if programme_id in gifts_of(a.application)]
     counts, last = _meeting_counts([a.pk for a in rows])
     mentor = mentor_of(login)
     out = []

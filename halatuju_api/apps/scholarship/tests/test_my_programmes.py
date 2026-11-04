@@ -19,6 +19,7 @@ from apps.scholarship.tests.factories import (
 
 LANDING = '/api/v1/admin/scholarship/my-programmes/'
 OVERVIEW = '/api/v1/admin/scholarship/programme-overview/'
+DESK = '/api/v1/admin/mentor/students/'
 NAMES = ('id', 'code', 'name_en', 'name_ms', 'name_ta', 'is_active', 'lifecycle', 'archived', 'opens')
 COUNTS = ('intake_years', 'applications', 'awarded')
 
@@ -40,6 +41,7 @@ class MyProgrammes(TestCase):
         cls.g4 = make_programme(cls.org, code='mp-g4')                  # nobody's work
         cls.gb = make_programme(cls.other, code='mp-gb')                # another organisation's
         c1, c2, c3, c4, cb = (make_cohort(programme=g) for g in (cls.g1, cls.g2, cls.g3, cls.g4, cls.gb))
+        cls.c1, cls.c3, cls.c4 = c1, c3, c4
 
         cls.reviewer = make_admin('reviewer', owning_org=cls.org)
         make_application('assigned', cohort=c1, reviewer=cls.reviewer)          # open
@@ -137,6 +139,48 @@ class MyProgrammes(TestCase):
         self.assertEqual((rows['mp-g2']['cases'], rows['mp-g2']['scholars'], rows['mp-g2']['opens']),
                          (0, 1, 'my_students'))
 
+    # ── S1b: My students narrowed to one gift (the mentor card's link) ───────────────────────────────
+    def desk(self, who, value=None):
+        return authed_client(who).get(DESK + ('' if value is None else f'?programme={value}'))
+
+    def desk_ids(self, who, value=None):
+        r = self.desk(who, value)
+        self.assertEqual(r.status_code, 200, r.content)
+        return [s['id'] for s in r.json()['students']]
+
+    def test_my_students_narrows_to_the_named_gift(self):
+        everyone = self.desk_ids(self.mentor)
+        self.assertEqual(len(everyone), 1)
+        self.assertEqual(self.desk_ids(self.mentor, self.g2.pk), everyone)
+        self.assertEqual(self.desk_ids(self.both, self.g2.pk), self.desk_ids(self.both))
+
+    def test_a_gift_with_none_of_their_students_is_an_empty_list(self):
+        self.assertEqual(self.desk_ids(self.mentor, self.g1.pk), [])
+        self.assertEqual(self.desk_ids(self.mentor, self.g4.pk), [])      # an ENDED assignment's gift
+        self.assertEqual(self.desk_ids(self.both, self.g1.pk), [])        # cases there, no student
+        self.assertEqual(self.desk_ids(self.mentor, self.gb.pk), [])      # another organisation's gift
+        self.assertEqual(self.desk_ids(self.mentor, 987654), [])          # unknown: the same answer
+
+    def test_a_value_that_is_not_a_gift_id_is_404(self):
+        for value in ('mp-g2', '-1', '1.0', '²'):
+            with self.subTest(value=value):
+                self.assertEqual(self.desk(self.mentor, value).status_code, 404)
+
+    def test_the_filter_reaches_through_the_cohort_like_the_gift_cards(self):
+        moved = make_cohort(programme=self.g1)
+        app = _scholar(moved)
+        MentorAssignment.objects.create(application=app, mentor=self.mentor.mentor)
+        moved.programme = self.g4
+        moved.save(update_fields=['programme'])                           # the file's column stays g1
+        self.assertIn(app.pk, self.desk_ids(self.mentor, self.g1.pk))
+        self.assertIn(app.pk, self.desk_ids(self.mentor, self.g4.pk))
+        self.assertNotIn(app.pk, self.desk_ids(self.mentor, self.g2.pk))
+
+    def test_the_filter_opens_the_desk_to_nobody_new(self):
+        for who in (self.reviewer, self.org_admin, make_admin('source_partner', owning_org=self.org)):
+            with self.subTest(role=who.role):
+                self.assertEqual(self.desk(who, self.g2.pk).status_code, 403)
+
     # ── outsiders and the fence ───────────────────────────────────────────────────────────────────────
     def test_a_referral_partner_and_a_source_user_are_refused(self):
         for who in (make_admin('partner', org=make_org()), make_admin('source_partner', owning_org=self.org)):
@@ -174,3 +218,29 @@ class MyProgrammes(TestCase):
             with self.subTest(role=who.role):
                 self.assertEqual(self.overview(who, 'mp-g4'), 200)
         self.assertEqual(self.overview(self.reviewer, 'mp-gb'), 404)      # another tenant's: 404 as before
+
+    # ── S1b review item 1: the `?intake=` side door ───────────────────────────────────────────────────
+    def round_status(self, who, cohort, code=None):
+        query = f'?intake={cohort.pk}' + (f'&programme={code}' if code else '')
+        return authed_client(who).get(OVERVIEW + query).status_code
+
+    def test_a_named_round_of_a_gift_with_no_case_of_theirs_is_404(self):
+        self.assertEqual(self.round_status(self.reviewer, self.c4), 404)
+        self.assertEqual(self.round_status(self.mentor, self.c4), 403)    # a mentor login has no Overview
+
+    def test_a_named_round_of_a_gift_with_their_open_or_done_case_opens(self):
+        self.assertEqual(self.round_status(self.reviewer, self.c1), 200)
+        self.assertEqual(self.round_status(self.reviewer, self.c3), 200)
+        self.assertEqual(self.round_status(self.reviewer, self.c1, 'mp-g1'), 200)
+
+    def test_an_admin_opens_any_round_of_their_organisation(self):
+        for who in (self.org_admin, self.finance, self.qc):
+            with self.subTest(role=who.role):
+                self.assertEqual(self.round_status(who, self.c4), 200)
+
+    def test_a_round_with_no_gift_opens_only_where_a_case_of_that_round_is_theirs(self):
+        loose = make_cohort(programme=None, owning_organisation=self.org)
+        self.assertEqual(self.round_status(self.reviewer, loose), 404)
+        make_application('assigned', cohort=loose, reviewer=self.reviewer)
+        self.assertEqual(self.round_status(self.reviewer, loose), 200)
+        self.assertEqual(self.round_status(self.org_admin, loose), 200)
