@@ -5,7 +5,8 @@ Not a line of the bodies below was reworded. ``pathway_engine`` re-exports every
 ``from .pathway_engine import distinctive_tokens`` (offer_course_match, offer_pathway, offer_link) and
 every other import keep working. A leaf: it imports nothing from ``pathway_engine``,
 ``offer_pathway`` or ``offer_course_match`` at module level (the two ``offer_pathway`` imports stay
-inside their functions). TD-473's level check lands here, beside the matcher it changes.
+inside their functions). Since the move, one addition: TD-473's level check (2026-11-04,
+``pre_u_letter_on_tertiary_pick``), beside the matcher it changes.
 """
 from __future__ import annotations
 
@@ -77,11 +78,55 @@ def _field_status(declared: str, offer: str) -> str:
     return 'match' if (d & o) else 'clash'
 
 
+# TD-473: a pre-U letter is known by its INSTITUTION, never by a word in its programme line — a
+# tertiary letter can name STPM / matriculation as the entry route ("Kejuruteraan Awam (Lepasan
+# STPM)", "Sains Komputer bagi calon STPM / Matrikulasi"), and two review rounds broke every
+# programme-word rule. A matriculation college is a matric letter. A Form-6 college or centre is an
+# STPM letter; so is a secondary school whose letter says Tingkatan Enam / STPM. A blank institution, an
+# issuer in its place ("Bahagian Matrikulasi KPM") or a bare acronym ("KMPh") decides nothing — the old
+# token compare stands, which never harms a student. A tertiary or vocational name beside it wins.
+_MATRIC_INSTITUTION_RE = re.compile(r'(?<![a-z])(?:kolej matrikulasi|matriculation college)(?![a-z])')
+_FORM6_INSTITUTION_RE = re.compile(
+    r'(?<![a-z])(?:(?:kolej|pusat) tingkatan (?:enam|6)|form (?:six|6) (?:college|centre))(?![a-z])')
+_SCHOOL_RE = re.compile(
+    r'(?<![a-z])(?:sekolah menengah|sek\.? men\.?|smk|smka|sma|smjk|sm sains|sm teknik)(?![a-z])')
+_FORM6_WORD_RE = re.compile(r'(?<![a-z])(?:tingkatan (?:enam|6)|form (?:six|6)|stpm)(?![a-z])')
+_NOT_PRE_U_INSTITUTION_RE = re.compile(
+    r'(?<![a-z])(?:universiti|university|politeknik|polytechnic|institut pendidikan guru|ipg'
+    r'|kolej komuniti|vokasional)(?![a-z])')
+
+
+def _pre_u_letter(offer_programme: str, offer_institution: str) -> bool:
+    inst = (offer_institution or '').lower()
+    if _NOT_PRE_U_INSTITUTION_RE.search(inst):
+        return False
+    if _MATRIC_INSTITUTION_RE.search(inst) or _FORM6_INSTITUTION_RE.search(inst):
+        return True
+    return bool(_SCHOOL_RE.search(inst)
+                and _FORM6_WORD_RE.search(f'{(offer_programme or "").lower()} {inst}'))
+
+
+def pre_u_letter_on_tertiary_pick(declared_type: str, offer_programme: str,
+                                  offer_institution: str) -> bool:
+    """TD-473 (owner, decisions.md 2026-11-03 rule 1): a matriculation / STPM / Form-6 letter on a
+    tertiary or PISMP application is a DIFFERENT ROUTE, whatever word the two names share — app 187's
+    "Program Matrikulasi" at "Kolej Matrikulasi Kejuruteraan Johor" ticked `match` against a
+    Kejuruteraan degree by the word KEJURUTERAAN. The LEVEL is checked before the shared word.
+    ``declared_type`` is ``chosen_pathway`` — the same field the Check 2 type-switch query reads
+    (``verdict_engine``); an empty or unknown one never clashes (nothing declared). Asasi is left
+    out: the ruling names a degree application."""
+    from .offer_pathway import pathway_family
+    if pathway_family(declared_type) not in ('tertiary', 'pismp'):
+        return False
+    return _pre_u_letter(offer_programme, offer_institution)
+
+
 def offer_pathway_match(declared_programme: str, declared_institution: str,
                         offer_programme: str, offer_institution: str,
                         declared_track: str = '', offer_stream: str = '',
                         institution_agreement: str = '',
-                        programme_agreement: str = '') -> str:
+                        programme_agreement: str = '',
+                        declared_type: str = '') -> str:
     """'match' / 'mismatch' / 'unknown' for an offer vs the declared pathway.
 
     A clash on the institution, the programme, OR the STREAM/TRACK makes it a mismatch (the
@@ -113,7 +158,14 @@ def offer_pathway_match(declared_programme: str, declared_institution: str,
     record as a mismatch — which then withheld the Institution tick too, because a tick is never
     green while the pathway is a mismatch. Passing the catalogue's verdict here REPLACES the token
     comparison for a catalogue-linked course, exactly as the institution one does.
+
+    ``declared_type`` — the application's ``chosen_pathway`` (TD-473). A pre-U letter against a
+    tertiary / PISMP pick is a ``mismatch`` before any token is compared
+    (``pre_u_letter_on_tertiary_pick``): a YELLOW Pathway chip and the Check 2 query, never red, no
+    band loss. '' (the default) skips the level check.
     """
+    if pre_u_letter_on_tertiary_pick(declared_type, offer_programme, offer_institution):
+        return 'mismatch'
     from .offer_pathway import parse_stpm_stream
     inst = institution_agreement or _field_status(declared_institution, offer_institution)
     prog = programme_agreement or _field_status(declared_programme, offer_programme)

@@ -7527,6 +7527,12 @@ against the chip-colour ruling (decisions.md 2026-11-02: Pathway is never red). 
 line limit (633 against its 613 entry + slack), so a verbatim split comes first, its own commit. Every door of the
 Pathway tick first (sprint-start 3b). *(B · M)*
 
+**Resolved 2026-11-04 (Cockpit).** The owner ruled `mismatch` (decisions.md 2026-11-03 rule 1); S6 split
+`pathway_engine.py` first. `pathway_match.pre_u_letter_on_tertiary_pick` checks the level before the token
+compare, reading the letter's INSTITUTION (matric college / Form-6 college / a school + Tingkatan Enam), never a
+programme word ("lepasan STPM" on a degree letter); asasi untouched. 0 live letters change (2
+superseded: 187, 276). Tests `test_td473_pre_u_letter_level.py`.
+
 ### [TD-474] An STPM school name followed by a one-word town line takes the town - low
 
 **Raised 2026-11-03 by the offer exact-read S5 adversarial review (L3, left open).** `offer_parse._read_block` joins a

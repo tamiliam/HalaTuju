@@ -39,6 +39,22 @@ other `webpack*` hint (they had accepted any comment); the landing's matrix door
 nothing, replaced by a real who-opens-it test; stale comments in `navigation.ts` / `adminLanding.ts` reworded; an
 archived programme's card opens that programme's Overview; TD-500 recorded.
 
+## TD-473 — a pre-U offer letter on a degree pick reads Pathway mismatch (2026-11-04, Cockpit)
+
+Owner ruling `docs/decisions.md` 2026-11-03 rule 1. No migration. No paid call.
+- `pathway_match.pre_u_letter_on_tertiary_pick`: a matriculation / STPM / Form-6 letter against a tertiary or
+  PISMP `chosen_pathway` (`pathway_family`) is `mismatch` BEFORE any token is compared — app 187's "Program
+  Matrikulasi" at "Kolej Matrikulasi Kejuruteraan Johor" ticked `match` against a Kejuruteraan degree by the
+  shared word. The letter is known by its INSTITUTION (a matriculation college; a Form-6 college; a secondary
+  school whose letter says Tingkatan Enam / STPM), never by a programme word: two adversarial rounds broke every
+  programme-word rule ("Kejuruteraan Awam (Lepasan STPM)" at a university; "Lepasan SPM Tingkatan Enam" at a
+  school). Asasi, an empty / unknown pick and a blank institution are untouched. `offer_pathway_match` gains
+  `declared_type` (default '' = no level check); `student_offer_check` passes `chosen_pathway`;
+  `audit_pathway_ticks`' legacy call passes it too (TD-473 is not request #9's change).
+- Effect: a YELLOW Pathway chip, no Institution tick, no silent pick adoption (`offer_sync`); never red, no band
+  step (S6: the Pathway chip is not counted). Production (read-only SQL, 2026-11-04): 0 live letters change; 2
+  superseded ones (apps 187, 276).
+- Tests: `test_td473_pre_u_letter_level.py`.
 
 ## Team tables T5c part 1 — pages open by keys (LIVE 2026-11-04; main ac68a361; api-01251-l9v, web-01081-957)
 
