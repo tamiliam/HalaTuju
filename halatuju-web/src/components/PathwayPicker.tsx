@@ -92,7 +92,8 @@ export default function PathwayPicker({
   }, [eligibleOnly, elig, profile, token, examType])
   const narrowing = eligibleOnly && canNarrow
   const eligLoading = narrowing && !elig
-  const allowed: Allowed = narrowing && elig ? elig.courseIds : null
+  // The degree list has no SPM entry rules to narrow by (request #63): "Eligible only" would empty it.
+  const allowed: Allowed = narrowing && elig && form.chosenPathway !== DEGREE_PATHWAY ? elig.courseIds : null
   // The pathway DRAWN: a MARA-division diploma is stored as `university` but shown under MARA
   // (`lib/planPicker.ts` shownPathway / storedPathway). ONLY on the programme-pathway branch: an STPM
   // or third-route holder picks from the degree list, where the pathway is never derived (review 2).
@@ -167,7 +168,7 @@ export default function PathwayPicker({
   )
 
   const pathways = narrowing && elig
-    ? PATHWAY_ORDER.filter((k) => elig.pathways.has(k) || k === pathway) : PATHWAY_ORDER
+    ? PATHWAY_ORDER.filter((k) => elig.pathways.has(k) || k === pathway || k === DEGREE_PATHWAY) : PATHWAY_ORDER
   const tracks = narrowing && elig
     ? MATRIC_TRACKS.filter((tr) => elig.matricTracks.includes(tr) || tr === form.preUTrack) : MATRIC_TRACKS
 

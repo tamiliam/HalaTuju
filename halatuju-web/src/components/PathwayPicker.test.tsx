@@ -262,7 +262,7 @@ describe('"Eligible only" — off by default, narrows when switched on', () => {
     const sw = screen.getByRole('switch', { name: 'search.eligibleOnly' })
     expect(sw.getAttribute('aria-checked')).toBe('false')
     fireEvent.click(sw)
-    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['poly']))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['degree', 'poly']))
     expect((checkEligibility as jest.Mock).mock.calls[0][0].bumiputera).toBe(true)
     choose('scholarship.apply.plan.pathwayLabel', 'poly')
     await waitFor(() => expect(options('scholarship.apply.plan.stateLabel')).toEqual(['Perak']))   // PKB offers no eligible course
@@ -279,7 +279,7 @@ describe('"Eligible only" — off by default, narrows when switched on', () => {
     mount(SPM)
     click('scholarship.apply.plan.sure')
     fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
-    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['mara']))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['degree', 'mara']))
     choose('scholarship.apply.plan.pathwayLabel', 'mara')
     await waitFor(() => expect(options('scholarship.apply.plan.stateLabel')).toEqual(['@MARA-BPT']))
     choose('scholarship.apply.plan.stateLabel', '@MARA-BPT')
@@ -295,7 +295,7 @@ describe('"Eligible only" — off by default, narrows when switched on', () => {
     mount(SPM)
     click('scholarship.apply.plan.sure')
     fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
-    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['university', 'mara']))
+    await waitFor(() => expect(options('scholarship.apply.plan.pathwayLabel')).toEqual(['university', 'degree', 'mara']))
   })
 
   it('narrows the matriculation tracks', async () => {
@@ -422,5 +422,42 @@ describe('a failed catalogue fetch', () => {
     expect(await screen.findByLabelText('scholarship.apply.plan.stateLabel')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(getPathwayOfferings).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('an SPM leaver can pick a university degree (request #63)', () => {
+  it('offers University degree in the pathway list and lists the degrees, unfiltered', async () => {
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    expect(options('scholarship.apply.plan.pathwayLabel')).toContain('degree')
+    choose('scholarship.apply.plan.pathwayLabel', 'degree')
+    await waitFor(() => expect(getPathwayOfferings).toHaveBeenCalledWith('degree'))
+    await waitFor(() => screen.getByLabelText('scholarship.apply.plan.institutionLabel.university'))
+    choose('scholarship.apply.plan.institutionLabel.university', 'UM')
+    fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+    expect(screen.getByText('Ijazah Perubatan')).toBeTruthy()
+    fireEvent.click(screen.getByText('Ijazah Undang-Undang'))
+    expect(latest.chosenPathway).toBe('degree')
+    expect(latest.chosenProgramme).toMatchObject({ courseId: 'LAW', institution: 'Universiti Malaya', institutionId: 'UM' })
+  })
+
+  it('"Eligible only" neither hides the degree choice nor empties its list', async () => {
+    mount(SPM)
+    click('scholarship.apply.plan.sure')
+    choose('scholarship.apply.plan.pathwayLabel', 'degree')
+    fireEvent.click(screen.getByRole('switch', { name: 'search.eligibleOnly' }))
+    await waitFor(() => expect(checkEligibility).toHaveBeenCalled())
+    await waitFor(() => screen.getByLabelText('scholarship.apply.plan.institutionLabel.university'))
+    expect(options('scholarship.apply.plan.pathwayLabel')).toContain('degree')
+    choose('scholarship.apply.plan.institutionLabel.university', 'UM')
+    fireEvent.focus(screen.getByPlaceholderText('scholarship.apply.plan.programmePlaceholder'))
+    expect(screen.getByText('Ijazah Perubatan')).toBeTruthy()
+    expect(screen.getByText('Ijazah Undang-Undang')).toBeTruthy()
+  })
+
+  it('an STPM holder still sees no pathway step', () => {
+    mount(STPM)
+    click('scholarship.apply.plan.sure')
+    expect(screen.queryByLabelText('scholarship.apply.plan.pathwayLabel')).toBeNull()
   })
 })

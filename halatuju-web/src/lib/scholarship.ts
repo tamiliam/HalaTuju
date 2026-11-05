@@ -193,7 +193,7 @@ export function isValidPhone(s: string): boolean {
 // taxonomy constant on the api side to hold this against (`pathway_type` is a column of data, not an
 // enum). ⚠ A pathway missing from this list is not drawn — check it when a pathway is introduced.
 export const PATHWAY_ORDER = [
-  'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
+  'matric', 'stpm', 'asasi', 'university', 'degree', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
 ] as const
 export type PathwayKey = typeof PATHWAY_ORDER[number]
 
@@ -204,7 +204,7 @@ export type PathwayCertainty = '' | 'sure' | 'uncertain'
 // Pathways whose offer branch names a PROGRAMME (institution first, then the course; PISMP by
 // school type then subject). The two pre-U pathways (matric, stpm) name a college / school instead.
 export const PROGRAMME_PATHWAYS = [
-  'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
+  'asasi', 'university', 'degree', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs', 'mara', 'tvet_other',
 ] as const
 export function isProgrammePathway(key: string): boolean {
   return (PROGRAMME_PATHWAYS as readonly string[]).includes(key)
