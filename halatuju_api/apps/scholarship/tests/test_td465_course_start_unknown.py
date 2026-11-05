@@ -16,9 +16,11 @@ from django.test import TestCase, override_settings
 
 from apps.scholarship import award
 from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
-from apps.scholarship.services import set_reporting_date_by_officer
+from apps.scholarship.models import InterviewSession
+from apps.scholarship.services import set_reporting_date_by_officer, submit_interview
 from apps.scholarship.tests.factories import (
-    RECOMMEND_VERDICT, TEST_JWT_SECRET, authed_client, make_admin, make_application, make_cohort,
+    RECOMMEND_VERDICT, TEST_JWT_SECRET, VERIFY_CHECKLIST, answered_findings, authed_client,
+    make_admin, make_application, make_cohort,
 )
 
 
@@ -104,4 +106,143 @@ class TestCourseStartUnknownStopsTheAward(TestCase):
         self.assertFalse(award.course_start_unknown(app))
         self.assertEqual(self._record_accept(app).status_code, 200)
         app.refresh_from_db()
+        self.assertEqual(app.award_amount, Decimal('1000'))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestQcRefusesAnApproveWithNoBursary(TestCase):
+    """TD-465 review: four routes fill the reporting date WITHOUT re-recording the verdict, so the
+    date stop alone let an approve with ``award_amount`` None reach `recommended`. QC's accept now
+    refuses it (``award_required``, no override); re-recording the verdict is the remedy."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = make_cohort()   # year 2026
+        org = cls.cohort.owning_organisation
+        cls.reviewer = make_admin('reviewer', owning_org=org)
+        cls.qc = make_admin('qc', owning_org=org)
+        cls.super = make_admin('super', super_admin=True)
+
+    def _post(self, who, app, door, body=None):
+        return authed_client(who).post(_url(app, door), body or {}, format='json')
+
+    def _sized_nothing(self):
+        """An approve AWAITING QC whose verdict was recorded while the start year was unknown."""
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                               reviewer=self.reviewer, chosen_pathway='stpm',
+                               reporting_date=None, award_amount=None)
+        r = self._post(self.reviewer, app, 'record-verdict',
+                       {'officer_verdict': dict(RECOMMEND_VERDICT), 'reason': 'ok'})
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)
+        return app
+
+    def _verify_accept(self, app):
+        # The completeness gate is not under test (the factory row is not a complete profile).
+        with mock.patch('apps.scholarship.views_admin.applications.application_completeness',
+                        return_value={'complete': True}):
+            return self._post(self.reviewer, app, 'verify-accept',
+                              {'checklist': dict(VERIFY_CHECKLIST)})
+
+    def _qc_accept(self, app, **extra):
+        with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
+            return self._post(self.qc, app, 'qc-decision', {'decision': 'accept', **extra})
+
+    def _assert_refused(self, app):
+        r = self._qc_accept(app, override_reason='try to pass')
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.json()['code'], 'award_required')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+        self.assertIsNone(app.award_amount)
+
+    # -- the four routes that fill the date without a re-record -------------------------------------
+    def test_after_an_offer_re_read(self):
+        from apps.scholarship import reextract, vision
+        from apps.scholarship.models import ApplicantDocument
+        app = self._sized_nothing()
+        doc = ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path='x/offer',
+            vision_fields={'student_verdict': 'ok',
+                           'fields': {'reporting_date': '10 JUN 2025', 'programme': 'Tingkatan Enam',
+                                      'institution': 'SMK Test'}})
+        # The paid reads are stubbed; the offer branch (autofill -> sync_reporting_date_from_offer)
+        # is the real code.
+        with mock.patch.object(vision, 'ocr_document_full', return_value=None), \
+                mock.patch.object(vision, 'run_vision_match_for_document'), \
+                mock.patch.object(vision, 'run_field_extraction_for_document'):
+            self.assertTrue(reextract.reextract_document(doc))
+        app.refresh_from_db()
+        self.assertEqual(app.reporting_date, datetime.date(2025, 6, 10))
+        self._assert_refused(app)
+
+    def test_after_a_cancelled_reopen(self):
+        app = self._sized_nothing()
+        r = self._post(self.qc, app, 'qc-decision', {'decision': 'reopen', 'comments': 'no date'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._post(self.reviewer, app, 'reporting-date',
+                                    {'date': '2025-06-10'}).status_code, 200)
+        r = self._post(self.super, app, 'cancel-reopen')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+        self._assert_refused(app)
+
+    def test_after_a_direct_verify_accept(self):
+        app = self._sized_nothing()
+        self.assertEqual(self._post(self.reviewer, app, 'reporting-date',
+                                    {'date': '2025-06-10'}).status_code, 200)
+        r = self._verify_accept(app)
+        self.assertEqual(r.status_code, 200, r.content)
+        self._assert_refused(app)
+
+    def test_after_the_reporting_date_box_alone(self):
+        app = self._sized_nothing()
+        self.assertEqual(self._post(self.reviewer, app, 'reporting-date',
+                                    {'date': '2025-06-10'}).status_code, 200)
+        self._assert_refused(app)
+
+    # -- unaffected ------------------------------------------------------------------------------
+    def test_an_approve_with_an_amount_is_accepted_as_before(self):
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                               reviewer=self.reviewer, chosen_pathway='stpm',
+                               reporting_date=datetime.date(2025, 6, 10), award_amount=1000)
+        r = self._qc_accept(app)
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'recommended')
+        self.assertEqual(app.award_amount, Decimal('1000'))
+
+    def test_a_decline_is_unaffected(self):
+        app = make_application('awaiting_qc', outcome='decline', cohort=self.cohort,
+                               reviewer=self.reviewer, chosen_pathway='stpm')
+        self.assertIsNone(app.award_amount)
+        r = self._qc_accept(app)
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+
+    # -- the real road ---------------------------------------------------------------------------
+    def test_reopen_date_re_record_verify_accept_sizes_and_accepts(self):
+        app = self._sized_nothing()
+        r = self._post(self.qc, app, 'qc-decision', {'decision': 'reopen', 'comments': 'no date'})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._post(self.reviewer, app, 'reporting-date',
+                                    {'date': '2025-06-10'}).status_code, 200)
+        # A reopened decision is re-gated on a submitted interview (TD-253).
+        submit_interview(InterviewSession.objects.create(
+            application=app, interviewer=self.reviewer, status='draft',
+            findings=answered_findings(app)))
+        r = self._post(self.reviewer, app, 'record-verdict',
+                       {'officer_verdict': dict(RECOMMEND_VERDICT), 'reason': 'ok'})
+        self.assertEqual(r.status_code, 200, r.content)
+        r = self._verify_accept(app)
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.award_amount, Decimal('1000'))
+        r = self._qc_accept(app)
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'recommended')
         self.assertEqual(app.award_amount, Decimal('1000'))

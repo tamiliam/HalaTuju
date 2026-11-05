@@ -372,12 +372,13 @@ class TestDeclineToQc(TestCase):
 
     def test_recommend_still_recommends_not_rejects(self):
         # Guard: a recommend verdict at QC still → recommended (the branch only diverts declines).
+        # An approve carries the amount record-verdict sized (QC refuses one without: TD-465).
         ScholarshipApplication.objects.filter(pk=self.app.id).update(
-            status='interviewed', officer_verdict={'overall': 'accept'})
+            status='interviewed', officer_verdict={'overall': 'accept'}, award_amount=2000)
         with mock.patch('apps.scholarship.views_admin.verdict.build_verdict', return_value=[]):
             self._auth('qc-uid')
             r = self._qc({'decision': 'accept'})
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 200, r.content)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
 
