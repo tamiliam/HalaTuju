@@ -184,3 +184,27 @@ grep -rn "SUPABASE_.*KEY" halatuju-web/src/lib/*supabase*.ts
 # Backup tier
 MCP: get_organization(id="wgkfortqdceiixptcijz")   # plan should be >= pro
 ```
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-05 (audit sprint A0.3)
+
+Security operating rules (full text, unchanged).
+
+- **RLS:** every `public` table has RLS on (event trigger `rls_auto_enable`, since 2026-09-16 — it adds
+  no policy: add the `service_role` policy yourself). Scholarship tables are deny-all to the public key.
+  **The four advisory tables are READ-only to students through the public key since 2026-10-05** (eight
+  write policies dropped; undo `docs/security/2026-10-05-restore-student-write-policies.sql`); every write
+  goes through Django. Run the Supabase Security Advisor after any migration; 0 errors before deploy.
+  New-table policy templates (written after an earlier RLS incident): `halatuju_api/docs/incident-001-rls-disabled.md`.
+  Check the trigger: `select evtenabled from pg_event_trigger where evtname = 'rls_auto_enable';` — `'O'` = on.
+- **Google Workspace is keyless** (TD-125/TD-329): no service-account key exists. If the path breaks,
+  alert policy "Google Workspace keyless path failed (Sheets / Drive / Meet)"
+  (`alertPolicies/10163327245873580870`) emails tamiliam@gmail.com; recovery = the IAM grant
+  (`roles/iam.serviceAccountTokenCreator` for the runtime SA on `halatuju-meet`) and
+  `iamcredentials.googleapis.com` enabled. A key fallback would be a code restore plus a deploy.
+- **Audit lines:** `AUDIT <event>` log lines (applicant reads feed the `applicant_record_reads` metric
+  and its > 30-in-10-minutes alert); logs are JSON with a real `severity` (TD-290, `halatuju/logging_json.py`)
+  — an alert matching `severity>=WARNING` only works because of it. Loggers are named in full
+  (`apps.scholarship.emails`), never `__name__` inside a package (`AuditLoggerNameTest`).
+- **Sessions:** three PKCE Supabase clients (student / admin / sponsor) with separate storage keys;
+  the web never imports a value from `@supabase/supabase-js` outside `supabaseAuthClient.ts`.
+

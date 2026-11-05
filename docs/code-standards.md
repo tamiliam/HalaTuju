@@ -373,3 +373,17 @@ story only when you want to know why. The two classes that earned a section of t
   the next sweep "finishes the job".
 - A promise to a named future sprint belongs in that sprint's ROADMAP section. A code comment is a
   note to whoever next opens that file, which is a different person (TD-271).
+
+## Moved from halatuju_api/CLAUDE.md, 2026-11-05 (audit sprint A0.3)
+
+Code-standards rules (full text, unchanged).
+
+- **NEVER raise a budget, a floor or a ledger**; split the file first, in its own commit, moves only. A new post-H18 query budget is a dated `_admitted` record, never in the frozen `baseline`.
+- ⛔ No value import from `@supabase/supabase-js` in `src/` (auth clients only in `supabaseAuthClient.ts`; `import type` is fine).
+- ⚠ Next's printed first-load counts the PAGE entry only; moving weight from a page into a layout lightens nothing. ⚠ 87.2 kB is the floor under every route. ⚠ The bundle budget cannot see CSS, fonts or lazy chunks, and does not run in `npm test`; `--from-log` needs the SAME build's `.next/`.
+- ⚠ The two query numbers (applicant detail with and without documents) being EQUAL is the point; ⚠ no write path may open or read the document snapshot. ⚠ `query_budgets` keys are route patterns, not file paths.
+- Moving a file that is in a ledger: declare the move (`_moved`); ⚠ a guard that READS a moved file by path must follow it in the same change; run BOTH suites.
+- ⚠ A tree-walking guard needs a floor; ⚠ allowlist a PATH, never a NAME (TD-277); ⚠ an empty `parametrize` / `.each` corpus generates ZERO tests; ⚠ the two trees watch each other (`test_web_guards_read_live_paths.py`, `crossTreePaths.test.ts`).
+- The debt register is not the api gate's (docs edits skip it): `code_health.py` at every close does the duplicate-id check.
+- The nine groups the code-health arc harvested (H19) are in the doc.
+

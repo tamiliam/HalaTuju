@@ -1,6 +1,6 @@
 # The Mobile Standard
 
-Adopted 2026-10-31 (Mobile M0). Roadmap: [plans/2026-10-31-mobile-native-roadmap.md](plans/2026-10-31-mobile-native-roadmap.md).
+Adopted 2026-10-31 (Mobile M0). Roadmap: [plans/archive/2026-10-31-mobile-native-roadmap.md](plans/archive/2026-10-31-mobile-native-roadmap.md).
 Live status of every screen: [mobile-ledger.md](mobile-ledger.md) (generated — do not edit).
 
 Students use HalaTuju on their phones almost all the time. The owner's rule: **if we show it on a
