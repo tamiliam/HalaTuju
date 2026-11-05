@@ -7897,3 +7897,51 @@ call, never a new fail. Round 12 blocked the plain spellings the same way; round
 read alike. **Fix:** a short list of campus-facility phrases (Kolej Kediaman, Asrama …) taken out as allowed spans,
 and a sibling-institute rule for a second public institute of another agency; measure on the corpus. *(S7 · S)*
 Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
+
+### [TD-512] A document record accepts any client storage path (SEC-01) - medium (high once bursary agreements exist)
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed; hotfix built on branch sec-a, in progress).** When a student records a document, the server accepts any `storage_path` the client sends; the only check is that the object exists (`scholarship/views.py` ~1099). Formal letters sit at `<org>/<app>/letters/<id>.pdf` with a sequential id, so a same-org student can guess one, register it, get a signed link and an OCR read, and Remove deletes any stored path. The correct guard exists (`scholar_money.own_path`) but is not used here. **Fix:** bind the path to the caller's own folder (as `requests_delivery` and `results_review.record_slip` already do); never delete a path the record does not own; add a regression test. *(A · S)*
+
+### [TD-513] Staff first-login link trusts user-writable user_metadata.email_verified (SEC-02) - medium (conditional)
+
+**Raised 2026-11-05 by the v3.1.0 project audit (code flaw confirmed; hotfix on branch sec-a).** `middleware/supabase_auth.py` ~156 falls back to `user_metadata.email_verified`, which the user can write, and `get_admin` (`views_admin.py` ~115) uses it to link an invited PartnerAdmin row by email. Exploitable only if Supabase issues sessions for unconfirmed emails (Confirm email OFF); the owner is checking that setting. **Fix:** trust only the server-side `email_confirmed_at` claim; test with a forged metadata flag. *(A · S)*
+
+### [TD-514] Throttle key comes from client-settable headers (SEC-03) - low
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `halatuju/throttling.py` trusts `CF-Connecting-IP` (no Cloudflare in front) and the LEFTMOST `X-Forwarded-For` hop; Cloud Run appends the real address as the RIGHTMOST hop. A new spoofed value per request gets a new bucket, so every anonymous limit can be skipped. Logged-in upload limits key on the user id and are unaffected. **Fix:** take the rightmost trusted hop, drop the Cloudflare header. *(A · S)*
+
+### [TD-515] Partner student CSV export has no audit line and no formula guard (SEC-04) - medium
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `courses/views_admin.py` ~483-531 exports name, NRIC, email, phone, address, household income and disability with no `AUDIT` line, and does not neutralise cells that start with `=`, `+`, `-` or `@`; fields students type themselves reach Excel as typed. The other CSV exports do both (`survey_results._cell`). Scope is fenced to the partner's own referred students. **Fix:** reuse `_cell` and write the AUDIT line; add tests for both. *(A · S)*
+
+### [TD-516] Python dependency bumps on the auth path: DRF 3.18.2, pyjwt 2.15.0 (SEC-10) - medium (quick win)
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** `requirements.lock` has DRF 3.18.1 (CVE-2026-114136, an unauthenticated memory blow-up: about 108 bytes in costs about 97 MiB, enough to hurt a 2 GiB instance on a 3-instance service) and pyjwt 2.14.0 (PYSEC-2026-4141; the RecursionError escapes the middleware's except clauses and becomes a 500). Also flagged, exploitability not assessed: aiohttp, pyasn1, certifi, multidict, opentelemetry-api. Pillow, pillow-heif and pypdf stay under TD-506. **Fix:** bump DRF and pyjwt, run the full suite, then take the rest in one pass. *(A · S)*
+
+### [TD-517] record-verdict calls Gemini twice inside the request (SP-01, org request 61) - medium (live harm)
+
+**Raised 2026-11-05 by the v3.1.0 project audit (reproduced on live logs: 17 of 23 real calls over 30 s in 30 days, worst 51.9 s).** With `finalise` set, `views_admin/verdict.py` ~159-212 runs `refine_sponsor_profile` and `generate_anon_blurb` inline, outside the transaction. Reviewers risk a timeout and a double submit; this caused org request 61. **Fix:** record the verdict at once and run refine and blurb as a background step (or a second request) with a progress state. *(A · M)*
+
+### [TD-518] reprocess-ic-vision hourly job runs near the 300 s limit (SP-02) - medium
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Median about 200 s, p95 about 232 s; 5 runs hit the 300 s timeout (2 of 44 ended in a 504 in the earlier window). A document is stamped before it is read, so a killed run does not loop on the same file, but the batch is cut mid-way and shares the web service's three instances. **Fix:** cap the batch size or move it to a Cloud Run job; check the scanned and processed counts for repeated paid re-reads. *(A · M)*
+
+### [TD-519] Slow synchronous paths: document upload, assign, interview submit, income coach (SP-03 to SP-06) - medium
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** Student document POST runs HEIC conversion, Vision, OCR and Gemini inside the request (p50 11.6 s, p95 27.2 s, max 57.4 s). Admin assign sends the reviewer email inline and returns a full detail serializer (p50 about 13 s, p95 39 s). Interview submit p95 26.5 s; the income coach GETs call a model inline (p95 14-21 s). Nothing failed, but students on phones retry and double-upload. **Fix:** defer the heavy step after the reply, slim the assign reply, cache the coach by input hash. *(A · M)*
+
+### [TD-520] Low security tidy-ups: claim-code race, email in a log line, public partner contacts, thin headers (SEC-08, 09, 11, 12) - low
+
+**Raised 2026-11-05 by the v3.1.0 project audit (SEC-08 and 09 confirmed; SEC-11 and 12 read, not run).** (1) `profile_claim._within` does a cache get then set, not an atomic add. (2) `courses/views.py` ~1418 writes an email address into a WARNING line. (3) `public.partner_organisations` has an "Allow public read" policy (Security Advisor 0012) exposing contact names, emails and phones. (4) No CSP, X-Frame-Options or Referrer-Policy on the web; HSTS is 30 days on the API. **Fix:** atomic add; log the user id; tighten the policy; add a `headers()` block. *(A · S)*
+
+### [TD-521] No real sign-in per role on a local stack (CO-01) - medium
+
+**Raised 2026-11-05 by the v3.1.0 project audit (facts confirmed).** `seed_local_console` makes one super admin; its demo reviewer has an `.invalid` email nobody can sign in as. The `/sandbox` screens return canned JSON, so role filters and permission bugs (TD-500 to TD-505) cannot be seen. TD-194 is resolved for super admin only. **Fix:** seed one real local login per hat (reviewer, mentor, finance, QC, sponsor, student) against a running API and web. *(A · M)*
+
+### [TD-522] Project documents out of date: Open Items Index, roadmap, flag table (RD-02, CO-02, CO-03) - medium
+
+**Raised 2026-11-05 by the v3.1.0 project audit (confirmed).** The register's Open Items Index says 137 open; the project's own counter reads 219 open of 503 at the tag, and about 82 entries sit in no tier. `docs/roadmap.md` was last updated 2026-03-20 and says v2.0. About 24 backend flags default OFF and no table says which are ON in production. **Fix:** regenerate the index, rewrite the roadmap, and add one table of flags with their live values (read off the service, not the defaults). *(A · S)*
+
+### [TD-523] Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
+
+**Raised 2026-11-05 by the v3.1.0 project audit (read from Cloud Run and Cloud Build).** The API has no minimum instance, so the first visitor after idle waits for the dataset load; one instance would cost money under the RM10 budget. Builds run 15-27 minutes, about 30 in 2.5 days. **Fix:** owner rules on min-instances; cache image layers and split the gate tests from the build. *(B · M)*
