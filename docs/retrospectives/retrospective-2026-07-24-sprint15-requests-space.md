@@ -1,12 +1,12 @@
 # Retrospective — Sprint 15: Requests space v1 (2026-07-24)
 
-Brief: `docs/plans/2026-07-24-sprint15-requests-space-brief.md`. Executor: Opus 4.8. **Status:
+Brief: `docs/plans/archive/2026-07-24-sprint15-requests-space-brief.md`. Executor: Opus 4.8. **Status:
 SHIPPED + DEPLOYED + LIVE 2026-07-24** — migrations 0111+0112 applied migrate-first, both Cloud
 Builds SUCCESS, `REQUESTS_ENABLED=1` flipped after owner review of the rate-card copy + a UI mock.
 
 ## The plan pivot — static rate card → AI-reviewer flow
 
-The roadmap (`docs/plans/2026-07-14-platform-roadmap-draft.md`, Phase 5 / Sprint 15) originally
+The roadmap (`docs/plans/archive/2026-07-14-platform-roadmap-draft.md`, Phase 5 / Sprint 15) originally
 scoped a **published rate card**: bugs free, features priced in RINGGIT off a fixed table, with
 "triage v1 = owner-run with an AI-drafted evaluation … price from the rate card". At the brief
 stage the owner locked a different design before a line of code was written: no rate card exists

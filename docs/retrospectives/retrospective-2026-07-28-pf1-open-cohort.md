@@ -1,7 +1,7 @@
 # Retrospective — PF-1: the platform stops guessing which programme a student applied to
 
 **Date:** 2026-07-28 · **Commits:** `4008d362` (P1, the refusal), `f7f652ef` (P2, the apply link)
-**Brief:** `docs/plans/2026-07-28-pf1-open-cohort-org-context.md`
+**Brief:** `docs/plans/archive/2026-07-28-pf1-open-cohort-org-context.md`
 **Migration:** none. **New dependency:** none.
 
 ---

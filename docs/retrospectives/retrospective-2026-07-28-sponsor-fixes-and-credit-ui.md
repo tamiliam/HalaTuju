@@ -4,7 +4,7 @@
 **Commits:** `0561ac1c` (S1.1 — three fixes), `5c96b001` (S2 — the credit UI)
 **Branch:** `feat/sponsor-detail` (worktree `.worktrees/sponsor-detail`)
 **Migration:** none. **New route:** none.
-**Plan / design of record:** `docs/plans/2026-07-27-sponsor-module-roadmap.md` ·
+**Plan / design of record:** `docs/plans/archive/2026-07-27-sponsor-module-roadmap.md` ·
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>
 
 ---

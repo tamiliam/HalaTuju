@@ -7,7 +7,7 @@ owning organisation (S2), enforce + prove the organisation wall on the admin sur
 BrightPath is the only organisation.
 **Commits:** `5ffcd493` (S2) · `f2c8c5ef` (S3a) · `171a6459` (S3b) · `1949c658` (checkpoint-1 runbook) · `200cbbd6` (S4).
 **Migrations:** scholarship `0099`+`0100`, courses `0062`+`0063` — all additive, applied
-migrate-first via Supabase MCP at Checkpoint 1 (runbook `docs/plans/2026-07-15-phase1-checkpoint1-migrate-first.md`).
+migrate-first via Supabase MCP at Checkpoint 1 (runbook `docs/plans/archive/2026-07-15-phase1-checkpoint1-migrate-first.md`).
 **Tests:** 3713 pytest passing (was 3674 at Phase-1 start → +39). No frontend change.
 
 ## What shipped
@@ -22,7 +22,7 @@ migrate-first via Supabase MCP at Checkpoint 1 (runbook `docs/plans/2026-07-15-p
   wired into every gate (list query, `_scoped_application`, `_can_review_app`,
   `_require_app_write`, `_require_qc`) and the three bypass list surfaces. Cross-org → 404.
   Staff backfill: admin/reviewer/qc → BrightPath; super/partner NULL. 44-endpoint audit
-  (`docs/plans/2026-07-15-phase1-s3a-endpoint-audit.md`).
+  (`docs/plans/archive/2026-07-15-phase1-s3a-endpoint-audit.md`).
 - **S3b — prove it, forever.** Fence-proof suite (two orgs, real endpoints), a
   `__subclasses__` coverage-completeness check (a new endpoint nobody classified fails CI),
   and a static source guard (a raw admin query without an `# org-fence:` pragma fails CI).

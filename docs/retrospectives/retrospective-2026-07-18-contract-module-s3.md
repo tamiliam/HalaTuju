@@ -1,7 +1,7 @@
 # Retrospective — Contract Module Sprint 3 (admin API + Stitch)
 
 **Date:** 2026-07-18
-**Plan:** `docs/plans/2026-07-18-contract-module-plan.md`
+**Plan:** `docs/plans/archive/2026-07-18-contract-module-plan.md`
 **Branch:** `feat/contract-module` (NOT pushed; single deploy at Sprint 5).
 **Scope:** The admin authoring/deployment API + the Stitch UI prototype. Backend
 only — the FE pages/components are Sprint 4, gated on the owner's Stitch approval.

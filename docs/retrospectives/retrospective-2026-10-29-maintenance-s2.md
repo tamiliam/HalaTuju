@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 2: the admin Scholars list and maintenance file (2026-10-29)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 2). Design of record: the owner-approved
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 2). Design of record: the owner-approved
 canvas (2026-10-29). Shipped as `3b27acbd` (feature) and `1debc6cc` (adversarial review fixes), pushed as `1debc6cc`.
 No migration.
 

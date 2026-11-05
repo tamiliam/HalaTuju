@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-27 · **Commit:** `20d683b4` (+ `39732b62`, a ported backend test)
 **Build:** `39732b6` SUCCESS both services · api `…00886-zgt`, web `…00729-hth`
-**Plan:** `docs/plans/2026-07-27-nav-ia-roadmap.md` · **Design of record:**
+**Plan:** `docs/plans/archive/2026-07-27-nav-ia-roadmap.md` · **Design of record:**
 <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>
 **Migration:** none. **Backend change:** none (one test ported).
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-01
 **Branch:** `feat/layer1-a1-tenant-theme`
-**Roadmap:** `docs/plans/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 1
+**Roadmap:** `docs/plans/archive/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 1
 **Migration:** `courses/0071_organisationtheme` — ADDITIVE, one new table. Migrate-first.
 
 ---

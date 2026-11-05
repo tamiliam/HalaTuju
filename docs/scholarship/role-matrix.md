@@ -18,7 +18,7 @@ what is worth showing, never what is permitted; the fence stays `_AdminBase._org
 visibility snapshot, so a drift shows up as a failing test rather than a quietly wrong menu.
 
 **Organisation access is a set of PERMISSIONS (org request #39, owner 2026-10-19; all four sprints built
-by 2026-10-21 — roadmap `docs/plans/2026-10-19-staff-permissions-roadmap.md`).** *"A reviewer is someone
+by 2026-10-21 — roadmap `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md`).** *"A reviewer is someone
 with review permission. A QC likewise is an admin with QC permission."* This file is therefore in three
 parts: the **catalogue** (what each permission opens), the **presets** (the set each role starts with),
 and the **lead tier** (the organisation admin, fixed). The per-role table further down is what each
@@ -350,20 +350,20 @@ signer must type their own name, matched against `PartnerAdmin.name`.
   `GET/PUT /api/v1/admin/scholarship/programme/configuration/`; tests
   `apps/scholarship/tests/test_layer0_config_screen.py`.
 - **SHIPPED 2026-07-15** — EVERYTHING in this matrix except the Finance row:
-  `docs/plans/2026-07-15-org-admin-powers-v1-brief.md` (single combined brief — org-admin
+  `docs/plans/archive/2026-07-15-org-admin-powers-v1-brief.md` (single combined brief — org-admin
   + qc org-wide write, QC recorder guard, assignment delegation, sponsor-vetting migration to
   super/org_admin, Admin-General read-only Administration, last-org-admin guard). No migration.
   Tests: `apps/scholarship/tests/test_org_admin_powers.py` +
   `apps/courses/tests/test_org_admin_role.py` (`TestLastOrgAdminGuard`/`TestAdminGeneralReadOnly`).
 - **SHIPPED 2026-07-16** — the Payments module (see the Payments section above): `admin`/`org_admin`
   access, org-fenced, two-person maker→approver sign-off. Plan
-  `docs/plans/2026-07-16-payments-module-plan.md`; endpoints in `views_admin.py`
+  `docs/plans/archive/2026-07-16-payments-module-plan.md`; endpoints in `views_admin.py`
   (`_PaymentsBase` + 6 views, classified in `test_org_fence.py`). **▶ Manual/FAQ currency carry:**
   the Payments module is not yet a Manual chapter — fold it into the owner's pending Manual
   screenshot pass. **(Cleared 2026-07-23 — the Payments module now has org-admin + finance Manual
   sections and FAQ entries.)**
 - **SHIPPED 2026-07-23 — the `finance` role** (Sprint 14, brief
-  `docs/plans/2026-07-22-sprint14-finance-role-brief.md`): a DORMANT payment-run checker plus a
+  `docs/plans/archive/2026-07-22-sprint14-finance-role-brief.md`): a DORMANT payment-run checker plus a
   funding summary inside the Payments module. Ships **dark** — with no finance admin on prod, the
   production chain is unchanged. Role choice `courses/0066` (choices-only), signature triple
   `scholarship/0109` (3 columns + status choices). Predicate

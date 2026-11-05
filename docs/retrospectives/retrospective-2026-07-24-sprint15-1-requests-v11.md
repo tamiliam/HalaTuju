@@ -1,6 +1,6 @@
 # Retrospective — Sprint 15.1: Requests v1.1 (2026-07-24)
 
-Brief: `docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`. **Status: SHIPPED + DEPLOYED +
+Brief: `docs/plans/archive/2026-07-24-sprint15-1-requests-v11-brief.md`. **Status: SHIPPED + DEPLOYED +
 LIVE 2026-07-24** — commits `b2a842cd`..`54b5fbbf`, both Cloud Builds SUCCESS for `54b5fbb`,
 migrations `scholarship/0113`+`0114` applied migrate-first with RLS, smoke green,
 `REQUESTS_ENABLED=1` held throughout (additive to the already-live Sprint 15 feature — no dark

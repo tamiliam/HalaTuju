@@ -1,6 +1,6 @@
 # Retrospective — Offer-extraction root cause + sponsor card data fix (upstream-first) — 2026-07-17
 
-Brief: `docs/plans/2026-07-16-sponsor-card-data-fix-brief.md`. One sprint, one deploy, NO
+Brief: `docs/plans/archive/2026-07-16-sponsor-card-data-fix-brief.md`. One sprint, one deploy, NO
 migration. Owner-diagnosed from app #125's card + cockpit. Fixed UPSTREAM (parser + data) with
 the read/write chain as defence-in-depth.
 

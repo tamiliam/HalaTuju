@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 6a: one Student communications page, and switches for the safe emails (2026-10-30)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 6, first half; the owner split it — 6b,
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 6, first half; the owner split it — 6b,
 letters, waits for an approved design). Shipped as `a1c9f85b` (feature) and `002c6ad7` (fixes for the 7 adversarial
 review findings, 0 HIGH); live as api-01209-74s at about 08:20 UTC. Migration `scholarship/0189` (two new tables
 and one index on `usage_events`) was applied by hand first.

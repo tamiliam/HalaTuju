@@ -1,7 +1,7 @@
 # Retrospective — Nav/IA Sprint N2: the console shell
 
 **Date:** 2026-07-28 · **Commit:** `e07f8f2e` (branch `feat/nav-shell`, worktree-isolated)
-**Plan:** `docs/plans/2026-07-27-nav-ia-roadmap.md` · **Design of record:**
+**Plan:** `docs/plans/archive/2026-07-27-nav-ia-roadmap.md` · **Design of record:**
 <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>
 **Migration:** none. **Backend:** none. **New dependency:** none.
 

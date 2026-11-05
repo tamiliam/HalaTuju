@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-Sprint 3 of the code-health roadmap (`docs/plans/2026-07-03-code-health-review.md`, findings
+Sprint 3 of the code-health roadmap (`docs/plans/archive/2026-07-03-code-health-review.md`, findings
 #6–#11), executed under the owner's pre-taken decisions of 2026-07-03:
 
 1. **#6 Sponsorship lapse on contractual reject** (owner: auto-lapse). New

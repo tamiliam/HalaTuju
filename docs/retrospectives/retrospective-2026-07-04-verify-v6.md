@@ -1,6 +1,6 @@
 # Retrospective — Verification-model V6 (FINAL): Gopal in the Action Centre + persona polish (2026-07-04)
 
-Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V6; audit findings F1, #15, #17.
+Roadmap `docs/plans/archive/2026-07-03-verification-model-roadmap.md` §V6; audit findings F1, #15, #17.
 The last sprint of the six-sprint verification-model hardening roadmap.
 
 ## What Was Built

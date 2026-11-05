@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 6b: letters on the scholar file and on My Bursary (2026-10-31)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 6, second half). Design of record: the
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 6, second half). Design of record: the
 LettersAdmin, LettersStudent and CommsLetters boards on https://claude.ai/artifact/LFHNYc4ynsyKLn6ZZtzReC (owner:
 "design ok", 2026-10-31). Shipped as `0e506798` (feature) and `98b0f964` (fixes for the adversarial review); live as
 api-01213-crq and web-01036-mkf. Migration `scholarship/0192_letters` (two new tables) was applied by hand first.

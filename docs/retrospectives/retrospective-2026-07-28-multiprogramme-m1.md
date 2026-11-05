@@ -1,6 +1,6 @@
 # Retrospective — M1: "which application is this about" stops being answered by position
 
-**Date:** 2026-07-28 · **Roadmap:** `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`
+**Date:** 2026-07-28 · **Roadmap:** `docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md`
 **Migration:** none. **New dependency:** none. **Approved scope:** M1 only.
 
 ---

@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 4a: results review and standing (2026-10-29)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 4, first half). Shipped as `3d38f1f8`
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 4, first half). Shipped as `3d38f1f8`
 (feature) and `10072c71` (adversarial review fixes plus the owner's slip ruling); live as api-01190-6cb plus web.
 Migration `scholarship/0186_semester_result_review` was applied by hand, migrate-first.
 

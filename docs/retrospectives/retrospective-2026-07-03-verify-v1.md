@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-03
 **Branch/worktree:** `feat/verify-v1` in `.worktrees/verify-model`
-**Roadmap:** `docs/plans/2026-07-03-verification-model-roadmap.md` (V1 of V1–V6)
-**Findings source:** `docs/plans/2026-07-03-check-model-audit.md` (#1, #2, F2, F3)
+**Roadmap:** `docs/plans/archive/2026-07-03-verification-model-roadmap.md` (V1 of V1–V6)
+**Findings source:** `docs/plans/archive/2026-07-03-check-model-audit.md` (#1, #2, F2, F3)
 **Migration:** NONE — every choice/schema this touches already existed; changes are Python
 constants, extraction schema, verdict logic, i18n, and a serializer field.
 **Tests:** 2025 scholarship pytest (+6 net) + 412 jest; tsc clean (17 pre-existing test-file

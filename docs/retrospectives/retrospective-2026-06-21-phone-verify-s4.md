@@ -1,7 +1,7 @@
 # Retrospective — Phone verification over WhatsApp (S4 / TD-136) + S5 close
 
 **Date:** 2026-06-21 · **Branch/worktree:** `feat/whatsapp-comms` (`.worktrees/wa-comms`) · **Commit:** `5be1123` → main
-**Roadmap:** `docs/plans/2026-06-21-whatsapp-and-scheduling-followups.md` (S4 ✅ built, S5 ✅ deployed)
+**Roadmap:** `docs/plans/archive/2026-06-21-whatsapp-and-scheduling-followups.md` (S4 ✅ built, S5 ✅ deployed)
 
 ## What shipped
 The last two items of the WhatsApp/scheduling roadmap.

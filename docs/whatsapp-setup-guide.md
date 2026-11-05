@@ -1,7 +1,7 @@
 # Twilio + WhatsApp — Owner Setup Guide (HalaTuju)
 
 **For:** tamiliam · **Date:** 2026-06-20 · **Goal:** stand up the WhatsApp comms channel.
-Companion to `docs/plans/2026-06-20-whatsapp-comms-channel.md`.
+Companion to `docs/plans/archive/2026-06-20-whatsapp-comms-channel.md`.
 
 You do the account/owner steps below; the engineer does all the code. There are **two stages** —
 you only need **Stage 1** to start; Stage 2 is for going live to real applicants later.

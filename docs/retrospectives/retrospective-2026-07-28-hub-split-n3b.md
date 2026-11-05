@@ -1,7 +1,7 @@
 # Retrospective — Nav/IA N3b: the Administration hub becomes real pages
 
 **Date:** 2026-07-28 · **Commits:** `e38e5eac` (N3b), `b26ba393` (auth callback, separate)
-**Roadmap:** `docs/plans/2026-07-27-nav-ia-roadmap.md`
+**Roadmap:** `docs/plans/archive/2026-07-27-nav-ia-roadmap.md`
 **Migration:** none. **Backend:** none. **New dependency:** none.
 
 ---

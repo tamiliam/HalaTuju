@@ -1,8 +1,8 @@
 # Retrospective — Sponsor spending S1: a Vircle report becomes stored transactions
 
 **2026-09-10.** Worktree `.worktrees/spending-ingest`, branch `feat/spending-ingest`.
-Roadmap `docs/plans/2026-09-10-sponsor-spending-roadmap.md`; requirements
-`docs/plans/2026-09-09-sponsor-spending-reports-brief.md`.
+Roadmap `docs/plans/archive/2026-09-10-sponsor-spending-roadmap.md`; requirements
+`docs/plans/archive/2026-09-09-sponsor-spending-reports-brief.md`.
 **Backend only. Not merged, not deployed. Migration `0155` NOT applied.**
 
 ## What was built

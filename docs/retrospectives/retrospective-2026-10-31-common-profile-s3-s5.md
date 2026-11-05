@@ -1,6 +1,6 @@
 # Retrospective — Common profile S3 + S4 + S5: My activity (2026-10-31)
 
-Roadmap: `docs/plans/2026-10-31-common-profile-roadmap.md` (arc DONE). Mock-ups (owner-approved, the My activity
+Roadmap: `docs/plans/archive/2026-10-31-common-profile-roadmap.md` (arc DONE). Mock-ups (owner-approved, the My activity
 column is on board 1): https://claude.ai/artifact/2w7vJhKNhjpkNuy8oa5582.
 Shipped together: main `d85eedbc` (api-01220-drw, web-01044-mjt), migration `scholarship/0195_staff_activity`
 applied by hand first, then the back-fill through the `release-decisions` job.

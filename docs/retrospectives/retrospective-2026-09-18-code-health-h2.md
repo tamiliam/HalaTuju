@@ -1,6 +1,6 @@
 # Retrospective — Code health H2: the tests run before every deploy
 
-**Date:** 2026-09-18 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H2 of H19
+**Date:** 2026-09-18 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H2 of H19
 **Built by:** an Opus 5 agent (the two config files, rollback artefacts, docs); the lead kept every
 step that touches production — the spikes, the trigger switch, the push and the watch.
 **Freeze status:** in force. Two of the ten sprints to *stabilised* are done.

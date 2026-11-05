@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-Sprint 2 of the code-health roadmap (`docs/plans/2026-07-03-code-health-review.md`, findings #5 + #22):
+Sprint 2 of the code-health roadmap (`docs/plans/archive/2026-07-03-code-health-review.md`, findings #5 + #22):
 
 1. **Clobber guards (#5a).** All three vision writers now refuse to overwrite a successful read
    with a failed one: `run_field_extraction_for_document` (keeps stored `fields` when the re-run

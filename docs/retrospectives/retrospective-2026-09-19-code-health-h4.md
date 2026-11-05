@@ -1,6 +1,6 @@
 # Retrospective — Code health H4: the standards become tests, inside the gate
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H4 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H4 of H19
 **Built by:** an Opus 5 agent to a written brief; the lead verified, re-ran both suites, extended
 the workspace health tool to close the one loophole the agent named, and closed.
 **Freeze status:** in force. **Phase 1 (Gates) is complete** — four of the ten sprints to *stabilised*.

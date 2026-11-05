@@ -1,6 +1,6 @@
 # Retrospective: Student maintenance Sprint 5a, the scholar file's Money and Contract tabs (2026-10-30)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 5, admin half; 5b is the student's Funds
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 5, admin half; 5b is the student's Funds
 and Contract tabs).
 
 - **Shipped:** `3d636795` (the feature) and `cebc9850` (fixes for the 6 adversarial review findings).

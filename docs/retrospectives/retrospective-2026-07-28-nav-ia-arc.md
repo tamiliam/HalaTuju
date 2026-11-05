@@ -1,7 +1,7 @@
 # Retrospective — the nav/IA arc (N1 → N4), closed
 
 **2026-07-27 to 2026-07-28 · four sprints, two days · roadmap
-`docs/plans/2026-07-27-nav-ia-roadmap.md` (now closed)**
+`docs/plans/archive/2026-07-27-nav-ia-roadmap.md` (now closed)**
 
 Per-sprint retrospectives already exist and are not repeated here:
 `…-2026-07-27-nav-registry-n1.md`, `…-2026-07-28-nav-shell-n2.md`,
@@ -133,7 +133,7 @@ third again in copy.**
 ## Carried out of the arc
 
 - **▶ PF-1 is next and is mine** (owner reassigned it 2026-07-28). Brief:
-  `docs/plans/2026-07-28-pf1-open-cohort-org-context.md`. Its safety half does not depend on the
+  `docs/plans/archive/2026-07-28-pf1-open-cohort-org-context.md`. Its safety half does not depend on the
   open product question and ships first.
 - **▶ Theming** — its own planning exercise across admin, sponsor and student surfaces, after PF-1.
 - **⏸ N3a** — parked with a trigger: a second active organisation in production.

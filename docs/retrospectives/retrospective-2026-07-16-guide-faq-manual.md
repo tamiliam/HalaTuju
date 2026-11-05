@@ -1,7 +1,7 @@
 # Retrospective — Role-Aware Guide & FAQ Manual
 
 **Date:** 2026-07-16
-**Brief:** `docs/plans/2026-07-16-guide-faq-manual-brief.md`
+**Brief:** `docs/plans/archive/2026-07-16-guide-faq-manual-brief.md`
 **Authority:** `docs/scholarship/role-matrix.md` + owner-approved Stitch mock.
 **Shape:** One sprint, **frontend + content only** (no backend, no migration), one deploy.
 **Tests:** 552 jest (+22 new) · `next build` clean · 2565 scholarship pytest (backend untouched — run per house rule).
@@ -33,7 +33,7 @@ for them ("you'll see only the applicants assigned to you"). Now:
   live UI. A currency-rule note was added to the matrix pointing at the manual.
 - **Screenshots**: reused the eight accurate `/reviewer-guide/` images; the five new org-admin/QC
   images are labelled placeholders (`ManualImage` degrades gracefully) with a capture manifest
-  (`docs/plans/2026-07-16-manual-screenshot-manifest.md`).
+  (`docs/plans/archive/2026-07-16-manual-screenshot-manifest.md`).
 
 ## Content corrections caught (currency wins)
 

@@ -158,4 +158,4 @@ nothing else.
 - The **landing page** and **sign-in prompt** carry the same platform-wide B40 copy. Same class,
   different pages, deliberately out of scope — still unlogged as work.
 - The **eleven officer-facing "B40" strings** are their own planned sprint
-  (`docs/plans/2026-09-09-officer-income-vocabulary.md`).
+  (`docs/plans/archive/2026-09-09-officer-income-vocabulary.md`).

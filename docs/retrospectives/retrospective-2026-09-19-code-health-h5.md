@@ -1,6 +1,6 @@
 # Retrospective — Code health H5: a test factory that only builds states the product can reach
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H5 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H5 of H19
 **Built by:** an Opus 5 agent to a written brief; the lead spot-checked the diff and the finding,
 re-ran the factory and standards suites, fixed the workspace tool, and closed.
 **Freeze status:** in force. Five of the ten sprints to *stabilised*. Run under the owner's standing

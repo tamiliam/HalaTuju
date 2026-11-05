@@ -619,7 +619,7 @@ it greys the assign picker and the server ignores it). Every T5 step that moves 
 
 **Context:** `/admin/requests` was one unpaged list carrying every request's full detail, with a status dropdown the
 server never read (`?status=` was ignored). R1 makes it a paged, server-filtered queue. Plan of record
-`docs/plans/2026-11-03-requests-list-r1-roadmap.md` (D1-D12); design of record the "Requests list" artifact.
+`docs/plans/archive/2026-11-03-requests-list-r1-roadmap.md` (D1-D12); design of record the "Requests list" artifact.
 
 **Decision:**
 1. **The tabs PARTITION the list (owner, option A).** Needs action / In progress / Closed, and All is their sum. Every
@@ -2682,7 +2682,7 @@ the live stored read of that document (fetched 2026-10-29) carries the same misr
 
 The owner asked for a whole system to look after students who were awarded and accepted, until their file is
 closed: a student hub ("My Bursary", `/scholarship/bursary`) and an admin Scholars list + maintenance file
-(`/admin/scholars`). Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (8 sprints + 3 later).
+(`/admin/scholars`). Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (8 sprints + 3 later).
 **Rulings:** (1) **who is in it** — from award acceptance to closure: `awarded` with `vircle_activated_at` set, OR
 `active` / `maintenance`; closed students keep read-only access. ONE predicate (`maintenance_scope.py`) replaces the
 four gates that today accept only `active`/`maintenance` — live count 65, all `awarded` + Vircle-activated
@@ -2877,7 +2877,7 @@ separately, and Continue needs PA + three and a koko score.
 
 ## An STPM student's CGPA is the PNGK of their grades (PA + best three); every reader asks one function — 2026-10-28 (STPM CGPA C2)
 
-Owner ruling (roadmap `docs/plans/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come
+Owner ruling (roadmap `docs/plans/archive/2026-10-28-stpm-cgpa-from-grades-roadmap.md`): subjects, grades and CGPA come
 from onboarding, and the STPM CGPA is worked out from the subjects and grades, never typed. Live, 54 of 98 STPM
 students carried a CGPA that disagreed with their own grades; every certificate read Exact agrees with
 PNGK = (Pengajian Am + best three others) / 4. Decisions: (1) one function, `apps/courses/stpm_pngk.pngk_from_grades`
@@ -3765,7 +3765,7 @@ an agreement" only when nothing is in play. The other student-side picks were re
 report lists them); none other picks an old finished application over a new in-play one today.
 
 **6. What this rules in and out.** Several applications in play to programmes of the SAME organisation
-— roadmap M2 for one organisation (`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`) —
+— roadmap M2 for one organisation (`docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md`) —
 is ruled OUT by the owner. Applications in play to programmes of DIFFERENT organisations at once are
 allowed by the ruling but BLOCKED as built (item 1a) until M2–M4 is approved and built (TD-353); the
 application screen still shows "more than one" rather than picking (M1 stands).
@@ -3951,7 +3951,7 @@ gate; then the form. Before any of them, nothing gift-specific is drawn until th
 landing already says closed — the smaller change, chosen over a second closed card.
 
 **Why.** This settles the open M4 design question in
-`docs/plans/2026-07-28-multi-programme-applications-roadmap.md` ("a student follows A's link but A has
+`docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md` ("a student follows A's link but A has
 closed while B is open — offer B, or stop at 'A is closed'?") in the direction it recommended: stop,
 with an explicit opt-in link, because an automatic redirect nudges a student toward a foundation she
 did not come for. A silent bounce told her nothing at all, which is worse than either.
@@ -3969,7 +3969,7 @@ of statuses. The STATUS list matches the server's duplicate check (`.exclude(sta
 by `studentScreenDrift.test.ts`); the SCOPE does not, on purpose: the server refuses a duplicate PER
 ROUND (`filter(cohort=cohort, profile=profile)`), the web refuses on any standing application in ANY
 round — one application per student until applying to several programmes (M2–M4 of
-`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`) is approved. The cost is real and
+`docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md`) is approved. The cost is real and
 accepted until then: a student rejected, withdrawn or closed in an old round cannot start one in a
 new round or gift from the form (TD-337, owner decision). Round 1 of this sprint called the web rule a
 mirror of the server's; it is not, and the comments and the drift test now say only what is true.
@@ -14213,7 +14213,7 @@ same treatment. Recorded in the roadmap's Sprint 4 section so it reads as a deci
 tab holds nothing but the funding questions); the story step always survives because the family
 roster is core. Rejected alternative: a per-programme step list on the payload — that is a
 stored layout, which is Layer 2 in disguise and forbidden by the standing constraint in
-`docs/plans/2026-07-28-configuration-layers-roadmap.md`.
+`docs/plans/archive/2026-07-28-configuration-layers-roadmap.md`.
 
 ## The requirement set is frozen at SUBMIT, not at start — 2026-08-30
 
@@ -17614,7 +17614,7 @@ Sprint D retires the chip, `StudentProfile.source` and the cockpit's `referred_b
 
 ## 2026-10-19 — Request #39: staff become a set of permissions; today's roles are presets; Finance approves payment runs
 
-**Owner rulings, 2026-10-19 (verbatim from the roadmap `docs/plans/2026-10-19-staff-permissions-roadmap.md`):**
+**Owner rulings, 2026-10-19 (verbatim from the roadmap `docs/plans/archive/2026-10-19-staff-permissions-roadmap.md`):**
 
 > "Can we change all to admin and control only access permission? So, a reviewer is someone with
 > review permission. A QC likewise is an admin with QC permission. In that way, we can have different

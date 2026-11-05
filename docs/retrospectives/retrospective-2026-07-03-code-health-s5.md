@@ -49,7 +49,7 @@ The last sprint of the code-health roadmap (findings #21/#23 + P3 quick wins):
 
 ## Roadmap complete
 
-All five sprints of `docs/plans/2026-07-03-code-health-review.md` are shipped. Remaining
+All five sprints of `docs/plans/archive/2026-07-03-code-health-review.md` are shipped. Remaining
 open items live in the roadmap's Backlog section (P3 leftovers → small-change lane) and
 the owner-decision list (WhatsApp opt-in default; quiz copy review before
 `BURSARY_AGREEMENT_ENABLED`; optional GitHub-support scrub of the purged PII objects).

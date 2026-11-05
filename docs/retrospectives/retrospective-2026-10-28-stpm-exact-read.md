@@ -1,6 +1,6 @@
 # Retrospective — STPM exact read (S1–S4), 2026-10-27 → 2026-10-28
 
-Roadmap: `docs/plans/2026-10-27-stpm-exact-read-roadmap.md`. Live: S1+S2 21ac26b5 · S3 ea10a4c9 · S4 live
+Roadmap: `docs/plans/archive/2026-10-27-stpm-exact-read-roadmap.md`. Live: S1+S2 21ac26b5 · S3 ea10a4c9 · S4 live
 re-read (job execution release-decisions-twfkb). MODEL_VERSION 1.10.0 → 1.11.0; VERDICT 2026-10-27.4.
 
 ## Outcome

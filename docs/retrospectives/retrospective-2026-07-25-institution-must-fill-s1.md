@@ -2,7 +2,7 @@
 
 **Deliverable.** `chosen_programme.institution` gets its own writer, hoisted above every pathway
 guard, plus a by-cause audit command. Backend only, no migration, nothing verdict/award/payment
-touching. Roadmap `docs/plans/2026-07-25-institution-must-fill-roadmap.md`.
+touching. Roadmap `docs/plans/archive/2026-07-25-institution-must-fill-roadmap.md`.
 
 ## What triggered it
 

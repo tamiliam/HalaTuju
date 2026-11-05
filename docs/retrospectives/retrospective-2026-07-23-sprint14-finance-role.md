@@ -1,6 +1,6 @@
 # Retrospective — Sprint 14: the Finance role (dormant checker) — 2026-07-23
 
-Brief: `docs/plans/2026-07-22-sprint14-finance-role-brief.md` (v2, owner-approved).
+Brief: `docs/plans/archive/2026-07-22-sprint14-finance-role-brief.md` (v2, owner-approved).
 Roadmap Phase 5, trigger fired 2026-07-22.
 
 ## What Was Built

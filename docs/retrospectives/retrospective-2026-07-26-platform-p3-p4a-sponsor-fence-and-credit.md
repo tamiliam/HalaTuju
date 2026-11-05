@@ -1,7 +1,7 @@
 # Retrospective — Platform P3 + P4a: sponsor programme fence, and the wallet credit
 
 **Date:** 2026-07-26
-**Sprints:** P3 and P4a of `docs/plans/2026-07-26-programme-layer-roadmap.md`
+**Sprints:** P3 and P4a of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`
 **Commits:** `c7a8e45a` (P3), `1dc102a2` (P4a), `faeb09fa` (role mapping)
 **Result:** 4635 pytest passed, 0 failed. Migrations `0122`–`0124` applied + verified on prod. **Deployed** as part of the programme-layer close.
 

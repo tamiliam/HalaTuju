@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-03
 **Branch/worktree:** `feat/verify-v4` in `.worktrees/verify-model` (off main incl. V1–V3)
-**Roadmap:** `docs/plans/2026-07-03-verification-model-roadmap.md` (V4 of V1–V6)
-**Findings source:** `docs/plans/2026-07-03-check-model-audit.md` §E + owner decision 2
+**Roadmap:** `docs/plans/archive/2026-07-03-verification-model-roadmap.md` (V4 of V1–V6)
+**Findings source:** `docs/plans/archive/2026-07-03-check-model-audit.md` §E + owner decision 2
 **Migration:** `0091_v4_academic_doc_types` — **choices-only (NO Postgres DDL)**. Recorded on prod
 via the claude.ai Supabase MCP at deploy (the owner runs the one-line INSERT; no data change).
 **Tests:** 2055 scholarship pytest (+9 net) + 413 jest; tsc clean.

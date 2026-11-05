@@ -1,6 +1,6 @@
 # Retrospective — Student maintenance Sprint 3: "My Bursary" and the controls move to the file (2026-10-29)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 3). Design of record: the owner-approved phone
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 3). Design of record: the owner-approved phone
 artboard (2026-10-29). Shipped as `1f78c76a` (feature) and `c007883e` (adversarial review fixes); live as api-01186-wgq
 + web (`/scholarship/in-programme` answers 307 → `/scholarship/bursary`, confirmed). No migration.
 

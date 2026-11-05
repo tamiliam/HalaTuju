@@ -1,6 +1,6 @@
 # Retrospective — Code health H11: the split is easy, the guards around it are not
 
-**Date:** 2026-09-20 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H11 of H19
+**Date:** 2026-09-20 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H11 of H19
 **Built by:** an Opus 5 agent to the same brief and the same hard rules as H9 and H10. The lead
 reads the report, pushes and watches the deploy.
 **Outcome: `views_admin.py` (8,556 lines) is a package of eleven files. No behaviour changed —

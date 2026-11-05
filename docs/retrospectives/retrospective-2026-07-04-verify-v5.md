@@ -1,7 +1,7 @@
 # Retrospective — Verification-model V5: verdict evenness + QC gap floor (2026-07-04)
 
-Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V5; audit
-`docs/plans/2026-07-03-check-model-audit.md` findings #5, #10–#14; owner decision 1.
+Roadmap `docs/plans/archive/2026-07-03-verification-model-roadmap.md` §V5; audit
+`docs/plans/archive/2026-07-03-check-model-audit.md` findings #5, #10–#14; owner decision 1.
 Ran across two model sessions (Fable 5 → Opus 4.8) via the mid-sprint handoff file.
 
 ## What Was Built

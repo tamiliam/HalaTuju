@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-01
 **Branch:** `feat/layer1-a2-colour-picker`
-**Roadmap:** `docs/plans/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 2
+**Roadmap:** `docs/plans/archive/2026-07-29-layer1-themes-roadmap.md`, arc A sprint 2
 **Migration:** none.
 **Design of record:** the working mock approved by the owner 2026-09-01 —
 <https://claude.ai/code/artifact/97405467-1fd5-45e3-97be-d83c5fb8739e>

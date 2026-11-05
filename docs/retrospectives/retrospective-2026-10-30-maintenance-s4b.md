@@ -1,6 +1,6 @@
 # Retrospective: Student maintenance Sprint 4b, when results are due and the student results emails (2026-10-30)
 
-Roadmap: `docs/plans/2026-10-29-student-maintenance-roadmap.md` (Sprint 4, second half). Shipped on main as
+Roadmap: `docs/plans/archive/2026-10-29-student-maintenance-roadmap.md` (Sprint 4, second half). Shipped on main as
 `e421d37b` (part 1: result terms and standing), `9da575eb` (part 2: emails and the Student communications tab),
 `eaee818a` (fixes for the 10 adversarial review findings), `9809de16` (migration 0188) and `47d00f11` (removing the
 noqa comments, so the code-standards ratchet held). Live as api revision 01193-58g. Migration

@@ -1,6 +1,6 @@
 # Retrospective — third results route (requests #37, #38, #43), 2026-10-25 → 2026-10-27
 
-Roadmap: `docs/plans/2026-10-25-third-results-route-roadmap.md` (rulings D1–D15 in §7a).
+Roadmap: `docs/plans/archive/2026-10-25-third-results-route-roadmap.md` (rulings D1–D15 in §7a).
 Live: S1 50df8d7f · S2a e4096440 · S2b eddd4ad6 · S3a+S3b 01f8a723 2de36a85 · S4 4bab4086.
 Migrations: courses 0084, scholarship 0178 (both applied via MCP before the push). Flag:
 THIRD_ROUTE_OPEN=1 on halatuju-api (set before the S2b push).

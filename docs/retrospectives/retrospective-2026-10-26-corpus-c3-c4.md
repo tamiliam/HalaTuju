@@ -2,7 +2,7 @@
 
 C3: `0ae5f431` (built as `fcb3ced1` in the worktree `ai-outage`, rebased onto TD-403) — live as
 api-01147-9gw. C4: the lead's live re-run, no code. Roadmap
-`docs/plans/2026-10-25-document-corpus-gaps-roadmap.md` (owner decisions A–D); wording from roadmap C0.
+`docs/plans/archive/2026-10-25-document-corpus-gaps-roadmap.md` (owner decisions A–D); wording from roadmap C0.
 Decisions: `docs/decisions.md` 2026-10-26 (owner rulings 1A, 2A). Register: TD-407 raised. With this the
 corpus-gaps arc is complete except the data-gated TVET families.
 

@@ -2,7 +2,7 @@
 
 C1: `1a2b4962` (the net) + `95131a65` (narrowed after review) — live as api-01144-sfg / web-00988-nhg.
 C2: `1accaab9` (UiTM) + `a781b49a` (digital PDFs; the officer hold) — live. Built in the worktree
-`ai-outage` against the owner-approved roadmap `docs/plans/2026-10-25-document-corpus-gaps-roadmap.md`
+`ai-outage` against the owner-approved roadmap `docs/plans/archive/2026-10-25-document-corpus-gaps-roadmap.md`
 (decisions A–D), from the brief of org request #47. Decisions: `docs/decisions.md` 2026-10-26 (owner
 rulings A, B, C). Register: TD-406 raised.
 

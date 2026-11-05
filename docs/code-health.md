@@ -7,7 +7,7 @@ that got WORSE than the last run by more than a tolerance — the only thing tha
 
 Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` at sprint close).
 
-**The arc that produced these readings is CLOSED.** `docs/plans/2026-09-18-code-health-roadmap.md`
+**The arc that produced these readings is CLOSED.** `docs/plans/archive/2026-09-18-code-health-roadmap.md`
 — nineteen sprints in six phases, **all shipped, H1 to H19**, 2026-09-18 to 2026-09-20. Its closing
 retrospective (what moved, what was promised and missed, what is enforced and by what, what is
 still open and whose it is) is the last section of that file. The development freeze was lifted at
@@ -885,7 +885,7 @@ bullet a heading) or in the tool, whichever the next `system-audit.md` pass pref
 
 **Not a reading, and the reason this entry exists:** the arc that produced every row above is
 closed. Its retrospective is the last section of
-`docs/plans/2026-09-18-code-health-roadmap.md`, and the header of this file now describes what is
+`docs/plans/archive/2026-09-18-code-health-roadmap.md`, and the header of this file now describes what is
 enforced and where.
 
 ### 2026-09-20 (TD-272) — `std: FAIL` is the TOOL, and here is the exact line to change

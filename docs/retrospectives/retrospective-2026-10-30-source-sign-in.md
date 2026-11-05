@@ -1,7 +1,7 @@
 # Retrospective — Source sign-in, S1–S4 and two review rounds (2026-10-30)
 
 Branch `source-signin`, seven commits (`89714e00` … `f45bc558`). Roadmap
-`docs/plans/2026-10-30-source-sign-in-roadmap.md`. **Built and reviewed, NOT deployed — waiting for the owner's
+`docs/plans/archive/2026-10-30-source-sign-in-roadmap.md`. **Built and reviewed, NOT deployed — waiting for the owner's
 go.** Deploy order: `halatuju_api/CLAUDE.md` "Next Sprint".
 
 ## What Was Built

@@ -1,6 +1,6 @@
 # Retrospective — Code health H7: `_money` was eight functions doing three jobs
 
-**Date:** 2026-09-19 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H7 of H19
+**Date:** 2026-09-19 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H7 of H19
 **Built by:** an Opus 5 agent (in the background, while the lead shipped TD-254); the lead re-ran
 the full suite, checked the golden fixture and the change set, and closed.
 **Freeze status:** in force. Seven of the ten sprints to *stabilised*. Run under the owner's

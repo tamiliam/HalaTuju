@@ -1,6 +1,6 @@
 # Retrospective — Code health H3: the guards the splits will lean on
 
-**Date:** 2026-09-18 · **Roadmap:** `docs/plans/2026-09-18-code-health-roadmap.md` · **Sprint:** H3 of H19
+**Date:** 2026-09-18 · **Roadmap:** `docs/plans/archive/2026-09-18-code-health-roadmap.md` · **Sprint:** H3 of H19
 **Built by:** an Opus 5 agent to a written brief; the lead verified the diff, re-ran the guards,
 checked production, and closed.
 **Freeze status:** in force. Three of the ten sprints to *stabilised* are done.
