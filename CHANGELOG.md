@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
 
+## fix: request #63 - an SPM-only student on the University degree pathway is not asked for STPM results
+
+- `results_route.higher_need`: a degree destination reached through the pathway code `degree` (the SPM "University degree" choice) with SPM-only results returns '' (no higher-results card; the SPM slip stays as the programme set it). Tertiary holders, and an SPM-only student whose degree comes from another route, are unchanged (owner ruling 2026-10-26). No web change: the card follows the served requirement. Tests in `test_third_route_s3.py`.
+
 ## Team tables T5c part 5c — Overview cards: no sublines, Unassigned = ready to assign, cards open the filtered list (LIVE 2026-11-05; main 3c39489b; api-01255-zsm, web-01084-l6b; no migration)
 
 Owner phone check 2026-11-05 (three asks); owner phone check of the result OK the same day. Commits 38144e07 (web), 7ce8de9c (server), 2b618fc8 (review follow-up).
