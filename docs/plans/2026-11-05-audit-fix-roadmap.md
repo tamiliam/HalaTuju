@@ -1,6 +1,6 @@
 # HalaTuju audit fix roadmap
 
-- **Status:** DRAFT — awaiting owner approval
+- **Status:** APPROVED by the owner on 2026-11-05. Each deploy group still needs its own yes.
 - **Date:** 2026-11-05
 - **Audit commit:** v3.1.0 (`442b21f4`)
 - **Audit report:** [docs/audits/2026-11-05-project-audit.md](../audits/2026-11-05-project-audit.md) (findings, Appendix A = the TD code check)
