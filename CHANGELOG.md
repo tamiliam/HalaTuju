@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Requests (Lane B)
+- Request #57 (wording only; no rule, permission or refusal changed): inviting an existing team member (organisation admin, admin or reviewer of the SAME organisation, not yet a mentor) as a mentor is still refused 409, now with code `already_team` and a message that points to Mentors, "Add Mentor" (the staff-member sheet). Any other existing sign-in keeps `already_staff`. Strings in en/ms/ta (`admin.mentors.error.already_team`); tests in `test_mentors.py` and `MentorInvite.test.tsx`.
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.

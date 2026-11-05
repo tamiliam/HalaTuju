@@ -23,7 +23,7 @@ import { inputCls, type Banner } from '@/components/admin/StaffAdmin'
 
 type T = (k: string, vars?: Record<string, string>) => string
 const K = 'admin.mentors'
-const INVITE_REFUSALS = ['already_staff', 'bad_email', 'name_required', 'organisation_required',
+const INVITE_REFUSALS = ['already_staff', 'already_team', 'bad_email', 'name_required', 'organisation_required',
   'not_configured', 'create_failed']
 const ACTION_REFUSALS = ['already_joined', 'not_active', 'active']
 const codeOf = (err: unknown) => (err as { code?: string })?.code ?? ''
