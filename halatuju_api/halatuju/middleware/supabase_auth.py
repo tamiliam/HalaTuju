@@ -151,10 +151,11 @@ class SupabaseAuthMiddleware:
                         )
 
                 if payload:
-                    # Attach user info to request. email_verified gates admin email-backfill
-                    # (TD audit 2026-06-14); Supabase carries it top-level or in user_metadata.
-                    _um = payload.get('user_metadata') or {}
-                    email_verified = bool(payload.get('email_verified', _um.get('email_verified', False)))
+                    # Attach user info to request. ⚠ Audit SEC-02: `email_verified` is read from the
+                    # top-level claim ONLY. `user_metadata` is writable by the account's own browser,
+                    # so it is never trusted; staff email-linking reads `email_confirmed_at`
+                    # server-side instead (`apps.courses.supabase_admin.link_refusal`).
+                    email_verified = bool(payload.get('email_verified', False))
                     # ⚠ TWO IDENTITIES FROM HERE ON, AND THEY ARE NOT THE SAME THING.
                     # `auth_sub` is the REAL JWT subject — who is holding the token. `user_id`
                     # is WHICH STUDENT PROFILE that login acts as, which a `ProfileLoginAlias`

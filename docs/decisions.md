@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## Audit SEC-01 / SEC-02: a document records only its issued key; staff email-linking reads the server — 2026-11-05 (security hotfix)
+
+**SEC-01:** the record step accepts exactly what the upload step issues — `build_doc_key(app, app.id, doc_type)/<32 hex>`
+for the caller's own application and the posted doc type (`storage.is_issued_doc_key`, the one home; `record_slip`
+asks it too). Any other path is 400 `bad_storage_path`. A delete removes a blob only inside the application's own
+prefix (`storage.is_inside_app_prefix`); otherwise the row goes and the blob stays, with a warning. No data migration:
+existing rows are not rewritten. A legacy three-segment key on an organisation-owned application is therefore kept
+on delete (an orphan, which the orphan sweep can collect) rather than deleted.
+
+**SEC-02:** `user_metadata` is writable by the account's own browser, and Supabase access tokens carry no top-level
+`email_verified`, so no token claim may decide a staff link. The link asks the admin API for `email_confirmed_at` and
+the same address (`supabase_admin.link_refusal`), and FAILS CLOSED: an unreadable login (including no Supabase config
+in local dev) links nothing. The refusal is not told to the caller: `AdminRoleView` answers as for any stranger, so an
+unconfirmed login learns nothing about whether a staff invite exists (the `is_withdrawn` rule).
+
+Alternatives rejected: a prefix-only check on the POST (it would still accept another doc type's folder or a
+non-issued name); trusting the top-level `email_verified` claim (absent from Supabase access tokens, so it either
+never links or invites a forged claim back); telling the caller "confirm your email" (it would disclose the invite).
+
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
 **One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at

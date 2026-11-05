@@ -1093,12 +1093,12 @@ class DocumentListCreateView(APIView):
         # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
         # doc that never resolves. Verify the object actually landed before recording it. Reject
         # ONLY on a CONFIRMED-missing blob (False); a storage hiccup during the check (None) must
-        # not block a legitimate upload. This runs BEFORE the stale-sweep below, so a rejection
-        # never touches the student's existing good copy.
-        from .storage import object_exists
-        if object_exists(serializer.validated_data.get('storage_path')) is False:
-            return Response({'error': 'upload_incomplete', 'code': 'upload_incomplete'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        # not block a legitimate upload. Runs BEFORE the stale-sweep (a rejection never touches the
+        # good copy). SEC-01: first, the key must be the one the upload step issued for THIS app + type.
+        from .storage import recorded_doc_key_refusal
+        _refusal = recorded_doc_key_refusal(app, new_doc_type, serializer.validated_data.get('storage_path'))
+        if _refusal:
+            return Response({'error': _refusal, 'code': _refusal}, status=status.HTTP_400_BAD_REQUEST)
         # Single-instance re-upload REPLACES the live copy in the slot. Phase 2 (version history):
         # the old row is no longer HARD-deleted — it is stamped `superseded_at` and pointed at the
         # replacement (`superseded_by`), retaining an audit trail shown under the officer "Old /
@@ -1385,10 +1385,10 @@ class DocumentDetailView(APIView):
                 superseded_by__in=[d.id for d in frontier]))
             chain.extend(parents)
             frontier = parents
-        from .storage import delete_objects
+        from .storage import delete_own_doc_objects   # SEC-01: a blob outside this app's prefix is kept
         paths = [d.storage_path for d in chain if d.storage_path]
         if paths:
-            delete_objects(paths)
+            delete_own_doc_objects(doc.application, paths)
         application = doc.application
         # Self-referential FK is SET_NULL, so delete order is safe; one query clears the chain.
         ApplicantDocument.objects.filter(id__in=[d.id for d in chain]).delete()

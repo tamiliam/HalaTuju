@@ -11,6 +11,7 @@ at deploy time (carry-forward), and these calls are mocked in tests.
 """
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 
@@ -31,6 +32,53 @@ def build_doc_key(app, *segments):
     tail = '/'.join(str(s) for s in segments if s not in (None, ''))
     org_id = getattr(app, 'owning_organisation_id', None)
     return f'{org_id}/{tail}' if org_id else tail
+
+
+_MAX_DOC_KEY = 500   # the serializer's storage_path max_length
+
+
+def is_issued_doc_key(app, doc_type, path):
+    """True only for a key the upload-URL step could have issued for THIS application and THIS
+    doc_type: exactly ``build_doc_key(app, app.id, doc_type)`` + ``/`` + 32 lowercase hex (audit
+    SEC-01). No ``..``, no leading slash, no extra segments — so a client can never point a
+    document row at another application's file, a formal letter or a bursary PDF."""
+    if not isinstance(path, str) or len(path) > _MAX_DOC_KEY or '..' in path or path.startswith('/'):
+        return False
+    prefix = build_doc_key(app, app.id, doc_type)
+    return re.fullmatch(re.escape(prefix) + r'/[0-9a-f]{32}', path) is not None
+
+
+def recorded_doc_key_refusal(app, doc_type, path):
+    """The error code that refuses recording ``path`` as a ``doc_type`` document of ``app``, or
+    None when it may be recorded: ``bad_storage_path`` for a key this app's upload step never
+    issued (SEC-01), ``upload_incomplete`` when storage CONFIRMS the object is absent."""
+    if not is_issued_doc_key(app, doc_type, path):
+        return 'bad_storage_path'
+    if object_exists(path) is False:
+        return 'upload_incomplete'
+    return None
+
+
+def is_inside_app_prefix(app, path):
+    """True when ``path`` sits under this application's own document prefix
+    (``build_doc_key(app, app.id)`` + ``/``) with no ``..``, ``.`` or empty segment."""
+    if not isinstance(path, str) or not path or path.startswith('/'):
+        return False
+    if any(seg in ('', '.', '..') for seg in path.split('/')):
+        return False
+    return path.startswith(build_doc_key(app, app.id) + '/')
+
+
+def delete_own_doc_objects(app, paths):
+    """Delete only the blobs inside ``app``'s own prefix (SEC-01). A stored path outside it (a row
+    recorded before the record step checked keys) is left in storage — the caller still deletes
+    the row — and logged by count only, never by path."""
+    paths = [p for p in (paths or []) if p]
+    own = [p for p in paths if is_inside_app_prefix(app, p)]
+    if len(own) < len(paths):
+        logger.warning('AUDIT doc_delete_foreign_path app=%s count=%d (row deleted, blob kept)',
+                       getattr(app, 'id', None), len(paths) - len(own))
+    return delete_objects(own) if own else True
 
 
 def build_request_attachment_key(org_id, request_id, uuid_hex):

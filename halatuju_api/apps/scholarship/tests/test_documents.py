@@ -6,6 +6,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
+from apps.scholarship.tests.doc_keys import issued_key as _key   # audit SEC-01: the issued shape only
 from apps.scholarship.tests.factories import (
     make_application, make_cohort, make_student,
 )
@@ -71,7 +72,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'epf',
-            'storage_path': f'{self.app_a.id}/epf/ghost',
+            'storage_path': _key(self.app_a, 'epf', 'ghost'),
             'original_filename': 'SUMATHY.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 400)
@@ -85,16 +86,16 @@ class TestDocumentApi(TestCase):
         """A confirmed-missing re-upload must NOT sweep the student's existing good copy."""
         self._auth(USER_A)
         ApplicantDocument.objects.create(application=self.app_a, doc_type='ic',
-                                         storage_path=f'{self.app_a.id}/ic/good')
+                                         storage_path=_key(self.app_a, 'ic', 'good'))
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'ic',
-            'storage_path': f'{self.app_a.id}/ic/ghost',
+            'storage_path': _key(self.app_a, 'ic', 'ghost'),
             'original_filename': 'ic.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 400)
         rows = ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic')
         self.assertEqual(rows.count(), 1)
-        self.assertEqual(rows.first().storage_path, f'{self.app_a.id}/ic/good')
+        self.assertEqual(rows.first().storage_path, _key(self.app_a, 'ic', 'good'))
         mock_del.assert_not_called()
 
     @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
@@ -102,7 +103,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'results_slip',
-            'storage_path': f'{self.app_a.id}/results_slip/abc',
+            'storage_path': _key(self.app_a, 'results_slip', 'abc'),
             'original_filename': 'results.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -128,21 +129,21 @@ class TestDocumentApi(TestCase):
         # Existing IC + an unrelated income-proof doc (multi-instance, must NOT be touched).
         old_ic = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic',
-            storage_path=f'{self.app_a.id}/ic/old-1',
+            storage_path=_key(self.app_a, 'ic', 'old-1'),
         )
         old_ic_2 = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic',
-            storage_path=f'{self.app_a.id}/ic/old-2',
+            storage_path=_key(self.app_a, 'ic', 'old-2'),
         )
         income = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip',
-            storage_path=f'{self.app_a.id}/salary_slip/keep-1',
+            storage_path=_key(self.app_a, 'salary_slip', 'keep-1'),
         )
 
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'ic',
-            'storage_path': f'{self.app_a.id}/ic/new',
+            'storage_path': _key(self.app_a, 'ic', 'new'),
             'original_filename': 'NRICF.jpeg', 'size': 200_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -151,7 +152,7 @@ class TestDocumentApi(TestCase):
         live_ic = ApplicantDocument.objects.filter(
             application=self.app_a, doc_type='ic', superseded_at__isnull=True)
         self.assertEqual(live_ic.count(), 1)
-        self.assertEqual(live_ic.first().storage_path, f'{self.app_a.id}/ic/new')
+        self.assertEqual(live_ic.first().storage_path, _key(self.app_a, 'ic', 'new'))
         new_id = live_ic.first().id
         for old in (old_ic, old_ic_2):
             old.refresh_from_db()
@@ -169,10 +170,10 @@ class TestDocumentApi(TestCase):
         """Phase 2: the student's documents listing shows only the LIVE copy after a re-upload —
         a superseded (replaced) doc is version history for the officer view, never shown back."""
         ApplicantDocument.objects.create(
-            application=self.app_a, doc_type='ic', storage_path=f'{self.app_a.id}/ic/old')
+            application=self.app_a, doc_type='ic', storage_path=_key(self.app_a, 'ic', 'old'))
         self._auth(USER_A)
         self.client.post('/api/v1/scholarship/documents/', {
-            'doc_type': 'ic', 'storage_path': f'{self.app_a.id}/ic/new',
+            'doc_type': 'ic', 'storage_path': _key(self.app_a, 'ic', 'new'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         docs = self.client.get('/api/v1/scholarship/documents/').json()['documents']
@@ -191,14 +192,14 @@ class TestDocumentApi(TestCase):
         delete-then-create order could wipe an income slip / IC / STR with no recovery."""
         old_ic = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic',
-            storage_path=f'{self.app_a.id}/ic/old-keep',
+            storage_path=_key(self.app_a, 'ic', 'old-keep'),
         )
         self._auth(USER_A)
         with patch.object(ApplicantDocument.objects, 'create', side_effect=RuntimeError('db boom')):
             try:
                 self.client.post('/api/v1/scholarship/documents/', {
                     'doc_type': 'ic',
-                    'storage_path': f'{self.app_a.id}/ic/new',
+                    'storage_path': _key(self.app_a, 'ic', 'new'),
                     'original_filename': 'NRICF.jpeg', 'size': 200_000,
                 }, format='json')
             except RuntimeError:
@@ -219,12 +220,12 @@ class TestDocumentApi(TestCase):
         mechanics by forcing the promote so the read doesn't need mocking)."""
         first = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip',
-            storage_path=f'{self.app_a.id}/salary_slip/jan',
+            storage_path=_key(self.app_a, 'salary_slip', 'jan'),
         )
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'salary_slip',
-            'storage_path': f'{self.app_a.id}/salary_slip/feb',
+            'storage_path': _key(self.app_a, 'salary_slip', 'feb'),
             'original_filename': 'feb.pdf', 'size': 50_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -233,7 +234,7 @@ class TestDocumentApi(TestCase):
             superseded_at__isnull=True,
         )
         self.assertEqual(rows.count(), 1)
-        self.assertEqual(rows.first().storage_path, f'{self.app_a.id}/salary_slip/feb')
+        self.assertEqual(rows.first().storage_path, _key(self.app_a, 'salary_slip', 'feb'))
         first.refresh_from_db()
         self.assertIsNotNone(first.superseded_at)      # Phase 2: retained as history
         # Phase 2: the stale blob is RETAINED — no Storage sweep.
@@ -248,14 +249,14 @@ class TestDocumentApi(TestCase):
         the slot mechanics from the read; the decision is tested elsewhere.)"""
         fathers = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip', household_member='father',
-            storage_path=f'{self.app_a.id}/salary_slip/father-old')
+            storage_path=_key(self.app_a, 'salary_slip', 'father-old'))
         mothers = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip', household_member='mother',
-            storage_path=f'{self.app_a.id}/salary_slip/mother-keep')
+            storage_path=_key(self.app_a, 'salary_slip', 'mother-keep'))
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'salary_slip', 'household_member': 'father',
-            'storage_path': f'{self.app_a.id}/salary_slip/father-new',
+            'storage_path': _key(self.app_a, 'salary_slip', 'father-new'),
             'original_filename': 'f.pdf', 'size': 50_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -263,7 +264,7 @@ class TestDocumentApi(TestCase):
             application=self.app_a, doc_type='salary_slip', household_member='father',
             superseded_at__isnull=True)
         self.assertEqual(father_rows.count(), 1)
-        self.assertEqual(father_rows.first().storage_path, f'{self.app_a.id}/salary_slip/father-new')
+        self.assertEqual(father_rows.first().storage_path, _key(self.app_a, 'salary_slip', 'father-new'))
         fathers.refresh_from_db()
         self.assertIsNotNone(fathers.superseded_at)     # father's old slip retained (superseded)
         mothers.refresh_from_db()
@@ -276,11 +277,11 @@ class TestDocumentApi(TestCase):
         salary-route member-tagged parent_ics — the sweep is (doc_type, member)-scoped."""
         father_ic = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='parent_ic', household_member='father',
-            storage_path=f'{self.app_a.id}/parent_ic/father')
+            storage_path=_key(self.app_a, 'parent_ic', 'father'))
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic',  # no household_member → blank
-            'storage_path': f'{self.app_a.id}/parent_ic/str-earner',
+            'storage_path': _key(self.app_a, 'parent_ic', 'str-earner'),
             'original_filename': 'ic.jpg', 'size': 50_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -299,11 +300,11 @@ class TestDocumentApi(TestCase):
         self.app_a.save(update_fields=['income_route', 'income_earner'])
         ApplicantDocument.objects.create(
             application=self.app_a, doc_type='parent_ic', household_member='',
-            storage_path=f'{self.app_a.id}/parent_ic/legacy-blank')
+            storage_path=_key(self.app_a, 'parent_ic', 'legacy-blank'))
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic',  # client sends NO member
-            'storage_path': f'{self.app_a.id}/parent_ic/new',
+            'storage_path': _key(self.app_a, 'parent_ic', 'new'),
             'original_filename': 'ic.png', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -332,7 +333,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic',                       # NO household_member sent
-            'storage_path': f'{self.app_a.id}/parent_ic/blank',
+            'storage_path': _key(self.app_a, 'parent_ic', 'blank'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -349,7 +350,7 @@ class TestDocumentApi(TestCase):
         self.app_a.save(update_fields=['income_route', 'father_name'])
         old = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='parent_ic', household_member='father',
-            storage_path=f'{self.app_a.id}/parent_ic/old')
+            storage_path=_key(self.app_a, 'parent_ic', 'old'))
 
         def _read(doc):
             from django.utils import timezone as _tz
@@ -361,7 +362,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic',                       # blank member → derived to father
-            'storage_path': f'{self.app_a.id}/parent_ic/new',
+            'storage_path': _key(self.app_a, 'parent_ic', 'new'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -403,7 +404,7 @@ class TestDocumentApi(TestCase):
                                        'profile_completed_at'])
         good = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip', household_member='father',
-            storage_path=f'{self.app_a.id}/salary_slip/good')
+            storage_path=_key(self.app_a, 'salary_slip', 'good'))
 
         def _read(doc):                      # the read succeeds but yields NO name — the blurry scan
             from django.utils import timezone as _tz
@@ -415,7 +416,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'salary_slip',       # NO household_member, and no name to derive one from
-            'storage_path': f'{self.app_a.id}/salary_slip/blurry',
+            'storage_path': _key(self.app_a, 'salary_slip', 'blurry'),
             'original_filename': 'IMG-blurry.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -465,7 +466,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'salary_slip', 'household_member': 'father',
-            'storage_path': f'{self.app_a.id}/salary_slip/father',
+            'storage_path': _key(self.app_a, 'salary_slip', 'father'),
             'original_filename': 'f.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -488,7 +489,7 @@ class TestDocumentApi(TestCase):
                                        'mother_name', 'profile_completed_at'])
         old_father = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='parent_ic', household_member='father',
-            storage_path=f'{self.app_a.id}/parent_ic/old_f')
+            storage_path=_key(self.app_a, 'parent_ic', 'old_f'))
 
         def _read(doc):
             from django.utils import timezone as _tz
@@ -500,7 +501,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic', 'household_member': 'mother',   # WRONG tag
-            'storage_path': f'{self.app_a.id}/parent_ic/mis',
+            'storage_path': _key(self.app_a, 'parent_ic', 'mis'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -529,7 +530,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic', 'household_member': 'mother',
-            'storage_path': f'{self.app_a.id}/parent_ic/ok',
+            'storage_path': _key(self.app_a, 'parent_ic', 'ok'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -557,7 +558,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic', 'household_member': 'father',
-            'storage_path': f'{self.app_a.id}/parent_ic/nric',
+            'storage_path': _key(self.app_a, 'parent_ic', 'nric'),
             'original_filename': 'ic.jpg', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
@@ -573,7 +574,7 @@ class TestDocumentApi(TestCase):
         def slip(rc, period):
             d = ApplicantDocument.objects.create(
                 application=self.app_a, doc_type='salary_slip', household_member='father',
-                request_code=rc, storage_path=f'{self.app_a.id}/salary_slip/{rc or "a"}{period}')
+                request_code=rc, storage_path=_key(self.app_a, 'salary_slip', f'{rc or "a"}{period}'))
             d.vision_fields = {'fields': {'period': period}}
             d.save(update_fields=['vision_fields'])
             return d
@@ -600,7 +601,7 @@ class TestDocumentApi(TestCase):
         def str_doc(rc, year):
             d = ApplicantDocument.objects.create(
                 application=self.app_a, doc_type='str', household_member='mother',
-                request_code=rc, storage_path=f'{self.app_a.id}/str/{rc or "a"}{year or "x"}')
+                request_code=rc, storage_path=_key(self.app_a, 'str', f'{rc or "a"}{year or "x"}'))
             d.vision_fields = {'fields': {'year': year, 'status': 'Lulus'}}
             d.save(update_fields=['vision_fields'])
             return d
@@ -626,7 +627,7 @@ class TestDocumentApi(TestCase):
         def genuine_str(member, tag):
             d = ApplicantDocument.objects.create(
                 application=self.app_a, doc_type='str', household_member=member,
-                storage_path=f'{self.app_a.id}/str/{tag}')
+                storage_path=_key(self.app_a, 'str', tag))
             d.vision_fields = {'authenticity': {'status': 'genuine'}}
             d.save(update_fields=['vision_fields'])
             return d
@@ -649,12 +650,12 @@ class TestDocumentApi(TestCase):
         from apps.scholarship.income_engine import dedupe_income_proof
         genuine = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='str', household_member='mother',
-            storage_path=f'{self.app_a.id}/str/genuine')
+            storage_path=_key(self.app_a, 'str', 'genuine'))
         genuine.vision_fields = {'fields': {'year': '2025'}, 'authenticity': {'status': 'genuine'}}
         genuine.save(update_fields=['vision_fields'])
         sara = ApplicantDocument.objects.create(                 # newer id, but not genuine
             application=self.app_a, doc_type='str', household_member='mother', request_code='officer_4',
-            storage_path=f'{self.app_a.id}/str/sara')
+            storage_path=_key(self.app_a, 'str', 'sara'))
         sara.vision_fields = {'fields': {'year': '2026'}, 'authenticity': {'status': 'suspect'}}
         sara.save(update_fields=['vision_fields'])
 
@@ -672,13 +673,13 @@ class TestDocumentApi(TestCase):
         from apps.scholarship.income_engine import dedupe_income_proof
         wrong = ApplicantDocument.objects.create(              # newer id, but wrong type
             application=self.app_a, doc_type='epf', household_member='mother',
-            storage_path=f'{self.app_a.id}/epf/wrong')
+            storage_path=_key(self.app_a, 'epf', 'wrong'))
         wrong.vision_fields = {'fields': {'statement_date': 'Jun 2026'},
                                'authenticity': {'status': 'not_epf'}}
         wrong.save(update_fields=['vision_fields'])
         genuine = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='epf', household_member='mother', request_code='officer_2',
-            storage_path=f'{self.app_a.id}/epf/genuine')
+            storage_path=_key(self.app_a, 'epf', 'genuine'))
         genuine.vision_fields = {'fields': {'statement_date': 'Jan 2026'},
                                  'authenticity': {'status': 'genuine'}}
         genuine.save(update_fields=['vision_fields'])
@@ -701,7 +702,7 @@ class TestDocumentApi(TestCase):
         def ebill(tag, period):
             d = ApplicantDocument.objects.create(
                 application=self.app_a, doc_type='electricity_bill', household_member='',
-                storage_path=f'{self.app_a.id}/eb/{tag}')
+                storage_path=_key(self.app_a, 'eb', tag))
             d.vision_fields = {'fields': {'billing_period': period, 'address': '12 Jln Mawar',
                                           'amount': 'RM90', 'name': 'RAVI A/L PERIAKARUPPAN'}}
             d.save(update_fields=['vision_fields'])
@@ -724,13 +725,13 @@ class TestDocumentApi(TestCase):
         self.app_a.save(update_fields=['father_name'])
         clean = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='electricity_bill', household_member='',
-            storage_path=f'{self.app_a.id}/eb/clean')
+            storage_path=_key(self.app_a, 'eb', 'clean'))
         clean.vision_fields = {'fields': {'billing_period': '05/2026', 'address': '12 Jln Mawar',
                                           'amount': 'RM90', 'name': 'RAVI A/L PERIAKARUPPAN'}}
         clean.save(update_fields=['vision_fields'])
         stranger = ApplicantDocument.objects.create(          # newer period, but a stranger's name
             application=self.app_a, doc_type='electricity_bill', household_member='',
-            storage_path=f'{self.app_a.id}/eb/stranger')
+            storage_path=_key(self.app_a, 'eb', 'stranger'))
         stranger.vision_fields = {'fields': {'billing_period': '06/2026', 'address': '9 Jln Lain',
                                              'amount': 'RM90', 'name': 'SURAINDRA A/S MAHA VAAM'}}
         stranger.save(update_fields=['vision_fields'])
@@ -791,13 +792,13 @@ class TestDocumentApi(TestCase):
         """Explicit DELETE on a doc also sweeps its Storage blob."""
         doc = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='water_bill',
-            storage_path=f'{self.app_a.id}/water_bill/abc',
+            storage_path=_key(self.app_a, 'water_bill', 'abc'),
         )
         self._auth(USER_A)
         resp = self.client.delete(f'/api/v1/scholarship/documents/{doc.id}/')
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(ApplicantDocument.objects.filter(id=doc.id).exists())
-        mock_storage_delete.assert_called_once_with([f'{self.app_a.id}/water_bill/abc'])
+        mock_storage_delete.assert_called_once_with([_key(self.app_a, 'water_bill', 'abc')])
 
     def test_delete_cross_user_404(self):
         doc = ApplicantDocument.objects.create(application=self.app_b, doc_type='ic', storage_path='x')
@@ -844,7 +845,7 @@ class TestDocumentApi(TestCase):
         for doc_type in ('salary_slip', 'water_bill', 'electricity_bill', 'offer_letter'):
             resp = self.client.post('/api/v1/scholarship/documents/', {
                 'doc_type': doc_type,
-                'storage_path': f'{self.app_a.id}/{doc_type}/abc',
+                'storage_path': _key(self.app_a, doc_type, 'abc'),
                 'original_filename': f'{doc_type}.pdf',
                 'size': 512,
             }, format='json')
@@ -870,7 +871,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'ic',
-            'storage_path': f'{self.app_a.id}/ic/abc',
+            'storage_path': _key(self.app_a, 'ic', 'abc'),
             'original_filename': 'mykad.jpg', 'size': 50_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -888,7 +889,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'results_slip',
-            'storage_path': f'{self.app_a.id}/results_slip/abc',
+            'storage_path': _key(self.app_a, 'results_slip', 'abc'),
             'original_filename': 'results.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -904,7 +905,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'statement_of_intent',
-            'storage_path': f'{self.app_a.id}/statement_of_intent/abc',
+            'storage_path': _key(self.app_a, 'statement_of_intent', 'abc'),
             'original_filename': 'letter.pdf', 'size': 2000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)
@@ -929,7 +930,7 @@ class TestDocumentApi(TestCase):
         self._auth(USER_A)
         resp = self.client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'ic',
-            'storage_path': f'{self.app_a.id}/ic/zzz',
+            'storage_path': _key(self.app_a, 'ic', 'zzz'),
             'original_filename': 'mykad.jpg', 'size': 50_000,
         }, format='json')
         self.assertEqual(resp.status_code, 201)   # upload not blocked
@@ -952,7 +953,7 @@ class TestIcGeminiFallbackIntegration(TestCase):
     def _ic_doc(self):
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='ic',
-            storage_path=f'{self.app.id}/ic/x', original_filename='mykad.jpg',
+            storage_path=_key(self.app, 'ic', 'x'), original_filename='mykad.jpg',
             content_type='image/jpeg', size=50_000)
 
     # A misread last digit (…1239) — OCR disagrees with the typed profile (…1234).
@@ -1019,7 +1020,7 @@ class TestRequestOwnedSlots(TestCase):
 
     def _upload(self, doc_type, suffix, request_code='', household_member=''):
         return self.client.post('/api/v1/scholarship/documents/', {
-            'doc_type': doc_type, 'storage_path': f'{self.app.id}/{doc_type}/{suffix}',
+            'doc_type': doc_type, 'storage_path': _key(self.app, doc_type, suffix),
             'request_code': request_code, 'household_member': household_member,
             'original_filename': f'{suffix}.jpg', 'size': 1000,
         }, format='json')
@@ -1037,7 +1038,7 @@ class TestRequestOwnedSlots(TestCase):
         rows = ApplicantDocument.objects.filter(
             application=self.app, doc_type='other', superseded_at__isnull=True)
         self.assertEqual(rows.count(), 1)
-        self.assertTrue(rows.first().storage_path.endswith('/b'))
+        self.assertEqual(rows.first().storage_path, _key(self.app, 'other', 'b'))
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
@@ -1045,7 +1046,7 @@ class TestRequestOwnedSlots(TestCase):
         # the student's own STR-route mother IC (no request_code)
         mother_ic = ApplicantDocument.objects.create(
             application=self.app, doc_type='parent_ic', household_member='mother',
-            storage_path=f'{self.app.id}/parent_ic/mother')
+            storage_path=_key(self.app, 'parent_ic', 'mother'))
         # a reviewer asks for the FATHER's IC — must NOT be force-tagged to mother / overwrite hers
         r = self._upload('parent_ic', 'father', request_code='officer_3', household_member='father')
         self.assertEqual(r.status_code, 201, r.content)
@@ -1091,7 +1092,7 @@ class TestRequestOwnedSlots(TestCase):
         i2 = add_officer_item(self.app, kind='doc', prompt='Upload B', admin_email='o@x', doc_type='other')
         doc = ApplicantDocument.objects.create(
             application=self.app, doc_type='other', request_code=i1.code,
-            storage_path=f'{self.app.id}/other/a')
+            storage_path=_key(self.app, 'other', 'a'))
         resolve_doc_items_for_upload(self.app, doc)
         i1.refresh_from_db(); i2.refresh_from_db()
         self.assertEqual(i1.status, 'resolved')   # the matching request closes
@@ -1125,7 +1126,7 @@ class TestStrKeepBetterGuard(TestCase):
         """A recognised Semakan with a readable Lulus (dateless → 'unconfirmed' — Probable)."""
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='str', household_member='mother',
-            storage_path=f'{self.app.id}/str/good', original_filename='str1.pdf', size=111,
+            storage_path=_key(self.app, 'str', 'good'), original_filename='str1.pdf', size=111,
             vision_fields={'fields': {'source_type': 'semakan_status', 'status': 'Lulus',
                                       'year': '', 'recipient_name': 'MATHAVI A/P T',
                                       'recipient_nric': '700423-07-5088'},
@@ -1150,7 +1151,7 @@ class TestStrKeepBetterGuard(TestCase):
              patch('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields',
                    side_effect=_extract):
             return self.client.post('/api/v1/scholarship/documents/', {
-                'doc_type': 'str', 'storage_path': f'{self.app.id}/str/{filename}-{size}',
+                'doc_type': 'str', 'storage_path': _key(self.app, 'str', f'{filename}-{size}'),
                 'original_filename': filename, 'size': size,
             }, format='json')
 
@@ -1197,7 +1198,7 @@ class TestStrKeepBetterGuard(TestCase):
         # newer Lulus DASHBOARD (unconfirmed, currency 3) — the dashboard is genuinely better.
         weak = ApplicantDocument.objects.create(
             application=self.app, doc_type='str', household_member='mother',
-            storage_path=f'{self.app.id}/str/weak', original_filename='sem.jpg', size=99,
+            storage_path=_key(self.app, 'str', 'weak'), original_filename='sem.jpg', size=99,
             vision_fields={'fields': {'source_type': 'semakan_status',
                                       'status': 'Dalam Proses Rayuan', 'year': ''},
                            'authenticity': {'status': 'genuine'}},
@@ -1253,9 +1254,9 @@ class TestStrKeepBetterGuard(TestCase):
         # unconditionally (no staging, no keep-better), even without a clean read.
         old = ApplicantDocument.objects.create(
             application=self.app, doc_type='income_support_doc',
-            storage_path=f'{self.app.id}/isd/old', original_filename='old.pdf', size=100)
+            storage_path=_key(self.app, 'income_support_doc', 'old'), original_filename='old.pdf', size=100)
         resp = self.client.post('/api/v1/scholarship/documents/', {
-            'doc_type': 'income_support_doc', 'storage_path': f'{self.app.id}/isd/new',
+            'doc_type': 'income_support_doc', 'storage_path': _key(self.app, 'income_support_doc', 'new'),
             'original_filename': 'new.pdf', 'size': 200}, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
         old.refresh_from_db()
@@ -1263,7 +1264,7 @@ class TestStrKeepBetterGuard(TestCase):
         live = ApplicantDocument.objects.filter(
             application=self.app, doc_type='income_support_doc', superseded_at__isnull=True)
         self.assertEqual(live.count(), 1)
-        self.assertEqual(live.first().storage_path, f'{self.app.id}/isd/new')
+        self.assertEqual(live.first().storage_path, _key(self.app, 'income_support_doc', 'new'))
 
 
 class TestPromoteDecision(SimpleTestCase):

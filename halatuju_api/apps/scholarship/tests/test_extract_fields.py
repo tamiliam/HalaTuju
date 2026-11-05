@@ -9,6 +9,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import StudentProfile
 from apps.scholarship import vision
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.doc_keys import issued_key
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER = 'extract-user'
@@ -243,7 +244,7 @@ class TestUploadGuardrails(TestCase):
 
     def _post(self, doc_type='salary_slip', size=1000):
         return self.client.post('/api/v1/scholarship/documents/', {
-            'doc_type': doc_type, 'storage_path': f'{self.app.id}/{doc_type}/x',
+            'doc_type': doc_type, 'storage_path': issued_key(self.app, doc_type, 'x'),
             'original_filename': 'f.pdf', 'size': size}, format='json')
 
     @override_settings(MAX_DOC_SIZE_BYTES=8 * 1024 * 1024)

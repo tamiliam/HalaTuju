@@ -469,12 +469,18 @@ class TestTheMentorsOwnProfile(TestCase):
 
 # ── Review fixes (adversarial review of 7a, 2026-10-31) ─────────────────────────────────────────
 def _verified_token(sub, email):
-    """A bearer token carrying a VERIFIED email — what a Google sign-in presents. `get_admin` links a
-    row with no UID to it by that email (`PartnerAdminMixin._find_admin`)."""
+    """A bearer token carrying an email — what a Google sign-in presents. `get_admin` links a row with
+    no UID to it by that email once the SERVER confirms it (`email_confirmed_at`; audit SEC-02)."""
     import jwt
     from apps.scholarship.tests.factories import TEST_JWT_SECRET as SECRET
-    return jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email,
-                       'email_verified': True}, SECRET, algorithm='HS256')
+    return jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email},
+                      SECRET, algorithm='HS256')
+
+
+def _confirmed(sub, email):
+    """The mocked admin-API read of a login whose address Supabase confirmed (audit SEC-02)."""
+    return patch('apps.courses.supabase_admin.read_auth_user', return_value={
+        'id': sub, 'email': email, 'email_confirmed_at': '2026-11-01T00:00:00Z'})
 
 
 class TestReviewFixes(_Base):
@@ -489,7 +495,8 @@ class TestReviewFixes(_Base):
         from rest_framework.test import APIClient
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {_verified_token("google-uid", "priya@gmail.com")}')
-        self.assertEqual(client.get(MENTORS).status_code, 403)
+        with _confirmed('google-uid', 'priya@gmail.com'):
+            self.assertEqual(client.get(MENTORS).status_code, 403)
         login = self.login('priya@gmail.com')
         self.assertEqual((login.supabase_user_id, login.first_seen_at), ('google-uid', None))
         mail.outbox.clear()

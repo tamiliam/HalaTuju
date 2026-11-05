@@ -24,6 +24,7 @@ from apps.scholarship import income_engine
 from apps.scholarship.models import ApplicantDocument
 from apps.scholarship.income_str_ownership import (
     _latest_str_check, str_ic_slots, str_owner_ic_asks, student_str_payload)
+from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 from apps.scholarship.tests.test_documents import TEST_JWT_SECRET, _token
 from apps.scholarship.tests.test_income_evidence_homes import (
@@ -235,7 +236,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
             with self.subTest(doc_type=doc_type):
                 resp = client.post('/api/v1/scholarship/documents/', {
                     'doc_type': doc_type, 'household_member': 'mother',
-                    'storage_path': f'{app.id}/{doc_type}/m', 'original_filename': 'm.pdf',
+                    'storage_path': issued_key(app, doc_type, 'm'), 'original_filename': 'm.pdf',
                     'size': 1000,
                 }, format='json')
                 self.assertEqual(resp.status_code, 201, resp.content)
@@ -260,7 +261,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
         resp = client.post('/api/v1/scholarship/documents/', {
             'doc_type': 'parent_ic', 'household_member': 'mother',
-            'storage_path': f'{app.id}/parent_ic/mother', 'original_filename': 'm.pdf', 'size': 1000,
+            'storage_path': issued_key(app, 'parent_ic', 'mother'), 'original_filename': 'm.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
         self.assertEqual(ApplicantDocument.objects.get(id=resp.json()['id']).household_member, 'mother')
@@ -268,7 +269,7 @@ class TestDocumentsEndpoint(StrIcSlotsBase):
         self.assertIsNone(fathers_ic.superseded_at)                   # his IC is untouched
         # ...and the earner's own card still force-tags as before (a blank tag lands on him)
         resp = client.post('/api/v1/scholarship/documents/', {
-            'doc_type': 'parent_ic', 'storage_path': f'{app.id}/parent_ic/blank',
+            'doc_type': 'parent_ic', 'storage_path': issued_key(app, 'parent_ic', 'blank'),
             'original_filename': 'f.pdf', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)

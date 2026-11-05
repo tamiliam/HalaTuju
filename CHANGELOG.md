@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: security - documents record only their own storage path; staff first login needs a confirmed email (audit SEC-01, SEC-02)
+
+Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `docs/decisions.md` "Audit SEC-01 / SEC-02".
+
+- **SEC-01, the document POST** (`DocumentListCreateView.post`) now refuses with 400 `bad_storage_path`, saving nothing, unless `storage_path` is exactly the key the sign-upload step issues for THIS application and THIS doc type: `build_doc_key(app, app.id, doc_type)` + `/` + 32 lowercase hex (`<org>/<app>/<doc_type>/<hex>`; `<app>/<doc_type>/<hex>` for an application with no organisation). No `..`, no leading slash, no extra segment, at most 500 characters. One home: `storage.is_issued_doc_key`, also asked by `results_review.record_slip` (which keeps its 200-character cap).
+- **SEC-01, the document DELETE** (`DocumentDetailView.delete`) deletes a blob only inside the application's own prefix (`storage.delete_own_doc_objects`); a row holding a foreign path is deleted, its blob kept, and an `AUDIT doc_delete_foreign_path` warning logged (count only, never the path). A legacy three-segment key on an organisation-owned application counts as foreign: its blob is kept (an orphan for `cleanup_orphan_blobs`, never a wrong delete).
+- **SEC-02:** the auth middleware no longer reads `user_metadata.email_verified` (browser-writable). Linking a staff row to a first sign-in by email (`PartnerAdminMixin._find_admin`, `staff_reinvite.is_withdrawn`) now asks `supabase_admin.link_refusal`: the admin API read must show `email_confirmed_at` for the same address. Fail closed: an unreadable login (failed, gone, no Supabase config) links nothing; an `AUDIT staff_link_refused reason=...` warning, never the address. No other login path changed.
+- Tests: `test_sec01_doc_paths.py`, `test_sec02_staff_link.py`; document-POST tests now record issued keys (`tests/doc_keys.issued_key`); the staff-link tests mock the admin read.
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.

@@ -30,15 +30,17 @@ def is_withdrawn(sub, supabase_user):
     invitation — so the sign-in page can say "your access has been withdrawn" (2026-10-09).
 
     ⚠ Only ever about the authenticated holder: by the JWT subject, or — for a Google invitee
-    cancelled before their first sign-in, whose row has no UID yet — by their VERIFIED email,
+    cancelled before their first sign-in, whose row has no UID yet — by their CONFIRMED email,
     exactly the two ways `get_admin` itself links a caller to a row. A stranger learns nothing
-    about any address but their own."""
+    about any address but their own. ⚠ Audit SEC-02: "confirmed" is the server's
+    `email_confirmed_at` (`supabase_admin.link_refusal`), never a token claim; unreadable = False."""
     if sub and PartnerAdmin.objects.filter(supabase_user_id=sub, is_active=False).exists():
         return True
     su = supabase_user or {}
     email = (su.get('email') or '').strip().lower()
-    return bool(email and su.get('email_verified') and PartnerAdmin.objects.filter(
-        email=email, supabase_user_id__isnull=True, is_active=False).exists())
+    return bool(email and sub and PartnerAdmin.objects.filter(
+        email=email, supabase_user_id__isnull=True, is_active=False).exists()
+        and supabase_admin.link_refusal(sub, email) is None)
 
 
 def may_reuse(caller, existing):

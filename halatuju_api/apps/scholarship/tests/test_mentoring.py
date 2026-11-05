@@ -505,15 +505,18 @@ class TestNeverASponsorOrPartnerReader(_Base):
 
 
 # ── Adversarial review of 7b (2026-11-01) ─────────────────────────────────────────────────────────
-def _verified_client(sub, email):
-    """A client whose token carries a VERIFIED email — what `get_admin` links a row with no UID to."""
+def _confirmed_sign_in(sub, email):
+    """Sign in at ``email`` with a login whose address the SERVER confirms (`email_confirmed_at`, read
+    via the mocked admin API; audit SEC-02) — what `get_admin` links a row with no UID to."""
     import jwt
     from rest_framework.test import APIClient
-    token = jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email,
-                        'email_verified': True}, TEST_JWT_SECRET, algorithm='HS256')
+    token = jwt.encode({'sub': sub, 'aud': 'authenticated', 'role': 'authenticated', 'email': email},
+                       TEST_JWT_SECRET, algorithm='HS256')
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-    return client
+    account = {'id': sub, 'email': email, 'email_confirmed_at': '2026-11-01T00:00:00Z'}
+    with patch('apps.courses.supabase_admin.read_auth_user', return_value=account):
+        return client.get('/api/v1/admin/role/')
 
 
 SUPABASE = dict(SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co')
@@ -533,7 +536,7 @@ class TestReviewFix1TheMentorTurnsOutToBeTheStudent(_Base):
         mentor = self._invited_at('aisyah.signin@example.test')
         self.assertEqual(self.assign(mentor, email_student=False).status_code, 200)   # nothing matched yet
         mail.outbox.clear()
-        _verified_client(self.app.profile.supabase_user_id, 'aisyah.signin@example.test').get('/api/v1/admin/role/')
+        _confirmed_sign_in(self.app.profile.supabase_user_id, 'aisyah.signin@example.test')
         login = mentoring._login(mentor)
         self.assertEqual(login.supabase_user_id, self.app.profile.supabase_user_id)   # get_admin linked it
         self.assertEqual(self.open_rows(), [])
@@ -545,7 +548,7 @@ class TestReviewFix1TheMentorTurnsOutToBeTheStudent(_Base):
     def test_a_link_for_another_scholars_mentor_ends_nothing(self):
         mentor = self._invited_at('kavitha.other@example.test')
         self.assign(mentor, email_student=False)
-        _verified_client('some-other-uid', 'kavitha.other@example.test').get('/api/v1/admin/role/')
+        _confirmed_sign_in('some-other-uid', 'kavitha.other@example.test')
         self.assertEqual([a.mentor_id for a in self.open_rows()], [mentor.pk])
 
     @override_settings(**SUPABASE)

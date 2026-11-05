@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.scholarship.income_engine import name_contradicts_tag, resolved_member_for
 from apps.scholarship.models import ApplicantDocument
+from apps.scholarship.tests.doc_keys import issued_key
 from apps.scholarship.tests.factories import (
     TEST_JWT_SECRET, authed_client, make_application, make_student,
 )
@@ -183,7 +184,7 @@ class FullNameMatchThroughTheUploadViewTest(TestCase):
                    return_value='https://s/dl'):
             resp = authed_client(self.student).post('/api/v1/scholarship/documents/', {
                 'doc_type': 'parent_ic', 'household_member': member,
-                'storage_path': f'{self.app.id}/parent_ic/{suffix}',
+                'storage_path': issued_key(self.app, 'parent_ic', suffix),
                 'original_filename': 'ic.jpg', 'size': 1000,
             }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)

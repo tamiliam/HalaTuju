@@ -138,12 +138,15 @@ class PartnerAdminMixinTest(TestCase):
         req = SimpleNamespace(
             user_id='attacker-uid',
             supabase_user={'email': 'admin@cumig.org', 'email_verified': False})
-        self.assertIsNone(PartnerAdminMixin().get_admin(req))
+        unconfirmed = {'id': 'attacker-uid', 'email': 'admin@cumig.org', 'email_confirmed_at': None}
+        with patch('apps.courses.supabase_admin.read_auth_user', return_value=unconfirmed):
+            self.assertIsNone(PartnerAdminMixin().get_admin(req))
         self.partner_admin.refresh_from_db()
         self.assertIsNone(self.partner_admin.supabase_user_id)  # not backfilled
 
     def test_verified_email_acquires_admin(self):
-        """Positive control: a VERIFIED email claim still links + backfills the admin row."""
+        """Positive control: an email the SERVER confirms (`email_confirmed_at`, audit SEC-02) still
+        links + backfills the admin row."""
         from types import SimpleNamespace
         from apps.courses.views_admin import PartnerAdminMixin
         self.partner_admin.supabase_user_id = None
@@ -151,7 +154,10 @@ class PartnerAdminMixinTest(TestCase):
         req = SimpleNamespace(
             user_id='legit-uid',
             supabase_user={'email': 'admin@cumig.org', 'email_verified': True})
-        admin = PartnerAdminMixin().get_admin(req)
+        confirmed = {'id': 'legit-uid', 'email': 'admin@cumig.org', 'email_confirmed_at': '2026-11-01T00:00:00Z'}
+        with patch('apps.courses.supabase_admin.read_auth_user', return_value=confirmed) as read:
+            admin = PartnerAdminMixin().get_admin(req)
+        read.assert_called_once_with('legit-uid')
         self.assertIsNotNone(admin)
         self.partner_admin.refresh_from_db()
         self.assertEqual(self.partner_admin.supabase_user_id, 'legit-uid')  # backfilled
@@ -355,7 +361,7 @@ class PartnerAccountCreationTest(TestCase):
 
     def test_account_is_created_with_a_password_and_a_verified_email(self):
         # email_confirm is load-bearing: get_admin only links a PartnerAdmin row by email when the
-        # JWT's email_verified claim is true, so without it the partner would have no role.
+        # server-side email_confirmed_at is set (audit SEC-02), so without it the partner would have no role.
         _, mock_post = self._invite()
         body = mock_post.call_args[1]['json']
         self.assertTrue(body['email_confirm'])
