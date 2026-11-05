@@ -269,7 +269,7 @@ class TestReadSlip(SimpleTestCase):
 
     def test_empty(self):
         self.assertEqual(read_slip(_doc({})),
-                         {'names': [], 'grades': {}, 'bands': {}, 'letters': {}})
+                         {'names': [], 'grades': {}, 'bands': {}, 'letters': {}, 'raw_lines': []})
 
 
 class TestBandCrossCheck(SimpleTestCase):

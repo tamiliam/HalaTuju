@@ -8,8 +8,42 @@ The subject-name normalisers it reads stay in ``academic_engine`` (their one hom
 """
 from __future__ import annotations
 
-from .academic_engine import (_GRADE_TO_BAND, _SUBJECT_BM, _base_letter, _is_char_loss,
-                              _norm_grade, _norm_lower_alnum, _slip_key)
+from .academic_engine import (_CELL_NOISE, _GRADE_TO_BAND, _SUBJECT_BM, _base_letter, _is_char_loss,
+                              _match_known_subject, _norm_grade, _norm_lower_alnum, _slip_key)
+from .slip_subject_aliases import ENGLISH_NAMES
+
+_KNOWN_KEYS = frozenset(_norm_lower_alnum(n) for n in _SUBJECT_BM.values())
+#: (Malay key, English words), LONGEST first so "Additional Mathematics" wins over "Mathematics".
+_ENGLISH = sorted(((_norm_lower_alnum(bm), frozenset(_norm_lower_alnum(en).split()))
+                   for en, bm in ENGLISH_NAMES.items()), key=lambda t: -len(t[1]))
+
+
+def _compare_key(name: str) -> str:
+    """``_slip_key`` plus the six English slip names (request #62). COMPARISON ONLY: the readers
+    (``_parse_grade_row``, ``spm_cert_parse``) never see these names, so no read changes (a slip row
+    "ENGLISH FOR SCIENCE AND TECHNOLOGY" is never Sains). A cell folds to the Malay subject when it
+    holds the English name (and maybe the Malay one, "1449 MATEMATIK MATHEMATICS") plus only a
+    subject code / grade / band."""
+    key = _slip_key(name)
+    if key in _KNOWN_KEYS:
+        return key
+    words = set(key.split())
+    for bm, en in _ENGLISH:
+        if en <= words and all(t.isdigit() or len(t) <= 2 or t in _CELL_NOISE
+                               for t in words - en - set(bm.split())):
+            return bm
+    return key
+
+
+def _printed_keys(line: str) -> set:
+    """The subject keys one RAW printed slip line shows: its ``_compare_key`` (an English name, with
+    only a code / grade / band beside it), plus the longest Malay subject it CONTAINS — the readers'
+    own containment rule (``_match_known_subject``, Malay and old names only), because a raw line
+    carries the noise the reader could not get past ("1511 SAINS <watermark> ACEMERLANG TINGGI").
+    Longest-first, so "SAINS KOMPUTER" is never Sains; English stays strict, so "ENGLISH FOR SCIENCE
+    AND TECHNOLOGY" is never Sains either."""
+    found = _match_known_subject(line)
+    return {_compare_key(line)} | ({_norm_lower_alnum(found)} if found else set())
 
 
 def compare_academics(profile_grades, slip) -> dict:
@@ -33,9 +67,10 @@ def compare_academics(profile_grades, slip) -> dict:
 
     slip_norm = {}  # normname → first readable form
     for n in slip['names']:
-        slip_norm.setdefault(_slip_key(n), n)
-    bands = slip.get('bands', {})
-    letters = slip.get('letters', {})
+        slip_norm.setdefault(_compare_key(n), n)
+    # read_slip keys these by `_slip_key`; re-key them the same way as the names (an English row).
+    grades, bands, letters = ({_compare_key(k): v for k, v in (slip.get(f) or {}).items()}
+                              for f in ('grades', 'bands', 'letters'))
 
     missing = sorted(orig for nn, orig in slip_norm.items() if nn not in prof_by_name)
     # Request #62 (owner 2026-11-06): a subject the student TYPED that is not on the slip is
@@ -43,9 +78,14 @@ def compare_academics(profile_grades, slip) -> dict:
     # Only on a COMPLETE read — names AND grades, the same `have_grades` test that decides whether
     # accuracy can be judged. A legacy names-only read (or a grades-less one) may simply have
     # missed a row, so it never asserts that a typed subject is absent.
-    extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in slip_norm) if slip['grades'] else []
+    # A subject PRINTED on the slip is never extra, even when the stored read dropped its row (the
+    # local reader skipped rows it did not know, e.g. an English name; those reads are never re-read):
+    # any of its raw printed lines (`_debug_rows`, local reads only) that shows it counts. A Gemini
+    # read keeps no raw lines, so its extra stands.
+    printed = set(slip_norm).union(*(_printed_keys(line) for line in slip.get('raw_lines') or ()))
+    extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in printed) if slip['grades'] else []
     mismatched, uncertain = [], []
-    for nn, slip_g in slip['grades'].items():
+    for nn, slip_g in grades.items():
         typed = prof_by_name.get(nn)
         if not typed or _norm_grade(typed) == _norm_grade(slip_g):
             continue  # not entered, or the typed grade matches the slip letter

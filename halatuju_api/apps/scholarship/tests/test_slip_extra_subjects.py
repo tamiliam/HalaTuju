@@ -185,3 +185,118 @@ class VerdictLadderAndBlockers(TestCase):
         self.assertEqual(student_slip_check(slip)['extra'], ['Fizik'])   # the case is real
         self.assertEqual(document_red_blockers(self.app), document_red_blockers(clean_app))
         self.assertEqual(doc_match_verdict(slip), 'ok')
+
+
+#: The six English names (request #62), normalised: comparison-only, never in a reader table.
+ENGLISH_KEYS = ('mathematics', 'additional mathematics', 'science', 'physics', 'chemistry', 'biology')
+
+
+def _row(line):
+    return [{'text': t} for t in line.split()]
+
+
+class EnglishNamesNeverReachTheReaders(SimpleTestCase):
+    """Review fix 1 (lead 2026-11-06): the English names fold at COMPARISON only. The slip readers
+    (`_parse_grade_row`, `spm_cert_parse`) read exactly what origin/main reads — checked against
+    main's own code at the time — so no stored or new read changes and no MODEL_VERSION bump."""
+
+    def test_the_reader_tables_hold_no_english_name(self):
+        from apps.scholarship import academic_engine, spm_cert_parse
+        for key in ENGLISH_KEYS:
+            with self.subTest(key=key):
+                self.assertNotIn(key, academic_engine._CANONICAL)
+                self.assertNotIn(tuple(key.split()), spm_cert_parse._SUBJECT_SEQ)
+
+    def test_grade_rows_read_as_on_main(self):
+        from apps.scholarship.academic_engine import _parse_grade_row
+        self.assertIsNone(_parse_grade_row(_row('6351 ENGLISH FOR SCIENCE AND TECHNOLOGY A- CEMERLANG')))
+        self.assertIsNone(_parse_grade_row(_row('1449 MATHEMATICS A CEMERLANG')))
+        self.assertIsNone(_parse_grade_row(_row('3472 ADDITIONAL MATHEMATICS B KEPUJIAN')))
+        self.assertEqual(_parse_grade_row(_row('1449 MATEMATIK MATHEMATICS A CEMERLANG')),
+                         {'subject': 'Matematik', 'grade': 'A-', 'band': 'cemerlang'})
+
+    def test_an_est_row_on_a_lapan_slip_still_falls_to_gemini(self):
+        from apps.scholarship.academic_engine import parse_spm_slip
+        from apps.scholarship.tests.test_academic_engine import _slip_words
+        header = [('SIJIL PELAJARAN MALAYSIA', 200), ('JUMLAH MATA PELAJARAN LAPAN', 900)]
+        rows = [(s, 'A', 'CEMERLANG TINGGI') for s in (
+            'BAHASA MELAYU', 'BAHASA INGGERIS', 'PENDIDIKAN MORAL', 'SEJARAH', 'MATEMATIK',
+            'PERNIAGAAN', 'PERTANIAN', '6351 ENGLISH FOR SCIENCE AND TECHNOLOGY')]
+        self.assertIsNone(parse_spm_slip(_slip_words(header, rows)))   # 7 of 8 read: never a fake Sains
+
+    def test_comparison_does_not_read_est_as_sains(self):
+        cmp = compare_academics({**CORE_TYPED, 'sci': 'A'},
+                                _slip(CORE + [{'subject': 'ENGLISH FOR SCIENCE AND TECHNOLOGY', 'grade': 'A'}]))
+        self.assertEqual(cmp['extra'], ['Sains'])
+        self.assertEqual(cmp['missing'], ['ENGLISH FOR SCIENCE AND TECHNOLOGY'])
+
+    def test_a_dual_language_cell_folds_at_comparison(self):
+        cmp = compare_academics({**CORE_TYPED, 'math': 'A'},
+                                _slip(CORE + [{'subject': '1449 MATEMATIK MATHEMATICS', 'grade': 'A'}]))
+        self.assertEqual((cmp['missing'], cmp['extra']), ([], []))
+
+
+def _stored(results, raw=None):
+    fields = {'candidate_name': 'X', 'results': results}
+    if raw is not None:
+        fields['_debug_rows'] = raw
+    return read_slip(SimpleNamespace(vision_fields={'fields': fields}))
+
+
+class APrintedSubjectIsNeverExtra(SimpleTestCase):
+    """Review fix 2: a stored local read that DROPPED a row it did not know (an English name) still
+    keeps the printed line in `_debug_rows`; a typed subject on one of those lines is not extra."""
+    RAW = ['SIJIL PELAJARAN MALAYSIA', '1103 BAHASA MELAYU A CEMERLANG TINGGI',
+           '1249 SEJARAH B KEPUJIAN TINGGI', '3472 ADDITIONAL MATHEMATICS A CEMERLANG']
+
+    def test_a_raw_printed_line_clears_the_extra(self):
+        cmp = compare_academics({**CORE_TYPED, 'addmath': 'A'}, _stored(CORE, self.RAW))
+        self.assertEqual(cmp['extra'], [])
+        self.assertTrue(cmp['complete'])
+
+    def test_without_the_raw_line_it_is_extra(self):
+        cmp = compare_academics({**CORE_TYPED, 'addmath': 'A'}, _stored(CORE, self.RAW[:3]))
+        self.assertEqual(cmp['extra'], ['Matematik Tambahan'])
+
+    def test_a_gemini_read_keeps_no_raw_lines_so_extra_stands(self):
+        cmp = compare_academics({**CORE_TYPED, 'addmath': 'A'}, _stored(CORE))
+        self.assertEqual(cmp['extra'], ['Matematik Tambahan'])
+
+    def test_a_noisy_raw_line_the_reader_dropped_still_counts(self):
+        # Live shape: a watermark and a glued band ("ACEMERLANG") made the reader drop the row.
+        cmp = compare_academics({**CORE_TYPED, 'sci': 'A'},
+                                _stored(CORE, ['1511 SAINS امانه ACEMERLANG TINGGI']))
+        self.assertEqual(cmp['extra'], [])
+
+    def test_a_longer_subject_on_the_raw_line_does_not_clear_its_prefix(self):
+        cmp = compare_academics({**CORE_TYPED, 'sci': 'A'}, _stored(CORE, ['3770 SAINS KOMPUTER C + KEPUJIAN ATAS']))
+        self.assertEqual(cmp['extra'], ['Sains'])
+
+    def test_a_raw_est_line_does_not_clear_a_typed_sains(self):
+        cmp = compare_academics({**CORE_TYPED, 'sci': 'A'},
+                                _stored(CORE, ['6351 ENGLISH FOR SCIENCE AND TECHNOLOGY A CEMERLANG']))
+        self.assertEqual(cmp['extra'], ['Sains'])
+
+
+class ThirdRouteSpmGrades(TestCase):
+    """A tertiary holder's SPM grades come from `spm_prereq_grades` merged with `grades`
+    (`spm_grades_for`); a subject typed only in the STPM page's SPM block is compared too."""
+    STPM = dict(exam_type='stpm', results_exam_type='stpm', stpm_cgpa=3.71,
+                stpm_grades={'PA': 'A'}, completed_qualifications=['spm', 'stpm'], grades=CORE_TYPED)
+
+    def _check(self, prereq):
+        app = make_application('submitted', student=make_student(**self.STPM, spm_prereq_grades=prereq))
+        doc = ApplicantDocument.objects.create(
+            application=app, doc_type='results_slip', storage_path=f'{app.id}/rs/x',
+            vision_run_at=timezone.now(),
+            vision_fields={'student_verdict': 'ok', 'fields': {
+                'candidate_name': 'X', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2023', 'results': CORE}})
+        return student_slip_check(doc)
+
+    def test_an_extra_subject_in_the_prereq_block_is_flagged(self):
+        chk = self._check({'hist': 'B', 'phy': 'A'})
+        self.assertEqual((chk['subjects'], chk['extra']), ('mismatch', ['Fizik']))
+
+    def test_no_extra_subject_no_flag(self):
+        chk = self._check({'hist': 'B'})
+        self.assertEqual((chk['subjects'], chk['extra']), ('match', []))

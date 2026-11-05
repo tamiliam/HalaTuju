@@ -18864,7 +18864,24 @@ pinned in `test_slip_extra_subjects.py`). (2) The tone is "please check your gra
 confident claim. (3) Only on a COMPLETE read (names AND grades — the same `have_grades` test that decides whether
 accuracy can be judged); a legacy names-only read never asserts it. (4) Slips that print the subject in English
 (MATHEMATICS, ADDITIONAL MATHEMATICS, SCIENCE, PHYSICS, CHEMISTRY, BIOLOGY) fold to the Malay subject before `extra` is
-computed (`slip_subject_aliases.ENGLISH_NAMES`, read through `academic_engine._CANONICAL`). (5) No alias is invented:
+computed (`slip_subject_aliases.ENGLISH_NAMES`, read ONLY by `academic_compare._compare_key`). Lead ruling after review
+(2026-11-06): the English names are COMPARISON-only and never reach the slip READERS — `academic_engine._CANONICAL` /
+`_KNOWN_SUBJECTS` (so `_parse_grade_row`, `parse_spm_slip`) and `spm_cert_parse._SUBJECT_SEQ` are byte-for-byte
+origin/main's (a reader that knew "SCIENCE" stored a slip row "6351 ENGLISH FOR SCIENCE AND TECHNOLOGY" as a fake Sains
+where main falls back to Gemini; pinned). No read changes, so the genuineness/vision `MODEL_VERSION` is NOT bumped.
+(4b) A subject PRINTED on the slip is never `extra`: the local reader dropped rows it did not know (an English name on
+a dual-language slip whose count line was unread, or a row whose band OCR glued: "1511 SAINS <watermark> ACEMERLANG")
+and those reads are stored and never re-read, so a typed subject is not extra when any of the read's raw printed lines
+(`fields._debug_rows`, local reads only) shows it: the line's comparison key (English names strict, as above) or the
+longest Malay subject it contains (the readers' own `_match_known_subject`, so "SAINS KOMPUTER" never clears Sains and
+"ENGLISH FOR SCIENCE AND TECHNOLOGY" never clears Sains). A Gemini read keeps no raw lines, so its `extra` stands.
+Production re-measure with the branch code (2026-11-06, read-only): 266 SPM slips; Fix 4b cleared 10 of 42 slips with
+an extra (13 subjects); 15 green→alert flips remain, 6 of them on a read short of the slip's printed count or missing
+a compulsory subject (possible false alerts: a Greek-letter "ΚΙΜΙΑ", a row whose name OCR lost but whose code 4531 /
+1249 survives). Open: matching a raw line by its SPM subject CODE would clear those.
+(4c) The coach's help signal (`documentHelp.helpSignal`) gains `,x:<subjects>` only when `extra` is non-empty: a slip
+without one keeps its signal; a slip WITH one (alone or beside a missing subject) moves once — one billable, throttled
+coach re-fetch, accepted because the advice now names the subject. (5) No alias is invented:
 UPU Online's SPM list (checked by the lead 2026-11-06) holds Lukisan / Pendidikan Seni Visual / Lukisan Kejuruteraan,
 Reka Bentuk Grafik / Reka Bentuk Grafik Digital / Grafik Komunikasi Teknikal and Reka Bentuk Kraf / Reka Cipta as
 separate subjects, so each is missing + extra against the other (pinned). `VERDICT_ENGINE_VERSION` 2026-11-06.1; old

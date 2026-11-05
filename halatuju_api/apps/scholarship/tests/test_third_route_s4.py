@@ -67,8 +67,9 @@ PRE_C3_SPM_SCORE = {'status': 'suspect', 'doc_seen': 'results_slip', 'probabilit
 #: C3 itself reading an STPM page as no result document (ruling 1A, live #256 shape).
 C3_NOT_A_RESULT = {'status': 'not_certificate', 'doc_seen': 'certificate', 'probability': 0.09,
                    'model_version': '1.9.0', 'reason': '2/16 certificate signatures present'}
-#: Every subject of `SPM` on the slip, at the typed grade (request #62: a typed subject the slip does
-#: not show is now flagged, so a one-row slip would no longer read as a clean SPM card).
+#: Every subject of `SPM` on the slip, at the typed grade. Request #62 flags a typed subject the slip
+#: does not show, so a one-row slip reads `review`; test_third_route_higher_owed's two controls import
+#: this read and pin a clean `verified` SPM card (the tests in this file pass either way).
 SPM_READ = {'candidate_name': 'PRIYA', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2025',
             'results': [{'subject': s, 'grade': g} for s, g in (
                 ('BAHASA MELAYU', 'A+'), ('BAHASA INGGERIS', 'A'), ('SEJARAH', 'A'), ('MATEMATIK', 'A'),

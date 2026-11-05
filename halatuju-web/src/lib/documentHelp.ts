@@ -242,7 +242,9 @@ export function helpSignal(doc: ApplicantDocument): string {
     doc.vision_address_match || '',
     // Results slip / offer letter: the check can change when the student edits their
     // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
-    // Request #62: the typed-not-on-slip list joins ONLY when present, so no existing signal moves.
+    // Request #62: the typed-not-on-slip list joins ONLY when present. A slip with no extra keeps its
+    // signal; one that has an extra (with or without a missing subject) gains `,x:…` once — one
+    // billable, throttled coach re-fetch, wanted, since the advice now names that subject.
     ac ? `${ac.name},${ac.subjects},${ac.results}${ac.extra?.length ? `,x:${ac.extra.join('+')}` : ''}` : '',
     pc ? `${pc.name},${pc.ic},${pc.pathway || ''}` : '',
     // Income earner IC: the cluster coach re-fires when the cluster verdict changes —

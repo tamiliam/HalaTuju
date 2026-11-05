@@ -26,7 +26,7 @@ import math
 import re
 
 from .school_names import school_name_core
-from .slip_subject_aliases import SUBJECT_ALIASES as _SUBJECT_ALIASES
+from .slip_subject_aliases import OLD_NAMES as _SUBJECT_ALIASES   # NOT the English names (#62)
 
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
 _SUBJECT_BM = {
@@ -197,7 +197,8 @@ _GRADE_TOKENS = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G',
 _BAND_HEADS = frozenset({'cemerlang', 'kepujian', 'lulus', 'gagal'})
 _BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
 
-#: Old names (Sprint C) and English slip names (request #62) → today's name: `slip_subject_aliases`.
+#: Old names (Sprint C) → today's name: `slip_subject_aliases.OLD_NAMES`. The READERS use this table; the
+#: English names (#62) fold at COMPARISON only (`academic_compare`), so no read changes.
 #: normalised name (today's or an old one) → today's name.
 _CANONICAL = {**{_norm_lower_alnum(n): n for n in set(_SUBJECT_BM.values())},
               **{_norm_lower_alnum(old): new for old, new in _SUBJECT_ALIASES.items()}}
@@ -222,9 +223,7 @@ def _slip_key(name: str) -> str:
         return _norm_lower_alnum(_CANONICAL[norm])
     found = _match_known_subject(name)
     if found:
-        words = set(norm.split())          # less the subject's words as PRINTED (an alias's too, #62)
-        extra = words - set(_norm_lower_alnum(found).split()) - max(
-            (kt for n, kt in _KNOWN_SUBJECTS if n == found and kt <= words), key=len)
+        extra = set(norm.split()) - set(_norm_lower_alnum(found).split())
         if all(t.isdigit() or len(t) <= 2 or t in _CELL_NOISE for t in extra):
             return _norm_lower_alnum(found)
     return norm
@@ -553,7 +552,9 @@ def read_slip(doc) -> dict:
         subs = fields.get('subjects')
         if isinstance(subs, list):
             names = [_split_band(s)[0] for s in subs if isinstance(s, str) and s.strip()]
-    return {'names': names, 'grades': grades, 'bands': bands, 'letters': letters}
+    raw = fields.get('_debug_rows') if isinstance(results, list) else None  # #62: printed lines (local read)
+    return {'names': names, 'grades': grades, 'bands': bands, 'letters': letters,
+            'raw_lines': [r for r in raw if isinstance(r, str)] if isinstance(raw, list) else []}
 
 
 def compare_academics(profile_grades, slip) -> dict:

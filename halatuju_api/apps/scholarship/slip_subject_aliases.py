@@ -1,4 +1,7 @@
-"""Other printed names of an SPM subject → today's grade-form name (``academic_engine._CANONICAL``).
+"""Other printed names of an SPM subject → today's grade-form name.
+
+``OLD_NAMES`` feed the slip READERS (``academic_engine._CANONICAL``); ``ENGLISH_NAMES`` feed the
+COMPARISON only (``academic_compare._compare_key``) and must never reach a reader (lead, 2026-11-06).
 
 A LEAF: no imports. It moved out of ``academic_engine.py`` (request #62, 2026-11-06), which is on
 the oversize ledger with no room, so the English names below could be added without growing it.
@@ -28,5 +31,3 @@ ENGLISH_NAMES = {
     'Mathematics': 'Matematik', 'Additional Mathematics': 'Matematik Tambahan',
     'Science': 'Sains', 'Physics': 'Fizik', 'Chemistry': 'Kimia', 'Biology': 'Biologi',
 }
-
-SUBJECT_ALIASES = {**OLD_NAMES, **ENGLISH_NAMES}
