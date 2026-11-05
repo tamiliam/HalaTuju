@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Requests (Lane B)
+
+- **Request #60 (BrightPath), 2026-11-05:** a mentor invite sent in error and revoked no longer blocks the address from being invited as staff. A staff invite now brings back a `mentor` login row only when it is switched off, never signed in, its Mentor record is deactivated, it has no footprint, and it is in the caller's organisation (or the caller is a super); the old Mentor record is unlinked and stays deactivated (`staff_reinvite.unused_revoked_mentor`, `may_reuse`, `bring_back`). Every other case keeps today's 409. Tests: `apps/courses/tests/test_request60_mentor_reinvite_as_staff.py`. Decision: docs/decisions.md "Request #60".
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.

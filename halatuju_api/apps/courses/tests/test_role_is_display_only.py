@@ -130,6 +130,8 @@ ALLOWLIST = {
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
     'courses/staff_reinvite.py::provision': ('DISPLAY', 'account kind',
         'the label says which kind of account this is (table / sign-in / recipient), not what it may do'),
+    'courses/staff_reinvite.py::_mentor_in_reach': ('GATE-LEFT', 'T5e',
+        'request #60: lead-tier (org_admin or super) reach over a revoked mentor, as _staff_target_manageable'),
     'courses/staff_tables.py::_team_member': ('DISPLAY', 'T5a tables',
         'table membership (which table a person is listed on)'),
     'courses/staff_tables.py::in_admins': ('DISPLAY', 'T5a tables',

@@ -1,5 +1,13 @@
 # Architectural Decisions — HalaTuju
 
+## Request #60: a revoked, never-signed-in mentor may be invited again as staff — 2026-11-05 (owner ruling)
+
+A narrow exception to the S7d rule "a re-invite never turns a mentor login into another role". A staff invite may
+bring back a `mentor` row ONLY when it is switched off, never signed in (`first_seen_at` NULL), its Mentor record is
+deactivated, it has no footprint, and it is in the caller's organisation (or the caller is a super), into a staff role.
+The old Mentor record is unlinked and stays deactivated. Everything else (signed in, active, footprint, another
+organisation's, a source user) keeps the 409. Code: `staff_reinvite.unused_revoked_mentor`, `may_reuse`, `bring_back`.
+
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
 **One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at

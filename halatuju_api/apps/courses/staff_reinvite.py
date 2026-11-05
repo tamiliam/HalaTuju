@@ -52,10 +52,38 @@ def may_reuse(caller, existing):
     has been used with its own password, and a Google row that already has a login."""
     from .views_admin import _staff_target_manageable, scholarship_staff
     if not (existing is not None and not existing.is_active and existing.first_seen_at is None
-            and not existing.is_super and _staff_target_manageable(caller, existing)):
+            and not existing.is_super
+            and (_staff_target_manageable(caller, existing)
+                 or (unused_revoked_mentor(existing) and _mentor_in_reach(caller, existing)))):
         return False
     staff_footprint, _ = scholarship_staff()
     return not staff_footprint.has_footprint(existing)
+
+
+def unused_revoked_mentor(row, *, lock=False):
+    """Request #60 (owner 2026-11-05): the ONE mentor login a staff re-invite may turn into staff — a
+    narrow exception to the S7d rule "a re-invite never turns a mentor login into another role". Only
+    a `mentor` row that is switched off, has never signed in (`first_seen_at` NULL) and whose Mentor
+    record is DEACTIVATED: a mentor invite sent in error and revoked. The footprint and the caller's
+    reach are `may_reuse`'s; `bring_back` asks this again on its locked row (``lock`` locks the
+    Mentor too, so a racing mentor re-invite cannot switch it back on underneath)."""
+    if (not row.is_mentor or row.is_active or row.first_seen_at is not None
+            or row.mentor_id is None):
+        return False
+    mentors = PartnerAdmin.mentor.field.related_model.objects
+    if lock:
+        mentors = mentors.select_for_update()
+    return mentors.filter(pk=row.mentor_id, deactivated_at__isnull=False).exists()
+
+
+def _mentor_in_reach(caller, row):
+    """Request #60: a super, or an organisation admin of the mentor's OWN organisation."""
+    if caller is None:
+        return False
+    if caller.is_super:
+        return True
+    return (caller.role == 'org_admin' and caller.owning_organisation_id is not None
+            and row.owning_organisation_id == caller.owning_organisation_id)
 
 
 def _chose_own_password(account):
@@ -262,7 +290,11 @@ def bring_back(existing, *, name, role, org, owning_org, temp_password=None, ema
         # re-invite. Since courses 0091 the database would no longer refuse a mentor row becoming a
         # reviewer, so this door refuses it itself (as `may_reuse` already does through
         # `_staff_target_manageable`). The source invite's own re-invite (same role) is untouched.
-        if row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role:
+        # Request #60 (owner 2026-11-05): the ONE exception is a revoked mentor login that never
+        # signed in and whose Mentor is deactivated (`unused_revoked_mentor`), and only into a staff
+        # role. Its Mentor record is unlinked below and stays deactivated.
+        if row.role in PartnerAdmin.NOT_STAFF_ROLES and role != row.role and not (
+                role not in PartnerAdmin.NOT_STAFF_ROLES and unused_revoked_mentor(row, lock=True)):
             return None, False, 'not_reusable'
         email = email or row.email
         if PartnerAdmin.objects.filter(email=email).exclude(pk=row.pk).exists():
