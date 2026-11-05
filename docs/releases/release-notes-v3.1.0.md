@@ -1,7 +1,7 @@
 # HalaTuju v3.1.0 - Release Notes
 
 **Date:** 2026-11-05 · **Tag:** `v3.1.0` (local until the owner approves the push) · **Previous release:** `v3.0.0` (2026-10-06)
-**Live at:** [halatuju.xyz](https://halatuju.xyz) · **Commits since v3.0.0:** 814 · **Live revisions:** api `halatuju-api-01255-zsm`, web `halatuju-web-01084-l6b` (main `3c39489b`)
+**Live at:** [halatuju.xyz](https://halatuju.xyz) · **Commits since v3.0.0:** 814 · **Live revisions:** api `halatuju-api-01255-zsm`, web `halatuju-web-01085-zz5` (main `442b21f4`, with the Next 14.2.35 security patch)
 
 Written for the owner (tamiliam) and whoever works on HalaTuju next. Every change is in [`CHANGELOG.md`](../../CHANGELOG.md) (newest first, above the "v3.0.0" heading); the reasons are in [`docs/decisions.md`](../decisions.md); the access review is in [`security-notes-v3.1.0.md`](security-notes-v3.1.0.md).
 

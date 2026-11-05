@@ -154,6 +154,12 @@ press Done; bugs charge 0.0; max 2 builders at once across both lanes. Scout (So
 - req-b commits: #58 eac32a49 (server drops unchanged paused:false for non-reviewers; page never shows raw code);
   #54 63dc1dc4 (card labels fallback "Declared by student" + documented partial sum; display only). ms/ta wording
   needs language check. Not yet reviewed.
+- Review req-b #58 + #54: SHIP both (low: an already-paused non-reviewer still refused on save, pre-existing).
+- #60 req-c 749cb570 (Opus): full api 12442 pass + 1 role-guard fail fixed (77 targeted pass; full not re-run).
+  Opus adversarial review SHIP; 3 lows -> log as TD at merge: (1) mentor re-invite racing bring_back can re-activate
+  the unlinked Mentor + rename the staff row (fix: _reinvite update filter(pk, mentor, role=mentor), roll back on 0);
+  (2) _mentor_in_reach fences on owning_organisation_id, mentor_invite on mentor.organisation_id - require both;
+  (3) may_reuse may say yes where bring_back refuses (UID + no issued credential).
 - Worktree `.worktrees/req-b` (branch req-b from 857a6b43). Builder (Sonnet) on #58 + #54 display there.
 - Drafts STAGED (live API, unapproved): #60, #61, #62, #63, #64.
   - #62 NOT a bug: student typed Add Maths G; slip read correct. Answer only, 0.5h. Optional "typed subject not on
