@@ -7753,6 +7753,26 @@ comes from their mentees). **Owner ruling 2026-11-04 ("b"):** fix AFTER v3.1.0 a
 other audit fixes. **Fix:** the reviewer invite must choose "one gift" or "every gift"; admins and mentors unchanged.
 It is a permission change: Opus build, adversarial review, owner phone check before it goes live. *(A · M)*
 
+### [TD-502] Overview cards without a filtered action link - low
+
+**Raised 2026-11-05 by T5c P5b / P5c (NOT fixed).** The cards qc_awaiting, invitations, sponsors_to_vet, payment_runs, wallet_credits and the mentor cards open their page unfiltered, so the count and the list can differ. P5c linked only the application-list cards (`?ready=1`, `?band=`, `?status`, `?assigned=me`) and requests (`?tab=action`). **Fix:** add the filter to each target page, then link the card, with a parity test per card as P5c did. *(A · M)*
+
+### [TD-503] Overview wallet_credits and sponsors_to_vet card scope - low (owner's call)
+
+**Raised 2026-11-05 by the P5b adversarial review (NOT fixed).** Admins and organisation admins get no wallet_credits card (finance only), though admins can also sign a credit. Finance sees the sponsors_to_vet card but may only read the page. Admin-General sees the org-wide awaiting_qc count. **Fix:** owner rules who should see each card; then align the card door with the page door in `my_pending.py`. *(A · S)*
+
+### [TD-504] Overview invitations card needs org_read; the Invitations page needs team_read - low
+
+**Raised 2026-11-05 by the P5b review (NOT fixed).** The card is guarded by `org_read`, the page it counts by `team_read`, so a person can see a card whose page refuses them, or the reverse. Same door mismatch exists for multi-gift payment_runs (one round trip per gift). **Fix:** use the page's own door for the card and batch the payment_runs lookup. *(A · S)*
+
+### [TD-505] Overview pending cards: id list, double EXISTS and unbudgeted pooled paths - low
+
+**Raised 2026-11-05 by the P5c review (NOT fixed).** `review_sla.in_band` builds an id list (fine at today's size); the ready-to-assign annotation runs the same EXISTS twice; the mentor and super (pooled) paths of `my_pending` have no query budget test (no N+1 found, budgets exist only for admin, finance and reviewer). Related: TD-500. **Fix:** push in_band into a subquery, annotate once, add budgets for the pooled paths. *(A · S)*
+
+### [TD-506] Dependency advisories: Next.js 14.2.0 (critical), Pillow, pypdf, nanoid, picomatch - high (needs the owner's ruling)
+
+**Raised 2026-11-05 by the v3.1.0 release audit (NOT fixed).** `npm audit --omit=dev`: 8 vulnerabilities (1 critical: `next` 14.2.0 with many advisories; 5 high incl. nanoid and picomatch, which `npm audit fix` clears). `pip-audit`: Pillow 11.3.0 (fixed in 12.x / 13.0.0) and pypdf 5.9.0 (fixed in 6.x), pillow-heif 0.22.0. pypdf 5.9.0 is pinned on purpose (the STPM certificate reader depends on its text layer), so a bump needs the exact-read eval re-run. `release.md` says a critical advisory blocks a release. **Fix:** an upgrade sprint (Next to a patched release, Pillow and pypdf with the eval corpus and golden masters as the guard), after the owner rules on timing. *(A · L)*
+
 ### [TD-489] The mentor screens still draw white cards on a phone (rule 15) - low (owner's call: later)
 
 **Raised 2026-11-04 by Mobile M8 follow-up part 2 (NOT fixed).** A mentor's own pages, `/admin/my-students` and

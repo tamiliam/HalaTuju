@@ -52,3 +52,9 @@ No migration. One new endpoint (`GET admin/scholarship/my-programmes/`). The own
 ## Next
 Owner's phone check of P5, then release v3.1.0, then the TD-501 fix sprint, then the full audit on the v3.1.0 tag.
 Freeze: no T5d, no offer S7.
+
+## Follow-ups 2026-11-05
+- **What went wrong.** The live landing shipped two sidebar rows both labelled "Programmes" (P5 kept the old Overview label), found only at the owner's phone check. Then, after P5b, the Unassigned card was too broad (it counted cases nobody could assign yet), and the cards did not open the action page that matched their number. P5b (one Overview page, per-person pending cards) and P5c (no sublines, Unassigned = ready to assign, filtered links) fixed these within a day; both live 2026-11-05, owner phone check OK.
+- **Guards added.** A label test (`navigation.labels.test.ts`) now fails on a repeated label or chord per role and language. Parity tests pin that each card count equals the list it links to (ready-to-assign, band, my open).
+- **Lesson.** Phone-check the live landing for EVERY role before a release, not only the admin view. A count must equal the list behind it, and a card should open that list; write the parity test with the card.
+- **Open lows** went to the debt register as TD-502 to TD-505.

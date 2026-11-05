@@ -22,7 +22,7 @@ and the current Next Sprint. The full text of everything else is in the docs bel
 
 ## Overview
 
-HalaTuju (halatuju.xyz, **v3.0.0**, 2026-10-06) is two products in one codebase. The **course guide**
+HalaTuju (halatuju.xyz, **v3.1.0**, 2026-11-05) is two products in one codebase. The **course guide**
 tells a Malaysian SPM or STPM leaver which courses they qualify for, ranks them and writes a report
 (golden masters: SPM 5,319, STPM 2,025). The **scholarship platform** runs a funder's bursary end to end:
 apply, results and documents read by OCR and AI, a deterministic verdict, interview, QC, award,
@@ -201,6 +201,11 @@ Each was learned the hard way; the story is in `docs/sprint-history.md` and `doc
 ## Next Sprint
 
 Older state blocks and the Mobile-native arc's milestone-by-milestone rules: `docs/sprint-history.md` ("Moved from halatuju_api/CLAUDE.md Next Sprint, 2026-11-03").
+
+### STATE AT 2026-11-05 — T5c P5b + P5c LIVE (main 3c39489b, api-01255-zsm, web-01084-l6b; no migration)
+
+- One "Overview" row and page: per-person pending cards (`GET admin/scholarship/my-pending/`, `apps/scholarship/my_pending.py`) above the programme cards. Unassigned means ready to assign (`queries_sla.ready_to_assign`); cards open the filtered applications list (`?ready=1`, `?band=`, `?status`, `?assigned=me`) or `?tab=action`. Owner phone check OK 2026-11-05. Open lows: TD-502 to TD-505.
+- **NEXT, in order:** (1) release v3.1.0 (`Settings/_workflows/release.md`; notes `docs/releases/release-notes-v3.1.0.md`, tag made locally, push needs the owner's yes); (2) TD-501 (reviewer invite must choose one gift or every gift; staff invites take no gift otherwise; Opus build, adversarial review, owner phone check); (3) the full project audit (`Settings/_workflows/project-audit.md`) on tag v3.1.0. **FREEZE in force: no T5d, no offer S7** until the audit's fix sprints are done.
 
 ### STATE AT 2026-11-04 — T5c PART 5 (PROGRAMMES LANDING) LIVE (main 1c21ecaf, api-01253-gcr, web-01082-t9w; no migration)
 
