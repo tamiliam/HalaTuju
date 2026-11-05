@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * Request #64 — the exam year on the officer Academic card. STPM shows the STPM year beside the
- * merit and the SPM year beside the grades heading; a third-route student shows the SPM year
+ * merit only; a third-route student shows the SPM year
  * beside her SPM grades; an SPM-only student is unchanged (year beside the merit).
  */
 import { render, screen } from '@testing-library/react'
@@ -37,10 +37,11 @@ function renderWith(extra: Record<string, unknown>) {
 const dd = (label: string) => screen.getByText(label).parentElement?.querySelector('dd')?.textContent
 const heading = (label: string) => screen.getByText(label, { exact: false }).textContent
 
-it('STPM shows the STPM year by the merit and the SPM year by the grades heading', () => {
+it('STPM shows the STPM year by the merit only, never an SPM year by the STPM grades heading', () => {
   renderWith({ qualification: 'stpm', stpm_pngk: 3.7, documents: [slip, higher] })
   expect(dd('admin.scholarship.meritScore')).toContain('admin.scholarship.docsDrawer.stpmExamYear:2025')
-  expect(heading('admin.scholarship.stpmGrades')).toContain('admin.scholarship.docsDrawer.examYear:2023')
+  expect(heading('admin.scholarship.stpmGrades')).not.toContain('examYear')
+  expect(dd('admin.scholarship.meritScore')).not.toContain('docsDrawer.examYear')
 })
 
 it('a third-route student shows the SPM year by her SPM grades, merit stays bare', () => {

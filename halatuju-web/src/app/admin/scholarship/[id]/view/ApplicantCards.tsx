@@ -251,8 +251,8 @@ export function ApplicantCards({
                 <div className="mt-3">
                   <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
-                    {(isStpm || third) && (() => {
-                      // The SPM grades of an STPM or third-route student keep their own SPM year (#64).
+                    {third && (() => {
+                      // A third-route student's SPM grades keep their SPM year (#64); an STPM card has no SPM block, so none.
                       const gy = spmExamYear(app.documents)
                       if (!gy) return null
                       return (
