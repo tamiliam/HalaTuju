@@ -251,7 +251,7 @@ export default function AdminProfilePage() {
         : `admin.myProfile.error.${code}`
       setMessage({ ok: false, text: step === 'me' && ME_REFUSALS.includes(code) ? t(meKey)
         : step === 'source' ? t(refusalKey('profile', code))
-          : (err instanceof Error && err.message) || t('admin.profileUpdateFailed') })
+          : t('admin.profileUpdateFailed') })   // Request #58: never the raw server code
     }
     setSaving(false)
   }

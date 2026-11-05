@@ -544,7 +544,13 @@ class ReviewerProfileView(_AdminBase):
             return err
         # TD-439 (owner 2026-10-31): the phone and "share with students" are read-only here (the
         # serializer drops them), so no blank-phone refusal: `admin/me/` is their one writer.
-        if not admin.has_perm('review') and 'paused' in request.data:
+        # Request #58: the profile page sends the whole form back, `paused: false` included, so an
+        # UNCHANGED not-paused switch from someone who does not review is no request at all — it is
+        # dropped, and the rest of the form saves. Only an attempt to PAUSE is refused.
+        data = request.data
+        if not admin.has_perm('review') and data.get('paused') is False and admin.paused_at is None:
+            data = {k: v for k, v in data.items() if k != 'paused'}
+        if not admin.has_perm('review') and 'paused' in data:
             # S7a: refused BEFORE anything is written — a mentor is never handed cases to pause (S7d:
             # nor a staff mentor without `review`).
             return Response({'error': 'not_reviewable', 'code': 'not_reviewable'},
@@ -554,17 +560,17 @@ class ReviewerProfileView(_AdminBase):
         # Split off `paused` before the serializer sees it — it belongs to a different model, and
         # an unknown key would otherwise be silently ignored, leaving the reviewer pressing a
         # switch that does nothing.
-        body = {k: v for k, v in request.data.items() if k not in ('paused', 'paused_at')}
+        body = {k: v for k, v in data.items() if k not in ('paused', 'paused_at')}
         serializer = ReviewerProfileSerializer(profile, data=body, partial=True)
         serializer.is_valid(raise_exception=True)
         # Common profile S3 / S4 review L4: the names of the fields whose value CHANGED, only.
         fields = sorted(k for k, v in serializer.validated_data.items() if getattr(profile, k) != v)
         serializer.save()
         refusal = None
-        if 'paused' in request.data:
+        if 'paused' in data:
             was = PartnerAdmin.objects.filter(pk=admin.pk).values_list('paused_at', flat=True).first()
             try:
-                set_paused(admin, request.data.get('paused'))
+                set_paused(admin, data.get('paused'))
                 now = PartnerAdmin.objects.filter(pk=admin.pk).values_list(
                     'paused_at', flat=True).first()
                 fields += ['paused'] if (was is None) != (now is None) else []

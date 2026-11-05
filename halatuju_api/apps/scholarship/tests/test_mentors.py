@@ -459,6 +459,15 @@ class TestTheMentorsOwnProfile(TestCase):
         self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.mentor_login).english_fluency,
                          'fluent')
 
+    def test_an_unchanged_not_paused_switch_does_not_block_a_mentors_save(self):
+        # Request #58: the profile page always sends paused:false; it must not refuse the save.
+        client = authed_client(self.mentor_login)
+        r = client.patch('/api/v1/admin/reviewer-profile/',
+                         {'paused': False, 'english_fluency': 'fluent'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(ReviewerProfile.objects.get(partner_admin=self.mentor_login).english_fluency,
+                         'fluent')
+
     def test_the_status_rule(self):
         m = Mentor(organisation=self.org)
         self.assertEqual(mentor_invite.status_of(m, None), 'invited')

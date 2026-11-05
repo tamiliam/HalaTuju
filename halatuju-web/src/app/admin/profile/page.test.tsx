@@ -180,6 +180,16 @@ it('the share-phone and pause switches are Toggles; each saves through its own e
   expect(mockApi.updateAdminProfile).not.toHaveBeenCalled()
 })
 
+it('a refused qualifications save shows words, never the raw server code (request #58)', async () => {
+  signIn('reviewer')
+  mockApi.updateReviewerProfile.mockRejectedValue(new Error('not_reviewable'))
+  render(<ProfilePage />)
+  fireEvent.click(await screen.findByRole('switch', { name: 'admin.reviewer.pauseLabel' }))
+  fireEvent.click(save())
+  expect(await screen.findByText('admin.profileUpdateFailed')).toBeTruthy()
+  expect(screen.queryByText('not_reviewable')).toBeNull()
+})
+
 it('a held Reviewer sees the onboarding banner and the completing save sends them on', async () => {
   signIn('reviewer', { reviewer_profile_complete: false })
   mockApi.getAdminMe.mockResolvedValue({ ...STAFF_ME, phone: '' })
