@@ -336,7 +336,10 @@ Superseded on 2026-11-05 by the full fix roadmap, `docs/plans/2026-11-05-audit-f
 
 ## Owner rulings
 
-(None yet. To be added at step 6.)
+- 2026-11-05: full TD sweep wanted (all 219 open items checked). Done; see Appendix A.
+- 2026-11-05: the plan must improve every reading. The fix roadmap `docs/plans/2026-11-05-audit-fix-roadmap.md` is APPROVED. Wave 0 may start. Each deploy group needs its own yes. Owner wants an update at every sprint and wave.
+- 2026-11-05: TD-066 (personal mobile number on the live site): remove the box. Done on branch td066; ships in G0.
+- Owner decisions D1-D13 (roadmap section 3) are still open. None blocks Wave 0.
 
 ## Closing section
 
