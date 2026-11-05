@@ -42,7 +42,22 @@ logger = logging.getLogger('apps.scholarship.views_admin')
 ALREADY_STAFF = ("This email address already has a HalaTuju admin sign-in, so it can't be invited as "
                  "a mentor. Ask HalaTuju support.")
 
+#: Request #57 (wording only): the same 409 refusal, but when the address is a team member of THIS
+#: organisation who could be added as a mentor on their own sign-in, the message says where to go.
+ALREADY_TEAM = ('This person is already on your team. To make them a mentor, go to Mentors, press '
+                '"Add Mentor" and choose them from the list (no invitation is needed).')
+
 _FLUENT = ('conversational', 'fluent')
+
+
+def _is_addable_team_member(email, organisation):
+    """True when ``email`` is an eligible staff login of ``organisation`` that is not a mentor yet
+    (the people the "Add a staff member as mentor" sheet offers). Only their OWN organisation's
+    caller learns this, so nothing leaks across organisations."""
+    from .. import staff_mentor
+    login = PartnerAdmin.objects.filter(email__iexact=email).order_by('id').first()
+    return (staff_mentor.eligible(login) and login.mentor_id is None
+            and login.owning_organisation_id == organisation.pk)
 
 
 def _bad_email(email):
@@ -90,6 +105,8 @@ def invite_mentor(request, admin):
                       'Supabase service role key not configured')
     done = mentor_invite.invite(admin, organisation=owner, email=email, name=name)
     if done.error == 'already_staff':
+        if _is_addable_team_member(email, owner):
+            return _error('already_team', status.HTTP_409_CONFLICT, ALREADY_TEAM)
         return _error('already_staff', status.HTTP_409_CONFLICT, ALREADY_STAFF)
     if done.error:
         return _error('create_failed', status.HTTP_502_BAD_GATEWAY,

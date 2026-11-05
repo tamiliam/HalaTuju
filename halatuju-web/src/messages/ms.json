@@ -8575,6 +8575,7 @@
       },
       "error": {
         "already_staff": "Alamat e-mel ini sudah mempunyai log masuk pentadbir HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
+        "already_team": "Orang ini sudah berada dalam pasukan anda. Untuk menjadikan mereka mentor, pergi ke Mentor, tekan \"Tambah Mentor\" dan pilih mereka daripada senarai (tiada jemputan diperlukan).",
         "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
         "name_required": "Taip nama mentor.",
         "organisation_required": "Pilih organisasi dahulu.",

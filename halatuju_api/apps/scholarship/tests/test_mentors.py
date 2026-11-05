@@ -163,8 +163,21 @@ class TestInvite(_Base):
         self.assertEqual((login.supabase_user_id, login.mentor_id), (None, mentor.pk))
         self.assertIn('You already have a HalaTuju account', mail.outbox[-1].body)
 
+    def test_a_team_member_of_this_organisation_is_pointed_to_add_mentor(self):
+        """Request 57: still refused (409), but the message says where to go. Only for an eligible,
+        not-yet-mentor member of the CALLER'S organisation; every other sign-in keeps `already_staff`."""
+        reviewer = make_admin('reviewer', owning_org=self.org)
+        for email in (self.viewer.email, self.lead.email.upper(), reviewer.email):
+            r = self.invite(email=email)
+            self.assertEqual((r.status_code, r.json()['code']), (409, 'already_team'), email)
+            self.assertIn('Add Mentor', r.json()['error'])
+        for email in (self.other_lead.email, self.super.email):
+            r = self.invite(email=email)
+            self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'), email)
+        self.assertEqual(Mentor.objects.count(), 0)
+
     def test_any_existing_sign_in_is_refused(self):
-        for email in (self.viewer.email, self.lead.email.upper()):
+        for email in (self.other_lead.email, self.super.email):
             r = self.invite(email=email)
             self.assertEqual((r.status_code, r.json()['code']), (409, 'already_staff'), email)
         self.invite()
