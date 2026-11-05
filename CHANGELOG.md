@@ -12,7 +12,7 @@ Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no
 
 Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION` 2026-11-06.1). Decisions: `docs/decisions.md` "Request #62".
 
-- `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
+- `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. A short read (fewer rows than the slip's printed subject total, or a compulsory subject absent) never raises it. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
 
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 

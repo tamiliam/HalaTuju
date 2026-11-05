@@ -8,14 +8,43 @@ The subject-name normalisers it reads stay in ``academic_engine`` (their one hom
 """
 from __future__ import annotations
 
-from .academic_engine import (_CELL_NOISE, _GRADE_TO_BAND, _SUBJECT_BM, _base_letter, _is_char_loss,
-                              _match_known_subject, _norm_grade, _norm_lower_alnum, _slip_key)
+from .academic_engine import (_CELL_NOISE, _GRADE_TO_BAND, _SUBJECT_BM, _base_letter,
+                              _declared_subject_count, _is_char_loss, _match_known_subject, _norm_grade,
+                              _norm_lower_alnum, _slip_key)
 from .slip_subject_aliases import ENGLISH_NAMES
 
 _KNOWN_KEYS = frozenset(_norm_lower_alnum(n) for n in _SUBJECT_BM.values())
 #: (Malay key, English words), LONGEST first so "Additional Mathematics" wins over "Mathematics".
 _ENGLISH = sorted(((_norm_lower_alnum(bm), frozenset(_norm_lower_alnum(en).split()))
                    for en, bm in ENGLISH_NAMES.items()), key=lambda t: -len(t[1]))
+
+
+#: The four compulsory SPM subjects (subjects.ts `core: true`: bm, eng, math, hist; decisions D4).
+_COMPULSORY = frozenset(_norm_lower_alnum(_SUBJECT_BM[k]) for k in ('bm', 'eng', 'math', 'hist'))
+
+
+def printed_subject_count(fields: dict):
+    """The subject total the slip PRINTS ("JUMLAH MATA PELAJARAN : LAPAN" = 8), or None — read from
+    what the stored record kept of the page: a local read's grouped lines (``_debug_rows``), else a
+    Gemini fallback's OCR word capture (``_slip_ocr_diag.capture``). The readers' own count
+    (``_declared_subject_count``); nothing is re-read."""
+    rows = fields.get('_debug_rows')
+    if not isinstance(rows, list):
+        diag = fields.get('_slip_ocr_diag')
+        cap = diag.get('capture') if isinstance(diag, dict) else None
+        rows = [w.get('text') for w in cap if isinstance(w, dict)] if isinstance(cap, list) else []
+    text = ' '.join(r for r in rows if isinstance(r, str))
+    return _declared_subject_count(text.upper()) if text else None
+
+
+def _short_read(slip_norm: dict, slip: dict) -> bool:
+    """Request #62 review: a read that holds FEWER subject rows than the slip prints, or that has
+    grades but lacks a compulsory subject, dropped rows — so it is not COMPLETE and never says a
+    typed subject is absent from the slip (``missing`` and the grade checks are unaffected)."""
+    printed = slip.get('printed_count')
+    if isinstance(printed, int) and len(slip_norm) < printed:
+        return True
+    return bool(slip.get('grades')) and not _COMPULSORY <= set(slip_norm)
 
 
 def _compare_key(name: str) -> str:
@@ -83,7 +112,10 @@ def compare_academics(profile_grades, slip) -> dict:
     # any of its raw printed lines (`_debug_rows`, local reads only) that shows it counts. A Gemini
     # read keeps no raw lines, so its extra stands.
     printed = set(slip_norm).union(*(_printed_keys(line) for line in slip.get('raw_lines') or ()))
-    extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in printed) if slip['grades'] else []
+    # A SHORT read (fewer rows than the slip's printed total, or a compulsory subject absent) is not
+    # complete either: it dropped rows, so it raises no extra (`_short_read`, #62 review).
+    extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in printed) \
+        if slip['grades'] and not _short_read(slip_norm, slip) else []
     mismatched, uncertain = [], []
     for nn, slip_g in grades.items():
         typed = prof_by_name.get(nn)

@@ -553,8 +553,10 @@ def read_slip(doc) -> dict:
         if isinstance(subs, list):
             names = [_split_band(s)[0] for s in subs if isinstance(s, str) and s.strip()]
     raw = fields.get('_debug_rows') if isinstance(results, list) else None  # #62: printed lines (local read)
+    from .academic_compare import printed_subject_count   # #62: the slip's own JUMLAH MATA PELAJARAN
     return {'names': names, 'grades': grades, 'bands': bands, 'letters': letters,
-            'raw_lines': [r for r in raw if isinstance(r, str)] if isinstance(raw, list) else []}
+            'raw_lines': [r for r in raw if isinstance(r, str)] if isinstance(raw, list) else [],
+            'printed_count': printed_subject_count(fields)}
 
 
 def compare_academics(profile_grades, slip) -> dict:

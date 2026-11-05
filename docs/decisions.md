@@ -18879,6 +18879,13 @@ Production re-measure with the branch code (2026-11-06, read-only): 266 SPM slip
 an extra (13 subjects); 15 green→alert flips remain, 6 of them on a read short of the slip's printed count or missing
 a compulsory subject (possible false alerts: a Greek-letter "ΚΙΜΙΑ", a row whose name OCR lost but whose code 4531 /
 1249 survives). Open: matching a raw line by its SPM subject CODE would clear those.
+(4d) Review (lead 2026-11-06): a SHORT read never raises `extra` (`academic_compare._short_read`): one holding fewer
+subject rows than the slip's own printed total ("JUMLAH MATA PELAJARAN : LAPAN", `_declared_subject_count` over the
+stored `_debug_rows`, or a Gemini read's `_slip_ocr_diag.capture` words; `read_slip` returns it as `printed_count`),
+or one with grades that lacks a compulsory subject (Bahasa Melayu, Bahasa Inggeris, Matematik, Sejarah: `subjects.ts`
+`core: true`, D4); `missing` and the grade checks are unchanged. Re-measure (read-only, 266 SPM slips): 16 flips -> 9,
+none of the 9 short or lacking a compulsory subject (the 7 cleared were all likely false). Code matching was not built:
+the repo holds no authoritative 4-digit code table.
 (4c) The coach's help signal (`documentHelp.helpSignal`) gains `,x:<subjects>` only when `extra` is non-empty: a slip
 without one keeps its signal; a slip WITH one (alone or beside a missing subject) moves once — one billable, throttled
 coach re-fetch, accepted because the advice now names the subject. (5) No alias is invented:

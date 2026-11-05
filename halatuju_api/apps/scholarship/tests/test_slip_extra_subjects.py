@@ -27,8 +27,11 @@ from apps.scholarship.tests.factories import make_application, make_student
 from apps.scholarship.verdict_engine import build_verdict
 from apps.scholarship.verdict_ladder import _academic_red_chips
 
-CORE = [{'subject': 'BAHASA MELAYU', 'grade': 'A'}, {'subject': 'SEJARAH', 'grade': 'B'}]
-CORE_TYPED = {'bm': 'A', 'hist': 'B'}
+#: The four compulsory subjects: a read without one of them is SHORT and never raises extra.
+CORE = [{'subject': 'BAHASA MELAYU', 'grade': 'A'}, {'subject': 'BAHASA INGGERIS', 'grade': 'A'},
+        {'subject': 'MATEMATIK', 'grade': 'A'}, {'subject': 'SEJARAH', 'grade': 'B'}]
+CORE_TYPED = {'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'B'}
+NO_MATH = [r for r in CORE if r['subject'] != 'MATEMATIK']   # an English / dual cell supplies it
 
 
 def _slip(results=None, subjects=None):
@@ -60,7 +63,7 @@ class CompareExtra(SimpleTestCase):
         self.assertTrue(cmp['complete'])
 
     def test_a_names_only_read_never_asserts_extra(self):
-        cmp = compare_academics({**CORE_TYPED, 'phy': 'A'}, _slip(subjects=['BAHASA MELAYU', 'SEJARAH']))
+        cmp = compare_academics({**CORE_TYPED, 'phy': 'A'}, _slip(subjects=[r['subject'] for r in CORE]))
         self.assertEqual(cmp['extra'], [])
         self.assertTrue(cmp['complete'])
 
@@ -71,7 +74,7 @@ class CompareExtra(SimpleTestCase):
         self.assertEqual(cmp['extra'], [])
 
     def test_english_slip_names_match_the_typed_malay_subjects(self):
-        rows = CORE + [{'subject': n, 'grade': 'A'} for n in (
+        rows = NO_MATH + [{'subject': n, 'grade': 'A'} for n in (
             'MATHEMATICS', 'ADDITIONAL MATHEMATICS', 'SCIENCE', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY')]
         typed = {**CORE_TYPED, 'math': 'A', 'addmath': 'A', 'sci': 'A', 'phy': 'A', 'chem': 'A', 'bio': 'A'}
         cmp = compare_academics(typed, _slip(rows))
@@ -232,7 +235,7 @@ class EnglishNamesNeverReachTheReaders(SimpleTestCase):
 
     def test_a_dual_language_cell_folds_at_comparison(self):
         cmp = compare_academics({**CORE_TYPED, 'math': 'A'},
-                                _slip(CORE + [{'subject': '1449 MATEMATIK MATHEMATICS', 'grade': 'A'}]))
+                                _slip(NO_MATH + [{'subject': '1449 MATEMATIK MATHEMATICS', 'grade': 'A'}]))
         self.assertEqual((cmp['missing'], cmp['extra']), ([], []))
 
 
@@ -276,6 +279,52 @@ class APrintedSubjectIsNeverExtra(SimpleTestCase):
         cmp = compare_academics({**CORE_TYPED, 'sci': 'A'},
                                 _stored(CORE, ['6351 ENGLISH FOR SCIENCE AND TECHNOLOGY A CEMERLANG']))
         self.assertEqual(cmp['extra'], ['Sains'])
+
+
+class AShortReadNeverRaisesExtra(SimpleTestCase):
+    """Review (lead 2026-11-06, production re-measure): `extra` needs a COMPLETE read. A read with
+    fewer rows than the slip PRINTS ("JUMLAH MATA PELAJARAN : LAPAN") or without a compulsory subject
+    dropped rows, so it raises no extra; `missing` and the grade checks are unchanged."""
+    LAPAN = ['SIJIL PELAJARAN MALAYSIA', 'JUMLAH MATA PELAJARAN : LAPAN']
+
+    def _gemini(self, results, words):
+        diag = {'reason': 'parse_none', 'capture': [{'text': w} for w in ' '.join(words).split()]}
+        return read_slip(SimpleNamespace(vision_fields={'fields': {
+            'candidate_name': 'X', 'results': results, '_slip_ocr_diag': diag}}))
+
+    def test_fewer_rows_than_the_printed_count_raises_no_extra(self):
+        slip = _stored(CORE + [{'subject': 'KIMIA', 'grade': 'B'}], self.LAPAN)
+        self.assertEqual(slip['printed_count'], 8)
+        cmp = compare_academics({**CORE_TYPED, 'phy': 'A'}, slip)
+        self.assertEqual(cmp['extra'], [])
+        self.assertEqual(cmp['missing'], ['KIMIA'])          # missing unchanged
+
+    def test_a_gemini_reads_word_capture_gives_the_printed_count(self):
+        slip = self._gemini(CORE, self.LAPAN)
+        self.assertEqual(slip['printed_count'], 8)
+        self.assertEqual(compare_academics({**CORE_TYPED, 'phy': 'A'}, slip)['extra'], [])
+
+    def test_a_read_holding_the_printed_count_still_raises_extra(self):
+        rows = CORE + [{'subject': s, 'grade': 'A'} for s in ('KIMIA', 'BIOLOGI', 'PERNIAGAAN', 'EKONOMI')]
+        cmp = compare_academics({**CORE_TYPED, 'chem': 'A', 'bio': 'A', 'business': 'A', 'ekonomi': 'A',
+                                 'phy': 'A'}, self._gemini(rows, self.LAPAN))
+        self.assertEqual(cmp['extra'], ['Fizik'])
+
+    def test_a_compulsory_subject_absent_raises_no_extra(self):
+        for absent in ('BAHASA MELAYU', 'BAHASA INGGERIS', 'MATEMATIK', 'SEJARAH'):
+            with self.subTest(absent=absent):
+                rows = [r for r in CORE if r['subject'] != absent]
+                self.assertEqual(compare_academics({**CORE_TYPED, 'phy': 'A'}, _slip(rows))['extra'], [])
+
+    def test_a_short_read_still_reports_missing_and_grade_mismatches(self):
+        rows = [r for r in CORE if r['subject'] != 'MATEMATIK'] + [{'subject': 'KIMIA', 'grade': 'C'}]
+        typed = {**CORE_TYPED, 'bm': 'C', 'chem': 'A', 'phy': 'A'}
+        cmp = compare_academics(typed, _slip(rows))
+        self.assertEqual(cmp['extra'], [])
+        self.assertEqual(cmp['missing'], [])
+        self.assertEqual(sorted(m['subject'] for m in cmp['mismatched']), ['BAHASA MELAYU', 'KIMIA'])
+        cmp = compare_academics(CORE_TYPED, _slip(rows))
+        self.assertEqual(cmp['missing'], ['KIMIA'])
 
 
 class ThirdRouteSpmGrades(TestCase):
