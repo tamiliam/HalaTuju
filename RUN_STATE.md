@@ -129,6 +129,45 @@ Lead rulings:
 - P5c follow-up 2b618fc8: band=open for my_open + parity test; M2 parity already holds (cards are all-gifts counts,
   no change); title= dropped; ApplicationUrlFilters.tsx extracted (page.tsx 599). Full pytest 12433 PASS; jest 6525
   with 1 fail (eslint-disable reason) fixed, affected suites 507 PASS; bundle 144.147. NEXT: owner deploy yes.
+- P5c LIVE 2026-11-05 (main 3c39489b; api halatuju-api-01255-zsm, web halatuju-web-01084-l6b; both SUCCESS).
+  NEXT: owner phone check -> P5b+P5c CHANGELOG + short close -> v3.1.0 release.
+- Owner phone check OK 2026-11-05. Close + release prep agent (Sonnet) running: CHANGELOG, retro follow-up, TDs for
+  the lows, Next Sprint, version bump + notes + local tag v3.1.0, memory + projects.json. NEXT: owner yes to push.
+- Close done: a6f65b31 (close docs, TD-502..505), 857a6b43 (release v3.1.0, web 3.1.0, notes), local tag v3.1.0;
+  memory 1d8b8c7; workspace c81c99d + 03e2039 (NOT pushed). wat_lint 0 FAIL / 4 WARN (old).
+- RELEASE BLOCKER: npm audit 1 critical / 5 high (next 14.2.0). Lead check: no middleware (GHSA-f82v n/a), Linux
+  host (Windows RCE n/a), image optimizer ON (AVIF/SVG RCE, fix only in 15.5.28+). OWNER OPTION A 2026-11-05: patch
+  first - next 14.2.35, images.unoptimized, npm audit fix (no force), full gates, ONE deploy, then tag v3.1.0. Next 15
+  upgrade = audit fix sprint 1 (security, freeze allows), then TD-501, then audit. Python Pillow/pillow-heif/pypdf ->
+  audit (doc reading, MODEL_VERSION). Security patch builder (Sonnet) running.
+
+## Lane B — org requests (owner 2026-11-05)
+Owner, verbatim: "We have a number of requests that are yet to be processed. Process them. If it is a bug, only fix
+the bug. Try not to broaden it, or change the design. After that, process the two requests that have been scheduled.
+You may push, but do not deploy without my approval."
+Rules: push only to a feature branch (main = deploy); agents STAGE analyses/closing reports + hours, never approve or
+press Done; bugs charge 0.0; max 2 builders at once across both lanes. Scout (Sonnet) listing open + scheduled.
+- SECURITY PATCH 57046b2f (next 14.2.35, image optimiser off, audit fix; gates 6525, mobile 775, /_next/image 404).
+  Bundle median 146.08 > 145: owner ruled RAISE (median 146.5, /profile 195, apply 189, application 209; TD-506
+  note) + that answer = deploy yes. Bundle re-run PASS (room 0.4).
+- Owner rulings 2026-11-05: #60 YES narrow exception (Opus builder, worktree req-c); #63 YES add SPM degree choice.
+- req-b commits: #58 eac32a49 (server drops unchanged paused:false for non-reviewers; page never shows raw code);
+  #54 63dc1dc4 (card labels fallback "Declared by student" + documented partial sum; display only). ms/ta wording
+  needs language check. Not yet reviewed.
+- Worktree `.worktrees/req-b` (branch req-b from 857a6b43). Builder (Sonnet) on #58 + #54 display there.
+- Drafts STAGED (live API, unapproved): #60, #61, #62, #63, #64.
+  - #62 NOT a bug: student typed Add Maths G; slip read correct. Answer only, 0.5h. Optional "typed subject not on
+    slip" warning = design change, not scoped.
+  - #64 real bug, 2.5h: ApplicantCards.tsx:225 hides the exam year for STPM/third routes. Fix = show SPM year by the
+    SPM grades heading + STPM year by merit (new higherExamYear in officerCockpit.ts). No design decision. BUILD next.
+  - #60 real bug, 2.5h: may_reuse refuses mentor rows (views_admin.py:658, staff_reinvite.py:54/265). Fix relaxes the
+    S7d ruling (mentor login never changes role) for never-signed-in revoked mentors -> OWNER DECISION.
+  - #63 real gap, 3h: UMS Sains Data degree IS in the catalogue; SPM students have no "degree" pathway
+    (PathwayPicker.tsx). Fix adds one pathway choice = small design change -> OWNER DECISION.
+  - #61: no length limit (verdict_reason unbounded). Lead log read: no record-verdict over 120 s and no 5xx on 3-4 Nov;
+    app 262 record-verdict ran 3x on 3 Nov 03:17-03:20Z at 41-52 s, all 200 (Gemini refine + blurb). Likely the
+    browser gave up on a ~50 s save and the user retried (each retry re-runs paid Gemini). The investigator's
+    45 s Gemini-timeout fix does not match this evidence -> re-scope before building.
 
 ## Stops waiting on the owner
 - **P5 phone check and deploy approval** (asked before each deploy; P5 changes reviewer and mentor access).
