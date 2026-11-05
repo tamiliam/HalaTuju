@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- TD-066 closed (owner ruling "Remove the box"): the TEMP tech-support help box (with its personal mobile number) is removed from the student application page, with its message key in en, ms and ta; a guard test keeps it out.
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.

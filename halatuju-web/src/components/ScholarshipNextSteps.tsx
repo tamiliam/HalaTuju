@@ -5,7 +5,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
-import { useBranding } from '@/lib/branding-context'
 import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication, type StudentProfile } from '@/lib/api'
 import {
   applicationToDetailsForm, buildDetailsPayload, firstTooLongField, setOnboardingReturn,
@@ -96,21 +95,6 @@ function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
   )
 }
 
-/** Render the tech-support text with the email address as a mailto: link. The address is the
- *  branded support email (platform → help@halatuju.xyz), which is also what the message string
- *  already contains after the {supportEmail} substitution — so the split finds it. */
-function renderTechSupport(text: string, email: string): React.ReactNode {
-  const i = text.indexOf(email)
-  if (i === -1) return text
-  return (
-    <>
-      {text.slice(0, i)}
-      <a href={`mailto:${email}`} className="font-medium underline hover:no-underline">{email}</a>
-      {text.slice(i + email.length)}
-    </>
-  )
-}
-
 export default function ScholarshipNextSteps({
   initialApp,
   token,
@@ -127,7 +111,6 @@ export default function ScholarshipNextSteps({
   onSubmitted?: (app: ScholarshipApplication) => void
 }) {
   const { t, locale } = useT()
-  const branding = useBranding()
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication>(initialApp)
   const [form, setForm] = useState<DetailsFormState>(() => applicationToDetailsForm(initialApp))
@@ -782,11 +765,6 @@ export default function ScholarshipNextSteps({
                 </button>
               )
             })}
-            {/* TEMP (testing only — remove when testing is done): tech-support help
-                placed in the menu so it's reachable on every step during testing. */}
-            <div className="pt-3">
-              <InfoBox kind="info">{renderTechSupport(t('scholarship.nextSteps.techSupport'), branding.emailSupport)}</InfoBox>
-            </div>
           </nav>
         </aside>
 
@@ -810,12 +788,6 @@ export default function ScholarshipNextSteps({
             {sections[shownTab]}
           </div>
         </div>
-      </div>
-
-      {/* TEMP (testing only — remove when done): tech-support on mobile, where the
-          left menu is hidden. */}
-      <div className="lg:hidden mt-4">
-        <InfoBox kind="info">{renderTechSupport(t('scholarship.nextSteps.techSupport'), branding.emailSupport)}</InfoBox>
       </div>
 
       {/* Bottom tab bar (mobile only) */}
