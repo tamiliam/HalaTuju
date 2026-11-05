@@ -153,7 +153,7 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
   - **TD numbering:** file TD-512 to TD-523 if the report appendix has not already done it (507 to 511 stay reserved for Lane B).
 - **Acceptance:**
   - `python Settings/_tools/wat_lint.py --project …` PASSes.
-  - The `code_health.py` td_open reading is ≤ 165.
+  - ~~The `code_health.py` td_open reading is ≤ 165.~~ Corrected 2026-11-05: the start was 233, not 219 (the audit added 14). A0.2 closed 25 with evidence, giving 208. The rest needs owner decisions or fixes in later waves. The final target (≤ 110) is unchanged.
   - The index count equals the reading.
   - Every merged child carries a marker.
 - **Readings moved:** td_open 219 → ≈ 160 (−60). wat_lint FAIL → PASS. Consolidation Review overdue → done.
