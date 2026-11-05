@@ -1,5 +1,7 @@
 # Sources and referral partners — roadmap (four sprints)
 
+> **Status (checked 2026-11-05): In progress (2026-10-18).** Sprint A live 2026-10-18; later sprints not confirmed done.
+
 **Status:** Sprint A BUILT 2026-10-09, LIVE 2026-10-18 (`bfa547d9` + `4570eb8f`, api-01119-l65; migration
 `courses/0078_two_referral_columns`, cutover `docs/scholarship/two-columns-cutover-sql.md`; retro
 `docs/retrospectives/retrospective-2026-10-18-sources-a.md`). Sprint B BUILT 2026-10-18, LIVE 2026-10-19

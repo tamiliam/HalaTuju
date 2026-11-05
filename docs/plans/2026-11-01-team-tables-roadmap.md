@@ -1,5 +1,7 @@
 # Team tables — one person, several hats (roadmap, 2026-11-01)
 
+> **Status (checked 2026-11-05): In progress.** T1-T5c live; T5d frozen until the audit fix sprints are done.
+
 Status: **APPROVED by the owner 2026-11-01** (design boards TeamAdmins / TeamReviewers / TeamMentors / TeamEmails on the maintenance canvas). Owner's model and rulings 2026-11-01 (decisions.md the same day once approved).
 
 ## Why

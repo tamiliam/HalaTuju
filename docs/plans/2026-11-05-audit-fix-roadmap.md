@@ -1,5 +1,7 @@
 # HalaTuju audit fix roadmap
 
+> **Status (checked 2026-11-05): In progress.** Approved by the owner; waves in progress.
+
 - **Status:** APPROVED by the owner on 2026-11-05. Each deploy group still needs its own yes.
 - **Date:** 2026-11-05
 - **Audit commit:** v3.1.0 (`442b21f4`)

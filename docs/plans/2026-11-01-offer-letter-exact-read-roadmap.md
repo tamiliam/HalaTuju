@@ -1,5 +1,7 @@
 # Offer letters read exactly — roadmap (2026-11-01)
 
+> **Status (checked 2026-11-05): In progress (2026-11-04).** S1-S6 live; S7 (paid) and S8 next.
+
 **Status:** APPROVED 2026-11-01 by the owner, with every recommended decision (D1–D6 option a). S1 in progress. Planned on main `c9a4612c` and checked against
 `origin/main 23e058a8`. Builds on the offer realignment, the date rule and the offer link — all LIVE 2026-11-01
 (main `9969c1f3`, api-01225-fxd; applied: 27 realigned, 9 linked). Retros

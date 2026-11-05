@@ -2,6 +2,8 @@
 
 # Roadmap — Bumiputera courses + Islamic subjects
 
+> **Status (checked 2026-11-05): In progress (2026-10-30).** Sprints A to F2 live; later steps not confirmed done.
+
 ## Context
 At launch we left out three things on purpose:
 - Bumi-only courses (UiTM, other "Melayu / Anak Negeri / Orang Asli sahaja" programmes, MARA TVET).

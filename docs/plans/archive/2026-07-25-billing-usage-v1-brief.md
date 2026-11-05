@@ -1,0 +1,28 @@
+# Billing & usage v1 — the meter (Sprint 13a) + the super-only usage screen
+
+> **Status (checked 2026-11-05): Done (2026-07-25).** Shipped (CHANGELOG, sprint history); billing usage is on in production.
+
+**Date:** 2026-07-25 · **Owner-triggered 2026-07-25** (gate met by `docs/plans/archive/2026-07-24-billing-sources-investigation.md` — read it first; its §3–§5 are the design source). **Executor:** Opus 4.8. **Owner gate: the usage-screen UI ships DARK and goes visible only after the owner approves the UI artifact** (standing lesson: present the artifact BEFORE the first flag-on ask).
+
+## Scope (one coherent deliverable)
+
+**A. The meter — `UsageEvent` (Sprint 13a from the roadmap).**
+- New model `UsageEvent`, table `usage_events`: `organisation` FK `courses.PartnerOrganisation` PROTECT **null=True** (NULL = platform-base work: course-selector reports, ops mail — kept for reconciliation, per the investigation), `application` FK SET_NULL null (when known), `service` (choices: `gemini`, `vision_ocr`, `openai`, `email`, `whatsapp`), `model` CharField blank, `source` CharField(40) (call-path tag: `doc_extract`, `genuineness`, `ic_fallback`, `doc_help`, `answer_relevance`, `profile_draft`, `profile_refine`, `anon_blurb`, `verdict_summary`, `contract_quiz`, `docx_segment`, `requests_triage`, `report`, email/whatsapp function tags…), `quantity` Integer default 1, `input_tokens`/`output_tokens` Integer null (AI only, from the response's usageMetadata), `created_at`. Index (organisation, created_at). ONE additive migration — **check the latest migration number at build time and take the next free one** (a concurrent session holds an uncommitted 0115; pull first; if collision looms, renumber yours and note it).
+- **Logging wrappers at the sanctioned seams ONLY** (tenancy Rule 6; the audit's call-site list is verified complete): `vision._call_gemini_json` + the two raw Cloud Vision OCR helpers, `profile_engine._call_gemini_text`, `contracts._gemini_generate`, `report_engine`'s Gemini/OpenAI calls (org=NULL, source=`report`), `emails._send`/`_send_html`/`_send_plain`/`_send_bilingual` (quantity 1 per send), `whatsapp.send_whatsapp`. Thread a lightweight context (`usage_org_id`/`usage_application_id`/`usage_source`) from each call site — every site is already org-resolvable (investigation §3): vision/profile/help/verdict via the `application` in hand, contracts via the template's organisation, triage via `OrgRequest.organisation`, WhatsApp via the passed application; email senders log org where the caller holds it, else NULL (do NOT rework the 53 senders' signatures beyond an optional kwarg — NULL-org email rows are acceptable v1).
+- **Metering is UNCONDITIONAL from deploy** (data accrues immediately; rows are cheap) and **absolutely best-effort**: the log write is wrapped so a metering failure can NEVER break the user-facing call (fault-injection test proves it). Token capture: adapt each Gemini seam to read the response's usage metadata internally — do not change the seams' public return shapes.
+
+**B. The usage screen — super-only, DARK.**
+- Flag `BILLING_USAGE_ENABLED` (default OFF, standard idiom). Flag gates the UI/endpoint only — never the metering.
+- Endpoint `GET /api/v1/admin/scholarship/billing/usage/?month=YYYY-MM` — super-only (`EXEMPT-super-only` in test_org_fence.py FENCED_OR_EXEMPT), flag-gated 404-first. Returns per-organisation (plus a `platform` row for NULL-org) aggregates: per service — event count, quantity, input/output token sums; and the month list available. Plain allowlist serializer/dict with an exact-key snapshot test. NO prices anywhere in v1 (no price list exists yet — investigation §4; units only).
+- FE: Administration hub — the existing **"Billing & usage — Coming soon" card becomes live FOR SUPER ONLY when the flag is on** (org-facing stays Coming soon in v1); new page `/admin/billing`: month picker, one section per organisation + Platform, service rows with stat tiles (Gemini calls + tokens in/out, Vision OCR calls, emails, WhatsApp). Pure lib helper for shaping + node-env jest test; i18n `admin.billing.*` en/ms/ta + namespace guard; brand/placeholder guards green. Match the app's existing light design system exactly.
+
+## Rails (standing)
+- NEVER push; NEVER touch remote DBs; hand the coordinator the migration DDL (CREATE TABLE + indexes + FKs; coordinator adds RLS same-transaction).
+- Full gates per commit: pytest 0 fail 0 skip (baseline ≈4486+, may have moved — pull first, code wins), jest (1 known Node-26 local fail held constant), next build, lint, `makemigrations --check` clean (exactly ONE new migration from this sprint).
+- Concurrent sessions are active in this tree (review-nudges + Vircle-activation edits, possibly committed by the time you start): pull first, explicit-path staging ONLY, never touch their files; if your push-less commits interleave with theirs, that's fine.
+- Fence suite: classify every new view; `UsageEvent.objects` in views_admin needs pragmas/WATCHED if queried raw. Zero brand literals. British English; ms/ta first-drafts per the Tamil style guide. No heredocs; no backticks in -m; delete scratch files.
+- Suggested commits: (1) model+migration+wrapper seam plumbing+tests; (2) endpoint+serializer+fence+tests; (3) FE page+card+i18n+guards (dark); (4) CHANGELOG.
+- The 113 email goldens and every Sprint 5/6/15 guard stay green — wrappers must not alter any rendered output.
+
+## Report back
+Commits; test counts before→after; the migration DDL; seam-coverage table (each billable call path → the source tag it logs + org-resolution route, so the coordinator can audit completeness against the tenancy audit §5 list); fault-injection proof; flag-off proof; deviations; anything red verbatim.
