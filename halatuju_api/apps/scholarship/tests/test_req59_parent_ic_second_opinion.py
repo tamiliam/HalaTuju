@@ -219,3 +219,49 @@ class TheStudentsOwnCardIsUnchanged(TestCase):
         self.assertEqual(vision._merge_ic_reads(det, {'name': 'ARUN'}, _P())['name'], 'ARUN')   # partial
         self.assertEqual(vision._merge_ic_reads(det, {'name': 'SOMEONE ELSE'}, _P())['name'], 'ARUN A/L KUMAP')
         self.assertEqual(vision._merge_ic_reads(det, {'name': 'ARUN A/L KUMAR'}, None)['name'], 'ARUN A/L KUMAP')
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=False, IC_GEMINI_FALLBACK_ENABLED=True)
+class TheEdgesOfTheParentReference(TestCase):
+    """Adversarial-review lows: odd rosters never let a wrong person's card clear the slip check."""
+
+    def _blockers(self, app):
+        from apps.scholarship.services import document_red_blockers
+        return document_red_blockers(app)
+
+    def test_a_one_word_father_name_does_not_let_the_childs_card_clear_the_slip_check(self):
+        app = _app(student_name='Ahmad Bin Ismail', father_name='ISMAIL')
+        _slip(app, 'father', 'ISMAIL BIN HASSAN', FATHER_NRIC)
+        pic = _read(_doc(app, 'parent_ic', 'father'), nric='700101-14-5617', name='AHMAD BIN ISMAL',
+                    second={'nric': '700101-14-5617', 'name': 'AHMAD BIN ISMAIL', 'address': ''})
+        from apps.scholarship.income_engine import student_income_ic_check
+        chk = student_income_ic_check(pic)
+        self.assertNotEqual(chk['proof_name_status'], 'match')      # the card-vs-slip check still bites
+        self.assertIn('parent_ic_person_mismatch', self._blockers(app))
+
+    def test_the_uncles_name_on_the_card_with_the_aunts_slip_stays_blocked(self):
+        app = _app(earner='guardian', other_family_members=[
+            {'name': 'Velu A/L Samy', 'relationship': 'guardian'},
+            {'name': 'Meena A/P Raman', 'relationship': 'guardian'}])
+        _slip(app, 'guardian', 'MEENA A/P RAMAN', '650505-14-5222')
+        gic = _read(_doc(app, 'parent_ic', 'guardian'), nric='600303-14-5111', name='VELU A/L SAMV',
+                    second={'nric': '600303-14-5111', 'name': 'VELU A/L SAMY', 'address': ''})
+        from apps.scholarship.income_engine import student_income_ic_check
+        chk = student_income_ic_check(gic)
+        self.assertNotEqual(chk['proof_name_status'], 'match')
+        self.assertIn('parent_ic_person_mismatch', self._blockers(app))
+
+    def test_an_untagged_mothers_card_is_not_given_the_fathers_name(self):
+        app = _app(route='str', earner='father')
+        pic = _read(_doc(app, 'parent_ic', ''), nric='720202-14-5678', name='SARASWATHY A/P MUTHV',
+                    second={'nric': '720202-14-5678', 'name': 'SARASWATHY A/P MUTHU', 'address': ''})
+        self.assertEqual(pic.vision_name, 'SARASWATHY A/P MUTHV')   # cheap reading kept, as today
+
+    def test_a_failing_reference_lookup_keeps_the_cheap_reading(self):
+        app = _app()
+        with patch('apps.scholarship.income_engine.identity_checks._roster_candidates',
+                   side_effect=RuntimeError('boom')):
+            pic = _read(_doc(app, 'parent_ic', 'father'), nric=FATHER_NRIC, name='KUMAR A/L RAJV',
+                        second={'nric': FATHER_NRIC, 'name': 'KUMAR A/L RAJU', 'address': ''})
+        self.assertEqual(pic.vision_name, 'KUMAR A/L RAJV')
+        self.assertEqual(pic.vision_error, '')
