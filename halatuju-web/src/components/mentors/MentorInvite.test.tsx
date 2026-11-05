@@ -48,6 +48,16 @@ it('invites with a name and an email; a refusal reads in plain words', async () 
   await waitFor(() => expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' })))
 })
 
+it('a team member refused as a mentor invite is pointed to Mentors (request 57)', async () => {
+  mockApi.inviteMentor.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'already_team' }))
+  render(<MentorInviteForm token="tok" t={t} onDone={jest.fn()} />)
+  const form = screen.getByTestId('mentor-invite-form')
+  fireEvent.change(within(form).getByLabelText('admin.mentors.invite.name'), { target: { value: 'Ravi' } })
+  fireEvent.change(within(form).getByLabelText('admin.emailLabel'), { target: { value: 'r@example.org' } })
+  fireEvent.submit(form)
+  expect((await within(form).findByRole('alert')).textContent).toBe('admin.mentors.error.already_team')
+})
+
 it('Resend and Revoke call the mentor endpoints, never the generic Cancel', async () => {
   const onDone = jest.fn()
   mockApi.mentorAction.mockResolvedValue({ ...MENTOR, emailed: true })

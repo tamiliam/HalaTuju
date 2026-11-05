@@ -96,7 +96,7 @@ from .genuineness.offer_issuers import not_checked_issuer
 #   2026-10-27.1 — third route S4 (#43): a higher result in the SPM card is named, never SPM-compared;
 #   .2 — #388: higher results OWED over a pre-S3 snapshot cap Academic at Probable (`higher_owed`).
 #   .3 TD-404 ANAK=AK, BINTI=BT/BTE; .4 STPM S3 scored (+1A); .5 TD-410 a suspect proof shows no income;
-VERDICT_ENGINE_VERSION = '2026-11-04.1'   # 11-04.1 offer exact-read S6: the offer Pathway chip is never counted red and Name / IC unreadable is not red (the owner's chip table) - a suspect offer reads Probable; 27.6 #374 declared ≤ Probable; .7 stamp+approver approves; .8 govt letterhead; 28.1 STPM CGPA C2: a slip's PNGK vs PA + best three; 28.2 TD-408 reversed patronymic = mismatch, Iban/BT father derived; 28.3 C4: an STPM CGPA matches within 0.01 (was 0.05); 29.1 Matric/Diploma M1: an "ACADEMIC TRANSCRIPT" is told by its college / polytechnic / fixed subject (#49); 29.2 M4: a Matriculation / polytechnic transcript is genuineness-scored (no longer "not checked"); 29.3 M4b: a non-final higher result reads as not yet on file (Probable, the final transcript asked for); a matric offer letter takes the not-a-result step; 11-03.1 request #53: a stamped name block reads as a stamp, so a village form with stamp + named approver counts (an income band can move); owner ruling 11-03: a non-payslip informal document needs a hand signature (`has_signature`), a stamp alone no longer approves it; 11-03.2 #53 follow-up: `has_stamp` (its own yes/no question) alone decides the stamp when present, so a signed AND stamped village form with a titled approver and no letterhead counts (an income band can move)
+VERDICT_ENGINE_VERSION = '2026-11-05.1'   # 11-05.1 #56: a results name ONE look-alike letter off the student's (one part of 4+ letters, substituted; genuine or unscored doc) is a likely misread, amber, never red; 11-04.1 offer exact-read S6: the offer Pathway chip is never counted red and Name / IC unreadable is not red (the owner's chip table) - a suspect offer reads Probable; 27.6 #374 declared ≤ Probable; .7 stamp+approver approves; .8 govt letterhead; 28.1 STPM CGPA C2: a slip's PNGK vs PA + best three; 28.2 TD-408 reversed patronymic = mismatch, Iban/BT father derived; 28.3 C4: an STPM CGPA matches within 0.01 (was 0.05); 29.1 Matric/Diploma M1: an "ACADEMIC TRANSCRIPT" is told by its college / polytechnic / fixed subject (#49); 29.2 M4: a Matriculation / polytechnic transcript is genuineness-scored (no longer "not checked"); 29.3 M4b: a non-final higher result reads as not yet on file (Probable, the final transcript asked for); a matric offer letter takes the not-a-result step; 11-03.1 request #53: a stamped name block reads as a stamp, so a village form with stamp + named approver counts (an income band can move); owner ruling 11-03: a non-payslip informal document needs a hand signature (`has_signature`), a stamp alone no longer approves it; 11-03.2 #53 follow-up: `has_stamp` (its own yes/no question) alone decides the stamp when present, so a signed AND stamped village form with a titled approver and no letterhead counts (an income band can move)
 
 #: Stamped on decided rows that predate the version column. NOT a version number — deliberately
 #: unmistakable, so it can never be read as an engine generation.
@@ -303,16 +303,16 @@ def _verdict_academic(application, spm_only=False):
     # for "the slip could not be read" (it falsely flagged Sharvani's clean, fully-read slip).
     name_status = _slip_name_status(slip)
     if name_status == 'mismatch':
-        # A RED Name chip (owner 2026-07-07 ladder: −1, stacking with subject/grade chips + the
-        # genuineness step), not a hard gap; still an `application_completeness` blocker (a separate
-        # gate). We continue below so subject/grade chips are surfaced too.
+        # A RED Name chip (owner 2026-07-07 ladder: −1, stacking with subject/grade chips + the genuineness
+        # step), not a hard gap; still an `application_completeness` blocker. Continue: other chips surface.
         unresolved.append(_item('results_slip_name_mismatch'))
+    elif name_status == 'partial':      # one letter off, a likely misread (#56): amber, never red
+        unresolved.append(_item('results_slip_name_near'))
     name_ok = name_status == 'match'
     if name_status == 'unreadable':
         unresolved.append(_item('results_slip_unreadable'))
-    elif name_status == 'match':
+    elif name_status == 'match':        # 'pending' → not yet decided; make no claim either way
         evidence.append(_item('results_slip_name_ok'))
-    # 'pending' → the slip's name is not yet decided; make no claim either way.
     if kind := wrong_slip.higher_kind(slip):                   # S4 (#43): not an SPM slip at all
         return wrong_slip.academic_fact(slip, kind, evidence, unresolved)
     data = read_slip(slip)

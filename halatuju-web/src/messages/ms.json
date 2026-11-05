@@ -1689,6 +1689,7 @@
           "mismatch": "Tidak sepadan",
           "unreadable": "Tidak dapat dibaca",
           "uncertain": "Sila semak",
+          "partial": "Sila semak",
           "pending": "Belum disemak"
         }
       },
@@ -4689,6 +4690,7 @@
           "address_state_mismatch": "KP didaftarkan di {ic_state}; pelajar berkata {profile_state}. Tanya yang mana terkini.",
           "results_slip_missing": "Tiada slip keputusan dimuat naik.",
           "results_slip_name_mismatch": "Slip keputusan atas nama berbeza. Sahkan.",
+          "results_slip_name_near": "Nama pada slip keputusan berbeza daripada nama pelajar dengan satu huruf yang serupa bentuknya (mungkin salah baca). Semak bahawa slip ini milik pelajar.",
           "results_slip_unreadable": "Slip keputusan tidak dapat dibaca — minta salinan yang lebih jelas.",
           "grades_unverified": "Gred belum disemak automatik dengan slip — sahkan secara visual.",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
@@ -4791,6 +4793,7 @@
           "higher_results_not_on_file": "Keputusan {held} tiada dalam fail. Permohonan ini dihantar sebelum muat naik keputusan pengajian tinggi wujud, jadi slip SPM sahaja tidak boleh menjadikan Akademik Pasti.",
           "higher_results_unreadable": "Keputusan pengajian tinggi tidak dapat dibaca — minta salinan yang lebih jelas.",
           "higher_results_name_mismatch": "Keputusan pengajian tinggi atas nama berbeza. Sahkan.",
+          "higher_results_name_near": "Nama pada keputusan pengajian tinggi berbeza daripada nama pelajar dengan satu huruf yang serupa bentuknya (mungkin salah baca). Semak bahawa keputusan ini milik pelajar.",
           "higher_results_name_ok": "Keputusan pengajian tinggi atas nama pelajar.",
           "higher_results_unverified": "Keputusan pengajian tinggi belum dibaca — semak dengan mata.",
           "higher_results_is_spm": "Dokumen dalam slot keputusan pengajian tinggi kelihatan seperti slip SPM, bukan keputusan {held}. Pelajar telah dimaklumkan; sahkan keputusan yang dimilikinya.",
@@ -8574,6 +8577,7 @@
       },
       "error": {
         "already_staff": "Alamat e-mel ini sudah mempunyai log masuk pentadbir HalaTuju, jadi tidak boleh dijemput sebagai mentor.",
+        "already_team": "Orang ini sudah berada dalam pasukan anda. Untuk menjadikan mereka mentor, pergi ke Mentor, tekan \"Tambah Mentor\" dan pilih mereka daripada senarai (tiada jemputan diperlukan).",
         "bad_email": "Alamat e-mel itu nampaknya tidak betul.",
         "name_required": "Taip nama mentor.",
         "organisation_required": "Pilih organisasi dahulu.",

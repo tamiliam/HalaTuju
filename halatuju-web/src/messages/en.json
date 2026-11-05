@@ -1689,6 +1689,7 @@
           "mismatch": "Doesn't match",
           "unreadable": "Couldn't read",
           "uncertain": "Please check",
+          "partial": "Please check",
           "pending": "Not checked yet"
         }
       },
@@ -4689,6 +4690,7 @@
           "address_state_mismatch": "The IC is registered in {ic_state}; the student says {profile_state}. Ask which is current.",
           "results_slip_missing": "No results slip uploaded.",
           "results_slip_name_mismatch": "The results slip is in a different name. Confirm.",
+          "results_slip_name_near": "The name on the results slip differs from the student's by one look-alike letter (probably a misread). Check it is the student's slip.",
           "results_slip_unreadable": "The results slip could not be read — ask for a clearer copy.",
           "grades_unverified": "Grades not yet auto-checked against the slip — confirm them by eye.",
           "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
@@ -4791,6 +4793,7 @@
           "higher_results_not_on_file": "{held} results not on file. This application was submitted before the higher-results upload existed, so its SPM slip alone cannot make Academic Certain.",
           "higher_results_unreadable": "The higher results could not be read — ask for a clearer copy.",
           "higher_results_name_mismatch": "The higher results are in a different name. Confirm.",
+          "higher_results_name_near": "The name on the higher results differs from the student's by one look-alike letter (probably a misread). Check they are the student's results.",
           "higher_results_name_ok": "The higher results are in the student's name.",
           "higher_results_unverified": "The higher results have not been read yet — check them by eye.",
           "higher_results_is_spm": "The document in the higher-results slot reads as an SPM slip, not {held} results. The student has been told; confirm which results they hold.",
@@ -8574,6 +8577,7 @@
       },
       "error": {
         "already_staff": "This email address already has a HalaTuju admin sign-in, so it cannot be invited as a mentor.",
+        "already_team": "This person is already on your team. To make them a mentor, go to Mentors, press \"Add Mentor\" and choose them from the list (no invitation is needed).",
         "bad_email": "That email address does not look right.",
         "name_required": "Type the mentor's name.",
         "organisation_required": "Choose an organisation first.",
