@@ -7,6 +7,8 @@ Moves only: not a line of this body was reworded. See `__init__.py`.
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from ..document_snapshot import latest_doc, live_docs
 from ..read_errors import ic_second_opinion_deferred
 from ..vision import nric_close, relationship_name_match as name_match
@@ -169,6 +171,27 @@ def student_income_ic_check(doc):
         'wrong_card': wrong_card,
         'deferred': deferred,
     }
+
+
+def parent_ic_reference(doc):
+    """Request #59 (2026-11-05): what a PARENT's card (``parent_ic``) is compared with when the AI
+    second opinion re-reads it (``vision._merge_ic_reads``) — that parent's OWN reference, never the
+    student's. A father's name is not his child's, so measuring the second reading against the
+    student's profile threw every correct reading of a parent's card away.
+
+    ``names``: the name(s) the student entered for that member in the family roster, then the name
+    on that member's own income proof (salary slip / EPF; on the STR route the STR, but only for the
+    declared earner — it is the earner's document). ``nric``: that proof's number ('' when none).
+    The member is the card's tag, else the declared earner (as ``student_income_ic_check`` reads it).
+    The merge applies to these exactly the bar it applies to the student's own card."""
+    app = doc.application
+    earner = (getattr(app, 'income_earner', '') or '').strip()
+    member = (getattr(doc, 'household_member', '') or '').strip() or earner
+    names = [n for m, n in _roster_candidates(app) if member and m == member]
+    p_name = p_nric = ''
+    if member and ((getattr(app, 'income_route', '') or '').strip() != 'str' or member == earner):
+        _, p_name, p_nric = _cluster_proof_identity(app, member)
+    return SimpleNamespace(nric=p_nric, names=[n for n in names + [p_name] if n])
 
 
 def _cluster_docs(application, member, doc_type):

@@ -870,9 +870,10 @@ def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
     CORE field (nric/name) only when it agrees with the profile and the deterministic
     read did not (or the deterministic read was empty); the soft address always prefers
     the cleaner Gemini value when present. So a confident deterministic match is never
-    overridden by the model."""
+    overridden by the model. #59: a parent's card passes ``parent_ic_reference`` (that parent's
+    ``names``, ANY of which may agree), never the student's profile — same bar, the right person."""
     p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
-    p_name = (getattr(profile, 'name', '') or '') if profile else ''
+    p_names = [n for n in (getattr(profile, 'names', None) or [getattr(profile, 'name', '') or '']) if n] if profile else []
     out = dict(det)
     gn = (g.get('nric') or '').strip()
     if gn:
@@ -884,8 +885,8 @@ def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
     if gname:
         if not out.get('name'):
             out['name'] = gname
-        elif (p_name and name_match(gname, p_name) != 'mismatch'
-              and name_match(out['name'], p_name) == 'mismatch'):
+        elif (any(name_match(gname, n) != 'mismatch' for n in p_names)
+              and all(name_match(out['name'], n) == 'mismatch' for n in p_names)):
             out['name'] = gname
     gaddr = (g.get('address') or '').strip()
     if gaddr:
@@ -926,7 +927,9 @@ def run_vision_for_document(doc) -> dict:
                     with usage.usage_context(source='ic_fallback'):  # inherits org/app
                         g = _gemini_ic_second_opinion(image, doc.content_type)
                     if not g.get('_error'):
-                        result = _merge_ic_reads(result, g, profile)
+                        from .income_engine import parent_ic_reference   # #59: a parent's card, its own person
+                        ref = parent_ic_reference(doc) if getattr(doc, 'doc_type', '') == 'parent_ic' else profile
+                        result = _merge_ic_reads(result, g, ref)
                         used_gemini, second = True, 'ok'
                     else:
                         second_error = g['_error']
