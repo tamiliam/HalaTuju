@@ -70,9 +70,10 @@ class FirstSignInLinks(TestCase):
         self.assertEqual(self.row.supabase_user_id, SUB)
 
     def test_an_unreadable_login_is_refused_and_nothing_crashes(self):
-        for read in ({'return_value': supabase_admin.FAILED}, {'return_value': supabase_admin.GONE},
-                     {'return_value': supabase_admin.INERT}, {'side_effect': RuntimeError('boom')}):
-            with self.subTest(read=read):
+        reads = {'failed': {'return_value': supabase_admin.FAILED}, 'gone': {'return_value': supabase_admin.GONE},
+                 'inert': {'return_value': supabase_admin.INERT}, 'raises': {'side_effect': RuntimeError('boom')}}
+        for label, read in reads.items():
+            with self.subTest(case=label):
                 r, _ = self._sign_in(read)
                 self.assertEqual(r.status_code, 200, r.content)
                 self.assertFalse(r.json()['is_admin'])
@@ -179,8 +180,8 @@ class LinkRefusalUnit(TestCase):
             ({'return_value': supabase_admin.INERT}, 'login_unreadable'),
             ({'side_effect': RuntimeError('boom')}, 'login_unreadable'),
         )
-        for read, want in cases:
-            with self.subTest(read=read), patch(READ, **read):
+        for n, (read, want) in enumerate(cases):
+            with self.subTest(case=n), patch(READ, **read):
                 self.assertEqual(supabase_admin.link_refusal(SUB, EMAIL), want)
 
     def test_a_refusal_logs_the_reason_never_the_address(self):
