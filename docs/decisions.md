@@ -25,6 +25,20 @@ attachment keys must be clean (no `..`, leading `/`, backslash, empty segment) a
 Gmail staff row with no login id was promised "Sign in with Google", so it links only a login whose server-side
 providers include `google` (with "Confirm email" off a password sign-up is "confirmed" with no proof).
 
+## TD-465 hotfix: an unknown STPM course-start year gives NO automatic amount — 2026-11-05
+
+**Decision:** `award.proposed_award_amount` asks `award.course_start_unknown` before sizing an STPM case; when the
+start year cannot be established it returns None, so `record-verdict` leaves `award_amount` unset. The case is then
+held by the EXISTING QC absolute stop (2026-07-23, `reporting_date_required`, no override) until the officer records
+the date, and a re-recorded verdict sizes it from the known year. Follows the 2026-07-23 ruling ("an absolute stop,
+no override — the officer records the date instead"); it narrows, but does not yet implement, the 2026-11-02 ruling
+that a start year must never set the amount by itself. Review round: four routes fill the date without re-recording
+the verdict (an offer re-read, a cancelled reopen, verify-accept, the reporting-date box), so QC's accept also refuses
+an APPROVE with no amount (`award_required`, no override; the remedy is to record the verdict again, which sizes it).
+No new status, amount or screen; other pathways and known-year STPM amounts are unchanged; stored
+awards are not touched (an owner call). The wider 2026-11-02 money ruling (the reviewer sets the amount from the
+time left; QC and payments reading one date rule) is still the money sprint's.
+
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
 **One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at

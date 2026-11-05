@@ -7410,6 +7410,14 @@ which dates count (e.g. "a not_offer_letter document never dates the course", de
 months RM1,000); a start year never sets the amount by itself. **Fix:** the money sprint after offer exact-read
 S4 (roadmap). *(B · M)*
 
+**Part (1) done 2026-11-05 (money hotfix, branch `money-a`, commit "fix: money - STPM cases with an unknown course
+start year stop for QC instead of an automatic RM3,000 (TD-465)"):** `award.proposed_award_amount` now asks
+`course_start_unknown` and returns None, so `record-verdict` commits no amount and QC's existing
+`reporting_date_required` absolute stop holds the case until the date is recorded; pinned by
+`tests/test_td465_course_start_unknown.py`. Stored awards untouched (owner call). **Still open:** part (2) (QC and
+payments read `reporting_date` directly) and the 2026-11-02 ruling that the reviewer sets the amount from the time
+left — the money sprint.
+
 ### [TD-466] Mobile M4c leftovers: the quiz step dots are 10 px buttons (done); the sandbox mounts pages inside its own 16 px gutter - low
 
 **Raised 2026-11-02 at the Mobile M4c build.** (1) Both quizzes (`src/app/quiz/page.tsx`, `src/app/stpm/quiz/page.tsx`)

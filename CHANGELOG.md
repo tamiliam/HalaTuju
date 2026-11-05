@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## fix: security - documents record only their own storage path; staff first login needs a confirmed email (audit SEC-01, SEC-02)
+## Unreleased
+
+### fix: security - documents record only their own storage path; staff first login needs a confirmed email (audit SEC-01, SEC-02)
 
 Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `docs/decisions.md` "Audit SEC-01 / SEC-02".
 
@@ -11,6 +13,16 @@ Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `d
 - **SEC-02:** the auth middleware no longer reads `user_metadata.email_verified` (browser-writable). Linking a staff row to a first sign-in by email (`PartnerAdminMixin._find_admin`, `staff_reinvite.is_withdrawn`) now asks `supabase_admin.link_refusal`: the admin API read must show `email_confirmed_at` for the same address. Fail closed: an unreadable login (failed, gone, no Supabase config) links nothing; an `AUDIT staff_link_refused reason=...` warning, never the address. No other login path changed.
 - Tests: `test_sec01_doc_paths.py`, `test_sec02_staff_link.py`; document-POST tests now record issued keys (`tests/doc_keys.issued_key`); the staff-link tests mock the admin read.
 - **Review lows L1-L3 (supersedes the "legacy key counts as foreign" sentence above):** L1 a document DELETE also removes the application's own legacy key `<app.id>/<doc_type>/<name>` (exactly three parts, first part equal to the app id, middle a real doc type; `storage.is_inside_app_prefix`); L2 a Requests attachment's record, delete and signed link refuse `..`, a leading `/`, a backslash and empty segments (`storage.is_request_attachment_key` / `is_clean_key`; record answers 400 `bad_path`, delete keeps the blob); L3 a Gmail / Googlemail staff row with no login id links only a login whose server-side providers include `google` (`supabase_admin.link_refusal`, reason `google_invite_not_google_login`), as its invite letter promised.
+
+### fix: money - STPM cases with an unknown course start year stop for QC instead of an automatic RM3,000 (TD-465)
+
+Money hotfix during the audit freeze (live defect confirmed by an audit verifier). Not pushed; no migration.
+
+- **The defect:** `award.course_start_unknown` (the owner's 2026-07-23 absolute stop) had no caller, so `award.proposed_award_amount` sized an STPM student with no intake year and no reporting date as a fresh entrant (RM3,000), and `record-verdict` committed it on an APPROVE. Because the auto-apply runs only when the amount is unset, the RM3,000 then survived the officer recording a 2025 date (a continuing student, RM1,000).
+- **The fix:** `proposed_award_amount` asks `course_start_unknown` first and returns None for that case, the existing "no automatic amount" outcome: `award_amount` stays unset, the cockpit shows no proposed bursary, and QC's existing absolute stop (`reporting_date_required`, no override) refuses the accept until the officer records the date. A re-recorded verdict then sizes it from the known year. No other rule, amount or route changes; stored awards are not touched.
+- No version bump: the award amount is not a verdict band (`VERDICT_ENGINE_VERSION` rule).
+- **Review round:** QC's accept now also refuses an APPROVE with no amount (`award_required`, no override), because four routes fill the date without re-recording the verdict (offer re-read, cancelled reopen, verify-accept, the reporting-date box); the `reporting_date_required` message now says re-recording also sets the bursary. API message only, no web change; 7 more tests in the same file.
+- Tests: `tests/test_td465_course_start_unknown.py` (new, 7); `tests/test_award_rule.py` updated where it pinned the defect (an STPM fresh entrant now carries a known 2026 date; the no-date STPM case asserts no amount).
 
 ## v3.1.0 - 2026-11-05
 

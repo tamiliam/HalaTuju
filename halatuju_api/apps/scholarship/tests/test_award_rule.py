@@ -5,6 +5,7 @@ records an APPROVE verdict, cleared on DECLINE, and only a SUPER may override it
 test_sponsorship). Here: the pure rule + the record-verdict auto-apply/clear behaviour +
 the proposed_award_amount serializer field.
 """
+import datetime
 from decimal import Decimal
 
 from django.test import TestCase, override_settings
@@ -23,10 +24,16 @@ def _cohort():
     return ScholarshipCohort.objects.create(code='pa', name='B40', year=2026)
 
 
-def _app(cohort, *, pathway='matric', status='interviewed', suffix='1'):
+#: A fresh-entrant reporting date in the cohort year (2026). TD-465: an STPM case needs a KNOWN
+#: course-start year to be sized at all, so the tests that mean "an STPM fresh entrant" carry one.
+FRESH = datetime.date(2026, 6, 8)
+
+
+def _app(cohort, *, pathway='matric', status='interviewed', suffix='1', reporting_date=None):
     p = StudentProfile.objects.create(supabase_user_id=f'aw-{suffix}', grades={'bm': 'A'}, exam_type='spm')
     return ScholarshipApplication.objects.create(
-        cohort=cohort, profile=p, status=status, chosen_pathway=pathway)
+        cohort=cohort, profile=p, status=status, chosen_pathway=pathway,
+        reporting_date=reporting_date)
 
 
 def _add_not_genuine_offer(app):
@@ -43,9 +50,11 @@ class TestProposedAmountRule(TestCase):
     def setUp(self):
         self.cohort = _cohort()
 
-    def test_stpm_is_3000(self):
+    def test_stpm_with_an_unknown_start_year_has_no_amount(self):
+        # TD-465: no offer intake and no reporting date = the size cannot be established. This
+        # used to fall through to RM3,000; now there is no automatic amount (QC's date stop holds it).
         app = _app(self.cohort, pathway='stpm', suffix='s')
-        self.assertEqual(award.proposed_award_amount(app), Decimal('3000'))
+        self.assertIsNone(award.proposed_award_amount(app))
 
     def test_stpm_continuing_is_1000(self):
         # Cohort year is 2026; a 2025 reporting date = started last year → one year left.
@@ -100,13 +109,13 @@ class TestVerdictDisqualifier(TestCase):
     def test_proposed_amount_is_by_type_despite_disqualifier(self):
         # 2026-07-04: the bursary is purely by-type — a confident disqualifier no longer
         # zeroes it (it still shows as a red verdict fact for the officer to weigh).
-        app = _app(self.cohort, pathway='stpm', suffix='dq1')
+        app = _app(self.cohort, pathway='stpm', suffix='dq1', reporting_date=FRESH)
         v = [{'fact': 'pathway', 'status': 'review', 'evidence': [],
               'unresolved': [{'code': 'offer_not_official', 'params': {}}]}]
         self.assertEqual(award.proposed_award_amount(app, verdict=v), Decimal('3000'))
 
     def test_proposed_amount_keeps_value_on_uncertain(self):
-        app = _app(self.cohort, pathway='stpm', suffix='dq2')
+        app = _app(self.cohort, pathway='stpm', suffix='dq2', reporting_date=FRESH)
         v = [{'fact': 'pathway', 'status': 'gap', 'evidence': [],
               'unresolved': [{'code': 'offer_letter_missing', 'params': {}}]}]
         self.assertEqual(award.proposed_award_amount(app, verdict=v), Decimal('3000'))
@@ -138,8 +147,9 @@ class TestAutoApplyOnVerdict(TestCase):
                                  'income': 'pass', 'overall': overall},
              'reason': 'ok'}, format='json')
 
-    def _app_assigned(self, pathway, suffix):
-        app = _app(self.cohort, pathway=pathway, status='interviewed', suffix=suffix)
+    def _app_assigned(self, pathway, suffix, reporting_date=FRESH):
+        app = _app(self.cohort, pathway=pathway, status='interviewed', suffix=suffix,
+                   reporting_date=reporting_date)
         app.assigned_to = PartnerAdmin.objects.get(supabase_user_id='rev')
         app.save(update_fields=['assigned_to'])
         return app
@@ -184,7 +194,7 @@ class TestAutoApplyOnVerdict(TestCase):
 
     def test_serializer_exposes_proposed(self):
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
-        app = _app(self.cohort, pathway='stpm', suffix='ser')
+        app = _app(self.cohort, pathway='stpm', suffix='ser', reporting_date=FRESH)
         data = AdminApplicationDetailSerializer(app).data
         self.assertEqual(data['proposed_award_amount'], '3000')
         self.assertIsNone(data['award_disqualifier'])

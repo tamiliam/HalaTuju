@@ -6,7 +6,7 @@ student's pre-U PATHWAY:
     STPM (Form 6, ``chosen_pathway == 'stpm'``)            → RM3,000
       …but a CONTINUING STPM student (already started a year ago — their offer's
       reporting date is in an intake YEAR before the cohort's) has only one year left
-      → RM1,000.
+      → RM1,000; and one whose start year is UNKNOWN → no amount (None, TD-465).
     everything else (Matrikulasi / UA Diploma / Poly Diploma
     / Asasi / PISMP / university / unknown)                → RM2,000
 
@@ -91,9 +91,18 @@ def proposed_award_amount(application, verdict=None):
     including one the verdict flags for likely decline. A confident disqualifier
     (``offer_not_official`` / ``income_above_b40_line``) NO LONGER zeroes the amount; it
     still surfaces as a red verdict fact for the officer to weigh in Recommend/Decline.
-    ``verdict`` is accepted for backward compatibility and ignored."""
+    ``verdict`` is accepted for backward compatibility and ignored.
+
+    TD-465 (2026-11-05): an STPM student whose course-start year is UNKNOWN
+    (``course_start_unknown``) gets NO proposed amount (None) — the size cannot be established,
+    and the old fall-through to RM3,000 committed the fresh-entrant figure by default. None is
+    the existing "no automatic amount" outcome: record-verdict leaves ``award_amount`` unset and
+    QC's absolute reporting-date stop (owner 2026-07-23) refuses the accept until the officer
+    records the date; a re-recorded verdict then sizes it from the known year."""
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     if pathway == 'stpm':
+        if course_start_unknown(application):
+            return None
         return _STPM_CONTINUING_AMOUNT if _stpm_continuing(application) else _STPM_AMOUNT
     return _DEFAULT_AMOUNT
 

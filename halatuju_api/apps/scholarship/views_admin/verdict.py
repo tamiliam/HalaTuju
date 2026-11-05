@@ -139,9 +139,9 @@ class AdminRecordVerdictView(_AdminBase):
         # Standardised assistance (owner decision 2026-06-29): the amount is fixed by the
         # pathway, not chosen by the reviewer. On APPROVE, auto-apply the proposed amount —
         # but only when unset, so a SUPER's manual override (set-award endpoint) survives a
-        # re-record. When the verdict confidently disqualifies (offer_not_official /
-        # income_above_b40_line) the proposal is None, so award_amount STAYS unset — a super
-        # may set a value if the system has erred. On DECLINE, clear it. See
+        # re-record. When the proposal is None (TD-465: an STPM course-start year that cannot be
+        # established) award_amount STAYS unset — QC's reporting-date stop holds the case until
+        # the date is recorded, and a re-record then sizes it. On DECLINE, clear it. See
         # apps.scholarship.award; reuse the verdict just snapshotted, don't recompute.
         from .. import award as award_rule
         award_was = app.award_amount   # TD-203: logged below, once the save has landed
@@ -285,15 +285,28 @@ def _accept_absolute_stop(app):
        committed RM3,000 instead of RM1,000), payment eligibility, and the semester-result request.
        QC clears it by reopening the case so the reviewer can enter the date
        (AdminReportingDateView) — hence the box shows at 'interviewing' / on a reopen, not here.
-    2. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
+    2. TD-465 review: an APPROVE verdict must carry its bursary (`award_required`, no override).
+       Four routes fill the date without re-recording the verdict (an offer re-read, a cancelled
+       reopen, verify-accept and the reporting-date box), so a case whose verdict sized nothing
+       (an unknown STPM start year) could reach `recommended` with no amount. Re-recording the
+       verdict sizes it from the known date; that is the remedy, not an override.
+    3. TD-376/377 review: on a ruled intake the IC must be LOCKED to reach `recommended`
        (`birth_state.ic_unlocked_for_rule`). No override can make an unlocked IC safe, and QC
        accept never re-locks it silently: verify-accept re-locks it and runs the duplicate check.
     """
     if app.reporting_date is None:
         return Response(
-            {'error': 'This student has no reporting date. Reopen the case so the '
-                      'reviewer can record it, then accept.',
+            {'error': 'This student has no reporting date. Reopen the case so the reviewer can '
+                      'record it and record the verdict again (which sets the proposed bursary), '
+                      'then accept.',
              'code': 'reporting_date_required'},
+            status=status.HTTP_400_BAD_REQUEST)
+    ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
+    if ov.get('overall') == 'accept' and app.award_amount is None:
+        return Response(
+            {'error': 'The proposed bursary is missing. Reopen the case so the reviewer can '
+                      'record the verdict again (that sets the bursary), then accept.',
+             'code': 'award_required'},
             status=status.HTTP_400_BAD_REQUEST)
     if birth_state.ic_unlocked_for_rule(app.profile,
                                         getattr(app.cohort, 'allowed_birth_states', None)):
