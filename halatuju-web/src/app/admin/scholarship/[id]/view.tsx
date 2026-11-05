@@ -823,9 +823,18 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const incomeTip = _incConfident
     ? t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.incomeProof') })
     : undefined
-  const incomeNote = _incConfident && !_hc!.income.matches && app.household_income
-    ? t('admin.scholarship.verified.declaredNote', { value: _fmtRm(app.household_income) })
-    : undefined
+  // Request #54: the fallback figure is the STUDENT'S, so say so — and, when the documents were read
+  // but not fully trusted, show what they add up to beside it instead of hiding it. Display only.
+  const _partial = _hc?.income.documented_partial
+  const incomeNote = _incConfident
+    ? (!_hc!.income.matches && app.household_income
+      ? t('admin.scholarship.verified.declaredNote', { value: _fmtRm(app.household_income) })
+      : undefined)
+    : (app.household_income
+      ? (_partial != null
+        ? t('admin.scholarship.verified.declaredByStudentDocs', { value: _fmtRm(_partial) })
+        : t('admin.scholarship.verified.declaredByStudent'))
+      : undefined)
   // Household size: once the student CONFIRMS the roster count (household_size_confirm query), lead
   // with the roster count + a tick and drop the stated figure to a muted "Declared: M" note — the
   // same document-on-top pattern as income (non-mutating). Otherwise: a tick when fully accounted,

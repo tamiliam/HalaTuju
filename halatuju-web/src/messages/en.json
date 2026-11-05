@@ -4579,6 +4579,8 @@
           "stpmResults": "the STPM results"
         },
         "sizeAccounted": "Everyone in the household is accounted for",
+        "declaredByStudent": "Declared by student",
+        "declaredByStudentDocs": "Declared by student. Documents read add up to {value}, not fully checked",
         "declaredNote": "Declared: {value}",
         "rosterNote": "Roster counts {count} people",
         "stpmDiffers": "The STPM results show {value}"

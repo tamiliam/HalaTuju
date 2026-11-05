@@ -112,19 +112,22 @@ def household_income_reconciliation(application):
         rounded; None unless we're CONFIDENT (earners exist, all read, all genuine).
       - ``all_known`` — False when any earner's income couldn't be read.
       - ``genuine`` — False when any contributing income doc is genuineness-suspect / wrong-type.
+      - ``documented_partial`` — request #54: the sum of the income that WAS read, when not confident
+        (display only, never scored); None when confident or nothing was read.
       - ``stated`` — the profile's declared household income.
       - ``matches`` — True ONLY when confident AND ``documented_total`` is within tolerance of
         ``stated``. A cockpit "verified" tick keys off this; a mismatch is flagged to the reviewer
         (the documented figure shown beside the stated one), never auto-applied.
     """
     members = _income_earning_members(application)
-    total, all_known, genuine = 0.0, True, True
+    total, all_known, genuine, read_any = 0.0, True, True, False
     for m in members:
         amt, _src = earner_monthly_income(application, m)
         if amt is None:
             all_known = False
         else:
             total += amt
+            read_any = True
         if not _member_income_genuine(application, m):
             genuine = False
     stated = getattr(getattr(application, 'profile', None), 'household_income', None)
@@ -134,8 +137,12 @@ def household_income_reconciliation(application):
     if documented is not None and stated:
         tol = max(_INCOME_MATCH_TOL_MIN, _INCOME_MATCH_TOL_FRAC * float(stated))
         matches = abs(documented - float(stated)) <= tol
+    # Request #54: what the documents add up to, ONLY so the screen can show it beside the student's
+    # declared figure when `documented_total` is withheld (a document not fully trusted). DISPLAY ONLY:
+    # nothing scores, matches or gates on it.
+    partial = round(total, 2) if read_any and not confident else None
     return {'documented_total': documented, 'all_known': all_known, 'genuine': genuine,
-            'stated': stated, 'matches': matches}
+            'stated': stated, 'matches': matches, 'documented_partial': partial}
 
 
 def household_size_accounted(application):

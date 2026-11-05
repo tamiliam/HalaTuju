@@ -4579,6 +4579,8 @@
           "stpmResults": "keputusan STPM"
         },
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
+        "declaredByStudent": "Diisytiharkan oleh pelajar",
+        "declaredByStudentDocs": "Diisytiharkan oleh pelajar. Dokumen yang dibaca berjumlah {value}, belum disemak sepenuhnya",
         "declaredNote": "Diisytiharkan: {value}",
         "rosterNote": "Senarai mencatat {count} orang",
         "stpmDiffers": "Keputusan STPM menunjukkan {value}"

@@ -63,6 +63,24 @@ class TestHouseholdIncomeReconciliation(SimpleTestCase):
         self.assertIsNone(r['documented_total'])
         self.assertFalse(r['matches'])
 
+    def test_54_untrusted_payslip_still_reports_what_was_read_for_display(self):
+        # Request #54: an untrusted payslip withholds documented_total (unchanged), but the sum that
+        # WAS read is served as documented_partial so the screen can show it beside the declared figure.
+        app = _app(income=2000, size=5)
+        m1, m2, m3 = self._recon(app, ['father', 'mother'], [3037.0, 2731.0], genuine=False)
+        with m1, m2, m3:
+            r = ie.household_income_reconciliation(app)
+        self.assertIsNone(r['documented_total'])
+        self.assertFalse(r['matches'])
+        self.assertEqual(r['documented_partial'], 5768.0)
+
+    def test_54_partial_is_absent_when_confident(self):
+        app = _app(income=7000, size=5)
+        m1, m2, m3 = self._recon(app, ['father', 'mother'], [3600.0, 3400.0])
+        with m1, m2, m3:
+            r = ie.household_income_reconciliation(app)
+        self.assertIsNone(r['documented_partial'])
+
     def test_unknown_earner_income_is_not_all_known(self):
         app = _app(income=5000, size=4)
         m1, m2, m3 = self._recon(app, ['father', 'mother'], [3000.0, None])
