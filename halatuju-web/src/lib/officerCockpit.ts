@@ -619,6 +619,21 @@ export function spmExamYear(documents: AdminApplicantDocument[] | undefined): Sp
   return { year: check.exam_year.trim(), status: check.exam_year_status || '' }
 }
 
+/**
+ * The STPM year read off the live higher-results document (request #64), read the way spmExamYear reads the slip.
+ * Matriculation, Asasi and Diploma store no year, so they return null and show nothing.
+ */
+export function higherExamYear(documents: AdminApplicantDocument[] | undefined): SpmExamYear | null {
+  const doc = (documents || []).find(
+    (d) => d.doc_type === 'higher_results'
+      && !d.superseded_at
+      && !!(d.higher_check?.exam_year || '').trim(),
+  )
+  const check = doc?.higher_check
+  if (!check || !check.exam_year) return null
+  return { year: check.exam_year.trim(), status: check.exam_year_status || '' }
+}
+
 // ── Utility-bill key values (at-a-glance, so the reviewer needn't open the document) ─────────
 
 export interface UtilityValue {

@@ -24,6 +24,7 @@ import {
   showsPostSubmissionCards,
   rejectionTrail,
   spmExamYear,
+  higherExamYear,
   type TimelineSource,
   type DecisionTrailInput,
 } from '@/lib/officerCockpit'
@@ -1806,5 +1807,32 @@ describe('assignOptions', () => {
     })
     expect(out[0].disabled).toBe(true)
     expect(out[0].reason).toBe('paused')
+  })
+})
+
+// ── higherExamYear (the STPM year beside an STPM merit score, request #64) ───
+
+describe('higherExamYear', () => {
+  const higher = (o: Record<string, unknown>, rest = {}) =>
+    doc({ doc_type: 'higher_results', higher_check: o as unknown as AdminApplicantDocument['higher_check'], ...rest })
+
+  it('reads the year and its currency off the live higher-results document', () => {
+    expect(higherExamYear([higher({ exam_year: '2025', exam_year_status: 'off' })]))
+      .toEqual({ year: '2025', status: 'off' })
+  })
+
+  it('is null for a document with no year (Matriculation, Asasi, Diploma store none)', () => {
+    expect(higherExamYear([higher({ exam_year: '' })])).toBeNull()
+    expect(higherExamYear([higher({})])).toBeNull()
+  })
+
+  it('is null with no higher-results document, and ignores a superseded one', () => {
+    expect(higherExamYear([])).toBeNull()
+    expect(higherExamYear(undefined)).toBeNull()
+    expect(higherExamYear([higher({ exam_year: '2024' }, { superseded_at: '2026-08-01T00:00:00Z' })])).toBeNull()
+  })
+
+  it('does not read an SPM results slip', () => {
+    expect(higherExamYear([doc({ doc_type: 'results_slip', academic_check: acadCheck({ exam_year: '2024' }) })])).toBeNull()
   })
 })

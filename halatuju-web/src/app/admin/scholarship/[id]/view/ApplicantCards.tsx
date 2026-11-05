@@ -16,7 +16,7 @@ import {
   formatAddress,
   expandMatricInstitution,
 } from '@/lib/scholarship'
-import { spmExamYear } from '@/lib/officerCockpit'
+import { higherExamYear, spmExamYear } from '@/lib/officerCockpit'
 import { formatDate } from '@/lib/formatDate'
 import { isApplyStage } from '@/lib/applicationStatus'
 import type { AdminScholarshipDetail } from '@/lib/admin-api'
@@ -222,13 +222,14 @@ export function ApplicantCards({
                       student: that merit comes from STPM, so an SPM year would misstate its source. */}
                   <Field label={t('admin.scholarship.meritScore')} value={(() => {
                     if (app.merit_score == null) return app.merit_score
-                    const sy = isStpm || third ? null : spmExamYear(app.documents)
+                    // STPM merit carries the STPM year (#64); a third-route merit stays bare, its SPM year sits by the SPM grades.
+                    const sy = third ? null : isStpm ? higherExamYear(app.documents) : spmExamYear(app.documents)
                     if (!sy) return app.merit_score
                     return (
                       <>
                         {app.merit_score}{' '}
                         <span className={sy.status === 'off' ? 'text-caution-700' : 'text-ground-500'}>
-                          ({t('admin.scholarship.docsDrawer.examYear', { year: sy.year })})
+                          ({t(isStpm ? 'admin.scholarship.docsDrawer.stpmExamYear' : 'admin.scholarship.docsDrawer.examYear', { year: sy.year })})
                         </span>
                       </>
                     )
@@ -250,6 +251,16 @@ export function ApplicantCards({
                 <div className="mt-3">
                   <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
+                    {(isStpm || third) && (() => {
+                      // The SPM grades of an STPM or third-route student keep their own SPM year (#64).
+                      const gy = spmExamYear(app.documents)
+                      if (!gy) return null
+                      return (
+                        <span className={`ml-1 normal-case ${gy.status === 'off' ? 'text-caution-700' : 'text-ground-500'}`}>
+                          ({t('admin.scholarship.docsDrawer.examYear', { year: gy.year })})
+                        </span>
+                      )
+                    })()}
                   </dt>
                   {/* The tick renders AFTER the subject chips (item 1). The SPM slip's tick belongs to
                       SPM chips only — never to an STPM student's STPM grades (#132), which carry the
