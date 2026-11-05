@@ -19,7 +19,8 @@ The rule, deliberately narrow (owner-approved plan + the 2026-11-05 review):
   there, so the ONE digit in the read name is put back as each letter it is a look-alike of.
 * Compared against the STUDENT'S OWN name only (never a guardian's).
 * Only on a document scored GENUINE or not scored at all (`doc_misread`): a suspect or fake slip
-  keeps the red mismatch, so a doubtful document cannot also borrow the name tolerance.
+  keeps the red mismatch, so a doubtful document cannot also borrow the name tolerance. An
+  'unchecked' (not-final) page counts as neither: it gets no tolerance.
 
 Anything else stays 'mismatch' and blocks exactly as before. The caller (`academic_engine.
 _slip_name_status`) turns a likely misread into 'partial': never a block, an amber chip, and a
@@ -95,9 +96,14 @@ def doc_misread(doc) -> bool:
     own name, on a document scored genuine or not scored at all? A suspect / fake document keeps the
     red mismatch (2026-11-05 review: 'partial' counts no red chip, so a suspect slip would otherwise
     move Unsure -> Probable). Reads only what is stored; runs no OCR, calls no model."""
-    from .genuineness.bands import canonical_status, stored_status
+    from .genuineness.bands import NOT_CHECKED, canonical_status, stored_status
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
-    if canonical_status(stored_status(vf), getattr(doc, 'doc_type', None)) not in ('', 'genuine'):
+    stored = stored_status(vf)
+    # 'unchecked' = a not-final higher-results page (semester slip, portal page, in-progress transcript):
+    # digital text, so a one-letter difference is more likely a real different name. No tolerance.
+    if (stored if isinstance(stored, str) else '').strip().lower() == NOT_CHECKED:
+        return False
+    if canonical_status(stored, getattr(doc, 'doc_type', None)) not in ('', 'genuine'):
         return False
     fields = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
     profile = getattr(getattr(doc, 'application', None), 'profile', None)

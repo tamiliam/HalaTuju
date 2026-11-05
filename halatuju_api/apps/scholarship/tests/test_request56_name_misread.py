@@ -239,9 +239,29 @@ class TestTheGenuinenessGate(TestCase):
         app, doc = self._slip(None)
         self.assertEqual(_slip_name_status(doc), 'partial')
 
-    def test_an_unchecked_slip_reads_as_unscored(self):
+    def test_an_unchecked_slip_gets_no_tolerance(self):
         app, doc = self._slip('unchecked')
+        self.assertEqual(_slip_name_status(doc), 'mismatch')
+        self.assertIn('results_slip_name_mismatch', document_red_blockers(app))
+
+    def test_an_unchecked_higher_result_gets_no_tolerance(self):
+        # 'unchecked' = a not-final page (semester slip, portal page): digital text, so no tolerance.
+        app = _app(STPM_HELD, DEGREE)
+        doc = _doc(app, 'higher_results', {**STPM_READ, 'candidate_name': MISREAD},
+                   verdict='name_mismatch', genuineness='unchecked')
+        self.assertEqual(_slip_name_status(doc), 'mismatch')
+        self.assertEqual(student_higher_check(doc)['name'], 'mismatch')
+        self.assertIn('higher_results_name_mismatch', document_red_blockers(app))
+
+    def test_a_digit_misread_passes_through_the_document_path(self):
+        app = _app(SPM_HELD, MATRIC_PATHWAY)
+        doc = _doc(app, 'results_slip', {'candidate_name': 'R0HANA A/P GOPAL', 'results': []},
+                   verdict='name_mismatch')
         self.assertEqual(_slip_name_status(doc), 'partial')
+        self.assertNotIn('results_slip_name_mismatch', document_red_blockers(app))
+        unchecked = _doc(app, 'results_slip', {'candidate_name': 'R0HANA A/P GOPAL', 'results': []},
+                         verdict='name_mismatch', genuineness='unchecked')
+        self.assertEqual(_slip_name_status(unchecked), 'mismatch')
 
     def test_a_genuine_slip_passes(self):
         app, doc = self._slip('genuine')
