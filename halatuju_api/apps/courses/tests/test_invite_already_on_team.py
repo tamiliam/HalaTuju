@@ -92,7 +92,8 @@ class AlreadyOnTheTeam(TestCase):
         req = type('R', (), {'supabase_user': {'email': 'gita@gmail.com', 'email_verified': True},
                              'user_id': 'google-uid'})()
         confirmed = {'id': 'google-uid', 'email': 'gita@gmail.com',
-                     'email_confirmed_at': '2026-11-01T00:00:00Z'}   # audit SEC-02: the server confirms it
+                     'email_confirmed_at': '2026-11-01T00:00:00Z',   # audit SEC-02: the server confirms it
+                     'app_metadata': {'provider': 'google', 'providers': ['google']}}   # L3: a Google login
         with patch('apps.courses.views_admin.auth_sub', return_value='google-uid'), \
                 patch('apps.courses.supabase_admin.read_auth_user', return_value=confirmed):
             self.assertEqual(PartnerAdminMixin().get_admin(req), row)

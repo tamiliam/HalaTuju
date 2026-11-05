@@ -59,14 +59,27 @@ def recorded_doc_key_refusal(app, doc_type, path):
     return None
 
 
+def _is_legacy_own_doc_key(app, parts):
+    """The pre-fence document key (before platform Sprint 4): exactly ``<app.id>/<doc_type>/<name>``
+    with ``doc_type`` a real ``ApplicantDocument`` type. The first part is compared WHOLE (app 5 never
+    matches 50) and the doc-type middle keeps it apart from an org-prefixed bursary key
+    ``<org>/<app>/<file>`` (its middle part is an application id, never a doc type)."""
+    from .models import ApplicantDocument   # lazy: storage stays importable without the models
+    return (len(parts) == 3 and parts[0] == str(app.id)
+            and parts[1] in {code for code, _label in ApplicantDocument.DOC_TYPES})
+
+
 def is_inside_app_prefix(app, path):
-    """True when ``path`` sits under this application's own document prefix
-    (``build_doc_key(app, app.id)`` + ``/``) with no ``..``, ``.`` or empty segment."""
-    if not isinstance(path, str) or not path or path.startswith('/'):
+    """True when ``path`` is this application's own: under its document prefix
+    (``build_doc_key(app, app.id)`` + ``/``), or its legacy 3-part document key
+    ``<app.id>/<doc_type>/<name>`` (the ~1,114 rows recorded before the org prefix, audit SEC-01 L1);
+    never with a ``..``, ``.``, empty segment or leading slash."""
+    if not isinstance(path, str) or not path or path.startswith('/') or '\\' in path:
         return False
-    if any(seg in ('', '.', '..') for seg in path.split('/')):
+    parts = path.split('/')
+    if any(seg in ('', '.', '..') for seg in parts):
         return False
-    return path.startswith(build_doc_key(app, app.id) + '/')
+    return path.startswith(build_doc_key(app, app.id) + '/') or _is_legacy_own_doc_key(app, parts)
 
 
 def delete_own_doc_objects(app, paths):
@@ -87,6 +100,22 @@ def build_request_attachment_key(org_id, request_id, uuid_hex):
     namespace (never collides with a doc key, which starts with a bare org id) and lets
     ``resolve_org_for_path`` read the owning org straight off the key for the download fence."""
     return f'requests/{org_id}/{request_id}/{uuid_hex}'
+
+
+def is_clean_key(path):
+    """True for a non-empty storage key with no ``..``, no leading slash, no backslash and no empty
+    or ``.`` segment — a key that can only name the object it spells (audit SEC-01 L2)."""
+    if not isinstance(path, str) or not path or path.startswith('/') or '\\' in path or '..' in path:
+        return False
+    return all(seg not in ('', '.') for seg in path.split('/'))
+
+
+def is_request_attachment_key(org_id, request_id, path):
+    """True only for a clean key inside THIS request's attachment namespace
+    (``build_request_attachment_key(org_id, request_id, '')`` + a name). The record, delete and
+    sign-link steps of a Requests attachment all ask this (audit SEC-01 L2)."""
+    prefix = build_request_attachment_key(org_id, request_id, '')
+    return is_clean_key(path) and path.startswith(prefix) and path != prefix
 
 
 def resolve_org_for_path(path):

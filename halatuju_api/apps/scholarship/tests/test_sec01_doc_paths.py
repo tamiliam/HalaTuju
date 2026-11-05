@@ -61,10 +61,38 @@ class IssuedKeyUnit(SimpleTestCase):
     def test_inside_the_app_prefix(self):
         self.assertTrue(storage.is_inside_app_prefix(self.org_app, '7/42/ic/abc'))
         self.assertTrue(storage.is_inside_app_prefix(self.org_app, '7/42/bursary_v1.pdf'))
-        for path in ('7/43/ic/abc', '42/ic/abc', '7/42', '7/42/../43/ic/abc', '/7/42/ic/abc',
+        for path in ('7/43/ic/abc', '7/42', '7/42/../43/ic/abc', '/7/42/ic/abc',
                      '7/42//ic', '7/42/./ic', '', None):
             with self.subTest(path=path):
                 self.assertFalse(storage.is_inside_app_prefix(self.org_app, path))
+
+    def test_the_legacy_three_part_key_of_this_app_is_its_own(self):
+        """L1: the ~1,114 rows recorded before the org prefix hold ``<app>/<doc_type>/<name>``."""
+        self.assertTrue(storage.is_inside_app_prefix(self.org_app, '42/ic/abc'))
+        self.assertTrue(storage.is_inside_app_prefix(self.org_app, f'42/results_slip/{HEX}'))
+        self.assertTrue(storage.is_inside_app_prefix(self.bare_app, '42/ic/abc'))
+        for path in (
+            '43/ic/abc',              # another application's legacy key
+            '4/ic/abc', '420/ic/abc',  # app 42 never matches app 4 or app 420
+            '042/ic/abc',             # a padded id is not this id
+            '42/letters/1.pdf',       # not a document type
+            '42/ic/abc/x',            # an extra segment
+            '42/ic',                  # too short
+            '42/ic/..', '42/../abc', '42/ic/.', '42//abc', '/42/ic/abc', '42\\ic\\abc',
+            '42/bursary_v1.pdf',      # a legacy bursary key is not a document
+        ):
+            with self.subTest(path=path):
+                self.assertFalse(storage.is_inside_app_prefix(self.org_app, path))
+
+    def test_an_org_prefixed_key_naming_this_app_in_the_middle_is_not_a_legacy_key(self):
+        """``<org>/<app>/<file>`` (an org-prefixed bursary key) is three parts too: with this app's id in
+        the middle its first part is an org id, and with this id first its middle is no doc type."""
+        app_5 = SimpleNamespace(owning_organisation_id=9, id=5)
+        self.assertFalse(storage.is_inside_app_prefix(app_5, '3/5/bursary_v1.pdf'))
+        self.assertFalse(storage.is_inside_app_prefix(app_5, '5/42/bursary_v1.pdf'))   # org 5, app 42
+        self.assertFalse(storage.is_inside_app_prefix(app_5, '5/42/letters/1.pdf'))
+        self.assertFalse(storage.is_inside_app_prefix(app_5, f'5/42/ic/{HEX}'))       # org 5, app 42's doc
+        self.assertTrue(storage.is_inside_app_prefix(app_5, f'5/ic/{HEX}'))           # its own legacy key
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -181,3 +209,27 @@ class DeleteKeepsAForeignBlob(TestCase):
         dele, warnings = self._delete(mine)
         dele.assert_called_once_with([mine])
         self.assertEqual(warnings, [])
+
+    def test_a_row_holding_its_own_legacy_three_part_key_deletes_its_blob(self):
+        """L1: a document recorded before the org prefix (``<app>/<doc_type>/<uuid>``) loses its file too."""
+        self.assertIsNotNone(self.app.owning_organisation_id)
+        legacy = f'{self.app.id}/ic/{HEX}'
+        dele, warnings = self._delete(legacy)
+        dele.assert_called_once_with([legacy])
+        self.assertEqual(warnings, [])
+
+    def test_a_row_holding_another_apps_legacy_key_keeps_that_blob(self):
+        foreign = f'{self.other.id}/ic/{HEX}'
+        dele, warnings = self._delete(foreign)
+        for call in dele.call_args_list:
+            self.assertNotIn(foreign, call.args[0] if call.args else call.kwargs.get('paths', []))
+        self.assertTrue(any('doc_delete_foreign_path' in w for w in warnings), warnings)
+
+    def test_an_org_prefixed_key_with_this_app_id_in_the_middle_keeps_that_blob(self):
+        """``<org>/<this app id>/<file>`` where the first part is ANOTHER organisation's id."""
+        other_org = self.app.owning_organisation_id + 1000
+        foreign = f'{other_org}/{self.app.id}/bursary_v1.pdf'
+        dele, warnings = self._delete(foreign)
+        for call in dele.call_args_list:
+            self.assertNotIn(foreign, call.args[0] if call.args else call.kwargs.get('paths', []))
+        self.assertTrue(any('doc_delete_foreign_path' in w for w in warnings), warnings)

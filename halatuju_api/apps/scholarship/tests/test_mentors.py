@@ -478,9 +478,11 @@ def _verified_token(sub, email):
 
 
 def _confirmed(sub, email):
-    """The mocked admin-API read of a login whose address Supabase confirmed (audit SEC-02)."""
+    """The mocked admin-API read of a Google login whose address Supabase confirmed (audit SEC-02;
+    a Google invite links only a login with the google provider, review low L3)."""
     return patch('apps.courses.supabase_admin.read_auth_user', return_value={
-        'id': sub, 'email': email, 'email_confirmed_at': '2026-11-01T00:00:00Z'})
+        'id': sub, 'email': email, 'email_confirmed_at': '2026-11-01T00:00:00Z',
+        'app_metadata': {'provider': 'google', 'providers': ['google']}})
 
 
 class TestReviewFixes(_Base):

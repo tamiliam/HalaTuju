@@ -476,7 +476,8 @@ class TestResendAndSignIn(TestCase):
         PartnerAdmin.objects.filter(email='cancelled.google@gmail.com').update(supabase_user_id=None)
         read = 'apps.courses.supabase_admin.read_auth_user'
         confirmed = {'id': 'google-sub-td335', 'email': 'cancelled.google@gmail.com',
-                     'email_confirmed_at': '2026-11-01T00:00:00Z'}
+                     'email_confirmed_at': '2026-11-01T00:00:00Z',
+                     'app_metadata': {'provider': 'google', 'providers': ['google']}}
         with patch(read, return_value=confirmed):
             told = self._google_client('cancelled.google@gmail.com', False).get('/api/v1/admin/role/')
         self.assertEqual(told.json(), {'is_admin': False, 'withdrawn': True})

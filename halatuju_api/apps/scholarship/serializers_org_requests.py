@@ -28,12 +28,14 @@ def _serialize_org_request_attachments(org_request):
     ``download_url`` is a signed URL with the SAME org assertion as ``ApplicantDocumentSerializer``:
     a blob whose key-org disagrees with the request's org signs to None (belt-and-braces cross-org
     guard on top of the org-fenced endpoint reads)."""
-    from .storage import create_signed_download_url, resolve_org_for_path
+    from .storage import create_signed_download_url, is_clean_key, resolve_org_for_path
     org_id = getattr(org_request, 'organisation_id', None)
     out = []
     for att in org_request.attachments.all():
         path_org = resolve_org_for_path(att.storage_path)
-        download_url = (None if (path_org is not None and org_id is not None and path_org != org_id)
+        # An unclean stored key (`..`, leading `/`, backslash, empty segment) never signs (SEC-01 L2).
+        download_url = (None if (not is_clean_key(att.storage_path) or (
+                            path_org is not None and org_id is not None and path_org != org_id))
                         else create_signed_download_url(att.storage_path))
         out.append({
             'id': att.id,

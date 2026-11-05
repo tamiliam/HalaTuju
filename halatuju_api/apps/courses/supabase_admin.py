@@ -157,6 +157,19 @@ def read_auth_user(uid):
         return FAILED
 
 
+def login_providers(account):
+    """The sign-in providers an admin-API user object records, server-side only: ``app_metadata``'s
+    ``provider`` and ``providers`` and each identity's ``provider`` (never ``user_metadata``)."""
+    app_meta = account.get('app_metadata') or {}
+    found = set(p for p in (app_meta.get('providers') or []) if isinstance(p, str))
+    if isinstance(app_meta.get('provider'), str):
+        found.add(app_meta['provider'])
+    for identity in account.get('identities') or []:
+        if isinstance(identity, dict) and isinstance(identity.get('provider'), str):
+            found.add(identity['provider'])
+    return {p.strip().lower() for p in found}
+
+
 def link_refusal(uid, email):
     """Why login ``uid`` may NOT be linked to the staff row invited at ``email``, or None when it may
     (audit SEC-02). The JWT carries no trustworthy "email verified" flag — Supabase puts one only in
@@ -164,7 +177,15 @@ def link_refusal(uid, email):
     the auth user must exist, have `email_confirmed_at` set, and hold exactly this address.
     ⚠ FAILS CLOSED: an unreadable login (`FAILED` / `GONE` / `INERT`) is refused, never linked. Never
     raises. A refusal is an `AUDIT staff_link_refused` warning (the reason only, never the address);
-    the caller simply gets no staff role, and the response says nothing about the invite."""
+    the caller simply gets no staff role, and the response says nothing about the invite.
+
+    ⚠ A GOOGLE INVITE LINKS ONLY A GOOGLE LOGIN (audit SEC-02 L3). Both callers link only a row with
+    no login id, and a Gmail / Googlemail row has none because its invite issued no password and told
+    the invitee "Sign in with Google" (`staff_reinvite.provision_for_invite`, the welcome letter's
+    `_welcome_access_block`). With Supabase's "Confirm email" off, a password sign-up at that address
+    gets `email_confirmed_at` with no proof — so for such an address the login's server-side
+    providers (`app_metadata.provider(s)`, `identities[].provider`) must include ``google``."""
+    from .views_admin import is_google_email   # lazy: views_admin imports this module
     try:
         account = read_auth_user(uid)
         if not isinstance(account, dict):
@@ -173,6 +194,8 @@ def link_refusal(uid, email):
             reason = 'email_unconfirmed'
         elif (account.get('email') or '').strip().lower() != (email or '').strip().lower():
             reason = 'email_mismatch'
+        elif is_google_email(email) and 'google' not in login_providers(account):
+            reason = 'google_invite_not_google_login'
         else:
             return None
     except Exception:  # belt and braces: read_auth_user never raises, but a link must never 500

@@ -19,6 +19,12 @@ Alternatives rejected: a prefix-only check on the POST (it would still accept an
 non-issued name); trusting the top-level `email_verified` claim (absent from Supabase access tokens, so it either
 never links or invites a forged claim back); telling the caller "confirm your email" (it would disclose the invite).
 
+**Review lows (same day):** L1 a legacy `<app.id>/<doc_type>/<name>` key IS the application's own on delete (the
+doc-type middle keeps it apart from an org-prefixed bursary key), replacing "kept as an orphan" above; L2 Requests
+attachment keys must be clean (no `..`, leading `/`, backslash, empty segment) at record, delete and sign; L3 a
+Gmail staff row with no login id was promised "Sign in with Google", so it links only a login whose server-side
+providers include `google` (with "Confirm email" off a password sign-up is "confirmed" with no proof).
+
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
 **One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at
