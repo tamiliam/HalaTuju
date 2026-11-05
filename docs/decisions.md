@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## Request #56: a results name one letter off the student's is a likely misread — 2026-11-05 (owner-approved plan; builder rulings)
+
+**The rule:** a results document (SPM slip, matriculation / STPM / diploma results) whose name differs from the student's OWN name by exactly ONE SUBSTITUTED letter, in exactly ONE name part, every other part identical and in the same order, is a likely misread: `_slip_name_status` reads `partial` (amber, never a block, a reviewer note "one letter off, please check"). Everything else stays `mismatch` and blocks as before.
+
+**Builder rulings:**
+- **Substitution only, not edit distance 1.** An OCR / AI misread swaps a glyph (O for Q); it does not add or drop one. An added or dropped letter is far more often a genuinely different spelling, so it stays a block.
+- **The floor: a part needs at least 4 letters** (`name_misread.MIN_PART_LETTERS`). Parts of 1-3 letters (TAN, LIM, ALI, NG) get no tolerance: one letter is a third or more of them, and LIM / LIN are different family names.
+- **Ordered parts, the student's own name only.** The compare keeps printed order (`vision._canonical_name_seq`), so a reordered name with a misread blocks; and it never compares against a guardian's or parent's name (the stored verdict already checks the household; a parent's near-miss is not the student's document).
+- **Derived at read time** from the stored candidate name and the student's profile name, in the ONE shared status (`academic_engine._slip_name_status`): no stored field, no re-read, every gate and card agrees. IC, parent and income identity checks are untouched (request #59 covers those).
+- **Known risk, accepted:** a sibling's results whose given name differs by one letter (RAJA / RAMA, same father) read amber, not red. The reviewer note asks for a check, and the card cannot reach Certain while it shows.
+
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
 **One page, one row:** the Programmes landing and the Organisation Overview merge into ONE page, "Overview", at

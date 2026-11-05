@@ -422,6 +422,8 @@ def verdict_academic(application, spm_fact):
     evidence, unresolved = [], []
     if chk['name'] == 'mismatch':
         unresolved.append(_item('higher_results_name_mismatch'))
+    elif chk['name'] == 'partial':       # one letter off, a likely misread (#56): check, never red
+        unresolved.append(_item('higher_results_name_near'))
     elif chk['name'] == 'match':
         evidence.append(_item('higher_results_name_ok'))
     if chk['readable'] is None:
