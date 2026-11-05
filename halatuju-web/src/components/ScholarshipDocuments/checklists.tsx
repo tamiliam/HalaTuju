@@ -477,11 +477,15 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
   )
 
   const entered = chk.slip_count - chk.missing.length
+  const extra = chk.extra || []   // request #62: entered, but the slip does not show it (server's list)
   const subjectsValue =
     chk.subjects === 'match'
       ? t('scholarship.docs.slipCheck.allEntered')
       : chk.subjects === 'mismatch'
-        ? `${t('scholarship.docs.slipCheck.missing')}: ${chk.missing.join(', ')}`
+        ? [
+            chk.missing.length ? `${t('scholarship.docs.slipCheck.missing')}: ${chk.missing.join(', ')}` : '',
+            extra.length ? `${t('scholarship.docs.slipCheck.notOnSlip')}: ${extra.join(', ')}` : '',
+          ].filter(Boolean).join('; ')
         : '—'
   const resultsValue =
     chk.results === 'match'
@@ -500,7 +504,7 @@ export function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (k
       {row(
         // Only show the "(entered/total)" count when there's a real subjects mismatch;
         // for match / couldn't-read / pending it's noise (and "(0/0)" looks broken).
-        chk.subjects === 'mismatch'
+        chk.subjects === 'mismatch' && chk.missing.length > 0
           ? `${t('scholarship.docs.slipCheck.subjects')} (${entered}/${chk.slip_count})`
           : t('scholarship.docs.slipCheck.subjects'),
         subjectsValue,

@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 Web only, not pushed, no server change. `adminMutate` marks a fetch that gets no response (`code: 'network_failure'`, `status: 0`, browser message kept); the cockpit's record-verdict save shows "Your decision may already be saved. Reload the page and check before pressing again." instead of Safari's "Load failed" (`officerCockpit.verdictSaveErrorText`), and a finalise `engine_error` gets `finaliseEngineError` instead of `finaliseNoDraft`. en/ms/ta; Tamil awaits language review.
 
+### fix: request #62 - a typed subject not on the results slip is flagged (please check); English slip names folded
+
+Branch req62 (not pushed; no migration, no data change; `VERDICT_ENGINE_VERSION` 2026-11-06.1). Decisions: `docs/decisions.md` "Request #62".
+
+- `compare_academics` returns `extra` (typed, not on a fully read slip); the verdict raises `academic_extra_subjects`, the ladder counts it like a missing subject, the slip check reads `subjects` 'mismatch', and the cockpit chip, the student's checklist and the coach (`slip_subjects_extra`) show it in en/ms/ta. Never a submission block. English slip names (MATHEMATICS, PHYSICS, ...) now match the Malay subjects. Tests: `test_slip_extra_subjects.py`, `view.slipExtra.test.tsx`, `ScholarshipDocuments/slipExtra.test.tsx`.
+
 ### docs: Sprint A0.3 - documents brought up to date (2026-11-05)
 
 Docs only, no code, not pushed. `docs/roadmap.md` rewritten at v3.1.0; live flag table (26 switches, read off the running services, secrets by name only) in `docs/deployment.md`; every plan file has a Status line and 88 finished or superseded ones are in `docs/plans/archive/` (links updated); `halatuju_api/CLAUDE.md` cut from 30.5k to under 20k characters with the detail moved into `docs/` (nothing deleted); TD-522 resolved (`td_open` 208 -> 207).

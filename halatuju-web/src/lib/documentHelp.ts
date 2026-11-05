@@ -23,6 +23,8 @@ export const HELP_VERDICTS = [
   // Results-slip specific (the three academic checks).
   'slip_name_mismatch',
   'slip_subjects_missing',
+  // Request #62 — a subject the student entered that is not on the (fully read) slip: please check.
+  'slip_subjects_extra',
   'slip_grade_mismatch',
   // Results-slip — a grade read with low confidence (double-check), and a skewed photo
   // that left it unclear (retake straight). Pointed alternatives to a confident mismatch.
@@ -240,7 +242,8 @@ export function helpSignal(doc: ApplicantDocument): string {
     doc.vision_address_match || '',
     // Results slip / offer letter: the check can change when the student edits their
     // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
-    ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
+    // Request #62: the typed-not-on-slip list joins ONLY when present, so no existing signal moves.
+    ac ? `${ac.name},${ac.subjects},${ac.results}${ac.extra?.length ? `,x:${ac.extra.join('+')}` : ''}` : '',
     pc ? `${pc.name},${pc.ic},${pc.pathway || ''}` : '',
     // Income earner IC: the cluster coach re-fires when the cluster verdict changes —
     // e.g. the student uploads a matching/ mismatching payslip, or the birth cert.
@@ -259,6 +262,7 @@ export interface CachedHelp {
   message: string
   verdict?: string
   gradeDiffs?: { subject: string; typed: string; slip: string }[]
+  extraSubjects?: string[]
 }
 
 function helpCacheKey(docId: number, signal: string): string {

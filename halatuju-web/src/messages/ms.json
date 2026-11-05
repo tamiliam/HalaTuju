@@ -1405,6 +1405,7 @@
         "editProfileName": "Betulkan nama anda dalam profil",
         "adjustGrades": "Laraskan gred saya",
         "gradeDiff": "{subject}: anda masukkan {typed}, tetapi slip anda menunjukkan {slip}.",
+        "extraSubject": "Anda memasukkan {subject} tetapi mata pelajaran itu tiada pada slip keputusan anda. Sila semak gred anda, atau muat naik slip yang lebih jelas.",
         "fallback": {
           "name_mismatch": "Nama yang kami baca tidak sepadan dengan nama dalam profil anda. Sama ada gambar kurang jelas, atau nama yang anda taip semasa mendaftar dieja sedikit berbeza. Muat naik gambar yang lebih jelas jika itu puncanya; jika nama pada kad betul, betulkan ejaan dalam profil anda.",
           "nric_mismatch": "Nombor IC yang kami baca tidak sepadan dengan yang ada dalam profil anda. Semak digitnya dalam profil, kemudian muat naik gambar IC yang jelas semula.",
@@ -1415,6 +1416,7 @@
           "review_manually": "Kami tidak dapat menyemaknya secara automatik, jadi seorang penyemak akan melihatnya secara manual. Tiada apa lagi yang perlu anda lakukan di sini.",
           "slip_name_mismatch": "Nama pada slip keputusan ini bukan nama anda — ia kelihatan seperti slip orang lain. Muat naik slip keputusan anda sendiri; nama padanya mesti sepadan dengan nama anda.",
           "slip_subjects_missing": "Slip keputusan anda menyenaraikan subjek yang belum anda tambah dalam profil. Tambah subjek yang tertinggal supaya sepadan dengan slip — atau muat naik fail yang betul jika tersilap fail.",
+          "slip_subjects_extra": "Anda memasukkan mata pelajaran yang tiada pada slip keputusan anda. Sila semak gred anda, atau muat naik slip yang lebih jelas.",
           "slip_grade_mismatch": "Satu gred pada slip anda berbeza daripada yang anda masukkan. Slip ialah rekod rasmi, jadi kemas kini gred dalam profil supaya sepadan. Jika gambar kabur, muat naik yang lebih jelas.",
           "slip_grade_uncertain": "Kami membaca slip anda tetapi tidak pasti sepenuhnya tentang satu gred. Semak bahawa gred yang anda masukkan sepadan dengan slip; jika ada yang berbeza, betulkan dalam profil. Gambar yang lebih jelas dan lurus juga membantu.",
           "slip_skewed_unclear": "Slip anda diambil pada sudut, menyebabkan sebahagiannya sukar dibaca. Letakkan rata, penuhkan bingkai, dan ambil gambar dari atas secara lurus, kemudian muat naik semula.",
@@ -1680,6 +1682,7 @@
         "fromSlip": "daripada slip anda",
         "allEntered": "semua mata pelajaran dimasukkan",
         "missing": "Belum dimasukkan",
+        "notOnSlip": "Tiada pada slip anda",
         "allMatch": "semua gred sepadan",
         "youTyped": "anda masukkan",
         "slipSays": "slip menyatakan",
@@ -2095,6 +2098,10 @@
         "academic_missing_subjects": {
           "title": "Tambah mata pelajaran yang tiada: {subjects}",
           "desc": "Slip keputusan anda menyenaraikan {total} mata pelajaran, tetapi hanya {entered} ada dalam profil anda. Sila tambah yang tiada — {subjects} — di halaman keputusan anda ({displayDomain}/onboarding/grades), kemudian kembali dan tandakan ini selesai."
+        },
+        "academic_extra_subjects": {
+          "title": "Semak mata pelajaran anda: {subjects}",
+          "desc": "Anda memasukkan {subjects} tetapi mata pelajaran itu tiada pada slip keputusan anda. Sila semak gred anda di halaman keputusan anda ({displayDomain}/onboarding/grades), atau muat naik slip yang lebih jelas, kemudian kembali dan tandakan ini selesai."
         },
         "academic_grade_mismatch": {
           "title": "Semak gred anda untuk {subject}",
@@ -4740,6 +4747,7 @@
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "pathway_switched": "Kursus ditukar — dahulu {from_programme} ({from_institution}), kini {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
+          "academic_extra_subjects": "Dimasukkan oleh pelajar tetapi tiada pada slip: {subjects}. Semak dengan mata: mungkin salah taip, atau baris yang terlepas semasa bacaan.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",

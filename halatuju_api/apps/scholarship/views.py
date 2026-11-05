@@ -1771,12 +1771,10 @@ class DocumentHelpView(APIView):
             return Response({'message': '', 'source': 'none'})
 
         # Specific academic diffs so the coach can NAME the subject(s) + grades (not just "a grade
-        # differs") and deep-link to the grades page (owner 2026-07-08). Cheap read of the same
-        # slip check; empty for non-grade verdicts.
-        grade_diffs = []
-        if verdict == 'slip_grade_mismatch':
-            from .academic_engine import student_slip_check
-            grade_diffs = student_slip_check(doc).get('mismatched') or []
+        # differs") and deep-link to the grades page (owner 2026-07-08; typed subjects not on the
+        # slip since request #62). The same slip check; empty for every other verdict.
+        from .slip_coach import coach_detail
+        detail = coach_detail(doc, verdict)
 
         # Throttle the billable call (never block — decisions.md "throttle the AI").
         # Per-application hourly cap via the default cache; degrade to the FE fallback copy.
@@ -1787,8 +1785,7 @@ class DocumentHelpView(APIView):
         key = f'help_coach:{doc.application_id}:{timezone.now():%Y%m%d%H}'
         if cache.get(key, 0) >= cap:
             _log_coach_serve('doc', doc.application_id, 'fallback', verdict)
-            return Response({'message': '', 'source': 'fallback', 'verdict': verdict,
-                             'grade_diffs': grade_diffs})
+            return Response({'message': '', 'source': 'fallback', 'verdict': verdict, **detail})
         cache.set(key, cache.get(key, 0) + 1, 3600)
 
         from .profile_engine import _resolve_language
@@ -1806,7 +1803,7 @@ class DocumentHelpView(APIView):
                 branding=_branding.for_application(doc.application),
             )
         result['verdict'] = verdict
-        result['grade_diffs'] = grade_diffs
+        result.update(detail)
         _log_coach_serve('doc', doc.application_id, result.get('source', 'none'), verdict)
         return Response(result)
 

@@ -15,19 +15,21 @@ from .academic_engine import (_GRADE_TO_BAND, _SUBJECT_BM, _base_letter, _is_cha
 def compare_academics(profile_grades, slip) -> dict:
     """Compare the slip's subjects/grades against what the student typed.
 
-    Returns ``{slip_count, missing, mismatched: [{subject, typed, slip}],
-    uncertain: [{subject, typed, slip, band}], have_grades, complete, accurate}``.
+    Returns ``{slip_count, missing, extra, mismatched: [{subject, typed, slip}],
+    uncertain: [{subject, typed, slip, band}], have_grades, complete, accurate}``. ``missing`` =
+    on the slip, not typed; ``extra`` = typed, not on the slip (request #62, complete reads only).
 
     The slip prints each grade twice — a letter AND a Malay band. When the two
     DISAGREE for a row, the read is unreliable for that subject, so a would-be
     grade mismatch is downgraded to **uncertain** ("please check") rather than
     asserted as a confident mismatch (guards against an OCR row-transposition
     confidently telling the student a wrong grade)."""
-    prof_by_name = {}
+    prof_by_name, typed_name = {}, {}   # normname → typed grade / the subject's readable BM name
     for key, grade in (profile_grades or {}).items():
         nm = _SUBJECT_BM.get(key)
         if nm and grade:
             prof_by_name[_norm_lower_alnum(nm)] = grade
+            typed_name[_norm_lower_alnum(nm)] = nm
 
     slip_norm = {}  # normname → first readable form
     for n in slip['names']:
@@ -36,6 +38,12 @@ def compare_academics(profile_grades, slip) -> dict:
     letters = slip.get('letters', {})
 
     missing = sorted(orig for nn, orig in slip_norm.items() if nn not in prof_by_name)
+    # Request #62 (owner 2026-11-06): a subject the student TYPED that is not on the slip is
+    # flagged too, as "please check" (the slip is the authoritative record, decisions 2026-06-02).
+    # Only on a COMPLETE read — names AND grades, the same `have_grades` test that decides whether
+    # accuracy can be judged. A legacy names-only read (or a grades-less one) may simply have
+    # missed a row, so it never asserts that a typed subject is absent.
+    extra = sorted(typed_name[nn] for nn in prof_by_name if nn not in slip_norm) if slip['grades'] else []
     mismatched, uncertain = [], []
     for nn, slip_g in slip['grades'].items():
         typed = prof_by_name.get(nn)
@@ -74,6 +82,7 @@ def compare_academics(profile_grades, slip) -> dict:
         'mismatched': mismatched,
         'uncertain': uncertain,
         'have_grades': bool(slip['grades']),
-        'complete': len(slip_norm) > 0 and not missing,
+        'extra': extra,
+        'complete': len(slip_norm) > 0 and not missing and not extra,
         'accurate': not mismatched and not uncertain,
     }

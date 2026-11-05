@@ -67,8 +67,12 @@ PRE_C3_SPM_SCORE = {'status': 'suspect', 'doc_seen': 'results_slip', 'probabilit
 #: C3 itself reading an STPM page as no result document (ruling 1A, live #256 shape).
 C3_NOT_A_RESULT = {'status': 'not_certificate', 'doc_seen': 'certificate', 'probability': 0.09,
                    'model_version': '1.9.0', 'reason': '2/16 certificate signatures present'}
+#: Every subject of `SPM` on the slip, at the typed grade (request #62: a typed subject the slip does
+#: not show is now flagged, so a one-row slip would no longer read as a clean SPM card).
 SPM_READ = {'candidate_name': 'PRIYA', 'exam': 'SIJIL PELAJARAN MALAYSIA TAHUN 2025',
-            'results': [{'subject': 'BAHASA MELAYU', 'grade': 'A+'}]}
+            'results': [{'subject': s, 'grade': g} for s, g in (
+                ('BAHASA MELAYU', 'A+'), ('BAHASA INGGERIS', 'A'), ('SEJARAH', 'A'), ('MATEMATIK', 'A'),
+                ('FIZIK', 'C+'), ('KIMIA', 'D'), ('BIOLOGI', 'C+'), ('MATEMATIK TAMBAHAN', 'D'))]}
 #: #77's document: a Matriculation offer letter in the SPM card (no result rows).
 MATRIC_OFFER_READ = {'candidate_name': 'PRIYA',
                      'exam': 'PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027'}

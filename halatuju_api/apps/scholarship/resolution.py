@@ -52,6 +52,7 @@ CODE_TO_TICKET = {
     'results_slip_unreadable':    {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
     'results_slip_name_mismatch': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
     'academic_missing_subjects':  {'fact': 'academic', 'kind': 'confirm'},
+    'academic_extra_subjects':    {'fact': 'academic', 'kind': 'confirm'},   # request #62
     'academic_grade_mismatch':    {'fact': 'academic', 'kind': 'confirm'},
     # #71 (owner 2026-07-08): letter + Malay band AGREE → the typed grade is confidently wrong.
     'academic_grade_band_mismatch': {'fact': 'academic', 'kind': 'confirm'},

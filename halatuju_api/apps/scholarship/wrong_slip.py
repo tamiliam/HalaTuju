@@ -139,7 +139,7 @@ def slip_check(doc, name) -> dict | None:
         'name': name, 'subjects': 'not_spm', 'results': 'not_spm',
         'candidate_name': f.get('candidate_name') or '', 'exam': (f.get('exam') or '').strip(),
         'exam_year': '', 'exam_year_status': '', 'was_skewed': False,
-        'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0,
+        'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': [],
         'higher_kind': kind, 'move_offered': offered,
         'actions_open': getattr(app, 'profile_completed_at', None) is None,
     }

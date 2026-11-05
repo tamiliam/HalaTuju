@@ -74,6 +74,7 @@ export default function DocumentHelpCoach({
   const [message, setMessage] = useState('')
   const [verdict, setVerdict] = useState<string | undefined>(undefined)
   const [gradeDiffs, setGradeDiffs] = useState<{ subject: string; typed: string; slip: string }[]>([])
+  const [extraSubjects, setExtraSubjects] = useState<string[]>([])   // request #62, served
 
   // Cache key: the per-language verdict signal. Only a (re-)upload changes the signal,
   // so a plain page reload reuses the stored advice — Gopal sticks, never re-pops.
@@ -89,6 +90,7 @@ export default function DocumentHelpCoach({
       setMessage(cached.message)
       setStatus(cached.source)
       setGradeDiffs(cached.gradeDiffs ?? [])
+      setExtraSubjects(cached.extraSubjects ?? [])
       return
     }
     let cancelled = false
@@ -97,16 +99,18 @@ export default function DocumentHelpCoach({
       .then((r) => {
         if (cancelled) return
         const diffs = r.grade_diffs ?? []
+        const extra = r.extra_subjects ?? []
         const next =
           r.source === 'ai' && r.message
-            ? { source: 'ai' as const, message: r.message, verdict: r.verdict, gradeDiffs: diffs }
+            ? { source: 'ai' as const, message: r.message, verdict: r.verdict, gradeDiffs: diffs, extraSubjects: extra }
             : r.source === 'none'
-              ? { source: 'none' as const, message: '', verdict: r.verdict, gradeDiffs: diffs }
-              : { source: 'fallback' as const, message: '', verdict: r.verdict, gradeDiffs: diffs }
+              ? { source: 'none' as const, message: '', verdict: r.verdict, gradeDiffs: diffs, extraSubjects: extra }
+              : { source: 'fallback' as const, message: '', verdict: r.verdict, gradeDiffs: diffs, extraSubjects: extra }
         setVerdict(next.verdict)
         setMessage(next.message)
         setStatus(next.source)
         setGradeDiffs(diffs)
+        setExtraSubjects(extra)
         writeHelpCache(doc.id, cacheSignal, next)
       })
       .catch(() => {
@@ -153,9 +157,21 @@ export default function DocumentHelpCoach({
           ))}
         </ul>
       )}
+      {/* Request #62: name each entered subject the slip does not show — "please check", never
+          "you are wrong" (the server serves the list; missing and extra can both be true). */}
+      {!loading && extraSubjects.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {extraSubjects.map((s) => (
+            <li key={s} className="text-sm text-ground-800">
+              {t('scholarship.docs.help.extraSubject').replace('{subject}', s)}
+            </li>
+          ))}
+        </ul>
+      )}
       {!loading &&
         (verdict === 'slip_grade_mismatch' ||
           verdict === 'slip_subjects_missing' ||
+          verdict === 'slip_subjects_extra' ||
           verdict === 'slip_grade_uncertain') && (
           <Link
             href="/onboarding/grades"

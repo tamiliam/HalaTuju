@@ -18849,3 +18849,29 @@ the caller's visibility; any other value is ignored, like `?parent_call`.
 — not chosen; the owner reused the existing rule.
 **Revisit if:** the owner wants the interviewing stage counted, or the grace rule changes (change it in
 `is_ready_for_assignment` and `ready_to_assign` together; the parity test fails if they part).
+
+## 2026-11-06 — Request #62: a typed subject that is not on the slip is flagged (please check), counted like a missing one; English slip names folded
+
+**Decision (owner, 2026-11-06):** EXTENDS "Results slip is the authoritative grade record" (2026-06-02); supersedes
+none of it. `academic_compare.compare_academics` now also returns `extra`: the subjects the student TYPED whose name is
+not among the slip's names (their readable Malay names, sorted), and `complete` is false while any is listed. Rulings:
+(1) it is an unresolved Academic item, `academic_extra_subjects` ("please check"), so the fact is not `verified`; the
+red-chip ladder counts it exactly like a missing subject (ONE Subjects chip for either or both); `student_slip_check`
+reports `subjects` = 'mismatch' with the `extra` list, so the cockpit chip, the student's checklist ("Not on your slip")
+and the coach (`slip_subjects_extra`, naming each subject through `slip_coach.coach_detail`, linking to the grades page)
+all show it. It is NOT a submission block or a document red (owner 2026-07-08 stands; `services/blockers.py` unchanged,
+pinned in `test_slip_extra_subjects.py`). (2) The tone is "please check your grades, or upload a clearer slip", never a
+confident claim. (3) Only on a COMPLETE read (names AND grades — the same `have_grades` test that decides whether
+accuracy can be judged); a legacy names-only read never asserts it. (4) Slips that print the subject in English
+(MATHEMATICS, ADDITIONAL MATHEMATICS, SCIENCE, PHYSICS, CHEMISTRY, BIOLOGY) fold to the Malay subject before `extra` is
+computed (`slip_subject_aliases.ENGLISH_NAMES`, read through `academic_engine._CANONICAL`). (5) No alias is invented:
+UPU Online's SPM list (checked by the lead 2026-11-06) holds Lukisan / Pendidikan Seni Visual / Lukisan Kejuruteraan,
+Reka Bentuk Grafik / Reka Bentuk Grafik Digital / Grafik Komunikasi Teknikal and Reka Bentuk Kraf / Reka Cipta as
+separate subjects, so each is missing + extra against the other (pinned). `VERDICT_ENGINE_VERSION` 2026-11-06.1; old
+snapshots are not re-built.
+**Alternatives considered:** (A) a submission block — rejected by the owner's 2026-07-08 ruling; (B) asserting extra on
+any read — rejected: a names-only or grades-less read may simply have missed a row; (C) folding the look-alike pairs —
+rejected: UPU lists them as different subjects.
+**Revisit if:** a slip prints another subject in English (add it to `ENGLISH_NAMES`), or UPU renames a subject (an
+old-name entry in `OLD_NAMES`). Open: the grade form offers `digital_gfx` named "Grafik Digital", which UPU calls
+"Reka Bentuk Grafik Digital" — a student with that slip row reads missing + extra until the catalogue names match.

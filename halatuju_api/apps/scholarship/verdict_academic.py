@@ -57,6 +57,8 @@ def _verdict_academic(application, spm_only=False):
                                 entered=cmp['slip_count'] - len(cmp['missing']),
                                 total=cmp['slip_count'],
                                 subjects=', '.join(cmp['missing'])))
+    if cmp['extra']:      # request #62: typed but not on the slip — "please check", never a block
+        unresolved.append(_item('academic_extra_subjects', subjects=', '.join(cmp['extra'])))
     for m in cmp['mismatched']:
         # band_confirmed (#71, owner 2026-07-08): the slip's letter AND Malay band agree, so a
         # ±-modifier difference is NOT an OCR blind spot — the read is double-confirmed and the

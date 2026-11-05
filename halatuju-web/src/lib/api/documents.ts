@@ -220,6 +220,9 @@ export interface AcademicCheck {
   exam_year: string
   exam_year_status?: '' | 'current' | 'off'   // route-aware (`exam_years`, 2026-11-01): current→green, off→amber
   missing: string[]
+  /** Request #62: subjects the student entered that a fully read slip does not show (please check).
+   *  Optional: a half-deployed pair (old api) simply has none. */
+  extra?: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
   uncertain: { subject: string; typed: string; slip: string; band: string }[]
   slip_count: number
@@ -444,6 +447,8 @@ export interface DocumentHelp {
   model_used?: string
   /** For a slip grade mismatch: the exact subject(s) that differ, so the coach can name them. */
   grade_diffs?: GradeDiff[]
+  /** Request #62: the entered subjects the slip does not show, so the coach can name them. */
+  extra_subjects?: string[]
 }
 
 export async function getDocumentHelp(

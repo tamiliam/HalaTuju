@@ -1405,6 +1405,7 @@
         "editProfileName": "Edit your name in your profile",
         "adjustGrades": "Adjust my grades",
         "gradeDiff": "{subject}: you entered {typed}, but your slip shows {slip}.",
+        "extraSubject": "You entered {subject} but it isn't on your results slip. Please check your grades, or upload a clearer slip.",
         "fallback": {
           "name_mismatch": "The name we read on this doesn't match the name in your profile. Either the photo is unclear, or the name you typed when registering is spelled differently. Upload a clearer photo if that's the cause; if the card is correct, fix the spelling in your profile.",
           "nric_mismatch": "The IC number we read doesn't match the one in your profile. Check the digits in your profile, then upload a clear photo of your IC again.",
@@ -1415,6 +1416,7 @@
           "review_manually": "We couldn't auto-check this one, so a reviewer will look at it by hand. There's nothing more you need to do here.",
           "slip_name_mismatch": "The name on this results slip isn't yours — it looks like someone else's slip. Upload your own results slip; the name on it must match yours.",
           "slip_subjects_missing": "Your results slip lists a subject you haven't added to your profile. Add the missing subject(s) so they match the slip — or upload the right file if this one was a mix-up.",
+          "slip_subjects_extra": "You entered a subject that isn't on your results slip. Please check your grades, or upload a clearer slip.",
           "slip_grade_mismatch": "A grade on your slip differs from what you entered. The slip is the official record, so update the grade in your profile to match it. If the photo is blurry, upload a clearer one instead.",
           "slip_grade_uncertain": "We read your slip but couldn't be fully sure of one grade. Check that the grades you entered match the slip; if one differs, correct it in your profile. A clearer, straight-on photo helps too.",
           "slip_skewed_unclear": "Your slip came through at an angle, which left one part hard to read. Lay it flat, fill the frame, and photograph it straight from above, then upload again.",
@@ -1680,6 +1682,7 @@
         "fromSlip": "from your slip",
         "allEntered": "all subjects entered",
         "missing": "Not entered yet",
+        "notOnSlip": "Not on your slip",
         "allMatch": "all grades match",
         "youTyped": "you entered",
         "slipSays": "slip says",
@@ -2095,6 +2098,10 @@
         "academic_missing_subjects": {
           "title": "Add your missing subjects: {subjects}",
           "desc": "Your results slip lists {total} subjects, but only {entered} are on your profile. Please add the missing ones — {subjects} — on your results page ({displayDomain}/onboarding/grades), then come back and mark this done."
+        },
+        "academic_extra_subjects": {
+          "title": "Check your subjects: {subjects}",
+          "desc": "You entered {subjects} but it isn't on your results slip. Please check your grades on your results page ({displayDomain}/onboarding/grades), or upload a clearer slip, then come back and mark this done."
         },
         "academic_grade_mismatch": {
           "title": "Check your grade for {subject}",
@@ -4740,6 +4747,7 @@
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",
           "pathway_switched": "Course switched — was {from_programme} ({from_institution}), now {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
+          "academic_extra_subjects": "Entered by the student but not on the slip: {subjects}. Check by eye: a typing slip, or a row the read missed.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "academic_grade_band_mismatch": "{subject}: the slip clearly shows {slip} — the letter and the Malay band agree — but the student typed {typed}. The typed grade is wrong; ask the student to correct it.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",

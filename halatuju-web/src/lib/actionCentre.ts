@@ -130,6 +130,8 @@ export const KNOWN_CODES = [
   // holds ("Please upload your STPM results"; `higher_owed.ASK_CODE`, params.results_kind).
   'higher_results_requested',
   'academic_missing_subjects',
+  // Request #62 — an entered subject the slip does not show (please check, never a block).
+  'academic_extra_subjects',
   'academic_grade_mismatch',
   // #71 — the slip's letter AND Malay band agree but differ from the typed grade (a confident,
   // by-eye-unnecessary mismatch → a confirm ticket).

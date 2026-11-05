@@ -50,6 +50,7 @@ VERDICT_GUIDANCE = {
     # Results-slip specific (the three academic checks: name / subjects / results).
     'slip_name_mismatch':    "the name on this results slip is not the applicant's — it looks like it may be someone else's slip",
     'slip_subjects_missing': "the results slip lists one or more subjects that were not entered in the applicant's profile",
+    'slip_subjects_extra':   "the applicant entered one or more subjects in their profile that we could not find on the results slip (request #62) — it may be a typing slip or a part of the slip we could not read",
     'slip_grade_mismatch':   "one or more grades on the results slip differ from the grades the applicant typed into their profile",
     # Results-slip — a grade that could NOT be read with full confidence (a faint +/- or
     # slight blur). Not a confident mismatch — we only ask the student to double-check.
@@ -126,6 +127,7 @@ VERDICT_FIX_HINT = {
         'missing subject(s) on their Profile page so their entered subjects match the '
         'results slip. (If the slip itself is the wrong file, they can re-upload instead.)'
     ),
+    'slip_subjects_extra': 'Do NOT say they are wrong — we only ask them to check. Kindly ask them to compare the subjects they entered with their results slip: if they entered a subject they did not sit, they can remove it on their Profile page; if the subject IS on their slip, a clearer, straight-on photo of the whole slip helps.',
     'slip_grade_mismatch': (
         'The results slip is the official record, so the fix is to make the PROFILE match '
         'the slip: kindly tell them to update the differing grade(s) on their Profile page '
@@ -406,8 +408,8 @@ def verdict_for_document(doc):
             return 'slip_name_mismatch'
         if chk['name'] == 'unreadable':
             return 'unreadable'
-        if chk['subjects'] == 'mismatch':
-            return 'slip_subjects_missing'
+        if chk['subjects'] == 'mismatch':      # missing first; else a typed subject not on it (#62)
+            return 'slip_subjects_missing' if chk.get('missing') else 'slip_subjects_extra'
         if chk['results'] == 'mismatch':
             return 'slip_grade_mismatch'
         # A grade we could not read with full confidence → ask the student to double-check

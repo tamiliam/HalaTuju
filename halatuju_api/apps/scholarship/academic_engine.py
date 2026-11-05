@@ -26,6 +26,7 @@ import math
 import re
 
 from .school_names import school_name_core
+from .slip_subject_aliases import SUBJECT_ALIASES as _SUBJECT_ALIASES
 
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
 _SUBJECT_BM = {
@@ -196,14 +197,7 @@ _GRADE_TOKENS = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G',
 _BAND_HEADS = frozenset({'cemerlang', 'kepujian', 'lulus', 'gagal'})
 _BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
 
-#: The names Sprint C replaced (Bumi coverage, 2026-10-29) → today's name. Reads stored before
-#: MODEL_VERSION 1.18.0 hold the old ones ("Manahij"), and are never re-read, so they stay readable.
-_SUBJECT_ALIASES = {
-    'Manahij': "Manahij Al-'Ulum Al-Islamiah", 'Lughah Arabiah': "Al-Lughah Al-'Arabiah Al-Mu'asirah",
-    'Adab & Balaghah': 'Al-Adab Wa Al-Balaghah', 'Turath Islamiah': 'Turath Dirasat Islamiah',
-    'Turath Quran & Sunnah': 'Turath Al-Quran dan Al-Sunnah',
-    'Pendidikan Al-Quran & Al-Sunnah': 'Pendidikan Al-Quran dan Al-Sunnah',
-}
+#: Old names (Sprint C) and English slip names (request #62) → today's name: `slip_subject_aliases`.
 #: normalised name (today's or an old one) → today's name.
 _CANONICAL = {**{_norm_lower_alnum(n): n for n in set(_SUBJECT_BM.values())},
               **{_norm_lower_alnum(old): new for old, new in _SUBJECT_ALIASES.items()}}
@@ -228,7 +222,9 @@ def _slip_key(name: str) -> str:
         return _norm_lower_alnum(_CANONICAL[norm])
     found = _match_known_subject(name)
     if found:
-        extra = set(norm.split()) - set(_norm_lower_alnum(found).split())
+        words = set(norm.split())          # less the subject's words as PRINTED (an alias's too, #62)
+        extra = words - set(_norm_lower_alnum(found).split()) - max(
+            (kt for n, kt in _KNOWN_SUBJECTS if n == found and kt <= words), key=len)
         if all(t.isdigit() or len(t) <= 2 or t in _CELL_NOISE for t in extra):
             return _norm_lower_alnum(found)
     return norm
@@ -630,7 +626,7 @@ def student_slip_check(doc) -> dict:
     coach (to pick its advice) both consume, so they can never disagree.
 
     Returns ``{name, subjects, results}`` each 'match' / 'mismatch' / 'unreadable'
-    / 'pending', plus ``{candidate_name, missing, mismatched, slip_count}`` detail.
+    / 'pending', plus ``{candidate_name, missing, extra, mismatched, slip_count}`` detail.
     Reads ONLY the student's own document + profile (no admin data)."""
     name = _slip_name_status(doc)
     from .wrong_slip import slip_check          # S4 (#43): a higher result here is never compared
@@ -668,14 +664,14 @@ def student_slip_check(doc) -> dict:
         return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
                 'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
-                'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0}
+                'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0, 'extra': []}
 
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
     # Third route S3b: ONE reader of the SPM grades — a tertiary holder's sit in the STPM page's
     # SPM block (`spm_prereq_grades`) as often as in `grades`. SPM holders: `grades`, unchanged.
     from apps.courses.exam_questions import spm_grades_for
     cmp = compare_academics(spm_grades_for(profile) if profile is not None else None, data)
-    subjects = 'mismatch' if cmp['missing'] else 'match'
+    subjects = 'mismatch' if cmp['missing'] or cmp['extra'] else 'match'   # #62: extra = typed, not on it
     if not cmp['have_grades']:
         results = 'pending'
     elif cmp['mismatched']:
@@ -689,7 +685,7 @@ def student_slip_check(doc) -> dict:
         'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
         'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
         'missing': cmp['missing'], 'mismatched': cmp['mismatched'],
-        'uncertain': cmp['uncertain'], 'slip_count': cmp['slip_count'],
+        'uncertain': cmp['uncertain'], 'slip_count': cmp['slip_count'], 'extra': cmp['extra'],
     }
 
 
