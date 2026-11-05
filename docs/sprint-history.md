@@ -8739,7 +8739,7 @@ changed at that moment. Worktree `.worktrees/sponsor-detail`. Retro
   had therefore already fired — corrected everywhere. Do not infer tenant counts from that table.
 
 **✅ M1 SHIPPED 2026-07-28 — "which application is this about" stops being positional.** Roadmap
-`docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md` (**M1 ONLY approved; M2-M4 are
+`docs/plans/2026-07-28-multi-programme-applications-roadmap.md` (**M1 ONLY approved; M2-M4 are
 NOT**); retro `docs/retrospectives/retrospective-2026-07-28-multiprogramme-m1.md`; decisions ×2; lessons ×3.
 **NO migration.** `pytest` **4957** (full scope) · `jest` **1039** / 67 suites · i18n 4151×3.
 - `views._current_application()` was `.order_by('-submitted_at').first()` with **"latest wins"** in
@@ -8980,7 +8980,7 @@ NO backend change** — `halatuju-web` only (plus one ported backend test).
 `e0234ed` (SUCCESS both services); `/api/v1/admin/sponsors/<pk>/` answers 401 unauthenticated, no
 API errors post-deploy. The four authenticated smoke checks remain owed. Commit
 `f69be3c4` (worktree `.worktrees/sponsor-detail`, branch `feat/sponsor-detail`). Plan
-`docs/plans/archive/2026-07-27-sponsor-module-roadmap.md`; design of record
+`docs/plans/2026-07-27-sponsor-module-roadmap.md`; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>; retro
 `docs/retrospectives/retrospective-2026-07-27-sponsor-detail-s1.md`; decisions ×3; lessons ×3.
 **Migration `0132` APPLIED to prod + verified** (additive nullable `sponsors.last_seen_at`;
@@ -9143,7 +9143,7 @@ including the weekly ones?"* — S1 had the wording and switches; nothing could 
 - **▶ NOTHING QUEUED after this** on the partner-comms track. Standing owner items unchanged.
 
 **✅ SHIPPED 2026-07-26 — PLATFORM PROGRAMME LAYER (P1a, P2a, P3, P4a).** Roadmap
-`docs/plans/archive/2026-07-26-programme-layer-roadmap.md`; retros ×3; decision records ×8; lessons ×5.
+`docs/plans/2026-07-26-programme-layer-roadmap.md`; retros ×3; decision records ×8; lessons ×5.
 **The hierarchy is now Organisation → Programme → Year (intake) → the student's award.** A
 Programme IS the gift ("the BrightPath Bursary"), one gift per programme; it never lapses, and
 each annual intake is a cohort beneath it. Driven by two prospects — Inspire Society (a second

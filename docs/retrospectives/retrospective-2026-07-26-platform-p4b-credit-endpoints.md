@@ -1,7 +1,7 @@
 # Retrospective — Platform P4b: the credit endpoints, and identity on the chain
 
 **Date:** 2026-07-26
-**Sprint:** P4b of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`
+**Sprint:** P4b of `docs/plans/2026-07-26-programme-layer-roadmap.md`
 **Branch:** `feat/p4b-credit-endpoint` (worktree — another agent was working the same repo)
 **Result:** 4678 pytest passed, 0 failed (baseline 4635). **Not deployed** — migration `0125` is
 migrate-first and has not been applied.

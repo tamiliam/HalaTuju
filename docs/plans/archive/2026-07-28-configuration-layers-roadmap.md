@@ -1,6 +1,6 @@
 # Configuration layers — Layer 0, then Layer 1
 
-> **Status (checked 2026-11-05): Done (2026-09).** Shipped (CHANGELOG, sprint history, decisions).
+> **Status (checked 2026-11-05): Done for Layer 1 (2026-09; themes closed in F7c). Layer 2 (moving elements) deliberately not built, by owner choice.**
 
 **Approved by the owner 2026-07-28.** Route in: `Settings/_workflows/implementation-planning.md`.
 This file is the durable home; the working plan file under `.claude/plans/` is deleted at sprint close.

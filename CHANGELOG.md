@@ -16399,7 +16399,7 @@ attaching scope to requests globally would relocate the fence into the client.
 ## M1 — "which application is this about" stops being answered by position — 2026-07-28
 
 First sprint of the multi-programme roadmap, and the only one approved
-(`docs/plans/archive/2026-07-28-multi-programme-applications-roadmap.md`). Same defect as PF-1, one layer
+(`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`). Same defect as PF-1, one layer
 up: `_current_application()` was `.order_by('-submitted_at').first()`, with *"latest wins"* in its
 docstring as though it were a rule. It was an assumption that held only because one cohort had
 ever existed. **Thirteen endpoints** resolve through it, so a student holding applications to two
@@ -16913,7 +16913,7 @@ exit 0. No backend change, no migration, pytest untouched.
 
 ## Sponsor module S1 — one sponsor, whole — 2026-07-27
 
-Sprint 1 of `docs/plans/archive/2026-07-27-sponsor-module-roadmap.md` (owner-approved; design of record
+Sprint 1 of `docs/plans/2026-07-27-sponsor-module-roadmap.md` (owner-approved; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>). **Migration `0132`,
 additive.**
 
@@ -17228,7 +17228,7 @@ link, and Replace + Remove grouped inside it.
 
 ## Platform programme layer P2b — a payment run pays ONE gift — 2026-07-26
 
-Sixth sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. `PaymentRun` was fenced to an
+Sixth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. `PaymentRun` was fenced to an
 **organisation** only. The moment BrightPath runs a second programme, one run would have drawn from
 both — paying one benefactor's students out of another's money, and making per-programme
 reconciliation impossible. Payments is the **live payout path** (prod holds an open draft run of 30
@@ -17305,7 +17305,7 @@ Proposal, decisions and the full re-consent arithmetic: `docs/scholarship/consen
 
 ## Platform programme layer P4b — the credit endpoints, and identity on the chain — 2026-07-26
 
-Fifth sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. **P4a built the wallet-credit
+Fifth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **P4a built the wallet-credit
 sign-off chain but gave it no surface**, so it was a control on paper: the people it names — an
 `admin` maker, an `org_admin` approver — had no way to execute their own steps, and every credit on
 the platform (including the RM172,000 already recorded) was written by a developer touching the
@@ -17356,7 +17356,7 @@ database. P4b removes the developer from the money path.
 
 ## Platform programme layer P4a — org-admin wallet credit (record + sign-off) — 2026-07-26
 
-Fourth sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. **The primary funding path
+Fourth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **The primary funding path
 until BrightPath's CLBG is registered** — every sponsor pays into a personal account and an org
 admin records the credit here. Migrations written but **NOT yet applied to prod**.
 
@@ -17390,7 +17390,7 @@ admin records the credit here. Migrations written but **NOT yet applied to prod*
 
 ## Platform programme layer P3 — sponsor acceptance is per programme — 2026-07-26
 
-Third sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. **A sponsor sees a
+Third sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **A sponsor sees a
 programme's students only if they were accepted into that programme.** Migrations written but
 **NOT yet applied to prod**.
 
@@ -17424,7 +17424,7 @@ programme's students only if they were accepted into that programme.** Migration
 
 ## Platform programme layer P2a — the sponsor wallet is per-programme — 2026-07-26
 
-Second sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. **Money given to one gift
+Second sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Money given to one gift
 programme is now never visible or spendable in another.** Migrations written but **NOT yet applied
 to prod**.
 
@@ -17461,7 +17461,7 @@ to prod**.
 
 ## Platform programme layer P1a — the durable gift level (structural) — 2026-07-26
 
-First sprint of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`. **Structural only —
+First sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Structural only —
 behaviour-neutral by construction, nothing reads the new column yet.** Migrations written but
 **NOT yet applied to prod** (migrate-first: apply, verify, then deploy).
 

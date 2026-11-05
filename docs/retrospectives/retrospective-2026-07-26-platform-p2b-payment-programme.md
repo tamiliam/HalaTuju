@@ -1,7 +1,7 @@
 # Retrospective — Platform P2b: a payment run pays ONE gift
 
 **Date:** 2026-07-26
-**Sprint:** P2b of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`
+**Sprint:** P2b of `docs/plans/2026-07-26-programme-layer-roadmap.md`
 **Branch:** `feat/p2b-payment-programme` (worktree — the repo is shared with another agent)
 **Result:** 4696 pytest passed, 0 failed (baseline 4678). Migrations `0126`+`0127` migrate-first.
 

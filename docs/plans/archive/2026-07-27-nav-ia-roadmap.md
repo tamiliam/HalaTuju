@@ -33,7 +33,7 @@ The console's navigation was a flat top bar built from a hardcoded chain of role
    Programme → Year shipped 2026-07-26 (`scholarship.Programme`, 143/143 applications carrying it)
    and nothing in the web app read it. The menu still said "Administration" for two different levels.
 
-Scheduled by `docs/plans/archive/2026-07-26-programme-layer-roadmap.md:353` — *"nav/IA shell (organisation
+Scheduled by `docs/plans/2026-07-26-programme-layer-roadmap.md:353` — *"nav/IA shell (organisation
 switcher, Administration as a section with sub-navigation)"* — with risk #6: *"The nav shell ships
 empty slots; each extraction sprint fills one — no second redesign."*
 

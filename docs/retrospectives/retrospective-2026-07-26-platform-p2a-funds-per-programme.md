@@ -1,7 +1,7 @@
 # Retrospective — Platform P2a: the sponsor wallet is per-programme
 
 **Date:** 2026-07-26
-**Sprint:** P2a of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`
+**Sprint:** P2a of `docs/plans/2026-07-26-programme-layer-roadmap.md`
 **Commits:** `bd2e6799` (code), `b7628c4e` (P4 sign-off decision)
 **Result:** shipped to prod schema; 4604 pytest passed, 0 failed. **Not deployed** (schema ahead of code — the safe direction).
 

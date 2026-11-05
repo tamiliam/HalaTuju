@@ -3,7 +3,7 @@
 **Date:** 2026-07-28
 **Branch:** `feat/sponsor-detail` (worktree), merged to `main` as `9589c32a`.
 **Migration `0133` APPLIED migrate-first + verified; templates SEEDED on prod (3 on, 6 off).**
-**Roadmap:** `docs/plans/archive/2026-07-27-sponsor-module-roadmap.md` · design of record
+**Roadmap:** `docs/plans/2026-07-27-sponsor-module-roadmap.md` · design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>
 
 ---

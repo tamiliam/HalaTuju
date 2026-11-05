@@ -1,7 +1,7 @@
 # Retrospective — Platform P1a: the Programme layer (structural)
 
 **Date:** 2026-07-26
-**Sprint:** P1a of `docs/plans/archive/2026-07-26-programme-layer-roadmap.md`
+**Sprint:** P1a of `docs/plans/2026-07-26-programme-layer-roadmap.md`
 **Commits:** `fed3ea40` (code) — preceded by `1941313f` (model + roadmap docs) and `d29633d4` (anonymity invariant)
 **Result:** shipped to prod schema; 4593 pytest passed, 0 failed. **Not deployed** (nothing reads the new column yet).
 
