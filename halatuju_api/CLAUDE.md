@@ -56,6 +56,7 @@ GCP project `gen-lang-client-0871147736`, account `tamiliam@gmail.com`; Cloud Ru
 - ⚠ After an `UPDATE` touching a `DEFERRABLE INITIALLY DEFERRED` FK, run `SET CONSTRAINTS ALL IMMEDIATE;` before `CREATE INDEX` in the same transaction.
 - ⚠ Adding, pausing or re-timing a Scheduler job means editing `cron_health.EXPECTED_CADENCE` in the same change.
 - ⚠ A `node_modules` JUNCTION in a worktree is removed with `[IO.Directory]::Delete('<path>')` BEFORE `git worktree remove`.
+- **Commit type is honest.** `fix:` only for a real defect that was live or would have been; a rename, a label, a review-round tweak or a follow-up to your own sprint is `refactor:`, `test:`, `chore:` or `docs:`. `fix:` counts feed `fix%` (TD-385) and the Consolidation Review reads them as failures. A sprint step carries the word "sprint" in its subject.
 - With more than one agent in the checkout: declare files in `AGENT-TERRITORY.log`, stage explicit paths (never `git add -A`), build in a worktree, push with `git push origin HEAD:main`.
 - A live re-read through a Cloud Run JOB must carry the service's read flags (`DOC_GENUINENESS_CHECK_ENABLED=1`, `BILLING_USAGE_ENABLED=true`); ⚠ the genuineness flag is on only for the exact value `1`.
 - A one-off team command runs through the `release-decisions` job with an args override (recipe in the doc).

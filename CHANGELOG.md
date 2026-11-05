@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### docs: Sprint A0.2 - debt register swept and the Consolidation Review (2026-11-05)
+
+Docs only, no code, not pushed. 25 register entries closed on file:line evidence (11 FIXED, 6 STALE, 8 MERGED), 4 UNSURE ones left open with a note; `td_open` 233 -> 208. Open Items Index regenerated (208 pointers). Consolidation Review written, Pending cleared, 25 unlogged commits logged. Project CLAUDE.md gains the commit-type rule.
+
 ### fix: security - documents record only their own storage path; staff first login needs a confirmed email (audit SEC-01, SEC-02)
 
 Branch sec-a (not pushed; no migration, no data change, api only). Decisions: `docs/decisions.md` "Audit SEC-01 / SEC-02".
