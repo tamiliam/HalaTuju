@@ -1,15 +1,27 @@
 # Architectural Decisions — HalaTuju
 
-## Request #56: a results name one letter off the student's is a likely misread — 2026-11-05 (owner-approved plan; builder rulings)
+## Request #56: a results name one look-alike letter off the student's is a likely misread — 2026-11-05 (owner-approved plan; owner ruling after review; builder rulings)
 
-**The rule:** a results document (SPM slip, matriculation / STPM / diploma results) whose name differs from the student's OWN name by exactly ONE SUBSTITUTED letter, in exactly ONE name part, every other part identical and in the same order, is a likely misread: `_slip_name_status` reads `partial` (amber, never a block, a reviewer note "one letter off, please check"). Everything else stays `mismatch` and blocks as before.
+**The rule:** a results document (SPM slip, matriculation / STPM / diploma results) whose name differs from the student's OWN name by exactly ONE SUBSTITUTED letter that is a known print-OCR LOOK-ALIKE, in exactly ONE name part, every other part identical and in the same order, on a document scored genuine or not scored at all, is a likely misread: `_slip_name_status` reads `partial` (amber, never a block, a reviewer note "differs by one look-alike letter (probably a misread). Check it is the student's slip."). Everything else stays `mismatch` and blocks as before.
+
+**Owner ruling 2026-11-05 (after the adversarial review): LOOK-ALIKE LETTERS ONLY.** The review found the any-letter rule let a sibling's slip through (AINI / AINA, MING / LING, RAJA / RAMA); a results slip carries no IC, so nothing else proves identity. The pairs are ONE constant, `name_misread.LOOK_ALIKE_PAIRS` (unordered, uppercase Latin glyphs a print OCR / AI reader really confuses):
+- **Kept:** O/Q (the #56 case), O/D, O/0, Q/0, D/0 (round letters and zero); I/L, I/1, L/1 (upright strokes: an uppercase I reads as a lowercase l, and both as 1); S/5, B/8, Z/2, G/6 (letter / digit shapes); U/V, C/G, E/F (a lost or faint stroke). Residual risk noted: I/L makes SALMA / SAIMA; both rare as a sibling pair, and the note still asks for a check.
+- **Rejected — every vowel for a vowel** (A/E/I/O/U among themselves): not glyph confusions, and exactly how sibling names differ (AINI / AINA, ROHANA / ROHANI). A test pins that no pair is two vowels.
+- **Rejected — M/N:** turns common names into each other (MING / NING, MINA / NINA, RAMI / RANI); not a typical print confusion either.
+- **Rejected — H/N:** HINA / NINA, HANA / NANA; an occasional confusion only on degraded print.
+- **Rejected — R/P:** a stroke-loss confusion on degraded print only (marked doubtful in the brief), and RANI / PANI, RAVI / PAVI. Can be added on evidence of a real misread.
+- **Rejected — I/J:** a handwriting confusion, not a print one in uppercase.
+- **Digits:** the strict tokeniser splits a part at a digit ("R0HANA" -> R + HANA), so the any-letter rule could never see it. Handled (small and contained in `name_misread`, no change to `vision`): exactly ONE digit in the read name, inside a part of at least 4 characters; it is put back as each letter it is a look-alike of, and the name must then equal the student's exactly. Two digits, a digit plus a letter difference, or a digit with no look-alike (7) block.
+
+**Review fix (medium), the genuineness gate:** `verdict_ladder._academic_red_chips` counts `partial` as 0 red chips, so a SUSPECT slip with a misread would have moved Unsure -> Probable. `name_misread.doc_misread` now returns False (stay `mismatch`, red) unless the document's own stored genuineness reads `genuine` or no signal (`canonical_status(stored_status(...))` in `('', 'genuine')`; a `NOT_CHECKED` page reads as no signal, as everywhere). A suspect or fake slip keeps today's red mismatch.
 
 **Builder rulings:**
 - **Substitution only, not edit distance 1.** An OCR / AI misread swaps a glyph (O for Q); it does not add or drop one. An added or dropped letter is far more often a genuinely different spelling, so it stays a block.
 - **The floor: a part needs at least 4 letters** (`name_misread.MIN_PART_LETTERS`). Parts of 1-3 letters (TAN, LIM, ALI, NG) get no tolerance: one letter is a third or more of them, and LIM / LIN are different family names.
 - **Ordered parts, the student's own name only.** The compare keeps printed order (`vision._canonical_name_seq`), so a reordered name with a misread blocks; and it never compares against a guardian's or parent's name (the stored verdict already checks the household; a parent's near-miss is not the student's document).
 - **Derived at read time** from the stored candidate name and the student's profile name, in the ONE shared status (`academic_engine._slip_name_status`): no stored field, no re-read, every gate and card agrees. IC, parent and income identity checks are untouched (request #59 covers those).
-- **Known risk, accepted:** a sibling's results whose given name differs by one letter (RAJA / RAMA, same father) read amber, not red. The reviewer note asks for a check, and the card cannot reach Certain while it shows.
+- **Known risk, narrowed by the owner's ruling:** a sibling whose given name differs by one LOOK-ALIKE letter only (rare: the kept pairs are glyph confusions, not how names vary) reads amber, not red. The note asks the reviewer to check it is the student's slip rather than inviting a wave-through, and the card cannot reach Certain while it shows. The ms / ta note wording is marked for language check.
+- **Accented letters stay a mismatch** (the tokeniser splits at a non a-z letter, so the part counts differ). `VERDICT_ENGINE_VERSION` stays 2026-11-05.1: the change is unreleased.
 
 ## T5c P5b: one Overview page with per-person pending cards — 2026-11-05 (owner rulings)
 
