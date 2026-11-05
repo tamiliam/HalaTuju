@@ -121,6 +121,8 @@ Field key: **Model** = build model. **Gates** = reviews and checks before the pu
   - Branch sec-a: SEC-01 / TD-512 (document record path fence, using `scholar_money.own_path`), SEC-02 / TD-513 (code half: `supabase_auth.py:156-157`), and whatever else the branch hand-back lists (SEC-03 / TD-514, SEC-04 / TD-515).
   - Branch money-a: TD-465 part 1 (`b0bedd54`: unknown course-start year no longer auto-awards RM3,000; the `award.py:58-66` stop gets its caller).
   - Anything the hand-back shows is not on a branch moves to A1.9 (SEC-03, SEC-04) or A1.13 (TD-465 part 2).
+  - Added 2026-11-05 (lead, recorded here so the plan matches the build): branch td066 (owner ruled "remove the box"; web only), the `is_clean_key` guard in `org_requests_ai.py` (same fence as SEC-01, one more caller), and the audit report + this roadmap (docs). TD-510, TD-511, TD-524 logged.
+  - A0.2 and A0.3 are docs only. They are in Wave 0 but not in G0. G0 = A0.1 only.
 - **Acceptance:**
   - Both suites are green on the merged tip.
   - A regression test exists for each fix: a foreign storage path is refused; an unverified metadata email is refused; an STPM accept with an unknown start year gets no amount and lands at the QC stop.
