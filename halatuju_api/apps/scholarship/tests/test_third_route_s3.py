@@ -173,24 +173,6 @@ class TestTheRequirementRule(TestCase):
         s = _states(_app(SPM_HELD, DEGREE))
         self.assertEqual((s['results_slip'], s['higher_results']), ('required', 'required'))
 
-    def test_request_63_spm_only_who_chose_the_degree_pathway_is_not_asked_for_higher_results(self):
-        """An SPM leaver who picks 'University degree' (code 'degree') holds no STPM results: the SPM
-        slip stays as the programme set it and no higher card is demanded."""
-        plan = {**DEGREE, 'chosen_pathway': 'degree'}
-        app = _app(SPM_HELD, plan)
-        self.assertEqual(results_route.higher_need(app), '')
-        s = _states(app)
-        self.assertEqual(s['results_slip'], 'required')
-        self.assertNotIn('higher_results', s)
-
-    def test_request_63_a_tertiary_holder_on_the_degree_pathway_is_unchanged(self):
-        for held in (STPM_HELD, DIPLOMA_HELD, MATRIC_HELD):
-            with self.subTest(held=held['exam_type']):
-                app = _app(held, {**DEGREE, 'chosen_pathway': 'degree'})
-                self.assertEqual(results_route.higher_need(app), 'required')
-                s = _states(app)
-                self.assertEqual((s['higher_results'], s['results_slip']), ('required', 'optional'))
-
     def test_the_ruling_leaves_a_submitted_one_alone(self):
         frozen = {'captured_at': '2026-10-01T00:00:00+00:00', 'questions': {},
                   'documents': {'ic': 'required', 'results_slip': 'required'}}

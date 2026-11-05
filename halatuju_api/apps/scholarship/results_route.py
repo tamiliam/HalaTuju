@@ -138,13 +138,7 @@ def higher_need(application) -> str:
         return ''
     tertiary = is_tertiary(held(application))
     if dest == DEGREE:
-        if tertiary:
-            return 'required'
-        # Request #63: an SPM-only student who CHOSE the "University degree" pathway for SPM leavers
-        # (code 'degree', e.g. a UMS degree that takes SPM) holds no higher results to upload.
-        if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'degree':
-            return ''
-        return 'required_with_slip'
+        return 'required' if tertiary else 'required_with_slip'
     return 'required' if tertiary else ''
 
 

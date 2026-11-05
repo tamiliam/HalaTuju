@@ -3088,6 +3088,10 @@ post-SPM results, so an SPM-only holder bound for a degree is REQUIRED to upload
 and her SPM slip stays required too (she always has academic evidence); the card says so with links
 to the results choice and the course choice. A programme that set the results optional is never
 escalated (only 'required' / 'optional' are mapped; anything else is left alone).
+**Owner ruling (2026-11-05, request #63):** the new "University degree" pathway choice for SPM leavers does NOT
+change this. An SPM-only student who picks it is still asked for the post-SPM results that got her into the degree
+(STPM, matric, foundation or diploma). A follow-up that excused her (167e2c83) was reverted before release; the
+`degree` pathway code is also set by offer confirmation (`confirmation.py`), so it is not a safe key for any exception.
 
 **D9.** An optional SPM slip never blocks: its name / unreadable reds are skipped by the gate when it
 is not the required upload (the reviewer still sees them). The grandfathered submitted arm of
