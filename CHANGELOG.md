@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
 
+### Security patch (pre-v3.1.0)
+- `next` and `eslint-config-next` 14.2.0 to 14.2.35 (exact pins; the last 14.2.x). Not Next 15.
+- Image optimiser off (`images: { unoptimized: true }` in `next.config.js`): closes the image-optimiser advisories until the Next 15 upgrade. `BrandLogo` no longer writes `/_next/image` addresses (plain `/public` path); its test updated.
+- `npm audit fix` (no `--force`): nanoid, picomatch and other in-range fixes in `package-lock.json`.
+- Left: Next.js advisories fixed only in 15.5.28+ (TD-506, first audit fix sprint); Pillow, pillow-heif and pypdf (deferred to the audit). See `docs/releases/security-notes-v3.1.0.md`.
+
 ## Team tables T5c part 5c — Overview cards: no sublines, Unassigned = ready to assign, cards open the filtered list (LIVE 2026-11-05; main 3c39489b; api-01255-zsm, web-01084-l6b; no migration)
 
 Owner phone check 2026-11-05 (three asks); owner phone check of the result OK the same day. Commits 38144e07 (web), 7ce8de9c (server), 2b618fc8 (review follow-up).

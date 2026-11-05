@@ -71,3 +71,5 @@ Measured at P5c close (2026-11-05) with the deploy gates' own command lines.
 1. Check the audit items above and the owner's ruling on them.
 2. Migrations are already applied on production (applied by hand before each deploy).
 3. Nothing to do for env vars beyond what each sprint recorded in `docs/deployment.md`.
+
+Security: we updated the web app's framework to its last safe 14.2 release and switched off a built-in image tool we do not use, so the most serious known weaknesses are closed before release.

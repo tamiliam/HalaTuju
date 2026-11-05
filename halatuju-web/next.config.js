@@ -11,6 +11,9 @@ const nextConfig = {
   // Standalone output for Docker/Cloud Run
   output: 'standalone',
 
+  // Closes the image-optimizer advisories until the Next 15 upgrade.
+  images: { unoptimized: true },
+
   // Environment variables exposed to browser
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
