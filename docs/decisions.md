@@ -26,6 +26,8 @@
 
 **Review fix (medium), the genuineness gate:** `verdict_ladder._academic_red_chips` counts `partial` as 0 red chips, so a SUSPECT slip with a misread would have moved Unsure -> Probable. `name_misread.doc_misread` now returns False (stay `mismatch`, red) unless the document's own stored genuineness reads `genuine` or no signal (`canonical_status(stored_status(...))` in `('', 'genuine')`; a `NOT_CHECKED` page reads as no signal, as everywhere). A suspect or fake slip keeps today's red mismatch.
 
+**Second review (low, accepted): unchecked (not-final) pages get no tolerance.** `NOT_CHECKED` is stored only on not-final higher-results pages (semester slips, the polytechnic portal page, a screenshot with digital text, and in-progress transcripts; `matric_poly_doc.py`). On digital text a one-letter difference is more likely a real different name, so `doc_misread` also returns False when the stored status (stripped, lower-cased) equals `NOT_CHECKED`. The tolerance applies only to genuine or truly unscored documents.
+
 **Builder rulings:**
 - **Substitution only, not edit distance 1.** An OCR / AI misread swaps a glyph (O for Q); it does not add or drop one. An added or dropped letter is far more often a genuinely different spelling, so it stays a block.
 - **The floor: a part needs at least 4 letters** (`name_misread.MIN_PART_LETTERS`). Parts of 1-3 letters (TAN, LIM, ALI, NG) get no tolerance: one letter is a third or more of them, and LIM / LIN are different family names.
