@@ -167,6 +167,7 @@ class TestStaticReadGuard(TestCase):
     READ_MODULES = [
         'verdict_engine.py', 'income_engine', 'anomaly_engine.py', 'pathway_engine.py',
         'pathway_match.py',     # offer exact-read S6: the matcher moved out of pathway_engine.py
+        'verdict_academic.py',  # request #62: the Academic fact moved out of verdict_engine.py
         'profile_engine.py', 'submission_review.py', 'check2_queries.py',
     ]
     #: `income_engine/` is 20 files at H16 (19 modules + the shell). A minimum, not an equality.
