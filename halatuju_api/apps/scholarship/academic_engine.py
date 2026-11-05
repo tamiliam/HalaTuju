@@ -629,11 +629,14 @@ def compare_academics(profile_grades, slip) -> dict:
 
 def _slip_name_status(doc) -> str:
     """Name check for a results slip, from the doc-assist read: 'match' / 'mismatch'
-    / 'unreadable' / 'pending' (not yet field-extracted)."""
+    / 'unreadable' / 'pending' (not yet field-extracted) / 'partial' — the name is ONE
+    letter off the student's own (#56, `name_misread`): a likely misread, never a block,
+    amber, with a reviewer note."""
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     sv = vf.get('student_verdict')
     if sv == 'name_mismatch':
-        return 'mismatch'
+        from .name_misread import doc_misread
+        return 'partial' if doc_misread(doc) else 'mismatch'
     if sv in ('wrong_doc', 'unreadable') or doc.vision_name_match == 'unreadable':
         return 'unreadable'
     if sv == 'ok' or doc.vision_name_match == 'found':

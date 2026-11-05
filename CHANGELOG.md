@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Requests (Lane B)
+
+### Request #56 — a results name one letter off is a likely misread, not another person (bug, no charge; branch req-e, not deployed)
+- A matriculation transcript read by the AI fallback came back with one letter of the given name as "Q" for "O"; the strict name check stored `name_mismatch` and the Documents step blocked the student.
+- New `apps/scholarship/name_misread.py`: the name read off the document is compared with the STUDENT'S OWN name part by part, in order. Same number of parts, every part but one identical, and the one differing part the same length, at least 4 letters, with exactly ONE substituted letter: a likely misread. Anything else (two letters, a letter in each of two parts, an added or dropped letter, a missing, extra or reordered part, a part of 1-3 letters, a near-miss of a parent's name) blocks exactly as before.
+- `academic_engine._slip_name_status`, the ONE read-time name status every gate and card reads (results slip and higher results), returns `partial` for a likely misread: never a block (red blockers, completeness, the red chip, the resolution verdict and the coach all key on `mismatch`), amber on the student's checklist, and a reviewer note on the Academic card (`results_slip_name_near` / `higher_results_name_near`, en/ms/ta). Read-time only: no stored field changes, no re-read needed, existing documents take it at once.
+- `VERDICT_ENGINE_VERSION` 2026-11-05.1. IC, parent and income identity checks untouched. Tests: `test_request56_name_misread.py` (18).
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
