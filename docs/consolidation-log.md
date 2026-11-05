@@ -21,6 +21,7 @@ _(cleared at the 2026-10-28 review — counter reset; the ten small-lane entries
 - 2026-11-01 8e6773d5 fix: My activity shows 10 rows first and no per-row rebuilt tag (owner) (ActivityCard.tsx, en/ms/ta, manual Guide + FAQ + tests)
 - 2026-11-03 159e824f 07f6da5d fix: Programme Settings - the gift's Configuration row renamed and moved last in the Programme group (owner) (navigation.ts + test, en/ms/ta, manual Guide + FAQ; also the apply gift test waits for the prefill, a deploy-build flake)
 - 2026-11-03 a3495aa9 docs: slim halatuju_api/CLAUDE.md (CLAUDE.md, docs/*)
+- 2026-11-05 ebc30f68 fix: remove the TEMP tech-support help box and its personal mobile number, TD-066 (halatuju-web/src/components/ScholarshipNextSteps.tsx, messages en/ms/ta; 1 source file, owner ruling)
 
 ## Sprints since the last review
 
