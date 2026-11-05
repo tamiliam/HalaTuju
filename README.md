@@ -2,6 +2,10 @@
 
 HalaTuju helps Malaysian SPM leavers find the right post-secondary course. It checks eligibility across 383 courses at 239 institutions, ranks matches by academic fit and personal interests, and generates AI-powered counselor reports — in English, Bahasa Melayu, and Tamil.
 
+## v3.1.0 (2026-11-05)
+
+v3.1.0 adds a team that works the way an organisation does (several hats, mentors, readable permissions), makes every page work on a phone, reads offer letters exactly, looks after the student after the award (results, surveys, announcements, mentoring), and gives each staff member one Overview page that shows only the work waiting for them. 12,433 api tests and 6,525 web tests pass. What changed, what to know, and the open known issues: [docs/releases/release-notes-v3.1.0.md](docs/releases/release-notes-v3.1.0.md). The v3.0.0 notes sit beside it.
+
 ## v3.0.0 (2026-10-06)
 
 v3.0.0 keeps the course guide and adds a complete, multi-tenant bursary platform: a student applies for a named gift, her results and family documents are read by machine and checked for genuineness, a deterministic engine reaches a verdict, a reviewer interviews her, a quality-control step signs it off, a sponsor funds her and the money reaches her eWallet through Vircle — each organisation with its own staff, rules, wording, colours, bills and reports. Every deploy is now gated by the test suites and by code standards that only ever tighten. What changed, what to know before upgrading, and the 116 open known issues: [docs/releases/release-notes-v3.0.0.md](docs/releases/release-notes-v3.0.0.md). Where the documentation lives: [docs/README.md](docs/README.md).
@@ -100,7 +104,7 @@ python -m pytest apps/courses/tests/test_golden_master.py -v
 
 - `halatuju_api/CLAUDE.md` — detailed architecture, deployment, and testing guide
 - `docs/roadmap.md` — planned features (STPM entrance, admin dashboard)
-- `docs/releases/release-notes-v3.0.0.md` — latest release notes (older ones beside it)
+- `docs/releases/release-notes-v3.1.0.md` — latest release notes (older ones beside it)
 - `CHANGELOG.md` — full version history
 
 ## License

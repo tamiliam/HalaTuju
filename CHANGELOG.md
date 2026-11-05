@@ -2,11 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.1.0 - 2026-11-05
+
+Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
+
+## Team tables T5c part 5c — Overview cards: no sublines, Unassigned = ready to assign, cards open the filtered list (LIVE 2026-11-05; main 3c39489b; api-01255-zsm, web-01084-l6b; no migration)
+
+Owner phone check 2026-11-05 (three asks); owner phone check of the result OK the same day. Commits 38144e07 (web), 7ce8de9c (server), 2b618fc8 (review follow-up).
+
+- **Sublines removed** (the "due soon" and "Nothing waiting" lines under the cards).
+- **Unassigned = ready to assign** (owner option A): a case counts only if the profile is complete, it is unassigned and `is_ready_for_assignment` says yes (`queries_sla.ready_to_assign` / `assignable_now`, one rule shared with the Assign screen). The programme overview tile uses the same rule; a parity test pins that the count equals the list.
+- **Cards open the filtered list:** `/admin/scholarship?ready=1`, `?band=overdue|due_soon|open`, `?status`, `?assigned=me`, with a removable chip (`ApplicationUrlFilters.tsx`); the requests card opens `?tab=action`. Server: `review_sla.in_band`, `attention(organisation=)`, per-organisation `query_answer_days`.
+- **Review follow-up:** the reviewer's My open card counted cases awaiting a verdict while `?assigned=me` listed all of her cases; it now links `?assigned=me&band=open`, with a parity test. Card counts are all-gift counts, so no `?programme=` is carried (checked, parity holds).
+- Not filtered (no filter exists on those pages): awaiting QC, invitations, sponsors to vet, payment runs, wallet credits, mentor cards. See TD-502.
+- Gates: pytest 12,433 passed / 3 skipped; jest 6,525; bundle median 144.147 kB; mobile-check 775 passed.
+
+## Team tables T5c part 5b — ONE Overview page with per-person pending cards (LIVE 2026-11-05; main f2efa6b0; api-01254-9vx, web-01083-smc; no migration)
+
+Owner ruling 2026-11-04 after the live phone check found two "Programmes" rows: one menu row, one page, cards that show the pending work of THAT person. Mock approved by the owner 2026-11-05. Commits 9f13e12e (web), 7bf77b8e (server), eedc20f4 (label).
+
+- **One "Overview" row and page** (chord V, route `/admin/organisation/programmes`): per-person pending cards on top, the programme cards below. The old Overview and Administration rows are gone; their routes redirect in one hop. Fixed `GIFT_DOOR` in `useGiftGate.ts`, which pointed at the old page.
+- **New `GET admin/scholarship/my-pending/`** (`apps/scholarship/my_pending.py`): admin (unassigned, overdue, awaiting QC, sponsors to vet, invitations, payment runs, requests), finance (payment runs, wallet credits, sponsors to vet, invitations), QC (awaiting your check, oldest days), reviewer (open, due soon, overdue), mentor (mentees, not yet met, asked for help). A card the caller may not see is absent. Query budgets 11/9/10.
+- Shared pieces: `credit_steps.step_refusal` (used by `sign_admin_credit` and the card), `qc_separation.barred_ids`, `pending_sponsor_count()`, the door `my_programmes.lands`. 16 server tests.
+- **Mentor card reads "Not yet met"** (en / ms / ta), counting mentees with no meeting at all (review finding M1, eedc20f4).
+- **Hotfix d8b5be0c (relabel Overview / duplicate-label test) was never pushed; superseded by P5b.** The label test it carried (`navigation.labels.test.ts`) now guards the single row.
+- Gates: pytest 12,422 passed / 3 skipped; jest 6,519; bundle median 144.148 kB; mobile-check 775 passed (the m8-organisation surface was removed).
+- Open lows: TD-502 to TD-505.
+
 ## Team tables T5c part 5 — the Programmes landing (LIVE 2026-11-04; main 1c21ecaf; api-01253-gcr, web-01082-t9w; revisions S1b/S2b/S2c)
 
-Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Live; owner phone check pending.
+Owner rulings 2026-11-04 (RUN_STATE.md "T5c P5"). Live; owner phone check done 2026-11-05 (which led to P5b and P5c above).
 
-**Hotfix — two "Programmes" rows in the sidebar:** the Organisation Overview row (labelKey admin.orgPage.nav, chord V) still read "Programmes" beside the new landing row. Relabelled Overview / Gambaran / கண்ணோட்டம். Regression test: halatuju-web/src/lib/navigation.labels.test.ts (no repeated label per group for every role and locale; no shared chord).
+**Hotfix — two "Programmes" rows in the sidebar (SUPERSEDED by P5b: d8b5be0c was never pushed; one Overview row replaced both):** the Organisation Overview row (labelKey admin.orgPage.nav, chord V) still read "Programmes" beside the new landing row. Relabelled Overview / Gambaran / கண்ணோட்டம். Regression test: halatuju-web/src/lib/navigation.labels.test.ts (no repeated label per group for every role and locale; no shared chord).
 
 **S1 — server:**
 - **New `GET admin/scholarship/my-programmes/`** (`views_admin/my_programmes.py`, `AdminMyProgrammesView`) →

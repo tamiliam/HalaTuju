@@ -1,6 +1,6 @@
 # HalaTuju documentation — what lives where
 
-Updated at the v3.0.0 release cut (2026-10-06). **Living documents** describe the system as it is
+Updated at the v3.1.0 release cut (2026-11-05). **Living documents** describe the system as it is
 today and are kept current at every sprint close. **History** is never edited after the fact
 except to fix a path.
 
@@ -29,7 +29,7 @@ except to fix a path.
 | [../CHANGELOG.md](../CHANGELOG.md) | Every change since v2.0-rc; older history in [changelog/](changelog/) |
 | [sprint-history.md](sprint-history.md) | The sprint, batch and incident notes that used to fill `halatuju_api/CLAUDE.md`, word for word |
 | [retrospectives/](retrospectives/) | One retrospective per sprint or release (new ones go here) |
-| [releases/](releases/) | Release notes per version, and the v3.0.0 migration list |
+| [releases/](releases/) | Release notes and security notes per version, and the v3.0.0 migration list |
 | [archive/](archive/) | Finished one-off audits, proposals and superseded plans |
 | `CHANGELOG.md` (this folder) | The pre-v2.0 course-selector changelog, kept as it was |
 
