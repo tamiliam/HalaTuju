@@ -68,7 +68,10 @@ def _review_images(req):
         attachments = list(req.attachments.all()) if req.pk else []
     except Exception:
         return out
+    from .storage import is_clean_key
     for att in attachments[:MAX_ATTACHMENTS]:
+        if not is_clean_key(att.storage_path):
+            continue  # never fetch a stored key that could name another object (SEC-01 residue)
         data = _fetch_image_bytes(att.storage_path)
         if data:
             out.append((data, att.content_type or 'image/png'))

@@ -7945,3 +7945,15 @@ Numbering note: Maintenance's unpushed T5c TD entries renumber to after TD-495.
 ### [TD-523] Cold starts and build minutes (SP-08, SP-12) - medium (owner's call)
 
 **Raised 2026-11-05 by the v3.1.0 project audit (read from Cloud Run and Cloud Build).** The API has no minimum instance, so the first visitor after idle waits for the dataset load; one instance would cost money under the RM10 budget. Builds run 15-27 minutes, about 30 in 2.5 days. **Fix:** owner rules on min-instances; cache image layers and split the gate tests from the build. *(B · M)*
+
+### [TD-510] A request for an unlinked matching staff row makes a Supabase admin call of up to 15 s each time (SEC-02 L4) - low
+
+**Raised 2026-11-05 by the sec-a review.** When a signed-in user has no linked staff row but a staff row matches their email, the auth middleware asks Supabase's admin API whether the email is confirmed, with a timeout of up to 15 s, on every request until linked. **Fix:** cache the answer briefly or link once and stop asking. *(A · S)*
+
+### [TD-511] A student can delete their own locked slip file through a second row (SEC-01 L5) - low
+
+**Raised 2026-11-05 by the sec-a review.** A second document row recording the same storage key lets a student delete the blob of a locked slip when they delete their own row. **Fix:** refuse a blob delete when another row, or a locked row, holds the same key. *(A · S)*
+
+### [TD-524] A hold verdict can reach QC accept with no amount - medium
+
+**Raised 2026-11-05 by the TD-465 money review.** money-a stops an APPROVE with no bursary at QC accept (`award_required`); a HOLD verdict that reaches QC accept with no amount has no check of its own. **Fix:** give the hold path its own check at QC accept, with a test. *(A · S)*

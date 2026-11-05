@@ -28,6 +28,10 @@ Money hotfix during the audit freeze (live defect confirmed by an audit verifier
 
 - TD-066 closed (owner ruling "Remove the box"): the TEMP tech-support help box (with its personal mobile number) is removed from the student application page, with its message key in en, ms and ta; a guard test keeps it out.
 
+### chore: deploy candidate g0 guard and debt entries
+
+- Guard: the org-request AI review skips stored attachment keys that fail `is_clean_key` before fetching (test `test_an_unclean_storage_key_is_never_fetched`). Debt entries TD-510, TD-511 (sec-a lows L4, L5) and TD-524 (hold verdict reaching QC accept with no amount).
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
