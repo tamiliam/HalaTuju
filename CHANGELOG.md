@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Requests (Lane B)
 
+### Request #59 — a parent's IC second opinion is compared with that parent, not the student (bug, no charge; branch req-e, not deployed)
+- When the cheap Vision read of a MyKad looks doubtful, Gemini re-reads the card and `vision._merge_ic_reads` accepts its name (or number) only when it agrees with a reference the cheap read did not. That reference was always the student's own profile, so on a FATHER's card (his name is never his child's) a correct second reading was thrown away, the misread name was kept, and his card then "did not match" his own salary slip: the student was blocked.
+- New `income_engine.parent_ic_reference(doc)`: a `parent_ic` is compared with THAT member's own reference — the name(s) the student entered for that member in the family roster, and the name and number on that member's own income proof (salary slip / EPF; the STR only for the declared earner). The member is the card's tag, else the declared earner. The student's name and number are never in it.
+- Same bar as the student's own card (`name_match`, exact name parts; a confident cheap read is never overridden); with several reference names, the second reading must agree with one and the cheap read with none. The student's own IC is unchanged. The trigger (`_should_gemini_ic`) is unchanged.
+- No version bump: no prompt, genuineness score or verdict-engine rule changed. Already-read cards keep their stored name; nothing re-reads them automatically (the owner decides on re-reading #59's father's IC after release; paid). Tests: `test_req59_parent_ic_second_opinion.py` (20).
+
 ### Request #56 — a results name one letter off is a likely misread, not another person (bug, no charge; branch req-e, not deployed)
 - A matriculation transcript read by the AI fallback came back with one letter of the given name as "Q" for "O"; the strict name check stored `name_mismatch` and the Documents step blocked the student.
 - New `apps/scholarship/name_misread.py`: the name read off the document is compared with the STUDENT'S OWN name part by part, in order. Same number of parts, every part but one identical, and the one differing part the same length, at least 4 letters, with exactly ONE substituted letter: a likely misread. Anything else (two letters, a letter in each of two parts, an added or dropped letter, a missing, extra or reordered part, a part of 1-3 letters, a near-miss of a parent's name) blocks exactly as before.

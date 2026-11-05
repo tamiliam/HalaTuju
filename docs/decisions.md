@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## Request #59: a parent's IC second opinion is compared with that parent — 2026-11-05 (bug fix; builder rulings)
+
+**The rule:** `vision._merge_ic_reads` accepts the Gemini second opinion's name / number only when it agrees with a reference the cheap read did not. For a `parent_ic` that reference is now `income_engine.parent_ic_reference(doc)` — that member's roster name(s) and that member's own income proof's name and NRIC — never the student's profile. The student's own `ic` keeps the profile, unchanged.
+
+**Builder rulings:**
+- **Same bar, right person.** The compare stays `name_match` (exact parts; `partial` agrees, as on the student's card); the tolerant `relationship_name_match` is NOT used. Several names: Gemini must agree with one, the cheap read with none (one name = the old rule exactly).
+- **The STR is the earner's document only** (on the STR route `_cluster_proof_identity` ignores the member), so another member's card never takes the earner's STR as its reference. The consent record's `guardian_name` / `guardian_nric` are not used (not needed for #59; not to hand in the merge).
+- **The NRIC follows the same reference** (the proof's number): the student's number is never a parent card's reference. Before, a parent card's Gemini number was used only when the cheap read had none.
+- **The trigger `_should_gemini_ic` is unchanged** (a parent's card still always escalates, compared with the student; TD-390's note). Changing it would change cost and design, not fix this bug.
+- **No version bump, no automatic re-read.** Stored reads keep their names; re-reading #59's father's IC is the owner's call (paid).
+
 ## Request #56: a results name one letter off the student's is a likely misread — 2026-11-05 (owner-approved plan; builder rulings)
 
 **The rule:** a results document (SPM slip, matriculation / STPM / diploma results) whose name differs from the student's OWN name by exactly ONE SUBSTITUTED letter, in exactly ONE name part, every other part identical and in the same order, is a likely misread: `_slip_name_status` reads `partial` (amber, never a block, a reviewer note "one letter off, please check"). Everything else stays `mismatch` and blocks as before.
