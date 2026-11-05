@@ -139,9 +139,9 @@ class AdminRecordVerdictView(_AdminBase):
         # Standardised assistance (owner decision 2026-06-29): the amount is fixed by the
         # pathway, not chosen by the reviewer. On APPROVE, auto-apply the proposed amount —
         # but only when unset, so a SUPER's manual override (set-award endpoint) survives a
-        # re-record. When the verdict confidently disqualifies (offer_not_official /
-        # income_above_b40_line) the proposal is None, so award_amount STAYS unset — a super
-        # may set a value if the system has erred. On DECLINE, clear it. See
+        # re-record. When the proposal is None (TD-465: an STPM course-start year that cannot be
+        # established) award_amount STAYS unset — QC's reporting-date stop holds the case until
+        # the date is recorded, and a re-record then sizes it. On DECLINE, clear it. See
         # apps.scholarship.award; reuse the verdict just snapshotted, don't recompute.
         from .. import award as award_rule
         award_was = app.award_amount   # TD-203: logged below, once the save has landed

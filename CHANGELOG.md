@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## fix: money - STPM cases with an unknown course start year stop for QC instead of an automatic RM3,000 (TD-465)
+
+Money hotfix during the audit freeze (live defect confirmed by an audit verifier). Not pushed; no migration.
+
+- **The defect:** `award.course_start_unknown` (the owner's 2026-07-23 absolute stop) had no caller, so `award.proposed_award_amount` sized an STPM student with no intake year and no reporting date as a fresh entrant (RM3,000), and `record-verdict` committed it on an APPROVE. Because the auto-apply runs only when the amount is unset, the RM3,000 then survived the officer recording a 2025 date (a continuing student, RM1,000).
+- **The fix:** `proposed_award_amount` asks `course_start_unknown` first and returns None for that case, the existing "no automatic amount" outcome: `award_amount` stays unset, the cockpit shows no proposed bursary, and QC's existing absolute stop (`reporting_date_required`, no override) refuses the accept until the officer records the date. A re-recorded verdict then sizes it from the known year. No other rule, amount or route changes; stored awards are not touched.
+- No version bump: the award amount is not a verdict band (`VERDICT_ENGINE_VERSION` rule).
+- Tests: `tests/test_td465_course_start_unknown.py` (new, 7); `tests/test_award_rule.py` updated where it pinned the defect (an STPM fresh entrant now carries a known 2026 date; the no-date STPM case asserts no amount).
+
 ## v3.1.0 - 2026-11-05
 
 Release cut (tag `v3.1.0`, local until the owner approves the push). Notes: `docs/releases/release-notes-v3.1.0.md`; access review: `docs/releases/security-notes-v3.1.0.md`. halatuju-web 3.0.0 to 3.1.0 (package.json and lock root); the api has no version constant. Release audit found open dependency advisories (TD-506). Everything between this heading and the "v3.0.0" heading below is in this release.
